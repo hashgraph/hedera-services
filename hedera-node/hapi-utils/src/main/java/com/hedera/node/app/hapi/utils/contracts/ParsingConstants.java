@@ -60,8 +60,9 @@ public final class ParsingConstants {
             "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_V3 =
             "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
-    public static final String HEDERA_TOKEN_V4 = "(" + "string,string,address,string,bool,uint32,bool," + TOKEN_KEY
-            + ARRAY_BRACKETS + "," + EXPIRY + ",bytes" + ")";
+    public static final String HEDERA_TOKEN_WITH_METADATA = "(" + "string,string,address,string,bool,int64,bool,"
+            + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ",bytes)";
+
     public static final String TOKEN_INFO = "("
             + HEDERA_TOKEN_V2
             + ",int64,bool,bool,bool,"

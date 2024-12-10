@@ -21,7 +21,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code StreamBuilder} specialization for tracking the side-effects of a {@code ConsensusSubmitMessage}
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code ConsensusSubmitMessage}
  * transaction.
  */
 public interface ConsensusSubmitMessageStreamBuilder extends StreamBuilder {

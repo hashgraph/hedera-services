@@ -45,6 +45,11 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
     private final AddressChecks addressChecks;
     private final FeatureFlags featureFlags;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     * @param addressChecks checks against addresses reserved for Hedera
+     * @param featureFlags current evm module feature flags
+     */
     public CustomExtCodeCopyOperation(
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks,

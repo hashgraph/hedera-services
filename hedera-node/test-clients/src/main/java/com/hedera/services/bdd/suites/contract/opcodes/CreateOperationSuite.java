@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -147,17 +146,15 @@ public class CreateOperationSuite {
 
     @HapiTest
     final Stream<DynamicTest> resetOnFactoryFailureWorks() {
-        return defaultHapiSpec("ResetOnFactoryFailureWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(
-                        contractCall(CONTRACT, "stackedDeploymentFailure")
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                .gas(780_000)
-                                .via("deploymentFailureTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                                .gas(780_000)
-                                .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "stackedDeploymentFailure")
+                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .gas(780_000)
+                        .via("deploymentFailureTxn"),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("deploymentFailureTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -179,17 +176,15 @@ public class CreateOperationSuite {
 
     @HapiTest
     final Stream<DynamicTest> resetOnFactoryFailureAfterDeploymentWorks() {
-        return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(
-                        contractCall(CONTRACT, "failureAfterDeploy")
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                .gas(780_000)
-                                .via("failureAfterDeploymentTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                                .gas(780_000)
-                                .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "failureAfterDeploy")
+                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .gas(780_000)
+                        .via("failureAfterDeploymentTxn"),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("failureAfterDeploymentTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -211,17 +206,15 @@ public class CreateOperationSuite {
 
     @HapiTest
     final Stream<DynamicTest> resetOnStackedFactoryFailureWorks() {
-        return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(
-                        contractCall(CONTRACT, "stackedDeploymentFailure")
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                .gas(780_000)
-                                .via("stackedDeploymentFailureTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                                .gas(780_000)
-                                .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "stackedDeploymentFailure")
+                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .gas(780_000)
+                        .via("stackedDeploymentFailureTxn"),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("stackedDeploymentFailureTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -264,10 +257,10 @@ public class CreateOperationSuite {
         final var contract = "CreateTrivial";
         final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 
-        return defaultHapiSpec("childContractStorageWorks")
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract).via("firstContractTxn"))
-                .then(assertionsHold((spec, ctxLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).via("firstContractTxn"),
+                assertionsHold((spec, ctxLog) -> {
                     final var subop1 =
                             contractCall(contract, "create").gas(785_000).via("createContractTxn");
 

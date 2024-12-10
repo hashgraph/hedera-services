@@ -22,8 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -75,8 +74,9 @@ class AutoAccountCreatorTest extends StepsBase {
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathECKeyAliasWorks() {
         accountCreatorInternalSetup(false);
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -106,8 +106,9 @@ class AutoAccountCreatorTest extends StepsBase {
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathEDKeyAliasWorks() {
         accountCreatorInternalSetup(false);
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -138,8 +139,9 @@ class AutoAccountCreatorTest extends StepsBase {
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
         accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

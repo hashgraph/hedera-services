@@ -57,8 +57,8 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("removal")
 class PbjConverterTest {
 
-    public static final NodeId NODE_ID_1 = new NodeId(1);
-    public static final NodeId NODE_ID_2 = new NodeId(2);
+    public static final NodeId NODE_ID_1 = NodeId.of(1);
+    public static final NodeId NODE_ID_2 = NodeId.of(2);
     private Randotron randotron;
 
     @BeforeEach

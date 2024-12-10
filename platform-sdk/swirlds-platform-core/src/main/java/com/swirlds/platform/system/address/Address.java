@@ -24,6 +24,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -457,16 +458,16 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different {@link X509Certificate} for signature.
+     * Create a new Address object based this one with different {@link X509Certificate} for signature.  If the
+     * certificate is not encodable, the field is set to null.
      *
      * @param sigCert New signing certificate for the created Address.
      * @return The new Address.
      */
     @NonNull
-    public Address copySetSigCert(@NonNull final X509Certificate sigCert) {
-        Objects.requireNonNull(sigCert, "sigCert must not be null");
-        Address a = copy();
-        a.sigCert = checkCertificateEncoding(new SerializableX509Certificate(sigCert));
+    public Address copySetSigCert(@Nullable final X509Certificate sigCert) {
+        final Address a = copy();
+        a.sigCert = sigCert == null ? null : checkCertificateEncoding(new SerializableX509Certificate(sigCert));
         return a;
     }
 
@@ -664,7 +665,7 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Throws an illegal argument exception if the certificate exists and is not encodable.
+     * Checks if the certificate is encodable and returns it if it is, otherwise returns null.
      *
      * @param certificate the certificate to check.
      * @return the certificate if it is encodable.
@@ -675,12 +676,7 @@ public class Address implements SelfSerializable {
         if (certificate == null) {
             return null;
         }
-        try {
-            certificate.getCertificate().getEncoded();
-            return certificate;
-        } catch (CertificateEncodingException e) {
-            throw new IllegalArgumentException("Certificate is not encodable");
-        }
+        return CryptoStatic.checkCertificate(certificate.getCertificate()) ? certificate : null;
     }
 
     /**

@@ -57,6 +57,13 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     private static final Optional<ExceptionalHaltReason> CHILD_RECORDS_LIMIT_HALT_REASON =
             Optional.of(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS);
 
+    /**
+     * @param evm the EVM to use
+     * @param gasCalculator the gas calculator to use
+     * @param requireCodeDepositToSucceed whether to require the deposit to succeed
+     * @param contractValidationRules the rules against which the contract will be validated
+     * @param initialContractNonce the initial contract nonce to use for the creation
+     */
     public CustomContractCreationProcessor(
             @NonNull final EVM evm,
             @NonNull final GasCalculator gasCalculator,

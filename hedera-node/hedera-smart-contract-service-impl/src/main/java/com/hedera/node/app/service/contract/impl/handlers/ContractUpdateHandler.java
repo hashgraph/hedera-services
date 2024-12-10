@@ -80,10 +80,11 @@ public class ContractUpdateHandler implements TransactionHandler {
      */
     public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractUpdateHandler() {
-        // Exists for injection
-    }
+    public ContractUpdateHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -246,6 +247,12 @@ public class ContractUpdateHandler implements TransactionHandler {
         return op.hasExpirationTime() && op.expirationTimeOrThrow().seconds() < curExpiry;
     }
 
+    /**
+     * @param contract the account of the contract to be updated
+     * @param context the {@link HandleContext} of the active ContractUpdateTransaction
+     * @param op the body of contract update transaction
+     * @return the updated account of the contract
+     */
     public Account update(
             @NonNull final Account contract,
             @NonNull final HandleContext context,

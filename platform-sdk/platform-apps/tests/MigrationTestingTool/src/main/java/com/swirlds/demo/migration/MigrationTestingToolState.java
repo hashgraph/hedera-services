@@ -19,11 +19,14 @@ package com.swirlds.demo.migration;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapKey;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
@@ -32,12 +35,15 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -47,10 +53,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MigrationTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
+@ConstructableIgnored
+public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolState.class);
 
     /**
@@ -83,38 +92,29 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * A record of the positions of each child within this node.
      */
     private static class ChildIndices {
-        public static final int UNUSED = 0;
-        public static final int MERKLE_MAP = 1;
-        public static final int VIRTUAL_MAP = 2;
+        public static final int UNUSED_PLATFORM_STATE = 0;
+        public static final int UNUSED_ROSTERS = 1;
+        public static final int UNUSED_ROSTER_STATE = 2;
 
-        public static final int CHILD_COUNT = 3;
+        public static final int MERKLE_MAP = 3;
+        public static final int VIRTUAL_MAP = 4;
+
+        public static final int CHILD_COUNT = 5;
     }
 
     public NodeId selfId;
 
-    public MigrationTestingToolState() {
-        super(ChildIndices.CHILD_COUNT);
+    public MigrationTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
     }
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
         super(that);
-        if (that.getMerkleMap() != null) {
-            setMerkleMap(that.getMerkleMap().copy());
-        }
-        if (that.getVirtualMap() != null) {
-            setVirtualMap(that.getVirtualMap().copy());
-        }
         that.setImmutable(true);
         this.setImmutable(false);
         this.selfId = that.selfId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNumberOfChildren() {
-        return ChildIndices.CHILD_COUNT;
     }
 
     /**
@@ -139,9 +139,10 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     @Override
     public boolean childHasExpectedType(final int index, final long childClassId) {
         switch (index) {
-            case ChildIndices.UNUSED:
-                // We used to use this for an address book, but now we don't use this index.
-                // Ignore whatever is found at this index.
+            case ChildIndices.UNUSED_PLATFORM_STATE:
+            case ChildIndices.UNUSED_ROSTERS:
+            case ChildIndices.UNUSED_ROSTER_STATE:
+                // Reserved for system states.
                 return true;
             case ChildIndices.MERKLE_MAP:
                 return childClassId == MerkleMap.CLASS_ID;
@@ -198,14 +199,25 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * Do genesis initialization.
      */
     private void genesisInit(final Platform platform) {
+        final Configuration configuration =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
         setMerkleMap(new MerkleMap<>());
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384);
+        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+                (short) 1,
+                DigestType.SHA_384,
+                merkleDbConfig.maxNumOfKeys(),
+                merkleDbConfig.hashesRamToDiskThreshold());
         // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
         // we create another instance of MerkleDB.
         MerkleDb.resetDefaultInstancePath();
-        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig);
+        final VirtualDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, configuration);
         setVirtualMap(new VirtualMap<>(
-                "virtualMap", new AccountVirtualMapKeySerializer(), new AccountVirtualMapValueSerializer(), dsBuilder));
+                "virtualMap",
+                new AccountVirtualMapKeySerializer(),
+                new AccountVirtualMapValueSerializer(),
+                dsBuilder,
+                configuration));
         selfId = platform.getSelfId();
     }
 
@@ -217,6 +229,8 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
+        super.init(platform, trigger, previousSoftwareVersion);
+
         final MerkleMap<AccountID, MapValue> merkleMap = getMerkleMap();
         if (merkleMap != null) {
             logger.info(STARTUP.getMarker(), "MerkleMap initialized with {} values", merkleMap.size());
@@ -249,7 +263,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
             final ConsensusEvent event = eventIt.next();
@@ -272,6 +291,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
     @Override
     public MigrationTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new MigrationTestingToolState(this);
     }
 

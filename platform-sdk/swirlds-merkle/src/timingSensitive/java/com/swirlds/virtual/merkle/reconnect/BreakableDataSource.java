@@ -66,12 +66,17 @@ public final class BreakableDataSource implements VirtualDataSource {
         }
 
         delegate.saveRecords(
-                firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
+                firstLeafPath,
+                lastLeafPath,
+                pathHashRecordsToUpdate,
+                leaves.stream(),
+                leafRecordsToDelete,
+                isReconnectContext);
     }
 
     @Override
-    public void close() throws IOException {
-        delegate.close();
+    public void close(final boolean keepData) throws IOException {
+        delegate.close(keepData);
     }
 
     @Override

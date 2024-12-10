@@ -18,12 +18,12 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -86,8 +86,8 @@ class SocketFactoryTest extends ConnectivityTestBase {
     /**
      * Tests the functionality {@link KeysAndCerts} are currently used for, signing and establishing TLS connections.
      *
-     * @param addressBook
-     * 		the address book of the network
+     * @param roster
+     * 		the roster of the network
      * @param keysAndCerts
      * 		keys and certificates to use for testing
      * @throws Throwable
@@ -95,22 +95,24 @@ class SocketFactoryTest extends ConnectivityTestBase {
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
-    void tlsFactoryTest(@NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
+    void tlsFactoryTest(@NonNull final Roster roster, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
             throws Throwable {
-        assertTrue(addressBook.getSize() > 1, "Address book must contain at least 2 nodes");
+        assertTrue(roster.rosterEntries().size() > 1, "Address book must contain at least 2 nodes");
         // choose 2 random nodes to test
         final Random random = new Random();
-        final List<Integer> nodeIndexes = random.ints(0, addressBook.getSize())
+        final List<Integer> nodeIndexes = random.ints(0, roster.rosterEntries().size())
                 .distinct()
                 .limit(2)
                 .boxed()
                 .toList();
-        final NodeId node1 = addressBook.getNodeId(nodeIndexes.get(0));
-        final NodeId node2 = addressBook.getNodeId(nodeIndexes.get(1));
+        final NodeId node1 =
+                NodeId.of(roster.rosterEntries().get(nodeIndexes.get(0)).nodeId());
+        final NodeId node2 =
+                NodeId.of(roster.rosterEntries().get(nodeIndexes.get(1)).nodeId());
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
-        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(addressBook, node1);
-        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(addressBook, node2);
+        final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(roster, node1);
+        final List<PeerInfo> node2Peers = Utilities.createPeerInfoList(roster, node2);
 
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),

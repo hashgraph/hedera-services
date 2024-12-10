@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.copyBuilderFrom;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.asStakingRewardBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.fromStakingInfo;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.lastInstantOfPreviousPeriodFor;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.newNodeStakeUpdateBuilder;
@@ -39,8 +40,8 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -189,10 +190,10 @@ public class StakeInfoHelper {
      * Also clears any pending rewards from the {@link NetworkStakingRewards} singleton for nodes that are no
      * longer in the address book.
      *
-     * @param context the token context
-     * @param networkInfo the list of node infos from the address book
-     * @param config the configuration for the node
-     * @param infoStore the writable store for the staking info
+     * @param context      the token context
+     * @param networkInfo  the list of node infos from the address book
+     * @param config       the configuration for the node
+     * @param infoStore    the writable store for the staking info
      * @param rewardsStore the store for the staking rewards
      */
     public StreamBuilder adjustPostUpgradeStakes(
@@ -215,7 +216,7 @@ public class StakeInfoHelper {
                         stakingInfo.copyBuilder().weight(0).deleted(true).build());
                 log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
                 // None of this node's rewards can ever be claimed now, so clear them from pending
-                final var rewards = copyBuilderFrom(rewardsStore)
+                final var rewards = asStakingRewardBuilder(rewardsStore)
                         .pendingRewards(rewardsStore.pendingRewards() - stakingInfo.pendingRewards())
                         .build();
                 rewardsStore.put(rewards);
@@ -247,7 +248,7 @@ public class StakeInfoHelper {
                 stakingConfig.maxStakeRewarded(),
                 POST_UPGRADE_MEMO);
         log.info("Exporting:\n{}", nodeStakes);
-        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class)
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo(POST_UPGRADE_MEMO)
                 .status(SUCCESS);

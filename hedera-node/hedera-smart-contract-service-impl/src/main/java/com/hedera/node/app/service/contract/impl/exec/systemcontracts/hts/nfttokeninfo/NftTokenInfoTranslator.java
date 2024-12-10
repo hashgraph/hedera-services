@@ -30,12 +30,17 @@ import javax.inject.Inject;
 
 public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for getNonFungibleTokenInfo(address,int64) method. */
     public static final Function NON_FUNGIBLE_TOKEN_INFO =
             new Function("getNonFungibleTokenInfo(address,int64)", ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO);
 
+    /** Selector for getNonFungibleTokenInfoV2(address,int64) method. */
     public static final Function NON_FUNGIBLE_TOKEN_INFO_V2 = new Function(
             "getNonFungibleTokenInfoV2(address,int64)", ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO_V2);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public NftTokenInfoTranslator() {
         // Dagger2
@@ -50,7 +55,7 @@ public class NftTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttemp
         final var v2Enabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
         return attempt.isSelector(NON_FUNGIBLE_TOKEN_INFO)
-                || attempt.isSelectorIfConfigEnabled(NON_FUNGIBLE_TOKEN_INFO_V2, v2Enabled);
+                || attempt.isSelectorIfConfigEnabled(v2Enabled, NON_FUNGIBLE_TOKEN_INFO_V2);
     }
 
     /**

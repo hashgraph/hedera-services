@@ -25,7 +25,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * This object is responsible for writing preconsensus events to disk. It differs from {@link PcesWriter} in that it
  * writes events to disk and then outputs them once it ensures they are durable.
  */
-@SuppressWarnings("unused") // will be used very soon (1 Oct 2024)
 public interface InlinePcesWriter {
 
     /**

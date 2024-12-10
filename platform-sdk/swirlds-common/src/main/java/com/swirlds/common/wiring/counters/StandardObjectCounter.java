@@ -44,16 +44,16 @@ public class StandardObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void onRamp() {
-        count.incrementAndGet();
+    public void onRamp(final long delta) {
+        count.addAndGet(delta);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean attemptOnRamp() {
-        count.getAndIncrement();
+    public boolean attemptOnRamp(final long delta) {
+        count.getAndAdd(delta);
         return true;
     }
 
@@ -61,16 +61,16 @@ public class StandardObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void forceOnRamp() {
-        count.getAndIncrement();
+    public void forceOnRamp(final long delta) {
+        count.getAndAdd(delta);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void offRamp() {
-        count.decrementAndGet();
+    public void offRamp(final long delta) {
+        count.addAndGet(-delta);
     }
 
     /**

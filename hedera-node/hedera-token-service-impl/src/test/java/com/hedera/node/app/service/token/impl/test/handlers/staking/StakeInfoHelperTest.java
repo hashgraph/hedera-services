@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.test.WritableStakingInfoStoreImplTest.NODE_ID_1;
@@ -40,11 +41,11 @@ import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -57,7 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakeInfoHelperTest {
-    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     private WritableStakingInfoStore infoStore;
 
@@ -115,7 +116,7 @@ class StakeInfoHelperTest {
         // Platform address book has node Ids 2, 4, 8
         final var networkInfo = new FakeNetworkInfo();
         given(tokenContext.consensusTime()).willReturn(Instant.EPOCH);
-        given(tokenContext.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class))
+        given(tokenContext.addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE))
                 .willReturn(streamBuilder);
         given(streamBuilder.transaction(any())).willReturn(streamBuilder);
         given(streamBuilder.memo(any())).willReturn(streamBuilder);

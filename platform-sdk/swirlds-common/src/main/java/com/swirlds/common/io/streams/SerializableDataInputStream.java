@@ -54,7 +54,7 @@ import java.util.function.Supplier;
  */
 public class SerializableDataInputStream extends AugmentedDataInputStream {
 
-    private static final int PROTOCOL_VERSION = SERIALIZATION_PROTOCOL_VERSION;
+    private static final Set<Integer> SUPPORTED_PROTOCOL_VERSIONS = Set.of(SERIALIZATION_PROTOCOL_VERSION);
 
     /** A stream used to read PBJ objects */
     private final ReadableSequentialData readableSequentialData;
@@ -70,16 +70,17 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     }
 
     /**
-     * Reads the protocol version written by {@link SerializableDataOutputStream#writeProtocolVersion()} and saves it
-     * internally. From this point on, it will use this version number to deserialize.
+     * Reads the protocol version written by {@link SerializableDataOutputStream#writeProtocolVersion()}
+     * From this point on, it will use this version number to deserialize.
      *
      * @throws IOException thrown if any IO problems occur
      */
-    public void readProtocolVersion() throws IOException {
+    public int readProtocolVersion() throws IOException {
         final int protocolVersion = readInt();
-        if (protocolVersion != PROTOCOL_VERSION) {
-            throw new IOException("invalid protocol version " + protocolVersion);
+        if (!SUPPORTED_PROTOCOL_VERSIONS.contains(protocolVersion)) {
+            throw new IOException("Unsupported protocol version " + protocolVersion);
         }
+        return protocolVersion;
     }
 
     /**

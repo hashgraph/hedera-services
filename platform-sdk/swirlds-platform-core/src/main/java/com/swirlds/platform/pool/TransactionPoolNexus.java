@@ -28,7 +28,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.config.TransactionConfig;
-import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.TransactionUtils;
@@ -42,6 +41,7 @@ import java.util.Objects;
 import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be

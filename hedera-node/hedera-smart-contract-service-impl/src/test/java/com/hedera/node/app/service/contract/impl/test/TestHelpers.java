@@ -44,6 +44,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -77,6 +78,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
@@ -205,6 +207,8 @@ public class TestHelpers {
             ContractID.newBuilder().contractNum(777).build();
     public static final AccountID CALLED_EOA_ID =
             AccountID.newBuilder().accountNum(666).build();
+    public static final ScheduleID CALLED_SCHEDULE_ID =
+            ScheduleID.newBuilder().scheduleNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
     public static final ContractID VALID_CONTRACT_ADDRESS = ContractID.newBuilder()
@@ -707,6 +711,7 @@ public class TestHelpers {
             "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     public static byte[] messageHash = unhex("47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
+    public static byte[] message = "This is a message".getBytes();
 
     public static byte[] signature = unhex(
             "aca7da997ad177f040240cdccf6905b71ab16b74434388c3a72f34fd25d6439346b2bac274ff29b48b3ea6e2d04c1336eaceafda3c53ab483fc3ff12fac3ebf200");
@@ -906,6 +911,14 @@ public class TestHelpers {
         return org.apache.tuweni.bytes.Bytes.concatenate(
                 org.apache.tuweni.bytes.Bytes.wrap(HasCallAttempt.REDIRECT_FOR_ACCOUNT.selector()),
                 accountAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectScheduleTxn(
+            final byte[] subSelector, final Address scheduleAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HssCallAttempt.REDIRECT_FOR_SCHEDULE_TXN.selector()),
+                scheduleAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 

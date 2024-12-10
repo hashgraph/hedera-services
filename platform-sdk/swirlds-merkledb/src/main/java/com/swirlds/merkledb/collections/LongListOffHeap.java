@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNullElse;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MemoryUtils;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -80,8 +81,8 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
      *
      * @throws IOException If there was a problem reading the file
      */
-    public LongListOffHeap(final Path file) throws IOException {
-        super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
+    public LongListOffHeap(final Path file, final Configuration configuration) throws IOException {
+        super(file, DEFAULT_RESERVED_BUFFER_LENGTH, configuration);
     }
 
     /** {@inheritDoc} */

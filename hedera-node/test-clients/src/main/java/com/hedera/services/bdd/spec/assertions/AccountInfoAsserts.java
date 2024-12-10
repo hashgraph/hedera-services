@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -229,6 +231,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    /**
+     * Asserts that the account has the given EVM address.
+     * @param evmAddress the EVM address
+     * @return this
+     */
+    public AccountInfoAsserts evmAddress(@NonNull final Address evmAddress) {
+        requireNonNull(evmAddress);
+        return evmAddress(ByteString.copyFrom(explicitFromHeadlong(evmAddress)));
+    }
+
     public AccountInfoAsserts noAlias() {
         registerProvider((spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), BAD_ALIAS));
         return this;
@@ -246,6 +258,21 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     public AccountInfoAsserts memo(String memo) {
         registerProvider((spec, o) -> assertEquals(memo, ((AccountInfo) o).getMemo(), "Bad memo!"));
         return this;
+    }
+
+    public static Function<HapiSpec, Function<Long, Optional<String>>> lessThan(final long expected) {
+        return spec -> actual -> {
+            if (actual == null) {
+                return Optional.of(
+                        String.format("Expected non-null numeric value less than <%d>, was <null>!", expected));
+            }
+
+            final var isLessThanExpected = actual < expected;
+
+            final var msg =
+                    isLessThanExpected ? null : String.format("Expected <%d> to be less than <%d>!", actual, expected);
+            return Optional.ofNullable(msg);
+        };
     }
 
     public AccountInfoAsserts balance(Function<HapiSpec, Function<Long, Optional<String>>> dynamicCondition) {

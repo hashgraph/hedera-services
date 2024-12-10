@@ -21,7 +21,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code StreamBuilder} specialization for tracking the side-effects of a {@code ConsensusCreateTopic} transaction.
+ * A {@code StreamBuilder} specialization for tracking the side effects of a {@code ConsensusCreateTopic} transaction.
  */
 public interface ConsensusCreateTopicStreamBuilder extends StreamBuilder {
     /**

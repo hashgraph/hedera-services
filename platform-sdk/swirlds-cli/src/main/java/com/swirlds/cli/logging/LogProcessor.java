@@ -81,7 +81,7 @@ public class LogProcessor {
 
                 final Path logFile = subdirectory.resolve("swirlds.log");
                 if (Files.exists(logFile)) {
-                    final NodeId nodeId = new NodeId(Integer.parseInt(subdirectoryName.substring(4)));
+                    final NodeId nodeId = NodeId.of(Integer.parseInt(subdirectoryName.substring(4)));
                     logFilesByNode.put(nodeId, logFile);
 
                     logger.info(LogMarker.CLI.getMarker(), "Found log file: {}", logFile);

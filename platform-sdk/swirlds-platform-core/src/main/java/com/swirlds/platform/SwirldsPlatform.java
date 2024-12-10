@@ -22,9 +22,10 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.StateInitializer.initializeState;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
-import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
+import static com.swirlds.platform.state.address.RosterMetrics.registerRosterMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -53,7 +54,6 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
@@ -76,7 +76,6 @@ import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -89,7 +88,6 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -109,7 +107,7 @@ public class SwirldsPlatform implements Platform {
     /**
      * the current nodes in the network and their information
      */
-    private final AddressBook currentAddressBook;
+    private final Roster currentRoster;
 
     /**
      * the object that contains all key pairs and CSPRNG state for this member
@@ -213,11 +211,11 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
-        currentAddressBook = initialState.getAddressBook();
+        currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
-        registerAddressBookMetrics(platformContext.getMetrics(), currentAddressBook, selfId);
+        registerRosterMetrics(platformContext.getMetrics(), currentRoster, selfId);
 
         RuntimeMetrics.setup(platformContext.getMetrics());
 
@@ -256,20 +254,6 @@ public class SwirldsPlatform implements Platform {
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
-        final boolean useOldStyleIntakeQueue = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useOldStyleIntakeQueue();
-
-        final LongSupplier intakeQueueSizeSupplier;
-        if (useOldStyleIntakeQueue) {
-            final SyncGossip gossip = (SyncGossip) builder.buildGossip();
-            intakeQueueSizeSupplier = () -> gossip.getOldStyleIntakeQueueSize();
-        } else {
-            intakeQueueSizeSupplier = platformWiring.getIntakeQueueSizeSupplier();
-        }
-
-        blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
@@ -358,7 +342,7 @@ public class SwirldsPlatform implements Platform {
                 swirldStateManager,
                 latestImmutableStateNexus,
                 savedStateController,
-                currentAddressBook);
+                currentRoster);
 
         blocks.loadReconnectStateReference().set(reconnectStateLoader::loadReconnectState);
         blocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
@@ -517,8 +501,8 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     @NonNull
-    public AddressBook getAddressBook() {
-        return currentAddressBook;
+    public Roster getRoster() {
+        return currentRoster;
     }
 
     /**

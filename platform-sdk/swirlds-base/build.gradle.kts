@@ -28,7 +28,13 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:-exports,-varargs,-static")
 }
 
-testModuleInfo { requires("org.junit.jupiter.api") }
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.assertj.core")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requires("awaitility")
+}
 
 timingSensitiveModuleInfo {
     requires("com.swirlds.base.test.fixtures")

@@ -24,27 +24,35 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -164,7 +172,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Instantiate a signed state.
      *
-     * @param platformContext          the platform context
+     * @param configuration            the configuration for this node
      * @param signatureVerifier        the signature verifier
      * @param state                    a fast copy of the state resulting from all transactions in consensus order from
      *                                 all events with received rounds up through the round this SignedState represents
@@ -179,7 +187,7 @@ public class SignedState implements SignedStateInfo {
      *                                 event stream
      */
     public SignedState(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final MerkleRoot state,
             @NonNull final String reason,
@@ -192,7 +200,7 @@ public class SignedState implements SignedStateInfo {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.state = state;
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
@@ -241,7 +249,6 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        state.initPlatformState();
         if (!isGenesisState()) {
             // Only non-genesis states will have signing weight
             final AddressBook addressBook = getAddressBook();
@@ -259,7 +266,8 @@ public class SignedState implements SignedStateInfo {
     @Override
     public @NonNull AddressBook getAddressBook() {
         return Objects.requireNonNull(
-                getState().getReadablePlatformState().getAddressBook(),
+                RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
+                        (MerkleStateRoot) getState().getSwirldState())),
                 "address book stored in this signed state is null, this should never happen");
     }
 
@@ -609,8 +617,40 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
+        if (address.getSigPublicKey() == null) {
+            // If the address does not have a valid public key, the signature is invalid.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            return false;
+        }
+
         return signatureVerifier.verifySignature(
                 state.getHash().getBytes(), signature.getBytes(), address.getSigPublicKey());
+    }
+
+    /**
+     * Check if a signature is valid. If a node has no weight or is missing a certificate, we consider the signature to
+     * be invalid.
+     *
+     * @param rosterEntry the roster entry of the signer, or null if there was no signing address
+     * @param signature   the signature to check
+     * @return true if the signature is valid, else false
+     */
+    private boolean isSignatureValid(@Nullable final RosterEntry rosterEntry, @NonNull final Signature signature) {
+        if (rosterEntry == null) {
+            return false;
+        }
+
+        if (rosterEntry.weight() == 0) {
+            return false;
+        }
+
+        X509Certificate cert = RosterUtils.fetchGossipCaCertificate(rosterEntry);
+
+        if (cert == null) {
+            return false;
+        }
+
+        return signatureVerifier.verifySignature(state.getHash().getBytes(), signature.getBytes(), cert.getPublicKey());
     }
 
     /**
@@ -690,6 +730,41 @@ public class SignedState implements SignedStateInfo {
                 signingWeight += trustedAddressBook.getAddress(nodeId).getWeight();
             }
         }
+    }
+
+    /**
+     * Remove all invalid signatures from a signed state.
+     *
+     * @param trustedRoster use this roster to determine signature validity instead of using the roster from the signed
+     *                      state. (Useful if validating signed states from untrusted sources.)
+     */
+    public void pruneInvalidSignatures(@NonNull final Roster trustedRoster) {
+        Objects.requireNonNull(trustedRoster);
+
+        final Map<Long, RosterEntry> entriesByNodeId = RosterUtils.toMap(trustedRoster);
+        final List<NodeId> signaturesToRemove = new ArrayList<>();
+
+        for (final NodeId nodeId : sigSet) {
+            final RosterEntry entry = entriesByNodeId.get(nodeId.id());
+            if (!isSignatureValid(entry, sigSet.getSignature(nodeId))) {
+                signaturesToRemove.add(nodeId);
+            }
+        }
+
+        for (final NodeId nodeId : signaturesToRemove) {
+            sigSet.removeSignature(nodeId);
+        }
+
+        long newWeight = 0;
+
+        for (final NodeId nodeId : sigSet) {
+            final RosterEntry entry = entriesByNodeId.get(nodeId.id());
+            if (entry != null) {
+                newWeight += entry.weight();
+            }
+        }
+
+        signingWeight = newWeight;
     }
 
     /**

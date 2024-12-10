@@ -98,6 +98,11 @@ public class EventualBlockStreamAssertion extends AbstractEventualStreamAssertio
         return false;
     }
 
+    @Override
+    protected String assertionDescription() {
+        return assertion == null ? "<N/A>" : assertion.toString();
+    }
+
     /**
      * Returns the block stream location for the first listed node in the network targeted
      * by the given spec.

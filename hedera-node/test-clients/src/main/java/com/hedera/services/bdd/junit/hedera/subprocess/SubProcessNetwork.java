@@ -26,9 +26,9 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.toSet;
 
 import com.google.protobuf.ByteString;
@@ -44,6 +44,7 @@ import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -55,6 +56,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -71,8 +73,8 @@ import org.apache.logging.log4j.Logger;
 public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetwork {
     private static final Logger log = LogManager.getLogger(SubProcessNetwork.class);
 
-    // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
-    private static final int PORTS_PER_NODE = 5;
+    // We need 6 ports for each node in the network (gRPC, gRPC TLS, gRPC node operator, gossip, gossip TLS, prometheus)
+    private static final int PORTS_PER_NODE = 6;
     private static final int MAX_PORT_REASSIGNMENTS = 3;
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
@@ -86,16 +88,72 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     // We initialize these randomly to reduce risk of port binding conflicts in CI runners
     private static int nextGrpcPort;
+    private static int nextNodeOperatorPort;
     private static int nextGossipPort;
     private static int nextGossipTlsPort;
     private static int nextPrometheusPort;
     private static boolean nextPortsInitialized = false;
 
-    private final AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
+    private final AtomicReference<DeferredRun> ready = new AtomicReference<>();
 
     private long maxNodeId;
     private String configTxt;
     private final String genesisConfigTxt;
+
+    /**
+     * Wraps a runnable, allowing us to defer running it until we know we are the privileged runner
+     * out of potentially several concurrent threads.
+     */
+    private static class DeferredRun {
+        private static final Duration SCHEDULING_TIMEOUT = Duration.ofSeconds(10);
+
+        /**
+         * Counts down when the runnable has been scheduled by the creating thread.
+         */
+        private final CountDownLatch latch = new CountDownLatch(1);
+        /**
+         * The runnable to be completed asynchronously.
+         */
+        private final Runnable runnable;
+        /**
+         * The future result, if this supplier was the privileged one.
+         */
+        @Nullable
+        private CompletableFuture<Void> future;
+
+        public DeferredRun(@NonNull final Runnable runnable) {
+            this.runnable = requireNonNull(runnable);
+        }
+
+        /**
+         * Schedules the supplier to run asynchronously, marking it as the privileged supplier for this entity.
+         */
+        public void runAsync() {
+            future = CompletableFuture.runAsync(runnable);
+            latch.countDown();
+        }
+
+        /**
+         * Blocks until the future result is available, then returns it.
+         */
+        public @NonNull CompletableFuture<Void> futureOrThrow() {
+            awaitScheduling();
+            return requireNonNull(future);
+        }
+
+        private void awaitScheduling() {
+            if (future == null) {
+                abortAndThrowIfInterrupted(
+                        () -> {
+                            if (!latch.await(SCHEDULING_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
+                                throw new IllegalStateException(
+                                        "Result future not scheduled within " + SCHEDULING_TIMEOUT);
+                            }
+                        },
+                        "Interrupted while awaiting scheduling of the result future");
+            }
+        }
+    }
 
     private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<SubProcessNode> nodes) {
         super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
@@ -153,7 +211,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     @Override
     public void awaitReady(@NonNull final Duration timeout) {
         if (ready.get() == null) {
-            final var future = runAsync(() -> {
+            final var deferredRun = new DeferredRun(() -> {
                 AssertionError error = null;
                 var retries = MAX_PORT_REASSIGNMENTS;
                 var bindException = false;
@@ -185,12 +243,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                     throw error;
                 }
             });
-            if (!ready.compareAndSet(null, future)) {
+            if (ready.compareAndSet(null, deferredRun)) {
                 // We only need one thread to wait for readiness
-                future.cancel(true);
+                deferredRun.runAsync();
             }
         }
-        ready.get().join();
+        ready.get().futureOrThrow().join();
     }
 
     /**
@@ -219,12 +277,23 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 ((SubProcessNode) node)
                         .reassignPorts(
                                 nextGrpcPort + nodeId * 2,
+                                nextNodeOperatorPort + nodeId,
                                 nextGossipPort + nodeId * 2,
                                 nextGossipTlsPort + nodeId * 2,
                                 nextPrometheusPort + nodeId);
             });
         }
         nodes.forEach(node -> ((SubProcessNode) node).reassignNodeAccountIdFrom(memoOfNode(node.getNodeId())));
+        refreshNodeConfigTxt();
+        HapiClients.tearDown();
+        this.clients = HapiClients.clientsFor(this);
+    }
+
+    /**
+     * Assigns disabled node operator port to nodes from the current <i>config.txt</i>.
+     */
+    public void assignWithDisabledNodeOperatorPort() {
+        nodes.forEach(node -> ((SubProcessNode) node).reassignWithNodeOperatorPortDisabled());
         refreshNodeConfigTxt();
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
@@ -274,6 +343,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 SUBPROCESS_HOST,
                                 SHARED_NETWORK_NAME.equals(name()) ? null : name(),
                                 nextGrpcPort + (int) nodeId * 2,
+                                nextNodeOperatorPort + (int) nodeId * 2,
+                                true,
                                 nextGossipPort + (int) nodeId * 2,
                                 nextGossipTlsPort + (int) nodeId * 2,
                                 nextPrometheusPort + (int) nodeId),
@@ -337,6 +408,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                         SUBPROCESS_HOST,
                                         SHARED_NETWORK_NAME.equals(name) ? null : name,
                                         nextGrpcPort,
+                                        nextNodeOperatorPort,
+                                        true,
                                         nextGossipPort,
                                         nextGossipTlsPort,
                                         nextPrometheusPort),
@@ -364,7 +437,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 .filter(line -> line.startsWith("address, " + id))
                 .map(line -> line.substring(line.lastIndexOf(",") + 2))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("No metadata found for node " + id));
     }
 
     private String consensusDabConfigTxt() {
@@ -409,18 +482,15 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * @param firstGrpcPort the first gRPC port
      */
     public static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
-        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then:
-        //   - nextGrpcPort = 10000
-        //   - nextGossipPort = 10008
-        //   - nextGossipTlsPort = 10009
-        //   - nextPrometheusPort = 10016
-        // So for a nodeId of 2, the assigned ports are:
-        //   - grpcPort = nextGrpcPort + nodeId * 2 = 10004
-        //   - gossipPort = nextGossipPort + nodeId * 2 = 10012
-        //   - gossipTlsPort = nextGossipTlsPort + nodeId * 2 = 10013
-        //   - prometheusPort = nextPrometheusPort + nodeId = 10018
+        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then the port assignments are,
+        //   - grpcPort = 10000, 10002, 10004, 10006
+        //   - nodeOperatorPort = 10008, 10009, 10010, 10011
+        //   - gossipPort = 10012, 10014, 10016, 10018
+        //   - gossipTlsPort = 10013, 10015, 10017, 10019
+        //   - prometheusPort = 10020, 10021, 10022, 10023
         nextGrpcPort = firstGrpcPort;
-        nextGossipPort = nextGrpcPort + 2 * size;
+        nextNodeOperatorPort = nextGrpcPort + 2 * size;
+        nextGossipPort = nextNodeOperatorPort + size;
         nextGossipTlsPort = nextGossipPort + 1;
         nextPrometheusPort = nextGossipPort + 2 * size;
         nextPortsInitialized = true;

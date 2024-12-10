@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.info;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -40,7 +41,7 @@ public enum UnavailableNetworkInfo implements NetworkInfo {
 
     @NonNull
     @Override
-    public SelfNodeInfo selfNodeInfo() {
+    public NodeInfo selfNodeInfo() {
         throw new UnsupportedOperationException("Self node info is not available");
     }
 
@@ -59,5 +60,15 @@ public enum UnavailableNetworkInfo implements NetworkInfo {
     @Override
     public boolean containsNode(final long nodeId) {
         throw new UnsupportedOperationException("Node info is not available");
+    }
+
+    @Override
+    public void updateFrom(final State state) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 }

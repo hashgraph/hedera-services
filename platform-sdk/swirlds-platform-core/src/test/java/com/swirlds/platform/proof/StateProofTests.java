@@ -378,7 +378,7 @@ class StateProofTests {
         final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int i = 0; i < signatureCount; i++) {
-            final NodeId nodeId = new NodeId(random.nextLong(1, 1000));
+            final NodeId nodeId = NodeId.of(random.nextLong(1, 1000));
             final Signature signature = randomSignature(random);
             signatures.put(nodeId, signature);
         }
@@ -426,7 +426,7 @@ class StateProofTests {
         final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (int i = 0; i < signatureCount; i++) {
-            final NodeId nodeId = new NodeId(random.nextLong(1, 1000));
+            final NodeId nodeId = NodeId.of(random.nextLong(1, 1000));
             final Signature signature = randomSignature(random);
             signatures.put(nodeId, signature);
         }
@@ -549,7 +549,7 @@ class StateProofTests {
         assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
 
         // Adding a signature for a node not in the address book should not change the result.
-        final NodeId nodeId = new NodeId(10000000);
+        final NodeId nodeId = NodeId.of(10000000);
         assertFalse(addressBook.contains(nodeId));
         final Signature signature = randomSignature(random);
         signatures.put(nodeId, signature);

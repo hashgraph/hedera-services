@@ -22,6 +22,9 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Utility class to convert address to account id
+ */
 public interface AddressIdConverter {
     /**
      * Given an address to be referenced in a synthetic {@link com.hedera.hapi.node.transaction.TransactionBody},

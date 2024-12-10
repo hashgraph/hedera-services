@@ -21,6 +21,7 @@ import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_F
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -788,7 +789,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     void testMapConstructedWithDefaultConstructorIsInvalid() {
-        VirtualMap<TestKey, TestValue> subject = new VirtualMap<>();
+        VirtualMap<TestKey, TestValue> subject = new VirtualMap<>(CONFIGURATION);
         assertFalse(subject.isValid());
     }
 
@@ -818,7 +819,7 @@ class VirtualMapTests extends VirtualTestBase {
      * result in the detached state having a data source.
      */
     @Test
-    void canFlushDetachedStateForStateSaving() throws InterruptedException {
+    void canFlushDetachedStateForStateSaving() throws IOException, InterruptedException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.put(A_KEY, APPLE);
         map0.put(B_KEY, BANANA);
@@ -836,7 +837,7 @@ class VirtualMapTests extends VirtualTestBase {
 
         // Detach, and then make another copy which should cause it to flush.
         map1.getRoot().enableFlush();
-        map1.getRoot().detach(Path.of("tmp"));
+        map1.getRoot().detach();
         map0.release();
 
         map1.release();

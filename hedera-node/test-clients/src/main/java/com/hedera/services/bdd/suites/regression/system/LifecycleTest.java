@@ -18,16 +18,19 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runBackgroundTrafficUntilFreezeComplete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
@@ -61,10 +64,9 @@ import java.util.function.Supplier;
  */
 public interface LifecycleTest {
     int MIXED_OPS_BURST_TPS = 50;
-    Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
+    Duration FREEZE_TIMEOUT = Duration.ofSeconds(180);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
-    //    Duration RESTART_TIMEOUT = Duration.ofSeconds(300);
-    Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
+    Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
     Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(210);
@@ -146,6 +148,22 @@ public interface LifecycleTest {
     }
 
     /**
+     * Returns an operation that upgrades the network with disabled node operator port to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    default SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+        return blockingOrder(
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
+                // Immediately submit a transaction in the same round to ensure freeze time is only
+                // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
+                confirmFreezeAndShutdown(),
+                sourcing(() ->
+                        FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
+                waitForActiveNetwork(RESTART_TIMEOUT));
+    }
+
+    /**
      * Returns an operation that upgrades the network to the given configuration version using a fake upgrade ZIP.
      * @param version the configuration version to upgrade to
      * @return the operation
@@ -176,6 +194,7 @@ public interface LifecycleTest {
     default HapiSpecOperation upgradeToConfigVersion(final int version, @NonNull final SpecOperation... preRestartOps) {
         requireNonNull(preRestartOps);
         return blockingOrder(
+                runBackgroundTrafficUntilFreezeComplete(),
                 sourcing(() -> freezeUpgrade()
                         .startingIn(2)
                         .seconds()
@@ -185,7 +204,11 @@ public interface LifecycleTest {
                 blockingOrder(preRestartOps),
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
-                waitForActiveNetwork(RESTART_TIMEOUT));
+                waitForActiveNetwork(RESTART_TIMEOUT),
+                cryptoCreate("postUpgradeAccount"),
+                // Ensure we have a post-upgrade transaction in a new period to trigger
+                // system file exports while still streaming records
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     /**

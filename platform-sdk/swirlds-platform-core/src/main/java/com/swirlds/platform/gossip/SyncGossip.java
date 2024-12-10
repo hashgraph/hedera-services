@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.gossip;
 
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
-import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -38,9 +38,9 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
@@ -75,19 +75,20 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -95,16 +96,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Boilerplate code for gossip.
  */
 public class SyncGossip implements ConnectionTracker, Gossip {
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
+    private static final Logger logger = LogManager.getLogger(SyncGossip.class);
 
     private boolean started = false;
 
-    private final PlatformContext platformContext;
     private final ReconnectController reconnectController;
 
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
@@ -141,22 +144,14 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private Consumer<PlatformEvent> receivedEventHandler;
 
     /**
-     * The old style intake queue (if enabled), null if not enabled.
-     */
-    private QueueThread<PlatformEvent> oldStyleIntakeQueue;
-
-    private final ThreadManager threadManager;
-
-    /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
-     * @param addressBook                   the current address book
+     * @param roster                        the current roster
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
-     * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param statusActionSubmitter         for submitting updates to the platform status manager
@@ -168,10 +163,9 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final LongSupplier intakeQueueSizeSupplier,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final Supplier<ReservedSignedState> latestCompleteState,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -179,18 +173,28 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        this.platformContext = Objects.requireNonNull(platformContext);
-
-        this.threadManager = Objects.requireNonNull(threadManager);
-
-        shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
+        shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), intakeEventCounter);
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final RosterEntry selfEntry = RosterUtils.getRosterEntry(roster, selfId.id());
+        final List<PeerInfo> peers;
+        final X509Certificate selfCert = RosterUtils.fetchGossipCaCertificate(selfEntry);
+        if (!CryptoStatic.checkCertificate(selfCert)) {
+            // Do not make peer connections if the self node does not have a valid signing certificate in the roster.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The gossip certificate for node {} is missing or invalid. "
+                            + "This node will not connect to any peers.",
+                    selfId);
+            peers = Collections.emptyList();
+        } else {
+            peers = Utilities.createPeerInfoList(roster, selfId);
+        }
 
         topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
@@ -198,7 +202,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
-                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
+                new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, roster);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
@@ -208,9 +212,16 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 connectionManagers::newConnection,
                 platformContext.getTime());
         // allow other members to create connections to me
-        final Address address = addressBook.getAddress(selfId);
+        final RosterEntry rosterEntry = RosterUtils.getRosterEntry(roster, selfId.id());
+        // Assume all ServiceEndpoints use the same port and use the port from the first endpoint.
+        // Previously, this code used a "local port" corresponding to the internal endpoint,
+        // which should normally be the second entry in the endpoints list if it's obtained via
+        // a regular AddressBook -> Roster conversion.
+        // The assumption must be correct, otherwise, if ports were indeed different, then the old code
+        // using the AddressBook would never have listened on a port associated with the external endpoint,
+        // thus not allowing anyone to connect to the node from outside the local network, which we'd have noticed.
         final ConnectionServer connectionServer = new ConnectionServer(
-                threadManager, address.getListenPort(), socketFactory, inboundConnectionHandler::handle);
+                threadManager, RosterUtils.fetchPort(rosterEntry, 0), socketFactory, inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
@@ -220,28 +231,23 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 .build());
 
         fallenBehindManager = new FallenBehindManagerImpl(
-                addressBook,
                 selfId,
                 topology,
                 statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
 
-        syncManager = new SyncManagerImpl(
-                platformContext,
-                intakeQueueSizeSupplier,
-                fallenBehindManager,
-                platformContext.getConfiguration().getConfigData(EventConfig.class));
+        syncManager = new SyncManagerImpl(platformContext, fallenBehindManager);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
         reconnectThrottle = new ReconnectThrottle(reconnectConfig, platformContext.getTime());
 
-        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
+        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, roster);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
 
-        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), roster);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
@@ -266,15 +272,9 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
-                        platformContext,
-                        threadManager,
-                        addressBook,
-                        reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics),
+                        platformContext, threadManager, roster, reconnectConfig.asyncStreamTimeout(), reconnectMetrics),
                 stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -284,7 +284,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
                 platformContext,
                 shadowgraph,
-                addressBook.getSize(),
+                roster.rosterEntries().size(),
                 syncMetrics,
                 event -> receivedEventHandler.accept(event),
                 syncManager,
@@ -299,7 +299,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
         final int permitCount;
         if (syncConfig.onePermitPerPeer()) {
-            permitCount = addressBook.getSize() - 1;
+            permitCount = roster.rosterEntries().size() - 1;
         } else {
             permitCount = syncConfig.syncProtocolPermitCount();
         }
@@ -311,14 +311,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 threadManager,
                 selfId,
                 appVersion,
-                intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
                 currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
-                reconnectConfig,
-                eventConfig);
+                reconnectConfig);
 
         thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }
@@ -328,14 +326,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             final ThreadManager threadManager,
             final NodeId selfId,
             final SoftwareVersion appVersion,
-            final LongSupplier intakeQueueSizeSupplier,
             final Supplier<ReservedSignedState> getLatestCompleteState,
             final SyncMetrics syncMetrics,
             final Supplier<PlatformStatus> platformStatusSupplier,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
-            final ReconnectConfig reconnectConfig,
-            final EventConfig eventConfig) {
+            final ReconnectConfig reconnectConfig) {
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
@@ -344,7 +340,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 syncPermitProvider,
                 intakeEventCounter,
                 gossipHalted::get,
-                () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
                 syncMetrics,
                 platformStatusSupplier);
@@ -501,42 +496,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
         platformStatusInput.bindConsumer(currentPlatformStatus::set);
 
-        final boolean useOldStyleIntakeQueue = platformContext
-                .getConfiguration()
-                .getConfigData(EventConfig.class)
-                .useOldStyleIntakeQueue();
-
-        if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<PlatformEvent>(threadManager)
-                    .setCapacity(10_000)
-                    .setThreadName("old_style_intake_queue")
-                    .setComponent("platform")
-                    .setHandler(eventOutput::forward)
-                    .setMetricsConfiguration(
-                            new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableMaxSizeMetric())
-                    .build();
-            thingsToStart.add(oldStyleIntakeQueue);
-
-            receivedEventHandler = event -> {
-                try {
-                    oldStyleIntakeQueue.put(event);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("interrupted while attempting to enqueue event from gossip", e);
-                }
-            };
-
-        } else {
-            receivedEventHandler = eventOutput::forward;
-        }
-    }
-
-    /**
-     * Get the size of the old style intake queue.
-     *
-     * @return the size of the old style intake queue
-     */
-    public int getOldStyleIntakeQueueSize() {
-        return oldStyleIntakeQueue.size();
+        receivedEventHandler = eventOutput::forward;
     }
 }

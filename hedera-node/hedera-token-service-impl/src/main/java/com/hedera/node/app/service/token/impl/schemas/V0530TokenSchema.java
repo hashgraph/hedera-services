@@ -23,9 +23,9 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +58,7 @@ public class V0530TokenSchema extends Schema {
 
     private void setMinStakeToZero(final MigrationContext ctx) {
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
-        final var addressBook = ctx.networkInfo().addressBook();
+        final var addressBook = ctx.genesisNetworkInfo().addressBook();
         logger.info("Setting minStake to 0 for all nodes in the address book");
         for (final var node : addressBook) {
             final var nodeNumber =

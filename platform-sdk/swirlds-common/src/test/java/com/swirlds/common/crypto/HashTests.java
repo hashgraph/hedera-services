@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -58,6 +59,7 @@ public class HashTests {
 
         assertThrows(NullPointerException.class, () -> new Hash((DigestType) null));
         assertThrows(NullPointerException.class, () -> new Hash((byte[]) null));
+        assertThrows(NullPointerException.class, () -> new Hash((Bytes) null));
         assertThrows(IllegalArgumentException.class, () -> new Hash((Hash) null));
 
         assertThrows(NullPointerException.class, () -> new Hash(nonZeroHashValue, null));

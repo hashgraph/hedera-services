@@ -76,9 +76,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * Default constructor for injection.
      */
     @Inject
-    public ConsensusUpdateTopicHandler() {
-        // Exists for injection
-    }
+    public ConsensusUpdateTopicHandler() {}
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {

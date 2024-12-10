@@ -20,7 +20,6 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -37,13 +36,6 @@ public interface PreHandleWorkflowInjectionModule {
 
     @Binds
     SignatureExpander bindSignatureExpander(SignatureExpanderImpl signatureExpander);
-
-    /**
-     * This binding is only needed to have a PreHandleDispatcher implementation that can be provided by dagger.
-     */
-    @Deprecated
-    @Binds
-    PreHandleDispatcher bindPreHandleDispatcher(DummyPreHandleDispatcher preHandleDispatcher);
 
     @Provides
     static ExecutorService provideExecutorService() {

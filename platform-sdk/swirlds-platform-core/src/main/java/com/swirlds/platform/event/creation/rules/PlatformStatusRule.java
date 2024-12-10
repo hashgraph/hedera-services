@@ -16,14 +16,15 @@
 
 package com.swirlds.platform.event.creation.rules;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.PLATFORM_STATUS;
+import static org.hiero.event.creator.EventCreationStatus.PLATFORM_STATUS;
 
-import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.hiero.event.creator.EventCreationRule;
+import org.hiero.event.creator.EventCreationStatus;
 
 /**
  * Limits the creation of new events depending on the current platform status.

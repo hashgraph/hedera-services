@@ -31,7 +31,7 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.blocks.BlockStreamService;
-import com.hedera.node.app.blocks.schemas.V0540BlockStreamSchema;
+import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -59,7 +59,7 @@ class BoundaryStateChangeListenerTest {
     @Test
     void understandsStateIds() {
         final var service = BlockStreamService.NAME;
-        final var stateKey = V0540BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+        final var stateKey = V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
         assertEquals(stateIdFor(service, stateKey), listener.stateIdFor(service, stateKey));
     }
 

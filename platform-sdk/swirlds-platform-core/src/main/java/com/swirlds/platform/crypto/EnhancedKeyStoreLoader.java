@@ -17,6 +17,7 @@
 package com.swirlds.platform.crypto;
 
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
+import static com.swirlds.logging.legacy.LogMarker.ERROR;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.CryptoStatic.copyPublicKeys;
@@ -24,6 +25,10 @@ import static com.swirlds.platform.crypto.CryptoStatic.createEmptyTrustStore;
 import static com.swirlds.platform.crypto.CryptoStatic.loadKeys;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
 
+import com.hedera.cryptography.asciiarmored.AsciiArmoredFiles;
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -32,8 +37,11 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,14 +57,18 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -75,6 +87,8 @@ import org.bouncycastle.operator.jcajce.JceInputDecryptorProviderBuilder;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.encoders.DecoderException;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
 
 /**
  * This class is responsible for loading the key stores for all nodes in the address book.
@@ -195,6 +209,16 @@ public class EnhancedKeyStoreLoader {
     private final Map<NodeId, PrivateKey> agrPrivateKeys;
 
     /**
+     * The private tss encryption keys loaded from disk.
+     */
+    private final Map<NodeId, BlsPrivateKey> tssPrivateKeys;
+
+    /**
+     * The public tss encryption keys.
+     */
+    private final Map<NodeId, BlsPublicKey> tssPublicKeys;
+
+    /**
      * The X.509 Certificates loaded from the key stores.
      */
     private final Map<NodeId, Certificate> agrCertificates;
@@ -234,6 +258,8 @@ public class EnhancedKeyStoreLoader {
         this.agrPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.agrCertificates = HashMap.newHashMap(addressBook.getSize());
         this.localNodes = HashSet.newHashSet(addressBook.getSize());
+        this.tssPrivateKeys = HashMap.newHashMap(addressBook.getSize());
+        this.tssPublicKeys = HashMap.newHashMap(addressBook.getSize());
     }
 
     /**
@@ -288,33 +314,58 @@ public class EnhancedKeyStoreLoader {
                 localNodes.add(nodeId);
                 sigPrivateKeys.compute(
                         nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
-                agrPrivateKeys.compute(
-                        nodeId, (k, v) -> resolveNodePrivateKey(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
+
+                BlsPrivateKey tssPrivateKey = resolveTssPrivateKey(nodeId, nodeAlias);
+                if (tssPrivateKey != null) {
+                    tssPrivateKeys.put(nodeId, tssPrivateKey);
+                }
             }
 
             sigCertificates.compute(
                     nodeId,
                     (k, v) -> resolveNodeCertificate(nodeId, nodeAlias, KeyCertPurpose.SIGNING, legacyPublicStore));
-            agrCertificates.compute(
-                    nodeId,
-                    (k, v) -> resolveNodeCertificate(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT, legacyPublicStore));
         });
 
         logger.trace(STARTUP.getMarker(), "Completed key store enumeration");
         return this;
     }
 
+    @Nullable
+    private BlsPrivateKey resolveTssPrivateKey(@NonNull final NodeId nodeId, @NonNull final String nodeAlias)
+            throws KeyLoadingException {
+        Objects.requireNonNull(nodeId, MSG_NODE_ID_NON_NULL);
+        Objects.requireNonNull(nodeAlias, MSG_NODE_ALIAS_NON_NULL);
+
+        Path keyLocation = keyStoreDirectory.resolve(String.format("t-private-%s.tss", nodeAlias));
+        if (Files.exists(keyLocation)) {
+            logger.trace(
+                    STARTUP.getMarker(),
+                    "Found tss encryption private key for node {} [ fileName = {} ]",
+                    nodeId,
+                    keyLocation.getFileName());
+            try {
+                return AsciiArmoredFiles.readPrivateKey(keyLocation);
+            } catch (final Exception e) {
+                logger.warn(
+                        STARTUP.getMarker(),
+                        "Failed to read TSS encryption private key from disk, will generate a new key.",
+                        e);
+                return null;
+            }
+        }
+        return null;
+    }
+
     /**
-     * Iterates over the local nodes and creates the agreement key and certificate for each if they do not exist.  This
-     * method should be called after {@link #scan()} and before {@link #verify()} in order to generate any missing
-     * agreement keys for local nodes to pass verification.
+     * Iterates over the local nodes and creates the agreement key and certificate for each.  This method should be
+     * called after {@link #scan()} and before {@link #verify()}.
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws NoSuchAlgorithmException if the algorithm required to generate the key pair is not available.
      * @throws NoSuchProviderException  if the security provider required to generate the key pair is not available.
      * @throws KeyGeneratingException   if an error occurred while generating the agreement key pair.
      */
-    public EnhancedKeyStoreLoader generateIfNecessary()
+    public EnhancedKeyStoreLoader generate()
             throws NoSuchAlgorithmException, NoSuchProviderException, KeyGeneratingException {
 
         for (final NodeId node : localNodes) {
@@ -344,6 +395,28 @@ public class EnhancedKeyStoreLoader {
                         signingKeyPair,
                         SecureRandom.getInstanceStrong());
                 agrCertificates.put(node, agrCert);
+            }
+
+            if (!tssPrivateKeys.containsKey(node) || tssPrivateKeys.get(node) == null) {
+                // Create a new public/private key pair for the TSS encryption key
+                BlsKeyPair tssKeyPair = CryptoStatic.generateBlsKeyPair(SecureRandom.getInstanceStrong());
+                tssPrivateKeys.put(node, tssKeyPair.privateKey());
+                tssPublicKeys.put(node, tssKeyPair.publicKey());
+                // Write the private key to disk
+                final String nodeAlias =
+                        nameToAlias(addressBook.getAddress(node).getSelfName());
+                Path tssEncryptionPrivateKeyLocation =
+                        keyStoreDirectory.resolve(String.format("t-private-%s.tss", nodeAlias));
+                try {
+                    AsciiArmoredFiles.writeKey(tssEncryptionPrivateKeyLocation, tssKeyPair.privateKey());
+                } catch (IOException e) {
+                    logger.error(ERROR.getMarker(), "Failed to write TSS encryption private key to disk", e);
+                    throw new KeyGeneratingException("Failed to write TSS encryption private key to disk", e);
+                }
+            } else {
+                // Create the BlsPublicKey from the private TSS encryption key
+                BlsPrivateKey tssPrivateKey = tssPrivateKeys.get(node);
+                tssPublicKeys.put(node, tssPrivateKey.createPublicKey());
             }
         }
         return this;
@@ -401,6 +474,16 @@ public class EnhancedKeyStoreLoader {
                 if (!agrCertificates.containsKey(nodeId)) {
                     throw new KeyLoadingException("No certificate found for node %s [ alias = %s, purpose = %s ]"
                             .formatted(nodeId, nodeAlias, KeyCertPurpose.AGREEMENT));
+                }
+
+                if (!tssPrivateKeys.containsKey(nodeId)) {
+                    throw new KeyLoadingException(
+                            "No TSS private key found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
+                }
+
+                if (!tssPublicKeys.containsKey(nodeId)) {
+                    throw new KeyLoadingException(
+                            "No TSS public key found for node %s [ alias = %s ]".formatted(nodeId, nodeAlias));
                 }
             }
 
@@ -477,7 +560,11 @@ public class EnhancedKeyStoreLoader {
                 final KeyPair sigKeyPair = new KeyPair(sigCert.getPublicKey(), sigPrivateKey);
                 final KeyPair agrKeyPair = new KeyPair(agrCert.getPublicKey(), agrPrivateKey);
 
-                final KeysAndCerts kc = new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
+                final BlsPrivateKey tssPrivateKey = tssPrivateKeys.get(nodeId);
+                final BlsPublicKey tssPublicKey = tssPublicKeys.get(nodeId);
+
+                final KeysAndCerts kc = new KeysAndCerts(
+                        sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores, tssPrivateKey, tssPublicKey);
 
                 keysAndCerts.put(nodeId, kc);
             }
@@ -1164,5 +1251,345 @@ public class EnhancedKeyStoreLoader {
     private interface AddressBookCallback {
         void apply(int index, NodeId nodeId, Address address, String nodeAlias)
                 throws KeyStoreException, KeyLoadingException;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// MIGRATION METHODS //////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Performs any necessary migration steps to ensure the key storage is up-to-date.
+     * <p>
+     * As of release 0.56 the on-disk cryptography should reflect the following structure:
+     * <ul>
+     *     <li>s-private-alias.pem - the private signing key </li>
+     *     <li>s-public-alias.pem - the public signing certificates of each node</li>
+     *     <li>all *.pfx files moved to <b>OLD_PFX_KEYS</b> subdirectory and no longer used.</li>
+     *     <li>all agreement key material is deleted from disk.</li>
+     * </ul>
+     *
+     * @return this {@link EnhancedKeyStoreLoader} instance.
+     */
+    @NonNull
+    public EnhancedKeyStoreLoader migrate() throws KeyLoadingException, KeyStoreException {
+        logger.info(STARTUP.getMarker(), "Starting key store migration");
+        final Map<NodeId, PrivateKey> pfxPrivateKeys = new HashMap<>();
+        final Map<NodeId, Certificate> pfxCertificates = new HashMap<>();
+
+        // delete agreement keys permanently.  They are being created at startup by generateIfNecessary() after scan().
+        deleteAgreementKeys();
+
+        // create PEM files for signing keys and certs.
+        long errorCount = extractPrivateKeysAndCertsFromPfxFiles(pfxPrivateKeys, pfxCertificates);
+
+        if (errorCount == 0) {
+            // validate only when there are no errors extracting pem files.
+            errorCount = validateKeysAndCertsAreLoadableFromPemFiles(pfxPrivateKeys, pfxCertificates);
+        }
+
+        if (errorCount > 0) {
+            // roll back due to errors.
+            // this deletes any pem files created, but leaves the agreement keys deleted.
+            logger.error(STARTUP.getMarker(), "Due to {} errors, reverting pem file creation.", errorCount);
+            rollBackSigningKeysAndCertsChanges(pfxPrivateKeys, pfxCertificates);
+        } else {
+            // cleanup pfx files by moving them to subdirectory
+            cleanupByMovingPfxFilesToSubDirectory();
+            logger.info(STARTUP.getMarker(), "Finished key store migration.");
+        }
+
+        return this;
+    }
+
+    /**
+     * Delete any agreement keys from the key store directory.
+     */
+    private void deleteAgreementKeys() {
+        // delete any agreement keys of the form a-*
+        final File[] agreementKeyFiles = keyStoreDirectory.toFile().listFiles((dir, name) -> name.startsWith("a-"));
+        if (agreementKeyFiles != null) {
+            for (final File agreementKeyFile : agreementKeyFiles) {
+                if (agreementKeyFile.isFile()) {
+                    try {
+                        Files.delete(agreementKeyFile.toPath());
+                        logger.debug(STARTUP.getMarker(), "Deleted agreement key file {}", agreementKeyFile.getName());
+                    } catch (final IOException e) {
+                        logger.error(
+                                ERROR.getMarker(),
+                                "Failed to delete agreement key file {}",
+                                agreementKeyFile.getName());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Extracts the private keys and certificates from the PFX files and writes them to PEM files.
+     *
+     * @param pfxPrivateKeys  the map of private keys being extracted (Updated By Method Call)
+     * @param pfxCertificates the map of certificates being extracted (Updated By Method Call)
+     * @return the number of errors encountered during the extraction process.
+     * @throws KeyStoreException   if the underlying method calls throw this exception.
+     * @throws KeyLoadingException if the underlying method calls throw this exception.
+     */
+    private long extractPrivateKeysAndCertsFromPfxFiles(
+            final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
+            throws KeyStoreException, KeyLoadingException {
+        final KeyStore legacyPublicStore = resolveLegacyPublicStore();
+        final AtomicLong errorCount = new AtomicLong(0);
+
+        iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
+            if (isLocal(address)) {
+                // extract private keys for local nodes
+                final Path sPrivateKeyLocation = keyStoreDirectory.resolve("s-private-" + nodeAlias + ".pem");
+                final Path ksLocation = legacyPrivateKeyStore(nodeAlias);
+                if (!Files.exists(sPrivateKeyLocation) && Files.exists(ksLocation)) {
+                    logger.trace(
+                            STARTUP.getMarker(),
+                            "Extracting private signing key for node {} from file {}",
+                            nodeId,
+                            ksLocation.getFileName());
+                    final PrivateKey privateKey =
+                            readLegacyPrivateKey(nodeId, ksLocation, KeyCertPurpose.SIGNING.storeName(nodeAlias));
+                    pfxPrivateKeys.put(nodeId, privateKey);
+                    if (privateKey == null) {
+                        logger.error(
+                                ERROR.getMarker(),
+                                "Failed to extract private signing key for node {} from file {}",
+                                nodeId,
+                                ksLocation.getFileName());
+                        errorCount.incrementAndGet();
+                    } else {
+                        logger.trace(
+                                STARTUP.getMarker(),
+                                "Writing private signing key for node {} to PEM file {}",
+                                nodeId,
+                                sPrivateKeyLocation.getFileName());
+                        try {
+                            writePemFile(true, sPrivateKeyLocation, privateKey.getEncoded());
+                        } catch (final IOException e) {
+                            logger.error(
+                                    ERROR.getMarker(),
+                                    "Failed to write private key for node {} to PEM file {}",
+                                    nodeId,
+                                    sPrivateKeyLocation.getFileName());
+                            errorCount.incrementAndGet();
+                        }
+                    }
+                }
+            }
+
+            // extract certificates for all nodes
+            final Path sCertificateLocation = keyStoreDirectory.resolve("s-public-" + nodeAlias + ".pem");
+            final Path ksLocation = legacyCertificateStore();
+            if (!Files.exists(sCertificateLocation) && Files.exists(ksLocation)) {
+                logger.trace(
+                        STARTUP.getMarker(),
+                        "Extracting signing certificate for node {} from file {} ",
+                        nodeId,
+                        ksLocation.getFileName());
+                final Certificate certificate =
+                        readLegacyCertificate(nodeId, nodeAlias, KeyCertPurpose.SIGNING, legacyPublicStore);
+                pfxCertificates.put(nodeId, certificate);
+                if (certificate == null) {
+                    logger.error(
+                            ERROR.getMarker(),
+                            "Failed to extract signing certificate for node {} from file {}",
+                            nodeId,
+                            ksLocation.getFileName());
+                    errorCount.incrementAndGet();
+                } else {
+                    logger.trace(
+                            STARTUP.getMarker(),
+                            "Writing signing certificate for node {} to PEM file {}",
+                            nodeId,
+                            sCertificateLocation.getFileName());
+                    try {
+                        writePemFile(false, sCertificateLocation, certificate.getEncoded());
+                    } catch (final CertificateEncodingException | IOException e) {
+                        logger.error(
+                                ERROR.getMarker(),
+                                "Failed to write signing certificate for node {} to PEM file {}",
+                                nodeId,
+                                sCertificateLocation.getFileName());
+                        errorCount.incrementAndGet();
+                    }
+                }
+            }
+        });
+        return errorCount.get();
+    }
+
+    /**
+     * Validates that the private keys and certs in PEM files are loadable and match the PFX loaded keys and certs.
+     *
+     * @param pfxPrivateKeys  the map of private keys being extracted.
+     * @param pfxCertificates the map of certificates being extracted.
+     * @return the number of errors encountered during the validation process.
+     * @throws KeyStoreException   if the underlying method calls throw this exception.
+     * @throws KeyLoadingException if the underlying method calls throw this exception.
+     */
+    private long validateKeysAndCertsAreLoadableFromPemFiles(
+            final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
+            throws KeyStoreException, KeyLoadingException {
+        final AtomicLong errorCount = new AtomicLong(0);
+        iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
+            if (isLocal(address) && pfxCertificates.containsKey(nodeId)) {
+                // validate private keys for local nodes
+                final Path ksLocation = privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING);
+                final PrivateKey pemPrivateKey = readPrivateKey(nodeId, ksLocation);
+                if (pemPrivateKey == null
+                        || !Arrays.equals(
+                                pemPrivateKey.getEncoded(),
+                                pfxPrivateKeys.get(nodeId).getEncoded())) {
+                    logger.error(ERROR.getMarker(), "Private key for node {} does not match the migrated key", nodeId);
+                    errorCount.incrementAndGet();
+                }
+            }
+
+            // validate certificates for all nodes PEM files were created for.
+            if (pfxCertificates.containsKey(nodeId)) {
+                final Path ksLocation = certificateStore(nodeAlias, KeyCertPurpose.SIGNING);
+                final Certificate pemCertificate = readCertificate(nodeId, ksLocation);
+                try {
+                    if (pemCertificate == null
+                            || !Arrays.equals(
+                                    pemCertificate.getEncoded(),
+                                    pfxCertificates.get(nodeId).getEncoded())) {
+                        logger.error(
+                                ERROR.getMarker(),
+                                "Certificate for node {} does not match the migrated certificate",
+                                nodeId);
+                        errorCount.incrementAndGet();
+                    }
+                } catch (final CertificateEncodingException e) {
+                    logger.error(ERROR.getMarker(), "Encoding error while validating certificate for node {}.", nodeId);
+                    errorCount.incrementAndGet();
+                }
+            }
+        });
+        return errorCount.get();
+    }
+
+    /**
+     * Rollback the creation of PEM files for signing keys and certificates.
+     *
+     * @param pfxPrivateKeys  the map of private keys being extracted.
+     * @param pfxCertificates the map of certificates being extracted.
+     * @throws KeyStoreException   if the underlying method calls throw this exception.
+     * @throws KeyLoadingException if the underlying method calls throw this exception.
+     */
+    private void rollBackSigningKeysAndCertsChanges(
+            final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
+            throws KeyStoreException, KeyLoadingException {
+
+        final AtomicLong cleanupErrorCount = new AtomicLong(0);
+        iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
+            // private key rollback
+            if (isLocal(address) && pfxPrivateKeys.containsKey(address.getNodeId())) {
+                try {
+                    Files.deleteIfExists(privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING));
+                } catch (final IOException e) {
+                    cleanupErrorCount.incrementAndGet();
+                }
+            }
+            // certificate rollback
+            if (pfxCertificates.containsKey(address.getNodeId())) {
+                try {
+                    Files.deleteIfExists(certificateStore(nodeAlias, KeyCertPurpose.SIGNING));
+                } catch (final IOException e) {
+                    cleanupErrorCount.incrementAndGet();
+                }
+            }
+        });
+        if (cleanupErrorCount.get() > 0) {
+            logger.error(
+                    ERROR.getMarker(),
+                    "Failed to rollback {} pem files created. Manual cleanup required.",
+                    cleanupErrorCount.get());
+            throw new IllegalStateException("Cryptography Migration failed to generate or validate PEM files.");
+        }
+    }
+
+    /**
+     * Move the PFX files to the OLD_PFX_KEYS subdirectory.
+     *
+     * @throws KeyStoreException   if the underlying method calls throw this exception.
+     * @throws KeyLoadingException if the underlying method calls throw this exception.
+     */
+    private void cleanupByMovingPfxFilesToSubDirectory() throws KeyStoreException, KeyLoadingException {
+        final AtomicLong cleanupErrorCount = new AtomicLong(0);
+
+        final String archiveDirectory = ".archive";
+        final String now = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").format(LocalDateTime.now());
+        final String newDirectory = archiveDirectory + File.pathSeparator + now;
+        final Path pfxArchiveDirectory = keyStoreDirectory.resolve(archiveDirectory);
+        final Path pfxDateDirectory = pfxArchiveDirectory.resolve(now);
+
+        logger.info(STARTUP.getMarker(), "Cryptography Migration Cleanup: Moving PFX files to {}", pfxDateDirectory);
+
+        if (!Files.exists(pfxDateDirectory)) {
+            try {
+                if (!Files.exists(pfxArchiveDirectory)) {
+                    Files.createDirectory(pfxArchiveDirectory);
+                }
+                Files.createDirectory(pfxDateDirectory);
+            } catch (final IOException e) {
+                logger.error(
+                        ERROR.getMarker(),
+                        "Failed to create [{}] subdirectory. Manual cleanup required.",
+                        newDirectory);
+                return;
+            }
+        }
+        iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
+            if (isLocal(address)) {
+                // move private key PFX files per local node
+                final File sPrivatePfx = legacyPrivateKeyStore(nodeAlias).toFile();
+                if (sPrivatePfx.exists()
+                        && sPrivatePfx.isFile()
+                        && !sPrivatePfx.renameTo(
+                                pfxDateDirectory.resolve(sPrivatePfx.getName()).toFile())) {
+                    cleanupErrorCount.incrementAndGet();
+                }
+            }
+        });
+        final File sPublicPfx = legacyCertificateStore().toFile();
+        if (sPublicPfx.exists()
+                && sPublicPfx.isFile()
+                && !sPublicPfx.renameTo(
+                        pfxDateDirectory.resolve(sPublicPfx.getName()).toFile())) {
+            cleanupErrorCount.incrementAndGet();
+        }
+        if (cleanupErrorCount.get() > 0) {
+            logger.error(
+                    ERROR.getMarker(),
+                    "Failed to move {} PFX files to [{}] subdirectory. Manual cleanup required.",
+                    cleanupErrorCount.get(),
+                    newDirectory);
+            throw new IllegalStateException(
+                    "Cryptography Migration failed to move PFX files to [" + newDirectory + "] subdirectory.");
+        }
+    }
+
+    /**
+     * Write the provided encoded key or certificate as a base64 DER encoded PEM file to the provided location.
+     *
+     * @param isPrivateKey true if the encoded data is a private key; false if it is a certificate.
+     * @param location     the location to write the PEM file.
+     * @param encoded      the byte encoded data to write to the PEM file.
+     * @throws IOException if an error occurred while writing the PEM file.
+     */
+    private static void writePemFile(
+            final boolean isPrivateKey, @NonNull final Path location, @NonNull final byte[] encoded)
+            throws IOException {
+        final PemObject pemObj = new PemObject(isPrivateKey ? "PRIVATE KEY" : "CERTIFICATE", encoded);
+        try (final FileOutputStream file = new FileOutputStream(location.toFile(), false);
+                final var out = new OutputStreamWriter(file);
+                final PemWriter writer = new PemWriter(out)) {
+            writer.writeObject(pemObj);
+            file.getFD().sync();
+        }
     }
 }

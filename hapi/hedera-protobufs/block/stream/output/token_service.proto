@@ -35,7 +35,6 @@ option java_package = "com.hedera.hapi.block.stream.output.protoc";
 option java_multiple_files = true;
 
 import "custom_fees.proto";
-import "transaction_record.proto";
 
 /**
  * Block Stream data for a `createToken` transaction.

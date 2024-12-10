@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -85,6 +86,20 @@ public class ClassicTransfersCall extends AbstractCall {
     private final VerificationStrategy verificationStrategy;
     private final SpecialRewardReceivers specialRewardReceivers;
 
+    /**
+     * @param gasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to be used
+     * @param selector the method selector
+     * @param senderId the account id of the sender
+     * @param preemptingFailureStatus the response code to revert with
+     * @param syntheticTransfer the body of synthetic transfer operation
+     * @param configuration the configuration to use
+     * @param approvalSwitchHelper the switcher between unauthorized debits to approvals in a synthetic transfer
+     * @param callStatusStandardizer the standardizer of failure statuses to an HTS transfer system contract
+     * @param verificationStrategy the verification strategy to use
+     * @param systemAccountCreditScreen the helper to screen if a transfer tries to credit a system account
+     * @param specialRewardReceivers the special reward receiver
+     */
     // too many parameters
     @SuppressWarnings("java:S107")
     public ClassicTransfersCall(
@@ -134,12 +149,14 @@ public class ClassicTransfersCall extends AbstractCall {
             return reversionWith(
                     gasRequirement,
                     systemContractOperations()
-                            .externalizePreemptedDispatch(syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT));
+                            .externalizePreemptedDispatch(
+                                    syntheticTransfer, INVALID_RECEIVING_NODE_ACCOUNT, CRYPTO_TRANSFER));
         }
         if (executionIsNotSupported()) {
             return haltWith(
                     gasRequirement,
-                    systemContractOperations().externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED));
+                    systemContractOperations()
+                            .externalizePreemptedDispatch(syntheticTransfer, NOT_SUPPORTED, CRYPTO_TRANSFER));
         }
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
@@ -147,7 +164,7 @@ public class ClassicTransfersCall extends AbstractCall {
                         .cryptoTransfer(requireNonNull(approvalSwitchHelper)
                                 .switchToApprovalsAsNeededIn(
                                         syntheticTransfer.cryptoTransferOrThrow(),
-                                        systemContractOperations().activeSignatureTestWith(verificationStrategy),
+                                        systemContractOperations().signatureTestWith(verificationStrategy),
                                         nativeOperations(),
                                         senderId))
                         .build()

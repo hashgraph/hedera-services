@@ -38,9 +38,9 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -240,7 +240,7 @@ public class V0490TokenSchema extends Schema {
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var stakingConfig = config.getConfigData(StakingConfig.class);
-        final var addressBook = ctx.networkInfo().addressBook();
+        final var addressBook = ctx.genesisNetworkInfo().addressBook();
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;

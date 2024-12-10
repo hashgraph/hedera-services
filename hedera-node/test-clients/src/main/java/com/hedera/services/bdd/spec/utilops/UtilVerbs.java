@@ -17,12 +17,12 @@
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateInitCodeWithConstructorArgs;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getUpdated121;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -93,18 +94,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
+import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -136,6 +141,7 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecThresholdKey;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -192,9 +198,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -202,6 +206,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -217,7 +222,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -227,6 +234,7 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.LongConsumer;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -529,40 +537,42 @@ public class UtilVerbs {
         };
     }
 
+    public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
+    }
+
     /**
-     * Returns an operation that changes the state of an embedded network to appear to be handling
-     * the first transaction after an upgrade.
-     *
-     * @return the operation that simulates the first transaction after an upgrade
+     * Returns an operation that initiates background traffic running until the target network's
+     * first node has reached {@link com.swirlds.platform.system.status.PlatformStatus#FREEZE_COMPLETE}.
+     * @return the operation
      */
-    public static SpecOperation simulatePostUpgradeTransaction() {
+    public static SpecOperation runBackgroundTrafficUntilFreezeComplete() {
         return withOpContext((spec, opLog) -> {
-            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
-                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
-                final var fakeState = embeddedHedera.state();
-                // First make the freeze and last freeze times non-null and identical
-                final var aTime = spec.consensusTime();
-                // This store immediately commits mutations, hence no cast and call to commit
-                final var writablePlatformStateStore =
-                        new WritablePlatformStateStore(fakeState.getWritableStates("PlatformStateService"));
-                writablePlatformStateStore.setLastFrozenTime(aTime);
-                writablePlatformStateStore.setFreezeTime(aTime);
-                // Next mark the migration records as not streamed
-                final var writableBlockStates = fakeState.getWritableStates("BlockRecordService");
-                final var blockInfo = writableBlockStates.<BlockInfo>getSingleton("BLOCKS");
-                blockInfo.put(requireNonNull(blockInfo.get())
-                        .copyBuilder()
-                        .migrationRecordsStreamed(false)
-                        .build());
-                ((CommittableWritableStates) writableBlockStates).commit();
-            } else {
-                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
-            }
+            opLog.info("Starting background traffic until freeze complete");
+            final var stopTraffic = new AtomicBoolean();
+            CompletableFuture.runAsync(() -> {
+                while (!stopTraffic.get()) {
+                    allRunFor(
+                            spec,
+                            cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, 1))
+                                    .fireAndForget()
+                                    .noLogging());
+                    spec.sleepConsensusTime(Duration.ofMillis(1L));
+                }
+            });
+            spec.targetNetworkOrThrow()
+                    .nodes()
+                    .getFirst()
+                    .statusFuture(FREEZE_COMPLETE, (status) -> {})
+                    .thenRun(() -> {
+                        stopTraffic.set(true);
+                        opLog.info("Stopping background traffic after freeze complete");
+                    });
         });
     }
 
-    public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
+    public static HapiSpecSleep sleepForSeconds(final long seconds) {
+        return sleepFor(seconds * 1_000L);
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
@@ -721,6 +731,10 @@ public class UtilVerbs {
         return new NewSpecKeyList(key, childKeys);
     }
 
+    public static NewSpecThresholdKey newThresholdKeyNamed(String key, int nRequired, List<String> childKeys) {
+        return new NewSpecThresholdKey(key, nRequired, childKeys);
+    }
+
     /**
      * Unless the {@link HapiSpec} is in a repeatable mode, returns an operation that will
      * run the given sub-operations in parallel.
@@ -732,7 +746,9 @@ public class UtilVerbs {
      * @return the operation that runs the sub-operations in parallel
      */
     public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
-        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
+        return "repeatable".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"))
+                ? blockingOrder(subs)
+                : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {
@@ -910,6 +926,21 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that runs a given callback with the EVM address implied by the given key.
+     *
+     * @param obs the callback to run with the address
+     * @return the operation that runs the callback using the address
+     */
+    public static SpecOperation useAddressOfKey(@NonNull final String key, @NonNull final Consumer<Address> obs) {
+        return withOpContext((spec, opLog) -> {
+            final var publicKey = fromByteString(spec.registry().getKey(key).getECDSASecp256K1());
+            final var address =
+                    asHeadlongAddress(recoverAddressFromPubKey(publicKey).toByteArray());
+            obs.accept(address);
+        });
+    }
+
+    /**
      * Returns an operation that computes and executes a {@link SpecOperation} returned by a function whose
      * input is the EVM address implied by the given key.
      *
@@ -1015,6 +1046,73 @@ public class UtilVerbs {
         });
     }
 
+    /**
+     * Returns an operation that creates the requested number of HIP-32 auto-created accounts using a key alias
+     * of the given type, with names given by the given name function and default {@link HapiCryptoTransfer} using
+     * the standard transfer of tinybar to a key alias.
+     * @param n the number of HIP-32 accounts to create
+     * @param keyShape the type of key alias to use
+     * @param nameFn the function that computes the spec registry names for the accounts
+     * @return the operation
+     */
+    public static SpecOperation createHip32Auto(
+            final int n, @NonNull final KeyShape keyShape, @NonNull final IntFunction<String> nameFn) {
+        return createHip32Auto(
+                n,
+                keyShape,
+                nameFn,
+                keyName -> cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, keyName, ONE_HUNDRED_HBARS)));
+    }
+
+    /**
+     * The function that computes the spec registry names of the keys that
+     * {@link #createHollow(int, IntFunction, Function)} uses to create the hollow accounts.
+     */
+    public static final IntFunction<String> AUTO_CREATION_KEY_NAME_FN = i -> "forAutoCreated" + i;
+
+    /**
+     * Returns an operation that creates the requested number of HIP-32 auto-created accounts using a key alias
+     * of the given type, with names given by the given name function and {@link HapiCryptoTransfer} derived
+     * from the given factory.
+     * @param n the number of HIP-32 accounts to create
+     * @param keyShape the type of key alias to use
+     * @param nameFn the function that computes the spec registry names for the accounts
+     * @param creationFn the function that computes the creation operation for each account
+     * @return the operation
+     */
+    public static SpecOperation createHip32Auto(
+            final int n,
+            @NonNull final KeyShape keyShape,
+            @NonNull final IntFunction<String> nameFn,
+            @NonNull final Function<String, HapiCryptoTransfer> creationFn) {
+        requireNonNull(nameFn);
+        requireNonNull(keyShape);
+        requireNonNull(creationFn);
+        return withOpContext((spec, opLog) -> {
+            final List<AccountID> createdIds = new ArrayList<>();
+            final List<String> keyNames = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                final var keyName = AUTO_CREATION_KEY_NAME_FN.apply(i);
+                keyNames.add(keyName);
+                allRunFor(spec, newKeyNamed(keyName).shape(keyShape));
+            }
+            allRunFor(
+                    spec,
+                    blockingOrder(keyNames.stream()
+                            .map(keyName -> blockingOrder(
+                                    creationFn.apply(keyName).via("hip32" + keyName),
+                                    getTxnRecord("hip32" + keyName)
+                                            .exposingCreationsTo(
+                                                    creations -> createdIds.add(asAccount(creations.getFirst())))))
+                            .toArray(SpecOperation[]::new)));
+            for (int i = 0; i < n; i++) {
+                final var name = nameFn.apply(i);
+                spec.registry().saveKey(name, spec.registry().getKey(keyNames.get(i)));
+                spec.registry().saveAccountId(name, createdIds.get(i));
+            }
+        });
+    }
+
     public static HapiSpecOperation overridingTwo(
             final String aProperty, final String aValue, final String bProperty, final String bValue) {
         return overridingAllOf(Map.of(
@@ -1075,6 +1173,20 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that asserts that the record stream must include a pass from the given assertion
+     * before its timeout elapses.
+     * @param assertion the assertion to apply to the record stream
+     * @param timeout the timeout for the assertion
+     * @return the operation that asserts a passing record stream
+     */
+    public static EventualRecordStreamAssertion recordStreamMustIncludePassFrom(
+            @NonNull final Function<HapiSpec, RecordStreamAssertion> assertion, @NonNull final Duration timeout) {
+        requireNonNull(assertion);
+        requireNonNull(timeout);
+        return EventualRecordStreamAssertion.eventuallyAssertingExplicitPass(assertion, timeout);
+    }
+
+    /**
      * Returns an operation that asserts that the block stream must include no failures from the given assertion
      * before its timeout elapses.
      * @param assertion the assertion to apply to the block stream
@@ -1110,6 +1222,24 @@ public class UtilVerbs {
 
     public static HapiSpecOperation[] nOps(final int n, @NonNull final IntFunction<HapiSpecOperation> source) {
         return IntStream.range(0, n).mapToObj(source).toArray(HapiSpecOperation[]::new);
+    }
+
+    /**
+     * Returns an operation that exposes the consensus time of the current spec to the given observer.
+     * @param observer the observer to pass the consensus time to
+     * @return the operation that exposes the consensus time
+     */
+    public static SpecOperation exposeSpecSecondTo(@NonNull final LongConsumer observer) {
+        return exposeSpecTimeTo(instant -> observer.accept(instant.getEpochSecond()));
+    }
+
+    /**
+     * Returns an operation that exposes the consensus time of the current spec to the given observer.
+     * @param observer the observer to pass the consensus time to
+     * @return the operation that exposes the consensus time
+     */
+    public static SpecOperation exposeSpecTimeTo(@NonNull final Consumer<Instant> observer) {
+        return doingContextual(spec -> observer.accept(spec.consensusTime()));
     }
 
     /**
@@ -2026,6 +2156,97 @@ public class UtilVerbs {
                 }));
     }
 
+    /**
+     * Asserts that a scheduled execution is as expected.
+     */
+    public interface ScheduledExecutionAssertion {
+        /**
+         * Tests that a scheduled execution body and result are as expected within the given spec.
+         * @param spec the context in which the assertion is being made
+         * @param body the transaction body of the scheduled execution
+         * @param result the transaction result of the scheduled execution
+         * @throws AssertionError if the assertion fails
+         */
+        void test(
+                @NonNull HapiSpec spec,
+                @NonNull com.hedera.hapi.node.transaction.TransactionBody body,
+                @NonNull TransactionResult result);
+    }
+
+    /**
+     * Returns a {@link ScheduledExecutionAssertion} that asserts the status of the execution result
+     * is as expected; and that the record of the scheduled execution is queryable, again with the expected status.
+     * @param status the expected status
+     * @return the assertion
+     */
+    public static ScheduledExecutionAssertion withStatus(
+            @NonNull final com.hedera.hapi.node.base.ResponseCodeEnum status) {
+        requireNonNull(status);
+        return (spec, body, result) -> {
+            assertEquals(status, result.status());
+            allRunFor(spec, getTxnRecord(body.transactionIDOrThrow()).assertingNothingAboutHashes());
+        };
+    }
+
+    /**
+     * Returns a {@link ScheduledExecutionAssertion} that asserts the status of the execution result
+     * is as expected; and that a query for its record, customized by the given spec, passes.
+     * @return the assertion
+     */
+    public static ScheduledExecutionAssertion withRecordSpec(@NonNull final Consumer<HapiGetTxnRecord> querySpec) {
+        requireNonNull(querySpec);
+        return (spec, body, result) -> {
+            final var op = getTxnRecord(body.transactionIDOrThrow()).assertingNothingAboutHashes();
+            querySpec.accept(op);
+            try {
+                allRunFor(spec, op);
+            } catch (Exception e) {
+                Assertions.fail(Optional.ofNullable(e.getCause()).orElse(e).getMessage());
+            }
+        };
+    }
+
+    /**
+     * Returns a {@link BlockStreamAssertion} factory that asserts the result of a scheduled execution
+     * of the given named transaction passes the given assertion.
+     * @param creationTxn the name of the transaction that created the scheduled execution
+     * @param assertion the assertion to apply to the scheduled execution
+     * @return a factory for a {@link BlockStreamAssertion} that asserts the result of the scheduled execution
+     */
+    public static Function<HapiSpec, BlockStreamAssertion> scheduledExecutionResult(
+            @NonNull final String creationTxn, @NonNull final ScheduledExecutionAssertion assertion) {
+        requireNonNull(creationTxn);
+        requireNonNull(assertion);
+        return spec -> block -> {
+            final com.hederahashgraph.api.proto.java.TransactionID creationTxnId;
+            try {
+                creationTxnId = spec.registry().getTxnId(creationTxn);
+            } catch (RegistryNotFound ignore) {
+                return false;
+            }
+            final var executionTxnId =
+                    protoToPbj(creationTxnId.toBuilder().setScheduled(true).build(), TransactionID.class);
+            final var items = block.items();
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                if (item.hasEventTransaction()) {
+                    final var parts =
+                            TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
+                    if (parts.transactionIdOrThrow().equals(executionTxnId)) {
+                        for (int j = i + 1; j < n; j++) {
+                            final var followingItem = items.get(j);
+                            if (followingItem.hasTransactionResult()) {
+                                assertion.test(spec, parts.body(), followingItem.transactionResultOrThrow());
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+    }
+
     public static class TransferListBuilder {
         private Tuple transferList;
 
@@ -2208,6 +2429,14 @@ public class UtilVerbs {
         }
 
         return privateKeyByteArray;
+    }
+
+    public static PrivateKey getEd25519PrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys()
+                .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                        key.getEd25519().toByteArray()));
+        return privateKey;
     }
 
     private static double getChargedUsed(@NonNull final HapiSpec spec, @NonNull final String txn) {

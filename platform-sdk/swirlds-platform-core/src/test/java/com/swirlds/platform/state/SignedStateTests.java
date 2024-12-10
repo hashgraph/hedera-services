@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -41,6 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -50,8 +53,18 @@ class SignedStateTests {
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final MerkleStateRoot state) {
+    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
+    }
+
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.forgetAllBuiltSignedStatesWithoutReleasing();
     }
 
     /**
@@ -60,9 +73,11 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
-        final MerkleStateRoot state = spy(new MerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+    private PlatformMerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+        final var real = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
+        final PlatformMerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
@@ -96,7 +111,7 @@ class SignedStateTests {
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
 
-        final MerkleStateRoot state = buildMockState(
+        final PlatformMerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -157,7 +172,7 @@ class SignedStateTests {
 
         final Thread mainThread = Thread.currentThread();
 
-        final MerkleStateRoot state = buildMockState(
+        final PlatformMerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -206,14 +221,14 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final MerkleRoot state = spy(new MerkleStateRoot(
+        final PlatformMerkleStateRoot state = spy(new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
-        state.initPlatformState();
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                TestPlatformContextBuilder.create().build().getConfiguration(),
                 mock(SignatureVerifier.class),
                 state,
                 "test",

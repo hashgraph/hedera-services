@@ -30,7 +30,6 @@ import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -137,7 +136,7 @@ public final class CompareStatesCommand extends AbstractCommand {
         logger.info(LogMarker.CLI.getMarker(), "Loading state from {}", statePath);
 
         final ReservedSignedState signedState = SignedStateFileReader.readStateFile(
-                        platformContext, statePath, SignedStateFileUtils::readState)
+                        platformContext.getConfiguration(), statePath)
                 .reservedSignedState();
         logger.info(LogMarker.CLI.getMarker(), "Hashing state");
         try {

@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.spi.key;
 
+import static java.util.Collections.unmodifiableSortedSet;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Helper class that contains all functionality for verifying signatures during handle.
  */
 public interface KeyVerifier {
+    SortedSet<Key> NO_AUTHORIZING_KEYS = unmodifiableSortedSet(new TreeSet<>(new KeyComparator()));
 
     /**
      * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
@@ -60,4 +65,16 @@ public interface KeyVerifier {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
+
+    /**
+     * If this verifier was authorized by one or more simple keys---for example, via cryptographic signature on a
+     * transaction submitted via HAPI; or via the action of a contract inside the EVM---returns the set of these
+     * authorizing keys, ordered by the {@link KeyComparator}.
+     * <p>
+     * Default is an empty set, for verifiers whose authorization is not derived from a legible set of simple keys.
+     * @return any simple keys that authorized this verifier
+     */
+    default SortedSet<Key> authorizingSimpleKeys() {
+        return NO_AUTHORIZING_KEYS;
+    }
 }

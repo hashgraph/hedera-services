@@ -863,12 +863,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         final var found = foundInAccountAmountsList(accountID, amount, accountAmountsList);
         assertTrue(
                 found,
-                "Cannot find AccountID: "
-                        + accountID
-                        + " and amount: "
-                        + amount
-                        + " in the transferList of the "
-                        + "txnRecord");
+                "Cannot find AccountID: " + accountID + " and amount: " + amount + " in :: " + accountAmountsList);
     }
 
     private boolean foundInAccountAmountsList(
@@ -915,8 +910,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         final List<AccountCreationDetails> creationDetails =
                 (creationDetailsObserver != null) ? new ArrayList<>() : null;
         final List<TokenID> tokenCreations = (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
+        final var firstUserNum = spec.startupProperties().getLong("hedera.firstUserEntity");
         for (final var rec : childRecords) {
-            if (rec.getReceipt().hasAccountID()) {
+            if (rec.getReceipt().hasAccountID()
+                    && rec.getReceipt().getAccountID().getAccountNum() >= firstUserNum) {
                 if (creations != null) {
                     creations.add(
                             HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));

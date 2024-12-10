@@ -20,7 +20,9 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.virtualmap.constructable.ConstructableUtils.registerVirtualMapConstructables;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
@@ -32,6 +34,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.config.BasicConfig;
@@ -148,6 +151,19 @@ public final class BootstrapUtils {
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Add classes to the constructable registry which need the configuration.
+     * @param configuration configuration
+     */
+    public static void setupConstructableRegistryWithConfiguration(Configuration configuration)
+            throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
+
+        registerVirtualMapConstructables(configuration);
     }
 
     /**

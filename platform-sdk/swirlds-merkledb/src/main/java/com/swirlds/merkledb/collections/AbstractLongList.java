@@ -21,7 +21,9 @@ import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChann
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -111,10 +113,16 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     protected final long maxLongs;
 
-    /** Min valid index of the list. All indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    /**
+     * Min valid index of the list. All indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s.
+     * If the list is empty, both min and max valid indices are -1.
+     */
     protected final AtomicLong minValidIndex = new AtomicLong(-1);
 
-    /** Max valid index of the list. All indices to the right of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    /**
+     * Max valid index of the list. All indices to the right of this index have {@code IMPERMISSIBLE_VALUE}-s.
+     * If the list is empty, both min and max valid indices are -1.
+     */
     protected final AtomicLong maxValidIndex = new AtomicLong(-1);
 
     /** Atomic reference array of our memory chunks */
@@ -125,6 +133,9 @@ public abstract class AbstractLongList<C> implements LongList {
      * happening in {@link LongList#updateValidRange}
      */
     protected final long reservedBufferLength;
+
+    /** Platform configuration */
+    protected Configuration configuration;
 
     /**
      * Construct a new LongList with the specified number of longs per chunk and maximum number of
@@ -163,9 +174,14 @@ public abstract class AbstractLongList<C> implements LongList {
      * positioned at the start of the data after the header at the end of this constructor.
      *
      * @param path File to read header from
+     * @param configuration platform configuration
      * @throws IOException If there was a problem reading the file
      */
-    protected AbstractLongList(final Path path, final long reservedBufferLength) throws IOException {
+    protected AbstractLongList(
+            final Path path, final long reservedBufferLength, @NonNull final Configuration configuration)
+            throws IOException {
+        requireNonNull(configuration);
+        this.configuration = configuration;
         final File file = path.toFile();
         this.reservedBufferLength = reservedBufferLength;
         if (!file.exists() || file.length() == 0) {
@@ -404,11 +420,13 @@ public abstract class AbstractLongList<C> implements LongList {
      */
     @Override
     public void writeToFile(final Path file) throws IOException {
-        try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+        try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             // write header
             writeHeader(fc);
-            // write data
-            writeLongsData(fc);
+            if (size() > 0) {
+                // write data
+                writeLongsData(fc);
+            }
             fc.force(true);
         }
     }
@@ -429,7 +447,9 @@ public abstract class AbstractLongList<C> implements LongList {
         // maxValidIndex is not written. On loading, it will be set automatically based on the size
         headerBuffer.flip();
         // always write at start of file
-        MerkleDbFileUtils.completelyWrite(fc, headerBuffer, 0);
+        if (MerkleDbFileUtils.completelyWrite(fc, headerBuffer, 0) != currentFileHeaderSize) {
+            throw new IOException("Failed to write long list header to the file channel " + fc);
+        }
         fc.position(currentFileHeaderSize);
     }
 

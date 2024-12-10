@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -44,8 +43,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelet
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -74,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -84,8 +87,8 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -102,54 +105,47 @@ public class FutureSchedulableOpsTest {
 
     @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
-        return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
-                .given(
-                        uploadScheduledContractPrices(GENESIS),
-                        uploadInitCode(SIMPLE_UPDATE),
-                        cryptoCreate(OTHER_PAYER),
-                        cryptoCreate(PAYING_SENDER),
-                        cryptoCreate(RECEIVER).receiverSigRequired(true),
-                        contractCreate(SIMPLE_UPDATE).gas(300_000L))
-                .when(
-                        scheduleCreate(
-                                        "canonical",
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                                .memo("")
-                                                .fee(ONE_HBAR))
-                                .payingWith(OTHER_PAYER)
-                                .via("canonicalCreation")
-                                .alsoSigningWith(PAYING_SENDER)
-                                .adminKey(OTHER_PAYER),
-                        scheduleSign("canonical")
-                                .via("canonicalSigning")
-                                .payingWith(PAYING_SENDER)
-                                .alsoSigningWith(RECEIVER),
-                        scheduleCreate(
-                                        "tbd",
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                                .memo("")
-                                                .fee(ONE_HBAR))
-                                .payingWith(PAYING_SENDER)
-                                .adminKey(PAYING_SENDER),
-                        scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER),
-                        scheduleCreate(
-                                        "contractCall",
-                                        contractCall(
-                                                        SIMPLE_UPDATE,
-                                                        "set",
-                                                        BigInteger.valueOf(5),
-                                                        BigInteger.valueOf(42))
-                                                .gas(24_000)
-                                                .memo("")
-                                                .fee(ONE_HBAR))
-                                .payingWith(OTHER_PAYER)
-                                .via("canonicalContractCall")
-                                .adminKey(OTHER_PAYER))
-                .then(
-                        validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
-                        validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-                        validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
-                        validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
+        return hapiTest(
+                uploadScheduledContractPrices(GENESIS),
+                uploadInitCode(SIMPLE_UPDATE),
+                cryptoCreate(OTHER_PAYER),
+                cryptoCreate(PAYING_SENDER),
+                cryptoCreate(RECEIVER).receiverSigRequired(true),
+                contractCreate(SIMPLE_UPDATE).gas(300_000L),
+                scheduleCreate(
+                                "canonical",
+                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                        .memo("")
+                                        .fee(ONE_HBAR))
+                        .payingWith(OTHER_PAYER)
+                        .via("canonicalCreation")
+                        .alsoSigningWith(PAYING_SENDER)
+                        .adminKey(OTHER_PAYER),
+                scheduleSign("canonical")
+                        .via("canonicalSigning")
+                        .payingWith(PAYING_SENDER)
+                        .alsoSigningWith(RECEIVER),
+                scheduleCreate(
+                                "tbd",
+                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                        .memo("")
+                                        .fee(ONE_HBAR))
+                        .payingWith(PAYING_SENDER)
+                        .adminKey(PAYING_SENDER),
+                scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER),
+                scheduleCreate(
+                                "contractCall",
+                                contractCall(SIMPLE_UPDATE, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                                        .gas(24_000)
+                                        .memo("")
+                                        .fee(ONE_HBAR))
+                        .payingWith(OTHER_PAYER)
+                        .via("canonicalContractCall")
+                        .adminKey(OTHER_PAYER),
+                validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
+                validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
+                validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
+                validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
     }
 
     @HapiTest
@@ -171,7 +167,7 @@ public class FutureSchedulableOpsTest {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             SUCCESS,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_SUCCEED);
@@ -198,7 +194,7 @@ public class FutureSchedulableOpsTest {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             AUTHORIZATION_FAILED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             "Scheduled transaction be AUTHORIZATION_FAILED!");
@@ -226,7 +222,7 @@ public class FutureSchedulableOpsTest {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
 
-                    Assertions.assertEquals(
+                    assertEquals(
                             SUCCESS,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             SCHEDULED_TRANSACTION_MUST_SUCCEED);
@@ -235,17 +231,21 @@ public class FutureSchedulableOpsTest {
 
     @HapiTest
     final Stream<DynamicTest> hapiTestScheduledSystemDeleteUnauthorizedPayerFails() {
+        final AtomicReference<String> unprivilegedThrottleExemptPayerId = new AtomicReference<>();
         return hapiTest(
+                doWithStartupConfig(
+                        "accounts.lastThrottleExempt",
+                        value -> doAdhoc(() -> unprivilegedThrottleExemptPayerId.set("0.0." + value))),
                 cryptoCreate(PAYING_ACCOUNT),
-                cryptoCreate(PAYING_ACCOUNT_2),
                 fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                sourcing(() -> scheduleCreate(
+                                A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
                         .withEntityMemo(randomUppercase(100))
-                        .designatingPayer(PAYING_ACCOUNT_2)
+                        .designatingPayer(unprivilegedThrottleExemptPayerId.get())
                         .payingWith(PAYING_ACCOUNT)
-                        .via(SUCCESS_TXN),
+                        .via(SUCCESS_TXN)),
                 scheduleSign(A_SCHEDULE)
-                        .alsoSigningWith(PAYING_ACCOUNT_2)
+                        .alsoSigningWith(GENESIS)
                         .payingWith(PAYING_ACCOUNT)
                         .via(SIGN_TX)
                         .hasKnownStatus(SUCCESS),
@@ -254,8 +254,7 @@ public class FutureSchedulableOpsTest {
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
                     allRunFor(spec, triggeredTx);
-
-                    Assertions.assertEquals(
+                    assertEquals(
                             NOT_SUPPORTED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),
                             "Scheduled transaction be NOT_SUPPORTED!");
@@ -296,10 +295,11 @@ public class FutureSchedulableOpsTest {
         var txnBody = cryptoCreate(SOMEBODY);
         var creation = "basicCryptoCreate";
 
-        return defaultHapiSpec("AddingSignaturesToExecutedTxFails")
-                .given(cryptoCreate("somesigner"), scheduleCreate(creation, txnBody))
-                .when(getScheduleInfo(creation).isExecuted().logged())
-                .then(scheduleSign(creation)
+        return hapiTest(
+                cryptoCreate("somesigner"),
+                scheduleCreate(creation, txnBody),
+                getScheduleInfo(creation).isExecuted().logged(),
+                scheduleSign(creation)
                         .via("signing")
                         .alsoSigningWith("somesigner")
                         .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
@@ -307,11 +307,10 @@ public class FutureSchedulableOpsTest {
 
     @HapiTest
     final Stream<DynamicTest> sharedKeyWorksAsExpected() {
-        return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
-                .given(
-                        newKeyNamed(SHARED_KEY),
-                        cryptoCreate("payerWithSharedKey").key(SHARED_KEY))
-                .when(scheduleCreate(
+        return hapiTest(
+                newKeyNamed(SHARED_KEY),
+                cryptoCreate("payerWithSharedKey").key(SHARED_KEY),
+                scheduleCreate(
                                 "deferredCreation",
                                 cryptoCreate("yetToBe")
                                         .signedBy()
@@ -320,7 +319,7 @@ public class FutureSchedulableOpsTest {
                                         .balance(123L)
                                         .fee(ONE_HBAR))
                         .payingWith("payerWithSharedKey")
-                        .via("creation"))
-                .then(getTxnRecord("creation").scheduled());
+                        .via("creation"),
+                getTxnRecord("creation").scheduled());
     }
 }

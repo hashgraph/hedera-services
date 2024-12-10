@@ -23,8 +23,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Common interface for factories that create descendents of {@link AbstractCallAttempt}.
+ * @param <T> the type of the call
  */
 public interface CallFactory<T extends AbstractCallAttempt<T>> {
+    /**
+     * @param input the input to the contract
+     * @param callType the call type of the current frame
+     * @param frame the message frame
+     * @return the call
+     */
     @NonNull
     T createCallAttemptFrom(@NonNull Bytes input, @NonNull FrameUtils.CallType callType, @NonNull MessageFrame frame);
 }

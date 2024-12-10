@@ -280,7 +280,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
-                platformContext,
+                platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,
                 immutableStateCons,
                 "TransactionHandler.createSignedState()",

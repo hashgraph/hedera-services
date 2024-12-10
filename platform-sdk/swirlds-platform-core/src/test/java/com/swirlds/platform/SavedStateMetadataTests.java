@@ -44,13 +44,13 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
-import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SavedStateMetadata;
 import com.swirlds.platform.state.snapshot.SavedStateMetadataField;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -90,7 +90,7 @@ class SavedStateMetadataTests {
     /** generates a random non-negative node id. */
     private NodeId generateRandomNodeId(@NonNull final Random random) {
         Objects.requireNonNull(random, "random must not be null");
-        return new NodeId(random.nextLong(Long.MAX_VALUE));
+        return NodeId.of(random.nextLong(Long.MAX_VALUE));
     }
 
     @Test
@@ -217,11 +217,11 @@ class SavedStateMetadataTests {
         when(platformState.getAddressBook()).thenReturn(addressBook);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())
-                .thenReturn(new ArrayList<>(List.of(new NodeId(3L), new NodeId(1L), new NodeId(2L))));
+                .thenReturn(new ArrayList<>(List.of(NodeId.of(3L), NodeId.of(1L), NodeId.of(2L))));
 
-        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, new NodeId(1234), Instant.now());
+        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, NodeId.of(1234), Instant.now());
 
-        assertEquals(List.of(new NodeId(1L), new NodeId(2L), new NodeId(3L)), metadata.signingNodes());
+        assertEquals(List.of(NodeId.of(1L), NodeId.of(2L), NodeId.of(3L)), metadata.signingNodes());
     }
 
     @Test

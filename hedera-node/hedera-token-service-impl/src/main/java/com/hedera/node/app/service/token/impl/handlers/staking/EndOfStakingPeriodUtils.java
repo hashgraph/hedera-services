@@ -62,7 +62,6 @@ public final class EndOfStakingPeriodUtils {
                 break;
             }
         }
-
         return (firstZero == -1)
                 ? rewardSumHistory.toString()
                 : IntStream.range(0, firstZero)
@@ -78,7 +77,8 @@ public final class EndOfStakingPeriodUtils {
      * @param stakingNodeInfo the staking node info
      * @return the {@link NodeStake} object
      */
-    public static NodeStake fromStakingInfo(final long rewardRate, StakingNodeInfo stakingNodeInfo) {
+    public static NodeStake fromStakingInfo(final long rewardRate, @NonNull final StakingNodeInfo stakingNodeInfo) {
+        requireNonNull(stakingNodeInfo);
         return NodeStake.newBuilder()
                 .nodeId(stakingNodeInfo.nodeNumber())
                 .stake(stakingNodeInfo.stake())
@@ -96,8 +96,9 @@ public final class EndOfStakingPeriodUtils {
      * @param networkRewardsStore the store to copy values from
      * @return the new builder instance
      */
-    public static NetworkStakingRewards.Builder copyBuilderFrom(
-            final ReadableNetworkStakingRewardsStore networkRewardsStore) {
+    public static NetworkStakingRewards.Builder asStakingRewardBuilder(
+            @NonNull final ReadableNetworkStakingRewardsStore networkRewardsStore) {
+        requireNonNull(networkRewardsStore);
         return NetworkStakingRewards.newBuilder()
                 .pendingRewards(networkRewardsStore.pendingRewards())
                 .stakingRewardsActivated(networkRewardsStore.isStakingRewardsActivated())
@@ -205,7 +206,7 @@ public final class EndOfStakingPeriodUtils {
      *                                in order to receive rewards
      * @return the calculated {@link RewardSumHistory}
      */
-    public static RewardSumHistory calculateRewardSumHistory(
+    public static RewardSumHistory computeExtendedRewardSumHistory(
             @NonNull final StakingNodeInfo currentInfo,
             final long perHbarRate,
             final long maxPerHbarRate,
@@ -241,7 +242,6 @@ public final class EndOfStakingPeriodUtils {
         }
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
         newRewardSumHistory.set(0, newRewardSumHistory.getFirst() + perHbarRateThisNode);
-
         return new RewardSumHistory(newRewardSumHistory, perHbarRateThisNode);
     }
 
@@ -258,7 +258,7 @@ public final class EndOfStakingPeriodUtils {
      * @return the calculated {@link StakeResult}
      */
     @NonNull
-    public static StakeResult computeNextStake(@NonNull final StakingNodeInfo stakingInfo) {
+    public static StakeResult computeNewStakes(@NonNull final StakingNodeInfo stakingInfo) {
         final var totalStake = stakingInfo.stakeToReward() + stakingInfo.stakeToNotReward();
         final long newStake;
         if (totalStake > stakingInfo.maxStake()) {

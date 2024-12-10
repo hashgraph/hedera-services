@@ -35,6 +35,9 @@ import javax.inject.Singleton;
 @Singleton
 public class GrantRevokeKycDecoder {
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public GrantRevokeKycDecoder() {
         // Dagger2

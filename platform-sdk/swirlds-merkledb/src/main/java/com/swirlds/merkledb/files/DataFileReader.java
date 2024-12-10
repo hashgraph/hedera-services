@@ -423,13 +423,20 @@ public final class DataFileReader implements AutoCloseable, Comparable<DataFileR
                 readBB.clear();
                 readBB.limit(PRE_READ_BUF_SIZE); // No need to read more than that for a header
                 int bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, readBB, byteOffsetInFile);
-                assert !isFileCompleted() || (bytesRead == Math.min(PRE_READ_BUF_SIZE, getSize() - byteOffsetInFile));
+                if (isFileCompleted() && (bytesRead != Math.min(PRE_READ_BUF_SIZE, getSize() - byteOffsetInFile))) {
+                    throw new IOException("Failed to read all bytes: toread="
+                            + Math.min(PRE_READ_BUF_SIZE, getSize() - byteOffsetInFile) + " read=" + bytesRead
+                            + " file=" + getIndex() + " off=" + byteOffsetInFile);
+                }
                 // Then read the tag and size from the read buffer, since it's wrapped over the byte buffer
                 readBuf.reset();
                 final int tag = readBuf.getVarInt(0, false); // tag
-                assert tag
-                        == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET)
-                                | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal());
+                if (tag
+                        != ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET)
+                                | ProtoConstants.WIRE_TYPE_DELIMITED.ordinal())) {
+                    throw new IOException(
+                            "Unknown data item tag: tag=" + tag + " file=" + getIndex() + " off=" + byteOffsetInFile);
+                }
                 final int sizeOfTag = ProtoWriterTools.sizeOfUnsignedVarInt32(tag);
                 final int size = readBuf.getVarInt(sizeOfTag, false);
                 final int sizeOfSize = ProtoWriterTools.sizeOfUnsignedVarInt32(size);
@@ -451,7 +458,10 @@ public final class DataFileReader implements AutoCloseable, Comparable<DataFileR
                 }
                 bytesRead = MerkleDbFileUtils.completelyRead(
                         fileChannel, readBB, byteOffsetInFile + sizeOfTag + sizeOfSize);
-                assert bytesRead == size : "Failed to read all data item bytes";
+                if (bytesRead != size) {
+                    throw new IOException("Failed to read all bytes: toread=" + size + " read=" + bytesRead + " file="
+                            + getIndex() + " off=" + byteOffsetInFile);
+                }
                 readBuf.position(0);
                 readBuf.limit(bytesRead);
                 return readBuf;

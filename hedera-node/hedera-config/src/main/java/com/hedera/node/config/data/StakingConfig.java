@@ -27,13 +27,15 @@ public record StakingConfig(
                 int rewardHistoryNumStoredPeriods,
         // ConfigProperty(value = "startupHelper.recompute", defaultValue = "NODE_STAKES,PENDING_REWARDS")
         // Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
-        @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") @NetworkProperty
+        @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "10") @NetworkProperty
                 int feesNodeRewardPercentage,
         @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "10") @NetworkProperty
                 int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean requireMinStakeToReward,
+        // Assume there should have been no skipped staking periods
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean assumeContiguousPeriods,
         // Can be renamed to just "rewardRate" when the "staking.rewardRate" property is removed
         // from all production 0.0.121 system files
         @ConfigProperty(defaultValue = "6849") @NetworkProperty long perHbarRewardRate,

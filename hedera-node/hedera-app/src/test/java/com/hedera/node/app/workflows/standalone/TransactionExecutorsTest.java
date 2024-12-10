@@ -17,9 +17,12 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -34,6 +37,8 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -57,32 +62,43 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
@@ -112,7 +128,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * </ol>
  */
 @ExtendWith(MockitoExtension.class)
-class TransactionExecutorsTest {
+public class TransactionExecutorsTest {
     private static final long GAS = 100_000L;
     private static final long EXPECTED_LUCKY_NUMBER = 42L;
     private static final AccountID TREASURY_ID =
@@ -128,17 +144,23 @@ class TransactionExecutorsTest {
     private static final String EXPECTED_TRACE_START =
             "{\"pc\":0,\"op\":96,\"gas\":\"0x13458\",\"gasCost\":\"0x3\",\"memSize\":0,\"depth\":1,\"refund\":0,\"opName\":\"PUSH1\"}";
 
+    public static final Metrics NO_OP_METRICS = new NoOpMetrics();
+    public static final NetworkInfo FAKE_NETWORK_INFO = fakeNetworkInfo();
+
     @Mock
     private SignatureVerifier signatureVerifier;
 
+    @Mock
+    private StartupNetworks startupNetworks;
+
     @Test
     void executesTransactionsAsExpected() {
+        final var overrides = Map.of("hedera.transaction.maxMemoUtf8Bytes", "101");
         // Construct a full implementation of the consensus node State API with all genesis accounts and files
-        final var state = genesisState();
+        final var state = genesisState(overrides);
 
         // Get a standalone executor based on this state, with an override to allow slightly longer memos
-        final var executor =
-                TRANSACTION_EXECUTORS.newExecutor(state, Map.of("hedera.transaction.maxMemoUtf8Bytes", "101"), null);
+        final var executor = TRANSACTION_EXECUTORS.newExecutor(state, overrides, null);
 
         // Execute a FileCreate that uploads the initcode for the Multipurpose.sol contract
         final var uploadOutput = executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH);
@@ -215,11 +237,23 @@ class TransactionExecutorsTest {
                 .transactionValidDuration(new Duration(minValidDuration));
     }
 
-    private State genesisState() {
+    private State genesisState(@NonNull final Map<String, String> overrides) {
         final var state = new FakeState();
+        final var configBuilder = HederaTestConfigBuilder.create();
+        overrides.forEach(configBuilder::withValue);
+        final var config = configBuilder.getOrCreateConfig();
         final var networkInfo = fakeNetworkInfo();
         final var servicesRegistry = new FakeServicesRegistry();
-        registerServices(servicesRegistry);
+        final var appContext = new AppContextImpl(
+                InstantSource.system(),
+                signatureVerifier,
+                UNAVAILABLE_GOSSIP,
+                () -> config,
+                () -> DEFAULT_NODE_INFO,
+                () -> NO_OP_METRICS,
+                new AppThrottleFactory(
+                        () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
+        registerServices(appContext, config, servicesRegistry);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         migrator.doMigrations(
@@ -229,18 +263,20 @@ class TransactionExecutorsTest {
                 new ServicesSoftwareVersion(
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
+                config,
                 networkInfo,
-                new NoOpMetrics());
+                NO_OP_METRICS,
+                startupNetworks);
         final var writableStates = state.getWritableStates(FileService.NAME);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(networkInfo, DEFAULT_CONFIG).forEach((fileNum, provider) -> {
-            final var fileId = createFileID(fileNum, DEFAULT_CONFIG);
+        genesisContentProviders(networkInfo, config).forEach((fileNum, provider) -> {
+            final var fileId = createFileID(fileNum, config);
             files.put(
                     fileId,
                     File.newBuilder()
                             .fileId(fileId)
                             .keys(KeyList.DEFAULT)
-                            .contents(provider.apply(DEFAULT_CONFIG))
+                            .contents(provider.apply(config))
                             .build());
         });
         ((CommittableWritableStates) writableStates).commit();
@@ -261,12 +297,15 @@ class TransactionExecutorsTest {
                 filesConfig.throttleDefinitions(), genesisSchema::genesisThrottleDefinitions);
     }
 
-    private void registerServices(@NonNull final ServicesRegistry servicesRegistry) {
+    private void registerServices(
+            @NonNull final AppContext appContext,
+            @NonNull final Configuration config,
+            @NonNull final ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(new AppContextImpl(InstantSource.system(), signatureVerifier)),
+                        new ContractServiceImpl(appContext),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
@@ -281,7 +320,7 @@ class TransactionExecutorsTest {
                 .forEach(servicesRegistry::register);
     }
 
-    private NetworkInfo fakeNetworkInfo() {
+    private static NetworkInfo fakeNetworkInfo() {
         final var addressBook = new AddressBook(StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(
                                 RandomAddressBookBuilder.create(new Random())
@@ -303,27 +342,35 @@ class TransactionExecutorsTest {
 
             @NonNull
             @Override
-            public SelfNodeInfo selfNodeInfo() {
-                throw new UnsupportedOperationException("Not implemented");
+            public NodeInfo selfNodeInfo() {
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate()));
             }
 
             @NonNull
             @Override
             public List<NodeInfo> addressBook() {
-                return StreamSupport.stream(addressBook.spliterator(), false)
-                        .map(NodeInfoImpl::fromAddress)
-                        .toList();
+                return List.of(
+                        new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate())));
             }
 
-            @Nullable
             @Override
             public NodeInfo nodeInfo(final long nodeId) {
-                throw new UnsupportedOperationException("Not implemented");
+                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
             }
 
             @Override
             public boolean containsNode(final long nodeId) {
-                return addressBook.contains(new NodeId(nodeId));
+                return addressBook.contains(NodeId.of(nodeId));
+            }
+
+            @Override
+            public void updateFrom(final State state) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public Roster roster() {
+                return buildRoster(addressBook);
             }
         };
     }
@@ -336,6 +383,29 @@ class TransactionExecutorsTest {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    public static X509Certificate randomX509Certificate() {
+        try {
+            final SecureRandom secureRandom = CryptoUtils.getDetRandom();
+
+            final KeyPairGenerator rsaKeyGen = KeyPairGenerator.getInstance("RSA");
+            rsaKeyGen.initialize(3072, secureRandom);
+            final KeyPair rsaKeyPair1 = rsaKeyGen.generateKeyPair();
+
+            final String name = "CN=Bob";
+            return CryptoStatic.generateCertificate(name, rsaKeyPair1, name, rsaKeyPair1, secureRandom);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Bytes getCertBytes(X509Certificate certificate) {
+        try {
+            return Bytes.wrap(certificate.getEncoded());
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

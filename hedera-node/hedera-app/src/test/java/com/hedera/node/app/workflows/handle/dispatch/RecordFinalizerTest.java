@@ -20,17 +20,16 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MES
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
@@ -68,6 +68,9 @@ public class RecordFinalizerTest {
 
     @Mock
     private Dispatch dispatch;
+
+    @Mock
+    private SavepointStackImpl stack;
 
     @Mock
     private FinalizeContext finalizeContext;
@@ -100,7 +103,7 @@ public class RecordFinalizerTest {
             HederaFunctionality.CRYPTO_TRANSFER,
             null);
 
-    private RecordStreamBuilder recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+    private RecordStreamBuilder recordBuilder = new RecordStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER);
     private RecordFinalizer subject;
 
     @BeforeEach
@@ -114,8 +117,9 @@ public class RecordFinalizerTest {
     }
 
     @Test
-    public void testFinalizeRecordUserTransaction() {
-        when(dispatch.txnCategory()).thenReturn(USER);
+    public void finalizesStakingRecordForScheduledDispatchOfUserTxn() {
+        given(dispatch.stack()).willReturn(stack);
+        given(stack.permitsStakingRewards()).willReturn(true);
 
         when(dispatch.handleContext().dispatchPaidRewards()).thenReturn(Map.of());
 
@@ -126,12 +130,13 @@ public class RecordFinalizerTest {
     }
 
     @Test
-    public void testFinalizeRecordChildTransaction() {
-        when(dispatch.txnCategory()).thenReturn(CHILD);
+    public void finalizesNonStakingRecordForIneligibleDispatchStack() {
+        given(dispatch.stack()).willReturn(stack);
 
         subject.finalizeRecord(dispatch);
+
         verify(finalizeRecordHandler, never()).finalizeStakingRecord(any(), any(), any(), any());
-        verify(finalizeRecordHandler, times(1)).finalizeNonStakingRecord(any(), any());
+        verify(finalizeRecordHandler).finalizeNonStakingRecord(any(), any());
     }
 
     @Test

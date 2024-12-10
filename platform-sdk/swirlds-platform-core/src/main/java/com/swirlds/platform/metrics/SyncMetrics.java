@@ -113,12 +113,6 @@ public class SyncMetrics {
             .withDescription("Number of times per second we do not sync because gossip is halted");
     private final CountPerSecond doNotSyncHalted;
 
-    private static final CountPerSecond.Config DO_NOT_SYNC_INTAKE_QUEUE_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "doNotSyncIntakeQueue")
-            .withUnit("hz")
-            .withDescription("Number of times per second we do not sync because the intake queue is too full");
-    private final CountPerSecond doNotSyncIntakeQueue;
-
     private static final CountPerSecond.Config DO_NOT_SYNC_FALLEN_BEHIND_CONFIG = new CountPerSecond.Config(
                     PLATFORM_CATEGORY, "doNotSyncFallenBehind")
             .withUnit("hz")
@@ -175,7 +169,6 @@ public class SyncMetrics {
         doNoSyncPlatformStatus = new CountPerSecond(metrics, DO_NOT_SYNC_PLATFORM_STATUS);
         doNotSyncCooldown = new CountPerSecond(metrics, DO_NOT_SYNC_COOLDOWN_CONFIG);
         doNotSyncHalted = new CountPerSecond(metrics, DO_NOT_SYNC_HALTED_CONFIG);
-        doNotSyncIntakeQueue = new CountPerSecond(metrics, DO_NOT_SYNC_INTAKE_QUEUE_CONFIG);
         doNotSyncFallenBehind = new CountPerSecond(metrics, DO_NOT_SYNC_FALLEN_BEHIND_CONFIG);
         doNotSyncNoPermits = new CountPerSecond(metrics, DO_NOT_SYNC_NO_PERMITS_CONFIG);
         doNotSyncIntakeCounter = new CountPerSecond(metrics, DO_NOT_SYNC_INTAKE_COUNTER_CONFIG);
@@ -410,13 +403,6 @@ public class SyncMetrics {
      */
     public void doNotSyncHalted() {
         doNotSyncHalted.count();
-    }
-
-    /**
-     * Signal that we chose not to sync because the intake queue is too full.
-     */
-    public void doNotSyncIntakeQueue() {
-        doNotSyncIntakeQueue.count();
     }
 
     /**

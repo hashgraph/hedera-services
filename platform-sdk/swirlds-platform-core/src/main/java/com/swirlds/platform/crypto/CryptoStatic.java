@@ -24,6 +24,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -42,8 +46,11 @@ import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,7 +67,9 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,6 +97,8 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * A collection of various static crypto methods
  */
 public final class CryptoStatic {
+    public static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     private static final Logger logger = LogManager.getLogger(CryptoStatic.class);
     private static final int SERIAL_NUMBER_BITS = 64;
     private static final int MASTER_KEY_MULTIPLIER = 157;
@@ -229,6 +240,22 @@ public final class CryptoStatic {
                     .getCertificate(v3CertBldr.build(signerBuilder.build(caPair.getPrivate())));
         } catch (CertificateException | OperatorCreationException e) {
             throw new KeyGeneratingException("Could not generate certificate!", e);
+        }
+    }
+
+    /**
+     * Decode a X509Certificate from a byte array that was previously obtained via X509Certificate.getEncoded().
+     *
+     * @param encoded a byte array with an encoded representation of a certificate
+     * @return the certificate reconstructed from its encoded form
+     */
+    @NonNull
+    public static X509Certificate decodeCertificate(@NonNull final byte[] encoded) {
+        try (final InputStream in = new ByteArrayInputStream(encoded)) {
+            final CertificateFactory factory = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) factory.generateCertificate(in);
+        } catch (CertificateException | IOException e) {
+            throw new CryptographyException(e);
         }
     }
 
@@ -530,8 +557,9 @@ public final class CryptoStatic {
                 if (cryptoConfig.enableNewKeyStoreModel()) {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
                     keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
+                            .migrate()
                             .scan()
-                            .generateIfNecessary()
+                            .generate()
                             .verify()
                             .injectInAddressBook()
                             .keysAndCerts();
@@ -602,5 +630,44 @@ public final class CryptoStatic {
             store.setCertificateEntry(SIGNING.storeName(name), sigCert);
         }
         return store;
+    }
+
+    /**
+     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
+     * @param secureRandom the secure random number generator to use
+     * @return a new {@link BlsKeyPair}
+     * @throws NoSuchAlgorithmException the algorithm is not supported
+     */
+    public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
+            throws NoSuchAlgorithmException {
+        if (secureRandom == null) {
+            logger.debug("Generating a new BLS key pair using a default secure random number generator");
+            return BlsKeyPair.generate(SIGNATURE_SCHEMA);
+        }
+        logger.debug("Generating a new BLS key pair using a custom secure random number generator");
+        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
+    }
+
+    /**
+     * Check if a certificate is valid.  A certificate is valid if it is not null, has a public key, and can be encoded.
+     *
+     * @param certificate the certificate to check
+     * @return true if the certificate is valid, false otherwise
+     */
+    public static boolean checkCertificate(@Nullable final Certificate certificate) {
+        if (certificate == null) {
+            return false;
+        }
+        if (certificate.getPublicKey() == null) {
+            return false;
+        }
+        try {
+            if (certificate.getEncoded().length == 0) {
+                return false;
+            }
+        } catch (final CertificateEncodingException e) {
+            return false;
+        }
+        return true;
     }
 }

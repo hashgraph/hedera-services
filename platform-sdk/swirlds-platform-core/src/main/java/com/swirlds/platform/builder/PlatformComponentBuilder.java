@@ -45,8 +45,10 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultInlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
+import com.swirlds.platform.event.preconsensus.InlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -92,7 +94,6 @@ import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
@@ -141,6 +142,7 @@ public class PlatformComponentBuilder {
     private StatusStateMachine statusStateMachine;
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
+    private InlinePcesWriter inlinePcesWriter;
     private IssDetector issDetector;
     private IssHandler issHandler;
     private Gossip gossip;
@@ -290,7 +292,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public InternalEventValidator buildInternalEventValidator() {
         if (internalEventValidator == null) {
-            final boolean singleNodeNetwork = blocks.initialAddressBook().getSize() == 1;
+            final boolean singleNodeNetwork =
+                    blocks.rosterHistory().getCurrentRoster().rosterEntries().size() == 1;
             internalEventValidator = new DefaultInternalEventValidator(
                     blocks.platformContext(), singleNodeNetwork, blocks.intakeEventCounter());
         }
@@ -360,12 +363,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
                     blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getPreviousAddressBook(),
-                    blocks.initialAddressBook(),
+                    blocks.rosterHistory().getPreviousRoster(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.intakeEventCounter());
         }
         return eventSignatureValidator;
@@ -499,16 +498,13 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.randomBuilder().buildNonCryptographicRandom(),
                     data -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    blocks.initialAddressBook(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
                     blocks.transactionPoolNexus());
 
             eventCreationManager = new DefaultEventCreationManager(
-                    blocks.platformContext(),
-                    blocks.transactionPoolNexus(),
-                    blocks.intakeQueueSizeSupplierSupplier().get(),
-                    eventCreator);
+                    blocks.platformContext(), blocks.transactionPoolNexus(), eventCreator);
         }
         return eventCreationManager;
     }
@@ -540,7 +536,7 @@ public class PlatformComponentBuilder {
     public ConsensusEngine buildConsensusEngine() {
         if (consensusEngine == null) {
             consensusEngine = new DefaultConsensusEngine(
-                    blocks.platformContext(), blocks.initialState().get().getAddressBook(), blocks.selfId());
+                    blocks.platformContext(), blocks.rosterHistory().getCurrentRoster(), blocks.selfId());
         }
         return consensusEngine;
     }
@@ -572,23 +568,11 @@ public class PlatformComponentBuilder {
     @NonNull
     public ConsensusEventStream buildConsensusEventStream() {
         if (consensusEventStream == null) {
-
-            // Required for conformity with legacy behavior. This sort of funky logic is normally something
-            // we'd try to move away from, but since we will be removing the CES entirely, it's simpler
-            // to just wait until the entire component disappears.
-            final Address address = blocks.initialAddressBook().getAddress(blocks.selfId());
-            final String consensusEventStreamName;
-            if (!address.getMemo().isEmpty()) {
-                consensusEventStreamName = address.getMemo();
-            } else {
-                consensusEventStreamName = String.valueOf(blocks.selfId());
-            }
-
             consensusEventStream = new DefaultConsensusEventStream(
                     blocks.platformContext(),
                     blocks.selfId(),
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
-                    consensusEventStreamName,
+                    blocks.consensusEventStreamName(),
                     (CesEvent event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference()
                                     .get()
@@ -778,6 +762,22 @@ public class PlatformComponentBuilder {
     }
 
     /**
+     * Provide an Inline PCES writer in place of the platform's default Inline PCES writer.
+     *
+     * @param inlinePcesWriter the PCES writer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInlinePcesWriter(@NonNull final InlinePcesWriter inlinePcesWriter) {
+        throwIfAlreadyUsed();
+        if (this.inlinePcesWriter != null) {
+            throw new IllegalStateException("Inline PCES writer has already been set");
+        }
+        this.inlinePcesWriter = Objects.requireNonNull(inlinePcesWriter);
+        return this;
+    }
+
+    /**
      * Build the PCES writer if it has not yet been built. If one has been provided via
      * {@link #withPcesWriter(PcesWriter)}, that writer will be used. If this method is called more than once, only the
      * first call will build the PCES writer. Otherwise, the default writer will be created and returned.
@@ -800,6 +800,33 @@ public class PlatformComponentBuilder {
             }
         }
         return pcesWriter;
+    }
+
+    /**
+     * Build the Inline PCES writer if it has not yet been built. If one has been provided via
+     * {@link #withInlinePcesWriter(InlinePcesWriter)}, that writer will be used. If this method is called more than
+     * once, only the first call will build the Inline PCES writer. Otherwise, the default writer will be created and
+     * returned.
+     *
+     * @return the Inline PCES writer
+     */
+    @NonNull
+    public InlinePcesWriter buildInlinePcesWriter() {
+        if (inlinePcesWriter == null) {
+            try {
+                final PcesFileManager preconsensusEventFileManager = new PcesFileManager(
+                        blocks.platformContext(),
+                        blocks.initialPcesFiles(),
+                        blocks.selfId(),
+                        blocks.initialState().get().getRound());
+                inlinePcesWriter = new DefaultInlinePcesWriter(
+                        blocks.platformContext(), preconsensusEventFileManager, blocks.selfId());
+
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return inlinePcesWriter;
     }
 
     /**
@@ -1040,10 +1067,9 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
-                    blocks.initialAddressBook(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.selfId(),
                     blocks.appVersion(),
-                    () -> blocks.intakeQueueSizeSupplierSupplier().get().getAsLong(),
                     blocks.swirldStateManager(),
                     () -> blocks.getLatestCompleteStateReference().get().get(),
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
@@ -1180,7 +1206,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchDetector buildBranchDetector() {
         if (branchDetector == null) {
-            branchDetector = new DefaultBranchDetector(blocks.initialAddressBook());
+            branchDetector = new DefaultBranchDetector(blocks.rosterHistory().getCurrentRoster());
         }
         return branchDetector;
     }
@@ -1212,7 +1238,8 @@ public class PlatformComponentBuilder {
     @NonNull
     public BranchReporter buildBranchReporter() {
         if (branchReporter == null) {
-            branchReporter = new DefaultBranchReporter(blocks.platformContext(), blocks.initialAddressBook());
+            branchReporter = new DefaultBranchReporter(
+                    blocks.platformContext(), blocks.rosterHistory().getCurrentRoster());
         }
         return branchReporter;
     }

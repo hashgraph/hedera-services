@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.sysFileUpdateTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
@@ -34,9 +35,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordStreamMustIncludePassFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.selectedItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateUpgradeAddressBooks;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator.EXISTENCE_ONLY_VALIDATOR;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
@@ -52,11 +56,11 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
@@ -134,6 +138,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         final Stream<DynamicTest> sameNodesTest() {
             final AtomicReference<SemanticVersion> startVersion = new AtomicReference<>();
             return hapiTest(
+                    recordStreamMustIncludePassFrom(selectedItems(
+                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
                     getVersionInfo().exposingServicesVersionTo(startVersion::set),
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(DabEnabledUpgradeTest::hasClassicAddressMetadata),
@@ -157,6 +163,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         @DisplayName("exports an address book without node1 and pays its stake no rewards")
         final Stream<DynamicTest> removedNodeTest() {
             return hapiTest(
+                    recordStreamMustIncludePassFrom(selectedItems(
+                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
@@ -192,6 +200,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         @DisplayName("exports an address book without node id3 and pays its stake no rewards")
         final Stream<DynamicTest> removedNodeTest() {
             return hapiTest(
+                    recordStreamMustIncludePassFrom(selectedItems(
+                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
@@ -211,7 +221,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws CertificateEncodingException {
             testLifecycle.doAdhoc(nodeCreate("node4")
                     .adminKey(DEFAULT_PAYER)
-                    .accountId(classicFeeCollectorIdFor(4))
+                    .accountId(AddressBookUtils.classicFeeCollectorIdFor(4))
                     .description(CLASSIC_NODE_NAMES[4])
                     .withAvailableSubProcessPorts()
                     .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()));
@@ -222,6 +232,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         @DisplayName("exports an address book with node id4")
         final Stream<DynamicTest> exportedAddressBookIncludesNodeId4() {
             return hapiTest(
+                    recordStreamMustIncludePassFrom(selectedItems(
+                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
                     prepareFakeUpgrade(),
                     // node4 was not active before this the upgrade, so it could not have written a config.txt
                     validateUpgradeAddressBooks(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
@@ -247,19 +259,19 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             testLifecycle.doAdhoc(
                     nodeCreate("node5")
                             .adminKey(DEFAULT_PAYER)
-                            .accountId(classicFeeCollectorIdFor(5))
+                            .accountId(AddressBookUtils.classicFeeCollectorIdFor(5))
                             .description(CLASSIC_NODE_NAMES[5])
                             .withAvailableSubProcessPorts()
                             .gossipCaCertificate(gossipCertificates.get(1).getEncoded()),
                     nodeCreate("toBeDeletedNode6")
                             .adminKey(DEFAULT_PAYER)
-                            .accountId(classicFeeCollectorIdFor(6))
+                            .accountId(AddressBookUtils.classicFeeCollectorIdFor(6))
                             .description(CLASSIC_NODE_NAMES[6])
                             .withAvailableSubProcessPorts()
                             .gossipCaCertificate(gossipCertificates.get(2).getEncoded()),
                     nodeCreate("disallowedNode7")
                             .adminKey(DEFAULT_PAYER)
-                            .accountId(classicFeeCollectorIdFor(7))
+                            .accountId(AddressBookUtils.classicFeeCollectorIdFor(7))
                             .description(CLASSIC_NODE_NAMES[7])
                             .withAvailableSubProcessPorts()
                             .gossipCaCertificate(gossipCertificates.get(3).getEncoded())
@@ -284,11 +296,12 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         @DisplayName("exported address book reflects only edits before prepare upgrade")
         final Stream<DynamicTest> exportedAddressBookReflectsOnlyEditsBeforePrepareUpgrade() {
             return hapiTest(
+                    recordStreamMustIncludePassFrom(selectedItems(
+                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
                     prepareFakeUpgrade(),
                     // Now make some changes that should not be incorporated in this upgrade
                     nodeDelete("5"),
                     nodeDelete("2"),
-                    nodeUpdate("0").accountId(classicFeeCollectorIdLiteralFor(900)),
                     validateUpgradeAddressBooks(NodeSelector.allNodes(), DabEnabledUpgradeTest::validateMultipartEdits),
                     upgradeToNextConfigVersion(
                             FakeNmt.removeNode(NodeSelector.byNodeId(4L), DAB_GENERATED),
@@ -308,11 +321,11 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
     private static void validateMultipartEdits(@NonNull final AddressBook addressBook) {
         assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 5L);
-        final var node0 = addressBook.getAddress(new NodeId(0L));
+        final var node0 = addressBook.getAddress(NodeId.of(0L));
         assertEquals(classicFeeCollectorIdLiteralFor(0), node0.getMemo());
-        final var node2 = addressBook.getAddress(new NodeId(2L));
+        final var node2 = addressBook.getAddress(NodeId.of(2L));
         assertEquals(classicFeeCollectorIdLiteralFor(902), node2.getMemo());
-        final var node5 = addressBook.getAddress(new NodeId(5L));
+        final var node5 = addressBook.getAddress(NodeId.of(5L));
         assertEquals(classicFeeCollectorIdLiteralFor(905), node5.getMemo());
         assertEquals("127.0.0.1", node5.getHostnameInternal());
         assertEquals(33000, node5.getPortInternal());
@@ -327,10 +340,6 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             assertEquals("" + i, address.getNickname(), "Wrong nickname");
             assertEquals(CLASSIC_NODE_NAMES[i], address.getSelfName(), "Wrong self-name");
         });
-    }
-
-    private static AccountID classicFeeCollectorIdFor(final long nodeId) {
-        return AccountID.newBuilder().setAccountNum(nodeId + 3L).build();
     }
 
     private static String classicFeeCollectorIdLiteralFor(final long nodeId) {

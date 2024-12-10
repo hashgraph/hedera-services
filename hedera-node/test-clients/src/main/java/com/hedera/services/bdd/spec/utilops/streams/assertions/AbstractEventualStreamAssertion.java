@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.streams.EventualAssertionResult;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import org.junit.jupiter.api.Assertions;
@@ -51,6 +52,10 @@ public abstract class AbstractEventualStreamAssertion extends UtilOp {
         result = new EventualAssertionResult(hasPassedIfNothingFailed, DEFAULT_TIMEOUT);
     }
 
+    protected AbstractEventualStreamAssertion(final boolean hasPassedIfNothingFailed, @NonNull final Duration timeout) {
+        result = new EventualAssertionResult(hasPassedIfNothingFailed, timeout);
+    }
+
     /**
      * Returns true if this assertion needs background traffic to be running in order to pass.
      * @return true if this assertion needs background traffic
@@ -75,13 +80,20 @@ public abstract class AbstractEventualStreamAssertion extends UtilOp {
     public void assertHasPassed() {
         try {
             final var eventualResult = result.get();
-            unsubscribe();
             if (!eventualResult.passed()) {
-                Assertions.fail(eventualResult.getErrorDetails());
+                Assertions.fail(assertionDescription() + " ended with result: " + eventualResult.getErrorDetails());
             }
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             Assertions.fail("Interrupted while waiting for " + this + " to pass");
+        } finally {
+            unsubscribe();
         }
     }
+
+    /**
+     * Returns a description of the assertion.
+     * @return a description of the assertion
+     */
+    protected abstract String assertionDescription();
 }

@@ -81,8 +81,6 @@ public interface SpecEntity {
      *
      * <p>Always use with <code>&#64;LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)</code>.
      *
-     * <p>(See, e.g., {@link com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite#selfDestructedContractIsDeletedInSameTx(String,SpecAccount,SpecContract,SpecContract)}.)
-     *
      * @param spec the spec to use to create an entity if it is not already created
      * @param entities - the entities to create, in order
      */

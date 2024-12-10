@@ -53,6 +53,16 @@ public class FakeNmt {
     }
 
     /**
+     * Returns an operation that restarts the network with the given config version.
+     *
+     * @param configVersion the config version to use
+     * @return the operation that restarts the network
+     */
+    public static TryToStartNodesOp restartNetworkWithDisabledNodeOperatorPort(final int configVersion) {
+        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, true);
+    }
+
+    /**
      * Returns an operation that removes a subprocess node from the network and refreshes the
      * address books on all remaining nodes using the given <i>config.txt</i> source.
      *
