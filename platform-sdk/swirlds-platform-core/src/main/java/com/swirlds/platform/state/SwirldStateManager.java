@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromRound;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -34,7 +35,6 @@ import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -135,31 +135,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
         // TODO update this logic to return the transactions from the callback consumer passed in
         // state.getSwirldState().handleConsensusRound, when it is implemented
-        return extractSystemTransactionsFromRound(round);
-    }
-
-    private List<ScopedSystemTransaction<StateSignatureTransaction>> extractSystemTransactionsFromRound(
-            final ConsensusRound round) {
-        final var systemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
-        while (round.iterator().hasNext()) {
-            final var consensusEvent = round.iterator().next();
-            while (consensusEvent.consensusTransactionIterator().hasNext()) {
-                final var consensusTransaction =
-                        consensusEvent.consensusTransactionIterator().next();
-
-                if (consensusTransaction.isSystem()) {
-                    final var stateSignatureTransaction =
-                            consensusTransaction.getTransaction().stateSignatureTransaction();
-                    if (stateSignatureTransaction != null) {
-                        systemTransactions.add(new ScopedSystemTransaction<>(
-                                consensusEvent.getCreatorId(),
-                                consensusEvent.getSoftwareVersion(),
-                                stateSignatureTransaction));
-                    }
-                }
-            }
-        }
-        return systemTransactions;
+        return extractFromRound(round, StateSignatureTransaction.class);
     }
 
     /**

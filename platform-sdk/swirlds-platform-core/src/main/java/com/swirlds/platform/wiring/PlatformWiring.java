@@ -636,10 +636,12 @@ public class PlatformWiring {
                 .getOutputWire()
                 .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
 
-        stateHasherWiring
+        transactionHandlerWiring
                 .getOutputWire()
                 .buildTransformer(
-                        "postHasher_getSystemTransactions", "system transactions", StateAndRound::systemTransactions)
+                        "getSystemTransactions",
+                        "stateAndRound with system transactions",
+                        StateAndRound::systemTransactions)
                 .solderTo(stateSignatureCollectorWiring.getInputWire(
                         StateSignatureCollector::handlePostconsensusSignatures));
 
@@ -657,19 +659,6 @@ public class PlatformWiring {
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
         // FUTURE WORK: Split the single StateAndRound output into separate State and Round wires.
 
-        // Extract signatures from post-consensus events for input to the StateSignatureCollector.
-        final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                postConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "extractConsensusSignatureTransactions",
-                        "consensus events",
-                        round -> SystemTransactionExtractionUtils.extractFromRound(
-                                round, StateSignatureTransaction.class));
-        hashedConsensusRoundOutput.solderTo(postConsensusTransformer.getInputWire());
-        postConsensusTransformer
-                .getOutputWire()
-                .solderTo(stateSignatureCollectorWiring.getInputWire(
-                        StateSignatureCollector::handlePostconsensusSignatures));
         // Solder the state output as input to the state signature collector.
         hashedStateOutputWire.solderTo(
                 stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::addReservedState));

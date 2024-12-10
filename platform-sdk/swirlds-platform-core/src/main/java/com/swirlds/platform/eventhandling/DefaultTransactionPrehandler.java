@@ -18,6 +18,7 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromEvent;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
@@ -28,7 +29,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -107,25 +107,6 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
 
         // TODO adapt this logic to read transactions directly from the callback passed in SwirldState.preHandle() when
         // implemented
-        return extractSystemTransactionsFromEvent(event);
-    }
-
-    private List<ScopedSystemTransaction<StateSignatureTransaction>> extractSystemTransactionsFromEvent(
-            @NonNull final PlatformEvent event) {
-        final var systemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
-        while (event.consensusTransactionIterator().hasNext()) {
-            final var transaction = event.consensusTransactionIterator().next();
-
-            if (transaction.isSystem()) {
-                final var stateSignatureTransaction =
-                        transaction.getTransaction().stateSignatureTransaction();
-                if (stateSignatureTransaction != null) {
-                    systemTransactions.add(new ScopedSystemTransaction<>(
-                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
-                }
-            }
-        }
-
-        return systemTransactions;
+        return extractFromEvent(event, StateSignatureTransaction.class);
     }
 }
