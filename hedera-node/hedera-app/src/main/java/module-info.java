@@ -60,6 +60,7 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler; // javax.annotation.processing.Generated
+    requires io.minio;
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;

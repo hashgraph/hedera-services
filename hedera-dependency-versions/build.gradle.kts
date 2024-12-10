@@ -37,6 +37,9 @@ dependencies.constraints {
     api("io.helidon.webclient:helidon-webclient-grpc:4.1.1") {
         because("io.helidon.webclient.grpc")
     }
+    api("io.minio:minio:8.5.14") {
+        because("io.minio")
+    }
     api("org.awaitility:awaitility:4.2.0") {
         because("awaitility")
     }

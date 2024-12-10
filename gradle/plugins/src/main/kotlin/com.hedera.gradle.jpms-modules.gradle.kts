@@ -107,6 +107,11 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
+    module("io.minio:minio", "io.minio") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        patchRealModule()
+    }
     module("io.grpc:grpc-util", "io.grpc.util")
     module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
     module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
@@ -143,6 +148,9 @@ extraJavaModuleInfo {
     module("commons-codec:commons-codec", "org.apache.commons.codec")
     module("com.esaulpaugh:headlong", "headlong")
     module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
+    module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual") {
+        patchRealModule()
+    }
     module("org.connid:framework", "org.connid.framework")
     module("org.connid:framework-internal", "org.connid.framework.internal") {
         exportAllPackages()
