@@ -36,8 +36,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
@@ -122,7 +124,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier)}.
+     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier, Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>)}.
      *
      * @param round the round to handle
      */

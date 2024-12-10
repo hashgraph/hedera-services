@@ -81,10 +81,16 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("enhanced-valid-no-agreement-key"))
                 .exists()
                 .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-no-tss-key"))
+                .exists()
+                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-2"))
+                .exists()
+                .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-corrupt-tss-key"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("legacy-valid").resolve("public.pfx"))
@@ -105,7 +111,15 @@ class EnhancedKeyStoreLoaderTest {
      */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Positive Test")
-    @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid", "enhanced-valid-no-agreement-key"})
+    @ValueSource(
+            strings = {
+                "legacy-valid",
+                "hybrid-valid",
+                "enhanced-valid",
+                "enhanced-valid-no-agreement-key",
+                "enhanced-valid-no-tss-key",
+                "enhanced-valid-corrupt-tss-key"
+            })
     void keyStoreLoaderPositiveTest(final String directoryName)
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
@@ -137,6 +151,8 @@ class EnhancedKeyStoreLoaderTest {
                 assertThat(keysAndCerts.sigCert()).isNotNull();
                 assertThat(keysAndCerts.agrKeyPair()).isNotNull();
                 assertThat(keysAndCerts.sigKeyPair()).isNotNull();
+                assertThat(keysAndCerts.privateTssEncryptionKey()).isNotNull();
+                assertThat(keysAndCerts.publicTssEncryptionKey()).isNotNull();
             }
 
             assertThat(addr.getSigPublicKey()).isNotNull();

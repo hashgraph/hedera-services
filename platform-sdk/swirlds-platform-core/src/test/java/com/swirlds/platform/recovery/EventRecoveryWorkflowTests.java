@@ -127,13 +127,13 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(immutableState)
-                .preHandle(any());
+                .preHandle(any(), any());
         doAnswer(invocation -> {
                     fail("mutable state should handle transactions");
                     return null;
                 })
                 .when(immutableState)
-                .handleConsensusRound(any(), any());
+                .handleConsensusRound(any(), any(), any());
 
         final SwirldState mutableState = mock(SwirldState.class);
         doAnswer(invocation -> {
@@ -141,7 +141,7 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(mutableState)
-                .preHandle(any());
+                .preHandle(any(), any());
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should only be handled once");
                     assertSame(round, invocation.getArgument(0), "unexpected round");
@@ -150,7 +150,7 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(mutableState)
-                .handleConsensusRound(any(), any());
+                .handleConsensusRound(any(), any(), any());
 
         EventRecoveryWorkflow.applyTransactions(immutableState, mutableState, platformState, round);
 

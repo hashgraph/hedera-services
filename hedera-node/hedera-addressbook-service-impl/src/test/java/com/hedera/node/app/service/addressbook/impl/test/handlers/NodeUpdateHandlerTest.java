@@ -42,7 +42,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -466,7 +465,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksFailWhenAccountIdNotGood() throws PreCheckException {
+    void preHandleFailedWhenAccountIdNotGood() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -477,7 +476,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksFailWhenAccountIdIsAlias() throws PreCheckException {
+    void preHandleFailedWhenAccountIdIsAlias() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -488,7 +487,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksFailWhenUpdateAccountIdNotAllowed() throws PreCheckException {
+    void preHandleFailedWhenUpdateAccountIdNotAllowed() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -540,17 +539,10 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("nodes.updateAccountIdAllowed", updateAccountIdAllowed)
                 .getOrCreateConfig();
-        mockPayerLookup(anotherKey, contextPayerId);
+        mockPayerLookup(anotherKey, contextPayerId, accountStore);
         final var context = new FakePreHandleContext(accountStore, txn, config);
         context.registerStore(ReadableNodeStore.class, readableStore);
         return context;
-    }
-
-    private Key mockPayerLookup(Key key, AccountID contextPayerId) {
-        final var account = mock(Account.class);
-        given(account.key()).willReturn(key);
-        given(accountStore.getAccountById(contextPayerId)).willReturn(account);
-        return key;
     }
 
     private class NodeUpdateBuilder {
