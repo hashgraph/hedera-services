@@ -18,7 +18,6 @@ package com.hedera.node.app.info;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
@@ -97,20 +96,16 @@ public class GenesisNetworkInfo implements NetworkInfo {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    @Override
-    public Roster roster() {
-        // This class should be constructed using the genesis AddressBook. The roster, on the other hand, should not be
-        // created until just before handing the roster over to the platform; therefore, we throw an illegal exception
-        // here
-        throw new IllegalStateException("No roster available at network genesis");
-    }
-
     private static Map<Long, NodeInfo> fromMetadata(@NonNull List<NodeMetadata> metadatas) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
         for (final var metadata : metadatas) {
             final var node = metadata.nodeOrThrow();
             final var nodeInfo = new NodeInfoImpl(
-                    node.nodeId(), node.accountId(), node.weight(), node.gossipEndpoint(), node.gossipCaCertificate());
+                    node.nodeId(),
+                    node.accountIdOrThrow(),
+                    node.weight(),
+                    node.gossipEndpoint(),
+                    node.gossipCaCertificate());
             nodeInfos.put(node.nodeId(), nodeInfo);
         }
         return nodeInfos;

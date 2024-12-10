@@ -166,9 +166,4 @@ public class StateNetworkInfo implements NetworkInfo {
         }
         return nodeInfos;
     }
-
-    @Override
-    public Roster roster() {
-        return activeRoster;
-    }
 }

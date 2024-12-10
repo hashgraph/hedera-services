@@ -643,7 +643,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisNetwork.nodeMetadata(), ledgerConfig.id());
+            genesisNetworkInfo =
+                    new GenesisNetworkInfo(requireNonNull(genesisNetwork).nodeMetadata(), ledgerConfig.id());
         }
         blockStreamService.resetMigratedLastBlockHash();
         startupNetworks = startupNetworksFactory.apply(configProvider, tssBaseService);

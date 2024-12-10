@@ -427,7 +427,6 @@ public class WorkingDirUtils {
                                     toPbj(HapiPropertySource.asAccount(parts[9])),
                                     "node" + (nodeId + 1),
                                     gossipEndpoints,
-                                    // TODO - Use the real service endpoint
                                     List.of(),
                                     mockCert,
                                     // The gRPC certificate hash is irrelevant for PR checks
