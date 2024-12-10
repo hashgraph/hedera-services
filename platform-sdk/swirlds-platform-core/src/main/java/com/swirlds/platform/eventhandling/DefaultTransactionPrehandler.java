@@ -30,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -106,7 +105,27 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             preHandleTime.update(startTime, time.nanoTime());
         }
 
-        // TODO temporarily return no transactions until SwirldState.preHandle() is updated with callback
-        return new ArrayList<>();
+        // TODO adapt this logic to read transactions directly from the callback passed in SwirldState.preHandle() when
+        // implemented
+        return extractSystemTransactionsFromEvent(event);
+    }
+
+    private List<ScopedSystemTransaction<StateSignatureTransaction>> extractSystemTransactionsFromEvent(
+            @NonNull final PlatformEvent event) {
+        final var systemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
+        while (event.consensusTransactionIterator().hasNext()) {
+            final var transaction = event.consensusTransactionIterator().next();
+
+            if (transaction.isSystem()) {
+                final var stateSignatureTransaction =
+                        transaction.getTransaction().stateSignatureTransaction();
+                if (stateSignatureTransaction != null) {
+                    systemTransactions.add(new ScopedSystemTransaction<>(
+                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+                }
+            }
+        }
+
+        return systemTransactions;
     }
 }

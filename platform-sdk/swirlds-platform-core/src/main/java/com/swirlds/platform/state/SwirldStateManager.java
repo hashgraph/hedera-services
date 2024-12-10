@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -128,24 +127,49 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param round the round to handle
      */
-    public void handleConsensusRound(final ConsensusRound round) {
+    public List<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
         final MerkleRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round);
         transactionHandler.handleRound(round, state);
+
+        // TODO update this logic to return the transactions from the callback consumer passed in
+        // state.getSwirldState().handleConsensusRound, when it is implemented
+        return extractSystemTransactionsFromRound(round);
+    }
+
+    private List<ScopedSystemTransaction<StateSignatureTransaction>> extractSystemTransactionsFromRound(
+            final ConsensusRound round) {
+        final var systemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
+        while (round.iterator().hasNext()) {
+            final var consensusEvent = round.iterator().next();
+            while (consensusEvent.consensusTransactionIterator().hasNext()) {
+                final var consensusTransaction =
+                        consensusEvent.consensusTransactionIterator().next();
+
+                if (consensusTransaction.isSystem()) {
+                    final var stateSignatureTransaction =
+                            consensusTransaction.getTransaction().stateSignatureTransaction();
+                    if (stateSignatureTransaction != null) {
+                        systemTransactions.add(new ScopedSystemTransaction<>(
+                                consensusEvent.getCreatorId(),
+                                consensusEvent.getSoftwareVersion(),
+                                stateSignatureTransaction));
+                    }
+                }
+            }
+        }
+        return systemTransactions;
     }
 
     /**
      * Seals the platform's state changes for the given round.
      * @param round the round to seal
      */
-    public List<ScopedSystemTransaction<StateSignatureTransaction>> sealConsensusRound(@NonNull final Round round) {
+    public void sealConsensusRound(@NonNull final Round round) {
         Objects.requireNonNull(round);
         final MerkleRoot state = stateRef.get();
         state.getSwirldState().sealConsensusRound(round);
-
-        // TODO temporary return no transactions until the SwirldState interface is updated to register callbacks
-        return new ArrayList<>();
     }
 
     /**
