@@ -58,7 +58,7 @@ public class ISSTestingToolMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(ISSTestingToolState.class, () -> {
                 ISSTestingToolState issTestingToolState = new ISSTestingToolState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(issTestingToolState);
+                FAKE_MERKLE_STATE_LIFECYCLES.initStates(issTestingToolState);
                 return issTestingToolState;
             }));
             registerMerkleStateRootClassIds();
@@ -115,7 +115,7 @@ public class ISSTestingToolMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new ISSTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

@@ -37,6 +37,7 @@ jobs:
   check-trigger:
     name: Check Trigger Conditions
     runs-on: network-node-linux-small-scheduler
+    if: ${{ !github.event.workflow_dispatch.repository.fork }}
     outputs:
       triggered: ${{ steps.evaluate.outputs.triggered }}
     steps:
@@ -140,11 +141,11 @@ jobs:
         run: echo "short-id=$(echo -n "${{ github.sha }}" | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
 
       - name: Send Slack Notification
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
+          webhook: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
             {
               "attachments": [

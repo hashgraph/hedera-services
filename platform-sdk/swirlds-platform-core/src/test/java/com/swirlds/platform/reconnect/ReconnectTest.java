@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.reconnect;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -34,6 +35,7 @@ import com.swirlds.common.test.fixtures.merkle.util.PairedStreams;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
@@ -41,19 +43,18 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.io.IOException;
-import java.security.PublicKey;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -85,7 +86,13 @@ final class ReconnectTest {
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.platform.state.signed");
         registry.registerConstructables("com.swirlds.platform.system");
+        registry.registerConstructables("com.swirlds.state.merkle");
         FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+    }
+
+    @AfterAll
+    static void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @Test
@@ -96,6 +103,8 @@ final class ReconnectTest {
         final ReconnectMetrics reconnectMetrics = mock(ReconnectMetrics.class);
 
         for (int index = 1; index <= numberOfReconnects; index++) {
+            MerkleDb.resetDefaultInstancePath();
+
             executeReconnect(reconnectMetrics);
             verify(reconnectMetrics, times(index)).incrementReceiverStartTimes();
             verify(reconnectMetrics, times(index)).incrementSenderStartTimes();
@@ -152,18 +161,6 @@ final class ReconnectTest {
         }
     }
 
-    private AddressBook buildAddressBook(final int numAddresses) {
-        final PublicKey publicKey = mock(PublicKey.class);
-        final List<Address> addresses = new ArrayList<>();
-        for (int i = 0; i < numAddresses; i++) {
-            final Address address = mock(Address.class);
-            when(address.getSigPublicKey()).thenReturn(publicKey);
-            when(address.getNodeId()).thenReturn(NodeId.of(i));
-            addresses.add(address);
-        }
-        return new AddressBook(addresses);
-    }
-
     private ReconnectTeacher buildSender(
             final ReservedSignedState signedState,
             final SocketConnection connection,
@@ -191,13 +188,14 @@ final class ReconnectTest {
 
     private ReconnectLearner buildReceiver(
             final MerkleRoot state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
-        final AddressBook addressBook = buildAddressBook(5);
+        final Roster roster =
+                RandomRosterBuilder.create(getRandomPrintSeed()).withSize(5).build();
 
         return new ReconnectLearner(
                 TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
                 connection,
-                addressBook,
+                roster,
                 state,
                 RECONNECT_SOCKET_TIMEOUT,
                 reconnectMetrics);

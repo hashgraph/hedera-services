@@ -12,6 +12,7 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
@@ -68,6 +69,7 @@ module com.hedera.node.app.service.contract.impl {
     exports com.hedera.node.app.service.contract.impl.exec.v038 to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.utils;
+    exports com.hedera.node.app.service.contract.impl.exec.metrics;
     exports com.hedera.node.app.service.contract.impl.exec.utils;
 
     opens com.hedera.node.app.service.contract.impl.exec to

@@ -150,7 +150,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(PlatformTestingToolState.class, () -> {
                         PlatformTestingToolState ptt = new PlatformTestingToolState();
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(ptt);
+                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(ptt);
                         return ptt;
                     }));
             logger.info(
@@ -869,7 +869,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new PlatformTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

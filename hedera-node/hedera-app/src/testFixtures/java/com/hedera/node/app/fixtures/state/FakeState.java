@@ -62,6 +62,14 @@ public class FakeState implements State {
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
     /**
+     * Exposes the underlying states for direct manipulation in tests.
+     * @return the states
+     */
+    public Map<String, Map<String, Object>> getStates() {
+        return states;
+    }
+
+    /**
      * Adds to the service with the given name the {@link ReadableKVState} {@code states}
      */
     public FakeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
@@ -73,8 +81,7 @@ public class FakeState implements State {
         });
         // Purge any readable or writable states whose state definitions are now stale,
         // since they don't include the new data sources we just added
-        readableStates.remove(serviceName);
-        writableStates.remove(serviceName);
+        purgeStatesCaches(serviceName);
         return this;
     }
 
@@ -91,6 +98,7 @@ public class FakeState implements State {
             v.remove(stateKey);
             return v;
         });
+        purgeStatesCaches(serviceName);
     }
 
     @NonNull
@@ -241,5 +249,10 @@ public class FakeState implements State {
                 listener.mapDeleteChange(stateId, key);
             }
         });
+    }
+
+    private void purgeStatesCaches(@NonNull final String serviceName) {
+        readableStates.remove(serviceName);
+        writableStates.remove(serviceName);
     }
 }

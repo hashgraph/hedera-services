@@ -158,11 +158,15 @@ public class StakePeriodChanges {
                         tokenContext);
             }
         } else {
-            if (consensusTime.getEpochSecond() > lastHandleTime.getEpochSecond()) {
+            if (isNextSecond(lastHandleTime, consensusTime)) {
                 return isNextStakingPeriod(consensusTime, lastHandleTime, tokenContext);
             }
         }
         return false;
+    }
+
+    public static boolean isNextSecond(final @NonNull Instant lastHandleTime, final Instant consensusTime) {
+        return consensusTime.getEpochSecond() > lastHandleTime.getEpochSecond();
     }
 
     @VisibleForTesting

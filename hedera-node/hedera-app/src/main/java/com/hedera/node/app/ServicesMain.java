@@ -22,11 +22,11 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -54,6 +54,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -80,6 +81,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
@@ -225,8 +227,19 @@ public class ServicesMain implements SwirldMain {
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
 
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
+        // the AddressBook is not changed after this point, so we calculate the hash now
+        cryptography.digestSync(diskAddressBook);
+
+        // Initialize the Merkle cryptography
+        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
         // Create initial state for the platform
         final var isGenesis = new AtomicBoolean(false);
+        // We want to be able to see the schema migration logs, so init logging here
+        initLogging();
         final var reservedState = getInitialState(
                 configuration,
                 recycleBin,
@@ -257,15 +270,6 @@ public class ServicesMain implements SwirldMain {
                     configuration);
         }
 
-        final var cryptography = CryptographyFactory.create();
-        CryptographyHolder.set(cryptography);
-        // the AddressBook is not changed after this point, so we calculate the hash now
-        cryptography.digestSync(diskAddressBook);
-
-        // Initialize the Merkle cryptography
-        final var merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
-
         // Create the platform context
         final var platformContext = PlatformContext.create(
                 configuration,
@@ -291,11 +295,10 @@ public class ServicesMain implements SwirldMain {
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {
             rosterHistory =
-                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
+                    RosterUtils.buildRosterHistory((State) initialState.get().getState());
         }
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.
-        final var roster = buildRoster(addressBook);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,
                         Hedera.SWIRLD_NAME,
@@ -343,6 +346,18 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
+    }
+
+    private static void initLogging() {
+        final var log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
+        try {
+            Log4jSetup.startLoggingFramework(log4jPath).await();
+        } catch (final InterruptedException e) {
+            // since the logging framework has not been instantiated, also log to stderr
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
+        }
     }
 
     /**

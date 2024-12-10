@@ -1194,7 +1194,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
+    public boolean flush() {
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be flushed");
         }
@@ -1205,14 +1205,25 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throw new IllegalStateException("a merged copy can not be flushed");
         }
 
-        final long start = System.currentTimeMillis();
-        flush(cache, state, dataSource);
-        cache.release();
-        final long end = System.currentTimeMillis();
-        flushed.set(true);
-        flushLatch.countDown();
-        statistics.recordFlush(end - start);
-        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed in {} ms", end - start);
+        // Prepare the cache for flush. It may affect cache's estimated size
+        cache.prepareForFlush();
+        if (shouldBeFlushed()) {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
+            final long start = System.currentTimeMillis();
+            flush(cache, state, dataSource);
+            cache.release();
+            final long end = System.currentTimeMillis();
+            flushed.set(true);
+            flushLatch.countDown();
+            statistics.recordFlush(end - start);
+            logger.debug(
+                    VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {} in {} ms", cache.getFastCopyVersion(), end - start);
+            return true;
+        } else {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
+            cache.garbageCollect();
+            return false;
+        }
     }
 
     private void flush(VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource ds) {
@@ -1246,15 +1257,14 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     @Override
     public long estimatedSize() {
-        final long estimatedDirtyLeavesCount =
-                cache.estimatedDirtyLeavesCount(state.getFirstLeafPath(), state.getLastLeafPath());
+        final long estimatedDirtyLeavesCount = cache.estimatedDirtyLeavesCount();
         final long estimatedLeavesSize = estimatedDirtyLeavesCount
                 * (Long.BYTES // path
                         + DigestType.SHA_384.digestLength() // hash
                         + keySerializer.getTypicalSerializedSize() // key
                         + valueSerializer.getTypicalSerializedSize()); // value
 
-        final long estimatedInternalsCount = cache.estimatedInternalsCount(state.getFirstLeafPath());
+        final long estimatedInternalsCount = cache.estimatedHashesCount();
         final long estimatedInternalsSize = estimatedInternalsCount
                 * (Long.BYTES // path
                         + DigestType.SHA_384.digestLength()); // hash
@@ -1504,6 +1514,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // will NEVER be updated again.
         assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
         final VirtualNodeCache<K, V> snapshotCache = originalMap.cache.snapshot();
+        snapshotCache.prepareForFlush();
         flush(snapshotCache, originalMap.state, this.dataSource);
 
         // Set up the VirtualHasher which we will use during reconnect.
@@ -1773,7 +1784,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         statistics.setSize(state.size());
 
         final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, key, value);
-        cache.putLeaf(newLeaf);
+        cache.putLeaf(newLeaf, true);
     }
 
     /**

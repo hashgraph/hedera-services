@@ -29,6 +29,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -47,6 +48,8 @@ import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -242,6 +245,16 @@ class DefaultSignedStateValidatorTests {
                     .build());
         }
         return addressBook;
+    }
+
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @ParameterizedTest
