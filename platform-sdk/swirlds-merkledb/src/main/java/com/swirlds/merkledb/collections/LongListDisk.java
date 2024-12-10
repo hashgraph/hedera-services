@@ -56,6 +56,10 @@ public class LongListDisk extends AbstractLongList<Long> {
      */
     private final FileChannel currentFileChannel;
 
+    /** This file channel is to work with the temporary file which is initialized in {@link LongListDisk#readBodyFromFileChannelOnInit}.
+     */
+    private FileChannel tempFileChannel;
+
     /**
      * Path to the temporary file used to store the data.
      * The field is effectively immutable, however it can't be declared
@@ -145,46 +149,39 @@ public class LongListDisk extends AbstractLongList<Long> {
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
         tempFile = createTempFile(sourceFileName, configuration);
-        // create temporary file for writing
-        // the warning is suppressed because the file is not supposed to be closed
-        // as this implementation uses a file channel from it.
+
         try (final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw")) {
-            // ensure that the amount of disk space is enough
-            // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
             rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
-            FileChannel tempFileCHannel = rf.getChannel();
-
-            final int totalNumberOfChunks = calculateNumberOfChunks(size());
-            final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
-            final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
-
-            // copy the first chunk
-            final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-            // we need to make sure that the chunk is written in full.
-            // If a value is absent, the list element will have IMPERMISSIBLE_VALUE
-            fillBufferWithZeroes(transferBuffer);
-            transferBuffer.position(minValidIndexInChunk * Long.BYTES);
-            MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
-            transferBuffer.flip();
-            // writing the full chunk, all values before minValidIndexInChunk are zeroes
-            MerkleDbFileUtils.completelyWrite(tempFileCHannel, transferBuffer, 0);
-            chunkList.set(firstChunkWithDataIndex, 0L);
-
-            // copy everything except for the first chunk and the last chunk
-            MerkleDbFileUtils.completelyTransferFrom(
-                    tempFileCHannel, fileChannel, memoryChunkSize, (long) (totalNumberOfChunks - 2) * memoryChunkSize);
-
-            // copy the last chunk
-            transferBuffer.clear();
-            MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
-            transferBuffer.flip();
-            MerkleDbFileUtils.completelyWrite(
-                    tempFileCHannel, transferBuffer, (long) (totalNumberOfChunks - 1) * memoryChunkSize);
-
-            for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
-                chunkList.set(i, (long) (i - firstChunkWithDataIndex) * memoryChunkSize);
+            this.tempFileChannel = rf.getChannel();
+            super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
+        } finally {
+            if (this.tempFileChannel != null && this.tempFileChannel.isOpen()) {
+                this.tempFileChannel.close();
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startOffset, int elementsToRead)
+            throws IOException {
+        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        final long chunkOffset = (long) (chunkIndex - firstChunkWithDataIndex) * memoryChunkSize;
+
+        final ByteBuffer transferBuffer = initOrGetTransferBuffer();
+        fillBufferWithZeroes(transferBuffer);
+        transferBuffer.clear();
+
+        final int byteStart = startOffset * Long.BYTES;
+        transferBuffer.position(byteStart).limit(byteStart + elementsToRead * Long.BYTES);
+        MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
+        transferBuffer.flip();
+        transferBuffer.limit(memoryChunkSize);
+        transferBuffer.position(0);
+
+        MerkleDbFileUtils.completelyWrite(tempFileChannel, transferBuffer, chunkOffset);
+
+        chunkList.set(chunkIndex, chunkOffset);
     }
 
     private static void fillBufferWithZeroes(ByteBuffer transferBuffer) {

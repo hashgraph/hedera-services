@@ -87,26 +87,20 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
 
     /** {@inheritDoc} */
     @Override
-    protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
-        if (minValidIndex.get() < 0) {
-            // Empty list, nothing to read
-            return;
-        }
-        final int totalNumberOfChunks = calculateNumberOfChunks(size());
-        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
-        final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
-        // read the first chunk
-        final ByteBuffer firstBuffer = createChunk();
-        firstBuffer.position(minValidIndexInChunk * Long.BYTES).limit(firstBuffer.capacity());
-        MerkleDbFileUtils.completelyRead(fileChannel, firstBuffer);
-        chunkList.set(firstChunkWithDataIndex, firstBuffer);
-        // read the rest of the data
-        for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
-            final ByteBuffer directBuffer = createChunk();
-            MerkleDbFileUtils.completelyRead(fileChannel, directBuffer);
-            directBuffer.position(0);
-            chunkList.set(i, directBuffer);
-        }
+    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startOffset, int elementsToRead)
+            throws IOException {
+        ByteBuffer chunk = createChunk();
+
+        int byteStart = startOffset * Long.BYTES;
+        chunk.position(byteStart);
+        chunk.limit(byteStart + elementsToRead * Long.BYTES);
+
+        MerkleDbFileUtils.completelyRead(fileChannel, chunk);
+
+        chunk.position(0);
+        chunk.limit(chunk.capacity());
+
+        chunkList.set(chunkIndex, chunk);
     }
 
     /** {@inheritDoc} */

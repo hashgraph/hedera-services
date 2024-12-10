@@ -51,6 +51,16 @@ import java.util.concurrent.atomic.AtomicLongArray;
 @SuppressWarnings("unused")
 public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
+    private static final ThreadLocal<ByteBuffer> TEMP_READ_BUFFER_THREAD_LOCAL;
+
+    static {
+        TEMP_READ_BUFFER_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
+            ByteBuffer buffer = ByteBuffer.allocateDirect(DEFAULT_NUM_LONGS_PER_CHUNK * Long.BYTES);
+            buffer.order(ByteOrder.nativeOrder());
+            return buffer;
+        });
+    }
+
     /** Construct a new LongListHeap with the default number of longs per chunk. */
     public LongListHeap() {
         this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, 0);
@@ -87,30 +97,20 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** {@inheritDoc} */
     @Override
-    protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
-        if (minValidIndex.get() < 0) {
-            // Empty list, nothing to read
-            return;
+    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startOffset, int elementsToRead)
+            throws IOException {
+        AtomicLongArray chunk = createChunk();
+
+        ByteBuffer buffer = TEMP_READ_BUFFER_THREAD_LOCAL.get();
+        MerkleDbFileUtils.completelyRead(fileChannel, buffer);
+        buffer.flip();
+
+        int index = startOffset;
+        while (buffer.hasRemaining()) {
+            chunk.set(index++, buffer.getLong());
         }
-        // read data
-        final int numOfArrays = calculateNumberOfChunks(size());
-        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
-        final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
-        final ByteBuffer buffer = allocateDirect(memoryChunkSize);
-        buffer.order(ByteOrder.nativeOrder());
-        for (int i = 0; i < numOfArrays; i++) {
-            final int startOffset = (i == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
-            final AtomicLongArray atomicLongArray = new AtomicLongArray(numLongsPerChunk);
-            buffer.clear();
-            MerkleDbFileUtils.completelyRead(fileChannel, buffer);
-            buffer.flip();
-            int index = startOffset;
-            while (buffer.remaining() > 0) {
-                atomicLongArray.set(index, buffer.getLong());
-                index++;
-            }
-            chunkList.set(i, atomicLongArray);
-        }
+
+        chunkList.set(chunkIndex, chunk);
     }
 
     /** {@inheritDoc} */
@@ -186,5 +186,11 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     @Override
     protected AtomicLongArray createChunk() {
         return new AtomicLongArray(numLongsPerChunk);
+    }
+
+    @Override
+    public void close() {
+        TEMP_READ_BUFFER_THREAD_LOCAL.remove();
+        super.close();
     }
 }
