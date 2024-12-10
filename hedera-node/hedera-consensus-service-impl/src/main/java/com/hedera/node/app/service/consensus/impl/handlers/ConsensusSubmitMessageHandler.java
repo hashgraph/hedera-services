@@ -38,11 +38,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -52,6 +56,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -68,6 +73,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -144,22 +150,15 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         validateTransaction(txn, config, topic);
 
         /* handle custom fees */
-        // check if payer is fee exempt
-        var payerIsFeeExempted = false;
-        if (!topic.feeExemptKeyList().isEmpty()) {
-            for (final var key : topic.feeExemptKeyList()) {
-                final var keyVerificationResult = handleContext.keyVerifier().verificationFor(key);
-                if (keyVerificationResult.passed()) {
-                    payerIsFeeExempted = true;
-                }
+        if (!topic.customFees().isEmpty() && !isFeeExempted(topic.feeExemptKeyList(), handleContext.keyVerifier())) {
+            // check payer limits or throw
+            if (!op.acceptAllCustomFees()) {
+                validateFeeLimits(topic.customFees(), op.maxCustomFees());
             }
-        }
-        if (!topic.customFees().isEmpty() && !payerIsFeeExempted) {
-            // validate and create synthetic body
+            // create synthetic body and dispatch crypto transfer
             final var syntheticBodies = customFeeAssessor.assessCustomFee(topic, handleContext);
             for (final var syntheticBody : syntheticBodies) {
-                // dispatch crypto transfer
-                var record = handleContext.dispatch(stepDispatch(
+                final var record = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
                         TransactionBody.newBuilder()
                                 .cryptoTransfer(syntheticBody)
@@ -319,6 +318,60 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             return MessageDigest.getInstance("SHA-384").digest(byteArray);
         } catch (final NoSuchAlgorithmException fatal) {
             throw new IllegalStateException(fatal);
+        }
+    }
+
+    /**
+     * Check if the submit message transaction is fee exempt
+     *
+     * @param feeExemptKeyList The list of keys that are exempt from fees
+     * @param keyVerifier The key verifier of this transaction
+     * @return if the transaction is fee exempt
+     */
+    private boolean isFeeExempted(@NonNull final List<Key> feeExemptKeyList, @NonNull final KeyVerifier keyVerifier) {
+        if (!feeExemptKeyList.isEmpty()) {
+            for (final var key : feeExemptKeyList) {
+                final var keyVerificationResult = keyVerifier.verificationFor(key);
+                if (keyVerificationResult.passed()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Validate that each topic custom fee has equal or lower value than the payer's limit
+     *
+     * @param topicCustomFees The topic's custom fee list
+     * @param payerCustomFeeLimits List with limits of fees that the payer is willing to pay
+     */
+    private void validateFeeLimits(
+            @NonNull final List<ConsensusCustomFee> topicCustomFees,
+            @NonNull final List<FixedFee> payerCustomFeeLimits) {
+        for (final ConsensusCustomFee fee : topicCustomFees) {
+            // validate limits
+            boolean passed = false;
+            final var fixedFee = fee.fixedFeeOrThrow();
+            if (fixedFee.hasDenominatingTokenId()) {
+                for (FixedFee feeLimit : payerCustomFeeLimits) {
+                    if (feeLimit.hasDenominatingTokenId()
+                            && feeLimit.denominatingTokenId().equals(fixedFee.denominatingTokenId())
+                            && feeLimit.amount() <= fixedFee.amount()) {
+                        passed = true;
+                        break;
+                    }
+                }
+            } else {
+                for (FixedFee feeLimit : payerCustomFeeLimits) {
+                    if (!feeLimit.hasDenominatingTokenId() && feeLimit.amount() <= fixedFee.amount()) {
+                        passed = true;
+                        break;
+                    }
+                }
+            }
+            // if any fee amount is larger than the corresponding limit, validation should fail
+            validateTrue(passed, ResponseCodeEnum.FAIL_FEE);
         }
     }
 

@@ -126,8 +126,10 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     associateAllTokensToCollectors(),
                     // create topic with 10 multilayer fees - 9 HTS + 1 HBAR
                     createTopicWith10Different2layerFees(),
-                    // todo check if accept all here is OK, or we should create all 10 fees limits
-                    submitMessageTo(TOPIC).acceptAllCustomFees(true).message("TEST").payingWith(SUBMITTER),
+                    submitMessageTo(TOPIC)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(SUBMITTER),
                     // assert topic fee collector balance
                     assertAllCollectorsBalances()));
         }

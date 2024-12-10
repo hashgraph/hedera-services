@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers.customfee;
 
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -78,27 +76,6 @@ public class ConsensusCustomFeeAssessor {
             }
 
             final var fixedFee = fee.fixedFeeOrThrow();
-
-            if (!op.acceptAllCustomFees()) {
-                // validate limits
-                boolean passed = false;
-                if (fixedFee.hasDenominatingTokenId()) {
-                    for (FixedFee feeLimit : op.maxCustomFees()) {
-                        if (feeLimit.hasDenominatingTokenId()
-                                && feeLimit.denominatingTokenId().equals(fixedFee.denominatingTokenId())
-                                && feeLimit.amount() <= fixedFee.amount()) {
-                            passed = true;
-                        }
-                    }
-                } else {
-                    for (FixedFee feeLimit : op.maxCustomFees()) {
-                        if (!feeLimit.hasDenominatingTokenId() && feeLimit.amount() <= fixedFee.amount()) {
-                            passed = true;
-                        }
-                    }
-                }
-                validateTrue(passed, ResponseCodeEnum.FAIL_FEE);
-            }
 
             if (fixedFee.hasDenominatingTokenId()) {
                 final var tokenId = fixedFee.denominatingTokenIdOrThrow();
