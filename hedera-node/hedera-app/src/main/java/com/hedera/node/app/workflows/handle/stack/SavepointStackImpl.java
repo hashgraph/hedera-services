@@ -37,6 +37,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -132,7 +133,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     public static SavepointStackImpl newChildStack(
             @NonNull final SavepointStackImpl root,
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
-            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final TransactionCategory category,
             @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final StreamMode streamMode) {
         return new SavepointStackImpl(root, reversingBehavior, category, customizer, streamMode);
@@ -177,7 +178,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     private SavepointStackImpl(
             @NonNull final SavepointStackImpl parent,
             @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
-            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final TransactionCategory category,
             @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final StreamMode streamMode) {
         requireNonNull(reversingBehavior);
@@ -272,6 +273,28 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             stack.pop().rollback();
         }
         setupFirstSavepoint(baseBuilder.category());
+    }
+
+    /**
+     * Returns true when this stack's base builder should be finalized with staking rewards. There are
+     * two qualifying cases:
+     * <ol>
+     *     <li>The stack is for top-level transaction (either a user transaction or a triggered execution
+     *     like a expiring scheduled transaction with {@code wait_for_expiry=true}); or,</li>
+     *     <li>The stack is for executing a scheduled transaction with {@code wait_for_expiry=false}, and
+     *     whose triggering parent was a user transaction.</li>
+     * </ol>
+     * The second category is solely for backward compatibility with mono-service, and should be considered
+     * for deprecation and removal.
+     */
+    public boolean permitsStakingRewards() {
+        return builderSink != null
+                ||
+                // For backward compatibility with mono-service, we permit paying staking rewards to
+                // scheduled transactions that are exactly children of user transactions
+                (baseBuilder.category() == SCHEDULED
+                        && state instanceof SavepointStackImpl parent
+                        && parent.txnCategory() == USER);
     }
 
     /**
@@ -397,11 +420,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     }
 
     /**
-     * Returns the {@link HandleContext.TransactionCategory} of the transaction that created this stack.
+     * Returns the {@link TransactionCategory} of the transaction that created this stack.
      *
      * @return the transaction category
      */
-    public HandleContext.TransactionCategory txnCategory() {
+    public TransactionCategory txnCategory() {
         return baseBuilder.category();
     }
 
@@ -524,7 +547,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         return new HandleOutput(blockRecordSource, recordSource);
     }
 
-    private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {
+    private void setupFirstSavepoint(@NonNull final TransactionCategory category) {
         if (state instanceof SavepointStackImpl parent) {
             stack.push(new FirstChildSavepoint(new WrappedState(state), parent.peek(), category));
         } else {
