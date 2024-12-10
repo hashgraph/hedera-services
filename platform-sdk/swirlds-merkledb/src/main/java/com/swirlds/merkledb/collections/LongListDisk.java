@@ -103,7 +103,7 @@ public class LongListDisk extends AbstractLongList<Long> {
             throw new UncheckedIOException(e);
         }
         freeChunks = new ConcurrentLinkedDeque<>();
-        fillBufferWithZeroes(initOrGetTransferBuffer());
+        fillBufferWithZeroes(initOrGetTransferBuffer(), memoryChunkSize);
     }
 
     /**
@@ -162,7 +162,7 @@ public class LongListDisk extends AbstractLongList<Long> {
             final ByteBuffer transferBuffer = initOrGetTransferBuffer();
             // we need to make sure that the chunk is written in full.
             // If a value is absent, the list element will have IMPERMISSIBLE_VALUE
-            fillBufferWithZeroes(transferBuffer);
+            fillBufferWithZeroes(transferBuffer, memoryChunkSize);
             transferBuffer.position(minValidIndexInChunk * Long.BYTES);
             MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
             transferBuffer.flip();
@@ -175,7 +175,7 @@ public class LongListDisk extends AbstractLongList<Long> {
                     tempFileCHannel, fileChannel, memoryChunkSize, (long) (totalNumberOfChunks - 2) * memoryChunkSize);
 
             // copy the last chunk
-            transferBuffer.clear();
+            transferBuffer.position(0).limit(memoryChunkSize);
             MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
             transferBuffer.flip();
             MerkleDbFileUtils.completelyWrite(
@@ -187,19 +187,20 @@ public class LongListDisk extends AbstractLongList<Long> {
         }
     }
 
-    private static void fillBufferWithZeroes(ByteBuffer transferBuffer) {
+    private static void fillBufferWithZeroes(ByteBuffer transferBuffer, int memoryChunkSize) {
         Arrays.fill(transferBuffer.array(), (byte) IMPERMISSIBLE_VALUE);
-        transferBuffer.clear();
+        transferBuffer.position(0).limit(memoryChunkSize);
     }
 
     private ByteBuffer initOrGetTransferBuffer() {
         ByteBuffer buffer = TRANSFER_BUFFER_THREAD_LOCAL.get();
-        if (buffer == null || buffer.capacity() != memoryChunkSize) {
+        if (buffer == null || buffer.capacity() < memoryChunkSize) {
+            // allocate/grow the buffer
             buffer = ByteBuffer.allocate(memoryChunkSize).order(ByteOrder.nativeOrder());
             TRANSFER_BUFFER_THREAD_LOCAL.set(buffer);
         } else {
-            // clean up the buffer
-            buffer.clear();
+            // limit the buffer to re-use
+            buffer.position(0).limit(memoryChunkSize);
         }
         return buffer;
     }
@@ -302,7 +303,7 @@ public class LongListDisk extends AbstractLongList<Long> {
                 MerkleDbFileUtils.completelyRead(currentFileChannel, transferBuffer, chunkOffset);
                 transferBuffer.position(currentPosition);
             } else {
-                fillBufferWithZeroes(transferBuffer);
+                fillBufferWithZeroes(transferBuffer, memoryChunkSize);
             }
 
             MerkleDbFileUtils.completelyWrite(fc, transferBuffer);
@@ -355,7 +356,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     @Override
     protected void closeChunk(@NonNull final Long chunk) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-        fillBufferWithZeroes(transferBuffer);
+        fillBufferWithZeroes(transferBuffer, memoryChunkSize);
         try {
             currentFileChannel.write(transferBuffer, chunk);
         } catch (IOException e) {
@@ -369,7 +370,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     protected void partialChunkCleanup(
             @NonNull final Long chunkOffset, final boolean leftSide, final long entriesToCleanUp) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-        fillBufferWithZeroes(transferBuffer);
+        fillBufferWithZeroes(transferBuffer, memoryChunkSize);
         transferBuffer.limit(toIntExact(entriesToCleanUp * Long.BYTES));
         if (leftSide) {
             try {
