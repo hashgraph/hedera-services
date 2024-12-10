@@ -1611,4 +1611,16 @@ enum ResponseCodeEnum {
      * given an explicit expiration time.
      */
     MISSING_EXPIRY_TIME = 372;
+
+    /**
+     * A contract operation attempted to schedule another transaction after it
+     * had already scheduled a recursive contract call.
+     */
+    NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION = 373;
+
+    /**
+     * A contract can schedule recursive calls a finite number of times (this is
+     * approximately four million times with typical network configuration.)
+     */
+    RECURSIVE_SCHEDULING_LIMIT_REACHED = 374;
 }

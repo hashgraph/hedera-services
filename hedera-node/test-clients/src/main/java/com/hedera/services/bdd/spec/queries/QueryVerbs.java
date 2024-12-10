@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal.fromDetails;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -99,6 +100,11 @@ public class QueryVerbs {
 
     public static HapiGetTxnRecord getTxnRecord(final TransactionID txnId) {
         return new HapiGetTxnRecord(txnId);
+    }
+
+    public static HapiGetTxnRecord getTxnRecord(final com.hedera.hapi.node.base.TransactionID txnId) {
+        return new HapiGetTxnRecord(
+                pbjToProto(txnId, com.hedera.hapi.node.base.TransactionID.class, TransactionID.class));
     }
 
     public static HapiGetContractInfo getContractInfo(final String contract) {

@@ -31,10 +31,12 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -276,6 +278,13 @@ public class AddressBookTestBase {
                 .weight(0)
                 .adminKey(key)
                 .build();
+    }
+
+    protected Key mockPayerLookup(Key key, AccountID contextPayerId, ReadableAccountStore accountStore) {
+        final var account = mock(Account.class);
+        given(account.key()).willReturn(key);
+        given(accountStore.getAccountById(contextPayerId)).willReturn(account);
+        return key;
     }
 
     public static List<X509Certificate> generateX509Certificates(final int n) {
