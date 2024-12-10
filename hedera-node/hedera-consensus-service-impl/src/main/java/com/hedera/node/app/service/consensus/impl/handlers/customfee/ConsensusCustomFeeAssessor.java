@@ -62,7 +62,7 @@ public class ConsensusCustomFeeAssessor {
         final var tokenTransfers = new ArrayList<TokenTransferList>();
         List<AccountAmount> hbarTransfers = new ArrayList<>();
         // we need to count the number of balance adjustments,
-        // and if needed to split custom fee transfers in to two separate dispatches
+        // and if needed to split custom fee transfers in to separate dispatches
         // todo: add explanation for maxTransfers
         final var maxTransfers = ledgerConfig.transfersMaxLen() / 3;
         var transferCounts = 0;
@@ -83,12 +83,8 @@ public class ConsensusCustomFeeAssessor {
                 if (context.payer().equals(tokenTreasury)) {
                     continue;
                 }
-
-                // todo after removing allowances - check limits
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
-
             } else {
-                // todo after removing allowances - check limits
                 hbarTransfers = mergeTransfers(
                         hbarTransfers, buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
             }
