@@ -90,7 +90,12 @@ public class PcesFileChannelWriter implements PcesFileWriter {
 
     @Override
     public void flush() throws IOException {
-        // benchmarks show that this has horrible performance
+        // nothing to do here
+    }
+
+    @Override
+    public void sync() throws IOException {
+        // benchmarks show that this has horrible performance for the channel writer
         channel.force(false);
     }
 
