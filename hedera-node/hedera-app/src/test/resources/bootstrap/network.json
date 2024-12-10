@@ -27,7 +27,8 @@
       "weight": "50",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      }
+      },
+      "tssEncryptionKey": "ASM="
     }
   }, {
     "rosterEntry": {
@@ -59,7 +60,8 @@
       "weight": "100",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      }
+      },
+      "tssEncryptionKey": "ASM="
     }
   }, {
     "rosterEntry": {
@@ -91,7 +93,8 @@
       "weight": "150",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      }
+      },
+      "tssEncryptionKey": "ASM="
     }
   }, {
     "rosterEntry": {
@@ -123,7 +126,8 @@
       "weight": "200",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      }
+      },
+      "tssEncryptionKey": "ASM="
     }
   }],
   "tssMessages": [{

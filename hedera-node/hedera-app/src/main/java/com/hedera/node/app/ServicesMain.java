@@ -234,11 +234,12 @@ public class ServicesMain implements SwirldMain {
                 () -> {
                     isGenesis.set(true);
                     final var genesisState = hedera.newMerkleStateRoot();
+                    final var genesisNetwork = DiskStartupNetworks.fromLegacyAddressBook(diskAddressBook);
                     hedera.initializeStatesApi(
                             (MerkleStateRoot) genesisState,
                             metrics,
                             InitTrigger.GENESIS,
-                            diskAddressBook,
+                            genesisNetwork,
                             configuration);
                     return genesisState;
                 },

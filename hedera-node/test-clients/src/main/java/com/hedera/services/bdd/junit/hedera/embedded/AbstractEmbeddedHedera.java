@@ -20,6 +20,7 @@ import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
+import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -40,6 +41,7 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -50,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -107,6 +110,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final FakeState state = new FakeState();
     protected final AccountID defaultNodeAccountId;
     protected final AddressBook addressBook;
+    protected final Network network;
     protected final Roster roster;
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
@@ -119,11 +123,18 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
         addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
-        roster = buildRoster(addressBook);
-        nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .collect(toMap(AbstractEmbeddedHedera::accountIdOf, Address::getNodeId));
-        accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
+        network = node.startupNetwork().orElseThrow();
+        roster = rosterFrom(network);
+        nodeIds = network.nodeMetadata().stream()
+                .map(metadata -> Pair.of(
+                        fromPbj(metadata.nodeOrThrow().accountIdOrThrow()),
+                        NodeId.of(metadata.rosterEntryOrThrow().nodeId())))
+                .collect(toMap(Pair::left, Pair::right));
+        accountIds = network.nodeMetadata().stream()
+                .map(metadata -> Pair.of(
+                        NodeId.of(metadata.rosterEntryOrThrow().nodeId()),
+                        metadata.nodeOrThrow().accountIdOrThrow()))
+                .collect(toMap(Pair::left, Pair::right));
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
         hedera = new Hedera(
@@ -147,8 +158,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         final Configuration configuration =
                 ConfigurationBuilder.create().autoDiscoverExtensions().build();
 
-        hedera.initializeStatesApi(
-                state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
+        hedera.initializeStatesApi(state, fakePlatform().getContext().getMetrics(), GENESIS, network, configuration);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled

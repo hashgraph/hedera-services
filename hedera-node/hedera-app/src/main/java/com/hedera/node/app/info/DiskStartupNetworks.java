@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.info;
 
+import static com.hedera.hapi.util.HapiUtils.parseAccount;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -37,9 +41,11 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,11 +68,10 @@ import org.apache.logging.log4j.Logger;
 public class DiskStartupNetworks implements StartupNetworks {
     private static final Logger log = LogManager.getLogger(DiskStartupNetworks.class);
 
-    private static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
-
     public static final String ARCHIVE = ".archive";
     public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
     public static final String OVERRIDE_NETWORK_JSON = "override-network.json";
+    public static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
 
     private final long selfNodeId;
     private final ConfigProvider configProvider;
@@ -198,6 +203,42 @@ public class DiskStartupNetworks implements StartupNetworks {
                 log.warn("Failed to write network info", e);
             }
         });
+    }
+
+    /**
+     * Converts a {@link AddressBook} to a {@link Network}. The resulting network will have no TSS
+     * keys of any kind.
+     *
+     * @param addressBook the address book to convert
+     * @return the converted network
+     */
+    public static @NonNull Network fromLegacyAddressBook(@NonNull final AddressBook addressBook) {
+        final var roster = buildRoster(addressBook);
+        return Network.newBuilder()
+                .nodeMetadata(roster.rosterEntries().stream()
+                        .map(rosterEntry -> {
+                            final var nodeId = rosterEntry.nodeId();
+                            final var nodeAccountId = parseAccount(
+                                    addressBook.getAddress(NodeId.of(nodeId)).getMemo());
+                            return NodeMetadata.newBuilder()
+                                    .rosterEntry(rosterEntry)
+                                    .node(Node.newBuilder()
+                                            .nodeId(nodeId)
+                                            .accountId(nodeAccountId)
+                                            .description("node" + (nodeId + 1))
+                                            .gossipEndpoint(rosterEntry.gossipEndpoint())
+                                            .serviceEndpoint(List.of())
+                                            .gossipCaCertificate(rosterEntry.gossipCaCertificate())
+                                            .grpcCertificateHash(Bytes.EMPTY)
+                                            .weight(rosterEntry.weight())
+                                            .deleted(false)
+                                            .adminKey(Key.DEFAULT)
+                                            .build())
+                                    .tssEncryptionKey(Bytes.EMPTY)
+                                    .build();
+                        })
+                        .toList())
+                .build();
     }
 
     /**
