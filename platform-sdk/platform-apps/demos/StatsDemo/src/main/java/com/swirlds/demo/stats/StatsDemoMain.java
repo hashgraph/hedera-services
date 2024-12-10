@@ -96,7 +96,6 @@ public class StatsDemoMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(StatsDemoState.class, () -> {
                 StatsDemoState statsDemoState = new StatsDemoState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initStates(statsDemoState);
                 return statsDemoState;
             }));
             registerMerkleStateRootClassIds();
