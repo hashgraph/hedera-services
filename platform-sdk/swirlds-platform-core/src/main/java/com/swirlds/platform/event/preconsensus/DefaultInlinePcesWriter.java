@@ -17,19 +17,19 @@
 package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class DefaultInlinePcesWriter implements InlinePcesWriter {
-    private static final Logger logger = LogManager.getLogger(DefaultInlinePcesWriter.class);
-
     private final CommonPcesWriter commonPcesWriter;
+    private final NodeId selfId;
+    private final FileSyncOption fileSyncOption;
+
     /**
      * Constructor
      *
@@ -37,10 +37,17 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
     public DefaultInlinePcesWriter(
-            @NonNull final PlatformContext platformContext, @NonNull final PcesFileManager fileManager) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final PcesFileManager fileManager,
+            @NonNull final NodeId selfId) {
         Objects.requireNonNull(platformContext, "platformContext is required");
         Objects.requireNonNull(fileManager, "fileManager is required");
-        commonPcesWriter = new CommonPcesWriter(platformContext, fileManager, true);
+        commonPcesWriter = new CommonPcesWriter(platformContext, fileManager, false);
+        this.selfId = Objects.requireNonNull(selfId, "selfId is required");
+        this.fileSyncOption = platformContext
+                .getConfiguration()
+                .getConfigData(PcesConfig.class)
+                .inlinePcesSyncOption();
     }
 
     @Override
@@ -67,6 +74,13 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
         try {
             commonPcesWriter.prepareOutputStream(event);
             commonPcesWriter.getCurrentMutableFile().writeEvent(event);
+
+            if (fileSyncOption == FileSyncOption.EVERY_EVENT
+                    || (fileSyncOption == FileSyncOption.EVERY_SELF_EVENT
+                            && event.getCreatorId().equals(selfId))) {
+                commonPcesWriter.getCurrentMutableFile().sync();
+            }
+
             return event;
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
