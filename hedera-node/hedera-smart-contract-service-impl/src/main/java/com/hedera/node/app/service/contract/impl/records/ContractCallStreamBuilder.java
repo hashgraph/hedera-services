@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -124,4 +125,11 @@ public interface ContractCallStreamBuilder extends ContractOperationStreamBuilde
      * @return the number of auto-associations created
      */
     int getNumAutoAssociations();
+
+    /**
+     * Returns the schedule ID.
+     *
+     * @return the schedule ID
+     */
+    ScheduleID scheduleID();
 }
