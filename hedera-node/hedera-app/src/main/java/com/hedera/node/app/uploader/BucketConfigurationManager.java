@@ -81,6 +81,7 @@ public class BucketConfigurationManager {
                             bucketCredentials);
                 })
                 .filter(Objects::nonNull)
+                .filter(CompleteBucketConfig::enabled)
                 .toList();
     }
 }
