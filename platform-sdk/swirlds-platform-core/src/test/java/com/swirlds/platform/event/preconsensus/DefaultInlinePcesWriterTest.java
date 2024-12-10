@@ -86,7 +86,7 @@ class DefaultInlinePcesWriterTest {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final DefaultInlinePcesWriter writer = new DefaultInlinePcesWriter(platformContext, fileManager);
+        final DefaultInlinePcesWriter writer = new DefaultInlinePcesWriter(platformContext, fileManager, selfId);
 
         writer.beginStreamingNewEvents();
         for (PlatformEvent event : events) {
@@ -108,7 +108,7 @@ class DefaultInlinePcesWriterTest {
         final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
         final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-        final DefaultInlinePcesWriter writer = new DefaultInlinePcesWriter(platformContext, fileManager);
+        final DefaultInlinePcesWriter writer = new DefaultInlinePcesWriter(platformContext, fileManager, selfId);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         // We will add this event at the very end, it should be ancient by then

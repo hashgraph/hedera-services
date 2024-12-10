@@ -94,13 +94,13 @@ public final class TeacherPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final ReconnectConfig reconnectConfig,
             final VirtualRootNode<K, V> root,
             final VirtualStateAccessor state,
-            final VirtualPipeline pipeline) {
+            final VirtualPipeline<K, V> pipeline) {
         // There is no distinction between originalState and reconnectState in this implementation
         super(root, state, state);
         this.reconnectConfig = reconnectConfig;
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
-                    records = pipeline.detachCopy(root);
+                    records = pipeline.pausePipelineAndRun("copy", root::detach);
                     ready.countDown();
                 })
                 .setComponent("virtualmap")
