@@ -38,14 +38,7 @@ import java.util.List;
 @ConfigData("blockStream")
 public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
-        // Bucket configurations with default AWS and GCP public buckets
-//        @ConfigProperty(defaultValue = """
-//        [
-//                "bucketName": "hedera-mainnet-blocks"
-//        ]
-//        """)
-//        @NetworkProperty List<BucketNetworkConfig> buckets,
-        @ConfigProperty(defaultValue = "[FILE, BUCKETS]") @NodeProperty List<BlockStreamWriterMode> writerMode,
+        @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "/opt/hgcapp/blockStreams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int serializationBatchSize,
