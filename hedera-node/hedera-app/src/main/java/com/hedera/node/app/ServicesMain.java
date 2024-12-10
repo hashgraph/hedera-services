@@ -216,7 +216,7 @@ public class ServicesMain implements SwirldMain {
         setupGlobalMetrics(configuration);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
 
-        hedera = newHedera(selfId);
+        hedera = newHedera(selfId, metrics);
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
@@ -346,6 +346,32 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
+     * Creates a canonical {@link Hedera} instance for the given node id and metrics.
+     *
+     * @param selfNodeId the node id
+     * @param metrics  the metrics
+     * @return the {@link Hedera} instance
+     */
+    public static Hedera newHedera(@NonNull final NodeId selfNodeId, @NonNull final Metrics metrics) {
+        requireNonNull(selfNodeId);
+        requireNonNull(metrics);
+        return new Hedera(
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
+                InstantSource.system(),
+                appContext -> new TssBaseServiceImpl(
+                        appContext,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool(),
+                        new TssLibraryImpl(appContext),
+                        ForkJoinPool.commonPool(),
+                        metrics),
+                DiskStartupNetworks::new,
+                selfNodeId);
+    }
+
+    /**
      * Build the configuration for this node.
      *
      * @return the configuration
@@ -425,23 +451,6 @@ public class ServicesMain implements SwirldMain {
 
     private static @NonNull Hedera hederaOrThrow() {
         return requireNonNull(hedera);
-    }
-
-    private static Hedera newHedera(@NonNull final NodeId selfNodeId) {
-        return new Hedera(
-                ConstructableRegistry.getInstance(),
-                ServicesRegistryImpl::new,
-                new OrderedServiceMigrator(),
-                InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
-                        appContext,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new TssLibraryImpl(appContext),
-                        ForkJoinPool.commonPool(),
-                        metrics),
-                DiskStartupNetworks::new,
-                selfNodeId);
     }
 
     @VisibleForTesting
