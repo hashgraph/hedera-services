@@ -1627,7 +1627,6 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
         public static final int UNUSED_ROSTERS = 1;
         public static final int UNUSED_ROSTER_STATE = 2;
 
-
         public static final int CONFIG = 3;
         /**
          * last sequence by each member for consensus events
