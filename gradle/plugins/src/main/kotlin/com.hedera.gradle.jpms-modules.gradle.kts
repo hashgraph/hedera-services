@@ -164,7 +164,7 @@ extraJavaModuleInfo {
     }
     module("com.esaulpaugh:headlong", "headlong")
     module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual") {
-        patchRealModule()
+        patchRealModule() // Inconsistent version on annotation processor classpath
         exportAllPackages()
     }
     module("org.connid:framework", "org.connid.framework")
