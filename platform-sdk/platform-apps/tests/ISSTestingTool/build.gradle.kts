@@ -19,3 +19,9 @@ plugins { id("com.hedera.gradle.application") }
 application.mainClass.set("com.swirlds.demo.iss.ISSTestingToolMain")
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
+
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+}
