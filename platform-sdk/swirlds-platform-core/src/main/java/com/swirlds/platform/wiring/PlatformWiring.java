@@ -57,7 +57,6 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.InlinePcesWriter;
-import com.swirlds.platform.event.preconsensus.NoOpInlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -800,7 +799,7 @@ public class PlatformWiring {
         stateSignerWiring.bind(builder::buildStateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         if (inlinePces) {
-            pcesInlineWriterWiring.bind(new NoOpInlinePcesWriter());
+            pcesInlineWriterWiring.bind(builder::buildInlinePcesWriter);
         } else {
             roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
             pcesSequencerWiring.bind(builder::buildPcesSequencer);
