@@ -85,6 +85,12 @@ jvmDependencyConflicts.patch {
     }
     module("junit:junit") { removeDependency("org.hamcrest:hamcrest-core") }
     module("org.hyperledger.besu:secp256k1") { addApiDependency("net.java.dev.jna:jna") }
+    module("com.squareup.okhttp3:okhttp") {
+        // Depend directly on 'okio-jvm' as 'okio' just contain Kotlin Mulitplatform metadata that
+        // we do not need and that is not a Java Module
+        removeDependency("com.squareup.okio:okio")
+        addApiDependency("com.squareup.okio:okio-jvm")
+    }
 }
 
 // Fix or enhance the 'module-info.class' of third-party Modules. This is about the
@@ -107,11 +113,16 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("io.minio:minio", "io.minio") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-        patchRealModule()
-    }
+
+    module(
+        "com.carrotsearch.thirdparty:simple-xml-safe",
+        "com.carrotsearch.thirdparty.simple.xml.safe"
+    )
+    module("com.squareup.okhttp3:okhttp", "okhttp3")
+    module("com.squareup.okio:okio-jvm", "okio")
+    module("io.minio:minio", "io.minio")
+    module("org.xerial.snappy:snappy-java", "org.xerial.snappy.java")
+
     module("io.grpc:grpc-util", "io.grpc.util")
     module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
     module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
@@ -145,11 +156,10 @@ extraJavaModuleInfo {
     module("com.google.dagger:dagger", "dagger")
     module("io.perfmark:perfmark-api", "io.perfmark")
     module("javax.inject:javax.inject", "javax.inject")
-    module("commons-codec:commons-codec", "org.apache.commons.codec")
     module("com.esaulpaugh:headlong", "headlong")
-    module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
     module("org.checkerframework:checker-qual", "org.checkerframework.checker.qual") {
-        patchRealModule()
+        patchRealModule() // Inconsistent version on annotation processor classpath
+        exportAllPackages()
     }
     module("org.connid:framework", "org.connid.framework")
     module("org.connid:framework-internal", "org.connid.framework.internal") {

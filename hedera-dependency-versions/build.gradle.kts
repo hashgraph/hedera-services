@@ -28,6 +28,9 @@ dependencies {
 }
 
 dependencies.constraints {
+    api("com.squareup.okio:okio-jvm:3.9.1") {
+        because("okio")
+    }
     api("io.helidon.common:helidon-common:4.1.1") {
         because("io.helidon.common")
     }
