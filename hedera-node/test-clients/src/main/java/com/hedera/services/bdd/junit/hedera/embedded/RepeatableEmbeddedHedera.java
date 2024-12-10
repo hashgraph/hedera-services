@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.TSS_SHARE_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
@@ -48,9 +49,17 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Instant FIXED_POINT = Instant.parse("2024-06-24T12:05:41.487328Z");
-    private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
+
+    // Using a default round duration of one second makes it easier to structure tests with
+    // time-based events like transactions scheduled with wait_for_expiry=true
+    public static final Duration DEFAULT_ROUND_DURATION = Duration.ofSeconds(1);
+
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
+
+    // The amount of consensus time that will be simulated to elapse before the next transaction---note
+    // that in repeatable mode, every transaction gets its own event, and each event gets its own round
+    private Duration roundDuration = DEFAULT_ROUND_DURATION;
 
     public RepeatableEmbeddedHedera(@NonNull final EmbeddedNode node) {
         super(node);
@@ -120,16 +129,31 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         return platform.lastRoundNo();
     }
 
-    private void handleNextRound(boolean skipsSignatureTxn) {
+    /**
+     * Sets the duration of each simulated consensus round, and hence the consensus time that will
+     * elapse before the next transaction is handled.
+     * @param roundDuration the duration of each simulated round
+     */
+    public void setRoundDuration(@NonNull final Duration roundDuration) {
+        this.roundDuration = requireNonNull(roundDuration);
+    }
+
+    /**
+     * Executes the transaction in the last-created event within its own round, unless that transaction
+     * is a {@link HederaFunctionality#TSS_SHARE_SIGNATURE} transaction and we are instructed to skip
+     * signatures.
+     * @param skipsSignatureTxn whether to skip handling the last-created event if it is a signature txn
+     */
+    private void handleNextRound(final boolean skipsSignatureTxn) {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
-        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == HederaFunctionality.TSS_SHARE_SIGNATURE) {
+        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == TSS_SHARE_SIGNATURE) {
             return;
         }
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
         hedera.handleWorkflow().handleRound(state, round);
         hedera.onSealConsensusRound(round, state);
-        notifyBlockStreamManagerIfEnabled(round.getRoundNum());
+        notifyStateHashed(round.getRoundNum());
     }
 
     private class SynchronousFakePlatform extends AbstractFakePlatform implements Platform {
@@ -153,7 +177,7 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         }
 
         private Round nextConsensusRound() {
-            time.tick(SIMULATED_ROUND_DURATION);
+            time.tick(roundDuration);
             final var firstRoundTime = time.now();
             final var consensusEvents = List.<ConsensusEvent>of(new FakeConsensusEvent(
                     requireNonNull(lastCreatedEvent),

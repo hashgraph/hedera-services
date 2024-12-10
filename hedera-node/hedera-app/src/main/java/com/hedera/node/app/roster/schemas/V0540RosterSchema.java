@@ -20,7 +20,6 @@ import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -28,6 +27,7 @@ import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -54,11 +54,13 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
     public static final String ROSTER_KEY = "ROSTERS";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
 
-    private static final long MAX_ROSTERS = 65_536L;
-
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
+    /**
+     * The delegate schema that defines the base roster schema.
+     */
+    private final V0540RosterBaseSchema baseSchema = new V0540RosterBaseSchema();
     /**
      * The test to use to determine if a candidate roster may be adopted at an upgrade boundary.
      */
@@ -86,9 +88,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
 
     @Override
     public @NonNull Set<StateDefinition> statesToCreate() {
-        return Set.of(
-                StateDefinition.singleton(ROSTER_STATES_KEY, RosterState.PROTOBUF),
-                StateDefinition.onDisk(ROSTER_KEY, ProtoBytes.PROTOBUF, Roster.PROTOBUF, MAX_ROSTERS));
+        return baseSchema.statesToCreate();
     }
 
     @Override

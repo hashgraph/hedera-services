@@ -82,6 +82,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
@@ -287,7 +288,7 @@ public class ServicesMain implements SwirldMain {
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {
             rosterHistory =
-                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState());
+                    RosterUtils.buildRosterHistory((State) initialState.get().getState());
         }
 
         // Follow the Inversion of Control pattern by injecting all needed dependencies into the PlatformBuilder.

@@ -71,28 +71,28 @@ public class ContractMetricsTest {
 
         assertThat(subject.getAllCounterNames())
                 .containsExactlyInAnyOrder(
-                        "SmartContractService:Rejected-ethereumTxDueToIntrinsicGas_total",
-                        "SmartContractService:Rejected-ethereumTx_total",
-                        "SmartContractService:Rejected-contractCallTxDueToIntrinsicGas_total",
-                        "SmartContractService:Rejected-contractCallTx_total",
-                        "SmartContractService:Rejected-contractCreateTxDueToIntrinsicGas_total",
-                        "SmartContractService:Rejected-contractCreateTx_total",
-                        "SmartContractService:Rejected-ethType3BlobTransaction_total");
+                        "SmartContractService:Rejected_ethereumTxDueToIntrinsicGas_total",
+                        "SmartContractService:Rejected_ethereumTx_total",
+                        "SmartContractService:Rejected_contractCallTxDueToIntrinsicGas_total",
+                        "SmartContractService:Rejected_contractCallTx_total",
+                        "SmartContractService:Rejected_contractCreateTxDueToIntrinsicGas_total",
+                        "SmartContractService:Rejected_contractCreateTx_total",
+                        "SmartContractService:Rejected_ethType3BlobTransaction_total");
         assertThat(subject.getAllCounters())
                 .containsExactlyInAnyOrderEntriesOf(Map.of(
-                        "SmartContractService:Rejected-ethereumTxDueToIntrinsicGas_total",
+                        "SmartContractService:Rejected_ethereumTxDueToIntrinsicGas_total",
                         14L,
-                        "SmartContractService:Rejected-ethereumTx_total",
+                        "SmartContractService:Rejected_ethereumTx_total",
                         4L,
-                        "SmartContractService:Rejected-contractCallTxDueToIntrinsicGas_total",
+                        "SmartContractService:Rejected_contractCallTxDueToIntrinsicGas_total",
                         10L,
-                        "SmartContractService:Rejected-contractCallTx_total",
+                        "SmartContractService:Rejected_contractCallTx_total",
                         1L,
-                        "SmartContractService:Rejected-contractCreateTxDueToIntrinsicGas_total",
+                        "SmartContractService:Rejected_contractCreateTxDueToIntrinsicGas_total",
                         12L,
-                        "SmartContractService:Rejected-contractCreateTx_total",
+                        "SmartContractService:Rejected_contractCreateTx_total",
                         2L,
-                        "SmartContractService:Rejected-ethType3BlobTransaction_total",
+                        "SmartContractService:Rejected_ethType3BlobTransaction_total",
                         20L));
 
         // And there is no counter for this functionality

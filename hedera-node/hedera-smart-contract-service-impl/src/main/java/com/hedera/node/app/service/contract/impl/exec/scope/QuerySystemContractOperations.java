@@ -29,6 +29,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,7 +65,8 @@ public class QuerySystemContractOperations implements SystemContractOperations {
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final Class<T> streamBuilderType,
-            @NonNull final Set<Key> authorizingKeys) {
+            @NonNull final Set<Key> authorizingKeys,
+            @NonNull final UsePresetTxnId usePresetTxnId) {
         throw new UnsupportedOperationException("Cannot dispatch synthetic transaction");
     }
 

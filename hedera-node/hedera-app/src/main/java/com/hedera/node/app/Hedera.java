@@ -598,11 +598,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
             initializeStatesApi(
                     state, metrics, trigger, null, platform.getContext().getConfiguration());
-
-            contractServiceImpl.registerMetrics();
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
+        contractServiceImpl.registerMetrics();
     }
 
     /**
