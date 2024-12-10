@@ -16,18 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.scheduledcreate;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall.FIXED_GAS_COST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_SCHEDULE_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONTRACT_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -90,8 +92,7 @@ class ScheduledCreateCallTest extends CallTestBase {
         final var result = subject.execute(frame).fullResult();
 
         // then
-        final var expectedOutput = gasOnly(
-                        revertResult(MISSING_TOKEN_SYMBOL, FIXED_GAS_COST), MISSING_TOKEN_SYMBOL, false)
+        final var expectedOutput = gasOnly(revertResult(MISSING_TOKEN_SYMBOL, 100L), MISSING_TOKEN_SYMBOL, false)
                 .fullResult();
         assertEquals(State.REVERT, result.result().getState());
         assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
@@ -117,8 +118,7 @@ class ScheduledCreateCallTest extends CallTestBase {
         final var result = subject.execute(frame).fullResult();
 
         // then
-        final var expectedOutput = gasOnly(
-                        revertResult(MISSING_TOKEN_NAME, FIXED_GAS_COST), MISSING_TOKEN_SYMBOL, false)
+        final var expectedOutput = gasOnly(revertResult(MISSING_TOKEN_NAME, 100L), MISSING_TOKEN_SYMBOL, false)
                 .fullResult();
         assertEquals(State.REVERT, result.result().getState());
         assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
@@ -144,8 +144,7 @@ class ScheduledCreateCallTest extends CallTestBase {
         final var result = subject.execute(frame).fullResult();
 
         // then
-        final var expectedOutput = gasOnly(
-                        revertResult(INVALID_ACCOUNT_ID, FIXED_GAS_COST), MISSING_TOKEN_SYMBOL, false)
+        final var expectedOutput = gasOnly(revertResult(INVALID_ACCOUNT_ID, 100L), MISSING_TOKEN_SYMBOL, false)
                 .fullResult();
         assertEquals(State.REVERT, result.result().getState());
         assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
@@ -179,8 +178,7 @@ class ScheduledCreateCallTest extends CallTestBase {
         // then
         final var encodedRespose = RC_AND_ADDRESS_ENCODER.encodeElements(
                 (long) SUCCESS.protoOrdinal(), headlongAddressOf(CALLED_SCHEDULE_ID));
-        final var expectedOutput = gasPlus(
-                        successResult(encodedRespose, FIXED_GAS_COST + 100L, recordBuilder), SUCCESS, false, 1100L)
+        final var expectedOutput = gasPlus(successResult(encodedRespose, 100L, recordBuilder), SUCCESS, false, 1100L)
                 .fullResult();
         assertEquals(State.COMPLETED_SUCCESS, result.result().getState());
         assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
