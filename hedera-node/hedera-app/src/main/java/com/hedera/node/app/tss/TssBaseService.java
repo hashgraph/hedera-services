@@ -21,14 +21,13 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
@@ -184,14 +183,14 @@ public interface TssBaseService extends Service {
     /**
      * Manages and does work based on the TSS status.
      *
-     * @param readableRosterStore   the network state
-     * @param tssStore
-     * @param isStakePeriodBoundary
-     * @param consensusNow
+     * @param state   the network state
+     * @param isStakePeriodBoundary whether the current consensus round is a stake period boundary
+     * @param consensusNow         the current consensus time
+     * @param storeMetricsService the store metrics service
      */
     void manageTssStatus(
-            final ReadableRosterStore readableRosterStore,
-            final WritableTssStore tssStore,
+            final State state,
             final boolean isStakePeriodBoundary,
-            final Instant consensusNow);
+            final Instant consensusNow,
+            final StoreMetricsService storeMetricsService);
 }

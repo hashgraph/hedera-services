@@ -34,6 +34,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -120,7 +121,8 @@ public class DispatchForResponseCodeHssCall extends AbstractCall {
                         verificationStrategy,
                         senderId,
                         ContractCallStreamBuilder.class,
-                        authorizingKeys);
+                        authorizingKeys,
+                        DispatchOptions.UsePresetTxnId.NO);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();

@@ -42,8 +42,10 @@ import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
@@ -390,6 +392,18 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
+    public void manageTssStatus(
+            final State state,
+            final boolean isStakePeriodBoundary,
+            final Instant consensusNow,
+            final StoreMetricsService storeMetricsService) {
+        final var storeFactory = new WritableStoreFactory(
+                state, TssBaseService.NAME, appContext.configSupplier().get(), storeMetricsService);
+        final var tssStore = storeFactory.getStore(WritableTssStore.class);
+        final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
+        manageTssStatus(rosterStore, tssStore, isStakePeriodBoundary, consensusNow);
+    }
+
     public void manageTssStatus(
             final ReadableRosterStore readableRosterStore,
             final WritableTssStore tssStore,
