@@ -60,6 +60,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -295,8 +296,11 @@ public class StartupStateUtilsTests {
         final Path savedStateDirectory = signedStateFilePath
                 .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
-
-        assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
+        int files_count = 0;
+        try (final Stream<Path> list = Files.list(savedStateDirectory)) {
+            files_count = (int) list.count();
+        }
+        assertEquals(5 - invalidStateCount, files_count);
         assertEquals(invalidStateCount, recycleCount.get());
     }
 

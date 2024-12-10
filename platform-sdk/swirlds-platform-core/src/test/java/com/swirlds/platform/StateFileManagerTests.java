@@ -76,6 +76,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
 class StateFileManagerTests {
 
     private static final NodeId SELF_ID = NodeId.of(1234);
@@ -453,9 +453,13 @@ class StateFileManagerTests {
             }
 
             // Verify that old states are properly deleted
+            int files_count = 0;
+            try (final Stream<Path> list = Files.list(statesDirectory)) {
+                files_count = (int) list.count();
+            }
             assertEquals(
                     Math.min(statesOnDisk, round),
-                    (int) Files.list(statesDirectory).count(),
+                    files_count,
                     "unexpected number of states on disk after saving round " + round);
 
             // ISS/fatal state should still be in place
