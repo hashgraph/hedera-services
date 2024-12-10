@@ -403,7 +403,7 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("Delete custom fee collector contract")
+        @DisplayName("Delete custom fee collector")
         // TOPIC_FEE_028
         final Stream<DynamicTest> deleteCollector() {
             final var collector = "collector";
