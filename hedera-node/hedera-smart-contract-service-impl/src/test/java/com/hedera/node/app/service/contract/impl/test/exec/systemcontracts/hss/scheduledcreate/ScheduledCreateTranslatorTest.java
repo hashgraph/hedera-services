@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -153,7 +154,8 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
         // given
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.senderId()).willReturn(SENDER_ID);
-        given(attempt.isSelector(SCHEDULED_CREATE_FUNGIBLE)).willReturn(true);
+        lenient().when(attempt.isSelector(SCHEDULED_CREATE_FUNGIBLE)).thenReturn(true);
+        lenient().when(attempt.isSelector(SCHEDULED_CREATE_NON_FUNGIBLE)).thenReturn(false);
         given(decoder.decodeScheduledCreateFT(any())).willReturn(transactionBody);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
@@ -173,8 +175,8 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
         // given
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.senderId()).willReturn(SENDER_ID);
-        given(attempt.isSelector(SCHEDULED_CREATE_NON_FUNGIBLE)).willReturn(true);
-        given(attempt.isSelector(SCHEDULED_CREATE_FUNGIBLE)).willReturn(false);
+        lenient().when(attempt.isSelector(SCHEDULED_CREATE_NON_FUNGIBLE)).thenReturn(true);
+        lenient().when(attempt.isSelector(SCHEDULED_CREATE_FUNGIBLE)).thenReturn(false);
         given(decoder.decodeScheduledCreateNFT(any())).willReturn(transactionBody);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
