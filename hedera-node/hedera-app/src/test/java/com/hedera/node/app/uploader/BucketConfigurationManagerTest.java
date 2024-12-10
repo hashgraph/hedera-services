@@ -52,14 +52,16 @@ public class BucketConfigurationManagerTest {
                 "provider": "AWS",
                 "endpoint": "https://s3.amazonaws.com",
                 "region": "us-east-1",
-                "bucketName": "hedera-mainnet-blocks"
+                "bucketName": "hedera-mainnet-blocks",
+                "enabled": "true"
             },
             {
                 "name": "default-gcp-bucket",
                 "provider": "GCP",
                 "endpoint": "https://storage.googleapis.com",
                 "region": "",
-                "bucketName": "hedera-mainnet-blocks"
+                "bucketName": "hedera-mainnet-blocks",
+                "enabled": "true"
             }
         ]
         """;
@@ -119,7 +121,8 @@ public class BucketConfigurationManagerTest {
                 "provider": "AWS",
                 "endpoint": "https://s3.amazonaws.com",
                 "region": "",
-                "bucketName": "hedera-mainnet-blocks"
+                "bucketName": "hedera-mainnet-blocks",
+                "enabled": "true"
             }
         ]
         """;
@@ -147,6 +150,7 @@ public class BucketConfigurationManagerTest {
                             bucket.endpoint(),
                             bucket.region(),
                             bucket.bucketName(),
+                            bucket.enabled(),
                             bucketCredentials);
                 })
                 .toList();

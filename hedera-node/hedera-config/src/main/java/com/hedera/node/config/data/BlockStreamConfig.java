@@ -64,14 +64,16 @@ public record BlockStreamConfig(
                 "provider": "AWS",
                 "endpoint": "https://s3.amazonaws.com",
                 "region": "us-east-1",
-                "bucketName": "hedera-mainnet-blocks"
+                "bucketName": "hedera-mainnet-blocks",
+                "enabled": "true"
             },
             {
                 "name": "default-gcp-bucket",
                 "provider": "GCP",
                 "endpoint": "https://storage.googleapis.com",
                 "region": "",
-                "bucketName": "hedera-mainnet-blocks"
+                "bucketName": "hedera-mainnet-blocks",
+                "enabled": "true"
             }
         ]
         """)

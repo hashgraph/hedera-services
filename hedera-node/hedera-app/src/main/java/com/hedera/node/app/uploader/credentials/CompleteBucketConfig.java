@@ -34,4 +34,5 @@ public record CompleteBucketConfig(
         String endpoint,
         String region,
         String bucketName,
+        boolean enabled,
         BucketCredentials credentials) {}

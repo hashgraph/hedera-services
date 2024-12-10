@@ -77,6 +77,7 @@ public class BucketConfigurationManager {
                             bucket.endpoint(),
                             bucket.region(),
                             bucket.bucketName(),
+                            bucket.enabled(),
                             bucketCredentials);
                 })
                 .filter(Objects::nonNull)

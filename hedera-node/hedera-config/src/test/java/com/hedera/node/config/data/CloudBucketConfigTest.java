@@ -27,7 +27,7 @@ public class CloudBucketConfigTest {
     @Test
     void testValidCloudBucketConfigObject() {
         CloudBucketConfig config = new CloudBucketConfig(
-                "test-bucket", BucketProvider.AWS, "test-endpoint", "test-region", "hedera-bucket");
+                "test-bucket", BucketProvider.AWS, "test-endpoint", "test-region", "hedera-bucket", true);
 
         assertThat(config).isNotNull();
         assertThat(config.name()).isEqualTo("test-bucket");
@@ -41,7 +41,8 @@ public class CloudBucketConfigTest {
     void failIfTheProviderIsAWSWithoutRegion() {
         assertThrows(
                 NullPointerException.class,
-                () -> new CloudBucketConfig("test-bucket", BucketProvider.AWS, "test-endpoint", null, "hedera-bucket"),
+                () -> new CloudBucketConfig(
+                        "test-bucket", BucketProvider.AWS, "test-endpoint", null, "hedera-bucket", true),
                 "region cannot be null if the provider is AWS");
     }
 
@@ -49,7 +50,8 @@ public class CloudBucketConfigTest {
     void failIfTheProviderIsAWSWithEmptyRegion() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new CloudBucketConfig("test-bucket", BucketProvider.AWS, "test-endpoint", "", "hedera-bucket"),
+                () -> new CloudBucketConfig(
+                        "test-bucket", BucketProvider.AWS, "test-endpoint", "", "hedera-bucket", true),
                 "region cannot be null if the provider is AWS");
     }
 }

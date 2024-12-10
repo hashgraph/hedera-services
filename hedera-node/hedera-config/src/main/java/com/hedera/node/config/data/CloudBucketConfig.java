@@ -19,7 +19,6 @@ package com.hedera.node.config.data;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.config.types.BucketProvider;
-import com.swirlds.config.api.ConfigProperty;
 
 /**
  * Configuration for the cloud bucket uploader.
@@ -30,11 +29,12 @@ import com.swirlds.config.api.ConfigProperty;
  * @param bucketName the name of the bucket
  */
 public record CloudBucketConfig(
-        @ConfigProperty String name,
-        @ConfigProperty BucketProvider provider,
-        @ConfigProperty String endpoint,
-        @ConfigProperty String region, // required for AWS only
-        @ConfigProperty String bucketName) {
+        String name,
+        BucketProvider provider,
+        String endpoint,
+        String region, // required for AWS only
+        String bucketName,
+        boolean enabled) {
     public CloudBucketConfig {
         requireNonNull(name, "name cannot be null");
         requireNonNull(provider, "provider cannot be null");
