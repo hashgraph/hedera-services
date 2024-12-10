@@ -134,6 +134,7 @@ public final class LongTermScheduleUtils {
                         .designatingPayer(GENESIS)
                         .payingWith(payer)
                         .recordingScheduledTxn()
+                        .waitForExpiry()
                         .expiringIn(lifetime)
                         .via(via)));
         return operations.toArray(SpecOperation[]::new);

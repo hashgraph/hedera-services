@@ -73,6 +73,7 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.WRONG_TRANSFER_LIST;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.scheduleFakeUpgrade;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -1067,34 +1068,29 @@ public class ScheduleLongTermExecutionTest {
     @HapiTest
     @Order(16)
     final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
-
-        return defaultHapiSpec("ScheduledFreezeWorksAsExpectedAtExpiry")
-                .given(flattened(
-                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
-                        scheduleFakeUpgrade(PAYING_ACCOUNT, 4, SUCCESS_TXN)))
-                .when(scheduleSign(VALID_SCHEDULE)
+        return hapiTest(flattened(
+                cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
+                scheduleFakeUpgrade(PAYING_ACCOUNT, 4, SUCCESS_TXN),
+                scheduleSign(VALID_SCHEDULE)
                         .alsoSigningWith(GENESIS)
                         .payingWith(PAYING_ACCOUNT)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        getScheduleInfo(VALID_SCHEDULE)
-                                .hasScheduleId(VALID_SCHEDULE)
-                                .hasWaitForExpiry()
-                                .isNotExecuted()
-                                .isNotDeleted()
-                                .hasRecordedScheduledTxn(),
-                        sleepFor(5000),
-                        cryptoCreate("foo").via(TRIGGERING_TXN),
-                        getScheduleInfo(VALID_SCHEDULE).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        freezeAbort().payingWith(GENESIS),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
-                            allRunFor(spec, triggeredTx);
-                            Assertions.assertEquals(
-                                    SUCCESS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                        }));
+                        .hasKnownStatus(SUCCESS),
+                getScheduleInfo(VALID_SCHEDULE)
+                        .hasScheduleId(VALID_SCHEDULE)
+                        .hasWaitForExpiry()
+                        .isNotExecuted()
+                        .isNotDeleted()
+                        .hasRecordedScheduledTxn(),
+                triggerSchedule(VALID_SCHEDULE, 5),
+                freezeAbort().payingWith(GENESIS),
+                withOpContext((spec, opLog) -> {
+                    var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
+                    allRunFor(spec, triggeredTx);
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
+                })));
     }
 
     @HapiTest
