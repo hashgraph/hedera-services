@@ -222,13 +222,19 @@ public class DiskStartupNetworks implements StartupNetworks {
                             final var nodeId = rosterEntry.nodeId();
                             final var nodeAccountId = parseAccount(
                                     addressBook.getAddress(NodeId.of(nodeId)).getMemo());
+                            // Currently the ReadableFreezeUpgradeActions.writeConfigLineAndPem()
+                            // assumes that the gossip endpoints in the Node objects are in the order
+                            // (Internal, External)...even though Roster format is the reverse :/
+                            final var legacyGossipEndpoints = List.of(
+                                    rosterEntry.gossipEndpoint().getLast(),
+                                    rosterEntry.gossipEndpoint().getFirst());
                             return NodeMetadata.newBuilder()
                                     .rosterEntry(rosterEntry)
                                     .node(Node.newBuilder()
                                             .nodeId(nodeId)
                                             .accountId(nodeAccountId)
                                             .description("node" + (nodeId + 1))
-                                            .gossipEndpoint(rosterEntry.gossipEndpoint())
+                                            .gossipEndpoint(legacyGossipEndpoints)
                                             .serviceEndpoint(List.of())
                                             .gossipCaCertificate(rosterEntry.gossipCaCertificate())
                                             .grpcCertificateHash(Bytes.EMPTY)
