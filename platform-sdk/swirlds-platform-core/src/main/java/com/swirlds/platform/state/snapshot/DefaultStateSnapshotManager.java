@@ -211,7 +211,7 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
         // don't log an error if this is a freeze state. they are expected to lack signatures
         if (reservedState.isFreezeState()) {
             final double signingWeightPercent = (((double) reservedState.getSigningWeight())
-                    / ((double) reservedState.getAddressBook().getTotalWeight()))
+                            / ((double) reservedState.getAddressBook().getTotalWeight()))
                     * 100.0;
 
             logger.info(
