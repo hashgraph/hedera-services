@@ -37,7 +37,7 @@ mainModuleInfo {
 }
 
 testModuleInfo {
-    requires("com.fasterxml.jackson.databind")
+    requires("com.fasterxml.jackson.core")
     requires("com.google.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
