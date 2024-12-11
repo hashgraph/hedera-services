@@ -62,6 +62,7 @@ import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -175,14 +176,18 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
         ((CommittableWritableStates) writableStates).commit();
+
+        final var writableRosterStates = state.getWritableStates(RosterService.NAME);
+        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
         if (!hedera.isRosterLifecycleEnabled()) {
-            final var writableRosterStates = state.getWritableStates(RosterService.NAME);
-            final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
             writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
             ((CommittableWritableStates) writableRosterStates).commit();
+        } else {
+            writableRosterStore.putActiveRoster(roster, 0);
         }
         // --- end of temporary code block ---
 
+        hedera.setRosterHistory(RosterUtils.createRosterHistory(writableRosterStore));
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);
         hedera.init(fakePlatform(), defaultNodeId);
