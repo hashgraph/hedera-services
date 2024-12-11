@@ -76,15 +76,9 @@ import org.junit.jupiter.api.Tag;
 public class CryptoServiceFeesSuite {
     private static final String CIVILIAN = "civilian";
     private static final String FEES_ACCOUNT = "feesAccount";
-    public static final String OWNER = "owner";
-    public static final String FUNGIBLE_TOKEN = "fungible";
-    public static final String SPENDER = "spender";
-    public static final String ANOTHER_SPENDER = "spender1";
-    public static final String SECOND_SPENDER = "spender2";
-    public static final String NON_FUNGIBLE_TOKEN = "nonFungible";
-    public static final String NFT_TOKEN_MINT_TXN = "nftTokenMint";
-    public static final String FUNGIBLE_TOKEN_MINT_TXN = "tokenMint";
-    public static final String APPROVE_TXN = "approveTxn";
+    private static final String OWNER = "owner";
+    private static final String SPENDER = "spender";
+    private static final String SECOND_SPENDER = "spender2";
     private static final String SENDER = "sender";
     private static final String RECEIVER = "receiver";
 
@@ -160,18 +154,13 @@ public class CryptoServiceFeesSuite {
 
     @HapiTest
     final Stream<DynamicTest> cryptoDeleteAllowanceFeesAsExpected() {
-        final String owner = "owner";
-        final String spender = "spender";
         final String token = "token";
         final String nft = "nft";
-        final String payer = "payer";
         return hapiTest(
                 newKeyNamed("supplyKey"),
-                cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                cryptoCreate(payer).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate("spender1").balance(ONE_HUNDRED_HBARS),
-                cryptoCreate("spender2").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(FEES_ACCOUNT).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(token)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -187,8 +176,8 @@ public class CryptoServiceFeesSuite {
                         .tokenType(NON_FUNGIBLE_UNIQUE)
                         .supplyKey("supplyKey")
                         .treasury(TOKEN_TREASURY),
-                tokenAssociate(owner, token),
-                tokenAssociate(owner, nft),
+                tokenAssociate(OWNER, token),
+                tokenAssociate(OWNER, nft),
                 mintToken(
                                 nft,
                                 List.of(
@@ -197,42 +186,42 @@ public class CryptoServiceFeesSuite {
                                         ByteString.copyFromUtf8("c")))
                         .via("nftTokenMint"),
                 mintToken(token, 500L).via("tokenMint"),
-                cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)),
+                cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
-                        .payingWith(owner)
-                        .addCryptoAllowance(owner, "spender2", 100L)
-                        .addTokenAllowance(owner, token, "spender2", 100L)
-                        .addNftAllowance(owner, nft, "spender2", false, List.of(1L, 2L, 3L)),
+                        .payingWith(OWNER)
+                        .addCryptoAllowance(OWNER, SPENDER, 100L)
+                        .addTokenAllowance(OWNER, token, SPENDER, 100L)
+                        .addNftAllowance(OWNER, nft, SPENDER, false, List.of(1L, 2L, 3L)),
                 /* without specifying owner */
                 cryptoDeleteAllowance()
-                        .payingWith(owner)
+                        .payingWith(OWNER)
                         .blankMemo()
                         .addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
                         .via("baseDeleteNft"),
                 validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
-                cryptoApproveAllowance().payingWith(owner).addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+                cryptoApproveAllowance().payingWith(OWNER).addNftAllowance(OWNER, nft, SPENDER, false, List.of(1L)),
                 /* with specifying owner */
                 cryptoDeleteAllowance()
-                        .payingWith(owner)
+                        .payingWith(OWNER)
                         .blankMemo()
-                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .addNftDeleteAllowance(OWNER, nft, List.of(1L))
                         .via("baseDeleteNft"),
                 validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
 
                 /* with 2 serials */
                 cryptoDeleteAllowance()
-                        .payingWith(owner)
+                        .payingWith(OWNER)
                         .blankMemo()
-                        .addNftDeleteAllowance(owner, nft, List.of(2L, 3L))
+                        .addNftDeleteAllowance(OWNER, nft, List.of(2L, 3L))
                         .via("twoDeleteNft"),
                 validateChargedUsdWithin("twoDeleteNft", 0.050101, 0.01),
                 /* with 2 sigs */
-                cryptoApproveAllowance().payingWith(owner).addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+                cryptoApproveAllowance().payingWith(OWNER).addNftAllowance(OWNER, nft, SPENDER, false, List.of(1L)),
                 cryptoDeleteAllowance()
-                        .payingWith(payer)
+                        .payingWith(FEES_ACCOUNT)
                         .blankMemo()
-                        .addNftDeleteAllowance(owner, nft, List.of(1L))
-                        .signedBy(payer, owner)
+                        .addNftDeleteAllowance(OWNER, nft, List.of(1L))
+                        .signedBy(FEES_ACCOUNT, OWNER)
                         .via("twoDeleteNft"),
                 validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01));
     }
@@ -240,6 +229,11 @@ public class CryptoServiceFeesSuite {
     @HapiTest
     final Stream<DynamicTest> cryptoApproveAllowanceFeesAsExpected() {
         final String SUPPLY_KEY = "supplyKey";
+        final String APPROVE_TXN = "approveTxn";
+        final String ANOTHER_SPENDER = "spender1";
+        final String FUNGIBLE_TOKEN = "fungible";
+        final String NON_FUNGIBLE_TOKEN = "nonFungible";
+
         return hapiTest(
                 newKeyNamed(SUPPLY_KEY),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -264,13 +258,12 @@ public class CryptoServiceFeesSuite {
                 tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                 tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                 mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c")))
-                        .via(NFT_TOKEN_MINT_TXN),
-                mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                        NON_FUNGIBLE_TOKEN,
+                        List.of(
+                                ByteString.copyFromUtf8("a"),
+                                ByteString.copyFromUtf8("b"),
+                                ByteString.copyFromUtf8("c"))),
+                mintToken(FUNGIBLE_TOKEN, 500L),
                 cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)),
                 cryptoApproveAllowance()
                         .payingWith(OWNER)
@@ -538,12 +531,8 @@ public class CryptoServiceFeesSuite {
         final var expectedGetAccountRecordPriceUsd = 0.0001;
 
         return hapiTest(
-                cryptoCreate("GetAccountRecordsTest")
-                        .balance(5 * ONE_HUNDRED_HBARS)
-                        .key(FEES_ACCOUNT),
-                getAccountRecords("GetAccountRecordsTest")
-                        .via("baseGetAccountRecord")
-                        .payingWith(FEES_ACCOUNT),
+                cryptoCreate("GetAccountRecordsTest"),
+                getAccountRecords("GetAccountRecordsTest").via("baseGetAccountRecord"),
                 validateChargedUsd("baseGetAccountRecord", expectedGetAccountRecordPriceUsd));
     }
 
