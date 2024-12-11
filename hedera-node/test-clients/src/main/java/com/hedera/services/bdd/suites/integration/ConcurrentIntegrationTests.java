@@ -182,7 +182,8 @@ public class ConcurrentIntegrationTests {
                             totalNodeStakeUpdates,
                             expectedNodeStakeUpdates);
                     return totalNodeStakeUpdates == expectedNodeStakeUpdates;
-                }), // This is the genesis transaction
+                }),
+                // This is the genesis transaction
                 cryptoCreate("firstUser"),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),

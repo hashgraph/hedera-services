@@ -819,7 +819,7 @@ class VirtualMapTests extends VirtualTestBase {
      * result in the detached state having a data source.
      */
     @Test
-    void canFlushDetachedStateForStateSaving() throws InterruptedException {
+    void canFlushDetachedStateForStateSaving() throws IOException, InterruptedException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.put(A_KEY, APPLE);
         map0.put(B_KEY, BANANA);
@@ -837,7 +837,7 @@ class VirtualMapTests extends VirtualTestBase {
 
         // Detach, and then make another copy which should cause it to flush.
         map1.getRoot().enableFlush();
-        map1.getRoot().detach(Path.of("tmp"));
+        map1.getRoot().detach();
         map0.release();
 
         map1.release();

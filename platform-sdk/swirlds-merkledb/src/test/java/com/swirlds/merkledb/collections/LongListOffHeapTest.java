@@ -28,6 +28,7 @@ import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -77,6 +78,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             }
             final Path file = testDirectory.resolve("LongListOffHeapCustomLongCount.ll");
             // write longList data
+            if (Files.exists(file)) {
+                Files.delete(file);
+            }
             list.writeToFile(file);
 
             final LongListOffHeap listFromDisk = createLongListFromFile(file, CONFIGURATION);
@@ -114,6 +118,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
             final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.ll");
             // write longList data
+            if (Files.exists(file)) {
+                Files.delete(file);
+            }
             list.writeToFile(file);
 
             final LongListOffHeap longListFromFile = createLongListFromFile(file, CONFIGURATION);
@@ -139,6 +146,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
             final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.ll");
             // write longList data
+            if (Files.exists(file)) {
+                Files.delete(file);
+            }
             list.writeToFile(file);
 
             final LongListOffHeap longListFromFile = createLongListFromFile(file, CONFIGURATION);
@@ -160,6 +170,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 list.put(i, i + 1);
             }
             final Path file = testDirectory.resolve("LongListOffHeap.ll");
+            if (Files.exists(file)) {
+                Files.delete(file);
+            }
             // write longList data
             list.writeToFile(file);
 
@@ -170,6 +183,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                     assertEquals(list.get(i), longListFromFile.get(i));
                 }
                 // write longList data again
+                Files.delete(file);
                 longListFromFile.writeToFile(file);
 
                 // restoring the list from the file again
@@ -242,6 +256,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
             assertEquals(1, list.get(bigIndex));
             final Path file = testDirectory.resolve("LongListLargeIndex.ll");
+            if (Files.exists(file)) {
+                Files.delete(file);
+            }
             list.writeToFile(file);
             try (LongListOffHeap listFromFile = new LongListOffHeap(file, CONFIGURATION)) {
                 assertEquals(1, listFromFile.get(bigIndex));
