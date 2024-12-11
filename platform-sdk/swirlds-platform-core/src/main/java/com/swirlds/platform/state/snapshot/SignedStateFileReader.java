@@ -16,16 +16,12 @@
 
 package com.swirlds.platform.state.snapshot;
 
-import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED_SIGSET_VERSIONS;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.RosterStateId;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -39,12 +35,8 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
-import com.swirlds.state.merkle.SigSet;
 import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,25 +88,10 @@ public final class SignedStateFileReader {
         final DeserializedSignedState returnState;
         final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(stateFile);
 
-        final MerkleTreeSnapshotReader.StateFileData normalizedData;
-        if (data.sigSet() == null) {
-            final File sigSetFile =
-                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
-            normalizedData = deserializeAndDebugOnFailure(
-                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
-                    (final MerkleDataInputStream in) -> {
-                        readAndCheckSigSetFileVersion(in);
-                        final SigSet sigSet = in.readSerializable();
-                        return new MerkleTreeSnapshotReader.StateFileData(data.stateRoot(), data.hash(), sigSet);
-                    });
-        } else {
-            normalizedData = data;
-        }
-
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                (MerkleRoot) normalizedData.stateRoot(),
+                (MerkleRoot) data.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
@@ -122,10 +99,10 @@ public final class SignedStateFileReader {
 
         registerServiceStates(newSignedState);
 
-        newSignedState.setSigSet(normalizedData.sigSet());
+        newSignedState.setSigSet(data.sigSet());
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
 
         return returnState;
     }
@@ -143,20 +120,6 @@ public final class SignedStateFileReader {
         if (!Files.isRegularFile(stateFile)) {
             throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
         }
-    }
-
-    /**
-     * Read the version from a signature set file and check it
-     *
-     * @param in the stream to read from
-     * @throws IOException if the version is invalid
-     */
-    private static void readAndCheckSigSetFileVersion(@NonNull final MerkleDataInputStream in) throws IOException {
-        final int fileVersion = in.readInt();
-        if (!SUPPORTED_SIGSET_VERSIONS.contains(fileVersion)) {
-            throw new IOException("Unsupported file version: " + fileVersion);
-        }
-        in.readProtocolVersion();
     }
 
     /**

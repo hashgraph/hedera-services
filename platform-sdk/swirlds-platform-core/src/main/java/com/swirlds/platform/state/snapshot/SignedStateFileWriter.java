@@ -24,8 +24,8 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSett
 import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_SIG_SET_FILE_VERSION;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
+import static com.swirlds.state.merkle.MerkleTreeSnapshotReader.INIT_SIG_SET_FILE_VERSION;
+import static com.swirlds.state.merkle.MerkleTreeSnapshotReader.SIGNATURE_SET_FILE_NAME;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;

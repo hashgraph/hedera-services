@@ -24,6 +24,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -60,6 +61,17 @@ public class MerkleTreeSnapshotReader {
 
     public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
+    public static final String SIGNATURE_SET_FILE_NAME = "signatureSet.bin";
+    /**
+     * The initial version of the signature set file
+     */
+    public static final int INIT_SIG_SET_FILE_VERSION = 1;
+
+    /**
+     * The supported versions of the signature set file
+     */
+    public static final Set<Integer> SUPPORTED_SIGSET_VERSIONS = Set.of(INIT_SIG_SET_FILE_VERSION);
+
     /**
      * This is a helper class to hold the data read from a state file.
      * @param stateRoot the root of Merkle tree state
@@ -77,7 +89,7 @@ public class MerkleTreeSnapshotReader {
      */
     @NonNull
     public static StateFileData readStateFileData(@NonNull final Path stateFile) throws IOException {
-        return deserializeAndDebugOnFailure(
+        final StateFileData data = deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
                     final int fileVersion = readAndCheckStateFileVersion(in);
@@ -91,6 +103,22 @@ public class MerkleTreeSnapshotReader {
                         throw new IOException("Unsupported state file version: " + fileVersion);
                     }
                 });
+        StateFileData normalizedData;
+        if (data.sigSet() == null) {
+            final File sigSetFile =
+                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
+            normalizedData = deserializeAndDebugOnFailure(
+                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
+                    (final MerkleDataInputStream in) -> {
+                        readAndCheckSigSetFileVersion(in);
+                        final SigSet sigSet = in.readSerializable();
+                        return new MerkleTreeSnapshotReader.StateFileData(data.stateRoot(), data.hash(), sigSet);
+                    });
+        } else {
+            normalizedData = data;
+        }
+
+        return normalizedData;
     }
 
     /**
@@ -149,5 +177,19 @@ public class MerkleTreeSnapshotReader {
         }
         in.readProtocolVersion();
         return fileVersion;
+    }
+
+    /**
+     * Read the version from a signature set file and check it
+     *
+     * @param in the stream to read from
+     * @throws IOException if the version is invalid
+     */
+    private static void readAndCheckSigSetFileVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+        final int fileVersion = in.readInt();
+        if (!SUPPORTED_SIGSET_VERSIONS.contains(fileVersion)) {
+            throw new IOException("Unsupported file version: " + fileVersion);
+        }
+        in.readProtocolVersion();
     }
 }
