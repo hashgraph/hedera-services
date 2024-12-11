@@ -121,7 +121,7 @@ public class V053AddressBookSchema extends Schema {
                     .description(formatNodeName(nodeInfo.nodeId()))
                     .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
-                    .weight(nodeInfo.stake())
+                    .weight(nodeInfo.weight())
                     .adminKey(nodeAdminKey);
             if (nodeDetailMap != null) {
                 nodeDetail = nodeDetailMap.get(nodeInfo.nodeId());

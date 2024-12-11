@@ -28,6 +28,7 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStream
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE;
 import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -140,8 +141,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         new BlockInfo(-1, EPOCH, STARTING_RUNNING_HASH_OBJ.hash(), null, false, EPOCH))
                 .commit();
         app.stateMutator(PlatformStateService.NAME)
-                .withSingletonState(
-                        V0540PlatformStateSchema.PLATFORM_STATE_KEY, V0540PlatformStateSchema.GENESIS_PLATFORM_STATE)
+                .withSingletonState(V0540PlatformStateSchema.PLATFORM_STATE_KEY, UNINITIALIZED_PLATFORM_STATE)
                 .commit();
 
         blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(app.configProvider(), NODE_INFO, SIGNER, fs);

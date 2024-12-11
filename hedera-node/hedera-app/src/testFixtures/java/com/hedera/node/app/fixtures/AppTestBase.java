@@ -327,7 +327,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 realSelfNodeInfo = new NodeInfoImpl(
                         selfNodeInfo.nodeId(),
                         selfNodeInfo.accountId(),
-                        selfNodeInfo.stake(),
+                        selfNodeInfo.weight(),
                         selfNodeInfo.gossipEndpoints(),
                         selfNodeInfo.sigCertBytes());
             }
@@ -350,7 +350,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                                     NodeMetadata.newBuilder().rosterEntry(entry).build())
                             .toList())
                     .build();
-            final var networkInfo = new GenesisNetworkInfo(genesisNetwork.nodeMetadata(), Bytes.fromHex("03"));
+            final var networkInfo = new GenesisNetworkInfo(genesisNetwork, Bytes.fromHex("03"));
             final var startupNetworks = new FakeStartupNetworks(genesisNetwork);
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();

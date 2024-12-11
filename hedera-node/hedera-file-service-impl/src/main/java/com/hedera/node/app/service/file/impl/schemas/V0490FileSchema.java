@@ -217,7 +217,7 @@ public class V0490FileSchema extends Schema {
         final var nodeDetails = new ArrayList<NodeAddress>();
         for (final var nodeInfo : networkInfo.addressBook()) {
             nodeDetails.add(NodeAddress.newBuilder()
-                    .stake(nodeInfo.stake())
+                    .stake(nodeInfo.weight())
                     .nodeAccountId(nodeInfo.accountId())
                     .nodeId(nodeInfo.nodeId())
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())

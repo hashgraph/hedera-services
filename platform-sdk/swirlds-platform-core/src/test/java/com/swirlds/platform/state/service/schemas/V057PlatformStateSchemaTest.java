@@ -69,7 +69,7 @@ class V057PlatformStateSchemaTest {
     private Supplier<Roster> activeRosterSupplier;
 
     @Mock
-    private Supplier<SoftwareVersion> appVersionSupplier;
+    private Function<Configuration, SoftwareVersion> appVersionFn;
 
     @Mock
     private MigrationContext migrationContext;
@@ -93,7 +93,7 @@ class V057PlatformStateSchemaTest {
 
     @BeforeEach
     void setUp() {
-        schema = new V057PlatformStateSchema(activeRosterSupplier, appVersionSupplier, platformStateStoreFactory);
+        schema = new V057PlatformStateSchema(activeRosterSupplier, appVersionFn, platformStateStoreFactory);
     }
 
     @Test
@@ -159,8 +159,8 @@ class V057PlatformStateSchemaTest {
             case NA -> {
                 // No-op
             }
-            case OLD -> given(appVersionSupplier.get()).willReturn(new BasicSoftwareVersion(7));
-            case NEW -> given(appVersionSupplier.get()).willReturn(new BasicSoftwareVersion(42));
+            case OLD -> given(appVersionFn.apply(any())).willReturn(new BasicSoftwareVersion(7));
+            case NEW -> given(appVersionFn.apply(any())).willReturn(new BasicSoftwareVersion(42));
         }
 
         given(migrationContext.appConfig()).willReturn(configuration);

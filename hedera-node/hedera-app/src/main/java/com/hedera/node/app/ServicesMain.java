@@ -99,7 +99,6 @@ import org.apache.logging.log4j.Logger;
  * <p>This class simply delegates to {@link Hedera}.
  */
 public class ServicesMain implements SwirldMain {
-
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
@@ -266,6 +265,7 @@ public class ServicesMain implements SwirldMain {
                     null,
                     platformConfig);
         }
+        hedera.setInitialStateHash(reservedState.hash());
 
         // Create the platform context
         final var platformContext = PlatformContext.create(
@@ -276,8 +276,6 @@ public class ServicesMain implements SwirldMain {
                 FileSystemManager.create(platformConfig),
                 recycleBin,
                 merkleCryptography);
-        hedera.setInitialStateHash(reservedState.hash());
-
         // Initialize the address book and set on platform builder
         final var addressBook = initializeAddressBook(selfId, version, initialState, diskAddressBook, platformContext);
         final RosterHistory rosterHistory;

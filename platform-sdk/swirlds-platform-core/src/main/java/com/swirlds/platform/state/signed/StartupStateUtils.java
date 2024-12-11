@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
 import static java.util.Objects.requireNonNull;
@@ -64,7 +63,7 @@ public final class StartupStateUtils {
      *
      * @param configuration      the configuration for this node
      * @param softwareVersion     the software version of the app
-     * @param genesisStateBuilder a supplier that can build a genesis state
+     * @param stateRootSupplier a supplier that can build a genesis state
      * @param mainClassName       the name of the app's SwirldMain class
      * @param swirldName          the name of this swirld
      * @param selfId              the node id of this node
@@ -78,7 +77,7 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
+            @NonNull final Supplier<MerkleRoot> stateRootSupplier,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -105,11 +104,12 @@ public final class StartupStateUtils {
             }
         }
 
-        final ReservedSignedState genesisState =
-                buildGenesisState(configuration, configAddressBook, softwareVersion, genesisStateBuilder.get());
-
-        try (genesisState) {
-            return copyInitialSignedState(configuration, genesisState.get());
+        final var stateRoot = stateRootSupplier.get();
+        final var signedState = new SignedState(
+                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
+        final var reservedSignedState = signedState.reserve("initial reservation on genesis state");
+        try (reservedSignedState) {
+            return copyInitialSignedState(configuration, reservedSignedState.get());
         }
     }
 
