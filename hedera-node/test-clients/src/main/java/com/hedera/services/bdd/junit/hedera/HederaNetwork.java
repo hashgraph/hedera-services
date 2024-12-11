@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A network of Hedera nodes.
@@ -153,6 +154,14 @@ public interface HederaNetwork {
      * Starts all nodes in the network.
      */
     void start();
+
+    /**
+     * Starts all nodes in the network with the given overrides.
+     * @param bootstrapOverrides the overrides
+     */
+    default void startWithOverrides(@NonNull Map<String, String> bootstrapOverrides) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Forcibly stops all nodes in the network.

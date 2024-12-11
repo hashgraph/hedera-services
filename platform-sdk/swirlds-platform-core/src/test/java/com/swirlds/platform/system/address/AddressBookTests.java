@@ -18,10 +18,10 @@ package com.swirlds.platform.system.address;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,10 +34,12 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -467,33 +469,20 @@ class AddressBookTests {
     }
 
     @Test
-    @DisplayName("Reconnect Address Book Comparison Test")
-    public void reconnectAddressBookComparisonTest() {
-        final Randotron randotron = Randotron.create();
-        final AddressBook addressBook =
-                RandomAddressBookBuilder.create(randotron).withSize(10).build();
+    void testMalformedAndMissingCertificate() {
+        final Address base = new Address();
+        // establish baseline behavior.
+        final X509Certificate goodCert = PreGeneratedX509Certs.getSigCert(0).getCertificate();
+        final Address withCert = base.copySetSigCert(goodCert);
+        assertEquals(goodCert, withCert.getSigCert());
+        assertEquals(goodCert.getPublicKey(), withCert.getSigCert().getPublicKey());
 
-        assertDoesNotThrow(() -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook.copy()));
-        // test exception on size mismatch
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(
-                        addressBook, addressBook.copy().remove(addressBook.getNodeId(0))));
+        // test null certificate
+        final Address nullCert = base.copySetSigCert(null);
+        assertNull(nullCert.getSigCert());
 
-        // test exception on node id mismatch
-        final AddressBook addressBook2 = addressBook.copy();
-        final Address address = addressBook2.getAddress(addressBook2.getNodeId(0));
-        addressBook2.remove(address.getNodeId());
-        addressBook2.add(address.copySetNodeId(addressBook.getNextAvailableNodeId()));
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook2));
-
-        // test exception on address mismatch
-        final AddressBook addressBook3 = addressBook.copy();
-        addressBook3.updateWeight(addressBook3.getNodeId(0), 100);
-        assertThrows(
-                IllegalStateException.class,
-                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook3));
+        // test malformed certificate
+        final Address badCert = base.copySetSigCert(PreGeneratedX509Certs.createBadCertificate());
+        assertNull(badCert.getSigCert());
     }
 }

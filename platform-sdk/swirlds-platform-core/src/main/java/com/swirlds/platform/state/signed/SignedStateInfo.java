@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.SigSet;
 
 /**
  * Contains information about a signed state. A SignedStateInfo object is still ok to read after the parent SignedState

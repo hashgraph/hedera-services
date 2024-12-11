@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_IS_TOKEN;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -64,19 +64,18 @@ public class TokenAndTypeCheckSuite {
     final Stream<DynamicTest> checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("checkTokenAndTypeStandardCases")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
-                        contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCallLocal(
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
@@ -97,8 +96,7 @@ public class TokenAndTypeCheckSuite {
                                         .resultViaFunctionName(
                                                 GET_TOKEN_TYPE,
                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))))
-                .then();
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))));
     }
 
     // Should just return false on isToken() check for missing token type
@@ -107,19 +105,18 @@ public class TokenAndTypeCheckSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("checkTokenAndTypeNegativeCases")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
-                        contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
@@ -136,28 +133,27 @@ public class TokenAndTypeCheckSuite {
                                 .via("FakeAddressTokenTypeCheckTx")
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
-                                .logged())))
-                .then(
-                        childRecordsCheck(
-                                "FakeAddressTokenCheckTx",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(HAPI_IS_TOKEN)
-                                                        .withStatus(SUCCESS)
-                                                        .withIsToken(false)))),
-                        childRecordsCheck(
-                                "FakeAddressTokenTypeCheckTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)
-                                //                                        .contractCallResult(resultWith()
-                                //
-                                // .contractCallResult(htsPrecompileResult()
-                                //                                                        .forFunction(HAPI_IS_TOKEN)
-                                //                                                        .withStatus(INVALID_TOKEN_ID)
-                                //                                                        .withIsToken(false)))
-                                ));
+                                .logged())),
+                childRecordsCheck(
+                        "FakeAddressTokenCheckTx",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(HAPI_IS_TOKEN)
+                                                .withStatus(SUCCESS)
+                                                .withIsToken(false)))),
+                childRecordsCheck(
+                        "FakeAddressTokenTypeCheckTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_TOKEN_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //                                                        .forFunction(HAPI_IS_TOKEN)
+                        //                                                        .withStatus(INVALID_TOKEN_ID)
+                        //                                                        .withIsToken(false)))
+                        ));
     }
 }

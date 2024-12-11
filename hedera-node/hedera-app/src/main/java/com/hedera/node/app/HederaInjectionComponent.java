@@ -40,10 +40,12 @@ import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -56,6 +58,7 @@ import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.query.annotations.OperatorQueries;
 import com.hedera.node.app.workflows.query.annotations.UserQueries;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.metrics.api.Metrics;
@@ -64,6 +67,7 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.BindsInstance;
@@ -93,7 +97,7 @@ import javax.inject.Singleton;
             BlockStreamModule.class,
             PlatformModule.class,
             ThrottleServiceModule.class,
-            FacilityInitModule.class,
+            FacilityInitModule.class
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();
@@ -120,6 +124,9 @@ public interface HederaInjectionComponent {
 
     @UserQueries
     QueryWorkflow queryWorkflow();
+
+    @OperatorQueries
+    QueryWorkflow operatorQueryWorkflow();
 
     BlockRecordManager blockRecordManager();
 
@@ -150,6 +157,9 @@ public interface HederaInjectionComponent {
         Builder contractServiceImpl(ContractServiceImpl contractService);
 
         @BindsInstance
+        Builder scheduleService(ScheduleService scheduleService);
+
+        @BindsInstance
         Builder configProviderImpl(ConfigProviderImpl configProvider);
 
         @BindsInstance
@@ -168,16 +178,19 @@ public interface HederaInjectionComponent {
         Builder platform(Platform platform);
 
         @BindsInstance
-        Builder self(final NodeInfo self);
+        Builder self(NodeInfo self);
 
         @BindsInstance
-        Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
+        Builder maxSignedTxnSize(@MaxSignedTxnSize int maxSignedTxnSize);
 
         @BindsInstance
         Builder currentPlatformStatus(CurrentPlatformStatus currentPlatformStatus);
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
+
+        @BindsInstance
+        Builder throttleFactory(Throttle.Factory throttleFactory);
 
         @BindsInstance
         Builder softwareVersion(SemanticVersion softwareVersion);
@@ -202,6 +215,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder networkInfo(NetworkInfo networkInfo);
+
+        @BindsInstance
+        Builder startupNetworks(StartupNetworks startupNetworks);
 
         HederaInjectionComponent build();
     }

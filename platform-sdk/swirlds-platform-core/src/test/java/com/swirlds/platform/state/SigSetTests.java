@@ -30,7 +30,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.state.merkle.SigSet;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -110,7 +110,7 @@ public class HederaContainer extends GenericContainer<HederaContainer> {
         recordStreamFolder.mkdirs();
         return this.withFileSystemBind(
                 recordPath.toString(),
-                Path.of(File.separator, "opt", "hedera", "services", recordStreamFolderName, "record0.0.3")
+                Path.of(File.separator, "opt", "hedera", "META-INF/services", recordStreamFolderName, "record0.0.3")
                         .toString(),
                 BindMode.READ_WRITE);
     }

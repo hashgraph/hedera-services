@@ -15,6 +15,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.freeze.codec;
     exports com.hedera.hapi.node.freeze.schema;
     exports com.hedera.hapi.node.network;
+    exports com.hedera.node.internal.network;
     exports com.hedera.hapi.node.network.codec;
     exports com.hedera.hapi.node.network.schema;
     exports com.hedera.hapi.node.scheduled;

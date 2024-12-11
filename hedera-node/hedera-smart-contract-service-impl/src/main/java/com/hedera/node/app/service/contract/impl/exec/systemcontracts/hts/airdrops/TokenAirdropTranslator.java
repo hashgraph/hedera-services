@@ -49,7 +49,7 @@ public class TokenAirdropTranslator extends AbstractCallTranslator<HtsCallAttemp
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         final var airdropEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractAirdropTokensEnabled();
-        return attempt.isSelectorIfConfigEnabled(TOKEN_AIRDROP, airdropEnabled);
+        return attempt.isSelectorIfConfigEnabled(airdropEnabled, TOKEN_AIRDROP);
     }
 
     public static long gasRequirement(

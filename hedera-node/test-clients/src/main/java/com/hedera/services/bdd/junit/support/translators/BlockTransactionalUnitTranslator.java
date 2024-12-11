@@ -118,7 +118,7 @@ public class BlockTransactionalUnitTranslator {
     /**
      * The base translator used to create the {@link SingleTransactionRecord}s.
      */
-    private final BaseTranslator baseTranslator = new BaseTranslator();
+    private final BaseTranslator baseTranslator;
     /**
      * The translators used to translate the block transaction parts for a logical HAPI transaction.
      */
@@ -177,6 +177,14 @@ public class BlockTransactionalUnitTranslator {
                     put(UTIL_PRNG, new UtilPrngTranslator());
                 }
             };
+
+    /**
+     * Constructs a new {@link BlockTransactionalUnitTranslator} with the given network size.
+     * @param networkSize the network size
+     */
+    public BlockTransactionalUnitTranslator(final int networkSize) {
+        baseTranslator = new BaseTranslator(networkSize - 1);
+    }
 
     /**
      * Scans a block for genesis information and returns true if found.

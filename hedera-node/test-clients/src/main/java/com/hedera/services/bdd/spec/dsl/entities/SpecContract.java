@@ -63,6 +63,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     private final long creationGas;
     private final String contractName;
     private final boolean immutable;
+    private final int maxAutoAssociations;
     private final Account.Builder builder = Account.newBuilder();
     /**
      * The constructor arguments for the contract's creation call; if the arguments are
@@ -78,18 +79,25 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      */
     public static SpecContract contractFrom(@NonNull final Contract annotation) {
         final var name = annotation.name().isBlank() ? annotation.contract() : annotation.name();
-        return new SpecContract(name, annotation.contract(), annotation.creationGas(), annotation.isImmutable());
+        return new SpecContract(
+                name,
+                annotation.contract(),
+                annotation.creationGas(),
+                annotation.isImmutable(),
+                annotation.maxAutoAssociations());
     }
 
     private SpecContract(
             @NonNull final String name,
             @NonNull final String contractName,
             final long creationGas,
-            final boolean immutable) {
+            final boolean immutable,
+            final int maxAutoAssociations) {
         super(name);
         this.immutable = immutable;
         this.creationGas = creationGas;
         this.contractName = requireNonNull(contractName);
+        this.maxAutoAssociations = maxAutoAssociations;
     }
 
     /**
@@ -221,6 +229,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
             final var unhexedBytecode = Hex.decode(initcode.toByteArray());
             op = contractCreate(name, constructorArgs)
                     .gas(creationGas)
+                    .maxAutomaticTokenAssociations(maxAutoAssociations)
                     .inlineInitCode(ByteString.copyFrom(unhexedBytecode))
                     .omitAdminKey(immutable);
         } else {
@@ -228,6 +237,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
                     createLargeFile(GENESIS, contractName, initcode),
                     contractCreate(name, constructorArgs)
                             .gas(creationGas)
+                            .maxAutomaticTokenAssociations(maxAutoAssociations)
                             .bytecode(contractName)
                             .omitAdminKey(immutable));
         }

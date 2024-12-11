@@ -22,29 +22,27 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
-import javax.inject.Inject;
 
 /**
- * A factory for creating service APIs based on the {@link SavepointStackImpl} for the current transaction.
+ * A factory for creating service APIs based on a {@link State}.
  */
 public class ServiceApiFactory {
-    private final SavepointStackImpl stack;
+    private final State state;
     private final Configuration configuration;
     private final StoreMetricsService storeMetricsService;
 
     private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER =
             Map.of(TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER);
 
-    @Inject
     public ServiceApiFactory(
-            @NonNull final SavepointStackImpl stack,
+            @NonNull final State state,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
-        this.stack = requireNonNull(stack);
+        this.state = requireNonNull(state);
         this.configuration = requireNonNull(configuration);
         this.storeMetricsService = requireNonNull(storeMetricsService);
     }
@@ -53,7 +51,7 @@ public class ServiceApiFactory {
         requireNonNull(apiInterface);
         final var provider = API_PROVIDER.get(apiInterface);
         if (provider != null) {
-            final var writableStates = stack.getWritableStates(provider.serviceName());
+            final var writableStates = state.getWritableStates(provider.serviceName());
             final var api = provider.newInstance(configuration, storeMetricsService, writableStates);
             assert apiInterface.isInstance(api); // This needs to be ensured while apis are registered
             return apiInterface.cast(api);

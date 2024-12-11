@@ -26,25 +26,30 @@ package com.swirlds.demo.hello;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.Transaction;
-import java.io.IOException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * This holds the current state of the swirld. For this simple "hello swirld" code, each transaction is just
  * a string, and the state is just a list of the strings in all the transactions handled so far, in the
  * order that they were handled.
  */
-public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class HelloSwirldDemoState extends PlatformMerkleStateRoot {
 
     /**
      * The version history of this class.
@@ -91,7 +96,11 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
 
     // ///////////////////////////////////////////////////////////////////
 
-    public HelloSwirldDemoState() {}
+    public HelloSwirldDemoState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
+    }
 
     private HelloSwirldDemoState(final HelloSwirldDemoState sourceState) {
         super(sourceState);
@@ -99,7 +108,12 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public synchronized void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }
@@ -107,6 +121,7 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
     @Override
     public synchronized HelloSwirldDemoState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new HelloSwirldDemoState(this);
     }
 
@@ -115,16 +130,6 @@ public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldSta
             return;
         }
         strings.add(new String(transaction.getApplicationTransaction().toByteArray(), StandardCharsets.UTF_8));
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeStringList(strings);
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        strings = in.readStringList(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
     }
 
     @Override

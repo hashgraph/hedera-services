@@ -25,7 +25,6 @@ import com.hedera.hapi.node.state.roster.RosterState.Builder;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.roster.RosterValidator;
 import com.swirlds.state.spi.WritableKVState;
@@ -39,6 +38,8 @@ import java.util.List;
  * Read-write implementation for accessing rosters states.
  */
 public class WritableRosterStore extends ReadableRosterStoreImpl {
+    public static final String ROSTER_KEY = "ROSTERS";
+    public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
 
     /**
      * The maximum number of active rosters to keep in the roster state.
@@ -64,8 +65,16 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     public WritableRosterStore(@NonNull final WritableStates writableStates) {
         super(writableStates);
         requireNonNull(writableStates);
-        this.rosterState = writableStates.getSingleton(RosterStateId.ROSTER_STATES_KEY);
-        this.rosterMap = writableStates.get(RosterStateId.ROSTER_KEY);
+        this.rosterState = writableStates.getSingleton(ROSTER_STATES_KEY);
+        this.rosterMap = writableStates.get(ROSTER_KEY);
+    }
+
+    /**
+     * Adopts the candidate roster as the active roster, starting in the given round.
+     * @param roundNumber the round number in which the candidate roster should be adopted as the active roster
+     */
+    public void adoptCandidateRoster(final long roundNumber) {
+        putActiveRoster(requireNonNull(getCandidateRoster()), roundNumber);
     }
 
     /**

@@ -19,6 +19,8 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
@@ -37,6 +39,7 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
@@ -85,7 +88,7 @@ public class FakeTssBaseService implements TssBaseService {
         DELEGATE
     }
 
-    private Signing signing = Signing.FAKE;
+    private Signing signing = Signing.DELEGATE;
     private boolean ignoreRequests = false;
 
     public FakeTssBaseService(@NonNull final AppContext appContext) {
@@ -173,8 +176,10 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void requestLedgerSignature(@NonNull final byte[] messageHash) {
+    public void requestLedgerSignature(
+            @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
+        requireNonNull(lastUsedConsensusTime);
         switch (signing) {
             case FAKE -> {
                 if (ignoreRequests) {
@@ -195,7 +200,7 @@ public class FakeTssBaseService implements TssBaseService {
                     }
                 }));
             }
-            case DELEGATE -> delegate.requestLedgerSignature(messageHash);
+            case DELEGATE -> delegate.requestLedgerSignature(messageHash, lastUsedConsensusTime);
         }
     }
 
@@ -237,7 +242,36 @@ public class FakeTssBaseService implements TssBaseService {
             @NonNull InitTrigger trigger,
             @NonNull ServiceMigrator serviceMigrator,
             @NonNull ServicesSoftwareVersion version,
-            @NonNull final Configuration configuration) {
-        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration);
+            @NonNull final Configuration configuration,
+            @NonNull final Roster overrideRoster) {
+        return delegate.chooseRosterForNetwork(state, trigger, serviceMigrator, version, configuration, overrideRoster);
+    }
+
+    @Override
+    public void regenerateKeyMaterial(@NonNull final State state) {
+        delegate.regenerateKeyMaterial(state);
+    }
+
+    @Override
+    public void generateParticipantDirectory(@NonNull final State state) {
+        delegate.generateParticipantDirectory(state);
+    }
+
+    @Override
+    public Bytes ledgerIdFrom(
+            @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
+        requireNonNull(directory);
+        requireNonNull(tssMessages);
+        return delegate.ledgerIdFrom(directory, tssMessages);
+    }
+
+    @Override
+    public TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory) {
+        return delegate.getTssMessageFromBytes(wrap, directory);
+    }
+
+    @Override
+    public void manageTssStatus(final State state) {
+        delegate.manageTssStatus(state);
     }
 }

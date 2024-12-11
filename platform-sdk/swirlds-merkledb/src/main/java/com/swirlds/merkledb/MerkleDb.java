@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -369,7 +368,7 @@ public final class MerkleDb {
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         final MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled);
+                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled, false);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -393,12 +392,13 @@ public final class MerkleDb {
      * @return A copied data source
      * @throws IOException If an I/O error occurs
      */
-    public MerkleDbDataSource copyDataSource(final MerkleDbDataSource dataSource, final boolean makeCopyPrimary)
+    public MerkleDbDataSource copyDataSource(
+            final MerkleDbDataSource dataSource, final boolean makeCopyPrimary, final boolean offlineUse)
             throws IOException {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
         importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
-        return getDataSource(tableId, label, false);
+        return getDataSource(tableId, label, false, offlineUse);
     }
 
     private void importDataSource(
@@ -408,10 +408,7 @@ public final class MerkleDb {
             final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
-        final MerkleDbConfig merkleDbConfig = getConfiguration().getConfigData(MerkleDbConfig.class);
-        final MerkleDbTableConfig tableConfig = dataSource
-                .getTableConfig()
-                .copy(merkleDbConfig.maxNumOfKeys(), merkleDbConfig.hashesRamToDiskThreshold());
+        final MerkleDbTableConfig tableConfig = dataSource.getTableConfig().copy();
         if (tableConfigs.get(tableId) != null) {
             throw new IllegalStateException("Table with ID " + tableId + " already exists");
         }
@@ -448,19 +445,24 @@ public final class MerkleDb {
             throw new IllegalStateException("Unknown table: " + name);
         }
         final int tableId = metadata.getTableId();
-        return getDataSource(tableId, name, dbCompactionEnabled);
+        return getDataSource(tableId, name, dbCompactionEnabled, false);
     }
 
     private MerkleDbDataSource getDataSource(
-            final int tableId, final String tableName, final boolean dbCompactionEnabled) throws IOException {
+            final int tableId, final String tableName, final boolean dbCompactionEnabled, final boolean useDiskIndices)
+            throws IOException {
         final MerkleDbTableConfig tableConfig = getTableConfig(tableId);
+        if (tableConfig == null) {
+            throw new IllegalStateException("Unknown table: " + tableId);
+        }
         final AtomicReference<IOException> rethrowIO = new AtomicReference<>(null);
         final MerkleDbDataSource dataSource = dataSources.updateAndGet(tableId, ds -> {
             if (ds != null) {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, dbCompactionEnabled);
+                return new MerkleDbDataSource(
+                        this, tableName, tableId, tableConfig, dbCompactionEnabled, useDiskIndices);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -478,21 +480,24 @@ public final class MerkleDb {
      * {@link #getDataSource(String, boolean)} method.
      *
      * @param dataSource The closed data source
+     * @param deleteData Indicates whether to delete the data source directory
      */
-    public void closeDataSource(final MerkleDbDataSource dataSource) {
+    void closeDataSource(final MerkleDbDataSource dataSource, boolean deleteData) {
         if (this != dataSource.getDatabase()) {
             throw new IllegalStateException("Can't close table in a different database");
         }
         final int tableId = dataSource.getTableId();
         assert dataSources.get(tableId) != null;
         dataSources.set(tableId, null);
-        final TableMetadata metadata = tableConfigs.get(tableId);
-        if (metadata == null) {
-            throw new IllegalArgumentException("Unknown table ID: " + tableId);
+        if (deleteData) {
+            final TableMetadata metadata = tableConfigs.get(tableId);
+            if (metadata == null) {
+                throw new IllegalArgumentException("Unknown table ID: " + tableId);
+            }
+            final String label = metadata.getTableName();
+            tableConfigs.set(tableId, null);
+            DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));
         }
-        final String label = metadata.getTableName();
-        tableConfigs.set(tableId, null);
-        DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));
         storeMetadata();
     }
 
@@ -545,7 +550,7 @@ public final class MerkleDb {
         if (targetDb.tableExists(tableName)) {
             throw new IllegalStateException("Table already exists in the target database, " + tableName);
         }
-        targetDb.importDataSource(dataSource, dataSource.getTableId(), true, true);
+        targetDb.importDataSource(dataSource, targetDb.getNextTableId(), true, true);
         targetDb.storeMetadata();
     }
 

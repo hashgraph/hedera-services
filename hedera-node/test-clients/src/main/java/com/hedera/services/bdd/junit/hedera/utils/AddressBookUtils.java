@@ -222,4 +222,15 @@ public class AddressBookUtils {
         requireNonNull(addressBook);
         return addressBook.getAddress(NodeId.of(nodeId));
     }
+
+    /**
+     * Returns the classic fee collector account ID for a given node ID.
+     * @param nodeId the node ID
+     * @return the classic fee collector account ID
+     */
+    public static com.hederahashgraph.api.proto.java.AccountID classicFeeCollectorIdFor(final long nodeId) {
+        return com.hederahashgraph.api.proto.java.AccountID.newBuilder()
+                .setAccountNum(nodeId + CLASSIC_FIRST_NODE_ACCOUNT_NUM)
+                .build();
+    }
 }

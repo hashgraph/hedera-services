@@ -56,11 +56,11 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
@@ -221,7 +221,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws CertificateEncodingException {
             testLifecycle.doAdhoc(nodeCreate("node4")
                     .adminKey(DEFAULT_PAYER)
-                    .accountId(classicFeeCollectorIdFor(4))
+                    .accountId(AddressBookUtils.classicFeeCollectorIdFor(4))
                     .description(CLASSIC_NODE_NAMES[4])
                     .withAvailableSubProcessPorts()
                     .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()));
@@ -259,19 +259,19 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             testLifecycle.doAdhoc(
                     nodeCreate("node5")
                             .adminKey(DEFAULT_PAYER)
-                            .accountId(classicFeeCollectorIdFor(5))
+                            .accountId(AddressBookUtils.classicFeeCollectorIdFor(5))
                             .description(CLASSIC_NODE_NAMES[5])
                             .withAvailableSubProcessPorts()
                             .gossipCaCertificate(gossipCertificates.get(1).getEncoded()),
                     nodeCreate("toBeDeletedNode6")
                             .adminKey(DEFAULT_PAYER)
-                            .accountId(classicFeeCollectorIdFor(6))
+                            .accountId(AddressBookUtils.classicFeeCollectorIdFor(6))
                             .description(CLASSIC_NODE_NAMES[6])
                             .withAvailableSubProcessPorts()
                             .gossipCaCertificate(gossipCertificates.get(2).getEncoded()),
                     nodeCreate("disallowedNode7")
                             .adminKey(DEFAULT_PAYER)
-                            .accountId(classicFeeCollectorIdFor(7))
+                            .accountId(AddressBookUtils.classicFeeCollectorIdFor(7))
                             .description(CLASSIC_NODE_NAMES[7])
                             .withAvailableSubProcessPorts()
                             .gossipCaCertificate(gossipCertificates.get(3).getEncoded())
@@ -340,10 +340,6 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             assertEquals("" + i, address.getNickname(), "Wrong nickname");
             assertEquals(CLASSIC_NODE_NAMES[i], address.getSelfName(), "Wrong self-name");
         });
-    }
-
-    private static AccountID classicFeeCollectorIdFor(final long nodeId) {
-        return AccountID.newBuilder().setAccountNum(nodeId + 3L).build();
     }
 
     private static String classicFeeCollectorIdLiteralFor(final long nodeId) {

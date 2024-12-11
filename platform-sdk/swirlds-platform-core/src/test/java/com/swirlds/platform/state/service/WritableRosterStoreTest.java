@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,7 +34,6 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RosterState.Builder;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.merkle.singleton.SingletonNode;
@@ -64,16 +64,18 @@ class WritableRosterStoreTest {
     void setUp() {
         final SingletonNode<RosterState> rosterStateSingleton = new SingletonNode<>(
                 PlatformStateService.NAME,
-                RosterStateId.ROSTER_STATES_KEY,
+                WritableRosterStore.ROSTER_STATES_KEY,
                 0,
                 RosterState.PROTOBUF,
                 new RosterState(null, new LinkedList<>()));
         final WritableKVState<ProtoBytes, Roster> rosters = MapWritableKVState.<ProtoBytes, Roster>builder(
-                        RosterStateId.ROSTER_KEY)
+                        WritableRosterStore.ROSTER_KEY)
                 .build();
-        when(writableStates.<ProtoBytes, Roster>get(RosterStateId.ROSTER_KEY)).thenReturn(rosters);
-        when(writableStates.<RosterState>getSingleton(RosterStateId.ROSTER_STATES_KEY))
-                .thenReturn(new WritableSingletonStateImpl<>(RosterStateId.ROSTER_STATES_KEY, rosterStateSingleton));
+        when(writableStates.<ProtoBytes, Roster>get(WritableRosterStore.ROSTER_KEY))
+                .thenReturn(rosters);
+        when(writableStates.<RosterState>getSingleton(WritableRosterStore.ROSTER_STATES_KEY))
+                .thenReturn(
+                        new WritableSingletonStateImpl<>(WritableRosterStore.ROSTER_STATES_KEY, rosterStateSingleton));
 
         readableRosterStore = new ReadableRosterStoreImpl(writableStates);
         writableRosterStore = new WritableRosterStore(writableStates);
@@ -249,6 +251,52 @@ class WritableRosterStoreTest {
     }
 
     /**
+     * Tests that setting three active rosters in a row will be reflected in the roster history. The roster history
+     * will contain two round roster pairs.
+     */
+    @Test
+    @DisplayName("Test Roster History")
+    void testRosterHistory() {
+        final Roster roster1 = createValidTestRoster(3);
+        writableRosterStore.putActiveRoster(roster1, 1);
+        assertSame(
+                readableRosterStore.getActiveRoster(),
+                roster1,
+                "Returned active roster should be the same as the one set");
+
+        final Roster roster2 = createValidTestRoster(1);
+        writableRosterStore.putActiveRoster(roster2, 2);
+        assertSame(
+                readableRosterStore.getActiveRoster(),
+                roster2,
+                "Returned active roster should be the same as the one set");
+
+        final Roster roster3 = createValidTestRoster(2);
+        writableRosterStore.putActiveRoster(roster3, 3);
+        assertSame(
+                readableRosterStore.getActiveRoster(),
+                roster3,
+                "Returned active roster should be the same as the one set");
+
+        final List<RoundRosterPair> rosterHistory = readableRosterStore.getRosterHistory();
+        assertEquals(2, rosterHistory.size(), "Roster history should contain 2 entries");
+
+        final Bytes roster2Hash = RosterUtils.hash(roster2).getBytes();
+        final Bytes roster3Hash = RosterUtils.hash(roster3).getBytes();
+
+        assertTrue(
+                rosterHistory.contains(new RoundRosterPair(2, roster2Hash)),
+                "Roster history should contain the second roster");
+        assertTrue(
+                rosterHistory.contains(new RoundRosterPair(3, roster3Hash)),
+                "Roster history should contain the third roster");
+        assertFalse(
+                rosterHistory.contains(
+                        new RoundRosterPair(1, RosterUtils.hash(roster1).getBytes())),
+                "Roster history should not contain the first roster");
+    }
+
+    /**
      * Creates a valid test roster with the given number of entries.
      *
      * @param entries the number of entries
@@ -261,7 +309,6 @@ class WritableRosterStoreTest {
                     .nodeId(i)
                     .weight(i + 1) // weight must be > 0
                     .gossipCaCertificate(Bytes.wrap("test" + i))
-                    .tssEncryptionKey(Bytes.wrap("test" + i))
                     .gossipEndpoint(ServiceEndpoint.newBuilder()
                             .domainName("domain.com" + i)
                             .port(666)

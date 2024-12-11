@@ -191,7 +191,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             @NonNull final Map<EntityIDPair, Long> fungibleChanges,
             @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,
             @NonNull final Map<AccountID, Long> hbarChanges) {
-        final Map<NftID, AccountID> finalNftOwners = new HashMap<>();
+        final Map<NftID, AccountID> childFinalNftOwners = new HashMap<>();
         context.forEachChildRecord(ChildStreamBuilder.class, childRecord -> {
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
@@ -226,7 +226,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
                     for (final var ownershipChange : tokenTransfers.nftTransfers()) {
                         final var newOwnerId = ownershipChange.receiverAccountIDOrElse(ZERO_ACCOUNT_ID);
                         final var key = new NftID(tokenId, ownershipChange.serialNumber());
-                        finalNftOwners.put(key, newOwnerId);
+                        childFinalNftOwners.put(key, newOwnerId);
                     }
                 }
             }
@@ -237,9 +237,15 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             final var nftTransfersForToken = entry.getValue();
             nftTransfersForToken.removeIf(transfer -> {
                 final var key = new NftID(tokenId, transfer.serialNumber());
-                return finalNftOwners
-                        .getOrDefault(key, ZERO_ACCOUNT_ID)
-                        .equals(transfer.receiverAccountIDOrElse(ZERO_ACCOUNT_ID));
+                if (childFinalNftOwners.containsKey(key)) {
+                    final var childFinalOwner = childFinalNftOwners.get(key);
+                    final var ourFinalOwner = transfer.receiverAccountIDOrThrow();
+                    // Remove this NFT transfer from our list if the child record's
+                    // transfer list already shows it being transferred to the same
+                    // final owner as in our list
+                    return childFinalOwner.equals(ourFinalOwner);
+                }
+                return false;
             });
             if (nftTransfersForToken.isEmpty()) {
                 iter.remove();

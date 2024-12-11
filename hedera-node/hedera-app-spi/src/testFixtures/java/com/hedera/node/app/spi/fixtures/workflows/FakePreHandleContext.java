@@ -428,21 +428,6 @@ public class FakePreHandleContext implements PreHandleContext {
     }
 
     @Override
-    @NonNull
-    public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
-            throws PreCheckException {
-        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested, false);
-        return innerContext;
-    }
-
-    @Override
-    @Nullable
-    public PreHandleContext innerContext() {
-        return innerContext;
-    }
-
-    @Override
     public String toString() {
         return "FakePreHandleContext{" + "accountStore="
                 + accountStore + ", txn="

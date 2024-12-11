@@ -80,11 +80,15 @@ class TssSubmissionsTest {
     @Mock
     private AppContext.Gossip gossip;
 
+    @Mock
+    private AppContext appContext;
+
     private TssSubmissions subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TssSubmissions(gossip, ForkJoinPool.commonPool());
+        given(appContext.gossip()).willReturn(gossip);
+        subject = new TssSubmissions(appContext, ForkJoinPool.commonPool());
         given(context.consensusNow()).willReturn(CONSENSUS_NOW);
         given(context.networkInfo()).willReturn(networkInfo);
         given(networkInfo.selfNodeInfo()).willReturn(nodeInfo);

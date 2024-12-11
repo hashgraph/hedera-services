@@ -87,10 +87,14 @@ class MerkleDbSnapshotTest {
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.merkledb");
         registry.registerConstructables("com.swirlds.virtualmap");
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(
                 VirtualNodeCache.class,
                 () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
     }
 
     @BeforeEach
@@ -274,7 +278,7 @@ class MerkleDbSnapshotTest {
         final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
         final VirtualDataSource original = dsBuilder.build("vm", false);
         // Simulate reconnect as a learner
-        final VirtualDataSource copy = dsBuilder.copy(original, true);
+        final VirtualDataSource copy = dsBuilder.copy(original, true, false);
 
         try {
             final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot", CONFIGURATION);

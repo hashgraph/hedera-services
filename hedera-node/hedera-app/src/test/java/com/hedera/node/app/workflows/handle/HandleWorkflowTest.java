@@ -31,13 +31,18 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.blocks.BlockStreamManager;
+import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
+import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -96,6 +101,15 @@ class HandleWorkflowTest {
     private CacheWarmer cacheWarmer;
 
     @Mock
+    private ScheduleService scheduleService;
+
+    @Mock
+    private KVStateChangeListener kvStateChangeListener;
+
+    @Mock
+    private BoundaryStateChangeListener boundaryStateChangeListener;
+
+    @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
 
     @Mock
@@ -130,6 +144,9 @@ class HandleWorkflowTest {
 
     @Mock
     private UserTxnFactory userTxnFactory;
+
+    @Mock
+    private TssBaseService tssBaseService;
 
     private HandleWorkflow subject;
 
@@ -205,6 +222,11 @@ class HandleWorkflowTest {
                 exchangeRateManager,
                 stakePeriodManager,
                 migrationStateChanges,
-                userTxnFactory);
+                userTxnFactory,
+                new AddressBookHelper(),
+                tssBaseService,
+                kvStateChangeListener,
+                boundaryStateChangeListener,
+                scheduleService);
     }
 }

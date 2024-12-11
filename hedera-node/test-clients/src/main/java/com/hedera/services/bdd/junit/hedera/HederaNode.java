@@ -138,9 +138,9 @@ public interface HederaNode {
     NodeMetadata metadata();
 
     /**
-     * Dumps the threads of the node, if applicable.
+     * Dumps the threads of the node, if applicable. Returns whether threads were dumped.
      */
-    default void dumpThreads() {
-        // No-op, for remote and embedded nodes thread dumps are not applicable
+    default boolean dumpThreads() {
+        return false;
     }
 }

@@ -45,6 +45,11 @@ public interface PcesFileWriter {
     void flush() throws IOException;
 
     /**
+     * Sync the buffer with the file system.
+     */
+    void sync() throws IOException;
+
+    /**
      * Close the file.
      */
     void close() throws IOException;

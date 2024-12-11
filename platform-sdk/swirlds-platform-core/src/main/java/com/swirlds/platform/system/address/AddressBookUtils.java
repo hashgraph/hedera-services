@@ -19,13 +19,11 @@ package com.swirlds.platform.system.address;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -33,10 +31,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -212,46 +207,6 @@ public class AddressBookUtils {
     }
 
     /**
-     * Verifies that all addresses and the nextNodeId are the same between the two address books, otherwise an
-     * IllegalStateException is thrown.  All other fields in the address book are intentionally ignored. This comparison
-     * is used during reconnect to verify that the address books align enough to proceed.
-     *
-     * @param addressBook1 the first address book to compare.
-     * @param addressBook2 the second address book to compare.
-     * @throws IllegalStateException if the address books are not compatible for reconnect.
-     */
-    public static void verifyReconnectAddressBooks(
-            @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2)
-            throws IllegalStateException {
-        final int addressCount = addressBook1.getSize();
-        if (addressCount != addressBook2.getSize()) {
-            throw new IllegalStateException("The address books do not have the same number of addresses.");
-        }
-        for (int i = 0; i < addressCount; i++) {
-            final NodeId nodeId1 = addressBook1.getNodeId(i);
-            final NodeId nodeId2 = addressBook2.getNodeId(i);
-            if (!nodeId1.equals(nodeId2)) {
-                throw new IllegalStateException("The address books do not have the same node ids.");
-            }
-            final Address address1 = addressBook1.getAddress(nodeId1);
-            final Address address2 = addressBook2.getAddress(nodeId2);
-
-            // With a switch from AddressBook to Roster, only a subset of fields in Address are truly comparable
-            // because the AddressBook instance that the PlatformBuilder passes to the reconnect classes is built
-            // from a Roster which is missing certain fields (custom names, memos, etc.)
-            // When the AB to Roster refactoring is complete, and specifically when the reconnect code migrates
-            // to using rosters, this method will be replaced with the one comparing the Rosters directly.
-            // For now, we're modifying the implementation here to only compare the fields in Address that are present
-            // in the Roster.
-            final RosterEntry rosterEntry1 = RosterRetriever.buildRosterEntry(address1);
-            final RosterEntry rosterEntry2 = RosterRetriever.buildRosterEntry(address2);
-            if (!rosterEntry1.equals(rosterEntry2)) {
-                throw new IllegalStateException("The address books do not have the same addresses.");
-            }
-        }
-    }
-
-    /**
      * Given a host and port, creates a {@link ServiceEndpoint} object with either an IP address or domain name
      * depending on the given host.
      *
@@ -276,60 +231,6 @@ public class AddressBookUtils {
     }
 
     /**
-     * Creates a new roster from the bootstrap address book.
-     *
-     * @return a new roster
-     */
-    @NonNull
-    public static Roster createRoster(@NonNull final AddressBook bootstrapAddressBook) {
-        Objects.requireNonNull(bootstrapAddressBook, "The bootstrapAddressBook must not be null.");
-        final List<RosterEntry> rosterEntries = new ArrayList<>(bootstrapAddressBook.getSize());
-        for (int i = 0; i < bootstrapAddressBook.getSize(); i++) {
-            final NodeId nodeId = bootstrapAddressBook.getNodeId(i);
-            final Address address = bootstrapAddressBook.getAddress(nodeId);
-
-            final RosterEntry rosterEntry = AddressBookUtils.toRosterEntry(address, nodeId);
-            rosterEntries.add(rosterEntry);
-        }
-        return Roster.newBuilder().rosterEntries(rosterEntries).build();
-    }
-
-    /**
-     * Converts an address to a roster entry.
-     *
-     * @param address the address to convert
-     * @param nodeId  the node ID to use for the roster entry
-     * @return the roster entry
-     */
-    private static RosterEntry toRosterEntry(@NonNull final Address address, @NonNull final NodeId nodeId) {
-        Objects.requireNonNull(address);
-        Objects.requireNonNull(nodeId);
-        final var signingCertificate = address.getSigCert();
-        Bytes signingCertificateBytes;
-        try {
-            signingCertificateBytes =
-                    signingCertificate == null ? Bytes.EMPTY : Bytes.wrap(signingCertificate.getEncoded());
-        } catch (final CertificateEncodingException e) {
-            signingCertificateBytes = Bytes.EMPTY;
-        }
-
-        final List<ServiceEndpoint> serviceEndpoints = new ArrayList<>(2);
-        if (address.getHostnameInternal() != null) {
-            serviceEndpoints.add(endpointFor(address.getHostnameInternal(), address.getPortInternal()));
-        }
-        if (address.getHostnameExternal() != null) {
-            serviceEndpoints.add(endpointFor(address.getHostnameExternal(), address.getPortExternal()));
-        }
-
-        return RosterEntry.newBuilder()
-                .nodeId(nodeId.id())
-                .weight(address.getWeight())
-                .gossipCaCertificate(signingCertificateBytes)
-                .gossipEndpoint(serviceEndpoints)
-                .build();
-    }
-
-    /**
      * Initializes the address book from the configuration and platform saved state.
      *
      * @param selfId               the node ID of the current node
@@ -350,7 +251,11 @@ public class AddressBookUtils {
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                 selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
 
-        if (addressBookInitializer.hasAddressBookChanged()) {
+        final boolean useRosterLifecycle = platformContext
+                .getConfiguration()
+                .getConfigData(AddressBookConfig.class)
+                .useRosterLifecycle();
+        if (!useRosterLifecycle && addressBookInitializer.hasAddressBookChanged()) {
             final MerkleRoot state = initialState.get().getState();
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of

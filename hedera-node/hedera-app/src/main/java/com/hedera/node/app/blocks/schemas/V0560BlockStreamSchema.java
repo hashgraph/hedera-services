@@ -116,6 +116,7 @@ public class V0560BlockStreamSchema extends Schema {
                         .postUpgradeWorkDone(false)
                         .creationSoftwareVersion(ctx.previousVersion())
                         .lastIntervalProcessTime(blockInfo.consTimeOfLastHandledTxn())
+                        .lastHandleTime(blockInfo.consTimeOfLastHandledTxn())
                         .build());
             }
         }

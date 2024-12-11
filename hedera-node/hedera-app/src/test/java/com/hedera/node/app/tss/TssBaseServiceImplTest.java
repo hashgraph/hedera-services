@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
@@ -23,8 +24,10 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +61,7 @@ class TssBaseServiceImplTest {
     @Mock
     private AppContext.Gossip gossip;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private AppContext appContext;
 
     @Mock
@@ -70,11 +73,13 @@ class TssBaseServiceImplTest {
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
         given(appContext.instantSource()).willReturn(InstantSource.system());
+        given(appContext.configSupplier()).willReturn(HederaTestConfigBuilder::createConfig);
+        given(appContext.selfNodeInfoSupplier()).willReturn(() -> DEFAULT_NODE_INFO);
         subject = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),
                 ForkJoinPool.commonPool(),
-                new PlaceholderTssLibrary(),
+                new TssLibraryImpl(appContext),
                 ForkJoinPool.commonPool(),
                 metrics);
     }
@@ -88,11 +93,11 @@ class TssBaseServiceImplTest {
         subject.registerLedgerSignatureConsumer(trackingConsumer);
         subject.registerLedgerSignatureConsumer(secondConsumer);
 
-        subject.requestLedgerSignature(firstMessage);
+        subject.requestLedgerSignature(firstMessage, Instant.ofEpochSecond(1_234_567L));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         subject.unregisterLedgerSignatureConsumer(secondConsumer);
         latch = new CountDownLatch(1);
-        subject.requestLedgerSignature(secondMessage);
+        subject.requestLedgerSignature(secondMessage, Instant.ofEpochSecond(1_234_567L));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         assertEquals(2, receivedMessageHashes.size());

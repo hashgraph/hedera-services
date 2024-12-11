@@ -16,8 +16,6 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
@@ -27,7 +25,6 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -50,7 +47,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     private final ObjectCounter offRamp;
     private final ToLongFunction<Object> dataCounter;
     private final FractionalTimer busyTimer;
-    private final Duration sleepDuration;
     private final long capacity;
 
     private final BlockingQueue<SequentialThreadTask> tasks = new LinkedBlockingQueue<>();
@@ -71,7 +67,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      * @param offRamp                  the counter to decrement when a task is removed from the queue
      * @param dataCounter              the function to weight input data objects for health monitoring
      * @param busyTimer                the timer to activate when a task is being handled
-     * @param sleepDuration            the duration to sleep when the queue is empty
      * @param capacity                 the maximum desired capacity for this task scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
@@ -86,7 +81,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
             @NonNull final ObjectCounter offRamp,
             @NonNull final ToLongFunction<Object> dataCounter,
             @NonNull final FractionalTimer busyTimer,
-            @NonNull final Duration sleepDuration,
             final long capacity,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
@@ -98,7 +92,6 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         this.offRamp = Objects.requireNonNull(offRamp);
         this.dataCounter = dataCounter;
         this.busyTimer = Objects.requireNonNull(busyTimer);
-        this.sleepDuration = Objects.requireNonNull(sleepDuration);
         this.capacity = capacity;
 
         thread = new Thread(this::run, "<scheduler " + name + ">");
@@ -183,17 +176,9 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         final List<SequentialThreadTask> buffer = new ArrayList<>(BUFFER_SIZE);
 
         while (alive.get()) {
-            tasks.drainTo(buffer, BUFFER_SIZE);
-            if (buffer.isEmpty()) {
-                if (sleepDuration.toNanos() <= 0) {
-                    continue;
-                }
-
+            if (tasks.drainTo(buffer, BUFFER_SIZE) == 0) {
                 try {
-                    final SequentialThreadTask task = tasks.poll(sleepDuration.toNanos(), NANOSECONDS);
-                    if (task == null) {
-                        continue;
-                    }
+                    final SequentialThreadTask task = tasks.take();
                     buffer.add(task);
                 } catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();

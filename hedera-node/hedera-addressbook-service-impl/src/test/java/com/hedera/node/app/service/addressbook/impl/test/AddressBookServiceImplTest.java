@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.service.addressbook.impl.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V057AddressBookSchema;
+import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class AddressBookServiceImplTest {
     private AddressBookServiceImpl subject;
@@ -40,10 +45,14 @@ class AddressBookServiceImplTest {
     }
 
     @Test
-    void registerSchemasRegistersNodesSchema() {
+    void registersExpectedSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
-
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
         subject.registerSchemas(schemaRegistry);
-        verify(schemaRegistry).register(notNull());
+        verify(schemaRegistry, times(2)).register(schemaCaptor.capture());
+        final var schemas = schemaCaptor.getAllValues();
+        assertThat(schemas).hasSize(2);
+        assertThat(schemas.getFirst()).isInstanceOf(V053AddressBookSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V057AddressBookSchema.class);
     }
 }

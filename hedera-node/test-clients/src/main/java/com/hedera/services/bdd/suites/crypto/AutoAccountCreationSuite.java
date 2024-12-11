@@ -21,7 +21,6 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -174,25 +173,22 @@ public class AutoAccountCreationSuite {
 
     @HapiTest
     final Stream<DynamicTest> aliasedPayerDoesntWork() {
-        return defaultHapiSpec("aliasedPayerDoesntWork")
-                .given(
-                        newKeyNamed(ALIAS),
-                        newKeyNamed(ALIAS_2),
-                        cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)))
-                .then(
-                        // pay with aliased id
-                        cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
-                                .payingWithAliased(ALIAS)
-                                .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND),
-                        // pay with regular accountID
-                        cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
-                                .payingWith(ALIAS));
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                newKeyNamed(ALIAS_2),
+                cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)),
+                // pay with aliased id
+                cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
+                        .payingWithAliased(ALIAS)
+                        .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND),
+                // pay with regular accountID
+                cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
+                        .payingWith(ALIAS));
     }
 
     @HapiTest
@@ -420,48 +416,43 @@ public class AutoAccountCreationSuite {
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
         final AtomicBoolean hasNodeStakeUpdate = new AtomicBoolean(false);
 
-        return defaultHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
-                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .via(NFT_CREATE),
-                        mintToken(NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"))),
-                        cryptoCreate(CIVILIAN).balance(civilianBal))
-                .when(
-                        tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L).between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
-                                .has(accountWith().balance(civilianBal)),
-                        // Auto-creation so, it will have -1 as max auto-associations.
-                        // Then auto-associated with the EVM address.
-                        cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1)
-                                        .between(CIVILIAN, VALID_ALIAS))
-                                .via(nftTransfer)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS))
-                .then(
-                        getTxnRecord(nftTransfer)
-                                .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp()))
-                                .exposingAllTo(records -> hasNodeStakeUpdate.set(
-                                        records.size() > 1 && isEndOfStakingPeriodRecord(records.get(1))))
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .hasPriority(recordWith().autoAssociationCount(1))
-                                .logged(),
-                        sourcing(() -> childRecordsCheck(
-                                nftTransfer,
-                                SUCCESS,
-                                recordWith().status(SUCCESS).consensusTimeImpliedByOffset(parentConsTime.get(), -1))));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .initialSupply(0)
+                        .treasury(TOKEN_TREASURY)
+                        .via(NFT_CREATE),
+                mintToken(NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"))),
+                cryptoCreate(CIVILIAN).balance(civilianBal),
+                tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
+                cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                getAccountInfo(CIVILIAN)
+                        .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
+                        .has(accountWith().balance(civilianBal)),
+                // Auto-creation so, it will have -1 as max auto-associations.
+                // Then auto-associated with the EVM address.
+                cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1).between(CIVILIAN, VALID_ALIAS))
+                        .via(nftTransfer)
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, VALID_ALIAS),
+                getTxnRecord(nftTransfer)
+                        .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp()))
+                        .exposingAllTo(records -> hasNodeStakeUpdate.set(
+                                records.size() > 1 && isEndOfStakingPeriodRecord(records.get(1))))
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(1)
+                        .hasPriority(recordWith().autoAssociationCount(1))
+                        .logged(),
+                sourcing(() -> childRecordsCheck(
+                        nftTransfer,
+                        SUCCESS,
+                        recordWith().status(SUCCESS).consensusTimeImpliedByOffset(parentConsTime.get(), -1))));
     }
 
     @HapiTest
@@ -469,88 +460,83 @@ public class AutoAccountCreationSuite {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
 
-        return defaultHapiSpec("multipleTokenTransfersSucceed")
-                .given(
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_A_CREATE),
-                        getTxnRecord(TOKEN_A_CREATE)
-                                .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY)
-                                .logged(),
-                        tokenCreate(B_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_B_CREATE),
-                        getTxnRecord(TOKEN_A_CREATE)
-                                .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY)
-                                .logged(),
-                        getTxnRecord(TOKEN_B_CREATE).hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
-                        cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2))
-                .when(
-                        cryptoTransfer(
-                                        moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
-                                        moving(100, B_TOKEN).between(TOKEN_TREASURY, CIVILIAN))
-                                .via("transferAToSponsor"),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(B_TOKEN).balance(900)),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(A_TOKEN).balance(900)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(100)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(B_TOKEN).balance(100)),
+        return hapiTest(
+                newKeyNamed(VALID_ALIAS),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(A_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(initialTokenSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .via(TOKEN_A_CREATE),
+                getTxnRecord(TOKEN_A_CREATE)
+                        .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY)
+                        .logged(),
+                tokenCreate(B_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(initialTokenSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .via(TOKEN_B_CREATE),
+                getTxnRecord(TOKEN_A_CREATE)
+                        .hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY)
+                        .logged(),
+                getTxnRecord(TOKEN_B_CREATE).hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
+                cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2),
+                cryptoTransfer(
+                                moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
+                                moving(100, B_TOKEN).between(TOKEN_TREASURY, CIVILIAN))
+                        .via("transferAToSponsor"),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(B_TOKEN).balance(900)),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(A_TOKEN).balance(900)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(B_TOKEN).balance(100)),
 
-                        /* --- transfer same token type to alias --- */
-                        cryptoTransfer(
-                                        moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
-                                        moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .via(multiTokenXfer)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS)
-                                .logged(),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
-                        // auto-creation and token association
-                        getTxnRecord(multiTokenXfer)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .tokenTransfers(includingFungibleMovement(
-                                                moving(10, A_TOKEN).to(VALID_ALIAS)))
-                                        .tokenTransfers(includingFungibleMovement(
-                                                moving(10, B_TOKEN).to(VALID_ALIAS)))
-                                        .autoAssociationCount(2))
-                                .logged(),
-                        childRecordsCheck(
-                                multiTokenXfer,
-                                SUCCESS,
-                                recordWith().status(SUCCESS).fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .hasToken(relationshipWith(A_TOKEN).balance(10))
-                                .hasToken(relationshipWith(B_TOKEN).balance(10))
-                                .has(accountWith().balance(0L).maxAutoAssociations(-1)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(90))
-                                .hasToken(relationshipWith(B_TOKEN).balance(90))
-                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)))
-                .then(
-                        /* --- transfer token to created alias */
-                        cryptoTransfer(moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .via("newXfer")
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY),
-                        getTxnRecord("newXfer")
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0)
-                                .logged(),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .hasToken(relationshipWith(A_TOKEN).balance(10))
-                                .hasToken(relationshipWith(B_TOKEN).balance(20)));
+                /* --- transfer same token type to alias --- */
+                cryptoTransfer(
+                                moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
+                                moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                        .via(multiTokenXfer)
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, VALID_ALIAS)
+                        .logged(),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
+                // auto-creation and token association
+                getTxnRecord(multiTokenXfer)
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(1)
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(10, A_TOKEN).to(VALID_ALIAS)))
+                                .tokenTransfers(includingFungibleMovement(
+                                        moving(10, B_TOKEN).to(VALID_ALIAS)))
+                                .autoAssociationCount(2))
+                        .logged(),
+                childRecordsCheck(
+                        multiTokenXfer,
+                        SUCCESS,
+                        recordWith().status(SUCCESS).fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .hasToken(relationshipWith(A_TOKEN).balance(10))
+                        .hasToken(relationshipWith(B_TOKEN).balance(10))
+                        .has(accountWith().balance(0L).maxAutoAssociations(-1)),
+                getAccountInfo(CIVILIAN)
+                        .hasToken(relationshipWith(A_TOKEN).balance(90))
+                        .hasToken(relationshipWith(B_TOKEN).balance(90))
+                        .has(accountWith().balanceLessThan(10 * ONE_HBAR)),
+                /* --- transfer token to created alias */
+                cryptoTransfer(moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                        .via("newXfer")
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY),
+                getTxnRecord("newXfer")
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(0)
+                        .logged(),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .hasToken(relationshipWith(A_TOKEN).balance(10))
+                        .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
 
     @HapiTest
@@ -559,47 +545,43 @@ public class AutoAccountCreationSuite {
         final var secondPayer = "secondPayer";
         final AtomicLong totalAutoCreationFees = new AtomicLong();
 
-        return defaultHapiSpec("payerBalanceIsReflectsAllChangesBeforeFeeCharging")
-                .given(
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(1000)
-                                .treasury(TOKEN_TREASURY),
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(1),
-                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
-                        cryptoTransfer(
-                                        moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
-                                        movingHbar(1).between(CIVILIAN, FUNDING))
-                                .fee(50 * ONE_HBAR)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN),
-                        getAccountBalance(CIVILIAN)
-                                .exposingBalanceTo(
-                                        balance -> totalAutoCreationFees.set(ONE_HUNDRED_HBARS - balance - 1)))
-                .when(
-                        logIt(spec -> String.format("Total auto-creation fees: %d", totalAutoCreationFees.get())),
-                        sourcing(() -> cryptoCreate(secondPayer)
-                                .maxAutomaticTokenAssociations(1)
-                                .balance(totalAutoCreationFees.get())),
-                        cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, secondPayer)))
-                .then(
-                        newKeyNamed(secondAliasKey),
-                        sourcing(() -> cryptoTransfer(
-                                        moving(10, A_TOKEN).between(secondPayer, secondAliasKey),
-                                        movingHbar(1).between(secondPayer, FUNDING))
-                                .fee(totalAutoCreationFees.get() - 2)
-                                .payingWith(secondPayer)
-                                .signedBy(secondPayer)
-                                .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)),
-                        getAccountBalance(secondPayer)
-                                .hasTinyBars(spec ->
-                                        // Should only be charged a few hundred thousand
-                                        // tinybar at most
-                                        balance -> ((totalAutoCreationFees.get() - balance) > 500_000L)
-                                                ? Optional.empty()
-                                                : Optional.of("Payer was" + " over-charged!")));
+        return hapiTest(
+                newKeyNamed(VALID_ALIAS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(A_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000)
+                        .treasury(TOKEN_TREASURY),
+                cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(1),
+                cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(
+                                moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
+                                movingHbar(1).between(CIVILIAN, FUNDING))
+                        .fee(50 * ONE_HBAR)
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN),
+                getAccountBalance(CIVILIAN)
+                        .exposingBalanceTo(balance -> totalAutoCreationFees.set(ONE_HUNDRED_HBARS - balance - 1)),
+                logIt(spec -> String.format("Total auto-creation fees: %d", totalAutoCreationFees.get())),
+                sourcing(() -> cryptoCreate(secondPayer)
+                        .maxAutomaticTokenAssociations(1)
+                        .balance(totalAutoCreationFees.get())),
+                cryptoTransfer(moving(100, A_TOKEN).between(TOKEN_TREASURY, secondPayer)),
+                newKeyNamed(secondAliasKey),
+                sourcing(() -> cryptoTransfer(
+                                moving(10, A_TOKEN).between(secondPayer, secondAliasKey),
+                                movingHbar(1).between(secondPayer, FUNDING))
+                        .fee(totalAutoCreationFees.get() - 2)
+                        .payingWith(secondPayer)
+                        .signedBy(secondPayer)
+                        .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)),
+                getAccountBalance(secondPayer)
+                        .hasTinyBars(spec ->
+                                // Should only be charged a few hundred thousand
+                                // tinybar at most
+                                balance -> ((totalAutoCreationFees.get() - balance) > 500_000L)
+                                        ? Optional.empty()
+                                        : Optional.of("Payer was" + " over-charged!")));
     }
 
     @HapiTest
@@ -611,81 +593,76 @@ public class AutoAccountCreationSuite {
         // with the size of the sig map, depending on the lengths of the public key prefixes required
         final long approxTransferFee = 1215188L;
 
-        return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
-                .given(
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_A_CREATE),
-                        tokenCreate(B_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_B_CREATE),
-                        getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
-                        getTxnRecord(TOKEN_B_CREATE).hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
-                        cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2))
-                .when(
-                        cryptoTransfer(
-                                        moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
-                                        moving(100, B_TOKEN).between(TOKEN_TREASURY, CIVILIAN))
-                                .via("transferAToSponsor"),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(B_TOKEN).balance(900)),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(A_TOKEN).balance(900)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(100)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(B_TOKEN).balance(100)),
+        return hapiTest(
+                newKeyNamed(VALID_ALIAS),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(A_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(initialTokenSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .via(TOKEN_A_CREATE),
+                tokenCreate(B_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(initialTokenSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .via(TOKEN_B_CREATE),
+                getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
+                getTxnRecord(TOKEN_B_CREATE).hasNewTokenAssociation(B_TOKEN, TOKEN_TREASURY),
+                cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2),
+                cryptoTransfer(
+                                moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
+                                moving(100, B_TOKEN).between(TOKEN_TREASURY, CIVILIAN))
+                        .via("transferAToSponsor"),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(B_TOKEN).balance(900)),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(A_TOKEN).balance(900)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(B_TOKEN).balance(100)),
 
-                        /* --- transfer same token type to alias --- */
-                        cryptoTransfer(
-                                        moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
-                                        moving(10, A_TOKEN).between(TOKEN_TREASURY, VALID_ALIAS))
-                                .via(sameTokenXfer)
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY)
-                                .logged(),
-                        getTxnRecord(sameTokenXfer)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .hasPriority(recordWith().autoAssociationCount(1))
-                                .logged(),
-                        childRecordsCheck(
-                                sameTokenXfer,
-                                SUCCESS,
-                                recordWith().status(SUCCESS).fee(EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE)),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .hasToken(relationshipWith(A_TOKEN).balance(20)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(A_TOKEN).balance(90))
-                                .has(accountWith().balanceLessThan(10 * ONE_HBAR)),
-                        assertionsHold((spec, opLog) -> {
-                            final var lookup = getTxnRecord(sameTokenXfer)
-                                    .andAllChildRecords()
-                                    .hasNonStakingChildRecordCount(1)
-                                    .hasPriority(recordWith().autoAssociationCount(1))
-                                    .hasNoAliasInChildRecord(0)
-                                    .logged();
-                            allRunFor(spec, lookup);
-                            final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
-                            final var payer = spec.registry().getAccountID(CIVILIAN);
-                            final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getFirstNonStakingChildRecord();
-                            assertAliasBalanceAndFeeInChildRecord(
-                                    parent, child, sponsor, payer, 0L, approxTransferFee, EXPECTED_ASSOCIATION_FEE);
-                        }))
-                .then(
-                        /* --- transfer another token to created alias.
-                        Alias created will have -1 as max-auto associations */
-                        cryptoTransfer(moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .via("failedXfer")
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY));
+                /* --- transfer same token type to alias --- */
+                cryptoTransfer(
+                                moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS),
+                                moving(10, A_TOKEN).between(TOKEN_TREASURY, VALID_ALIAS))
+                        .via(sameTokenXfer)
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY)
+                        .logged(),
+                getTxnRecord(sameTokenXfer)
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(1)
+                        .hasPriority(recordWith().autoAssociationCount(1))
+                        .logged(),
+                childRecordsCheck(
+                        sameTokenXfer,
+                        SUCCESS,
+                        recordWith().status(SUCCESS).fee(EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE)),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .hasToken(relationshipWith(A_TOKEN).balance(20)),
+                getAccountInfo(CIVILIAN)
+                        .hasToken(relationshipWith(A_TOKEN).balance(90))
+                        .has(accountWith().balanceLessThan(10 * ONE_HBAR)),
+                assertionsHold((spec, opLog) -> {
+                    final var lookup = getTxnRecord(sameTokenXfer)
+                            .andAllChildRecords()
+                            .hasNonStakingChildRecordCount(1)
+                            .hasPriority(recordWith().autoAssociationCount(1))
+                            .hasNoAliasInChildRecord(0)
+                            .logged();
+                    allRunFor(spec, lookup);
+                    final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
+                    final var payer = spec.registry().getAccountID(CIVILIAN);
+                    final var parent = lookup.getResponseRecord();
+                    final var child = lookup.getFirstNonStakingChildRecord();
+                    assertAliasBalanceAndFeeInChildRecord(
+                            parent, child, sponsor, payer, 0L, approxTransferFee, EXPECTED_ASSOCIATION_FEE);
+                }),
+                /* --- transfer another token to created alias.
+                Alias created will have -1 as max-auto associations */
+                cryptoTransfer(moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                        .via("failedXfer")
+                        .payingWith(CIVILIAN)
+                        .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY));
     }
 
     @HapiTest
@@ -857,246 +834,222 @@ public class AutoAccountCreationSuite {
         final var ed25519Shape = KeyShape.ED25519;
         final var autoCreation = "autoCreation";
 
-        return defaultHapiSpec("canGetBalanceAndInfoViaAlias")
-                .given(
-                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
-                        newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape))
-                .when(
-                        sortedCryptoTransfer(
-                                        tinyBarsFromAccountToAlias(CIVILIAN, ed25519SourceKey, ONE_HUNDRED_HBARS),
-                                        tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS))
-                                /* Sort the transfer list so the accounts are created in a predictable order (the
-                                 * serialized bytes of an Ed25519 are always lexicographically prior to the serialized
-                                 * bytes of a secp256k1 key, so now the first child record will _always_ be for the
-                                 * ed25519 auto-creation). */
-                                .payingWith(GENESIS)
-                                .via(autoCreation),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ed25519SourceKey)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, secp256k1SourceKey)))
-                .then(
-                        getTxnRecord(autoCreation)
-                                .andAllChildRecords()
-                                .hasNoAliasInChildRecord(0)
-                                .hasNoAliasInChildRecord(1)
-                                .logged(),
-                        getAutoCreatedAccountBalance(ed25519SourceKey)
-                                .hasExpectedAccountID()
-                                .logged(),
-                        getAutoCreatedAccountBalance(secp256k1SourceKey)
-                                .hasExpectedAccountID()
-                                .logged(),
-                        getAliasedAccountInfo(ed25519SourceKey)
-                                .hasExpectedAliasKey()
-                                .hasExpectedAccountID()
-                                .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0))
-                                .logged(),
-                        getAliasedAccountInfo(secp256k1SourceKey)
-                                .hasExpectedAliasKey()
-                                .hasExpectedAccountID()
-                                .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0))
-                                .logged());
+        return hapiTest(
+                cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
+                newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape),
+                sortedCryptoTransfer(
+                                tinyBarsFromAccountToAlias(CIVILIAN, ed25519SourceKey, ONE_HUNDRED_HBARS),
+                                tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS))
+                        /* Sort the transfer list so the accounts are created in a predictable order (the
+                         * serialized bytes of an Ed25519 are always lexicographically prior to the serialized
+                         * bytes of a secp256k1 key, so now the first child record will _always_ be for the
+                         * ed25519 auto-creation). */
+                        .payingWith(GENESIS)
+                        .via(autoCreation),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ed25519SourceKey)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, secp256k1SourceKey)),
+                getTxnRecord(autoCreation)
+                        .andAllChildRecords()
+                        .hasNoAliasInChildRecord(0)
+                        .hasNoAliasInChildRecord(1)
+                        .logged(),
+                getAutoCreatedAccountBalance(ed25519SourceKey)
+                        .hasExpectedAccountID()
+                        .logged(),
+                getAutoCreatedAccountBalance(secp256k1SourceKey)
+                        .hasExpectedAccountID()
+                        .logged(),
+                getAliasedAccountInfo(ed25519SourceKey)
+                        .hasExpectedAliasKey()
+                        .hasExpectedAccountID()
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0))
+                        .logged(),
+                getAliasedAccountInfo(secp256k1SourceKey)
+                        .hasExpectedAliasKey()
+                        .hasExpectedAccountID()
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0))
+                        .logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> aliasCanBeUsedOnManyAccountsNotAsAlias() {
-        return defaultHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
-                .given(
-                        /* have alias key on other accounts and tokens not as alias */
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(PAYER).key(VALID_ALIAS).balance(INITIAL_BALANCE * ONE_HBAR),
-                        tokenCreate(PAYER).adminKey(VALID_ALIAS),
-                        tokenCreate(PAYER).supplyKey(VALID_ALIAS),
-                        tokenCreate("a").treasury(PAYER))
-                .when(
-                        /* auto account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, VALID_ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN))
-                .then(
-                        /* get transaction record and validate the child record has alias bytes as expected */
-                        getTxnRecord(TRANSFER_TXN)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .hasNoAliasInChildRecord(0),
-                        getAccountInfo(PAYER)
-                                .has(accountWith()
-                                        .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
-                                        .noAlias()),
-                        getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith()
-                                        .key(VALID_ALIAS)
-                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
-                                        .alias(VALID_ALIAS)
-                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .memo(AUTO_MEMO)));
+        return hapiTest(
+                /* have alias key on other accounts and tokens not as alias */
+                newKeyNamed(VALID_ALIAS),
+                cryptoCreate(PAYER).key(VALID_ALIAS).balance(INITIAL_BALANCE * ONE_HBAR),
+                tokenCreate(PAYER).adminKey(VALID_ALIAS),
+                tokenCreate(PAYER).supplyKey(VALID_ALIAS),
+                tokenCreate("a").treasury(PAYER),
+                /* auto account is created */
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, VALID_ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN),
+                /* get transaction record and validate the child record has alias bytes as expected */
+                getTxnRecord(TRANSFER_TXN)
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(1)
+                        .hasNoAliasInChildRecord(0),
+                getAccountInfo(PAYER)
+                        .has(accountWith()
+                                .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
+                                .noAlias()),
+                getAliasedAccountInfo(VALID_ALIAS)
+                        .has(accountWith()
+                                .key(VALID_ALIAS)
+                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                .alias(VALID_ALIAS)
+                                .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                .receiverSigReq(false)
+                                .memo(AUTO_MEMO)));
     }
 
     @HapiTest
     final Stream<DynamicTest> accountCreatedIfAliasUsedAsPubKey() {
-        return defaultHapiSpec("accountCreatedIfAliasUsedAsPubKey")
-                .given(
-                        newKeyNamed(ALIAS),
-                        cryptoCreate(PAYER_1)
-                                .balance(INITIAL_BALANCE * ONE_HBAR)
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                cryptoCreate(PAYER_1)
+                        .balance(INITIAL_BALANCE * ONE_HBAR)
+                        .key(ALIAS)
+                        .signedBy(ALIAS, DEFAULT_PAYER),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER_1, ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN),
+                getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                getAccountInfo(PAYER_1)
+                        .has(accountWith()
+                                .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
+                                .noAlias()),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith()
                                 .key(ALIAS)
-                                .signedBy(ALIAS, DEFAULT_PAYER))
-                .when(cryptoTransfer(tinyBarsFromToWithAlias(PAYER_1, ALIAS, ONE_HUNDRED_HBARS))
-                        .via(TRANSFER_TXN))
-                .then(
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAccountInfo(PAYER_1)
-                                .has(accountWith()
-                                        .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
-                                        .noAlias()),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith()
-                                        .key(ALIAS)
-                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
-                                        .alias(ALIAS)
-                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false))
-                                .logged());
+                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                .alias(ALIAS)
+                                .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                .receiverSigReq(false))
+                        .logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
-        return defaultHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
-                .given(
-                        newKeyNamed(ALIAS),
-                        newKeyNamed(ALIAS_2),
-                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via("txn"),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord("txn").hasNonStakingChildRecordCount(1).logged())
-                .then(
-                        cryptoDeleteAliased(ALIAS)
-                                .transfer(PAYER)
-                                .hasKnownStatus(SUCCESS)
-                                .signedBy(ALIAS, PAYER, DEFAULT_PAYER)
-                                .purging(),
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via("txn2")
-                                .hasKnownStatus(ACCOUNT_DELETED)
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                newKeyNamed(ALIAS_2),
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via("txn"),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                getTxnRecord("txn").hasNonStakingChildRecordCount(1).logged(),
+                cryptoDeleteAliased(ALIAS)
+                        .transfer(PAYER)
+                        .hasKnownStatus(SUCCESS)
+                        .signedBy(ALIAS, PAYER, DEFAULT_PAYER)
+                        .purging(),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via("txn2")
+                        .hasKnownStatus(ACCOUNT_DELETED)
 
-                        /* need to validate it creates after expiration */
-                        //						sleepFor(60000L),
-                        //						cryptoTransfer(
-                        //								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "alias",
-                        // ONE_HUNDRED_HBARS)).via(
-                        //								"txn2"),
-                        //						getTxnRecord("txn2").hasChildRecordCount(1).logged()
-                        );
+                /* need to validate it creates after expiration */
+                //						sleepFor(60000L),
+                //						cryptoTransfer(
+                //								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "alias",
+                // ONE_HUNDRED_HBARS)).via(
+                //								"txn2"),
+                //						getTxnRecord("txn2").hasChildRecordCount(1).logged()
+                );
     }
 
     @HapiTest
     final Stream<DynamicTest> transferFromAliasToAlias() {
-        return defaultHapiSpec("transferFromAliasToAlias")
-                .given(
-                        newKeyNamed(ALIAS),
-                        newKeyNamed(ALIAS_2),
-                        cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
-                                .via("txn"),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord("txn").andAllChildRecords().logged(),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)))
-                .then(
-                        /* transfer from an alias that was auto created to a new alias, validate account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_2),
-                        getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged(),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)),
-                        getAliasedAccountInfo(ALIAS_2)
-                                .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)));
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                newKeyNamed(ALIAS_2),
+                cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
+                        .via("txn"),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                getTxnRecord("txn").andAllChildRecords().logged(),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)),
+                /* transfer from an alias that was auto created to a new alias, validate account is created */
+                cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN_2),
+                getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged(),
+                getAliasedAccountInfo(ALIAS).has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)),
+                getAliasedAccountInfo(ALIAS_2)
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> transferFromAliasToAccount() {
         final var payer = PAYER_4;
         final var alias = ALIAS;
-        return defaultHapiSpec("transferFromAliasToAccount")
-                .given(
-                        newKeyNamed(alias),
-                        cryptoCreate(payer).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate("randomAccount").balance(0L).payingWith(payer))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, 2 * ONE_HUNDRED_HBARS))
-                                .via("txn"),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, alias)),
-                        getTxnRecord("txn").andAllChildRecords().logged(),
-                        getAliasedAccountInfo(alias)
-                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)))
-                .then(
-                        /* transfer from an alias that was auto created to a new alias, validate account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias(alias, "randomAccount", ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_2),
-                        getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().hasNonStakingChildRecordCount(0),
-                        getAliasedAccountInfo(alias)
-                                .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)));
+        return hapiTest(
+                newKeyNamed(alias),
+                cryptoCreate(payer).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoCreate("randomAccount").balance(0L).payingWith(payer),
+                cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, 2 * ONE_HUNDRED_HBARS))
+                        .via("txn"),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, alias)),
+                getTxnRecord("txn").andAllChildRecords().logged(),
+                getAliasedAccountInfo(alias)
+                        .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)),
+                /* transfer from an alias that was auto created to a new alias, validate account is created */
+                cryptoTransfer(tinyBarsFromToWithAlias(alias, "randomAccount", ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN_2),
+                getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().hasNonStakingChildRecordCount(0),
+                getAliasedAccountInfo(alias).has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)));
     }
 
     @HapiTest
     final Stream<DynamicTest> transferToAccountAutoCreatedUsingAccount() {
-        return defaultHapiSpec("transferToAccountAutoCreatedUsingAccount")
-                .given(newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
-                                .via("txn"),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
-                        getTxnRecord("txn").andAllChildRecords().logged())
-                .then(
-                        /* get the account associated with alias and transfer */
-                        withOpContext((spec, opLog) -> {
-                            final var aliasAccount = spec.registry()
-                                    .getAccountID(spec.registry()
-                                            .getKey(TRANSFER_ALIAS)
-                                            .toByteString()
-                                            .toStringUtf8());
+        return hapiTest(
+                newKeyNamed(TRANSFER_ALIAS),
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
+                        .via("txn"),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
+                getTxnRecord("txn").andAllChildRecords().logged(),
+                /* get the account associated with alias and transfer */
+                withOpContext((spec, opLog) -> {
+                    final var aliasAccount = spec.registry()
+                            .getAccountID(spec.registry()
+                                    .getKey(TRANSFER_ALIAS)
+                                    .toByteString()
+                                    .toStringUtf8());
 
-                            final var op = cryptoTransfer(
-                                            tinyBarsFromTo(PAYER, asAccountString(aliasAccount), ONE_HUNDRED_HBARS))
-                                    .via(TRANSFER_TXN_2);
-                            final var op2 = getTxnRecord(TRANSFER_TXN_2)
-                                    .andAllChildRecords()
-                                    .logged();
-                            final var op3 = getAccountInfo(PAYER)
-                                    .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS)));
-                            final var op4 = getAliasedAccountInfo(TRANSFER_ALIAS)
-                                    .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0));
-                            allRunFor(spec, op, op2, op3, op4);
-                        }));
+                    final var op = cryptoTransfer(
+                                    tinyBarsFromTo(PAYER, asAccountString(aliasAccount), ONE_HUNDRED_HBARS))
+                            .via(TRANSFER_TXN_2);
+                    final var op2 =
+                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
+                    final var op3 = getAccountInfo(PAYER)
+                            .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS)));
+                    final var op4 = getAliasedAccountInfo(TRANSFER_ALIAS)
+                            .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0));
+                    allRunFor(spec, op, op2, op3, op4);
+                }));
     }
 
     @HapiTest
     final Stream<DynamicTest> transferToAccountAutoCreatedUsingAlias() {
-        return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
-                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)))
-                .then(
-                        /* transfer using alias and not account number */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_2),
-                        getTxnRecord(TRANSFER_TXN_2)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0)
-                                .logged(),
-                        getAccountInfo(PAYER)
-                                .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS))),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)));
+        return hapiTest(
+                newKeyNamed(ALIAS),
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN),
+                getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                getAccountInfo(PAYER).has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)),
+                getAliasedAccountInfo(ALIAS).has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)),
+                /* transfer using alias and not account number */
+                cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
+                        .via(TRANSFER_TXN_2),
+                getTxnRecord(TRANSFER_TXN_2)
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(0)
+                        .logged(),
+                getAccountInfo(PAYER)
+                        .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS))),
+                getAliasedAccountInfo(ALIAS)
+                        .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
     @HapiTest
@@ -1125,34 +1078,31 @@ public class AutoAccountCreationSuite {
                 .build()
                 .toByteString();
 
-        return defaultHapiSpec("autoAccountCreationUnsupportedAlias")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(PAYER, threshKeyAlias, ONE_HUNDRED_HBARS))
-                                .hasKnownStatus(INVALID_ALIAS_KEY)
-                                .via("transferTxnThreshKey"),
-                        cryptoTransfer(tinyBarsFromTo(PAYER, keyListAlias, ONE_HUNDRED_HBARS))
-                                .hasKnownStatus(INVALID_ALIAS_KEY)
-                                .via("transferTxnKeyList"),
-                        cryptoTransfer(tinyBarsFromTo(PAYER, contractKeyAlias, ONE_HUNDRED_HBARS))
-                                .hasKnownStatus(INVALID_ALIAS_KEY)
-                                .via("transferTxnContract"),
-                        cryptoTransfer(tinyBarsFromTo(PAYER, delegateContractKeyAlias, ONE_HUNDRED_HBARS))
-                                .hasKnownStatus(INVALID_ALIAS_KEY)
-                                .via("transferTxnKeyDelegate"))
-                .then();
+        return hapiTest(
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromTo(PAYER, threshKeyAlias, ONE_HUNDRED_HBARS))
+                        .hasKnownStatus(INVALID_ALIAS_KEY)
+                        .via("transferTxnThreshKey"),
+                cryptoTransfer(tinyBarsFromTo(PAYER, keyListAlias, ONE_HUNDRED_HBARS))
+                        .hasKnownStatus(INVALID_ALIAS_KEY)
+                        .via("transferTxnKeyList"),
+                cryptoTransfer(tinyBarsFromTo(PAYER, contractKeyAlias, ONE_HUNDRED_HBARS))
+                        .hasKnownStatus(INVALID_ALIAS_KEY)
+                        .via("transferTxnContract"),
+                cryptoTransfer(tinyBarsFromTo(PAYER, delegateContractKeyAlias, ONE_HUNDRED_HBARS))
+                        .hasKnownStatus(INVALID_ALIAS_KEY)
+                        .via("transferTxnKeyDelegate"));
     }
 
     @HapiTest
     final Stream<DynamicTest> autoAccountCreationBadAlias() {
         final var invalidAlias = VALID_25519_ALIAS.substring(0, 10);
 
-        return defaultHapiSpec("autoAccountCreationBadAlias")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(cryptoTransfer(tinyBarsFromTo(PAYER, invalidAlias, ONE_HUNDRED_HBARS))
+        return hapiTest(
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                cryptoTransfer(tinyBarsFromTo(PAYER, invalidAlias, ONE_HUNDRED_HBARS))
                         .hasKnownStatus(INVALID_ALIAS_KEY)
-                        .via("transferTxnBad"))
-                .then();
+                        .via("transferTxnBad"));
     }
 
     @HapiTest
@@ -1254,15 +1204,14 @@ public class AutoAccountCreationSuite {
 
     @HapiTest
     final Stream<DynamicTest> multipleAutoAccountCreations() {
-        return defaultHapiSpec("multipleAutoAccountCreations")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        newKeyNamed("alias1"),
-                        newKeyNamed(ALIAS_2),
-                        newKeyNamed("alias3"),
-                        newKeyNamed("alias4"),
-                        newKeyNamed("alias5"))
-                .then(assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
+        return hapiTest(
+                cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR),
+                newKeyNamed("alias1"),
+                newKeyNamed(ALIAS_2),
+                newKeyNamed("alias3"),
+                newKeyNamed("alias4"),
+                newKeyNamed("alias5"),
+                assumingNoStakingChildRecordCausesMaxChildRecordsExceeded(
                         cryptoTransfer(
                                 tinyBarsFromToWithAlias(PAYER, "alias1", ONE_HUNDRED_HBARS),
                                 tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
@@ -1292,22 +1241,21 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferHbarsToEVMAddressAlias")
-                .given(
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
                                     .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
                                     .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
@@ -1329,17 +1277,16 @@ public class AutoAccountCreationSuite {
                             .hasPrecheck(INVALID_SIGNATURE);
 
                     allRunFor(spec, op1, op2, txnRequiringHollowAccountSignature);
-                }))
-                .then(
-                        getTxnRecord(HBAR_XFER)
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        // and transfers to the 0.0.ECDSA_BYTES alias should succeed.
-                        cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
-                                .hasKnownStatus(SUCCESS)
-                                .via(TRANSFER_TXN),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
+                }),
+                getTxnRecord(HBAR_XFER)
+                        .hasChildRecordCount(1)
+                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
+                // and transfers to the 0.0.ECDSA_BYTES alias should succeed.
+                cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
+                        .hasKnownStatus(SUCCESS)
+                        .via(TRANSFER_TXN),
+                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 
     @HapiTest
@@ -1492,30 +1439,29 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferNonFungibleToEVMAddressAlias")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
-                        tokenCreate(nonFungibleToken)
-                                .initialSupply(0)
-                                .treasury(PARTY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(nonFungibleToken, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            nftId.set(registry.getTokenID(nonFungibleToken));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
+                tokenCreate(nonFungibleToken)
+                        .initialSupply(0)
+                        .treasury(PARTY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(MULTI_KEY),
+                mintToken(nonFungibleToken, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    nftId.set(registry.getTokenID(nonFungibleToken));
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     /* hollow account created with nft transfer as expected */
                     var cryptoTransferWithLazyCreate = cryptoTransfer(
                                     (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
@@ -1577,8 +1523,8 @@ public class AutoAccountCreationSuite {
                             nftTransfer,
                             transferToECDSAKeyAlias,
                             getHollowAccountInfoAfterTransfers);
-                }))
-                .then(getTxnRecord(NFT_XFER)
+                }),
+                getTxnRecord(NFT_XFER)
                         .hasNonStakingChildRecordCount(1)
                         .hasPriority(recordWith().autoAssociationCount(1))
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
@@ -1589,19 +1535,18 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
 
-        return defaultHapiSpec("cannotAutoCreateWithTxnToLongZero")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            evmAddress.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    evmAddress.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     final var validTransfer = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR))
                             .hasKnownStatus(SUCCESS)
                             .via("passedTxn");
@@ -1612,8 +1557,8 @@ public class AutoAccountCreationSuite {
                             .via("failedTxn");
 
                     allRunFor(spec, validTransfer, invalidTransferToLongZero);
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     getTxnRecord("failedTxn").logged();
                     getTxnRecord("passedTxn")
                             .hasChildRecordCount(1)

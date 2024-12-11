@@ -218,9 +218,7 @@ class DispatchProcessorTest {
                 .willReturn(true);
         given(recordBuilder.exchangeRate(any())).willReturn(recordBuilder);
         given(dispatch.handleContext()).willReturn(context);
-        given(dispatch.txnCategory()).willReturn(USER);
         givenAuthorization();
-        given(dispatch.txnCategory()).willReturn(USER);
 
         subject.processDispatch(dispatch);
 
@@ -456,7 +454,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
         verify(opWorkflowMetrics).incrementThrottled(CRYPTO_TRANSFER);
@@ -531,7 +529,7 @@ class DispatchProcessorTest {
         subject.processDispatch(dispatch);
 
         verifyUtilization();
-        verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody());
+        verify(platformStateUpdates).handleTxBody(stack, CONTRACT_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
@@ -551,7 +549,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
@@ -564,13 +562,12 @@ class DispatchProcessorTest {
         given(dispatchValidator.validationReportFor(dispatch)).willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         given(dispatch.handleContext()).willReturn(context);
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, CRYPTO_TRANSFER_TXN_INFO.txBody(), dispatch.config());
         verify(recordBuilder).status(SUCCESS);
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
         assertFinished(IsRootStack.NO);
@@ -648,11 +645,7 @@ class DispatchProcessorTest {
 
     private void assertFinished(@NonNull final IsRootStack isRootStack) {
         verify(recordFinalizer).finalizeRecord(dispatch);
-        if (isRootStack == IsRootStack.YES) {
-            verify(stack).commitTransaction(any());
-        } else {
-            verify(stack).commitFullStack();
-        }
+        verify(stack).commitFullStack();
     }
 
     private void verifyTrackedFeePayments() {

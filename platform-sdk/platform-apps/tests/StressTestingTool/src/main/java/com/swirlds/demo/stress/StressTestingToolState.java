@@ -26,29 +26,33 @@ package com.swirlds.demo.stress;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * This testing tool simulates configurable processing times for both preHandling and handling for stress testing
  * purposes.
  */
-public class StressTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class StressTestingToolState extends PlatformMerkleStateRoot {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
 
     /** A running sum of transaction contents */
@@ -57,8 +61,11 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     /** supplies the app config */
     public StressTestingToolConfig config;
 
-    @SuppressWarnings("unused")
-    public StressTestingToolState() {}
+    public StressTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
+    }
 
     private StressTestingToolState(@NonNull final StressTestingToolState sourceState) {
         super(sourceState);
@@ -74,6 +81,7 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
     @Override
     public synchronized StressTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new StressTestingToolState(this);
     }
 
@@ -84,6 +92,8 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion previousSoftwareVersion) {
+        super.init(platform, trigger, previousSoftwareVersion);
+
         this.config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
     }
 
@@ -91,7 +101,11 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         busyWait(config.preHandleTime());
     }
 
@@ -99,7 +113,12 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }
@@ -122,22 +141,6 @@ public class StressTestingToolState extends PartialMerkleLeaf implements SwirldS
                 // busy wait
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(runningSum);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        runningSum = in.readLong();
     }
 
     /**
