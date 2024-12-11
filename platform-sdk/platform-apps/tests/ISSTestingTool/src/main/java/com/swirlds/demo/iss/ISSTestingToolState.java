@@ -35,6 +35,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -42,6 +43,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
@@ -69,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -98,10 +101,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      */
     private static final Duration INCIDENT_WINDOW = Duration.ofSeconds(10);
 
-    private static final int RUNNING_SUM_INDEX = 1;
-    private static final int GENESIS_TIMESTAMP_INDEX = 2;
-    private static final int PLANNED_ISS_LIST_INDEX = 3;
-    private static final int PLANNED_LOG_ERROR_LIST_INDEX = 4;
+    // 0 is PLATFORM_STATE, 1 is ROSTERS, 2 is ROSTER_STATE
+    private static final int RUNNING_SUM_INDEX = 3;
+    private static final int GENESIS_TIMESTAMP_INDEX = 4;
+    private static final int PLANNED_ISS_LIST_INDEX = 5;
+    private static final int PLANNED_LOG_ERROR_LIST_INDEX = 6;
 
     private NodeId selfId;
 
@@ -236,7 +240,12 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -252,7 +261,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                         shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
 
                 if (plannedIss != null) {
-                    triggerISS(round.getConsensusRoster(), plannedIss, elapsedSinceGenesis, currentTimestamp);
+                    triggerISS(round, plannedIss, elapsedSinceGenesis, currentTimestamp);
                     // Record the consensus time at which this ISS was provoked
                     scratchPad.set(
                             IssTestingToolScratchpad.PROVOKED_ISS,
@@ -392,13 +401,13 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Trigger an ISS
      *
-     * @param roster         the address book for this round
+     * @param round               the current round
      * @param plannedIss          the planned ISS to trigger
      * @param elapsedSinceGenesis the amount of time that has elapsed since genesis
      * @param currentTimestamp    the current consensus timestamp
      */
     private void triggerISS(
-            @NonNull final Roster roster,
+            @NonNull final Round round,
             @NonNull final PlannedIss plannedIss,
             @NonNull final Duration elapsedSinceGenesis,
             @NonNull final Instant currentTimestamp) {
@@ -408,7 +417,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         Objects.requireNonNull(currentTimestamp);
 
         final int hashPartitionIndex = plannedIss.getPartitionOfNode(selfId);
-        if (hashPartitionIndex == findLargestPartition(roster, plannedIss)) {
+        if (hashPartitionIndex == findLargestPartition(round.getConsensusRoster(), plannedIss)) {
             // If we are in the largest partition then don't bother modifying the state.
             return;
         }
@@ -422,11 +431,12 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         logger.info(
                 STARTUP.getMarker(),
                 "ISS intentionally provoked. This ISS was planned to occur at time after genesis {}, "
-                        + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will "
+                        + "and actually occurred at time after genesis {} in round {}. This node ({}) is in partition {} and will "
                         + "agree with the hashes of all other nodes in partition {}. Nodes in other partitions "
                         + "are expected to have divergent hashes.",
                 plannedIss.getTimeAfterGenesis(),
                 elapsedSinceGenesis,
+                round.getRoundNum(),
                 selfId,
                 hashPartitionIndex,
                 hashPartitionIndex);
