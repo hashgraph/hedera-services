@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.tss.schemas;
 
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.state.lifecycle.StateDefinition;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,9 +38,15 @@ public class V0570TSSSchemaTest {
     @Test
     void registersExpectedSchema() {
         final var statesToCreate = subject.statesToCreate();
-        assertThat(statesToCreate.size()).isEqualTo(1);
+        assertThat(statesToCreate.size()).isEqualTo(2);
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(V0570TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY, iter.next());
+        // Assert that statesToCreate contains the expected keys
+        while (iter.hasNext()) {
+            final var stateKey = iter.next();
+            if (!stateKey.equals(TSS_ENCRYPTION_KEYS_KEY) && !stateKey.equals(TSS_STATUS_KEY)) {
+                throw new IllegalStateException("Unexpected state key: " + stateKey);
+            }
+        }
     }
 }
