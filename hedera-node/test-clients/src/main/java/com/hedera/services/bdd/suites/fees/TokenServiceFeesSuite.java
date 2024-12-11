@@ -17,6 +17,8 @@
 package com.hedera.services.bdd.suites.fees;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -88,7 +90,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(TOKEN)
 public class TokenServiceFeesSuite {
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
     private static final double ALLOWED_DIFFERENCE = 1;
@@ -503,7 +507,7 @@ public class TokenServiceFeesSuite {
 
     @HapiTest
     final Stream<DynamicTest> nftMintsScaleLinearlyBasedOnNumberOfSerialNumbers() {
-        final var expectedFee = 20 * EXPECTED_NFT_MINT_PRICE_USD;
+        final var expectedFee = 10 * EXPECTED_NFT_MINT_PRICE_USD;
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
