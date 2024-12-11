@@ -168,7 +168,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     final var round = new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
                     hedera.handleWorkflow().handleRound(state, round);
                     hedera.onSealConsensusRound(round, state);
-                    notifyBlockStreamManagerIfEnabled(round.getRoundNum());
+                    notifyStateHashed(round.getRoundNum());
                     prehandledEvents.clear();
                 }
                 // Now drain all events that will go in the next round and pre-handle them

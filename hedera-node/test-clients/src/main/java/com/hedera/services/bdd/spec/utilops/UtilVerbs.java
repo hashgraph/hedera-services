@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
@@ -93,17 +94,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.block.stream.output.TransactionResult;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
+import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -2149,6 +2154,97 @@ public class UtilVerbs {
                         allRunFor(spec, onSuccess);
                     }
                 }));
+    }
+
+    /**
+     * Asserts that a scheduled execution is as expected.
+     */
+    public interface ScheduledExecutionAssertion {
+        /**
+         * Tests that a scheduled execution body and result are as expected within the given spec.
+         * @param spec the context in which the assertion is being made
+         * @param body the transaction body of the scheduled execution
+         * @param result the transaction result of the scheduled execution
+         * @throws AssertionError if the assertion fails
+         */
+        void test(
+                @NonNull HapiSpec spec,
+                @NonNull com.hedera.hapi.node.transaction.TransactionBody body,
+                @NonNull TransactionResult result);
+    }
+
+    /**
+     * Returns a {@link ScheduledExecutionAssertion} that asserts the status of the execution result
+     * is as expected; and that the record of the scheduled execution is queryable, again with the expected status.
+     * @param status the expected status
+     * @return the assertion
+     */
+    public static ScheduledExecutionAssertion withStatus(
+            @NonNull final com.hedera.hapi.node.base.ResponseCodeEnum status) {
+        requireNonNull(status);
+        return (spec, body, result) -> {
+            assertEquals(status, result.status());
+            allRunFor(spec, getTxnRecord(body.transactionIDOrThrow()).assertingNothingAboutHashes());
+        };
+    }
+
+    /**
+     * Returns a {@link ScheduledExecutionAssertion} that asserts the status of the execution result
+     * is as expected; and that a query for its record, customized by the given spec, passes.
+     * @return the assertion
+     */
+    public static ScheduledExecutionAssertion withRecordSpec(@NonNull final Consumer<HapiGetTxnRecord> querySpec) {
+        requireNonNull(querySpec);
+        return (spec, body, result) -> {
+            final var op = getTxnRecord(body.transactionIDOrThrow()).assertingNothingAboutHashes();
+            querySpec.accept(op);
+            try {
+                allRunFor(spec, op);
+            } catch (Exception e) {
+                Assertions.fail(Optional.ofNullable(e.getCause()).orElse(e).getMessage());
+            }
+        };
+    }
+
+    /**
+     * Returns a {@link BlockStreamAssertion} factory that asserts the result of a scheduled execution
+     * of the given named transaction passes the given assertion.
+     * @param creationTxn the name of the transaction that created the scheduled execution
+     * @param assertion the assertion to apply to the scheduled execution
+     * @return a factory for a {@link BlockStreamAssertion} that asserts the result of the scheduled execution
+     */
+    public static Function<HapiSpec, BlockStreamAssertion> scheduledExecutionResult(
+            @NonNull final String creationTxn, @NonNull final ScheduledExecutionAssertion assertion) {
+        requireNonNull(creationTxn);
+        requireNonNull(assertion);
+        return spec -> block -> {
+            final com.hederahashgraph.api.proto.java.TransactionID creationTxnId;
+            try {
+                creationTxnId = spec.registry().getTxnId(creationTxn);
+            } catch (RegistryNotFound ignore) {
+                return false;
+            }
+            final var executionTxnId =
+                    protoToPbj(creationTxnId.toBuilder().setScheduled(true).build(), TransactionID.class);
+            final var items = block.items();
+            for (int i = 0, n = items.size(); i < n; i++) {
+                final var item = items.get(i);
+                if (item.hasEventTransaction()) {
+                    final var parts =
+                            TransactionParts.from(item.eventTransactionOrThrow().applicationTransactionOrThrow());
+                    if (parts.transactionIdOrThrow().equals(executionTxnId)) {
+                        for (int j = i + 1; j < n; j++) {
+                            final var followingItem = items.get(j);
+                            if (followingItem.hasTransactionResult()) {
+                                assertion.test(spec, parts.body(), followingItem.transactionResultOrThrow());
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        };
     }
 
     public static class TransferListBuilder {

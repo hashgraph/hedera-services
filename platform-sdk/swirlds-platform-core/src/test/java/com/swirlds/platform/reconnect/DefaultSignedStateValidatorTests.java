@@ -21,6 +21,8 @@ import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -31,11 +33,11 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterEntryBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -71,7 +73,7 @@ class DefaultSignedStateValidatorTests {
 
     private static final int ROUND = 0;
 
-    private AddressBook addressBook;
+    private Roster roster;
 
     private DefaultSignedStateValidator validator;
 
@@ -235,16 +237,16 @@ class DefaultSignedStateValidatorTests {
                 .collect(Collectors.toList()));
     }
 
-    @NonNull
-    private static AddressBook createAddressBook(@NonNull final Random random, @NonNull final List<Node> nodes) {
-        final AddressBook addressBook = new AddressBook();
+    private static Roster createRoster(@NonNull final Random random, @NonNull final List<Node> nodes) {
+        List<RosterEntry> rosterEntries = new ArrayList<>(nodes.size());
         for (final Node node : nodes.stream().sorted().toList()) {
-            addressBook.add(RandomAddressBuilder.create(random)
-                    .withNodeId(node.id)
+            rosterEntries.add(RandomRosterEntryBuilder.create(random)
+                    .withNodeId(node.id.id())
                     .withWeight(node.weight)
                     .build());
         }
-        return addressBook;
+
+        return new Roster(rosterEntries);
     }
 
     @BeforeEach
@@ -262,7 +264,7 @@ class DefaultSignedStateValidatorTests {
     @DisplayName("Signed State Validation")
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
         final Randotron randotron = Randotron.create();
-        addressBook = createAddressBook(randotron, nodes);
+        roster = createRoster(randotron, nodes);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -271,18 +273,18 @@ class DefaultSignedStateValidatorTests {
 
         final SignedState signedState = stateSignedByNodes(signingNodes);
         final SignedStateValidationData originalData =
-                new SignedStateValidationData(signedState.getState().getReadablePlatformState(), addressBook);
+                new SignedStateValidationData(signedState.getState().getReadablePlatformState(), roster);
 
         final boolean shouldSucceed = stateHasEnoughWeight(nodes, signingNodes);
         if (shouldSucceed) {
             assertDoesNotThrow(
-                    () -> validator.validate(signedState, addressBook, originalData),
+                    () -> validator.validate(signedState, roster, originalData),
                     "State signed with a majority of weight (%s out of %s) should pass validation."
                             .formatted(getValidSignatureWeight(signingNodes), getTotalWeight(nodes)));
         } else {
             assertThrows(
                     SignedStateInvalidException.class,
-                    () -> validator.validate(signedState, addressBook, originalData),
+                    () -> validator.validate(signedState, roster, originalData),
                     "State not signed with a majority of weight (%s out of %s) should NOT pass validation."
                             .formatted(getValidSignatureWeight(signingNodes), getTotalWeight(nodes)));
         }
@@ -342,7 +344,7 @@ class DefaultSignedStateValidatorTests {
 
         return new RandomSignedStateGenerator()
                 .setRound(ROUND)
-                .setAddressBook(addressBook)
+                .setAddressBook(RosterUtils.buildAddressBook(roster))
                 .setStateHash(stateHash)
                 .setSignatures(nodeSigs(signingNodes))
                 .setSignatureVerifier(signatureVerifier)

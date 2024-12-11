@@ -255,7 +255,8 @@ class ChildDispatchFactoryTest {
                                 callback,
                                 emptySet(),
                                 StreamBuilder.class,
-                                DispatchOptions.StakingRewards.ON)));
+                                DispatchOptions.StakingRewards.ON,
+                                DispatchOptions.UsePresetTxnId.NO)));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
