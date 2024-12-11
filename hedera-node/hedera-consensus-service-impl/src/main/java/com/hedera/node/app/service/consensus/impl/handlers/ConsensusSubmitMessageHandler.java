@@ -371,7 +371,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 }
             }
             // if any fee amount is larger than the corresponding limit, validation should fail
-            validateTrue(passed, ResponseCodeEnum.FAIL_FEE);
+            validateTrue(passed, ResponseCodeEnum.CUSTOM_FEES_LIMIT_EXCEEDED);
         }
     }
 
