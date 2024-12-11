@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 
 class ISSTestingToolStateTest {
 
-    private static final int RUNNING_SUM_INDEX = 1;
+    private static final int RUNNING_SUM_INDEX = 3;
     private ISSTestingToolState state;
     private PlatformStateModifier platformStateModifier;
     private Round round;
