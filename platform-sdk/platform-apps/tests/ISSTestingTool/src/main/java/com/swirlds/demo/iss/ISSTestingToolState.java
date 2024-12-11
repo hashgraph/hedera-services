@@ -309,8 +309,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             return false;
         }
 
-        final var transaction = transactionBytes.toByteArray();
-        return transaction.length > 4;
+        return transactionBytes.length() > 4;
     }
 
     /**
