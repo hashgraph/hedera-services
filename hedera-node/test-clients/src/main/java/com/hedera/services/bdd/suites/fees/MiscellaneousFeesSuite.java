@@ -34,7 +34,9 @@ import com.hedera.services.bdd.junit.HapiTest;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag("FEE")
 public class MiscellaneousFeesSuite {
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String BOB = "bob";
