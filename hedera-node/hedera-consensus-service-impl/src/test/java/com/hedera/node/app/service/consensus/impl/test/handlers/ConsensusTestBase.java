@@ -124,10 +124,18 @@ public class ConsensusTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
-    protected final List<ConsensusCustomFee> customFees = List.of(ConsensusCustomFee.newBuilder()
+    protected final ConsensusCustomFee tokenCustomFee = ConsensusCustomFee.newBuilder()
+            .fixedFee(FixedFee.newBuilder()
+                    .denominatingTokenId(fungibleTokenId)
+                    .amount(1)
+                    .build())
+            .feeCollectorAccountId(anotherPayer)
+            .build();
+    protected final ConsensusCustomFee hbarCustomFee = ConsensusCustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(1).build())
             .feeCollectorAccountId(anotherPayer)
-            .build());
+            .build();
+    protected final List<ConsensusCustomFee> customFees = List.of(tokenCustomFee, hbarCustomFee);
 
     protected Topic topic;
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl.handlers.customfee;
 
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -124,7 +125,8 @@ public class ConsensusCustomFeeAssessor {
                 .build();
     }
 
-    private AccountID getTokenTreasury(TokenID tokenId, ReadableTokenStore tokenStore) {
+    @VisibleForTesting
+    public AccountID getTokenTreasury(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         return token.treasuryAccountIdOrThrow();

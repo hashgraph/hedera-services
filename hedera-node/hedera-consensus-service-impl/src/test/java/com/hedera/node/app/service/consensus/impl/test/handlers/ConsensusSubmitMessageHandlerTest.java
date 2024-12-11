@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
@@ -34,7 +35,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
@@ -53,6 +56,7 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessag
 import com.hedera.node.app.service.consensus.impl.handlers.customfee.ConsensusCustomFeeAssessor;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -61,6 +65,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -95,12 +100,18 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @Mock
     private SignatureVerification signatureVerification;
 
+    @Mock
+    private CryptoTransferStreamBuilder streamBuilder;
+
+    private ConsensusCustomFeeAssessor customFeeAssessor;
+
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
     void setUp() {
         commonSetUp();
-        subject = new ConsensusSubmitMessageHandler(new ConsensusCustomFeeAssessor());
+        customFeeAssessor = spy(new ConsensusCustomFeeAssessor());
+        subject = new ConsensusSubmitMessageHandler(customFeeAssessor);
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("consensus.message.maxBytesAllowed", 100)
@@ -362,6 +373,28 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         verify(feeCalc).addNetworkRamByteSeconds(10080);
     }
 
+    @Test
+    @DisplayName("Handle submit to topic with custom fee works as expected")
+    void handleWorksAsExpectedWithCustomFee() {
+        givenValidTopic();
+
+        final var txn = newSubmitMessageTxnWithMaxFee();
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.consensusNow()).willReturn(consensusTimestamp);
+
+        mockPayerKeyIsNotFeeExempt();
+
+        final var initialTopic = writableTopicState.get(topicId);
+        subject.handle(handleContext);
+
+        final var expectedTopic = writableTopicState.get(topicId);
+        assertNotEquals(initialTopic, expectedTopic);
+        assertEquals(initialTopic.sequenceNumber() + 1, expectedTopic.sequenceNumber());
+        assertNotEquals(
+                initialTopic.runningHash().toString(),
+                expectedTopic.runningHash().toString());
+    }
+
     /* ----------------- Helper Methods ------------------- */
 
     private Key mockPayerLookup() {
@@ -383,6 +416,19 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .message(Bytes.wrap(message));
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusSubmitMessage(submitMessageBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newSubmitMessageTxnWithMaxFee() {
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .maxCustomFees(tokenCustomFee.fixedFee(), hbarCustomFee.fixedFee())
+                .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
+                .message(Bytes.wrap("Message for test-" + Instant.now() + "."
+                        + Instant.now().getNano()));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
@@ -429,12 +475,20 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private final ByteString NONSENSE = ByteString.copyFromUtf8("NONSENSE");
 
     private void mockPayerKeyIsFeeExempt() {
+        // mock signature is in FEKL
         given(handleContext.keyVerifier()).willReturn(keyVerifier);
         given(keyVerifier.verificationFor(any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.passed()).willReturn(true);
     }
 
     private void mockPayerKeyIsNotFeeExempt() {
+        // mock payer and token processing
+        doReturn(anotherPayer).when(customFeeAssessor).getTokenTreasury(any(), any());
+        given(handleContext.payer()).willReturn(payerId);
+        // mock crypto transfer dispatch results
+        given(handleContext.dispatch(any(DispatchOptions.class))).willReturn(streamBuilder);
+        given(streamBuilder.status()).willReturn(SUCCESS);
+        // mock signature is not in FEKL
         given(handleContext.keyVerifier()).willReturn(keyVerifier);
         given(keyVerifier.verificationFor(any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.passed()).willReturn(false);
