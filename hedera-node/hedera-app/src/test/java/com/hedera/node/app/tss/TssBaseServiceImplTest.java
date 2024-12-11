@@ -213,7 +213,7 @@ class TssBaseServiceImplTest {
         final var expectedTssStatus =
                 new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
         subject.setTssStatus(oldStatus);
-        subject.manageTssStatus(
+        subject.updateTssStatus(
                 true,
                 Instant.ofEpochSecond(1_234_567L),
                 new TssBaseServiceImpl.RosterAndTssInfo(
@@ -245,7 +245,7 @@ class TssBaseServiceImplTest {
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
 
         subject.generateParticipantDirectory(state);
-        subject.manageTssStatus(
+        subject.updateTssStatus(
                 true,
                 Instant.ofEpochSecond(1_234_567L),
                 new TssBaseServiceImpl.RosterAndTssInfo(
@@ -286,7 +286,7 @@ class TssBaseServiceImplTest {
 
         subject.generateParticipantDirectory(state);
         subject.getTssKeysAccessor().generateKeyMaterialForActiveRoster(state);
-        subject.manageTssStatus(
+        subject.updateTssStatus(
                 true,
                 Instant.ofEpochSecond(1_234_567L),
                 new TssBaseServiceImpl.RosterAndTssInfo(
@@ -320,7 +320,7 @@ class TssBaseServiceImplTest {
         given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
 
         subject.generateParticipantDirectory(state);
-        subject.manageTssStatus(
+        subject.updateTssStatus(
                 true,
                 Instant.ofEpochSecond(1_234_567L),
                 new TssBaseServiceImpl.RosterAndTssInfo(
@@ -348,7 +348,7 @@ class TssBaseServiceImplTest {
         given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
 
         subject.generateParticipantDirectory(state);
-        subject.manageTssStatus(
+        subject.updateTssStatus(
                 true,
                 Instant.ofEpochSecond(1_234_567L),
                 new TssBaseServiceImpl.RosterAndTssInfo(
@@ -389,7 +389,7 @@ class TssBaseServiceImplTest {
         given(gossip.sign(any())).willReturn(FAKE_SIGNATURE);
 
         subject.generateParticipantDirectory(state);
-        subject.manageTssStatus(
+        subject.updateTssStatus(
                 true,
                 Instant.ofEpochSecond(1_234_567L),
                 new TssBaseServiceImpl.RosterAndTssInfo(
