@@ -44,7 +44,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -62,7 +61,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -384,8 +382,6 @@ class DiskStartupNetworksTest {
             tssEncryptionKey.put(key, value);
         }
 
-        final var tssStatus = writableStates.<TssStatus>getSingleton(V0570TssBaseSchema.TSS_STATUS_KEY);
-        tssStatus.put(TssStatus.DEFAULT);
         ((CommittableWritableStates) writableStates).commit();
     }
 

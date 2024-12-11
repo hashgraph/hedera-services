@@ -24,15 +24,14 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.BitSet;
@@ -90,18 +89,16 @@ public class TssCryptographyManager {
      * given hash, based on incorporating all available {@link TssMessage}s, if
      * the threshold number of messages are available. The signature is with the node's RSA key used for gossip.
      *
-     * @param targetRosterHash the hash of the target roster
-     * @param directory the TSS participant directory
+     * @param directory        the TSS participant directory
+     * @param tssMessageBodies the list of TSS message bodies
+     * @param voteBody         the vote body
      * @return a future resolving to the signed vote if given message passes the threshold, or null otherwise
      */
     public CompletableFuture<Vote> getVoteFuture(
-            @NonNull final Bytes targetRosterHash,
             @NonNull final TssParticipantDirectory directory,
-            @NonNull final ReadableTssStore tssStore,
-            final long selfNodeId) {
-        final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
-        final var voteKey = new TssVoteMapKey(targetRosterHash, selfNodeId);
-        if (tssStore.getVote(voteKey) == null) {
+            @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
+            @Nullable final TssVoteTransactionBody voteBody) {
+        if (voteBody == null) {
             return computeVote(tssMessageBodies, directory).exceptionally(e -> {
                 log.error("Error computing public keys and signing", e);
                 return null;

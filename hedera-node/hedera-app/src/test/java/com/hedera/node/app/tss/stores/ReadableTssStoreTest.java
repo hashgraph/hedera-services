@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.stores;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,7 +35,6 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -44,7 +42,6 @@ import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import java.util.BitSet;
 import java.util.List;
@@ -69,9 +66,6 @@ class ReadableTssStoreTest {
 
     @Mock
     private ReadableKVState<EntityNumber, TssEncryptionKeyTransactionBody> readableTssEncryptionKeyState;
-
-    @Mock
-    private ReadableSingletonState<TssStatus> readableTssStatusState;
 
     @Mock
     private ReadableStates states;
@@ -111,8 +105,6 @@ class ReadableTssStoreTest {
                 .thenReturn(readableTssVoteState);
         when(states.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY))
                 .thenReturn(readableTssEncryptionKeyState);
-        when(states.<TssStatus>getSingleton(TSS_STATUS_KEY)).thenReturn(readableTssStatusState);
-
         tssStore = new ReadableTssStoreImpl(states);
     }
 
@@ -240,15 +232,6 @@ class ReadableTssStoreTest {
 
         TssEncryptionKeyTransactionBody result = tssStore.getTssEncryptionKey(nodeID);
         assertEquals(encryptionKey, result);
-    }
-
-    @Test
-    void testGetTssStatus() {
-        TssStatus status = TssStatus.DEFAULT;
-        when(readableTssStatusState.get()).thenReturn(status);
-
-        TssStatus result = tssStore.getTssStatus();
-        assertEquals(status, result);
     }
 
     @Test
