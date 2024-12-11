@@ -107,6 +107,12 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return self();
     }
 
+    public HapiTopicCreate feeExemptKeys(Key... keys) {
+        feeExemptKeyNamesList = Optional.of(
+                Stream.of(keys).<Function<HapiSpec, Key>>map(k -> spec -> k).collect(toList()));
+        return self();
+    }
+
     public HapiTopicCreate withConsensusCustomFee(final Function<HapiSpec, ConsensusCustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
