@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.tss.schemas;
 
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_STATUS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -25,14 +25,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link V0570TssBaseSchema}.
+ * Unit tests for {@link V0580TssBaseSchema}.
  */
-public class V0570TSSSchemaTest {
-    private V0570TssBaseSchema subject;
+public class V0580TSSSchemaTest {
+    private V0580TssBaseSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V0570TssBaseSchema();
+        subject = new V0580TssBaseSchema();
     }
 
     @Test

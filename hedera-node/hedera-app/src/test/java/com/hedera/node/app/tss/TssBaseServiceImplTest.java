@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -112,6 +112,6 @@ class TssBaseServiceImplTest {
     void placeholderRegistersSchemas() {
         subject.registerSchemas(registry);
         verify(registry).register(argThat(s -> s instanceof V0560TssBaseSchema));
-        verify(registry).register(argThat(s -> s instanceof V0570TssBaseSchema));
+        verify(registry).register(argThat(s -> s instanceof V0580TssBaseSchema));
     }
 }

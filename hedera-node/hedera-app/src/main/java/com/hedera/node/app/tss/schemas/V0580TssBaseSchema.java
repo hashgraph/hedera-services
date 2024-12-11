@@ -33,7 +33,7 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
-public class V0570TssBaseSchema extends Schema {
+public class V0580TssBaseSchema extends Schema {
     public static final String TSS_STATUS_KEY = "TSS_STATUS";
     public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
     /**
@@ -45,12 +45,12 @@ public class V0570TssBaseSchema extends Schema {
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(58).patch(0).build();
 
     /**
      * Create a new instance
      */
-    public V0570TssBaseSchema() {
+    public V0580TssBaseSchema() {
         super(VERSION);
     }
 
