@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@Tag("FEE")
 public class MiscellaneousFeesSuite {
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String BOB = "bob";
