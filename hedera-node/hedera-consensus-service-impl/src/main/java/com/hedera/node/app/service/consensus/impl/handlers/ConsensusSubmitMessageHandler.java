@@ -357,7 +357,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 for (FixedFee feeLimit : payerCustomFeeLimits) {
                     if (feeLimit.hasDenominatingTokenId()
                             && feeLimit.denominatingTokenId().equals(fixedFee.denominatingTokenId())
-                            && feeLimit.amount() <= fixedFee.amount()) {
+                            && fixedFee.amount() <= feeLimit.amount()) {
                         passed = true;
                         break;
                     }
