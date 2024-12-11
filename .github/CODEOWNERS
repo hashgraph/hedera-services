@@ -7,7 +7,7 @@
 ##### Example apps ######
 #########################
 # Platform-Base Example app
-/example-apps/**/module-info.java               @hashgraph/platform-base @hashgraph/devops-ci
+/example-apps/**/module-info.java               @hashgraph/platform-base
 /example-apps/swirlds-platform-base-example/    @hashgraph/platform-base
 
 
@@ -25,7 +25,6 @@
 
 # Hedera Node Root Protections
 /hedera-node/                                   @hashgraph/hedera-services
-/hedera-node/README.md                          @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
@@ -48,7 +47,6 @@
 /hedera-node/hedera-util*/                      @hashgraph/hedera-services
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-services
 /hedera-node/test-clients/                      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
-/hedera-node/**/module-info.java                @hashgraph/hedera-services @hashgraph/devops-ci
 
 ###############################
 ##### Hedera Cryptography #####
@@ -61,7 +59,7 @@
 
 # Platform SDK Root Protections
 /platform-sdk/                                      @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
-/platform-sdk/README.md                             @hashgraph/platform-hashgraph @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/platform-sdk/README.md                             @hashgraph/platform-hashgraph
 
 # Platform SDK Modules
 /platform-sdk/platform-apps/                        @hashgraph/platform-hashgraph
@@ -81,7 +79,12 @@
 /platform-sdk/swirlds-unit-tests/core/              @hashgraph/platform-hashgraph @hashgraph/platform-base
 /platform-sdk/swirlds-unit-tests/structures/        @hashgraph/platform-data @hashgraph/platform-architects  @hashgraph/platform-base
 /platform-sdk/swirlds-virtualmap/                   @hashgraph/platform-data @hashgraph/platform-architects
-/platform-sdk/**/module-info.java                   @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/platform-sdk/**/module-info.java                   @hashgraph/platform-hashgraph @hashgraph/platform-base
+
+####################
+#####   HAPI  ######
+####################
+/hapi/                                              @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/platform-architects @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
 
 # Documentation
 /platform-sdk/docs/platformWiki.md                  @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base
@@ -120,15 +123,15 @@ gradlew.bat                                         @hashgraph/devops-ci @hashgr
 /CODEOWNERS                                         @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/README.md                                          @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/README.md                                          @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
 **/LICENSE                                          @hashgraph/release-engineering-managers
 
 # CodeCov configuration
 **/codecov.yml                                      @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Git Ignore definitions
-**/.gitignore                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
-**/.gitignore.*                                     @hashgraph/devops-ci @hashgraph/release-engineering-managers
+**/.gitignore                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
+**/.gitignore.*                                     @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
 
 # Legacy CircleCI configuration
 .circleci.settings.xml                              @hashgraph/devops-ci @hashgraph/release-engineering-managers

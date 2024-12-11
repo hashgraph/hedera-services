@@ -429,6 +429,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 this,
                 configSupplier,
                 () -> daggerApp.networkInfo().selfNodeInfo(),
+                () -> metrics,
                 new AppThrottleFactory(
                         configSupplier,
                         () -> daggerApp.workingStateAccessor().getState(),
@@ -612,6 +613,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
+        contractServiceImpl.registerMetrics();
     }
 
     /**

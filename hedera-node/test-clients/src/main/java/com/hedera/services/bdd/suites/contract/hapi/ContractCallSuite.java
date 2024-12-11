@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubK
 import static com.hedera.services.bdd.junit.TestTags.ADHOC;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -2561,6 +2562,25 @@ public class ContractCallSuite {
                 }),
                 childRecordsCheck(
                         TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS).memo(LAZY_MEMO)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> badEvmAddressResultsInPrecheckFail() {
+        final var BAD_EVM_ADDRESS = "123456";
+        final var NAME = "name";
+        final var ERC_721_ABI = "ERC721ABI";
+        final var BAD_EVM_ADDRESS_CONTRACT = "badEvmAddressContract";
+
+        return hapiTest(
+                withOpContext((spec, ctxLog) -> spec.registry()
+                        .saveContractId(
+                                BAD_EVM_ADDRESS_CONTRACT,
+                                asContractIdWithEvmAddress(ByteString.copyFrom(unhex(BAD_EVM_ADDRESS))))),
+                withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi(BAD_EVM_ADDRESS_CONTRACT, getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .notTryingAsHexedliteral()
+                                .hasPrecheck(INVALID_CONTRACT_ID))));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -60,15 +61,17 @@ public class RecordFinalizer {
      * and the child record finalizer is used for child and preceding transactions.
      * @param dispatch the dispatch
      */
-    public void finalizeRecord(final Dispatch dispatch) {
-        switch (dispatch.txnCategory()) {
-            case USER, SCHEDULED -> recordFinalizer.finalizeStakingRecord(
+    public void finalizeRecord(@NonNull final Dispatch dispatch) {
+        requireNonNull(dispatch);
+        if (dispatch.stack().permitsStakingRewards()) {
+            recordFinalizer.finalizeStakingRecord(
                     dispatch.finalizeContext(),
                     dispatch.txnInfo().functionality(),
                     extraRewardReceivers(
                             dispatch.txnInfo().txBody(), dispatch.txnInfo().functionality(), dispatch.recordBuilder()),
                     dispatch.handleContext().dispatchPaidRewards());
-            case CHILD, PRECEDING -> recordFinalizer.finalizeNonStakingRecord(
+        } else {
+            recordFinalizer.finalizeNonStakingRecord(
                     dispatch.finalizeContext(), dispatch.txnInfo().functionality());
         }
     }

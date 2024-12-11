@@ -22,10 +22,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.util.function.Predicate;
