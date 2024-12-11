@@ -225,6 +225,8 @@ public class TopicCustomFeeBase {
     protected static String[] feeExemptKeyNames(int count) {
         final var list = new ArrayList<String>();
         for (int i = 0; i < count; i++) {
+
+
             list.add(FEE_EXEMPT_KEY_PREFIX + i);
         }
         return list.toArray(new String[0]);
