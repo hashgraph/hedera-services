@@ -163,6 +163,8 @@ public class LongListDisk extends AbstractLongList<Long> {
         tempFile = createTempFile(sourceFileName, configuration);
 
         try (final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw")) {
+            // ensure that the amount of disk space is enough
+            // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
             rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
             this.tempFileChannel = rf.getChannel();
             super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
@@ -175,8 +177,7 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /** {@inheritDoc} */
     @Override
-    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startOffset, int elementsToRead)
-            throws IOException {
+    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
         final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
         final long chunkOffset = (long) (chunkIndex - firstChunkWithDataIndex) * memoryChunkSize;
 
@@ -184,14 +185,17 @@ public class LongListDisk extends AbstractLongList<Long> {
         fillBufferWithZeroes(transferBuffer);
         transferBuffer.clear();
 
-        final int byteStart = startOffset * Long.BYTES;
-        transferBuffer.position(byteStart).limit(byteStart + elementsToRead * Long.BYTES);
+        final int startByteOffset = startIndex * Long.BYTES;
+        transferBuffer.position(startByteOffset).limit(memoryChunkSize);
         MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
         transferBuffer.flip();
         transferBuffer.limit(memoryChunkSize);
         transferBuffer.position(0);
-
-        MerkleDbFileUtils.completelyWrite(tempFileChannel, transferBuffer, chunkOffset);
+        long bytesTransferred = MerkleDbFileUtils.completelyWrite(tempFileChannel, transferBuffer, chunkOffset);
+        if (bytesTransferred != memoryChunkSize) {
+            throw new IOException("Failed to read long list chunks, chunkIndex=" + chunkIndex + " expected="
+                    + memoryChunkSize + " actual=" + bytesTransferred);
+        }
 
         chunkList.set(chunkIndex, chunkOffset);
     }

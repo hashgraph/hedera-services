@@ -244,37 +244,32 @@ public abstract class AbstractLongList<C> implements LongList {
      * @throws IOException if there was a problem reading the file
      */
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
-        final long minValidIndex = this.minValidIndex.get();
-        if (minValidIndex < 0) {
+        if (minValidIndex.get() < 0) {
             // Empty list, nothing to read
             return;
         }
 
-        final int totalChunks = calculateNumberOfChunks(size.get());
-        final int firstDataChunk = toIntExact(minValidIndex / numLongsPerChunk);
-        final int minIndexInChunk = toIntExact(minValidIndex % numLongsPerChunk);
+        final int totalNumberOfChunks = calculateNumberOfChunks(size.get());
+        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
 
-        for (int chunkIndex = firstDataChunk; chunkIndex < totalChunks; chunkIndex++) {
-            final int startOffset = (chunkIndex == firstDataChunk) ? minIndexInChunk : 0;
-            final int maxChunkElements = numLongsPerChunk - startOffset;
-
-            readChunkData(fileChannel, chunkIndex, startOffset, maxChunkElements);
+        for (int chunkIndex = firstChunkWithDataIndex; chunkIndex < totalNumberOfChunks; chunkIndex++) {
+            final int startIndex = (chunkIndex == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
+            readChunkData(fileChannel, chunkIndex, startIndex);
         }
     }
 
     /**
      * Subclasses must implement this method to read data from the provided fileChannel
-     * and store it into the chunk at `chunkIndex`, starting at `startOffset` within that
+     * and store it into the chunk at `chunkIndex`, starting at `startIndex` within that
      * chunk.
      *
      * @param fileChannel   the file channel to read from
      * @param chunkIndex    the index of the chunk to store the read data
-     * @param startOffset   the starting offset within the chunk to begin writing data
-     * @param elementsToRead the number of elements expected to read (subclasses may use or ignore this)
+     * @param startIndex   the starting index within the chunk to begin writing data
      * @throws IOException if there is an error reading the file
      */
-    protected abstract void readChunkData(FileChannel fileChannel, int chunkIndex, int startOffset, int elementsToRead)
-            throws IOException;
+    protected abstract void readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException;
 
     /**
      * Called when the list is initialized from an empty or absent source file.

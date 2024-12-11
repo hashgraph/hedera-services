@@ -17,18 +17,17 @@
 package com.swirlds.merkledb.collections;
 
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
+
+    @Override
+    protected LongListOffHeap createLongListWriter() {
+        return new LongListOffHeap();
+    }
 
     @Override
     protected LongListHeap createLongListWithChunkSizeInMb(final int chunkSizeInMb) {
@@ -45,27 +44,5 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
     protected LongListHeap createLongListFromFile(final Path file, final Configuration configuration)
             throws IOException {
         return new LongListHeap(file, configuration);
-    }
-
-    @Test
-    void writeReadSize1(@TempDir final Path tempDir) throws IOException {
-        try (final AbstractLongList<?> list = createLongList()) {
-            list.updateValidRange(2, 2);
-            list.put(2, 1);
-            final Path file = tempDir.resolve("writeReadSize1.ll");
-            // write longList data
-            list.writeToFile(file);
-            // check file exists and contains some data
-            assertTrue(Files.exists(file), "file does not exist");
-            // now try and construct a new LongList reading from the file
-            try (final LongList list2 = createLongListFromFile(file, CONFIGURATION)) {
-                // now check data and other attributes
-                assertEquals(list.capacity(), list2.capacity(), "Unexpected value for list2.capacity()");
-                assertEquals(list.size(), list2.size(), "Unexpected value for list2.size()");
-                assertEquals(1, list2.get(2));
-            }
-            // delete file as we are done with it
-            Files.delete(file);
-        }
     }
 }

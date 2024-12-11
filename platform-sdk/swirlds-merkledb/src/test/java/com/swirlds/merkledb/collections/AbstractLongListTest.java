@@ -53,6 +53,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
         return new LongListHeap();
     }
 
+    protected LongListDisk createLongListDisk(final Configuration configuration) {
+        return new LongListDisk(configuration);
+    }
+
+    protected abstract AbstractLongList<?> createLongListWriter();
+
     @SuppressWarnings("SameParameterValue")
     protected abstract T createLongListWithChunkSizeInMb(final int chunkSizeInMb);
 
@@ -241,6 +247,114 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 // now check data and other attributes
                 assertEquals(list2.capacity(), list.capacity(), "Unexpected value for list2.capacity()");
                 assertEquals(list2.size(), list2.size(), "Unexpected value for list2.size()");
+            }
+            // delete file as we are done with it
+            Files.delete(file);
+        }
+    }
+
+    @Test
+    void writeReadSizeOfOne(@TempDir final Path tempDir) throws IOException {
+        try (final AbstractLongList<?> list = createLongList()) {
+            list.updateValidRange(1, 1);
+            list.put(1, 1);
+            final Path file = tempDir.resolve("writeReadSizeOfOne.ll");
+            // write longList data
+            list.writeToFile(file);
+            // check file exists and contains some data
+            assertTrue(Files.exists(file), "file does not exist");
+            // now try and construct a new LongList reading from the file
+            try (final LongList list2 = createLongListFromFile(file, CONFIGURATION)) {
+                // now check data and other attributes
+                assertEquals(list.capacity(), list2.capacity(), "Unexpected value for list2.capacity()");
+                assertEquals(list.size(), list2.size(), "Unexpected value for list2.size()");
+                assertEquals(1, list2.get(1));
+            }
+            // delete file as we are done with it
+            Files.delete(file);
+        }
+    }
+
+    @Test
+    void createDiskReadBack(@TempDir final Path tempDir) throws IOException {
+        try (final AbstractLongList<?> list = createLongListDisk(CONFIGURATION)) {
+            list.updateValidRange(0, getSampleSize());
+            for (int i = 1; i < getSampleSize(); i++) {
+                list.put(i, i);
+            }
+            final Path file = tempDir.resolve("createDiskReadBack.ll");
+            // write longList data
+            list.writeToFile(file);
+            // check file exists and contains some data
+            assertTrue(Files.exists(file), "file does not exist");
+            assertEquals(
+                    (FILE_HEADER_SIZE_V2 + (Long.BYTES * (long) getSampleSize())),
+                    Files.size(file),
+                    "Expected file to contain all the data so its size [" + Files.size(file)
+                            + "] should have been header plus longs data size ["
+                            + (FILE_HEADER_SIZE_V2 + (Long.BYTES * (getSampleSize())))
+                            + "]");
+            // check all data, to make sure it did not get messed up
+            for (int i = 0; i < getSampleSize(); i++) {
+                final long readValue = list.get(i, 0);
+                assertEquals(
+                        i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
+            }
+            // now try and construct a new LongList reading from the file
+            try (final LongList longList2 = createLongListFromFile(file, CONFIGURATION)) {
+                // now check data and other attributes
+                assertEquals(list.capacity(), longList2.capacity(), "Unexpected value for longList2.capacity()");
+                assertEquals(list.size(), longList2.size(), "Unexpected value for longList2.size()");
+                for (int i = 0; i < getSampleSize(); i++) {
+                    final long readValue = longList2.get(i, 0);
+                    assertEquals(
+                            i,
+                            readValue,
+                            "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
+                }
+            }
+            // delete file as we are done with it
+            Files.delete(file);
+        }
+    }
+
+    @Test
+    void createWithWriterAndReadBack(@TempDir final Path tempDir) throws IOException {
+        try (final AbstractLongList<?> list = createLongListWriter()) {
+            list.updateValidRange(0, getSampleSize());
+            for (int i = 1; i < getSampleSize(); i++) {
+                list.put(i, i);
+            }
+            final Path file = tempDir.resolve("createWithWriterAndReadBack.ll");
+            // write longList data
+            list.writeToFile(file);
+            // check file exists and contains some data
+            assertTrue(Files.exists(file), "file does not exist");
+            assertEquals(
+                    (FILE_HEADER_SIZE_V2 + (Long.BYTES * (long) getSampleSize())),
+                    Files.size(file),
+                    "Expected file to contain all the data so its size [" + Files.size(file)
+                            + "] should have been header plus longs data size ["
+                            + (FILE_HEADER_SIZE_V2 + (Long.BYTES * (getSampleSize())))
+                            + "]");
+            // check all data, to make sure it did not get messed up
+            for (int i = 0; i < getSampleSize(); i++) {
+                final long readValue = list.get(i, 0);
+                assertEquals(
+                        i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
+            }
+            // now try and construct a new LongList reading from the file
+            try (final LongList longList2 = createLongListFromFile(file, CONFIGURATION)) {
+                // now check data and other attributes
+                assertEquals(list.capacity(), longList2.capacity(), "Unexpected value for longList2.capacity()");
+                assertEquals(list.size(), longList2.size(), "Unexpected value for longList2.size()");
+                for (int i = 0; i < getSampleSize(); i++) {
+                    final long readValue = longList2.get(i, 0);
+                    assertEquals(
+                            i,
+                            readValue,
+                            "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
+                }
             }
             // delete file as we are done with it
             Files.delete(file);

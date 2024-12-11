@@ -49,26 +49,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         return new LongListOffHeap();
     }
 
-    @Test
-    void writeReadSize1(@TempDir final Path tempDir) throws IOException {
-        try (final AbstractLongList<?> list = createLongList()) {
-            list.updateValidRange(2, 3);
-            list.put(2, 123);
-            final Path file = tempDir.resolve("writeReadSize1.ll");
-            // write longList data
-            list.writeToFile(file);
-            // check file exists and contains some data
-            assertTrue(Files.exists(file), "file does not exist");
-            // now try and construct a new LongList reading from the file
-            try (final LongList list2 = createLongListFromFile(file, CONFIGURATION)) {
-                // now check data and other attributes
-                assertEquals(list.capacity(), list2.capacity(), "Unexpected value for list2.capacity()");
-                assertEquals(list.size(), list2.size(), "Unexpected value for list2.size()");
-                assertEquals(123, list2.get(2));
-            }
-            // delete file as we are done with it
-            Files.delete(file);
-        }
+    @Override
+    protected LongListHeap createLongListWriter() {
+        return new LongListHeap();
     }
 
     @Override
