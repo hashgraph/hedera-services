@@ -499,20 +499,6 @@ public class PlatformWiring {
                 .solderTo(stateSignatureCollectorWiring.getInputWire(
                         StateSignatureCollector::handlePreconsensusSignatures));
 
-        // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
-        final WireTransformer<PlatformEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                preConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "extractPreconsensusSignatureTransactions",
-                        "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(
-                                event, StateSignatureTransaction.class));
-        splitOrphanBufferOutput.solderTo(preConsensusTransformer.getInputWire());
-        preConsensusTransformer
-                .getOutputWire()
-                .solderTo(stateSignatureCollectorWiring.getInputWire(
-                        StateSignatureCollector::handlePreconsensusSignatures));
-
         // Split output of StateSignatureCollector into single ReservedSignedStates.
         final OutputWire<ReservedSignedState> splitReservedSignedStateWire = stateSignatureCollectorWiring
                 .getOutputWire()
