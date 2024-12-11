@@ -31,6 +31,14 @@ import javax.inject.Singleton;
 @Singleton
 public class ScheduledCreateDecoder {
 
+    // Tuple indexes
+    // Indexes for SCHEDULED_CREATE_FUNGIBLE and SCHEDULED_CREATE_NON_FUNGIBLE
+    // scheduleCreateFungibleToken(HederaToken, int64, int32)
+    // scheduleCreateNonFungibleToken(HederaToken)
+    private static final int TOKEN_TUPLE_INDEX = 0;
+    private static final int INIT_SUPPLY_TUPLE_INDEX = 1;
+    private static final int DECIMALS_TUPLE_INDEX = 2;
+
     private final CreateDecoder createDecoder;
 
     @Inject
@@ -47,10 +55,10 @@ public class ScheduledCreateDecoder {
                 .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
                         .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
                                 .tokenCreation(createToken(createDecoder.getTokenCreateWrapper(
-                                        call.get(0),
+                                        call.get(TOKEN_TUPLE_INDEX),
                                         true,
-                                        call.get(1),
-                                        call.get(2),
+                                        call.get(INIT_SUPPLY_TUPLE_INDEX),
+                                        call.get(DECIMALS_TUPLE_INDEX),
                                         attempt.senderId(),
                                         attempt.nativeOperations(),
                                         attempt.addressIdConverter())))
@@ -65,7 +73,7 @@ public class ScheduledCreateDecoder {
                 .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
                         .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
                                 .tokenCreation(createToken(createDecoder.getTokenCreateWrapperNonFungible(
-                                        call.get(0),
+                                        call.get(TOKEN_TUPLE_INDEX),
                                         attempt.senderId(),
                                         attempt.nativeOperations(),
                                         attempt.addressIdConverter())))

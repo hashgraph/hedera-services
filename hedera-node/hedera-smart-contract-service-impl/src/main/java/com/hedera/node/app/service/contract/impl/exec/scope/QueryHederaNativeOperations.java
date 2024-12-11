@@ -156,9 +156,8 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     }
 
     /**
-     * Refuses to get the authorizing simple keys.
+     * Refuses to get the transactionID of the top level call in this context.
      *
-     * @return the authorizing simple keys
      * @throws UnsupportedOperationException always
      */
     @Override
