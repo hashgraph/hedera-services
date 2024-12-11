@@ -1,13 +1,21 @@
+/**
+ * # Get Token Info
+ * Query to retrieve information for a single token.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
 
-/*-
- * ‌
- * Hedera Network Services Protobuf
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +27,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -34,195 +41,367 @@ import "timestamp.proto";
 import "duration.proto";
 
 /**
- * Gets information about Token instance
+ * Request information for a token.
  */
 message TokenGetInfoQuery {
     /**
-     * Standard info sent from client to node, including the signed payment, and what kind of
-     * response is requested (cost, state proof, both, or neither)
+     * Standard information sent with every query operation.<br/>
+     * This includes the signed payment and what kind of response is requested
+     * (cost, state proof, both, or neither).
      */
     QueryHeader header = 1;
 
     /**
-     * The token for which information is requested. If invalid token is provided, INVALID_TOKEN_ID
-     * response is returned.
+     * A token identifier.
+     * <p>
+     * This SHALL identify the token to query.<br/>
+     * The identified token MUST exist, and MUST NOT be deleted.
      */
     TokenID token = 2;
 }
 
 /**
- * The metadata about a Token instance
+ * An Hedera Token Service(HTS) token.
+ *
+ * A token SHALL represent a fungible or non-fungible unit of exchange.<br/>
+ * The specified Treasury Account SHALL receive the initial supply of tokens and
+ * SHALL determine distribution of all tokens once minted.
  */
 message TokenInfo {
     /**
-     * ID of the token instance
+     * A unique identifier for this token.
      */
     TokenID tokenId = 1;
 
     /**
-     * The name of the token. It is a string of ASCII only characters
+     * A human-readable name for this token.
+     * <p>
+     * This value MAY NOT be unique.<br/>
+     * This value SHALL NOT exceed 100 bytes when encoded as UTF-8.
      */
     string name = 2;
 
     /**
-     * The symbol of the token. It is a UTF-8 capitalized alphabetical string
+     * A human-readable symbol for the token.
+     * <p>
+     * This value SHALL NOT be unique.<br/>
+     * This value SHALL NOT exceed 100 bytes when encoded as UTF-8.
      */
     string symbol = 3;
 
     /**
-     * The number of decimal places a token is divisible by. Always 0 for tokens of type
-     * NON_FUNGIBLE_UNIQUE
+     * A number of decimal places for this token.
+     * <p>
+     * If decimals are 8 or 11, then the number of whole tokens can be at most
+     * billions or millions, respectively. More decimals allows for a more
+     * finely-divided token, but also limits the maximum total supply.
+     * <p>
+     * Examples
+     * <ul>
+     *   <li>Bitcoin satoshis (21 million whole tokens with 8 decimals).</li>
+     *   <li>Hedera tinybar (50 billion whole tokens with 8 decimals).</li>
+     *   <li>Bitcoin milli-satoshis (21 million whole tokens with 11
+     *       decimals).</li>
+     *   <li>Theoretical limit is roughly 92.2 billion with 8 decimals, or
+     *       92.2 million with 11 decimals.</li>
+     * </ul>
+     * All token amounts in the network are stored as integer amounts, with
+     * each unit representing 10<sup>-decimals</sup> whole tokens.
+     * <p>
+     * For tokens with `token_type` set to `NON_FUNGIBLE_UNIQUE` this MUST be 0.
      */
     uint32 decimals = 4;
 
     /**
-     * For tokens of type FUNGIBLE_COMMON - the total supply of tokens that are currently in
-     * circulation. For tokens of type NON_FUNGIBLE_UNIQUE - the number of NFTs created of this
-     * token instance
+     * A _current_ total supply of this token, expressed in the smallest unit
+     * of the token.
+     * <p>
+     * The number of _whole_ tokens this represents is (total_supply /
+     * 10<sup>decimals</sup>). The value of total supply, MUST be within the
+     * positive range of a twos-compliment signed 64-bit integer.
+     * The `total_supply`, therefore MUST be between 1, and
+     * 9,223,372,036,854,775,807, inclusive.
+     * <p>
+     * This value SHALL be reduced when a `token_burn` or `token_wipe_account`
+     * operation is executed, and SHALL be increased when a `token_mint`
+     * operation is executed.
      */
     uint64 totalSupply = 5;
 
     /**
-     * The ID of the account which is set as Treasury
+     * A treasury account identifier for this token.
+     * <p>
+     * When the token is created, the initial supply given in the token create
+     * transaction SHALL be minted and deposited in the treasury account.<br/>
+     * All token mint transactions for this token SHALL deposit the new minted
+     * tokens in the treasury account.<br/>
+     * All token burn transactions for this token SHALL remove the tokens to be
+     * burned from the treasury account.
      */
     AccountID treasury = 6;
 
     /**
-     * The key which can perform update/delete operations on the token. If empty, the token can be
-     * perceived as immutable (not being able to be updated/deleted)
+     * Access control for general modification of this token.
+     * <p>
+     * This key MUST sign any `token_update` transaction that
+     * changes any attribute of the token other than expiration_time.
+     * Other attributes of this token MAY be changed by transactions other than
+     * `token_update`, and MUST be signed by one of the other purpose-specific
+     * keys assigned to the token.<br/>
+     * This value can be set during token creation, and SHALL NOT be
+     * modified thereafter, unless the update transaction is signed by both
+     * the existing `admin_key` and the new `admin_key`.<br/>
+     * If the `admin_key` is not set for a token, that token SHALL be immutable.
      */
     Key adminKey = 7;
 
     /**
-     * The key which can grant or revoke KYC of an account for the token's transactions. If empty,
-     * KYC is not required, and KYC grant or revoke operations are not possible.
+     * Access control for KYC for this token.
+     * <p>
+     * Know Your Customer (KYC) status may be granted for an account by a token
+     * grant kyc transaction signed by this key.<br/>
+     * If this key is not set, then KYC status cannot be granted to an account
+     * for this token, and any `TokenGrantKyc` transaction attempting to grant
+     * kyc to an account for this token SHALL NOT succeed.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key kycKey = 8;
 
     /**
-     * The key which can freeze or unfreeze an account for token transactions. If empty, freezing is
-     * not possible
+     * Access control to freeze this token.
+     * <p>
+     * A token may be frozen for an account, preventing any transaction from
+     * transferring that token for that specified account, by a token freeze
+     * account transaction signed by this key.<br/>
+     * If this key is not set, the token cannot be frozen, and any transaction
+     * attempting to freeze the token for an account SHALL NOT succeed.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key freezeKey = 9;
 
     /**
-     * The key which can wipe token balance of an account. If empty, wipe is not possible
+     * Access control of account wipe for this token.
+     * <p>
+     * A token may be wiped, removing and burning tokens from a specific
+     * account, by a token wipe transaction, which MUST be signed by this key.
+     * The `treasury_account` cannot be subjected to a token wipe. A token burn
+     * transaction, signed by the `supply_key`, serves to burn tokens held by
+     * the `treasury_account` instead.<br/>
+     * If this key is not set, the token cannot be wiped, and any transaction
+     * attempting to wipe the token from an account SHALL NOT succeed.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key wipeKey = 10;
 
     /**
-     * The key which can change the supply of a token. The key is used to sign Token Mint/Burn
-     * operations
+     * Access control of token mint/burn for this token.
+     * <p>
+     * A token mint transaction MUST be signed by this key, and any token mint
+     * transaction not signed by the current `supply_key` for that token
+     * SHALL NOT succeed.<br/>
+     * A token burn transaction MUST be signed by this key, and any token burn
+     * transaction not signed by the current `supply_key` for that token
+     * SHALL NOT succeed.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key supplyKey = 11;
 
     /**
-     * The default Freeze status (not applicable, frozen or unfrozen) of Hedera accounts relative to
-     * this token. FreezeNotApplicable is returned if Token Freeze Key is empty. Frozen is returned
-     * if Token Freeze Key is set and defaultFreeze is set to true. Unfrozen is returned if Token
-     * Freeze Key is set and defaultFreeze is set to false
+     * A flag indicating if accounts associated to this token are frozen by
+     * default, not frozen, or freeze is not applicable.
+     * <p>
+     * Accounts frozen by default and newly associated with this token CANNOT
+     * transact in the token until unfrozen.<br/>
+     * This SHALL NOT prevent a `tokenReject` transaction to return the tokens
+     * from an account to the treasury account.
      */
     TokenFreezeStatus defaultFreezeStatus = 12;
 
     /**
-     * The default KYC status (KycNotApplicable or Revoked) of Hedera accounts relative to this
-     * token. KycNotApplicable is returned if KYC key is not set, otherwise Revoked
+     * A flag indicating if accounts associated with this token are granted
+     * KYC by default, revoked by default, or KYC is not applicable.
      */
     TokenKycStatus defaultKycStatus = 13;
 
     /**
-     * Specifies whether the token was deleted or not
+     * A flag indicating that this token is deleted.
+     * <p>
+     * A transaction involving a deleted token MUST NOT succeed.
      */
     bool deleted = 14;
 
     /**
-     * An account which will be automatically charged to renew the token's expiration, at
-     * autoRenewPeriod interval
+     * An identifier for the account (if any) that the network will attempt
+     * to charge for this token's auto-renewal upon expiration.
+     * <p>
+     * This field is OPTIONAL. If it is not set then renewal fees SHALL be
+     * charged to the account identified by `treasury`.
      */
     AccountID autoRenewAccount = 15;
 
     /**
-     * The interval at which the auto-renew account will be charged to extend the token's expiry
+     * A duration by which the network should automatically extend
+     * this token's expiration.
+     * <p>
+     * If the token has a valid auto-renew account, and is not deleted upon
+     * expiration, the network SHALL attempt to automatically renew this
+     * token.<br/>
+     * The default values for the minimum period and maximum period are 30 days
+     * and 90 days, respectively.
      */
     Duration autoRenewPeriod = 16;
 
     /**
-     * The epoch second at which the token will expire
+     * An expiration time for this token, in seconds since the epoch.
+     * <p>
+     * For this purpose, `epoch` SHALL be the
+     * UNIX epoch with 0 at `1970-01-01T00:00:00.000Z`.
      */
     Timestamp expiry = 17;
 
     /**
-     * The memo associated with the token
+     * A short description of this token.
+     * <p>
+     * This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+     * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 18;
 
     /**
-     * The token type
+     * A type for this token.
+     * <p>
+     * A token SHALL be either `FUNGIBLE_COMMON` or `NON_FUNGIBLE_UNIQUE`.<br/>
+     * If this value was omitted during token creation, `FUNGIBLE_COMMON`
+     * SHALL be used.<br/>
+     * The value `FUNGIBLE_COMMON` SHALL represent a fungible/common token.
+     * The value `NON_FUNGIBLE_UNIQUE` SHALL represent a
+     * non-fungible/unique token.
      */
     TokenType tokenType = 19;
 
     /**
-     * The token supply type
+     * A supply type for this token.
+     * <p>
+     * A token SHALL have either `INFINITE` or `FINITE` supply type.<br/>
+     * If this value was omitted during token creation, the value `INFINITE`
+     * SHALL be used.
      */
     TokenSupplyType supplyType = 20;
 
     /**
-     * For tokens of type FUNGIBLE_COMMON - The Maximum number of fungible tokens that can be in
-     * circulation. For tokens of type NON_FUNGIBLE_UNIQUE - the maximum number of NFTs (serial
-     * numbers) that can be in circulation
+     * A maximum supply of this token.<br/>
+     * This is the maximum number of tokens of this type that may be issued.
+     * <p>
+     * This limit SHALL apply regardless of `token_type`.<br/>
+     * If `supply_type` is `INFINITE` then this value MUST be 0.<br/>
+     * If `supply_type` is `FINITE`, then this value MUST be greater than 0.
      */
     int64 maxSupply = 21;
 
     /**
-     * The key which can change the custom fee schedule of the token; if not set, the fee schedule
-     * is immutable
+     * Access control of the `custom_fees` field for this token.
+     * <p>
+     * The token custom fee schedule may be changed, modifying the fees charged
+     * for transferring that token, by a token update transaction, which MUST
+     * be signed by this key.<br/>
+     * If this key is not set, the token custom fee schedule cannot be changed,
+     * and any transaction attempting to change the custom fee schedule for
+     * this token SHALL NOT succeed.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key fee_schedule_key = 22;
 
     /**
-     * The custom fees to be assessed during a CryptoTransfer that transfers units of this token
+     * A custom fee schedule for this token.
      */
     repeated CustomFee custom_fees = 23;
 
     /**
-     * The Key which can pause and unpause the Token.
+     * Access control of pause/unpause for this token.
+     * <p>
+     * A token may be paused, preventing any transaction from transferring that
+     * token, by a token update transaction signed by this key.<br/>
+     * If this key is not set, the token cannot be paused, and any transaction
+     * attempting to pause the token SHALL NOT succeed.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key pause_key = 24;
 
     /**
-     * Specifies whether the token is paused or not. PauseNotApplicable is returned if pauseKey is not set.
+     * A flag indicating that this token is paused.<br/>
+     * A token may be paused, unpaused, or pause not applicable.
+     * <p>
+     * A transaction involving a paused token, other than token_unpause,
+     * MUST NOT succeed.
      */
     TokenPauseStatus pause_status = 25;
 
     /**
-     * The ledger ID the response was returned from; please see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-198.md">HIP-198</a> for the network-specific IDs. 
+     * The ledger ID of the network that generated this response.
+     * <p>
+     * This value SHALL identify the distributed ledger that responded to
+     * this query.
      */
     bytes ledger_id = 26;
 
     /**
-     * Represents the metadata of the token definition.
+     * A Token "Metadata".
+     * <p>
+     * This value, if set, SHALL NOT exceed 100 bytes.
      */
     bytes metadata = 27;
 
     /**
-     * The key which can change the metadata of a token
-     * (token definition and individual NFTs).
+     * Access Control of metadata update for this token.
+     * <p>
+     * A transaction to update the `metadata` field of this token MUST be
+     * signed by this key.<br/>
+     * If this token is a non-fungible/unique token type, a transaction to
+     * update the `metadata` field of any individual serialized unique token
+     * of this type MUST be signed by this key.<br/>
+     * If this key is not set, the token metadata SHALL NOT be changed after it
+     * is created.<br/>
+     * If this key is not set, the metadata for any individual serialized token
+     * of this type SHALL NOT be changed after it is created.<br/>
+     * This key MAY be set when the token is created, and MAY be set or modified
+     * via a token update transaction signed by the `admin_key`.<br/>
+     * If `admin_key` is not set, this value, whether set or unset,
+     * SHALL be immutable.
      */
     Key metadata_key = 28;
 }
 
 /**
- * Response when the client sends the node TokenGetInfoQuery
+ * A response message for the `getTokenInfo` query.
  */
 message TokenGetInfoResponse {
     /**
-     * Standard response from node to client, including the requested fields: cost, or state proof,
-     * or both, or neither
+     * The standard response information for queries.<br/>
+     * This includes the values requested in the `QueryHeader`
+     * (cost, state proof, both, or neither).
      */
     ResponseHeader header = 1;
 
     /**
-     * The information requested about this token instance
+     * The information requested for the identified token.
      */
     TokenInfo tokenInfo = 2;
 }
