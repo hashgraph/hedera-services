@@ -18,8 +18,6 @@ package com.hedera.hapi.node.state.roster;
  * limitations under the License.
  */
 
-import "basic_types.proto";
-
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.roster">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
@@ -33,24 +31,23 @@ option java_multiple_files = true;
  * This data SHALL be used to track round numbers and the rosters used in determining the consensus.<br/>
  */
 message RosterState {
+    /**
+     * The SHA-384 hash of a candidate roster.
+     * <p>
+     * This is the hash of the roster that is currently being considered
+     * for adoption.<br/>
+     * A Node SHALL NOT, ever, have more than one candidate roster
+     * at the same time.
+     */
+    bytes candidate_roster_hash = 1;
 
-  /**
-   * The SHA-384 hash of a candidate roster.
-   * <p>
-   * This is the hash of the roster that is currently being considered
-   * for adoption.<br/>
-   * A Node SHALL NOT, ever, have more than one candidate roster
-   * at the same time.
-   */
-  bytes candidate_roster_hash = 1;
-
-  /**
-   * A list of round numbers and roster hashes.<br/>
-   * The round number indicates the round in which the corresponding roster became active
-   * <p>
-   * This list SHALL be ordered by round numbers in descending order.
-   */
-  repeated RoundRosterPair round_roster_pairs = 2;
+    /**
+     * A list of round numbers and roster hashes.<br/>
+     * The round number indicates the round in which the corresponding roster became active
+     * <p>
+     * This list SHALL be ordered by round numbers in descending order.
+     */
+    repeated RoundRosterPair round_roster_pairs = 2;
 }
 
 /**
@@ -60,18 +57,17 @@ message RosterState {
  * active roster used for that round.
  */
 message RoundRosterPair {
+    /**
+     * The round number.
+     * <p>
+     * This value SHALL be the round number of the consensus round in which this roster became active.
+     */
+    uint64 round_number = 1;
 
-  /**
-   * The round number.
-   * <p>
-   * This value SHALL be the round number of the consensus round in which this roster became active.
-   */
-  uint64 round_number = 1;
-
-  /**
-   * The SHA-384 hash of the active roster for the given round number.
-   * <p>
-   * This value SHALL be the hash of the active roster used for the round.
-   */
-  bytes active_roster_hash = 2;
+    /**
+     * The SHA-384 hash of the active roster for the given round number.
+     * <p>
+     * This value SHALL be the hash of the active roster used for the round.
+     */
+    bytes active_roster_hash = 2;
 }
