@@ -101,10 +101,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      */
     private static final Duration INCIDENT_WINDOW = Duration.ofSeconds(10);
 
-    private static final int RUNNING_SUM_INDEX = 1;
-    private static final int GENESIS_TIMESTAMP_INDEX = 2;
-    private static final int PLANNED_ISS_LIST_INDEX = 3;
-    private static final int PLANNED_LOG_ERROR_LIST_INDEX = 4;
+    // 0 is PLATFORM_STATE, 1 is ROSTERS, 2 is ROSTER_STATE
+    private static final int RUNNING_SUM_INDEX = 3;
+    private static final int GENESIS_TIMESTAMP_INDEX = 4;
+    private static final int PLANNED_ISS_LIST_INDEX = 5;
+    private static final int PLANNED_LOG_ERROR_LIST_INDEX = 6;
 
     private NodeId selfId;
 

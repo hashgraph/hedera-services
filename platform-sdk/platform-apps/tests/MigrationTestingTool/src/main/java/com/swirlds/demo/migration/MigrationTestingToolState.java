@@ -92,11 +92,14 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      * A record of the positions of each child within this node.
      */
     private static class ChildIndices {
-        public static final int UNUSED = 0;
-        public static final int MERKLE_MAP = 1;
-        public static final int VIRTUAL_MAP = 2;
+        public static final int UNUSED_PLATFORM_STATE = 0;
+        public static final int UNUSED_ROSTERS = 1;
+        public static final int UNUSED_ROSTER_STATE = 2;
 
-        public static final int CHILD_COUNT = 3;
+        public static final int MERKLE_MAP = 3;
+        public static final int VIRTUAL_MAP = 4;
+
+        public static final int CHILD_COUNT = 5;
     }
 
     public NodeId selfId;
@@ -136,9 +139,10 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public boolean childHasExpectedType(final int index, final long childClassId) {
         switch (index) {
-            case ChildIndices.UNUSED:
-                // We used to use this for an address book, but now we don't use this index.
-                // Ignore whatever is found at this index.
+            case ChildIndices.UNUSED_PLATFORM_STATE:
+            case ChildIndices.UNUSED_ROSTERS:
+            case ChildIndices.UNUSED_ROSTER_STATE:
+                // Reserved for system states.
                 return true;
             case ChildIndices.MERKLE_MAP:
                 return childClassId == MerkleMap.CLASS_ID;
