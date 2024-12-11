@@ -105,6 +105,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     private final MerkleDbTableConfig tableConfig;
 
     /**
+     * Indicates whether disk based indices are used for this data source.
+     */
+    private final boolean preferDiskBasedIndices;
+
+    /**
      * In memory off-heap store for path to disk location, this is used for internal hashes store.
      */
     private final LongList pathToDiskLocationInternalNodes;
@@ -182,12 +187,15 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig tableConfig,
-            final boolean compactionEnabled)
+            final boolean compactionEnabled,
+            final boolean preferDiskBasedIndices)
             throws IOException {
         this.database = database;
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
+        this.preferDiskBasedIndices = preferDiskBasedIndices;
+
         final MerkleDbConfig merkleDbConfig = database.getConfiguration().getConfigData(MerkleDbConfig.class);
 
         // create thread group with label
@@ -240,7 +248,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         // create path to disk location index
         final boolean forceIndexRebuilding = merkleDbConfig.indexRebuildingEnforced();
-        if (tableConfig.isPreferDiskBasedIndices()) {
+        if (preferDiskBasedIndices) {
             pathToDiskLocationInternalNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
@@ -250,7 +258,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             pathToDiskLocationInternalNodes = new LongListOffHeap();
         }
         // path to disk location index, leaf nodes
-        if (tableConfig.isPreferDiskBasedIndices()) {
+        if (preferDiskBasedIndices) {
             pathToDiskLocationLeafNodes =
                     new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile, database.getConfiguration());
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
@@ -326,7 +334,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 dbPaths.keyToPathDirectory,
                 keyToPathStoreName,
                 tableName + ":objectKeyToPath",
-                tableConfig.isPreferDiskBasedIndices());
+                preferDiskBasedIndices);
         keyToPathFileCompactor = new DataFileCompactor(
                 merkleDbConfig,
                 keyToPathStoreName,
@@ -749,9 +757,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         return true;
     }
 
-    /** Wait for any merges to finish, then close all data stores and free all resources. */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void close() throws IOException {
+    public void close(final boolean keepData) throws IOException {
         if (!closed.getAndSet(true)) {
             try {
                 // Stop merging and shutdown the datasource compactor
@@ -788,7 +798,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                     // updated count of open databases
                     COUNT_OF_OPEN_DATABASES.decrement();
                     // Notify the database
-                    database.closeDataSource(this);
+                    database.closeDataSource(this, !keepData);
                 }
             }
         }
@@ -882,7 +892,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("maxNumberOfKeys", tableConfig.getMaxNumberOfKeys())
-                .append("preferDiskBasedIndexes", tableConfig.isPreferDiskBasedIndices())
+                .append("preferDiskBasedIndexes", preferDiskBasedIndices)
                 .append("pathToDiskLocationInternalNodes.size", pathToDiskLocationInternalNodes.size())
                 .append("pathToDiskLocationLeafNodes.size", pathToDiskLocationLeafNodes.size())
                 .append("hashesRamToDiskThreshold", tableConfig.getHashesRamToDiskThreshold())
@@ -949,7 +959,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
     // For testing purpose
     boolean isPreferDiskBasedIndexes() {
-        return tableConfig.isPreferDiskBasedIndices();
+        return preferDiskBasedIndices;
     }
 
     // For testing purpose
