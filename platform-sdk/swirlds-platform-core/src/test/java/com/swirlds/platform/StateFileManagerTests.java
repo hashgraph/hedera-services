@@ -454,13 +454,13 @@ class StateFileManagerTests {
             }
 
             // Verify that old states are properly deleted
-            int files_count = 0;
-            try (final Stream<Path> list = Files.list(statesDirectory)) {
-                files_count = (int) list.count();
+            int filesCount;
+            try (Stream<Path> list = Files.list(statesDirectory)) {
+                filesCount = (int) list.count();
             }
             assertEquals(
                     Math.min(statesOnDisk, round),
-                    files_count,
+                    filesCount,
                     "unexpected number of states on disk after saving round " + round);
 
             // ISS/fatal state should still be in place

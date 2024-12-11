@@ -296,11 +296,11 @@ public class StartupStateUtilsTests {
         final Path savedStateDirectory = signedStateFilePath
                 .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
-        int files_count = 0;
-        try (final Stream<Path> list = Files.list(savedStateDirectory)) {
-            files_count = (int) list.count();
+        int filesCount;
+        try (Stream<Path> list = Files.list(savedStateDirectory)) {
+            filesCount = (int) list.count();
         }
-        assertEquals(5 - invalidStateCount, files_count);
+        assertEquals(5 - invalidStateCount, filesCount, "Unexpected number of files " + filesCount);
         assertEquals(invalidStateCount, recycleCount.get());
     }
 
