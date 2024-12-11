@@ -45,6 +45,7 @@ module com.hedera.node.app {
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
+    requires com.fasterxml.jackson.databind;
     requires com.google.common;
     requires com.google.protobuf;
     requires io.grpc.netty;
@@ -103,6 +104,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
+    exports com.hedera.node.app.uploader;
+    exports com.hedera.node.app.uploader.credentials;
     exports com.hedera.node.app.tss.api;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;
