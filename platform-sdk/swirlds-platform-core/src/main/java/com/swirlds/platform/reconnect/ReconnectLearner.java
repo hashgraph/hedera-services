@@ -30,7 +30,6 @@ import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -106,8 +105,7 @@ public class ReconnectLearner {
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
-        this.stateValidationData = new SignedStateValidationData(
-                currentState.getReadablePlatformState(), RosterUtils.buildAddressBook(roster));
+        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), roster);
     }
 
     /**
@@ -159,7 +157,7 @@ public class ReconnectLearner {
         try {
             receiveSignatures();
             reservedSignedState = reconnect();
-            validator.validate(reservedSignedState.get(), RosterUtils.buildAddressBook(roster), stateValidationData);
+            validator.validate(reservedSignedState.get(), roster, stateValidationData);
             ReconnectUtils.endReconnectHandshake(connection);
             SignedStateFileReader.unregisterServiceStates(reservedSignedState.get());
             return reservedSignedState;
