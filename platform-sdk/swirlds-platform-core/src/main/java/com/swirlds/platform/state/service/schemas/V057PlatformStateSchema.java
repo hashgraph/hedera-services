@@ -21,9 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.internal.network.NodeMetadata;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -31,7 +30,6 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -48,16 +46,16 @@ public class V057PlatformStateSchema extends Schema {
      */
     private final Supplier<Roster> activeRoster;
 
-    private final Supplier<SoftwareVersion> appVersion;
+    private final Function<Configuration, SoftwareVersion> appVersionFn;
     private final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFactory;
 
     public V057PlatformStateSchema(
             @NonNull final Supplier<Roster> activeRoster,
-            @NonNull final Supplier<SoftwareVersion> appVersion,
+            @NonNull final Function<Configuration, SoftwareVersion> appVersionFn,
             @NonNull final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFactory) {
         super(VERSION);
         this.activeRoster = requireNonNull(activeRoster);
-        this.appVersion = requireNonNull(appVersion);
+        this.appVersionFn = requireNonNull(appVersionFn);
         this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
@@ -67,29 +65,8 @@ public class V057PlatformStateSchema extends Schema {
         if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
-
         final var platformStateStore = platformStateStoreFactory.apply(ctx.newStates());
-        final var startupNetworks = ctx.startupNetworks();
-        if (ctx.isGenesis()) {
-            final var genesisNetwork = startupNetworks.genesisNetworkOrThrow();
-            final var roster = new Roster(genesisNetwork.nodeMetadata().stream()
-                    .map(NodeMetadata::rosterEntryOrThrow)
-                    .toList());
-            final var addressBook = RosterUtils.buildAddressBook(roster);
-            platformStateStore.bulkUpdate(v -> {
-                v.setAddressBook(addressBook);
-                v.setPreviousAddressBook(null);
-                v.setCreationSoftwareVersion(appVersion.get());
-                v.setRound(0);
-                v.setLegacyRunningEventHash(null);
-                v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
-                final var basicConfig = ctx.platformConfig().getConfigData(BasicConfig.class);
-                final long genesisFreezeTime = basicConfig.genesisFreezeTime();
-                if (genesisFreezeTime > 0) {
-                    v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
-                }
-            });
-        } else if (isUpgrade(ctx)) {
+        if (isUpgrade(ctx)) {
             final var candidateAddressBook = RosterUtils.buildAddressBook(activeRoster.get());
             final var previousAddressBook = platformStateStore.getAddressBook();
             platformStateStore.bulkUpdate(v -> {
@@ -100,8 +77,8 @@ public class V057PlatformStateSchema extends Schema {
     }
 
     private boolean isUpgrade(@NonNull final MigrationContext ctx) {
-        final var currentVersion = appVersion.get().getPbjSemanticVersion();
-        final var previousVersion = ctx.previousVersion();
-        return SEMANTIC_VERSION_COMPARATOR.compare(currentVersion, (requireNonNull(previousVersion))) > 0;
+        final var previousVersion = requireNonNull(ctx.previousVersion());
+        final var currentVersion = appVersionFn.apply(ctx.appConfig()).getPbjSemanticVersion();
+        return SEMANTIC_VERSION_COMPARATOR.compare(previousVersion, currentVersion) < 0;
     }
 }

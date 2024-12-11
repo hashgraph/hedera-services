@@ -82,7 +82,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     @BeforeEach
     void setUp() {
         freezeTimeBackingStore = new AtomicReference<>(null);
-        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.GENESIS_PLATFORM_STATE);
+        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));

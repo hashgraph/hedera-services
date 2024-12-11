@@ -107,7 +107,7 @@ public class FakeNetworkInfo implements NetworkInfo {
             }
 
             @Override
-            public long stake() {
+            public long weight() {
                 return stake;
             }
 

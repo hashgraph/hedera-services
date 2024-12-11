@@ -39,7 +39,7 @@ public interface NodeInfo {
      * @return whether this node has zero stake.
      */
     default boolean zeroStake() {
-        return stake() == 0;
+        return weight() == 0;
     }
 
     /**
@@ -65,7 +65,7 @@ public interface NodeInfo {
      * The stake weight of this node.
      * @return the stake weight
      */
-    long stake();
+    long weight();
 
     /**
      * The signing x509 certificate bytes of the member
@@ -82,22 +82,26 @@ public interface NodeInfo {
     List<ServiceEndpoint> gossipEndpoints();
 
     /**
+     * The gossip X.509 certificate of this node.
+     * @return the gossip X.509 certificate
+     * @throws IllegalStateException if the certificate could not be extracted
+     */
+    default X509Certificate sigCert() {
+        try {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) certificateFactory.generateCertificate(
+                    new ByteArrayInputStream(sigCertBytes().toByteArray()));
+        } catch (CertificateException e) {
+            throw new IllegalStateException("Error extracting public key from certificate", e);
+        }
+    }
+
+    /**
      * The public key of this node, as a hex-encoded string. It is extracted from the certificate bytes.
      *
      * @return the public key
      */
     default String hexEncodedPublicKey() {
-        try {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-
-            // Convert the byte array to an InputStream and generate the X509Certificate object
-            X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(
-                    new ByteArrayInputStream(sigCertBytes().toByteArray()));
-
-            // Return the public key from the certificate
-            return CommonUtils.hex(certificate.getPublicKey().getEncoded());
-        } catch (CertificateException e) {
-            throw new IllegalStateException("Error extracting public key from certificate", e);
-        }
+        return CommonUtils.hex(sigCert().getPublicKey().getEncoded());
     }
 }
