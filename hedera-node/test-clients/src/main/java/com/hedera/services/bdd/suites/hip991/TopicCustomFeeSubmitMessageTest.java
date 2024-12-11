@@ -595,7 +595,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("Submits a message to a topic with custom fee FT with 4 layer fees")
         // TOPIC_FEE_144
-        final Stream<DynamicTest> submitToTopicWithThreeLayersOfFees() {
+        final Stream<DynamicTest> submitToTopicWithFourLayersOfFees() {
             final var collector = "collector";
             return hapiTest(flattened(
                     createTokenWith4LayerFee(SUBMITTER, "fourLayerToken", true),
