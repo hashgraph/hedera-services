@@ -69,7 +69,6 @@ public class AddressBookTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(AddressBookTestingToolState.class, () -> {
                         AddressBookTestingToolState addressBookTestingToolState = new AddressBookTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(addressBookTestingToolState);
                         return addressBookTestingToolState;
                     }));
             registerMerkleStateRootClassIds();

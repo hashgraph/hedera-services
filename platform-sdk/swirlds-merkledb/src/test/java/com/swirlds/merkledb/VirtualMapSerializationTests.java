@@ -40,7 +40,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
@@ -97,21 +96,18 @@ class VirtualMapSerializationTests {
      * Create a new virtual map data source builder.
      */
     public static MerkleDbDataSourceBuilder constructBuilder() throws IOException {
+        return constructBuilder(CONFIGURATION);
+    }
+
+    public static MerkleDbDataSourceBuilder constructBuilder(final Configuration configuration) throws IOException {
         // The tests below create maps with identical names. They would conflict with each other in the default
         // MerkleDb instance, so let's use a new database location for every map
         final Path defaultVirtualMapPath =
-                LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", CONFIGURATION);
+                LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", configuration);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                        (short) 1,
-                        DigestType.SHA_384,
-                        merkleDbConfig.maxNumOfKeys(),
-                        merkleDbConfig.hashesRamToDiskThreshold())
-                .preferDiskIndices(false)
-                .hashesRamToDiskThreshold(Long.MAX_VALUE)
-                .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
+        final MerkleDbTableConfig tableConfig =
+                new MerkleDbTableConfig((short) 1, DigestType.SHA_384, 1234, Long.MAX_VALUE);
+        return new MerkleDbDataSourceBuilder(tableConfig, configuration);
     }
 
     /**
@@ -390,7 +386,7 @@ class VirtualMapSerializationTests {
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(
-                "inMemoryModeSerde", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(), configuration);
+                "inMemoryModeSerde", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(configuration), configuration);
 
         // Copy 0
         for (int i = 0; i < 100; i++) {
@@ -447,6 +443,8 @@ class VirtualMapSerializationTests {
         try (final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
             copyF.serialize(out, tmp);
         }
+
+        MerkleDb.resetDefaultInstancePath();
 
         final ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
         map = new VirtualMap<>(configuration);
