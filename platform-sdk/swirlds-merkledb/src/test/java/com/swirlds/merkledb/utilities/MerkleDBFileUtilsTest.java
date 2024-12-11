@@ -451,7 +451,7 @@ class MerkleDBFileUtilsTest {
             final int dstPosition,
             final int maxBytes,
             final String expected,
-            final int expectedWritten)
+            final long expectedWritten)
             throws IOException {
         final File outputFile = createTestFile(FILLER_STRING);
         final File inputFile = createTestFile(EXAMPLE_STRING);
@@ -462,7 +462,7 @@ class MerkleDBFileUtilsTest {
                         (FileChannel) Files.newByteChannel(inputFile.toPath(), StandardOpenOption.READ)) {
             inChannel.position(inChannelPosition);
             outChannel.position(3);
-            final int bytesWritten =
+            final long bytesWritten =
                     MerkleDbFileUtils.completelyTransferFrom(outChannel, inChannel, dstPosition, maxBytes);
             assertEquals(expectedWritten, bytesWritten);
             assertEquals(expectedWritten + inChannelPosition, inChannel.position());
@@ -493,7 +493,7 @@ class MerkleDBFileUtilsTest {
             final int dstPosition,
             final int maxBytes,
             final String expected,
-            final int expectedWritten)
+            final long expectedWritten)
             throws IOException {
         final File outputFile = createTestFile(FILLER_STRING);
         final File inputFile = createTestFile(EXAMPLE_STRING);
@@ -509,7 +509,7 @@ class MerkleDBFileUtilsTest {
                         (FileChannel) Files.newByteChannel(inputFile.toPath(), StandardOpenOption.READ)) {
             inChannel.position(inChannelPosition);
             outChannel.position(3);
-            final int bytesWritten =
+            final long bytesWritten =
                     MerkleDbFileUtils.completelyTransferFrom(outChannel, inChannel, dstPosition, maxBytes);
             assertEquals(expectedWritten, bytesWritten);
             assertEquals(expectedWritten + inChannelPosition, inChannel.position());
