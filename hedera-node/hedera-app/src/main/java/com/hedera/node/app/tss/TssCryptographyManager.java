@@ -118,24 +118,27 @@ public class TssCryptographyManager {
     private CompletableFuture<Vote> computeVote(
             @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
             @NonNull final TssParticipantDirectory tssParticipantDirectory) {
-        return CompletableFuture.supplyAsync(
-                () -> {
-                    final var tssMessages = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-                    if (!isThresholdMet(tssMessages, tssParticipantDirectory)) {
-                        return null;
-                    }
-                    final var aggregationStart = instantSource.instant();
-                    final var validTssMessages = getTssMessages(tssMessages, tssParticipantDirectory, tssLibrary);
-                    final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
-                    final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
-                    final var signature = gossip.sign(ledgerId.toBytes());
-                    final var thresholdMessages = asBitSet(tssMessages);
-                    final var aggregationEnd = instantSource.instant();
-                    tssMetrics.updateAggregationTime(
-                            Duration.between(aggregationStart, aggregationEnd).toMillis());
-                    return new Vote(ledgerId, signature, thresholdMessages);
-                },
-                libraryExecutor);
+        return CompletableFuture.supplyAsync(() -> getVote(tssMessageBodies, tssParticipantDirectory), libraryExecutor);
+    }
+
+    @Nullable
+    public Vote getVote(
+            final @NonNull List<TssMessageTransactionBody> tssMessageBodies,
+            final @NonNull TssParticipantDirectory tssParticipantDirectory) {
+        final var tssMessages = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        if (!isThresholdMet(tssMessages, tssParticipantDirectory)) {
+            return null;
+        }
+        final var aggregationStart = instantSource.instant();
+        final var validTssMessages = getTssMessages(tssMessages, tssParticipantDirectory, tssLibrary);
+        final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
+        final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
+        final var signature = gossip.sign(ledgerId.toBytes());
+        final var thresholdMessages = asBitSet(tssMessages);
+        final var aggregationEnd = instantSource.instant();
+        tssMetrics.updateAggregationTime(
+                Duration.between(aggregationStart, aggregationEnd).toMillis());
+        return new Vote(ledgerId, signature, thresholdMessages);
     }
 
     /**

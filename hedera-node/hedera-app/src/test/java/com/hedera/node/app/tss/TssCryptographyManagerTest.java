@@ -18,6 +18,8 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.handlers.TssUtils.computeNodeShares;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -36,7 +38,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -73,9 +74,6 @@ public class TssCryptographyManagerTest {
     private StoreFactory storeFactory;
 
     @Mock
-    private WritableTssStore tssStore;
-
-    @Mock
     private TssMetrics tssMetrics;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -94,23 +92,20 @@ public class TssCryptographyManagerTest {
     void testWhenVoteAlreadySubmitted() {
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(tssStore.getVote(any())).thenReturn(mock(TssVoteTransactionBody.class)); // Simulate vote already submitted
+        // Simulate vote already submitted
+        final var result =
+                subject.getVoteFuture(tssParticipantDirectory, List.of(body), (mock(TssVoteTransactionBody.class)));
 
-        //        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore);
-
-        //        assertNull(result.join());
+        assertNull(result.join());
     }
 
     @Test
     void testWhenVoteNoVoteSubmittedAndThresholdNotMet() {
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(tssStore.getVote(any())).thenReturn(null);
+        final var result = subject.getVoteFuture(tssParticipantDirectory, List.of(body), null);
 
-        //        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore,
-        // voteKey, 0);
-
-        //        assertNull(result.join());
+        assertNull(result.join());
     }
 
     @Test
@@ -121,18 +116,14 @@ public class TssCryptographyManagerTest {
 
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenReturn(mockPublicShares);
         when(tssLibrary.aggregatePublicShares(any())).thenReturn(ledgerId);
         when(gossip.sign(any())).thenReturn(mockSignature);
 
-        //        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore,
-        // voteKey, 0);
-
-        //        assertNotNull(result.join());
+        final var result = subject.getVoteFuture(tssParticipantDirectory, List.of(body), null);
+        assertNotNull(result.join());
         verify(gossip).sign(ledgerId.toBytes());
     }
 
@@ -140,16 +131,12 @@ public class TssCryptographyManagerTest {
     void testWhenMetException() {
         final var body = getTssBody();
         when(handleContext.storeFactory()).thenReturn(storeFactory);
-        when(tssStore.getVote(any())).thenReturn(null);
-        when(tssStore.getMessagesForTarget(any())).thenReturn(List.of(body));
         when(tssLibrary.verifyTssMessage(any(), any())).thenReturn(true);
 
         when(tssLibrary.computePublicShares(any(), any())).thenThrow(new RuntimeException());
+        final var result = subject.getVoteFuture(tssParticipantDirectory, List.of(body), null);
 
-        //        final var result = subject.getVoteFuture(body.targetRosterHash(), tssParticipantDirectory, tssStore,
-        // voteKey, 0);
-
-        //        assertNull(result.join());
+        assertNull(result.join());
         verify(gossip, never()).sign(any());
     }
 

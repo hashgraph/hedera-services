@@ -202,14 +202,22 @@ class TssBaseServiceImplTest {
     @Test
     void managesTssStatusWhenRosterToKeyIsNone() {
         final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.NONE, Bytes.EMPTY);
-
-        //        given(tssStore.getTssStatus()).willReturn(oldStatus);
-        //        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
-        //        verify(tssStore)
-        //                .put(new NewTssStatus.newBuilder()
-        //                        .rosterToKey(RosterToKey.CANDIDATE_ROSTER)
-        //                        .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES)
-        //                        .build());
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
+        subject.setTssStatus(oldStatus);
+        subject.manageTssStatus(
+                true,
+                Instant.ofEpochSecond(1_234_567L),
+                new TssBaseServiceImpl.RosterAndTssInfo(
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        List.of(),
+                        Optional.empty(),
+                        List.of(),
+                        null));
+        assertEquals(expectedTssStatus, subject.getTssStatus());
     }
 
     @Test
@@ -219,20 +227,27 @@ class TssBaseServiceImplTest {
                         new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, i * 2L + 1, Bytes.wrap("MESSAGE" + i)))
                 .toList();
         final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
+        subject.setTssStatus(oldStatus);
 
-        //        given(tssStore.getTssStatus()).willReturn(oldStatus);
-        given(tssStore.getMessagesForTarget(any())).willReturn(messages);
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
 
         subject.generateParticipantDirectory(state);
-        //        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
-
-        //        verify(tssStore)
-        //                .put(TssStatus.newBuilder()
-        //                        .rosterToKey(RosterToKey.ACTIVE_ROSTER)
-        //                        .tssKeyingStatus(TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES)
-        //                        .build());
+        subject.manageTssStatus(
+                true,
+                Instant.ofEpochSecond(1_234_567L),
+                new TssBaseServiceImpl.RosterAndTssInfo(
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        messages,
+                        Optional.empty(),
+                        List.of(),
+                        null));
+        assertEquals(expectedTssStatus, subject.getTssStatus());
     }
 
     @ParameterizedTest
@@ -241,20 +256,26 @@ class TssBaseServiceImplTest {
             names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
     void managesTssStatusWhenKeyingComplete(RosterToKey rosterToKey) {
         final var oldStatus = new TssStatus(KEYING_COMPLETE, rosterToKey, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(KEYING_COMPLETE, RosterToKey.NONE, Bytes.EMPTY);
+        subject.setTssStatus(oldStatus);
 
-        //        given(tssStore.getTssStatus()).willReturn(oldStatus);
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
         given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
 
         subject.generateParticipantDirectory(state);
-        //        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
-
-        //        verify(tssStore)
-        //                .put(TssStatus.newBuilder()
-        //                        .rosterToKey(RosterToKey.NONE)
-        //                        .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
-        //                        .ledgerId(Bytes.EMPTY)
-        //                        .build());
+        subject.manageTssStatus(
+                true,
+                Instant.ofEpochSecond(1_234_567L),
+                new TssBaseServiceImpl.RosterAndTssInfo(
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        List.of(),
+                        Optional.empty(),
+                        List.of(),
+                        null));
+        assertEquals(expectedTssStatus, subject.getTssStatus());
     }
 
     @ParameterizedTest
@@ -263,23 +284,29 @@ class TssBaseServiceImplTest {
             names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
     void managesTssStatusWhenVotesReachedThreshold(RosterToKey rosterToKey) {
         final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, rosterToKey, Bytes.EMPTY);
-        //        given(tssStore.getTssStatus()).willReturn(oldStatus);
-        given(tssStore.anyWinningVoteFrom(any(), any(), any()))
-                .willReturn(Optional.of(TssVoteTransactionBody.newBuilder()
-                        .ledgerId(Bytes.wrap("ledger"))
-                        .tssVote(Bytes.wrap(BitSet.valueOf(new long[] {1L, 2L}).toByteArray()))
-                        .build()));
+        final var expectedTssStatus = new TssStatus(KEYING_COMPLETE, rosterToKey, Bytes.wrap("ledger"));
+        subject.setTssStatus(oldStatus);
+
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
         given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
 
         subject.generateParticipantDirectory(state);
-        //        subject.manageTssStatus(rosterStore, tssStore, true, Instant.ofEpochSecond(1_234_567L));
-
-        //        verify(tssStore)
-        //                .put(TssStatus.newBuilder()
-        //                        .rosterToKey(rosterToKey)
-        //                        .tssKeyingStatus(TssKeyingStatus.KEYING_COMPLETE)
-        //                        .ledgerId(Bytes.wrap("ledger"))
-        //                        .build());
+        subject.manageTssStatus(
+                true,
+                Instant.ofEpochSecond(1_234_567L),
+                new TssBaseServiceImpl.RosterAndTssInfo(
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        TARGET_ROSTER,
+                        TARGET_HASH,
+                        List.of(),
+                        Optional.of(TssVoteTransactionBody.newBuilder()
+                                .ledgerId(Bytes.wrap("ledger"))
+                                .tssVote(Bytes.wrap(
+                                        BitSet.valueOf(new long[] {1L, 2L}).toByteArray()))
+                                .build()),
+                        List.of(),
+                        null));
+        assertEquals(expectedTssStatus, subject.getTssStatus());
     }
 }
