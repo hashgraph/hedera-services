@@ -63,7 +63,7 @@ public class BucketConfigurationManager {
      *
      * @return the list of {@link CompleteBucketConfig} with applied credentials
      */
-    public List<CompleteBucketConfig> getCompleteBucketConfigs() {
+        public List<CompleteBucketConfig> getCompleteBucketConfigs() {
         return blockStreamConfig.buckets().stream()
                 .map(bucket -> {
                     var bucketCredentials = credentials.credentials().get(bucket.name());
