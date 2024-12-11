@@ -535,7 +535,9 @@ public class CryptoServiceFeesSuite {
         return hapiTest(
                 cryptoCreate(nonTreasurySender).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate("GetAccountRecordsTest").key(nonTreasurySender).payingWith(nonTreasurySender),
-                getAccountRecords("GetAccountRecordsTest").payingWith(nonTreasurySender).via("baseGetAccountRecord"),
+                getAccountRecords("GetAccountRecordsTest")
+                        .payingWith(nonTreasurySender)
+                        .via("baseGetAccountRecord"),
                 sleepFor(2000),
                 validateChargedUsd("baseGetAccountRecord", expectedGetAccountRecordPriceUsd));
     }
