@@ -210,9 +210,9 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
 
         // don't log an error if this is a freeze state. they are expected to lack signatures
         if (reservedState.isFreezeState()) {
-            final double signingWeightPercent = ((double) reservedState.getSigningWeight())
-                    / reservedState.getAddressBook().getTotalWeight()
-                    * 100;
+            final double signingWeightPercent = (((double) reservedState.getSigningWeight())
+                    / ((double) reservedState.getAddressBook().getTotalWeight()))
+                    * 100.0;
 
             logger.info(
                     STATE_TO_DISK.getMarker(),
@@ -225,8 +225,8 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
                     reservedState.getAddressBook().getTotalWeight(),
                     signingWeightPercent);
         } else {
-            final double signingWeight1Percent = ((double) signingWeight1) / totalWeight1 * 100;
-            final double signingWeight2Percent = ((double) signingWeight2) / totalWeight2 * 100;
+            final double signingWeight1Percent = (((double) signingWeight1) / ((double) totalWeight1)) * 100.0;
+            final double signingWeight2Percent = (((double) signingWeight2) / ((double) totalWeight2)) * 100.0;
 
             logger.error(
                     EXCEPTION.getMarker(),
