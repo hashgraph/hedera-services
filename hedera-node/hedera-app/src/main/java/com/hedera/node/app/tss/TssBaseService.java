@@ -182,6 +182,9 @@ public interface TssBaseService extends Service {
 
     /**
      * Manages and does work based on the TSS status.
+     * It is called each second and computes the TSS status, based on the network state.
+     * If the self-node has any pending TSS submissions that can help progress the TSS Status, then it will
+     * submit them.
      *
      * @param state   the network state
      * @param isStakePeriodBoundary whether the current consensus round is a stake period boundary

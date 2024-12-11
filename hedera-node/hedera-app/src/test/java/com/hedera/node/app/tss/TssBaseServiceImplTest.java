@@ -19,6 +19,7 @@ package com.hedera.node.app.tss;
 import static com.hedera.node.app.tss.TssKeyingStatus.KEYING_COMPLETE;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.workflows.handle.steps.PlatformStateUpdatesTest.ROSTER_STATE;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
@@ -29,6 +30,11 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -39,16 +45,21 @@ import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -83,7 +94,6 @@ class TssBaseServiceImplTest {
                     new RosterEntry(1L, 3L, Bytes.EMPTY, List.of()),
                     new RosterEntry(2L, 2L, Bytes.EMPTY, List.of()))
             .build();
-    private static final long SOURCE_WEIGHT = 9L;
     private static final Roster TARGET_ROSTER = Roster.newBuilder()
             .rosterEntries(
                     new RosterEntry(0L, 1L, Bytes.EMPTY, List.of()),
@@ -91,7 +101,10 @@ class TssBaseServiceImplTest {
                     new RosterEntry(2L, 3L, Bytes.EMPTY, List.of()),
                     new RosterEntry(3L, 4L, Bytes.EMPTY, List.of()))
             .build();
-
+    final BlsPublicKey FAKE_PUBLIC_KEY =
+            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(10L)), SIGNATURE_SCHEMA);
+    final BlsPrivateKey FAKE_PRIVATE_KEY = BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom());
+    private static final Signature FAKE_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
     private CountDownLatch latch;
     private final List<byte[]> receivedMessageHashes = new ArrayList<>();
     private final List<byte[]> receivedSignatures = new ArrayList<>();
@@ -112,18 +125,13 @@ class TssBaseServiceImplTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private AppContext appContext;
 
-    @Mock
-    private Metrics metrics;
-
-    @Mock
-    private WritableTssStore tssStore;
-
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableRosterStore rosterStore;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private TssLibrary tssLibrary;
 
+    private Metrics metrics = new NoOpMetrics();
     private State state;
     private TssBaseServiceImpl subject;
 
@@ -220,15 +228,17 @@ class TssBaseServiceImplTest {
         assertEquals(expectedTssStatus, subject.getTssStatus());
     }
 
-    @Test
-    void managesTssStatusWhenMessagesReachedThreshold() {
+    @ParameterizedTest
+    @EnumSource(
+            value = RosterToKey.class,
+            names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
+    void managesTssStatusWhenMessagesReachedThreshold(RosterToKey rosterToKey) {
         final var messages = IntStream.range(0, 8)
                 .mapToObj(i ->
                         new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, i * 2L + 1, Bytes.wrap("MESSAGE" + i)))
                 .toList();
-        final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
-        final var expectedTssStatus =
-                new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
+        final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, rosterToKey, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, rosterToKey, Bytes.EMPTY);
         subject.setTssStatus(oldStatus);
 
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
@@ -248,6 +258,53 @@ class TssBaseServiceImplTest {
                         List.of(),
                         null));
         assertEquals(expectedTssStatus, subject.getTssStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = RosterToKey.class,
+            names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
+    void submitsTssMessageIfSelfHasNotSubmitted(RosterToKey rosterToKey) {
+        final var messages = IntStream.range(0, 4)
+                .mapToObj(i ->
+                        new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, i * 2L + 1, Bytes.wrap("MESSAGE" + i)))
+                .toList();
+        final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, rosterToKey, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, rosterToKey, Bytes.EMPTY);
+        subject.setTssStatus(oldStatus);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+        given(tssLibrary.generateTssMessage(any()))
+                .willReturn(new FakeTssMessage(Bytes.wrap("test").toByteArray()));
+        given(tssLibrary.generateTssMessage(any(), any()))
+                .willReturn(new FakeTssMessage(Bytes.wrap("test").toByteArray()));
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.decryptPrivateShares(any(), any()))
+                .willReturn(List.of(new TssPrivateShare(1, FAKE_PRIVATE_KEY)));
+        assertFalse(subject.haveSentMessageForTargetRoster());
+
+        subject.generateParticipantDirectory(state);
+        subject.getTssKeysAccessor().generateKeyMaterialForActiveRoster(state);
+        subject.manageTssStatus(
+                true,
+                Instant.ofEpochSecond(1_234_567L),
+                new TssBaseServiceImpl.RosterAndTssInfo(
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        messages,
+                        Optional.empty(),
+                        List.of(),
+                        null));
+        if (rosterToKey == RosterToKey.ACTIVE_ROSTER) {
+            verify(tssLibrary).generateTssMessage(any());
+        } else {
+            verify(tssLibrary).generateTssMessage(any(), any());
+        }
+        assertEquals(expectedTssStatus, subject.getTssStatus());
+        assertTrue(subject.haveSentMessageForTargetRoster());
     }
 
     @ParameterizedTest
@@ -308,5 +365,51 @@ class TssBaseServiceImplTest {
                         List.of(),
                         null));
         assertEquals(expectedTssStatus, subject.getTssStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = RosterToKey.class,
+            names = {"ACTIVE_ROSTER", "CANDIDATE_ROSTER"})
+    void submitsVoteWhenSelfHasNotSubmittedVotes(RosterToKey rosterToKey) {
+        final var messages = IntStream.range(0, 8)
+                .mapToObj(i ->
+                        new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, i * 2L + 1, Bytes.wrap("MESSAGE" + i)))
+                .toList();
+
+        final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, rosterToKey, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, rosterToKey, Bytes.EMPTY);
+        subject.setTssStatus(oldStatus);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+        given(gossip.sign(any())).willReturn(FAKE_SIGNATURE);
+
+        subject.generateParticipantDirectory(state);
+        subject.manageTssStatus(
+                true,
+                Instant.ofEpochSecond(1_234_567L),
+                new TssBaseServiceImpl.RosterAndTssInfo(
+                        SOURCE_ROSTER,
+                        SOURCE_HASH,
+                        TARGET_ROSTER,
+                        TARGET_HASH,
+                        messages,
+                        Optional.empty(),
+                        List.of(),
+                        null));
+        assertEquals(expectedTssStatus, subject.getTssStatus());
+        assertTrue(subject.haveSentVoteForTargetRoster());
+    }
+
+    public record FakeTssMessage(byte[] bytes) implements TssMessage {
+
+        @Override
+        public byte[] toBytes() {
+            return bytes;
+        }
     }
 }

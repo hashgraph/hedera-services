@@ -395,19 +395,20 @@ public class TssBaseServiceImpl implements TssBaseService {
         if (tssStatus == null) {
             //            computeInitialTssStatus(state);
         }
-        final var targetRoster = getTargetRoster(
-                requireNonNull(rosterStore.getActiveRoster()), rosterStore.getCandidateRoster(), tssStatus);
-        final var selfNodeId = appContext.selfNodeInfoSupplier().get().nodeId();
-        final var voteKey = new TssVoteMapKey(targetRoster, selfNodeId);
-        final var selfVote = tssStore.getVote(voteKey);
 
-        final var activeRoster = rosterStore.getActiveRoster();
         // collect tss encryption keys for all nodes in the active roster that are not null
+        final var activeRoster = rosterStore.getActiveRoster();
         final var encryptionKeys = activeRoster.rosterEntries().stream()
                 .map(entry -> tssStore.getTssEncryptionKey(entry.nodeId()))
                 .filter(Objects::nonNull)
                 .toList();
 
+        // In order for the TSS state machine to run asynchronously in a separate thread, all the necessary
+        // information is collected and passed to the manageTssStatus method.
+        final var targetRoster = getTargetRoster(
+                requireNonNull(rosterStore.getActiveRoster()), rosterStore.getCandidateRoster(), tssStatus);
+        final var voteKey = new TssVoteMapKey(
+                targetRoster, appContext.selfNodeInfoSupplier().get().nodeId());
         final var info = new RosterAndTssInfo(
                 activeRoster,
                 requireNonNull(rosterStore.getCurrentRosterHash()),
@@ -416,11 +417,18 @@ public class TssBaseServiceImpl implements TssBaseService {
                 tssStore.getMessagesForTarget(targetRoster),
                 tssStore.anyWinningVoteFrom(rosterStore.getCurrentRosterHash(), targetRoster, rosterStore),
                 encryptionKeys,
-                selfVote);
+                tssStore.getVote(voteKey));
         CompletableFuture.runAsync(
                 () -> manageTssStatus(isStakePeriodBoundary, consensusNow, info), tssLibraryExecutor);
     }
 
+    /**
+     * Computes the next TSS status from the state.
+     *
+     * @param isStakePeriodBoundary whether the current consensus round is a stake period boundary
+     * @param consensusNow          the current consensus time
+     * @param info                  the roster and TSS information
+     */
     void manageTssStatus(final boolean isStakePeriodBoundary, final Instant consensusNow, final RosterAndTssInfo info) {
         final var statusChange = new StatusChange(isStakePeriodBoundary, consensusNow, info);
         final var newTssStatus = statusChange.computeNewStatus();
@@ -500,31 +508,41 @@ public class TssBaseServiceImpl implements TssBaseService {
             return new TssStatus(newKeyingStatus, newRosterToKey, newLedgerId);
         }
 
+        /**
+         * Validates the votes and submits a vote for the current node if needed to reach the threshold.
+         *
+         * @param candidateRosterHash the candidate roster hash
+         * @param activeRosterHash    the active roster hash
+         */
         private void validateVotesAndSubmitIfNeeded(final Bytes candidateRosterHash, final Bytes activeRosterHash) {
             final var voteBodies = info.winningVote();
             if (voteBodies.isPresent()) {
                 newKeyingStatus = TssKeyingStatus.KEYING_COMPLETE;
                 newLedgerId = voteBodies.get().ledgerId();
-            } else if (!haveSentVoteForTargetRoster) {
+            } else if (!haveSentVoteForTargetRoster && info.selfVote() == null) {
                 // Get the directory of participants for the target roster
                 final var directory = tssDirectoryAccessor.activeParticipantDirectory();
-                if (info.selfVote() == null) {
-                    final var vote = tssCryptographyManager.getVote(info.tssMessages(), directory);
-                    if (vote != null) {
-                        final var tssVote = TssVoteTransactionBody.newBuilder()
-                                .tssVote(vote.bitSet())
-                                .sourceRosterHash(activeRosterHash)
-                                .targetRosterHash(candidateRosterHash)
-                                .ledgerId(vote.ledgerId())
-                                .nodeSignature(vote.signature().getBytes())
-                                .build();
-                        tssSubmissions.submitTssVote(tssVote, consensusNow);
-                    }
+                final var vote = tssCryptographyManager.getVote(info.tssMessages(), directory);
+                if (vote != null) {
+                    final var tssVote = TssVoteTransactionBody.newBuilder()
+                            .tssVote(vote.bitSet())
+                            .sourceRosterHash(activeRosterHash)
+                            .targetRosterHash(candidateRosterHash)
+                            .ledgerId(vote.ledgerId())
+                            .nodeSignature(vote.signature().getBytes())
+                            .build();
+                    tssSubmissions.submitTssVote(tssVote, consensusNow);
                     haveSentVoteForTargetRoster = true;
                 }
             }
         }
 
+        /**
+         * Validates the messages and submits a message for the current node if needed to reach the threshold.
+         *
+         * @param activeRosterHash    the active roster hash
+         * @param candidateRosterHash the candidate roster hash
+         */
         private void validateMessagesAndSubmitIfNeeded(final Bytes activeRosterHash, final Bytes candidateRosterHash) {
             final var thresholdReached = validateThresholdTssMessages();
             if (thresholdReached) {
@@ -563,12 +581,20 @@ public class TssBaseServiceImpl implements TssBaseService {
             }
         }
 
+        /**
+         * Resets the status to the initial state.
+         */
         private void reset() {
             newRosterToKey = RosterToKey.NONE;
             haveSentMessageForTargetRoster = false;
             haveSentVoteForTargetRoster = false;
         }
 
+        /**
+         * Validates the threshold of TSS messages.
+         *
+         * @return true if the threshold is met, false otherwise
+         */
         private boolean validateThresholdTssMessages() {
             final var participantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
             final var tssMessageBodies = info.tssMessages();
@@ -576,6 +602,9 @@ public class TssBaseServiceImpl implements TssBaseService {
             return isThresholdMet(tssMessages, participantDirectory);
         }
 
+        /**
+         * Validates the threshold of encryption keys and creates the encryption key for self if not present.
+         */
         private void validateThresholdEncryptionKeysReached() {
             var numTssEncryptionKeys = info.encryptionKeys().size();
             final var thresholdReached = numTssEncryptionKeys
@@ -588,6 +617,18 @@ public class TssBaseServiceImpl implements TssBaseService {
         }
     }
 
+    /**
+     * A record to hold the roster and TSS information that is needed to compute new TSS status.
+     *
+     * @param activeRoster     the active roster
+     * @param activeRosterHash the active roster hash
+     * @param candidateRoster  the candidate roster
+     * @param targetRosterHash the target roster hash
+     * @param tssMessages      the TSS messages for the target roster
+     * @param winningVote      the winning vote for the target roster
+     * @param encryptionKeys   the encryption keys for the active roster
+     * @param selfVote         the self vote for the current node
+     */
     public record RosterAndTssInfo(
             @NonNull Roster activeRoster,
             @NonNull Bytes activeRosterHash,
@@ -598,6 +639,14 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull List<TssEncryptionKeyTransactionBody> encryptionKeys,
             TssVoteTransactionBody selfVote) {}
 
+    /**
+     * Returns the target roster hash based on the current TSS status roster to key.
+     *
+     * @param activeRoster    the active roster
+     * @param candidateRoster the candidate roster
+     * @param tssStatus       the TSS status
+     * @return the target roster hash
+     */
     @NonNull
     private Bytes getTargetRoster(
             @NonNull final Roster activeRoster,
@@ -620,5 +669,15 @@ public class TssBaseServiceImpl implements TssBaseService {
     @VisibleForTesting
     public void setTssStatus(final TssStatus tssStatus) {
         this.tssStatus = tssStatus;
+    }
+
+    @VisibleForTesting
+    public boolean haveSentVoteForTargetRoster() {
+        return haveSentVoteForTargetRoster;
+    }
+
+    @VisibleForTesting
+    public boolean haveSentMessageForTargetRoster() {
+        return haveSentMessageForTargetRoster;
     }
 }
