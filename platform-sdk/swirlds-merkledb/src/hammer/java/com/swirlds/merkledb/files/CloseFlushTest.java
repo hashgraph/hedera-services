@@ -156,12 +156,13 @@ public class CloseFlushTest {
             return super.getClassId() + 1;
         }
 
+        @NonNull
         @Override
         public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
             return new VirtualDataSource() {
                 @Override
-                public void close() throws IOException {
-                    delegate.close();
+                public void close(boolean keepData) throws IOException {
+                    delegate.close(keepData);
                 }
 
                 @Override

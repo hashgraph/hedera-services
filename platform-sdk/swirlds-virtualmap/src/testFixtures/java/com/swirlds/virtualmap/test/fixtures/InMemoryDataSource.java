@@ -77,10 +77,12 @@ public class InMemoryDataSource implements VirtualDataSource {
      * Close the data source
      */
     @Override
-    public void close() {
-        hashes.clear();
-        leafRecords.clear();
-        keyToPathMap.clear();
+    public void close(final boolean keepData) {
+        if (!keepData) {
+            hashes.clear();
+            leafRecords.clear();
+            keyToPathMap.clear();
+        }
         closed = true;
     }
 

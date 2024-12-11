@@ -212,9 +212,10 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public BreakableDataSource copy(final VirtualDataSource snapshotMe, final boolean makeCopyActive) {
+        public BreakableDataSource copy(
+                final VirtualDataSource snapshotMe, final boolean makeCopyActive, final boolean offlineUse) {
             final var breakableSnapshot = (BreakableDataSource) snapshotMe;
-            return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive));
+            return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive, offlineUse));
         }
 
         @Override
@@ -278,8 +279,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public void close() throws IOException {
-            delegate.close();
+        public void close(final boolean keepData) throws IOException {
+            delegate.close(keepData);
         }
 
         @Override

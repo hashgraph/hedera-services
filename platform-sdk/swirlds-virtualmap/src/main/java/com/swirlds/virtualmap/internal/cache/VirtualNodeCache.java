@@ -365,13 +365,24 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param virtualMapConfig platform configuration for VirtualMap
      */
     public VirtualNodeCache(final @NonNull VirtualMapConfig virtualMapConfig) {
-        requireNonNull(virtualMapConfig);
+        this(virtualMapConfig, 0);
+    }
+
+    /**
+     * Create a new VirtualNodeCache. The cache will be the first in the chain. It will get the
+     * specified fastCopyVersion, and create the shared data structures.
+     *
+     * @param virtualMapConfig platform configuration for VirtualMap
+     * @param fastCopyVersion copy version
+     */
+    public VirtualNodeCache(final @NonNull VirtualMapConfig virtualMapConfig, long fastCopyVersion) {
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
-        this.virtualMapConfig = virtualMapConfig;
+        this.fastCopyVersion.set(fastCopyVersion);
+        this.virtualMapConfig = requireNonNull(virtualMapConfig);
     }
 
     /**
