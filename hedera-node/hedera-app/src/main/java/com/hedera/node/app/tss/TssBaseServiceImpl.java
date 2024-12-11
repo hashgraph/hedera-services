@@ -196,14 +196,22 @@ public class TssBaseServiceImpl implements TssBaseService {
         // FUTURE - instead of an arbitrary counter here, use the share index from the private share
         final var shareIndex = new AtomicInteger(0);
         for (final var tssPrivateShare : tssPrivateShares) {
-            final var msg = tssLibrary.generateTssMessage(candidateDirectory, tssPrivateShare);
-            final var tssMessage = TssMessageTransactionBody.newBuilder()
-                    .sourceRosterHash(activeRosterHash)
-                    .targetRosterHash(candidateRosterHash)
-                    .shareIndex(shareIndex.getAndAdd(1))
-                    .tssMessage(Bytes.wrap(msg.toBytes()))
-                    .build();
-            tssSubmissions.submitTssMessage(tssMessage, context);
+            CompletableFuture.runAsync(
+                            () -> {
+                                final var msg = tssLibrary.generateTssMessage(candidateDirectory, tssPrivateShare);
+                                final var tssMessage = TssMessageTransactionBody.newBuilder()
+                                        .sourceRosterHash(activeRosterHash)
+                                        .targetRosterHash(candidateRosterHash)
+                                        .shareIndex(shareIndex.getAndAdd(1))
+                                        .tssMessage(Bytes.wrap(msg.toBytes()))
+                                        .build();
+                                tssSubmissions.submitTssMessage(tssMessage, context);
+                            },
+                            tssLibraryExecutor)
+                    .exceptionally(e -> {
+                        log.error("Error generating tssMessage", e);
+                        return null;
+                    });
         }
     }
 

@@ -105,6 +105,8 @@ class TssBaseServiceImplTest {
             new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(10L)), SIGNATURE_SCHEMA);
     final BlsPrivateKey FAKE_PRIVATE_KEY = BlsPrivateKey.create(SIGNATURE_SCHEMA, new SecureRandom());
     private static final Signature FAKE_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
+    private final TssMessage TSS_MESSAGE = () -> "test".getBytes();
+
     private CountDownLatch latch;
     private final List<byte[]> receivedMessageHashes = new ArrayList<>();
     private final List<byte[]> receivedSignatures = new ArrayList<>();
@@ -275,10 +277,8 @@ class TssBaseServiceImplTest {
 
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
-        given(tssLibrary.generateTssMessage(any()))
-                .willReturn(new FakeTssMessage(Bytes.wrap("test").toByteArray()));
-        given(tssLibrary.generateTssMessage(any(), any()))
-                .willReturn(new FakeTssMessage(Bytes.wrap("test").toByteArray()));
+        given(tssLibrary.generateTssMessage(any())).willReturn(TSS_MESSAGE);
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(TSS_MESSAGE);
         given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
         given(tssLibrary.decryptPrivateShares(any(), any()))
                 .willReturn(List.of(new TssPrivateShare(1, FAKE_PRIVATE_KEY)));
@@ -403,13 +403,5 @@ class TssBaseServiceImplTest {
                         null));
         assertEquals(expectedTssStatus, subject.getTssStatus());
         assertTrue(subject.haveSentVoteForTargetRoster());
-    }
-
-    public record FakeTssMessage(byte[] bytes) implements TssMessage {
-
-        @Override
-        public byte[] toBytes() {
-            return bytes;
-        }
     }
 }
