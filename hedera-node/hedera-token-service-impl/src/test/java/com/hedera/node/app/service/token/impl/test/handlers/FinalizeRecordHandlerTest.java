@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +54,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.ChildStreamBuilder;
@@ -64,7 +66,9 @@ import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,6 +117,9 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private StakingRewardsHandlerImpl stakingRewardsHandler;
+
+    @Mock
+    private StakingRewardsHelper stakingRewardsHelper;
 
     private FinalizeRecordHandler subject;
 
@@ -447,6 +454,54 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .forEachChildRecord(any(), any());
 
         subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
+    }
+
+    @Test
+    void test() {
+        // This case handles a successful NFT transfer to an auto-created account
+        final var existingTokenRel = givenNonFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_1212_ID)
+                .build();
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212);
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(existingTokenRel);
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(existingTokenRel);
+        final var nft = givenNft(
+                NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build())
+                .copyBuilder()
+                .ownerId(ACCOUNT_1212_ID)
+                .build();
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts();
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts();
+        // Simulate the token receiver's account (ACCOUNT_3434) being auto-created
+        writableAccountStore.put(ACCOUNT_3434
+                .copyBuilder()
+                .tinybarBalance(0)
+                .alias(Bytes.wrap("00000000000000000003"))
+                .build());
+        writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        readableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        context = mockContext();
+
+        given(context.configuration()).willReturn(configuration);
+        given(context.hasChildOrPrecedingRecords()).willReturn(true);
+        final Map<AccountID, Long> rewards = stakingRewardsHandler.applyStakingRewards(context, Collections.emptySet(), emptyMap());
+        given(requiresExternalization(rewards)).willReturn(true);
+
+        subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
+
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .nftTransfers(NftTransfer.newBuilder()
+                                .serialNumber(1)
+                                .senderAccountID(ACCOUNT_1212_ID)
+                                .receiverAccountID(ACCOUNT_3434_ID)
+                                .build())
+                        .build()));
     }
 
     @Test
