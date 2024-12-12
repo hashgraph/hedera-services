@@ -22,7 +22,10 @@ import java.util.concurrent.Future;
 
 public interface CloudBucketUploader {
     Future<Void> uploadBlock(Path blockPath);
+
     Future<Boolean> blockExists(String objectKey);
+
     Future<String> getBlockMd5(String objectKey);
+
     BucketProvider getProvider();
 }
