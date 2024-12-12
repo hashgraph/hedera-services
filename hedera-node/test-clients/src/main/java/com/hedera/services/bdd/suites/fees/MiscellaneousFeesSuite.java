@@ -26,24 +26,28 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 public class MiscellaneousFeesSuite {
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
-    public static final String BOB = "bob";
+    private static final String BOB = "bob";
+    private static final String ALICE = "alice";
+    private static final double BASE_FEE_MISC_GET_VERSION = 0.0001;
+    private static final double BASE_FEE_MISC_PRNG_TRX = 0.001;
+    public static final double BASE_FEE_MISC_GET_TRX_RECORD = 0.0001;
+    private static final double EXPECTED_FEE_PRNG_RANGE_TRX = 0.0010010316;
+    private String alice;
 
     @HapiTest
-    final Stream<DynamicTest> usdFeeAsExpectedForPrngTransaction() {
-        double baseFee = 0.001;
-        double plusRangeFee = 0.0010010316;
+    @DisplayName("USD base fee as expected for Prng transaction")
+    final Stream<DynamicTest> miscPrngTrxBaseUSDFee() {
         final var baseTxn = "prng";
         final var plusRangeTxn = "prngWithRange";
 
@@ -52,14 +56,15 @@ public class MiscellaneousFeesSuite {
                 cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
                 hapiPrng().payingWith(BOB).via(baseTxn).blankMemo().logged(),
                 getTxnRecord(baseTxn).hasOnlyPseudoRandomBytes().logged(),
-                validateChargedUsd(baseTxn, baseFee),
+                validateChargedUsd(baseTxn, BASE_FEE_MISC_PRNG_TRX),
                 hapiPrng(10).payingWith(BOB).via(plusRangeTxn).blankMemo().logged(),
                 getTxnRecord(plusRangeTxn).hasOnlyPseudoRandomNumberInRange(10).logged(),
-                validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 0.5));
+                validateChargedUsd(plusRangeTxn, EXPECTED_FEE_PRNG_RANGE_TRX, 0.5));
     }
 
     @HapiTest
-    final Stream<DynamicTest> usdFeeAsExpectedForGetVersionInfo() {
+    @DisplayName("USD base fee as expected for get version info")
+    final Stream<DynamicTest> miscGetInfoBaseUSDFee() {
         return hapiTest(
                 cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
                 getVersionInfo()
@@ -68,28 +73,33 @@ public class MiscellaneousFeesSuite {
                         .via("versionInfo")
                         .logged(),
                 sleepFor(1000),
-                validateChargedUsd("versionInfo", 0.0001));
+                validateChargedUsd("versionInfo", BASE_FEE_MISC_GET_VERSION));
     }
 
     @HapiTest
-    final Stream<DynamicTest> usdFeeAsExpectedForTransactionGetReciept() {
+    @DisplayName("USD base fee as expected for get account balance")
+    final Stream<DynamicTest> miscGetAccountBalanceBaseUSDFee() {
         return hapiTest(
                 cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS).via("createTxn").logged(),
                 getReceipt("createTxn").signedBy(BOB).payingWith(BOB),
+                // free transaction - verifying that the paying account has the same balance as it was at the beginning
                 getAccountBalance(BOB).hasTinyBars(ONE_HUNDRED_HBARS));
     }
 
     @HapiTest
-    final Stream<DynamicTest> usdFeeAsExpectedForTransactionGetRecord() {
+    @DisplayName("USD base fee as expected for get transaction record")
+    final Stream<DynamicTest> miscGetTransactionRecordBaseUSDFee() {
+        String baseTransactionGetRecord = "baseTransactionGetRecord";
+        String createTxn = "createTxn";
         return hapiTest(
-                cryptoCreate("Alice").balance(ONE_BILLION_HBARS),
+                cryptoCreate(ALICE).balance(ONE_BILLION_HBARS),
                 cryptoCreate(BOB)
                         .balance(ONE_HUNDRED_HBARS)
-                        .signedBy("Alice")
-                        .payingWith("Alice")
-                        .via("createTxn")
+                        .signedBy(ALICE)
+                        .payingWith(ALICE)
+                        .via(createTxn)
                         .logged(),
-                getTxnRecord("createTxn").signedBy(BOB).payingWith(BOB).via("transactionGetRecord"),
-                validateChargedUsd("transactionGetRecord", 0.0001));
+                getTxnRecord(createTxn).signedBy(BOB).payingWith(BOB).via(baseTransactionGetRecord),
+                validateChargedUsd(baseTransactionGetRecord, BASE_FEE_MISC_GET_TRX_RECORD));
     }
 }
