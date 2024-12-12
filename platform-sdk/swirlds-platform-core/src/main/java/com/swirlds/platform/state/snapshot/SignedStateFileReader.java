@@ -179,9 +179,17 @@ public final class SignedStateFileReader {
      * @param signedState a signed state to register schemas in
      */
     public static void registerServiceStates(@NonNull final SignedState signedState) {
-        registerServiceState(
-                (MerkleStateRoot) signedState.getState(), new V0540PlatformStateSchema(), PlatformStateService.NAME);
-        registerServiceState((MerkleStateRoot) signedState.getState(), new V0540RosterSchema(), RosterStateId.NAME);
+        registerServiceStates((MerkleStateRoot) signedState.getState());
+    }
+
+    /**
+     * Register stub states for PlatformStateService and RosterService so that the State knows about them per the metadata and services registry.
+     * See the doc for registerServiceStates(SignedState) above for more details.
+     * @param state a State to register schemas in
+     */
+    public static void registerServiceStates(@NonNull final State state) {
+        registerServiceState(state, new V0540PlatformStateSchema(), PlatformStateService.NAME);
+        registerServiceState(state, new V0540RosterSchema(), RosterStateId.NAME);
     }
 
     private static void registerServiceState(
@@ -209,7 +217,8 @@ public final class SignedStateFileReader {
     /**
      * Unregister the PlatformStateService and RosterService so that the app
      * can initialize States API eventually. Currently, it wouldn't initialize it
-     * if it sees the PlatformStateService already present.
+     * if it sees the PlatformStateService already present. This check occurs at
+     * Hedera.onStateInitialized().
      *
      * See the doc for registerServiceStates above for more details on why
      * we initialize these stub states in the first place.
