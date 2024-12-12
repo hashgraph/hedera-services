@@ -102,7 +102,8 @@ public class ISSTestingToolMain implements SwirldMain {
         final ISSTestingToolConfig testingToolConfig =
                 platform.getContext().getConfiguration().getConfigData(ISSTestingToolConfig.class);
 
-        new TransactionGenerator(new Random(), platform, testingToolConfig.transactionsPerSecond()).start();
+        final var state = platform.getLatestImmutableState("ISSTestingToolMain.run()");
+        new TransactionGenerator(new Random(), platform, testingToolConfig.transactionsPerSecond(), state.get()).start();
     }
 
     /**

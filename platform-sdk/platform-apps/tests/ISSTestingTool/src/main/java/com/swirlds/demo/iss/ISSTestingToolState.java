@@ -26,16 +26,22 @@ package com.swirlds.demo.iss;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
@@ -294,7 +300,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the transaction to apply
      */
     private void handleTransaction(final ConsensusTransaction transaction) {
-        if (isSystemTransaction(transaction.getApplicationTransaction())) {
+        if (isSystemTransaction(transaction)) {
             return;
         }
 
@@ -304,12 +310,32 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }
 
-    private boolean isSystemTransaction(final Bytes transactionBytes) {
-        if (transactionBytes == null || transactionBytes.length() == 0) {
+    private boolean isSystemTransaction(final ConsensusTransaction transaction) {
+        if(transaction.isSystem()) {
+            return true;
+        }
+
+        try {
+            final var parsedTransaction = Transaction.PROTOBUF.parseStrict(transaction.getApplicationTransaction().toReadableSequentialData());
+
+            Bytes bodyBytes;
+            if(parsedTransaction.signedTransactionBytes().length() > 0) {
+                bodyBytes = parsedTransaction.signedTransactionBytes();
+            } else {
+                bodyBytes = parsedTransaction.bodyBytes();
+            }
+
+            final var parsedTransactionBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
+
+            if(parsedTransactionBody.stateSignatureTransaction() != null) {
+                return true;
+            }
+        } catch (ParseException e) {
+            logger.error("Failed to parse transaction body", e);
             return false;
         }
 
-        return transactionBytes.length() > 4;
+        return false;
     }
 
     /**
@@ -496,5 +522,10 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

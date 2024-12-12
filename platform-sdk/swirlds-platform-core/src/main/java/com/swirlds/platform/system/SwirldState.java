@@ -17,6 +17,7 @@
 package com.swirlds.platform.system;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -125,4 +126,8 @@ public interface SwirldState extends MerkleNode {
      */
     @Override
     SwirldState copy();
+
+    default Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+        return Bytes.EMPTY;
+    }
 }

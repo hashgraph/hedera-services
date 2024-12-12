@@ -11,4 +11,5 @@ module com.swirlds.demo.iss {
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires com.google.protobuf;
 }
