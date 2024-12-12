@@ -26,15 +26,12 @@ package com.swirlds.demo.iss;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -311,23 +308,25 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private boolean isSystemTransaction(final ConsensusTransaction transaction) {
-        if(transaction.isSystem()) {
+        if (transaction.isSystem()) {
             return true;
         }
 
         try {
-            final var parsedTransaction = Transaction.PROTOBUF.parseStrict(transaction.getApplicationTransaction().toReadableSequentialData());
+            final var parsedTransaction = Transaction.PROTOBUF.parseStrict(
+                    transaction.getApplicationTransaction().toReadableSequentialData());
 
             Bytes bodyBytes;
-            if(parsedTransaction.signedTransactionBytes().length() > 0) {
+            if (parsedTransaction.signedTransactionBytes().length() > 0) {
                 bodyBytes = parsedTransaction.signedTransactionBytes();
             } else {
                 bodyBytes = parsedTransaction.bodyBytes();
             }
 
-            final var parsedTransactionBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
+            final var parsedTransactionBody =
+                    TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
 
-            if(parsedTransactionBody.stateSignatureTransaction() != null) {
+            if (parsedTransactionBody.stateSignatureTransaction() != null) {
                 return true;
             }
         } catch (ParseException e) {

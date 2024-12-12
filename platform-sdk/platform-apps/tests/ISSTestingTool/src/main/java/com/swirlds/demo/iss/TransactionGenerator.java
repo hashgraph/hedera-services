@@ -19,7 +19,6 @@ package com.swirlds.demo.iss;
 import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
-import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -29,7 +28,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import java.util.Random;
-import java.util.function.Supplier;
 
 /**
  * Generates and submits transactional workload.
@@ -44,7 +42,10 @@ public class TransactionGenerator implements Startable {
     private final StoppableThread systemTransactionsThread;
 
     public TransactionGenerator(
-            final Random random, final Platform platform, final int networkWideTransactionsPerSecond, final SwirldState issTestingToolState) {
+            final Random random,
+            final Platform platform,
+            final int networkWideTransactionsPerSecond,
+            final SwirldState issTestingToolState) {
 
         this.random = random;
         this.platform = platform;
@@ -97,9 +98,14 @@ public class TransactionGenerator implements Startable {
         random.nextBytes(signature);
         final byte[] hash = new byte[48];
         random.nextBytes(hash);
-        final var stateSignatureTransaction = StateSignatureTransaction.newBuilder().signature(Bytes.wrap(signature)).hash(Bytes.wrap(hash)).round(round).build();
+        final var stateSignatureTransaction = StateSignatureTransaction.newBuilder()
+                .signature(Bytes.wrap(signature))
+                .hash(Bytes.wrap(hash))
+                .round(round)
+                .build();
 
-        final var encodedStateSignatureTransaction = issTestingToolState.encodeSystemTransaction(stateSignatureTransaction);
+        final var encodedStateSignatureTransaction =
+                issTestingToolState.encodeSystemTransaction(stateSignatureTransaction);
 
         platform.createTransaction(encodedStateSignatureTransaction.toByteArray());
     }
