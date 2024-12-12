@@ -22,7 +22,7 @@ import java.util.Objects;
  * @param accessKey the access key of the bucket
  * @param secretKey the secret key of the bucket
  */
-public record BucketCredentials(String accessKey, String secretKey) {
+public record BucketCredentials(String accessKey, char[] secretKey) {
     public BucketCredentials {
         Objects.requireNonNull(accessKey, "access key cannot be null");
         Objects.requireNonNull(secretKey, "secret key cannot be null");

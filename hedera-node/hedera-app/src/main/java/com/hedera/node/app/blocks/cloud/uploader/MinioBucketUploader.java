@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -59,7 +60,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                         .endpoint(config.endpoint())
                         .credentials(
                                 config.credentials().accessKey(),
-                                config.credentials().secretKey());
+                                Arrays.toString(config.credentials().secretKey()));
                 // Add region only if the provider is AWS
                 if (config.provider() == BucketProvider.AWS && config.region() != null) {
                     builder.region(config.region());
@@ -182,6 +183,16 @@ public class MinioBucketUploader implements CloudBucketUploader {
             return stat.etag();
         } catch (Exception e) {
             throw new CompletionException(e);
+        }
+    }
+
+    /**
+     * Utility method to zero the secret key char array by filling it with null characters after use
+     * @param array the char array to clear
+     */
+    public void clearCharArray(char[] array) {
+        if (array != null) {
+            Arrays.fill(array, '\0');
         }
     }
 }

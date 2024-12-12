@@ -55,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,8 +96,8 @@ class MinioBucketUploaderTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        awsBucketCredentials = new BucketCredentials("awsAccessKey", "awsSecretKey");
-        gcsBucketCredentials = new BucketCredentials("gcsAccessKey", "gcsSecretKey");
+        awsBucketCredentials = new BucketCredentials("awsAccessKey", "awsSecretKey".toCharArray());
+        gcsBucketCredentials = new BucketCredentials("gcsAccessKey", "gcsSecretKey".toCharArray());
         awsBucketConfig = new CompleteBucketConfig(
                 "awsBucketConfig",
                 BucketProvider.AWS,
@@ -251,5 +252,11 @@ class MinioBucketUploaderTest {
         }
 
         return blockFiles;
+    }
+
+    @AfterEach
+    void tearDown() {
+        uploader.clearCharArray(awsBucketCredentials.secretKey());
+        uploader.clearCharArray(gcsBucketCredentials.secretKey());
     }
 }
