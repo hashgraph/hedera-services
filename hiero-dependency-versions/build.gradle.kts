@@ -53,11 +53,6 @@ dependencies.constraints {
     api("com.esaulpaugh:headlong:6.1.1") { because("com.esaulpaugh.headlong") }
     api("info.picocli:picocli:4.6.3") { because("info.picocli") }
     api("io.github.classgraph:classgraph:4.8.65") { because("io.github.classgraph") }
-    api("io.netty:netty-handler:4.1.110.Final") { because("io.netty.handler") }
-    api("io.netty:netty-transport:4.1.111.Final") { because("io.netty.transport") }
-    api("io.netty:netty-transport-classes-epoll:4.1.111.Final") {
-        because("io.netty.transport.classes.epoll")
-    }
     api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }
     api("io.prometheus:simpleclient:0.16.0") { because("io.prometheus.simpleclient") }
     api("io.prometheus:simpleclient_httpserver:0.16.0") {
