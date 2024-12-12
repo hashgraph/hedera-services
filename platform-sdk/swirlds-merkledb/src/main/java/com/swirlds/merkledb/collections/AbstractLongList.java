@@ -268,6 +268,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param fileChannel   the file channel to read from
      * @param chunkIndex    the index of the chunk to store the read data
      * @param startIndex   the starting index within the chunk to begin writing data
+     * @return a chunk (byte buffer, array or long that represents an offset of the chunk)
      * @throws IOException if there is an error reading the file
      */
     protected abstract C readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException;
