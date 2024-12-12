@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.blocks.cloud.uploader;
 
 import com.hedera.node.app.annotations.CommonExecutor;
@@ -6,6 +22,7 @@ import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.BucketProvider;
+import io.minio.MinioClient;
 import io.minio.StatObjectArgs;
 import io.minio.UploadObjectArgs;
 import io.minio.errors.ErrorResponseException;
@@ -24,7 +41,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import io.minio.MinioClient;
 
 @Singleton
 public class MinioBucketUploader implements CloudBucketUploader {
@@ -43,8 +59,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                         .endpoint(config.endpoint())
                         .credentials(
                                 config.credentials().accessKey(),
-                                config.credentials().secretKey()
-                        );
+                                config.credentials().secretKey());
                 // Add region only if the provider is AWS
                 if (config.provider() == BucketProvider.AWS && config.region() != null) {
                     builder.region(config.region());
@@ -65,7 +80,8 @@ public class MinioBucketUploader implements CloudBucketUploader {
         this.uploadExecutor = executor;
         this.bucketName = completeBucketConfigs.getFirst().bucketName();
         this.provider = completeBucketConfigs.getFirst().provider();
-        this.maxRetryAttempts = configProvider.getConfiguration()
+        this.maxRetryAttempts = configProvider
+                .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .uploadRetryAttempts();
         this.minioClients = MinioClientFactory.createClients(bucketConfigurationManager.getCompleteBucketConfigs());
@@ -81,54 +97,56 @@ public class MinioBucketUploader implements CloudBucketUploader {
 
     @Override
     public CompletableFuture<Void> uploadBlock(Path blockPath) {
-        return CompletableFuture.runAsync(() -> {
-
-            if (!Files.exists(blockPath)) {
-                throw new IllegalArgumentException("Block path does not exist: " + blockPath);
-            }
-            String fileName = blockPath.getFileName().toString();
-            String objectKey = fileName.endsWith(".blk")
-                    ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
-                    : "";
-            try {
-                // First check if object already exists
-                if (blockExistsOnCloud(objectKey)) {
-                    String existingMd5 = getBlockMd5Internal(objectKey);
-                    if (existingMd5.equals(calculateMD5Hash(blockPath))) {
-                        logger.debug("Block {} already exists with matching MD5", objectKey);
-                        return;
+        return CompletableFuture.runAsync(
+                () -> {
+                    if (!Files.exists(blockPath)) {
+                        throw new IllegalArgumentException("Block path does not exist: " + blockPath);
                     }
-                    throw new HashMismatchException(objectKey, provider.toString());
-                }
-                // Upload with retry logic
-                RetryUtils.withRetry(() -> {
-                    minioClients.getFirst().uploadObject(
-                            UploadObjectArgs.builder()
-                                    .bucket(bucketName)
-                                    .object(objectKey)
-                                    .filename(blockPath.toString())
-                                    .contentType("application/octet-stream")
-                                    .build());
-                    return null;
-                }, maxRetryAttempts);
-            } catch (Exception e) {
-                throw new CompletionException("Failed to upload block " + objectKey, e);
-            }
-        }, uploadExecutor);
+                    String fileName = blockPath.getFileName().toString();
+                    String objectKey = fileName.endsWith(".blk")
+                            ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
+                            : "";
+                    try {
+                        // First check if object already exists
+                        if (blockExistsOnCloud(objectKey)) {
+                            String existingMd5 = getBlockMd5Internal(objectKey);
+                            if (existingMd5.equals(calculateMD5Hash(blockPath))) {
+                                logger.debug("Block {} already exists with matching MD5", objectKey);
+                                return;
+                            }
+                            throw new HashMismatchException(objectKey, provider.toString());
+                        }
+                        // Upload with retry logic
+                        RetryUtils.withRetry(
+                                () -> {
+                                    minioClients
+                                            .getFirst()
+                                            .uploadObject(UploadObjectArgs.builder()
+                                                    .bucket(bucketName)
+                                                    .object(objectKey)
+                                                    .filename(blockPath.toString())
+                                                    .contentType("application/octet-stream")
+                                                    .build());
+                                    return null;
+                                },
+                                maxRetryAttempts);
+                    } catch (Exception e) {
+                        throw new CompletionException("Failed to upload block " + objectKey, e);
+                    }
+                },
+                uploadExecutor);
     }
 
     @Override
     public CompletableFuture<Boolean> blockExists(String objectKey) {
-        return CompletableFuture.supplyAsync(
-                () -> blockExistsOnCloud(objectKey),
-                uploadExecutor);
+        return CompletableFuture.supplyAsync(() -> blockExistsOnCloud(objectKey), uploadExecutor);
     }
+
     @Override
     public CompletableFuture<String> getBlockMd5(String objectKey) {
-        return CompletableFuture.supplyAsync(
-                () -> getBlockMd5Internal(objectKey),
-                uploadExecutor);
+        return CompletableFuture.supplyAsync(() -> getBlockMd5Internal(objectKey), uploadExecutor);
     }
+
     @Override
     public BucketProvider getProvider() {
         return provider;
@@ -136,8 +154,9 @@ public class MinioBucketUploader implements CloudBucketUploader {
 
     public boolean blockExistsOnCloud(String objectKey) {
         try {
-            minioClients.getFirst().statObject(
-                    StatObjectArgs.builder()
+            minioClients
+                    .getFirst()
+                    .statObject(StatObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectKey)
                             .build());
@@ -151,10 +170,12 @@ public class MinioBucketUploader implements CloudBucketUploader {
             throw new CompletionException(e);
         }
     }
+
     private String getBlockMd5Internal(String objectKey) {
         try {
-            var stat = minioClients.getFirst().statObject(
-                    StatObjectArgs.builder()
+            var stat = minioClients
+                    .getFirst()
+                    .statObject(StatObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectKey)
                             .build());
@@ -163,5 +184,4 @@ public class MinioBucketUploader implements CloudBucketUploader {
             throw new CompletionException(e);
         }
     }
-
 }

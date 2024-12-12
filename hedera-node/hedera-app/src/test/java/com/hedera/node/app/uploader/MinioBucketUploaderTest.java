@@ -1,4 +1,23 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.uploader;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.blocks.cloud.uploader.MinioBucketUploader;
 import com.hedera.node.app.uploader.credentials.BucketCredentials;
@@ -18,15 +37,21 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 import io.minio.messages.ErrorResponse;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -37,30 +62,24 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MinioBucketUploaderTest {
 
     @Mock
     private BucketConfigurationManager bucketConfigurationManager;
+
     @Mock
     private ConfigProvider configProvider;
+
     @Mock
     private ExecutorService executorService;
+
     @Mock
     private MinioClient minioClient;
+
     @Mock
     private BlockStreamConfig blockStreamConfig;
 
@@ -85,29 +104,16 @@ class MinioBucketUploaderTest {
                 "us-west-2",
                 "aws-bucket",
                 true,
-                awsBucketCredentials
-        );
+                awsBucketCredentials);
         gcsBucketConfig = new CompleteBucketConfig(
-                "gcsBucketConfig",
-                BucketProvider.GCP,
-                "gcs-endpoint",
-                "",
-                "gcs-bucket",
-                true,
-                gcsBucketCredentials
-                );
+                "gcsBucketConfig", BucketProvider.GCP, "gcs-endpoint", "", "gcs-bucket", true, gcsBucketCredentials);
         // Mock Headers for StatObjectResponse with valid timestamp
         mockHeaders = new okhttp3.Headers.Builder()
                 .add("last-modified", "Wed, 12 Oct 2022 10:15:30 GMT") // Valid RFC 1123 timestamp
                 .build();
 
         // Create a valid StatObjectResponse
-        mockStatResponse = new StatObjectResponse(
-                mockHeaders,
-                "mock-object",
-                "mock-bucket",
-                "mock-region"
-        );
+        mockStatResponse = new StatObjectResponse(mockHeaders, "mock-object", "mock-bucket", "mock-region");
 
         // Mock bucketConfigurationManager
         when(bucketConfigurationManager.getCompleteBucketConfigs())
@@ -116,20 +122,20 @@ class MinioBucketUploaderTest {
         // Mock the behavior of configProvider
         VersionedConfiguration versionedConfiguration = mock(VersionedConfiguration.class);
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
-        when(versionedConfiguration.getConfigData(BlockStreamConfig.class))
-                .thenReturn(blockStreamConfig);
+        when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
 
         uploader = new MinioBucketUploader(bucketConfigurationManager, executorService, configProvider);
     }
 
-//    @Test
+    //    @Test
     void testUploadBlockSuccess() throws Exception {
         // Create a temporary file to simulate the block file
         Path tempFile = Files.createTempFile("test", ".blk");
         Files.write(tempFile, "test-content".getBytes());
 
         // Mock ErrorResponse with lenient settings to support final class
-        ErrorResponse mockErrorResponse = Mockito.mock(ErrorResponse.class,
+        ErrorResponse mockErrorResponse = Mockito.mock(
+                ErrorResponse.class,
                 withSettings().strictness(Strictness.LENIENT).useConstructor());
         when(mockErrorResponse.message()).thenReturn("Bucket not found"); // Complete the stubbing
 
@@ -138,8 +144,10 @@ class MinioBucketUploaderTest {
 
         // Mocking the upload process
         doAnswer(invocation -> {
-            return CompletableFuture.completedFuture(null); // Simulate a successful upload
-        }).when(minioClient).uploadObject(any(UploadObjectArgs.class));
+                    return CompletableFuture.completedFuture(null); // Simulate a successful upload
+                })
+                .when(minioClient)
+                .uploadObject(any(UploadObjectArgs.class));
 
         // Spy on the uploader
         uploader = spy(uploader);
@@ -160,8 +168,7 @@ class MinioBucketUploaderTest {
     }
 
     @Test
-    void testUploadBlockSucceedsIfFileExists()
-            throws IOException {
+    void testUploadBlockSucceedsIfFileExists() throws IOException {
 
         // Load all the test block files from the resources directory
         Map<String, InputStream> blockFiles = loadAllBlockFilesFromDirectory();
@@ -170,7 +177,7 @@ class MinioBucketUploaderTest {
         // Run the method and verify behavior
         Path blockFile;
         for (Map.Entry<String, InputStream> entry : blockFiles.entrySet()) {
-            String fileName = entry.getKey();  // File name in the bucket
+            String fileName = entry.getKey(); // File name in the bucket
             InputStream inputStream = entry.getValue();
             // Write InputStream to a temporary file
             blockFile = Files.createTempFile(fileName, ".blk");
@@ -180,14 +187,16 @@ class MinioBucketUploaderTest {
 
             // Pass the Path to uploader.uploadBlock()
             CompletableFuture<Void> result = uploader.uploadBlock(blockFile);
-//            assertDoesNotThrow(result::join); // Ensure no exceptions are thrown
+            //            assertDoesNotThrow(result::join); // Ensure no exceptions are thrown
             assertThrows(TimeoutException.class, () -> result.get(1, TimeUnit.SECONDS));
         }
     }
 
     @Test
     void testUploadBlockFailsIfFileDoesNotExist()
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException, ExecutionException, InterruptedException, TimeoutException {
+            throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
+                    NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
+                    InternalException, ExecutionException, InterruptedException, TimeoutException {
 
         // Create a temporary file to simulate the block file (this file will not exist after deletion)
         Path tempFile = Files.createTempFile("nonexistent", ".blk");
@@ -201,7 +210,7 @@ class MinioBucketUploaderTest {
         verify(minioClient, never()).uploadObject(any());
     }
 
-//    @Test
+    //    @Test
     void testBlockExistsReturnsTrue() throws Exception {
         when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mock(io.minio.StatObjectResponse.class));
 
@@ -210,7 +219,7 @@ class MinioBucketUploaderTest {
         assertTrue(result.join());
     }
 
-//    @Test
+    //    @Test
     void testBlockExistsReturnsFalse() throws Exception {
         // Mock minioClient behavior
         when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mockStatResponse);
@@ -223,21 +232,24 @@ class MinioBucketUploaderTest {
 
         Path resourcesPath;
         try {
-            resourcesPath = Paths.get(MinioBucketUploaderTest.class.getClassLoader().getResource("uploader/").toURI());
+            resourcesPath = Paths.get(MinioBucketUploaderTest.class
+                    .getClassLoader()
+                    .getResource("uploader/")
+                    .toURI());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
 
         try (Stream<Path> files = Files.list(resourcesPath)) {
-            files.filter(file -> file.toString().endsWith(".blk"))
-                    .forEach(file -> {
-                        try {
-                            blockFiles.put(file.getFileName().toString(), Files.newInputStream(file));
-                        } catch (IOException e) { }
-                    });
-        } catch (IOException ioe) { }
+            files.filter(file -> file.toString().endsWith(".blk")).forEach(file -> {
+                try {
+                    blockFiles.put(file.getFileName().toString(), Files.newInputStream(file));
+                } catch (IOException e) {
+                }
+            });
+        } catch (IOException ioe) {
+        }
 
         return blockFiles;
     }
-
 }

@@ -39,9 +39,7 @@ mainModuleInfo {
 }
 
 configurations {
-    runtimeOnly {
-        exclude(group = "com.google.code.findbugs", module = "annotations")
-    }
+    runtimeOnly { exclude(group = "com.google.code.findbugs", module = "annotations") }
 }
 
 testModuleInfo {
@@ -213,6 +211,4 @@ tasks.register<Exec>("stopDockerContainers") {
     commandLine("docker-compose", "stop")
 }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.remove("-Werror")
-}
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.remove("-Werror") }

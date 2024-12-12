@@ -53,6 +53,7 @@ module com.hedera.node.app {
     requires io.helidon.common.tls;
     requires io.helidon.webclient.api;
     requires io.helidon.webclient.grpc;
+    requires io.minio;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
@@ -61,7 +62,6 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler; // javax.annotation.processing.Generated
-    requires io.minio;
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
