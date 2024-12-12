@@ -18,7 +18,6 @@ package com.hedera.node.app.info;
 
 import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static java.util.Objects.requireNonNull;
 
@@ -29,10 +28,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -116,16 +112,11 @@ public class StateNetworkInfo implements NetworkInfo {
     @Override
     public void updateFrom(@NonNull final State state) {
         final var config = configProvider.getConfiguration();
-        if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-            activeRoster = retrieveActiveOrGenesisRoster(state);
-        } else {
-            // When the feature flag is disabled, the rosters in RosterService state are not up-to-date
-            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
-            // instead of the address book
-            final var readablePlatformStateStore =
-                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            activeRoster = buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
-        }
+
+        // RosterRetriever will fetch the roster from the RosterService state if it's populated.
+        // Otherwise, it falls back to reading the AddressBook from the PlatformStateService.
+        activeRoster = retrieveActiveOrGenesisRoster(state);
+
         nodeInfos.clear();
         nodeInfos.putAll(buildNodeInfoMap(state));
     }

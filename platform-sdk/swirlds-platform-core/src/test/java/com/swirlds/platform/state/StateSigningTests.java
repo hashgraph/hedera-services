@@ -335,7 +335,10 @@ class StateSigningTests {
         final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
         final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
         final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
-        signedState.getState().getWritablePlatformState().setAddressBook(updatedAddressBook);
+        // We cannot really update the AddressBook/Roster in an already signed state because it's already hashed and
+        // immutable.
+        // However, we can call a version of the `SignedState.pruneInvalidSignatures()` method that accepts a random
+        // AddressBook instead.
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();
@@ -343,7 +346,7 @@ class StateSigningTests {
         tamperedBytes[0] = 0;
         when(signatures.get(1).getBytes()).thenReturn(Bytes.wrap(tamperedBytes));
 
-        signedState.pruneInvalidSignatures();
+        signedState.pruneInvalidSignatures(updatedAddressBook);
 
         assertEquals(signaturesAdded.size() - 2, sigSet.size());
         assertEquals(

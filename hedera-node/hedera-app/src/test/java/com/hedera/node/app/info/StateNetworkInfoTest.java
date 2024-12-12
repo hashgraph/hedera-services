@@ -28,22 +28,19 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.platform.state.Address;
-import com.hedera.hapi.platform.state.AddressBook;
-import com.hedera.hapi.platform.state.NodeId;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.platform.state.service.PlatformStateService;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -67,12 +64,6 @@ public class StateNetworkInfoTest {
     @Mock
     private ReadableStates readableStates;
 
-    @Mock
-    private ReadableSingletonState<PlatformState> platformReadableState;
-
-    @Mock
-    private PlatformState platformState;
-
     private static final long SELF_ID = 1L;
     private final Roster activeRoster = new Roster(List.of(
             RosterEntry.newBuilder().nodeId(SELF_ID).weight(10).build(),
@@ -89,7 +80,6 @@ public class StateNetworkInfoTest {
                 .thenReturn(new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1));
         when(state.getReadableStates(AddressBookService.NAME)).thenReturn(readableStates);
         when(readableStates.<EntityNumber, Node>get("NODES")).thenReturn(nodeState);
-        when(state.getReadableStates(PlatformStateService.NAME)).thenReturn(readableStates);
         networkInfo = new StateNetworkInfo(state, activeRoster, SELF_ID, configProvider);
     }
 
@@ -129,34 +119,27 @@ public class StateNetworkInfoTest {
     @Test
     public void testUpdateFrom() {
         when(nodeState.get(any(EntityNumber.class))).thenReturn(mock(Node.class));
-        when(readableStates.<PlatformState>getSingleton("PLATFORM_STATE")).thenReturn(platformReadableState);
-        when(platformReadableState.get()).thenReturn(platformState);
-        when(platformState.addressBook())
-                .thenReturn(AddressBook.newBuilder()
-                        .addresses(
-                                Address.newBuilder()
-                                        .id(new NodeId(2L))
-                                        .weight(111L)
-                                        .signingCertificate(getCertBytes(CERTIFICATE_2))
-                                        // The agreementCertificate is unused, but required to prevent deserialization
-                                        // failure in
-                                        // States API.
-                                        .agreementCertificate(getCertBytes(CERTIFICATE_2))
-                                        .hostnameInternal("10.0.55.66")
-                                        .portInternal(222)
-                                        .build(),
-                                Address.newBuilder()
-                                        .id(new NodeId(3L))
-                                        .weight(3L)
-                                        .signingCertificate(getCertBytes(CERTIFICATE_3))
-                                        // The agreementCertificate is unused, but required to prevent deserialization
-                                        // failure in
-                                        // States API.
-                                        .agreementCertificate(getCertBytes(CERTIFICATE_3))
-                                        .hostnameExternal("external3.com")
-                                        .portExternal(111)
-                                        .build())
-                        .build());
+
+        final Roster roster = new Roster(List.of(
+                RosterEntry.newBuilder()
+                        .nodeId(2L)
+                        .weight(111L)
+                        .gossipCaCertificate(getCertBytes(CERTIFICATE_2))
+                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                .ipAddressV4(Bytes.wrap(new byte[] {10, 0, 55, 66}))
+                                .port(222)
+                                .build())
+                        .build(),
+                RosterEntry.newBuilder()
+                        .nodeId(3L)
+                        .weight(3L)
+                        .gossipCaCertificate(getCertBytes(CERTIFICATE_3))
+                        .gossipEndpoint(ServiceEndpoint.newBuilder()
+                                .domainName("external3.com")
+                                .port(111)
+                                .build())
+                        .build()));
+        RosterServiceStateMock.setup(state, roster);
 
         networkInfo.updateFrom(state);
         assertEquals(2, networkInfo.addressBook().size());
