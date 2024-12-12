@@ -310,7 +310,6 @@ class PcesFileTests {
         }
 
         // After all files have been deleted, the test directory should be empty again.
-        int filesCount;
         try (Stream<Path> list = Files.list(testDirectory)) {
             filesCount = (int) list.count();
         }
@@ -392,7 +391,6 @@ class PcesFileTests {
         }
 
         // After all files have been deleted, the test directory should be empty again.
-        int filesCount;
         try (Stream<Path> list = Files.list(streamDirectory)) {
             filesCount = (int) list.count();
         }
