@@ -116,6 +116,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
             }
         }, uploadExecutor);
     }
+
     @Override
     public CompletableFuture<Boolean> blockExists(String objectKey) {
         return CompletableFuture.supplyAsync(
@@ -132,7 +133,8 @@ public class MinioBucketUploader implements CloudBucketUploader {
     public BucketProvider getProvider() {
         return provider;
     }
-    private boolean blockExistsOnCloud(String objectKey) {
+
+    public boolean blockExistsOnCloud(String objectKey) {
         try {
             minioClients.getFirst().statObject(
                     StatObjectArgs.builder()
