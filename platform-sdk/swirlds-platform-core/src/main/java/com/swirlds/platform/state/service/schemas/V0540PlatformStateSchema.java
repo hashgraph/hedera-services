@@ -88,12 +88,9 @@ public class V0540PlatformStateSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
+        final var stateSingleton = ctx.newStates().<PlatformState>getSingleton(PLATFORM_STATE_KEY);
         if (ctx.isGenesis()) {
-            final var stateSingleton = ctx.newStates().<PlatformState>getSingleton(PLATFORM_STATE_KEY);
-            if (stateSingleton.get() == null) {
-                // The WritablePlatformStateStore constructor needs a non-null singleton state here
-                stateSingleton.put(UNINITIALIZED_PLATFORM_STATE);
-            }
+            stateSingleton.put(UNINITIALIZED_PLATFORM_STATE);
             final var genesisStateSpec = genesisStateSpec(ctx);
             final var platformStateStore = new WritablePlatformStateStore(ctx.newStates());
             if (ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
@@ -101,20 +98,17 @@ public class V0540PlatformStateSchema extends Schema {
                 // use the legacy previous/current AddressBook fields, so omit them
                 platformStateStore.bulkUpdate(genesisStateSpec);
             } else {
-                Consumer<PlatformStateModifier> addressBookSpec;
-                try {
-                    final var book = addressBook.get();
-                    requireNonNull(book);
-                    addressBookSpec = v -> {
-                        v.setPreviousAddressBook(null);
-                        v.setAddressBook(book.copy());
-                    };
-                } catch (IllegalStateException ignore) {
-                    // An app using the Browser entrypoint will initialize its genesis address books
-                    // a different way, and will have given us UNAVAILABLE_DISK_ADDRESS_BOOK
-                    addressBookSpec = v -> {};
-                }
-                platformStateStore.bulkUpdate(genesisStateSpec.andThen(addressBookSpec));
+                final var book = addressBook.get();
+                requireNonNull(book);
+                platformStateStore.bulkUpdate(genesisStateSpec.andThen(v -> {
+                    v.setPreviousAddressBook(null);
+                    v.setAddressBook(book.copy());
+                }));
+            }
+        } else {
+            // (FUTURE) Delete this code path, it is only reached through the Browser entrypoint
+            if (stateSingleton.get() == null) {
+                stateSingleton.put(UNINITIALIZED_PLATFORM_STATE);
             }
         }
     }

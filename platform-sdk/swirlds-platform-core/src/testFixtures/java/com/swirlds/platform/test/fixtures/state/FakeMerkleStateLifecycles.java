@@ -148,9 +148,6 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                     }
                 });
         final var mockMigrationContext = mock(MigrationContext.class);
-        given(mockMigrationContext.isGenesis()).willReturn(true);
-        given(mockMigrationContext.appConfig()).willReturn(CONFIGURATION);
-        given(mockMigrationContext.platformConfig()).willReturn(CONFIGURATION);
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         given(mockMigrationContext.newStates()).willReturn(writableStates);
         schema.migrate(mockMigrationContext);
