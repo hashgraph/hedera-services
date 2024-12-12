@@ -130,7 +130,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
-        final var schema = new V0540PlatformStateSchema(config -> new BasicSoftwareVersion(123));
+        final var schema = new V0540PlatformStateSchema(config -> new BasicSoftwareVersion(1));
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {

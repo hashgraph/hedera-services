@@ -180,11 +180,7 @@ public final class SignedStateFileReader {
      */
     public static void registerServiceStates(@NonNull final SignedState signedState) {
         registerServiceState(
-                (MerkleStateRoot) signedState.getState(),
-                new V0540PlatformStateSchema(config -> {
-                    throw new IllegalStateException();
-                }),
-                PlatformStateService.NAME);
+                (MerkleStateRoot) signedState.getState(), new V0540PlatformStateSchema(), PlatformStateService.NAME);
         registerServiceState((MerkleStateRoot) signedState.getState(), new V0540RosterBaseSchema(), RosterStateId.NAME);
     }
 

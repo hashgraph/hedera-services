@@ -79,6 +79,7 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -308,6 +309,7 @@ class DiskStartupNetworksTest {
                 ForkJoinPool.commonPool(),
                 NO_OP_METRICS);
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
+        PLATFORM_STATE_SERVICE.setDiskAddressBook(new AddressBook());
         Set.of(
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,

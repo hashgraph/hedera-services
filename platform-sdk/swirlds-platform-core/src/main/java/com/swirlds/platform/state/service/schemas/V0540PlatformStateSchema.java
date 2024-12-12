@@ -19,20 +19,15 @@ package com.swirlds.platform.state.service.schemas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.Pair;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -42,11 +37,15 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Defines the {@link PlatformState} singleton and initializes it at genesis.
  */
 public class V0540PlatformStateSchema extends Schema {
+    private static final Supplier<AddressBook> UNAVAILABLE_DISK_ADDRESS_BOOK = () -> {
+        throw new IllegalStateException("No disk address book available");
+    };
     private static final Function<Configuration, SoftwareVersion> UNAVAILABLE_VERSION_FN = config -> {
         throw new IllegalStateException("No version information available");
     };
@@ -62,14 +61,22 @@ public class V0540PlatformStateSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
+    private final Supplier<AddressBook> addressBook;
     private final Function<Configuration, SoftwareVersion> versionFn;
 
     public V0540PlatformStateSchema() {
-        this(UNAVAILABLE_VERSION_FN);
+        this(UNAVAILABLE_DISK_ADDRESS_BOOK, UNAVAILABLE_VERSION_FN);
     }
 
     public V0540PlatformStateSchema(@NonNull final Function<Configuration, SoftwareVersion> versionFn) {
+        this(UNAVAILABLE_DISK_ADDRESS_BOOK, versionFn);
+    }
+
+    public V0540PlatformStateSchema(
+            @NonNull final Supplier<AddressBook> addressBook,
+            @NonNull final Function<Configuration, SoftwareVersion> versionFn) {
         super(VERSION);
+        this.addressBook = requireNonNull(addressBook);
         this.versionFn = requireNonNull(versionFn);
     }
 
@@ -91,46 +98,13 @@ public class V0540PlatformStateSchema extends Schema {
                 // use the legacy previous/current AddressBook fields, so omit them
                 platformStateStore.bulkUpdate(genesisStateSpec);
             } else {
-                // Before roster lifecycle is enabled, we must populate the legacy
-                // AddressBook fields from the genesis network info
+                // Before roster lifecycle is enabled, we set the address book fields from disk config.txt
                 platformStateStore.bulkUpdate(genesisStateSpec.andThen(v -> {
                     v.setPreviousAddressBook(null);
-                    final var networkInfo = requireNonNull(ctx.genesisNetworkInfo());
-                    v.setAddressBook(new AddressBook(networkInfo.addressBook().stream()
-                            .map(info -> {
-                                final var intPair =
-                                        asPair(info.gossipEndpoints().getLast());
-                                final var extPair =
-                                        asPair(info.gossipEndpoints().getFirst());
-                                return new Address(
-                                        NodeId.of(info.nodeId()),
-                                        "" + info.nodeId(),
-                                        "node" + (info.nodeId() + 1),
-                                        info.weight(),
-                                        intPair.left(),
-                                        intPair.right(),
-                                        extPair.left(),
-                                        extPair.right(),
-                                        new SerializableX509Certificate(info.sigCert()),
-                                        null,
-                                        "0.0." + info.accountId().accountNumOrThrow());
-                            })
-                            .toList()));
+                    v.setAddressBook(requireNonNull(addressBook.get()).copy());
                 }));
             }
         }
-    }
-
-    private Pair<String, Integer> asPair(@NonNull final ServiceEndpoint endpoint) {
-        if (endpoint.ipAddressV4().length() == 4) {
-            return Pair.of(dotDelimitedOctets(endpoint.ipAddressV4().toByteArray()), endpoint.port());
-        } else {
-            return Pair.of(endpoint.domainName(), endpoint.port());
-        }
-    }
-
-    private String dotDelimitedOctets(@NonNull final byte[] bytes) {
-        return (0xff & bytes[0]) + "." + (0xff & bytes[1]) + "." + (0xff & bytes[2]) + "." + (0xff & bytes[3]);
     }
 
     private Consumer<PlatformStateModifier> genesisStateSpec(@NonNull final MigrationContext ctx) {

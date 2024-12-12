@@ -48,4 +48,4 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "TssMessage,TssVote,TssShareSignature") @NetworkProperty
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
-        @ConfigProperty(defaultValue = "ONLY_FREEZE_BLOCK") DiskNetworkExport diskNetworkExport) {}
+        @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport) {}
