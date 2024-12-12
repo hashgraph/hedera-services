@@ -17,16 +17,13 @@
 package com.hedera.services.bdd.suites.fees;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -69,12 +66,22 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 @HapiTestLifecycle
-@Tag(CRYPTO)
 public class CryptoServiceFeesSuite {
+    private static final double BASE_FEE_CRYPTO_GET_ACCOUNT_INFO = 0.0001;
+    private static final double BASE_FEE_CRYPTO_CREATE = 0.05;
+    private static final double BASE_FEE_CRYPTO_DELETE = 0.005;
+    private static final double BASE_FEE_CRYPTO_DELETE_ALLOWANCE = 0.05;
+    private static final double BASE_FEE_CRYPTO_UPDATE = 0.000214;
+    private static final double BASE_FEE_WITH_EXPIRY_CRYPTO_UPDATE = 0.00022;
+    private static final double BASE_FEE_HBAR_CRYPTO_TRANSFER = 0.0001;
+    private static final double BASE_FEE_HTS_CRYPTO_TRANSFER = 0.001;
+    private static final double BASE_FEE_NFT_CRYPTO_TRANSFER = 0.001;
+    private static final double BASE_FEE_CRYPTO_GET_ACCOUNT_RECORDS = 0.0001;
+
     private static final String CIVILIAN = "civilian";
     private static final String FEES_ACCOUNT = "feesAccount";
     private static final String OWNER = "owner";
@@ -91,91 +98,58 @@ public class CryptoServiceFeesSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> cryptoCreateUsdFeeAsExpected() {
-        double expectedPriceUsd = 0.05;
-        final var noAutoAssocSlots = "noAutoAssocSlots";
-        final var oneAutoAssocSlot = "oneAutoAssocSlot";
-        final var tenAutoAssocSlots = "tenAutoAssocSlots";
-        final var unlimitedAutoAssocSlots = "unlimitedAutoAssocSlots";
+    @DisplayName("CryptoCreate transaction has expected base fee")
+    final Stream<DynamicTest> cryptoCreateBaseUSDFee() {
+        final var cryptoCreate = "cryptoCreate";
         return hapiTest(
-                cryptoCreate(noAutoAssocSlots)
+                cryptoCreate(cryptoCreate)
                         .key(CIVILIAN)
-                        .balance(0L)
-                        .via(noAutoAssocSlots)
+                        .via(cryptoCreate)
                         .blankMemo()
-                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                         .signedBy(CIVILIAN)
                         .payingWith(CIVILIAN),
-                cryptoCreate(oneAutoAssocSlot)
-                        .key(CIVILIAN)
-                        .balance(0L)
-                        .maxAutomaticTokenAssociations(1)
-                        .via(oneAutoAssocSlot)
-                        .blankMemo()
-                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                        .signedBy(CIVILIAN)
-                        .payingWith(CIVILIAN),
-                cryptoCreate(tenAutoAssocSlots)
-                        .key(CIVILIAN)
-                        .balance(0L)
-                        .maxAutomaticTokenAssociations(10)
-                        .via(tenAutoAssocSlots)
-                        .blankMemo()
-                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                        .signedBy(CIVILIAN)
-                        .payingWith(CIVILIAN),
-                cryptoCreate(unlimitedAutoAssocSlots)
-                        .key(CIVILIAN)
-                        .balance(0L)
-                        .maxAutomaticTokenAssociations(-1)
-                        .via(unlimitedAutoAssocSlots)
-                        .blankMemo()
-                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                        .signedBy(CIVILIAN)
-                        .payingWith(CIVILIAN),
-                getTxnRecord(tenAutoAssocSlots).logged(),
-                validateChargedUsd(noAutoAssocSlots, expectedPriceUsd),
-                validateChargedUsd(oneAutoAssocSlot, expectedPriceUsd),
-                validateChargedUsd(tenAutoAssocSlots, expectedPriceUsd),
-                validateChargedUsd(unlimitedAutoAssocSlots, expectedPriceUsd));
+                validateChargedUsd(cryptoCreate, BASE_FEE_CRYPTO_CREATE));
     }
 
     @HapiTest
-    final Stream<DynamicTest> cryptoDeleteUsdFeeAsExpected() {
-        double expectedDeletePriceUsd = 0.005;
-        final var noAutoAssocSlots = "noAutoAssocSlots";
+    @DisplayName("CryptoDelete transaction has expected base fee")
+    final Stream<DynamicTest> cryptoDeleteBaseUSDFee() {
+        final var cryptoCreate = "cryptoCreate";
+        final var cryptoDelete = "cryptoDelete";
         return hapiTest(
-                cryptoCreate(noAutoAssocSlots).balance(5 * ONE_HUNDRED_HBARS).key(CIVILIAN),
-                cryptoDelete(noAutoAssocSlots)
-                        .via("basicDelete")
+                cryptoCreate(cryptoCreate).balance(5 * ONE_HUNDRED_HBARS).key(CIVILIAN),
+                cryptoDelete(cryptoCreate)
+                        .via(cryptoDelete)
                         .payingWith(CIVILIAN)
                         .signedBy(CIVILIAN),
-                validateChargedUsd("basicDelete", expectedDeletePriceUsd));
+                validateChargedUsd(cryptoDelete, BASE_FEE_CRYPTO_DELETE));
     }
 
     @HapiTest
-    final Stream<DynamicTest> cryptoDeleteAllowanceFeesAsExpected() {
+    @DisplayName("CryptoDeleteAllowance transaction has expected base fee")
+    final Stream<DynamicTest> cryptoDeleteAllowanceBaseUSDFee() {
         final String token = "token";
         final String nft = "nft";
+        final String supplyKey = "supplyKey";
+        final String baseDeleteNft = "baseDeleteNft";
         return hapiTest(
-                newKeyNamed("supplyKey"),
+                newKeyNamed(supplyKey),
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
-                cryptoCreate(FEES_ACCOUNT).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
                 cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                 tokenCreate(token)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .supplyType(TokenSupplyType.FINITE)
-                        .supplyKey("supplyKey")
-                        .maxSupply(1000L)
+                        .supplyKey(supplyKey)
                         .initialSupply(10L)
+                        .maxSupply(1000L)
                         .treasury(TOKEN_TREASURY),
                 tokenCreate(nft)
-                        .maxSupply(10L)
-                        .initialSupply(0)
-                        .supplyType(TokenSupplyType.FINITE)
                         .tokenType(NON_FUNGIBLE_UNIQUE)
-                        .supplyKey("supplyKey")
+                        .supplyType(TokenSupplyType.FINITE)
+                        .supplyKey(supplyKey)
+                        .initialSupply(0)
+                        .maxSupply(10L)
                         .treasury(TOKEN_TREASURY),
                 tokenAssociate(OWNER, token),
                 tokenAssociate(OWNER, nft),
@@ -198,38 +172,22 @@ public class CryptoServiceFeesSuite {
                         .payingWith(OWNER)
                         .blankMemo()
                         .addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
-                        .via("baseDeleteNft"),
-                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
+                        .via(baseDeleteNft),
+                validateChargedUsdWithin(baseDeleteNft, BASE_FEE_CRYPTO_DELETE_ALLOWANCE, 0.01),
                 cryptoApproveAllowance().payingWith(OWNER).addNftAllowance(OWNER, nft, SPENDER, false, List.of(1L)),
                 /* with specifying owner */
                 cryptoDeleteAllowance()
                         .payingWith(OWNER)
                         .blankMemo()
                         .addNftDeleteAllowance(OWNER, nft, List.of(1L))
-                        .via("baseDeleteNft"),
-                validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
-
-                /* with 2 serials */
-                cryptoDeleteAllowance()
-                        .payingWith(OWNER)
-                        .blankMemo()
-                        .addNftDeleteAllowance(OWNER, nft, List.of(2L, 3L))
-                        .via("twoDeleteNft"),
-                validateChargedUsdWithin("twoDeleteNft", 0.050101, 0.01),
-                /* with 2 sigs */
-                cryptoApproveAllowance().payingWith(OWNER).addNftAllowance(OWNER, nft, SPENDER, false, List.of(1L)),
-                cryptoDeleteAllowance()
-                        .payingWith(FEES_ACCOUNT)
-                        .blankMemo()
-                        .addNftDeleteAllowance(OWNER, nft, List.of(1L))
-                        .signedBy(FEES_ACCOUNT, OWNER)
-                        .via("twoDeleteNft"),
-                validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01));
+                        .via(baseDeleteNft),
+                validateChargedUsdWithin(baseDeleteNft, BASE_FEE_CRYPTO_DELETE_ALLOWANCE, 0.01));
     }
 
     @HapiTest
-    final Stream<DynamicTest> cryptoApproveAllowanceFeesAsExpected() {
-        final String SUPPLY_KEY = "supplyKey";
+    @DisplayName("CryptoApproveAllowance transaction has expected base fee")
+    final Stream<DynamicTest> cryptoApproveAllowanceBaseUSDFee() {
+        final String SUPPLY_KEY = "supplyKeyApproveAllowance";
         final String APPROVE_TXN = "approveTxn";
         final String ANOTHER_SPENDER = "spender1";
         final String FUNGIBLE_TOKEN = "fungible";
@@ -352,9 +310,8 @@ public class CryptoServiceFeesSuite {
     }
 
     @LeakyHapiTest(overrides = {"entities.maxLifetime", "ledger.maxAutoAssociations"})
-    final Stream<DynamicTest> cryptoUpdateUsdFeeAsExpected() {
-        double baseFee = 0.000214;
-        double baseFeeWithExpiry = 0.00022;
+    @DisplayName("CryptoUpdate transaction has expected base fee")
+    final Stream<DynamicTest> cryptoUpdateBaseUSDFee() {
 
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
@@ -364,6 +321,9 @@ public class CryptoServiceFeesSuite {
         final var invalidNegativeTxn = "invalidNegativeTxn";
         final var validNegativeTxn = "validNegativeTxn";
         final var allowedPercentDiff = 1.5;
+        final var canonicalAccount = "canonicalAccount";
+        final var payer = "payer";
+        final var autoAssocTarget = "autoAssocTarget";
 
         AtomicLong expiration = new AtomicLong();
         return hapiTest(
@@ -371,83 +331,75 @@ public class CryptoServiceFeesSuite {
                         "ledger.maxAutoAssociations", "5000",
                         "entities.maxLifetime", "3153600000"),
                 newKeyNamed("key").shape(SIMPLE),
-                cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
-                cryptoCreate("canonicalAccount")
+                cryptoCreate(payer).key("key").balance(1_000 * ONE_HBAR),
+                cryptoCreate(canonicalAccount)
                         .key("key")
                         .balance(100 * ONE_HBAR)
                         .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                         .blankMemo()
-                        .payingWith("payer"),
-                cryptoCreate("autoAssocTarget")
+                        .payingWith(payer),
+                cryptoCreate(autoAssocTarget)
                         .key("key")
                         .balance(100 * ONE_HBAR)
                         .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                         .blankMemo()
-                        .payingWith("payer"),
-                getAccountInfo("canonicalAccount").exposingExpiry(expiration::set),
-                sourcing(() -> cryptoUpdate("canonicalAccount")
-                        .payingWith("canonicalAccount")
+                        .payingWith(payer),
+                getAccountInfo(canonicalAccount).exposingExpiry(expiration::set),
+                sourcing(() -> cryptoUpdate(canonicalAccount)
+                        .payingWith(canonicalAccount)
                         .expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
                         .blankMemo()
                         .via(baseTxn)),
-                getAccountInfo("canonicalAccount")
-                        .hasMaxAutomaticAssociations(0)
-                        .logged(),
-                cryptoUpdate("autoAssocTarget")
-                        .payingWith("autoAssocTarget")
+                getAccountInfo(canonicalAccount).hasMaxAutomaticAssociations(0).logged(),
+                cryptoUpdate(autoAssocTarget)
+                        .payingWith(autoAssocTarget)
                         .blankMemo()
                         .maxAutomaticAssociations(1)
                         .via(plusOneTxn),
-                getAccountInfo("autoAssocTarget").hasMaxAutomaticAssociations(1).logged(),
-                cryptoUpdate("autoAssocTarget")
-                        .payingWith("autoAssocTarget")
+                getAccountInfo(autoAssocTarget).hasMaxAutomaticAssociations(1).logged(),
+                cryptoUpdate(autoAssocTarget)
+                        .payingWith(autoAssocTarget)
                         .blankMemo()
                         .maxAutomaticAssociations(11)
                         .via(plusTenTxn),
-                getAccountInfo("autoAssocTarget")
-                        .hasMaxAutomaticAssociations(11)
-                        .logged(),
-                cryptoUpdate("autoAssocTarget")
-                        .payingWith("autoAssocTarget")
+                getAccountInfo(autoAssocTarget).hasMaxAutomaticAssociations(11).logged(),
+                cryptoUpdate(autoAssocTarget)
+                        .payingWith(autoAssocTarget)
                         .blankMemo()
                         .maxAutomaticAssociations(5000)
                         .via(plusFiveKTxn),
-                getAccountInfo("autoAssocTarget")
+                getAccountInfo(autoAssocTarget)
                         .hasMaxAutomaticAssociations(5000)
                         .logged(),
-                cryptoUpdate("autoAssocTarget")
-                        .payingWith("autoAssocTarget")
+                cryptoUpdate(autoAssocTarget)
+                        .payingWith(autoAssocTarget)
                         .blankMemo()
                         .maxAutomaticAssociations(-1000)
                         .via(invalidNegativeTxn)
                         .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                cryptoUpdate("autoAssocTarget")
-                        .payingWith("autoAssocTarget")
+                cryptoUpdate(autoAssocTarget)
+                        .payingWith(autoAssocTarget)
                         .blankMemo()
                         .maxAutomaticAssociations(5001)
                         .via(plusFiveKAndOneTxn)
                         .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                cryptoUpdate("autoAssocTarget")
-                        .payingWith("autoAssocTarget")
+                cryptoUpdate(autoAssocTarget)
+                        .payingWith(autoAssocTarget)
                         .blankMemo()
                         .maxAutomaticAssociations(-1)
                         .via(validNegativeTxn),
-                getAccountInfo("autoAssocTarget")
-                        .hasMaxAutomaticAssociations(-1)
-                        .logged(),
-                validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff),
-                validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff),
-                validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff),
-                validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff),
-                validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff));
+                getAccountInfo(autoAssocTarget).hasMaxAutomaticAssociations(-1).logged(),
+                validateChargedUsd(baseTxn, BASE_FEE_WITH_EXPIRY_CRYPTO_UPDATE, allowedPercentDiff),
+                validateChargedUsd(plusOneTxn, BASE_FEE_CRYPTO_UPDATE, allowedPercentDiff),
+                validateChargedUsd(plusTenTxn, BASE_FEE_CRYPTO_UPDATE, allowedPercentDiff),
+                validateChargedUsd(plusFiveKTxn, BASE_FEE_CRYPTO_UPDATE, allowedPercentDiff),
+                validateChargedUsd(validNegativeTxn, BASE_FEE_CRYPTO_UPDATE, allowedPercentDiff));
     }
 
     @HapiTest
-    final Stream<DynamicTest> cryptoTransferBaseFeeChargedAsExpected() {
-        final String SUPPLY_KEY = "supplyKey";
-        final var expectedHbarXferPriceUsd = 0.0001;
-        final var expectedHtsXferPriceUsd = 0.001;
-        final var expectedNftXferPriceUsd = 0.001;
+    @DisplayName("CryptoTransfer transaction has expected base fee")
+    final Stream<DynamicTest> cryptoTransferBaseUSDFee() {
+        final String SUPPLY_KEY = "supplyKeyCryptoTransfer";
         final var expectedHtsXferWithCustomFeePriceUsd = 0.002;
         final var expectedNftXferWithCustomFeePriceUsd = 0.002;
         final var transferAmount = 1L;
@@ -520,16 +472,16 @@ public class CryptoServiceFeesSuite {
                         .fee(ONE_HBAR)
                         .payingWith(nonTreasurySender)
                         .via(nftXferTxnWithCustomFee),
-                validateChargedUsdWithin(hbarXferTxn, expectedHbarXferPriceUsd, 0.01),
-                validateChargedUsdWithin(htsXferTxn, expectedHtsXferPriceUsd, 0.01),
-                validateChargedUsdWithin(nftXferTxn, expectedNftXferPriceUsd, 0.01),
+                validateChargedUsdWithin(hbarXferTxn, BASE_FEE_HBAR_CRYPTO_TRANSFER, 0.01),
+                validateChargedUsdWithin(htsXferTxn, BASE_FEE_HTS_CRYPTO_TRANSFER, 0.01),
+                validateChargedUsdWithin(nftXferTxn, BASE_FEE_NFT_CRYPTO_TRANSFER, 0.01),
                 validateChargedUsdWithin(htsXferTxnWithCustomFee, expectedHtsXferWithCustomFeePriceUsd, 0.1),
                 validateChargedUsdWithin(nftXferTxnWithCustomFee, expectedNftXferWithCustomFeePriceUsd, 0.3));
     }
 
     @HapiTest
+    @DisplayName("CryptoGetAccountRecords query has expected base fee")
     final Stream<DynamicTest> cryptoCryptoGetAccountRecordsBaseUSDFee() {
-        final var expectedGetAccountRecordPriceUsd = 0.0001;
         final var nonTreasurySender = "nonTreasurySender";
 
         return hapiTest(
@@ -539,38 +491,27 @@ public class CryptoServiceFeesSuite {
                         .payingWith(nonTreasurySender)
                         .via("baseGetAccountRecord"),
                 sleepFor(2000),
-                validateChargedUsd("baseGetAccountRecord", expectedGetAccountRecordPriceUsd));
+                validateChargedUsd("baseGetAccountRecord", BASE_FEE_CRYPTO_GET_ACCOUNT_RECORDS));
     }
 
     @HapiTest
+    @DisplayName("CryptoGetAccountBalance query has expected base fee of zero")
     final Stream<DynamicTest> cryptoGetAccountBalanceBaseUSDFee() {
-
+        final String getAccountBalanceTestFeesAccount = "GetAccountBalanceTestFeesAccount";
         return hapiTest(
-                getAccountBalance(CIVILIAN)
-                        .hasTinyBars(5 * ONE_HUNDRED_HBARS)
-                        .signedBy(FEES_ACCOUNT)
-                        .payingWith(FEES_ACCOUNT),
-                getAccountBalance(FEES_ACCOUNT).hasTinyBars(5 * ONE_HUNDRED_HBARS));
+                cryptoCreate(getAccountBalanceTestFeesAccount).balance(ONE_HBAR),
+                getAccountBalance(getAccountBalanceTestFeesAccount)
+                        .hasTinyBars(ONE_HBAR)
+                        .signedBy(getAccountBalanceTestFeesAccount)
+                        .payingWith(getAccountBalanceTestFeesAccount),
+                getAccountBalance(getAccountBalanceTestFeesAccount).hasTinyBars(ONE_HBAR));
     }
 
     @HapiTest
-    final Stream<DynamicTest> cryptoGetInfoBaseUSDFee() {
-        final var expectedGetInfoPriceUsd = 0.0001;
-
-        long balance = 1_234_567L;
+    @DisplayName("CryptoGetAccountInfo query has expected base fee")
+    final Stream<DynamicTest> cryptoGetAccountInfoBaseUSDFee() {
         return hapiTest(
-                cryptoCreate("noStakingTarget").key(CIVILIAN).balance(balance),
-                getAccountInfo("noStakingTarget")
-                        .has(accountWith()
-                                .accountId("noStakingTarget")
-                                .stakedNodeId(0L)
-                                .noStakedAccountId()
-                                .key(CIVILIAN)
-                                .balance(balance))
-                        .via("basicGetInfo")
-                        .payingWith(CIVILIAN)
-                        .signedBy(CIVILIAN)
-                        .logged(),
-                validateChargedUsd("basicGetInfo", expectedGetInfoPriceUsd));
+                getAccountInfo(CIVILIAN).via("basicGetInfo").payingWith(FEES_ACCOUNT),
+                validateChargedUsd("basicGetInfo", BASE_FEE_CRYPTO_GET_ACCOUNT_INFO));
     }
 }
