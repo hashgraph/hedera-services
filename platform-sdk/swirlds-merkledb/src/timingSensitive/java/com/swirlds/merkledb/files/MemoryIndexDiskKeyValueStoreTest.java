@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
@@ -212,11 +213,18 @@ class MemoryIndexDiskKeyValueStoreTest {
         writeBatch(testType, store, 1500, 2000, 3500, 1234);
         checkRange(testType, store, 0, 2000, 1234);
         // check number of files created
-        assertEquals(3, Files.list(tempDir).count(), "unexpected # of files #1");
+        int filesCount;
+        try (Stream<Path> list = Files.list(tempDir)) {
+            filesCount = (int) list.count();
+        }
+        assertEquals(3, filesCount, "unexpected # of files #1");
         // compact all files
         dataFileCompactor.compact();
         // check number of files after merge
-        assertEquals(1, Files.list(tempDir).count(), "unexpected # of files #2");
+        try (Stream<Path> list = Files.list(tempDir)) {
+            filesCount = (int) list.count();
+        }
+        assertEquals(1, filesCount, "unexpected # of files #2");
         // check all data
         checkRange(testType, store, 0, 2000, 1234);
         // check metrics are reported
@@ -265,23 +273,28 @@ class MemoryIndexDiskKeyValueStoreTest {
         checkRange(testType, store, 0, 2000, 8910);
         checkRange(testType, store, 2000, 48_000, 56_000);
         // check number of files created
-        assertEquals(2, Files.list(tempDir).count(), "unexpected # of files #3");
+        try (Stream<Path> list = Files.list(tempDir)) {
+            filesCount = (int) list.count();
+        }
+        assertEquals(2, filesCount, "unexpected # of files #3");
 
         // create a snapshot
         final Path tempSnapshotDir = testDirectory.resolve("DataFileTestSnapshot");
         store.snapshot(tempSnapshotDir);
         // check all files are in new dir
-        Files.list(tempDir).forEach(file -> {
-            assertTrue(Files.exists(tempSnapshotDir.resolve(file.getFileName())), "Expected file does not exist");
-            try {
-                assertEquals(
-                        Files.size(file),
-                        Files.size(tempSnapshotDir.resolve(file.getFileName())),
-                        "Unexpected value from Files.size()");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        try (Stream<Path> list = Files.list(tempDir)) {
+            list.forEach(file -> {
+                assertTrue(Files.exists(tempSnapshotDir.resolve(file.getFileName())), "Expected file does not exist");
+                try {
+                    assertEquals(
+                            Files.size(file),
+                            Files.size(tempSnapshotDir.resolve(file.getFileName())),
+                            "Unexpected value from Files.size()");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
         final MemoryIndexDiskKeyValueStore storeFromSnapshot = new MemoryIndexDiskKeyValueStore(

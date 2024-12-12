@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -272,10 +273,10 @@ class VirtualMapSerializationTests {
         out.writeMerkleTree(savedStateDirectory, map);
         out.flush();
 
-        final List<Path> filesInDirectory = Files.list(savedStateDirectory).toList();
-        assertNotNull(filesInDirectory, "saved state directory is not a valid directory");
-        assertTrue(filesInDirectory.size() > 0, "there should be a non-zero number of files created");
-
+        try (Stream<Path> list = Files.list(savedStateDirectory)) {
+            assertNotNull(list.toList(), "saved state directory is not a valid directory");
+            assertTrue(list.count() > 0, "there should be a non-zero number of files created");
+        }
         // Change default MerkleDb path, so data sources are restored into a different DB instance
         final Path restoredDbDirectory =
                 LegacyTemporaryFileBuilder.buildTemporaryDirectory("merkledb-restored", CONFIGURATION);
