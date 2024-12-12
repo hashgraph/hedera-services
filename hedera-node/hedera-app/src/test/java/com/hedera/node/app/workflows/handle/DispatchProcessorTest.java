@@ -218,9 +218,7 @@ class DispatchProcessorTest {
                 .willReturn(true);
         given(recordBuilder.exchangeRate(any())).willReturn(recordBuilder);
         given(dispatch.handleContext()).willReturn(context);
-        given(dispatch.txnCategory()).willReturn(USER);
         givenAuthorization();
-        given(dispatch.txnCategory()).willReturn(USER);
 
         subject.processDispatch(dispatch);
 
@@ -564,7 +562,6 @@ class DispatchProcessorTest {
         given(dispatchValidator.validationReportFor(dispatch)).willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         given(dispatch.handleContext()).willReturn(context);
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
 
@@ -648,11 +645,7 @@ class DispatchProcessorTest {
 
     private void assertFinished(@NonNull final IsRootStack isRootStack) {
         verify(recordFinalizer).finalizeRecord(dispatch);
-        if (isRootStack == IsRootStack.YES) {
-            verify(stack).commitTransaction(any());
-        } else {
-            verify(stack).commitFullStack();
-        }
+        verify(stack).commitFullStack();
     }
 
     private void verifyTrackedFeePayments() {

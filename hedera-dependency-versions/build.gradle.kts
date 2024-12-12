@@ -133,7 +133,7 @@ dependencies.constraints {
     api("javax.inject:javax.inject:1") {
         because("javax.inject")
     }
-    api("com.goterl:lazysodium-java:5.1.1") {
+    api("com.goterl:lazysodium-java:5.1.4") {
         because("lazysodium.java")
     }
     api("net.i2p.crypto:eddsa:0.3.0") {
