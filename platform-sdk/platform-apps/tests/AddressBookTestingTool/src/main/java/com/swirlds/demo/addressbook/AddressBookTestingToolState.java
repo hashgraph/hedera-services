@@ -51,6 +51,7 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -204,6 +205,14 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
             this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
             logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
         }
+
+        // Since this demo State doesn't call Hedera.onStateInitialized() to init States API for all services
+        // (because it doesn't call super.init(), and the FakeMerkleStateLifecycles doesn't do that anyway),
+        // we need to register PlatformService and RosterService states for the rest of the code to operate
+        // when an instance of this state is received via reconnect. In any other cases, this call
+        // should be idempotent.
+        SignedStateFileReader.registerServiceStates(this);
+        logger.info(STARTUP.getMarker(), "Registered PlatformService and RosterService states.");
     }
 
     /**
