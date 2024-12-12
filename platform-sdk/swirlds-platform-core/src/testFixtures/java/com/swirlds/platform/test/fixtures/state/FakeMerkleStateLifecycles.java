@@ -82,7 +82,6 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
             .withConfigDataType(TemporaryFileConfig.class)
             .withConfigDataType(StateCommonConfig.class)
             .withConfigDataType(FileSystemManagerConfig.class)
-            .withValue("addressBook.useRosterLifecycle", "true")
             .build();
 
     /**

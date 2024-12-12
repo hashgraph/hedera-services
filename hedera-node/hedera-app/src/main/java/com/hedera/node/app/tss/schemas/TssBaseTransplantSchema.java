@@ -80,7 +80,10 @@ public interface TssBaseTransplantSchema {
     }
 
     /**
-     * Set the TSS messages in the state from the provided network, for whatever nodes they are available.
+     * Set TSS state from the provided network. If {@link Network#tssMessages()} is empty, this is a no-op. If
+     * {@link Network#tssMessages()} is non-empty, then assumes there are exactly a threshold number of TSS messages
+     * that were received in ea
+     *
      * @param network the network from which to extract the TSS messages
      * @param tssMessageOps the state in which to store the TSS messages
      */
