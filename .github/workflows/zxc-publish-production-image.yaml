@@ -112,7 +112,7 @@ jobs:
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@e7cc33a01bc1b1df406bac8a1c4a409a34bdca0a # v4.4.3
+        uses: jfrog/setup-jfrog-cli@96153976e4e81b3701e9cc0a5b9597e80614af81 # v4.5.1
         if: ${{ inputs.dry-run-enabled != true && inputs.registry-name == 'jfrog' && !cancelled() && !failure() }}
         env:
           JF_URL: ${{ secrets.jf-url }}
