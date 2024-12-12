@@ -139,7 +139,7 @@ dependencies.constraints {
     api("net.i2p.crypto:eddsa:0.3.0") {
         because("net.i2p.crypto.eddsa")
     }
-    api("org.antlr:antlr4-runtime:4.13.1") {
+    api("org.antlr:antlr4-runtime:4.13.2") {
         because("org.antlr.antlr4.runtime")
     }
     api("commons-codec:commons-codec:1.15") {
