@@ -18,6 +18,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.config;
     requires org.apache.logging.log4j;
+    requires com.google.common;
     requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
