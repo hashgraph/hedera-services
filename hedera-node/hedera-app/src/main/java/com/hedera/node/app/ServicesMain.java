@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
@@ -28,7 +29,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupG
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.roster.RosterUtils.buildRosterHistory;
-import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSignedState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
@@ -62,6 +63,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
@@ -71,12 +73,16 @@ import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.signed.HashedReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -92,6 +98,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -257,7 +264,7 @@ public class ServicesMain implements SwirldMain {
         final var isGenesis = new AtomicBoolean(false);
         // We want to be able to see the schema migration logs, so init logging here
         initLogging();
-        final var reservedState = getInitialState(
+        final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
                 version,
@@ -276,8 +283,7 @@ public class ServicesMain implements SwirldMain {
                 },
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
-                selfId,
-                diskAddressBook);
+                selfId);
         final var initialState = reservedState.state();
         if (!isGenesis.get()) {
             hedera.initializeStatesApi(
@@ -455,6 +461,47 @@ public class ServicesMain implements SwirldMain {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
             exitSystem(CONFIGURATION_ERROR);
             throw e;
+        }
+    }
+
+    /**
+     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
+     * if no valid state is found on disk.
+     *
+     * @param configuration      the configuration for this node
+     * @param softwareVersion     the software version of the app
+     * @param stateRootSupplier a supplier that can build a genesis state
+     * @param mainClassName       the name of the app's SwirldMain class
+     * @param swirldName          the name of this swirld
+     * @param selfId              the node id of this node
+     * @return the initial state to be used by this node
+     */
+    @NonNull
+    private static HashedReservedSignedState loadInitialState(
+            @NonNull final Configuration configuration,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Supplier<MerkleRoot> stateRootSupplier,
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final NodeId selfId) {
+        final var loadedState = StartupStateUtils.loadStateFile(
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
+        try (loadedState) {
+            if (loadedState.isNotNull()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        new SavedStateLoadedPayload(
+                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+                return copyInitialSignedState(configuration, loadedState.get());
+            }
+        }
+        final var stateRoot = stateRootSupplier.get();
+        final var signedState = new SignedState(
+                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
+        final var reservedSignedState = signedState.reserve("initial reservation on genesis state");
+        try (reservedSignedState) {
+            return copyInitialSignedState(configuration, reservedSignedState.get());
         }
     }
 
