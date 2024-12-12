@@ -84,9 +84,10 @@ public class TssKeysAccessor {
             @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
             @NonNull final ReadableTssStore tssStore,
             @NonNull final Bytes activeRosterHash) {
-        final var validTssOps = validateTssMessages(
+        final var result = validateTssMessages(
                 tssStore.getMessagesForTarget(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps, activeRosterParticipantDirectory, tssLibrary);
+        final var validTssMessages =
+                getTssMessages(result.validTssMessages(), activeRosterParticipantDirectory, tssLibrary);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
 

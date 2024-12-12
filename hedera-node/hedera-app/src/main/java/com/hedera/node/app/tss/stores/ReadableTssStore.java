@@ -30,6 +30,7 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.LongUnaryOperator;
@@ -38,8 +39,9 @@ import java.util.stream.IntStream;
 public interface ReadableTssStore {
     /**
      * The selected TSS messages and implied ledger id for some roster.
+     *
      * @param tssMessages the selected TSS messages
-     * @param ledgerId the implied ledger id
+     * @param ledgerId    the implied ledger id
      */
     record RosterKeys(@NonNull List<TssMessageTransactionBody> tssMessages, @NonNull Bytes ledgerId) {
         public RosterKeys {
@@ -53,7 +55,7 @@ public interface ReadableTssStore {
      *
      * @param sourceRosterHash the source roster hash
      * @param targetRosterHash the target roster hash
-     * @param rosterStore the roster store
+     * @param rosterStore      the roster store
      */
     default Optional<RosterKeys> consensusRosterKeys(
             @NonNull final Bytes sourceRosterHash,
@@ -79,7 +81,7 @@ public interface ReadableTssStore {
      *
      * @param sourceRosterHash the source roster hash
      * @param targetRosterHash the target roster hash
-     * @param rosterStore the roster store
+     * @param rosterStore      the roster store
      * @return the roster keys, if available
      */
     default Optional<TssVoteTransactionBody> anyWinningVoteFrom(
@@ -108,13 +110,43 @@ public interface ReadableTssStore {
     }
 
     /**
+     * If present, returns one of the winning votes from the given target roster hash.
+     * This iterates through all the votes for the target roster hash and returns the first one that is valid for
+     * any source roster.
+     *
+     * @param targetRosterHash the target roster hash
+     * @param rosterStore      the roster store
+     * @return the winning vote, if present
+     */
+    default Optional<TssVoteTransactionBody> anyWinningVoteFor(
+            @NonNull final Bytes targetRosterHash, @NonNull final ReadableRosterStore rosterStore) {
+        requireNonNull(targetRosterHash);
+        requireNonNull(rosterStore);
+        final var possibleSourceRosters = new HashSet<Bytes>();
+        final var votesForTargetRoster = allVotes().stream()
+                .filter(vote -> targetRosterHash.equals(vote.targetRosterHash()))
+                .toList();
+        for (final var vote : votesForTargetRoster) {
+            possibleSourceRosters.add(vote.sourceRosterHash());
+        }
+
+        for (final var sourceRosterHash : possibleSourceRosters) {
+            final var vote = anyWinningVoteFrom(sourceRosterHash, targetRosterHash, rosterStore);
+            if (vote.isPresent()) {
+                return vote;
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * If present, returns one of the winning votes from the given source roster hash for the keys of the target roster,
      * using the given total weight and per-node weight for the source roster. There is no guarantee of ordering between
      * multiple winning votes.
      *
-     * @param sourceRosterHash the source roster hash the vote must be from
-     * @param targetRosterHash the target roster hash the vote must be for
-     * @param sourceRosterWeight the total weight of the source the vote must be from
+     * @param sourceRosterHash     the source roster hash the vote must be from
+     * @param targetRosterHash     the target roster hash the vote must be for
+     * @param sourceRosterWeight   the total weight of the source the vote must be from
      * @param sourceRosterWeightFn a function that returns the weight of a node in the source roster given its id
      * @return a winning vote, if present
      */
@@ -148,6 +180,8 @@ public interface ReadableTssStore {
      */
     TssVoteTransactionBody getVote(@NonNull TssVoteMapKey tssVoteMapKey);
 
+    List<TssVoteTransactionBody> allVotes();
+
     /**
      * Check if a TSS vote exists for the given key.
      *
@@ -158,6 +192,7 @@ public interface ReadableTssStore {
 
     /**
      * Get the list of Tss messages for the given roster hash.
+     *
      * @param rosterHash The roster hash to look up.
      * @return The list of Tss messages, or an empty list if not found.
      */
@@ -165,6 +200,7 @@ public interface ReadableTssStore {
 
     /**
      * Get the Tss encryption key transaction body for the given node ID.
+     *
      * @param nodeID The node ID to look up.
      * @return The Tss encryption key transaction body, or null if not found.
      */

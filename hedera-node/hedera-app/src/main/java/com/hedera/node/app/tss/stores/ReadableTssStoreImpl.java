@@ -127,6 +127,16 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
      * {@inheritDoc}
      */
     @Override
+    public List<TssVoteTransactionBody> allVotes() {
+        return stream(spliterator(readableTssVoteState.keys(), readableTssVoteState.size(), NONNULL), false)
+                .map(readableTssVoteState::get)
+                .collect(toList());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean exists(@NonNull final TssVoteMapKey tssVoteKey) {
         return readableTssVoteState.contains(tssVoteKey);
     }

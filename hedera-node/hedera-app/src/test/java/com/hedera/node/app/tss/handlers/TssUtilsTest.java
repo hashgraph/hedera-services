@@ -59,8 +59,9 @@ public class TssUtilsTest {
         final var tssParticipantDirectory = mock(TssParticipantDirectory.class);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
 
-        final var validMessages =
-                validateTssMessages(List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary);
+        final var validMessages = validateTssMessages(
+                        List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary)
+                .validTssMessages();
 
         assertEquals(1, validMessages.size());
     }
@@ -72,8 +73,9 @@ public class TssUtilsTest {
         final var tssParticipantDirectory = mock(TssParticipantDirectory.class);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(false);
 
-        final var validMessages =
-                validateTssMessages(List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary);
+        final var validMessages = validateTssMessages(
+                        List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary)
+                .validTssMessages();
 
         assertEquals(0, validMessages.size());
     }

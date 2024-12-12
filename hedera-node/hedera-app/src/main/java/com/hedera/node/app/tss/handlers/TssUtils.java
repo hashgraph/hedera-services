@@ -31,6 +31,7 @@ import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.Map;
 public class TssUtils {
     public static final SignatureSchema SIGNATURE_SCHEMA =
             SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
+
     /**
      * Compute the TSS participant directory from the roster.
      *
@@ -84,18 +86,21 @@ public class TssUtils {
      * @param tssParticipantDirectory the participant directory
      * @return list of valid TSS messages
      */
-    public static List<TssMessageTransactionBody> validateTssMessages(
+    public static ValidMessagesWithVote validateTssMessages(
             @NonNull final List<TssMessageTransactionBody> tssMessages,
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final TssLibrary tssLibrary) {
         final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
-        for (final var op : tssMessages) {
-            final var isValid = tssLibrary.verifyTssMessage(tssParticipantDirectory, op.tssMessage());
+        final var bitSet = new BitSet();
+        for (int i = 0; i < tssMessages.size(); i++) {
+            final var isValid = tssLibrary.verifyTssMessage(
+                    tssParticipantDirectory, tssMessages.get(i).tssMessage());
             if (isValid) {
-                validTssMessages.add(op);
+                bitSet.set(i);
+                validTssMessages.add(tssMessages.get(i));
             }
         }
-        return validTssMessages;
+        return new ValidMessagesWithVote(validTssMessages, bitSet);
     }
 
     /**
@@ -132,7 +137,8 @@ public class TssUtils {
 
     /**
      * Compute the number of shares each node should have based on the weight of the node.
-     * @param weights the map of node ID to weight
+     *
+     * @param weights   the map of node ID to weight
      * @param maxShares the maximum number of shares
      * @return a map of node ID to the number of shares
      */
@@ -152,11 +158,14 @@ public class TssUtils {
     /**
      * Returns whether a vote bitset with the given weight has met the threshold for a roster with the given
      * total weight.
-     * @param voteWeight the weight of the vote bitset
+     *
+     * @param voteWeight  the weight of the vote bitset
      * @param totalWeight the total weight of the roster
      * @return true if the threshold has been met, false otherwise
      */
     public static boolean hasMetThreshold(final long voteWeight, final long totalWeight) {
         return voteWeight >= (totalWeight + 2) / 3;
     }
+
+    public record ValidMessagesWithVote(List<TssMessageTransactionBody> validTssMessages, BitSet vote) {}
 }

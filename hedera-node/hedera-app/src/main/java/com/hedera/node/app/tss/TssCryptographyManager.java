@@ -125,37 +125,20 @@ public class TssCryptographyManager {
     public Vote getVote(
             final @NonNull List<TssMessageTransactionBody> tssMessageBodies,
             final @NonNull TssParticipantDirectory tssParticipantDirectory) {
-        final var tssMessages = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-        if (!isThresholdMet(tssMessages, tssParticipantDirectory)) {
+        final var result = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        if (!isThresholdMet(result.validTssMessages(), tssParticipantDirectory)) {
             return null;
         }
         final var aggregationStart = instantSource.instant();
-        final var validTssMessages = getTssMessages(tssMessages, tssParticipantDirectory, tssLibrary);
+        final var validTssMessages = getTssMessages(result.validTssMessages(), tssParticipantDirectory, tssLibrary);
         final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
         final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
         final var signature = gossip.sign(ledgerId.toBytes());
-        final var thresholdMessages = asBitSet(tssMessages);
+        final var vote = result.vote();
         final var aggregationEnd = instantSource.instant();
         tssMetrics.updateAggregationTime(
                 Duration.between(aggregationStart, aggregationEnd).toMillis());
-        return new Vote(ledgerId, signature, thresholdMessages);
-    }
-
-    /**
-     * Compute the TSS vote bit set. No need to validate the TSS messages here as they have already been validated.
-     *
-     * @param thresholdMessages the valid TSS messages
-     * @return the TSS vote bit set
-     */
-    private BitSet asBitSet(@NonNull final List<TssMessageTransactionBody> thresholdMessages) {
-        // TODO - fix this, nodes vote for TSS messages based on their position
-        //  in consensus order of messages received for a roster hash, NOT by
-        //  the message's share index
-        final var tssVoteBitSet = new BitSet();
-        for (TssMessageTransactionBody op : thresholdMessages) {
-            tssVoteBitSet.set((int) op.shareIndex());
-        }
-        return tssVoteBitSet;
+        return new Vote(ledgerId, signature, vote);
     }
 
     /**
