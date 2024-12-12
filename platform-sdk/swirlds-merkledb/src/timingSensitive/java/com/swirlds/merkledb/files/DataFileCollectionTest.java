@@ -56,12 +56,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -446,8 +446,8 @@ class DataFileCollectionTest {
             assertEquals(
                     1,
                     list.filter(f -> f.toString().endsWith(".pbj"))
-                        .filter(f -> !f.toString().contains("metadata"))
-                        .count(),
+                            .filter(f -> !f.toString().contains("metadata"))
+                            .count(),
                     "unexpected # of files #1");
         }
         // After merge is complete, there should be only 1 "fully written" file, and that it is
@@ -496,8 +496,8 @@ class DataFileCollectionTest {
             assertEquals(
                     2,
                     list.filter(f -> f.toString().endsWith(".pbj"))
-                        .filter(f -> !f.toString().contains("metadata"))
-                        .count(),
+                            .filter(f -> !f.toString().contains("metadata"))
+                            .count(),
                     "unexpected # of files");
         }
     }
@@ -604,8 +604,8 @@ class DataFileCollectionTest {
             assertEquals(
                     1,
                     list.filter(f -> f.toString().endsWith(".pbj"))
-                        .filter(f -> !f.toString().contains("metadata"))
-                        .count(),
+                            .filter(f -> !f.toString().contains("metadata"))
+                            .count(),
                     "unexpected # of files");
         }
     }
@@ -656,7 +656,7 @@ class DataFileCollectionTest {
             assertEquals(
                     10,
                     list.filter(file -> file.getFileName().toString().startsWith(storeName))
-                        .count(),
+                            .count(),
                     "expected 10 db files");
         }
         assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files");
@@ -683,11 +683,9 @@ class DataFileCollectionTest {
             assertEquals(
                     1,
                     list.filter(file -> file.getFileName().toString().matches(storeName + ".*pbj"))
-                        .filter(f -> !f.toString().contains("metadata"))
-                        .count(),
-                    "expected 1 db files but had ["
-                            + Arrays.toString(list.toArray())
-                            + "]");
+                            .filter(f -> !f.toString().contains("metadata"))
+                            .count(),
+                    "expected 1 db files but had [" + Arrays.toString(list.toArray()) + "]");
         }
         checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // close db
