@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.blocks.cloud.uploader;
 
-import java.util.Objects;
+import com.hedera.node.config.types.BucketProvider;
+import java.nio.file.Path;
+import java.util.concurrent.Future;
 
-/**
- * @param accessKey the access key of the bucket
- * @param secretKey the secret key of the bucket
- */
-public record BucketCredentials(String accessKey, char[] secretKey) {
-    public BucketCredentials {
-        Objects.requireNonNull(accessKey, "access key cannot be null");
-        Objects.requireNonNull(secretKey, "secret key cannot be null");
-    }
+public interface CloudBucketUploader {
+    Future<Void> uploadBlock(Path blockPath);
+
+    Future<Boolean> blockExists(String objectKey);
+
+    Future<String> getBlockMd5(String objectKey);
+
+    BucketProvider getProvider();
 }

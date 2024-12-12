@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.blocks.cloud.uploader;
 
-import java.util.Objects;
-
-/**
- * @param accessKey the access key of the bucket
- * @param secretKey the secret key of the bucket
- */
-public record BucketCredentials(String accessKey, char[] secretKey) {
-    public BucketCredentials {
-        Objects.requireNonNull(accessKey, "access key cannot be null");
-        Objects.requireNonNull(secretKey, "secret key cannot be null");
+public class HashMismatchException extends RuntimeException {
+    public HashMismatchException(String objectKey, String provider) {
+        super(String.format("Hash mismatch for block %d in provider %s", objectKey, provider));
     }
 }

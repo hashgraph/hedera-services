@@ -28,6 +28,9 @@ dependencies {
 }
 
 dependencies.constraints {
+    api("com.squareup.okio:okio-jvm:3.9.1") {
+        because("okio")
+    }
     api("io.helidon.common:helidon-common:4.1.1") {
         because("io.helidon.common")
     }
@@ -36,6 +39,9 @@ dependencies.constraints {
     }
     api("io.helidon.webclient:helidon-webclient-grpc:4.1.1") {
         because("io.helidon.webclient.grpc")
+    }
+    api("io.minio:minio:8.5.14") {
+        because("io.minio")
     }
     api("org.awaitility:awaitility:4.2.0") {
         because("awaitility")
@@ -109,7 +115,7 @@ dependencies.constraints {
     api("io.github.classgraph:classgraph:4.8.65") {
         because("io.github.classgraph")
     }
-    api("io.netty:netty-handler:4.1.110.Final") {
+    api("io.netty:netty-handler:4.1.115.Final") {
         because("io.netty.handler")
     }
     api("io.netty:netty-transport:4.1.111.Final") {
@@ -133,7 +139,7 @@ dependencies.constraints {
     api("javax.inject:javax.inject:1") {
         because("javax.inject")
     }
-    api("com.goterl:lazysodium-java:5.1.1") {
+    api("com.goterl:lazysodium-java:5.1.4") {
         because("lazysodium.java")
     }
     api("net.i2p.crypto:eddsa:0.3.0") {
