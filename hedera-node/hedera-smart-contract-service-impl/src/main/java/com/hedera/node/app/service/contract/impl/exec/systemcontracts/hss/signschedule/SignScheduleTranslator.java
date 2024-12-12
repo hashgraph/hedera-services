@@ -17,20 +17,24 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.pbj.runtime.io.buffer.Bytes.wrap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
@@ -41,11 +45,16 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.pbj.runtime.ParseException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Translates {@code signSchedule()} calls to the HSS system contract.
@@ -55,6 +64,8 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     public static final Function SIGN_SCHEDULE = new Function("signSchedule(address,bytes)", ReturnTypes.INT_64);
     public static final Function SIGN_SCHEDULE_PROXY = new Function("signSchedule()", ReturnTypes.INT_64);
     public static final Function AUTHORIZE_SCHEDULE = new Function("authorizeSchedule(address)", ReturnTypes.INT_64);
+    private static final int SCHEDULE_ID_INDEX = 0;
+    private static final int SIGNATURE_MAP_INDEX = 1;
 
     @Inject
     public SignScheduleTranslator() {
@@ -68,7 +79,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractSignScheduleEnabled();
         final var authorizeScheduleEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractAuthorizeScheduleEnabled();
-        return attempt.isSelectorIfConfigEnabled(signScheduleEnabled, SIGN_SCHEDULE_PROXY)
+        return attempt.isSelectorIfConfigEnabled(signScheduleEnabled, SIGN_SCHEDULE_PROXY, SIGN_SCHEDULE)
                 || attempt.isSelectorIfConfigEnabled(authorizeScheduleEnabled, AUTHORIZE_SCHEDULE);
     }
 
@@ -121,6 +132,8 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     private ScheduleID scheduleIdFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
         if (attempt.isSelector(SIGN_SCHEDULE_PROXY)) {
+            return getScheduleIDForSignScheduleProxy(attempt);
+        } else if (attempt.isSelector(SIGN_SCHEDULE)) {
             return getScheduleIDForSignSchedule(attempt);
         } else if (attempt.isSelector(AUTHORIZE_SCHEDULE)) {
             return getScheduleIDForAuthorizeSchedule(attempt);
@@ -129,18 +142,27 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     }
 
     private static ScheduleID getScheduleIDForSignSchedule(@NonNull HssCallAttempt attempt) {
-        final var scheduleID = attempt.redirectScheduleId();
-        validateTrue(scheduleID != null, INVALID_SCHEDULE_ID);
-        return attempt.redirectScheduleId();
+        final var call = SIGN_SCHEDULE.decodeCall(attempt.inputBytes());
+        return getScheduleIDFromCall(attempt, call);
     }
 
     private static ScheduleID getScheduleIDForAuthorizeSchedule(@NonNull HssCallAttempt attempt) {
         final var call = AUTHORIZE_SCHEDULE.decodeCall(attempt.inputBytes());
-        final Address scheduleAddress = call.get(0);
+        return getScheduleIDFromCall(attempt, call);
+    }
+
+    private static @Nullable ScheduleID getScheduleIDFromCall(@NotNull HssCallAttempt attempt, Tuple call) {
+        final Address scheduleAddress = call.get(SCHEDULE_ID_INDEX);
         final var number = numberOfLongZero(explicitFromHeadlong(scheduleAddress));
         final var schedule = attempt.enhancement().nativeOperations().getSchedule(number);
         validateTrue(schedule != null, INVALID_SCHEDULE_ID);
         return schedule.scheduleId();
+    }
+
+    private static ScheduleID getScheduleIDForSignScheduleProxy(@NonNull HssCallAttempt attempt) {
+        final var scheduleID = attempt.redirectScheduleId();
+        validateTrue(scheduleID != null, INVALID_SCHEDULE_ID);
+        return attempt.redirectScheduleId();
     }
 
     /**
@@ -151,6 +173,10 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
      */
     private Set<Key> keySetFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
+
+        if (attempt.isSelector(SIGN_SCHEDULE)) {
+            return getKeyForSignSchedule(attempt);
+        }
         final var sender = attempt.enhancement().nativeOperations().getAccount(attempt.senderId());
         requireNonNull(sender);
         if (sender.smartContract()) {
@@ -158,6 +184,33 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         } else {
             return getKeysForEOASender(attempt);
         }
+    }
+
+    @NonNull
+    private static Set<Key> getKeyForSignSchedule(@NonNull HssCallAttempt attempt) {
+        requireNonNull(attempt);
+        final Set<Key> keys = new HashSet<>();
+        final var call = SIGN_SCHEDULE.decodeCall(attempt.inputBytes());
+
+        final var signatureBlob = (byte[]) call.get(SIGNATURE_MAP_INDEX);
+        SignatureMap sigMap;
+        try {
+            sigMap = requireNonNull(SignatureMap.PROTOBUF.parse(wrap(signatureBlob)));
+            for (var sigPair : sigMap.sigPair()) {
+                if (sigPair.hasEd25519()) {
+                    // verify the key and add it to the set
+                    keys.add(Key.newBuilder().ed25519(sigPair.ed25519OrThrow()).build());
+                }
+                if (sigPair.hasEcdsaSecp256k1()) {
+                    keys.add(Key.newBuilder()
+                            .ecdsaSecp256k1(sigPair.ecdsaSecp256k1OrThrow())
+                            .build());
+                }
+            }
+        } catch (@NonNull final ParseException | NullPointerException ex) {
+            throw new HandleException(INVALID_TRANSACTION_BODY);
+        }
+        return keys;
     }
 
     @NonNull

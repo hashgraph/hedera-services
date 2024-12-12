@@ -30,6 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signsc
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ class HssCallAttemptTest extends CallTestBase {
 
     @Mock
     private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
 
     private List<CallTranslator<HssCallAttempt>> callTranslators;
 
@@ -62,6 +66,7 @@ class HssCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -79,6 +84,7 @@ class HssCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);

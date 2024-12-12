@@ -45,6 +45,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
     private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
     private final List<CallTranslator<HssCallAttempt>> callTranslators;
+    private final SignatureVerifier signatureVerifier;
 
     @Inject
     public HssCallFactory(
@@ -56,6 +57,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
+        this.signatureVerifier = requireNonNull(signatureVerifier);
         this.callTranslators = requireNonNull(callTranslators);
     }
 
@@ -83,6 +85,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
                 configOf(frame),
                 syntheticIds.converterFor(enhancement.nativeOperations()),
                 verificationStrategies,
+                signatureVerifier,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
                 frame.isStatic());

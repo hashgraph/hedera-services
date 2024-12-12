@@ -48,6 +48,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signsc
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
@@ -102,6 +103,9 @@ class SignScheduleTranslatorTest {
     @Mock
     private ScheduleID scheduleID;
 
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
     private SignScheduleTranslator subject;
 
     @BeforeEach
@@ -120,6 +124,7 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
 
@@ -141,6 +146,7 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
 
@@ -162,6 +168,7 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
 
@@ -183,6 +190,7 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
 
@@ -204,6 +212,7 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
 
@@ -233,6 +242,7 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
 
@@ -257,7 +267,14 @@ class SignScheduleTranslatorTest {
         final var input = Bytes.wrapByteBuffer(
                 SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
-                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
+                input,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
 
         // then:
         final var call = subject.callFrom(attempt);

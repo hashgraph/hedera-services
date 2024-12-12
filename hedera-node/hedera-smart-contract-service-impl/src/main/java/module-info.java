@@ -30,6 +30,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.google.protobuf;
     requires org.apache.commons.lang3;
     requires org.bouncycastle.provider;
+    requires org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler;
 
