@@ -20,8 +20,8 @@ dependencies {
 }
 
 tasks.testCodeCoverageReport {
-    // Redo the setup done in 'JacocoReportAggregationPlugin', but gather the class files in the file tree,
-    // and filter out selected classes by path.
+    // Redo the setup done in 'JacocoReportAggregationPlugin', but gather the class files in the
+    // file tree and filter out selected classes by path.
     val filteredClassFiles =
         configurations.aggregateCodeCoverageReportResults
             .get()
