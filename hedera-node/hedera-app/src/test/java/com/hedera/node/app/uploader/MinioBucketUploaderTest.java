@@ -130,7 +130,7 @@ class MinioBucketUploaderTest {
     //    @Test
     void testUploadBlockSuccess() throws Exception {
         // Create a temporary file to simulate the block file
-        Path tempFile = Files.createTempFile("test", ".blk");
+        Path tempFile = Files.createTempFile("test", ".gz");
         Files.write(tempFile, "test-content".getBytes());
 
         // Mock ErrorResponse with lenient settings to support final class
@@ -180,7 +180,7 @@ class MinioBucketUploaderTest {
             String fileName = entry.getKey(); // File name in the bucket
             InputStream inputStream = entry.getValue();
             // Write InputStream to a temporary file
-            blockFile = Files.createTempFile(fileName, ".blk");
+            blockFile = Files.createTempFile(fileName, "blk.gz");
             try (OutputStream outputStream = Files.newOutputStream(blockFile)) {
                 inputStream.transferTo(outputStream);
             }
@@ -199,7 +199,7 @@ class MinioBucketUploaderTest {
                     InternalException, ExecutionException, InterruptedException, TimeoutException {
 
         // Create a temporary file to simulate the block file (this file will not exist after deletion)
-        Path tempFile = Files.createTempFile("nonexistent", ".blk");
+        Path tempFile = Files.createTempFile("nonexistent", ".blk.gz");
         Files.delete(tempFile);
 
         // Execute the uploadBlock method
@@ -241,7 +241,7 @@ class MinioBucketUploaderTest {
         }
 
         try (Stream<Path> files = Files.list(resourcesPath)) {
-            files.filter(file -> file.toString().endsWith(".blk")).forEach(file -> {
+            files.filter(file -> file.toString().endsWith(".gz")).forEach(file -> {
                 try {
                     blockFiles.put(file.getFileName().toString(), Files.newInputStream(file));
                 } catch (IOException e) {
