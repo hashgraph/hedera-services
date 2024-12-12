@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import com.hedera.node.app.blocks.impl.BucketUploadManager;
 import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.app.uploader.credentials.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
@@ -42,6 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class BucketConfigurationManagerTest {
     @Mock
     private ConfigProvider configProvider;
+
+    @Mock
+    private BucketUploadManager bucketUploadManager;
 
     private BucketConfigurationManager subject;
     private static final String DEFAULT_BUCKETS_CONFIG =
@@ -72,7 +76,7 @@ public class BucketConfigurationManagerTest {
     void testHappyCompletionOfBucketConfigs() {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
-        subject = new BucketConfigurationManager(configProvider);
+        subject = new BucketConfigurationManager(configProvider, bucketUploadManager);
 
         List<CloudBucketConfig> cloudBucketConfigs;
         try {
@@ -104,7 +108,7 @@ public class BucketConfigurationManagerTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
 
         Throwable throwable = catchThrowable(() -> {
-            subject = new BucketConfigurationManager(configProvider);
+            subject = new BucketConfigurationManager(configProvider, bucketUploadManager);
         });
         assertThat(throwable)
                 .isInstanceOf(RuntimeException.class)
@@ -131,7 +135,7 @@ public class BucketConfigurationManagerTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new BucketConfigurationManager(configProvider);
+        subject = new BucketConfigurationManager(configProvider, bucketUploadManager);
         assertThrows(
                 ValueInstantiationException.class,
                 () -> mapper.readValue(AWS_PROVIDER_WITH_EMPTY_REGION, new TypeReference<List<CloudBucketConfig>>() {}),

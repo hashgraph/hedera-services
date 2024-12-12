@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.blocks;
 
+import com.hedera.node.app.blocks.cloud.uploader.CloudUploaderModule;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
+import com.hedera.node.app.blocks.impl.BucketUploadManager;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import com.hedera.node.app.blocks.impl.GrpcBlockItemWriter;
-import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -31,28 +32,26 @@ import java.nio.file.FileSystem;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = CloudUploaderModule.class)
 public interface BlockStreamModule {
     @Binds
     @Singleton
     BlockStreamManager bindBlockStreamManager(BlockStreamManagerImpl blockStreamManager);
-
-    @Binds
-    @Singleton
-    BucketConfigurationManager bindBucketConfigurationManager(BucketConfigurationManager blockStreamManager);
 
     @Provides
     @Singleton
     static Supplier<BlockItemWriter> bindBlockItemWriterSupplier(
             @NonNull final ConfigProvider configProvider,
             @NonNull final NodeInfo selfNodeInfo,
-            @NonNull final FileSystem fileSystem) {
+            @NonNull final FileSystem fileSystem,
+            @NonNull final BucketUploadManager bucketUploadManager) {
         final var config = configProvider.getConfiguration();
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
-            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
+            case FILE_AND_BUCKET -> () ->
+                    new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, bucketUploadManager);
             case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
-            case FILE_AND_BUCKET -> throw new IllegalArgumentException("gRPC block writer not yet implemented");
         };
     }
 }

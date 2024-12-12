@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.blocks.cloud.uploader;
 
-import com.hedera.node.app.annotations.CommonExecutor;
-import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -31,61 +29,32 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Singleton
 public class MinioBucketUploader implements CloudBucketUploader {
     private static final Logger logger = LogManager.getLogger(MinioBucketUploader.class);
-    private final List<MinioClient> minioClients;
+    private final MinioClient minioClient;
     private final String bucketName;
     private final BucketProvider provider;
     private final ExecutorService uploadExecutor;
     private final int maxRetryAttempts;
 
-    public class MinioClientFactory {
-        public static List<MinioClient> createClients(List<CompleteBucketConfig> configs) {
-            List<MinioClient> clients = new ArrayList<>();
-            for (CompleteBucketConfig config : configs) {
-                MinioClient.Builder builder = MinioClient.builder()
-                        .endpoint(config.endpoint())
-                        .credentials(
-                                config.credentials().accessKey(),
-                                Arrays.toString(config.credentials().secretKey()));
-                // Add region only if the provider is AWS
-                if (config.provider() == BucketProvider.AWS && config.region() != null) {
-                    builder.region(config.region());
-                }
-                // Build and add the client to the list
-                clients.add(builder.build());
-            }
-            return clients;
-        }
-    }
-
-    @Inject
     public MinioBucketUploader(
-            BucketConfigurationManager bucketConfigurationManager,
-            @CommonExecutor ExecutorService executor,
-            ConfigProvider configProvider) {
-        List<CompleteBucketConfig> completeBucketConfigs = bucketConfigurationManager.getCompleteBucketConfigs();
+            ExecutorService executor, ConfigProvider configProvider, CompleteBucketConfig completeBucketConfig) {
         this.uploadExecutor = executor;
-        this.bucketName = completeBucketConfigs.getFirst().bucketName();
-        this.provider = completeBucketConfigs.getFirst().provider();
+        this.bucketName = completeBucketConfig.bucketName();
+        this.provider = completeBucketConfig.provider();
         this.maxRetryAttempts = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .uploadRetryAttempts();
-        this.minioClients = MinioClientFactory.createClients(bucketConfigurationManager.getCompleteBucketConfigs());
+        this.minioClient = MinioClientFactory.createClient(completeBucketConfig);
     }
 
     private String calculateMD5Hash(Path filePath) throws IOException, NoSuchAlgorithmException {
@@ -120,14 +89,12 @@ public class MinioBucketUploader implements CloudBucketUploader {
                         // Upload with retry logic
                         RetryUtils.withRetry(
                                 () -> {
-                                    minioClients
-                                            .getFirst()
-                                            .uploadObject(UploadObjectArgs.builder()
-                                                    .bucket(bucketName)
-                                                    .object(objectKey)
-                                                    .filename(blockPath.toString())
-                                                    .contentType("application/octet-stream")
-                                                    .build());
+                                    minioClient.uploadObject(UploadObjectArgs.builder()
+                                            .bucket(bucketName)
+                                            .object(objectKey)
+                                            .filename(blockPath.toString())
+                                            .contentType("application/octet-stream")
+                                            .build());
                                     return null;
                                 },
                                 maxRetryAttempts);
@@ -155,12 +122,10 @@ public class MinioBucketUploader implements CloudBucketUploader {
 
     public boolean blockExistsOnCloud(String objectKey) {
         try {
-            minioClients
-                    .getFirst()
-                    .statObject(StatObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectKey)
-                            .build());
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build());
             return true;
         } catch (ErrorResponseException e) {
             if (e.errorResponse().code().equals("NoSuchKey")) {
@@ -174,12 +139,10 @@ public class MinioBucketUploader implements CloudBucketUploader {
 
     private String getBlockMd5Internal(String objectKey) {
         try {
-            var stat = minioClients
-                    .getFirst()
-                    .statObject(StatObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectKey)
-                            .build());
+            var stat = minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build());
             return stat.etag();
         } catch (Exception e) {
             throw new CompletionException(e);
