@@ -338,7 +338,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addresses = nodes.stream()
                     .map(nodeInfo -> new Address()
                             .copySetNodeId(NodeId.of(nodeInfo.nodeId()))
-                            .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
+                            .copySetWeight(nodeInfo.zeroWeight() ? 0 : 10))
                     .toList();
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);

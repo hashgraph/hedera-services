@@ -34,11 +34,11 @@ import java.util.List;
 public interface NodeInfo {
 
     /**
-     * Convenience method to check if this node is zero-stake.
+     * Convenience method to check if this node has zero weight.
      *
-     * @return whether this node has zero stake.
+     * @return whether this node has zero weight
      */
-    default boolean zeroStake() {
+    default boolean zeroWeight() {
         return weight() == 0;
     }
 

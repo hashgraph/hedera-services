@@ -92,7 +92,7 @@ public class FakeNetworkInfo implements NetworkInfo {
     private static NodeInfo fakeInfoWith(
             final long nodeId,
             @NonNull final AccountID nodeAccountId,
-            long stake,
+            long weight,
             List<ServiceEndpoint> gossipEndpoints,
             @Nullable Bytes sigCertBytes) {
         return new NodeInfo() {
@@ -108,7 +108,7 @@ public class FakeNetworkInfo implements NetworkInfo {
 
             @Override
             public long weight() {
-                return stake;
+                return weight;
             }
 
             @Override
