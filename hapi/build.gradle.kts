@@ -43,7 +43,7 @@ testModuleInfo {
 }
 
 tasks.test {
-    // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
+    // We are running a lot of tests (10s of thousands), so they need to run in parallel. Make each
     // class run in parallel.
     systemProperties["junit.jupiter.execution.parallel.enabled"] = true
     systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
