@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -55,6 +56,9 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
     @Nullable
     private final Schedule redirectScheduleTxn;
 
+    @NonNull
+    private final SignatureVerifier signatureVerifier;
+
     // too many parameters
     @SuppressWarnings("java:S107")
     public HssCallAttempt(
@@ -65,6 +69,7 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<HssCallAttempt>> callTranslators,
             final boolean isStaticCall) {
@@ -86,6 +91,7 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
         } else {
             this.redirectScheduleTxn = null;
         }
+        this.signatureVerifier = signatureVerifier;
     }
 
     @Override
@@ -194,5 +200,14 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
                     .contractID(ContractID.newBuilder().contractNum(contractNum).build())
                     .build());
         }
+    }
+
+    /*
+     * Returns the {@link SignatureVerifier} used for this call.
+     *
+     * @return the {@link SignatureVerifier} used for this call
+     */
+    public @NonNull SignatureVerifier signatureVerifier() {
+        return signatureVerifier;
     }
 }
