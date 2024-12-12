@@ -170,6 +170,15 @@ public class CommonPbjConverters {
         };
     }
 
+    /**
+     * Given a PBJ type, converts it to a proto type.
+     * @param pbj the PBJ type
+     * @param pbjClass the PBJ class
+     * @param protoClass the proto class
+     * @return the proto type
+     * @param <T> the PBJ type
+     * @param <R> the proto type
+     */
     public static <T extends Record, R extends GeneratedMessageV3> R pbjToProto(
             final T pbj, final Class<T> pbjClass, final Class<R> protoClass) {
         try {

@@ -150,7 +150,6 @@ public class PlatformTestingToolMain implements SwirldMain {
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(PlatformTestingToolState.class, () -> {
                         PlatformTestingToolState ptt = new PlatformTestingToolState();
-                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(ptt);
                         return ptt;
                     }));
             logger.info(
