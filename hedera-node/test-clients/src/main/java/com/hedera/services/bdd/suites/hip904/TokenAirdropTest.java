@@ -902,6 +902,7 @@ public class TokenAirdropTest extends TokenAirdropBase {
         final Stream<DynamicTest> ftWithFractionalFeeNetOfTransfersFalseNotAssociatedCollector() {
             var sender = "sender";
             return hapiTest(
+                    cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
                     tokenAssociate(sender, FT_WITH_FRACTIONAL_FEE_2),
                     cryptoTransfer(
                             moving(100, FT_WITH_FRACTIONAL_FEE_2).between(TREASURY_FOR_CUSTOM_FEE_TOKENS, sender)),
