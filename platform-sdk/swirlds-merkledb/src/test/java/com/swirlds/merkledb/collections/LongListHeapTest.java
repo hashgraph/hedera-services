@@ -24,8 +24,9 @@ import java.nio.file.Path;
 
 public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
 
+    /** {@inheritDoc} */
     @Override
-    protected LongListOffHeap createLongListWriter() {
+    protected LongListOffHeap createWritingLongList() {
         return new LongListOffHeap();
     }
 

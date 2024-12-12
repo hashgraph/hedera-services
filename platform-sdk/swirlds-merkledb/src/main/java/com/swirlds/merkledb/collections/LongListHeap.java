@@ -20,6 +20,7 @@ import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocateDirect;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.utilities.MemoryUtils;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -51,11 +52,9 @@ import java.util.concurrent.atomic.AtomicLongArray;
 @SuppressWarnings("unused")
 public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
-    private static final ThreadLocal<ByteBuffer> TEMP_READ_BUFFER_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(DEFAULT_NUM_LONGS_PER_CHUNK * Long.BYTES);
-        buffer.order(ByteOrder.nativeOrder());
-        return buffer;
-    });
+    /** A temp buffer for reading chunk data from the file during initialization. */
+    private static final ByteBuffer TEMP_READ_BUFFER =
+            ByteBuffer.allocateDirect(DEFAULT_NUM_LONGS_PER_CHUNK * Long.BYTES).order(ByteOrder.nativeOrder());
 
     /** Construct a new LongListHeap with the default number of longs per chunk. */
     public LongListHeap() {
@@ -93,19 +92,24 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** {@inheritDoc} */
     @Override
-    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
+    protected AtomicLongArray readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex)
+            throws IOException {
         AtomicLongArray chunk = createChunk();
 
-        ByteBuffer buffer = TEMP_READ_BUFFER_THREAD_LOCAL.get();
-        MerkleDbFileUtils.completelyRead(fileChannel, buffer);
-        buffer.flip();
+        int startByteOffset = startIndex * Long.BYTES;
+
+        TEMP_READ_BUFFER.position(0);
+        TEMP_READ_BUFFER.limit(memoryChunkSize - startByteOffset);
+
+        MerkleDbFileUtils.completelyRead(fileChannel, TEMP_READ_BUFFER);
+        TEMP_READ_BUFFER.flip();
 
         int index = startIndex;
-        while (buffer.hasRemaining()) {
-            chunk.set(index++, buffer.getLong());
+        while (TEMP_READ_BUFFER.hasRemaining()) {
+            chunk.set(index++, TEMP_READ_BUFFER.getLong());
         }
 
-        chunkList.set(chunkIndex, chunk);
+        return chunk;
     }
 
     /** {@inheritDoc} */
@@ -185,7 +189,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     @Override
     public void close() {
-        TEMP_READ_BUFFER_THREAD_LOCAL.remove();
+        MemoryUtils.closeDirectByteBuffer(TEMP_READ_BUFFER);
         super.close();
     }
 }

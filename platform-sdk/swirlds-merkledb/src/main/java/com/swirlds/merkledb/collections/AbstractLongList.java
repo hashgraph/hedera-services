@@ -255,7 +255,8 @@ public abstract class AbstractLongList<C> implements LongList {
 
         for (int chunkIndex = firstChunkWithDataIndex; chunkIndex < totalNumberOfChunks; chunkIndex++) {
             final int startIndex = (chunkIndex == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
-            readChunkData(fileChannel, chunkIndex, startIndex);
+            C chunk = readChunkData(fileChannel, chunkIndex, startIndex);
+            chunkList.set(chunkIndex, chunk);
         }
     }
 
@@ -269,7 +270,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param startIndex   the starting index within the chunk to begin writing data
      * @throws IOException if there is an error reading the file
      */
-    protected abstract void readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException;
+    protected abstract C readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException;
 
     /**
      * Called when the list is initialized from an empty or absent source file.

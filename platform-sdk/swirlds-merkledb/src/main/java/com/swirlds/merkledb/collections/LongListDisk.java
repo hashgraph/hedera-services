@@ -177,27 +177,26 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     /** {@inheritDoc} */
     @Override
-    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
+    protected Long readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
         final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
         final long chunkOffset = (long) (chunkIndex - firstChunkWithDataIndex) * memoryChunkSize;
 
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         fillBufferWithZeroes(transferBuffer);
-        transferBuffer.clear();
 
         final int startByteOffset = startIndex * Long.BYTES;
         transferBuffer.position(startByteOffset).limit(memoryChunkSize);
         MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
         transferBuffer.flip();
-        transferBuffer.limit(memoryChunkSize);
         transferBuffer.position(0);
+        transferBuffer.limit(memoryChunkSize);
         long bytesTransferred = MerkleDbFileUtils.completelyWrite(tempFileChannel, transferBuffer, chunkOffset);
         if (bytesTransferred != memoryChunkSize) {
             throw new IOException("Failed to read long list chunks, chunkIndex=" + chunkIndex + " expected="
                     + memoryChunkSize + " actual=" + bytesTransferred);
         }
 
-        chunkList.set(chunkIndex, chunkOffset);
+        return chunkOffset;
     }
 
     private void fillBufferWithZeroes(ByteBuffer transferBuffer) {

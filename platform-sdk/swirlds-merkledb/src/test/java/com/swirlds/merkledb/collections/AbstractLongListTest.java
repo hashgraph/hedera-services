@@ -19,7 +19,9 @@ package com.swirlds.merkledb.collections;
 import static com.swirlds.base.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V2;
-import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.*;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,7 +59,14 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
         return new LongListDisk(configuration);
     }
 
-    protected abstract AbstractLongList<?> createLongListWriter();
+    /**
+     * Provides a LongList implementation intended for writing data.
+     * This may be used in tests to verify that lists created by this "writer" can
+     * be successfully read back by other implementations.
+     *
+     * @return a LongList for writing operations
+     */
+    protected abstract AbstractLongList<?> createWritingLongList();
 
     @SuppressWarnings("SameParameterValue")
     protected abstract T createLongListWithChunkSizeInMb(final int chunkSizeInMb);
@@ -320,7 +329,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     void createWithWriterAndReadBack(@TempDir final Path tempDir) throws IOException {
-        try (final AbstractLongList<?> list = createLongListWriter()) {
+        try (final AbstractLongList<?> list = createWritingLongList()) {
             list.updateValidRange(0, getSampleSize());
             for (int i = 1; i < getSampleSize(); i++) {
                 list.put(i, i);

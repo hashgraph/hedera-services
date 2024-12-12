@@ -87,7 +87,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
 
     /** {@inheritDoc} */
     @Override
-    protected void readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
+    protected ByteBuffer readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
         ByteBuffer chunk = createChunk();
 
         int startByteOffset = startIndex * Long.BYTES;
@@ -98,7 +98,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
 
         chunk.position(0);
 
-        chunkList.set(chunkIndex, chunk);
+        return chunk;
     }
 
     /** {@inheritDoc} */

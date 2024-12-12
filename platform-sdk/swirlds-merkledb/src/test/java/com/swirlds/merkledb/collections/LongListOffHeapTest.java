@@ -20,7 +20,9 @@ import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.config.api.Configuration;
@@ -49,8 +51,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         return new LongListOffHeap();
     }
 
+    /** {@inheritDoc} */
     @Override
-    protected LongListHeap createLongListWriter() {
+    protected LongListHeap createWritingLongList() {
         return new LongListHeap();
     }
 
