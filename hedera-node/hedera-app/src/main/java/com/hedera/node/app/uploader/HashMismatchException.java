@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.cloud.uploader;
+package com.hedera.node.app.uploader;
 
 public class HashMismatchException extends RuntimeException {
     public HashMismatchException(String objectKey, String provider) {

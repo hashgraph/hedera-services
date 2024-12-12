@@ -19,7 +19,6 @@ package com.hedera.node.app.uploader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.hedera.node.app.blocks.cloud.uploader.MinioBucketUploader;
 import com.hedera.node.app.uploader.credentials.BucketCredentials;
 import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;

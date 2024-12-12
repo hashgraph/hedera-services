@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.cloud.uploader;
+package com.hedera.node.app.uploader;
 
 import com.hedera.node.config.types.BucketProvider;
 import java.nio.file.Path;

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.cloud.uploader;
+package com.hedera.node.app.uploader;
 
 import com.hedera.node.app.annotations.CommonExecutor;
-import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;

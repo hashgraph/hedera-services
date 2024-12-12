@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.uploader.credentials;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -26,5 +27,18 @@ public record BucketCredentials(String accessKey, char[] secretKey) {
     public BucketCredentials {
         Objects.requireNonNull(accessKey, "access key cannot be null");
         Objects.requireNonNull(secretKey, "secret key cannot be null");
+    }
+
+    @Override
+    // Required to allow for comparison of BucketCredentials objects now that we are using char[] for secretKey
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BucketCredentials that)) return false;
+        return Objects.equals(accessKey, that.accessKey) && Arrays.equals(secretKey, that.secretKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(accessKey, Arrays.hashCode(secretKey));
     }
 }
