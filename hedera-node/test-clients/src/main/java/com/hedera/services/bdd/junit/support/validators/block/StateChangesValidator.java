@@ -211,7 +211,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                 metrics,
                 InitTrigger.GENESIS,
                 DiskStartupNetworks.fromLegacyAddressBook(addressBook),
-                platformConfig);
+                platformConfig,
+                addressBook);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block

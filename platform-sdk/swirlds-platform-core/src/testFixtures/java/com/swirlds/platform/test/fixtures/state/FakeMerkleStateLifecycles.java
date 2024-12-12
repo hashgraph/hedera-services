@@ -35,6 +35,8 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -73,11 +75,14 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
 
     public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(AddressBookConfig.class)
+            .withConfigDataType(BasicConfig.class)
             .withConfigDataType(MerkleDbConfig.class)
             .withConfigDataType(VirtualMapConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
             .withConfigDataType(StateCommonConfig.class)
             .withConfigDataType(FileSystemManagerConfig.class)
+            .withValue("addressBook.useRosterLifecycle", "true")
             .build();
 
     /**
@@ -125,7 +130,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
-        final var schema = new V0540PlatformStateSchema();
+        final var schema = new V0540PlatformStateSchema(config -> new BasicSoftwareVersion(123));
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
@@ -144,6 +149,9 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                     }
                 });
         final var mockMigrationContext = mock(MigrationContext.class);
+        given(mockMigrationContext.isGenesis()).willReturn(true);
+        given(mockMigrationContext.appConfig()).willReturn(CONFIGURATION);
+        given(mockMigrationContext.platformConfig()).willReturn(CONFIGURATION);
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
         given(mockMigrationContext.newStates()).willReturn(writableStates);
         schema.migrate(mockMigrationContext);

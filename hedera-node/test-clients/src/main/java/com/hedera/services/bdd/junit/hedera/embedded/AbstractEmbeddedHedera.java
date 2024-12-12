@@ -176,7 +176,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             trigger = RESTART;
         }
         hedera.initializeStatesApi(
-                state, fakePlatform().getContext().getMetrics(), trigger, network, ServicesMain.buildPlatformConfig());
+                state,
+                fakePlatform().getContext().getMetrics(),
+                trigger,
+                network,
+                ServicesMain.buildPlatformConfig(),
+                addressBook);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled

@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.service;
 
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,10 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V057PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V058RosterLifecycleTransitionSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -51,12 +49,6 @@ class PlatformStateServiceTest {
     private SingletonNode<PlatformState> platformState;
 
     @Test
-    void canSetAndClearActiveRosterFn() {
-        assertDoesNotThrow(() -> PLATFORM_STATE_SERVICE.setActiveRosterFn(() -> Roster.DEFAULT));
-        assertDoesNotThrow(PLATFORM_STATE_SERVICE::clearActiveRosterFn);
-    }
-
-    @Test
     void registersOneSchema() {
         final ArgumentCaptor<Schema> captor = ArgumentCaptor.forClass(Schema.class);
         given(registry.register(captor.capture())).willReturn(registry);
@@ -64,7 +56,7 @@ class PlatformStateServiceTest {
         final var schemas = captor.getAllValues();
         assertEquals(2, schemas.size());
         assertInstanceOf(V0540PlatformStateSchema.class, schemas.getFirst());
-        assertInstanceOf(V057PlatformStateSchema.class, schemas.getLast());
+        assertInstanceOf(V058RosterLifecycleTransitionSchema.class, schemas.getLast());
     }
 
     @Test

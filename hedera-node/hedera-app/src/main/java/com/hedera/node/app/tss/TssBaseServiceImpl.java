@@ -273,10 +273,10 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     @NonNull
     public Roster chooseRosterForNetwork(
-            @NonNull State state,
-            @NonNull InitTrigger trigger,
-            @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version,
+            @NonNull final State state,
+            @NonNull final InitTrigger trigger,
+            @NonNull final ServiceMigrator serviceMigrator,
+            @NonNull final ServicesSoftwareVersion version,
             @NonNull final Configuration configuration,
             @NonNull final Roster overrideRoster) {
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {

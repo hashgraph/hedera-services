@@ -307,6 +307,7 @@ class DiskStartupNetworksTest {
                 tssLibrary,
                 ForkJoinPool.commonPool(),
                 NO_OP_METRICS);
+        PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
         Set.of(
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,

@@ -137,6 +137,8 @@ public interface MigrationContext {
     default <T extends Comparable<? super T>> boolean isUpgrade(
             @NonNull final Function<Configuration, T> currentVersionFn,
             @NonNull final Function<SemanticVersion, T> previousVersionFn) {
+        final var current = currentVersionFn.apply(appConfig());
+        final var previous = previousVersion();
         return currentVersionFn.apply(appConfig()).compareTo(previousVersionFn.apply(previousVersion())) > 0;
     }
 }

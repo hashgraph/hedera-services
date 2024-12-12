@@ -39,7 +39,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
@@ -52,6 +51,7 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -78,7 +78,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,11 +104,9 @@ final class BlockRecordManagerTest extends AppTestBase {
     private BlockRecordFormat blockRecordFormat;
     private BlockRecordWriterFactory blockRecordWriterFactory;
 
-    @Mock
-    private BlockStreamManagerImpl blockStreamManager;
-
     @BeforeEach
     void setUpEach() throws Exception {
+        PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
         // create in memory temp dir
         fs = Jimfs.newFileSystem(Configuration.unix());
         final var tempDir = fs.getPath("/temp");
