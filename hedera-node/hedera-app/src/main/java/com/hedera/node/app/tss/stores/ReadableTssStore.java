@@ -180,6 +180,11 @@ public interface ReadableTssStore {
      */
     TssVoteTransactionBody getVote(@NonNull TssVoteMapKey tssVoteMapKey);
 
+    /**
+     * Get all TSS votes in the store. This is needed for a specific case when we are checking the status
+     * for the keying of an active roster.
+     * @return The list of TSS votes.
+     */
     List<TssVoteTransactionBody> allVotes();
 
     /**

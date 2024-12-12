@@ -17,6 +17,7 @@
 package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.TssKeyingStatus.KEYING_COMPLETE;
+import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
 import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
@@ -26,6 +27,7 @@ import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTE
 import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -40,6 +42,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -49,6 +52,7 @@ import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
+import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
@@ -129,6 +133,9 @@ class TssBaseServiceImplTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableRosterStore rosterStore;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableTssStore tssStore;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private TssLibrary tssLibrary;
@@ -403,5 +410,110 @@ class TssBaseServiceImplTest {
                         null));
         assertEquals(expectedTssStatus, subject.getTssStatus());
         assertTrue(subject.haveSentVoteForTargetRoster());
+    }
+
+    @Test
+    void managesTssStatusOnIntializationWaitingForkeys() {
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);
+        given(rosterStore.getCandidateRoster()).willReturn(null);
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+
+        subject.generateParticipantDirectory(state);
+        final var tssStatus = subject.computeInitialTssStatus(tssStore, rosterStore);
+        assertEquals(expectedTssStatus, tssStatus);
+    }
+
+    @Test
+    void managesTssStatusOnIntializationWaitingForMessages() {
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);
+        given(rosterStore.getCandidateRoster()).willReturn(null);
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+        given(tssStore.getTssEncryptionKey(anyLong())).willReturn(TssEncryptionKeyTransactionBody.DEFAULT);
+
+        subject.generateParticipantDirectory(state);
+        final var tssStatus = subject.computeInitialTssStatus(tssStore, rosterStore);
+        assertEquals(expectedTssStatus, tssStatus);
+    }
+
+    @Test
+    void managesTssStatusOnIntializationWaitingForVotes() {
+        final var messages = IntStream.range(0, 8)
+                .mapToObj(i ->
+                        new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, i * 2L + 1, Bytes.wrap("MESSAGE" + i)))
+                .toList();
+
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_THRESHOLD_TSS_VOTES, RosterToKey.ACTIVE_ROSTER, Bytes.EMPTY);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);
+        given(rosterStore.getCandidateRoster()).willReturn(null);
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+        given(tssStore.getTssEncryptionKey(anyLong())).willReturn(TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssStore.getMessagesForTarget(any())).willReturn(messages);
+
+        subject.generateParticipantDirectory(state);
+        final var tssStatus = subject.computeInitialTssStatus(tssStore, rosterStore);
+        assertEquals(expectedTssStatus, tssStatus);
+    }
+
+    @Test
+    void managesTssStatusOnIntializationWaitingForMessagesCandidateRoster() {
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);
+        given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+        given(tssStore.getTssEncryptionKey(anyLong())).willReturn(TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssStore.getMessage(any()))
+                .willReturn(new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, 1L, Bytes.EMPTY));
+        given(tssStore.anyWinningVoteFor(SOURCE_HASH, rosterStore))
+                .willReturn(Optional.of(TssVoteTransactionBody.DEFAULT));
+
+        subject.generateParticipantDirectory(state);
+
+        final var tssStatus = subject.computeInitialTssStatus(tssStore, rosterStore);
+        assertEquals(expectedTssStatus, tssStatus);
+    }
+
+    @Test
+    void managesTssStatusOnIntializationWaitingForVotesCandidateRoster() {
+        final var expectedTssStatus =
+                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
+
+        given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
+        given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);
+        given(rosterStore.getCandidateRoster()).willReturn(TARGET_ROSTER);
+        given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
+        given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
+        given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
+        given(tssStore.getTssEncryptionKey(anyLong())).willReturn(TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssStore.getMessage(any()))
+                .willReturn(new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, 1L, Bytes.EMPTY));
+        given(tssStore.anyWinningVoteFor(SOURCE_HASH, rosterStore))
+                .willReturn(Optional.of(TssVoteTransactionBody.DEFAULT));
+
+        subject.generateParticipantDirectory(state);
+
+        final var tssStatus = subject.computeInitialTssStatus(tssStore, rosterStore);
+        assertEquals(expectedTssStatus, tssStatus);
     }
 }

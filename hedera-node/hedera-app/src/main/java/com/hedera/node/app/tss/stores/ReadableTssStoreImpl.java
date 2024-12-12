@@ -21,12 +21,10 @@ import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
 import static java.util.Objects.requireNonNull;
-import static java.util.Spliterator.NONNULL;
-import static java.util.Spliterators.spliterator;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
 
+import com.google.common.collect.Streams;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
@@ -75,7 +73,7 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
         requireNonNull(sourceRosterHash);
         requireNonNull(targetRosterHash);
         requireNonNull(sourceRosterWeightFn);
-        return stream(spliterator(readableTssVoteState.keys(), readableTssVoteState.size(), NONNULL), false)
+        return Streams.stream(readableTssVoteState.keys())
                 .filter(key -> targetRosterHash.equals(key.rosterHash()))
                 .map(key -> new WeightedVote(
                         sourceRosterWeightFn.applyAsLong(key.nodeId()), requireNonNull(readableTssVoteState.get(key))))
@@ -128,9 +126,9 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
      */
     @Override
     public List<TssVoteTransactionBody> allVotes() {
-        return stream(spliterator(readableTssVoteState.keys(), readableTssVoteState.size(), NONNULL), false)
+        return Streams.stream(readableTssVoteState.keys())
                 .map(readableTssVoteState::get)
-                .collect(toList());
+                .toList();
     }
 
     /**

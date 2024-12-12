@@ -437,7 +437,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 () -> updateTssStatus(isStakePeriodBoundary, consensusNow, info), tssLibraryExecutor);
     }
 
-    private TssStatus computeInitialTssStatus(final ReadableTssStore tssStore, final ReadableRosterStore rosterStore) {
+    TssStatus computeInitialTssStatus(final ReadableTssStore tssStore, final ReadableRosterStore rosterStore) {
         final var activeRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
         final var candidateRoster = rosterStore.getCandidateRoster();
         final var candidateRosterHash =
@@ -445,7 +445,7 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         final var winningVoteActive = tssStore.anyWinningVoteFor(activeRosterHash, rosterStore);
         if (winningVoteActive.isEmpty()) {
-            final var keyingStatus = getTssKeyingStatus(tssStore, rosterStore, activeRosterHash);
+            final var keyingStatus = getTssKeyingStatus(tssStore, activeRosterHash, rosterStore.getActiveRoster());
             return new TssStatus(keyingStatus, ACTIVE_ROSTER, Bytes.EMPTY);
         }
 
@@ -456,7 +456,8 @@ public class TssBaseServiceImpl implements TssBaseService {
             return winningVoteCandidate
                     .map(voteBody -> new TssStatus(KEYING_COMPLETE, NONE, voteBody.ledgerId()))
                     .orElseGet(() -> {
-                        final var keyingStatus = getTssKeyingStatus(tssStore, rosterStore, candidateRosterHash);
+                        final var keyingStatus =
+                                getTssKeyingStatus(tssStore, candidateRosterHash, rosterStore.getCandidateRoster());
                         return new TssStatus(keyingStatus, CANDIDATE_ROSTER, activeRosterLedgerId);
                     });
         }
@@ -465,16 +466,16 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     private TssKeyingStatus getTssKeyingStatus(
-            final ReadableTssStore tssStore, final ReadableRosterStore rosterStore, final Bytes activeRosterHash) {
-        final var numEncryptionKeys = requireNonNull(rosterStore.getActiveRoster()).rosterEntries().stream()
+            final ReadableTssStore tssStore, final Bytes targetRosterHash, final Roster targetRoster) {
+        final var numEncryptionKeys = requireNonNull(targetRoster).rosterEntries().stream()
                 .map(entry -> tssStore.getTssEncryptionKey(entry.nodeId()))
                 .filter(Objects::nonNull)
                 .count();
-        if (numEncryptionKeys != rosterStore.getActiveRoster().rosterEntries().size()) {
+        if (numEncryptionKeys != targetRoster.rosterEntries().size()) {
             return WAITING_FOR_ENCRYPTION_KEYS;
         }
         final var activeDirectory = tssDirectoryAccessor.activeParticipantDirectory();
-        final var tssMessages = tssStore.getMessagesForTarget(activeRosterHash);
+        final var tssMessages = tssStore.getMessagesForTarget(targetRosterHash);
         final var result = validateTssMessages(tssMessages, activeDirectory, tssLibrary);
         final var isThresholdMet = isThresholdMet(result.validTssMessages(), activeDirectory);
         if (isThresholdMet) {
@@ -641,15 +642,6 @@ public class TssBaseServiceImpl implements TssBaseService {
                     }
                 }
             }
-        }
-
-        /**
-         * Resets the status to the initial state.
-         */
-        private void reset() {
-            newRosterToKey = NONE;
-            haveSentMessageForTargetRoster = false;
-            haveSentVoteForTargetRoster = false;
         }
 
         /**
