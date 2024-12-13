@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.tss;
 
-import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static com.hedera.node.app.tss.handlers.TssUtils.voteForValidMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
@@ -125,35 +124,20 @@ public class TssCryptographyManager {
     public Vote getVote(
             final @NonNull List<TssMessageTransactionBody> tssMessageBodies,
             final @NonNull TssParticipantDirectory tssParticipantDirectory) {
-        final var result = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-        if (!isThresholdMet(result.validTssMessages(), tssParticipantDirectory)) {
+        final var result = voteForValidMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        if (result.isEmpty()) {
             return null;
         }
         final var aggregationStart = instantSource.instant();
-        final var validTssMessages = getTssMessages(result.validTssMessages(), tssParticipantDirectory, tssLibrary);
+        final var validTssMessages =
+                getTssMessages(result.get().validTssMessages(), tssParticipantDirectory, tssLibrary);
         final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
         final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
         final var signature = gossip.sign(ledgerId.toBytes());
-        final var vote = result.vote();
+        final var vote = result.get().vote();
         final var aggregationEnd = instantSource.instant();
         tssMetrics.updateAggregationTime(
                 Duration.between(aggregationStart, aggregationEnd).toMillis());
         return new Vote(ledgerId, signature, vote);
-    }
-
-    /**
-     * Check if the threshold consensus weight is met to submit a {@link TssVoteTransactionBody}.
-     * The threshold is met if more than half the consensus weight has been received.
-     *
-     * @param validTssMessages        the valid TSS messages
-     * @param tssParticipantDirectory the TSS participant directory
-     * @return true if the threshold is met, false otherwise
-     */
-    public static boolean isThresholdMet(
-            @NonNull final List<TssMessageTransactionBody> validTssMessages,
-            @NonNull final TssParticipantDirectory tssParticipantDirectory) {
-        final var numShares = tssParticipantDirectory.getShareIds().size();
-        // If more than 1/2 the consensus weight has been received, then the threshold is met
-        return validTssMessages.size() >= getThresholdForTssMessages(numShares);
     }
 }

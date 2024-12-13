@@ -17,7 +17,7 @@
 package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static com.hedera.node.app.tss.handlers.TssUtils.getValidMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -84,10 +84,9 @@ public class TssKeysAccessor {
             @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
             @NonNull final ReadableTssStore tssStore,
             @NonNull final Bytes activeRosterHash) {
-        final var result = validateTssMessages(
+        final var tssMessages = getValidMessages(
                 tssStore.getMessagesForTarget(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
-        final var validTssMessages =
-                getTssMessages(result.validTssMessages(), activeRosterParticipantDirectory, tssLibrary);
+        final var validTssMessages = getTssMessages(tssMessages, activeRosterParticipantDirectory, tssLibrary);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
 

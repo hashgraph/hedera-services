@@ -20,6 +20,7 @@ import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirect
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.data.TssConfig;
@@ -59,6 +60,17 @@ public class TssDirectoryAccessor {
         final var rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
         final var activeRoster = requireNonNull(rosterStore.getActiveRoster());
         this.tssParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode);
+    }
+
+    /**
+     * Generates the participant directory for the given roster.
+     *
+     * @param roster   Roster to generate participant directory for
+     */
+    public TssParticipantDirectory generateTssParticipantDirectoryFor(@NonNull final Roster roster) {
+        final var maxSharesPerNode =
+                configurationSupplier.get().getConfigData(TssConfig.class).maxSharesPerNode();
+        return computeParticipantDirectory(roster, maxSharesPerNode);
     }
 
     public TssParticipantDirectory activeParticipantDirectory() {

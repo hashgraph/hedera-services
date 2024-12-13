@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss;
 
+import static com.hedera.node.app.tss.RosterToKey.CANDIDATE_ROSTER;
 import static com.hedera.node.app.tss.TssKeyingStatus.KEYING_COMPLETE;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
@@ -219,8 +220,7 @@ class TssBaseServiceImplTest {
     @Test
     void managesTssStatusWhenRosterToKeyIsNone() {
         final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.NONE, Bytes.EMPTY);
-        final var expectedTssStatus =
-                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, CANDIDATE_ROSTER, Bytes.EMPTY);
         subject.setTssStatus(oldStatus);
         subject.updateTssStatus(
                 true,
@@ -290,6 +290,7 @@ class TssBaseServiceImplTest {
         given(tssLibrary.decryptPrivateShares(any(), any()))
                 .willReturn(List.of(new TssPrivateShare(1, FAKE_PRIVATE_KEY)));
         assertFalse(subject.haveSentMessageForTargetRoster());
+        given(tssStore.getMessagesForTarget(any())).willReturn(messages);
 
         subject.generateParticipantDirectory(state);
         subject.getTssKeysAccessor().generateKeyMaterialForActiveRoster(state);
@@ -473,8 +474,7 @@ class TssBaseServiceImplTest {
 
     @Test
     void managesTssStatusOnIntializationWaitingForMessagesCandidateRoster() {
-        final var expectedTssStatus =
-                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, CANDIDATE_ROSTER, Bytes.EMPTY);
 
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
         given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);
@@ -496,8 +496,7 @@ class TssBaseServiceImplTest {
 
     @Test
     void managesTssStatusOnIntializationWaitingForVotesCandidateRoster() {
-        final var expectedTssStatus =
-                new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.CANDIDATE_ROSTER, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, CANDIDATE_ROSTER, Bytes.EMPTY);
 
         given(rosterStore.getCurrentRosterHash()).willReturn(SOURCE_HASH);
         given(rosterStore.getActiveRoster()).willReturn(SOURCE_ROSTER);

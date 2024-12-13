@@ -27,6 +27,7 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class TssUtils {
     public static final SignatureSchema SIGNATURE_SCHEMA =
@@ -69,7 +71,7 @@ public class TssUtils {
     }
 
     /**
-     * Compute the threshold of consensus weight needed for submitting a {@link com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody}
+     * Compute the threshold of consensus weight needed for submitting a {@link TssVoteTransactionBody}
      * If more than 1/2 the consensus weight has been received, then the threshold is met
      *
      * @param totalShares the total number of shares
@@ -81,12 +83,44 @@ public class TssUtils {
 
     /**
      * Validate TSS messages using the TSS library. If the message is valid, add it to the list of valid TSS messages.
+     * If the threshold is met, return the list of valid TSS messages and the vote bit set.
      *
      * @param tssMessages             list of TSS messages to validate
      * @param tssParticipantDirectory the participant directory
      * @return list of valid TSS messages
      */
-    public static ValidMessagesWithVote validateTssMessages(
+    public static Optional<ValidMessagesWithVote> voteForValidMessages(
+            @NonNull final List<TssMessageTransactionBody> tssMessages,
+            @NonNull final TssParticipantDirectory tssParticipantDirectory,
+            @NonNull final TssLibrary tssLibrary) {
+        final var threshold =
+                getThresholdForTssMessages(tssParticipantDirectory.getShareIds().size());
+        int numValidMessages = 0;
+        final var validTssMessages = new LinkedList<TssMessageTransactionBody>();
+        final var bitSet = new BitSet();
+        for (int i = 0; i < tssMessages.size(); i++) {
+            final var isValid = tssLibrary.verifyTssMessage(
+                    tssParticipantDirectory, tssMessages.get(i).tssMessage());
+            if (isValid) {
+                bitSet.set(i);
+                validTssMessages.add(tssMessages.get(i));
+                numValidMessages++;
+            }
+            if (numValidMessages >= threshold) {
+                return Optional.of(new ValidMessagesWithVote(validTssMessages, bitSet));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Validate TSS messages using the TSS library. If the message is valid, add it to the list of valid TSS messages.
+     *
+     * @param tssMessages             list of TSS messages to validate
+     * @param tssParticipantDirectory the participant directory
+     * @return list of valid TSS messages
+     */
+    public static List<TssMessageTransactionBody> getValidMessages(
             @NonNull final List<TssMessageTransactionBody> tssMessages,
             @NonNull final TssParticipantDirectory tssParticipantDirectory,
             @NonNull final TssLibrary tssLibrary) {
@@ -100,7 +134,7 @@ public class TssUtils {
                 validTssMessages.add(tssMessages.get(i));
             }
         }
-        return new ValidMessagesWithVote(validTssMessages, bitSet);
+        return validTssMessages;
     }
 
     /**
