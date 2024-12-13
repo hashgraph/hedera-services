@@ -446,13 +446,14 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
+                (appContext, readableRosterStoreSupplier) -> new TssBaseServiceImpl(
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
-                        metrics),
+                        metrics,
+                        readableRosterStoreSupplier),
                 DiskStartupNetworks::new,
                 selfNodeId);
     }

@@ -18,17 +18,23 @@ package com.hedera.node.app.tss.schemas;
 
 import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
 import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Schema for the TSS service.
@@ -48,10 +54,22 @@ public class V0570TssBaseSchema extends Schema {
             SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
 
     /**
-     * Create a new instance
+     * The factory to use to create the writable roster store.
      */
-    public V0570TssBaseSchema() {
+    private final Function<WritableStates, WritableTssStore> tssStoreFactory;
+
+    private final Supplier<ReadableRosterStore> readableRosterStoreSupplier;
+
+    /**
+     * Create a new instance.
+     */
+    public V0570TssBaseSchema(
+            @NonNull final Function<WritableStates, WritableTssStore> tssStoreFactory,
+            @NonNull final Supplier<ReadableRosterStore> readableRosterStoreSupplier) {
+
         super(VERSION);
+        this.tssStoreFactory = requireNonNull(tssStoreFactory);
+        this.readableRosterStoreSupplier = requireNonNull(readableRosterStoreSupplier);
     }
 
     @Override
@@ -60,6 +78,19 @@ public class V0570TssBaseSchema extends Schema {
         if (tssStatusState.get() == null) {
             tssStatusState.put(new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, ACTIVE_ROSTER, Bytes.EMPTY));
         }
+
+        // remove TssEncryptionKeys from state if node ids are not present
+        // in both active and candidate roster's entries
+        final var tssStore = tssStoreFactory.apply(ctx.newStates());
+        tssStore.removeIfNotPresent(readableRosterStoreSupplier.get().getCombinedRosterEntriesNodeIds());
+    }
+
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        // remove TssEncryptionKeys from state if node ids are not present
+        // in both active and candidate roster's entries
+        final var tssStore = tssStoreFactory.apply(ctx.newStates());
+        tssStore.removeIfNotPresent(readableRosterStoreSupplier.get().getCombinedRosterEntriesNodeIds());
     }
 
     @NonNull

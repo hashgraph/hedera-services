@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
@@ -64,18 +63,14 @@ public class V057RosterSchema extends Schema {
     @Deprecated
     private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
 
-    private final Supplier<WritableTssStore> writableTssStore;
-
     public V057RosterSchema(
             @NonNull final Predicate<Roster> canAdopt,
             @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
-            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory,
-            @NonNull final Supplier<WritableTssStore> writableTssStore) {
+            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory) {
 
         super(VERSION);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
-        this.writableTssStore = requireNonNull(writableTssStore);
         this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
@@ -85,17 +80,10 @@ public class V057RosterSchema extends Schema {
         if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
-        final var states = ctx.newStates();
-        final var tssStore = writableTssStore.get();
-        final var rosterStore = rosterStoreFactory.apply(states);
-        final var rostersEntriesNodeIds = rosterStore.getCombinedRosterEntriesNodeIds();
+        final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
         final var startupNetworks = ctx.startupNetworks();
         if (ctx.isGenesis()) {
             setActiveRoster(GENESIS_ROUND_NO, rosterStore, startupNetworks.genesisNetworkOrThrow());
-
-            // remove TssEncryptionKeys from state if node ids are not present
-            // in both active and candidate roster's entries
-            tssStore.removeIfNotPresent(rostersEntriesNodeIds);
         } else {
             final long roundNumber = ctx.roundNumber();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
@@ -113,18 +101,10 @@ public class V057RosterSchema extends Schema {
                     //   (previousRoster, previousRound) := (previousRoster, 0)
                     //   set (previousRoster, 0) as the active roster in the roster state.
                     rosterStore.putActiveRoster(previousRoster, 0L);
-
-                    // remove TssEncryptionKeys from state if node ids are not present
-                    // in both active and candidate roster's entries
-                    tssStore.removeIfNotPresent(rostersEntriesNodeIds);
                 }
 
                 // set (overrideRoster, currentRound) as the active roster in the roster state.
                 setActiveRoster(currentRound, rosterStore, overrideNetwork.get());
-
-                // remove TssEncryptionKeys from state if node ids are not present
-                // in both active and candidate roster's entries
-                tssStore.removeIfNotPresent(rostersEntriesNodeIds);
                 startupNetworks.setOverrideRound(roundNumber);
             } else if (isUpgrade(ctx)) {
                 if (rosterStore.getActiveRoster() == null) {
@@ -138,10 +118,6 @@ public class V057RosterSchema extends Schema {
                     final var previousRoster = buildRoster(platformState.getAddressBook());
                     rosterStore.putActiveRoster(previousRoster, 0L);
 
-                    // remove TssEncryptionKeys from state if node ids are not present
-                    // in both active and candidate roster's entries
-                    tssStore.removeIfNotPresent(rostersEntriesNodeIds);
-
                     // If there is no active roster at a migration boundary, we
                     // must have a migration network in the startup assets
                     // configAddressBook := Read the address book in config.txt
@@ -150,10 +126,6 @@ public class V057RosterSchema extends Schema {
                     // currentRoster := translateToRoster(configAddressBook)
                     // set (currentRoster, currentRound) as the active roster in the roster state.
                     rosterStore.putActiveRoster(rosterFrom(network), currentRound);
-
-                    // remove TssEncryptionKeys from state if node ids are not present
-                    // in both active and candidate roster's entries
-                    tssStore.removeIfNotPresent(rostersEntriesNodeIds);
                 } else {
                     // candidateRoster := read the candidate roster from the roster state.
                     final var candidateRoster = rosterStore.getCandidateRoster();
@@ -164,10 +136,6 @@ public class V057RosterSchema extends Schema {
 
                         // set (candidateRoster, currentRound) as the new active roster in the roster state.
                         rosterStore.adoptCandidateRoster(currentRound);
-
-                        // remove TssEncryptionKeys from state if node ids are not present
-                        // in both active and candidate roster's entries
-                        tssStore.removeIfNotPresent(rostersEntriesNodeIds);
                     }
                 }
             }

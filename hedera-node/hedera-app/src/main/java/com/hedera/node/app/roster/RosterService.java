@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
@@ -55,15 +54,11 @@ public class RosterService implements Service {
     @Deprecated
     private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
 
-    private final Supplier<WritableTssStore> writableTssStoreSupplier;
-
     public RosterService(
             @NonNull final Predicate<Roster> canAdopt,
-            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory,
-            @NonNull final Supplier<WritableTssStore> writableTssStoreSupplier) {
+            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory) {
         this.canAdopt = requireNonNull(canAdopt);
         this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
-        this.writableTssStoreSupplier = requireNonNull(writableTssStoreSupplier);
     }
 
     @NonNull
@@ -81,7 +76,6 @@ public class RosterService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0540RosterSchema());
-        registry.register(new V057RosterSchema(
-                canAdopt, WritableRosterStore::new, platformStateStoreFactory, writableTssStoreSupplier));
+        registry.register(new V057RosterSchema(canAdopt, WritableRosterStore::new, platformStateStoreFactory));
     }
 }

@@ -43,6 +43,7 @@ import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
@@ -58,6 +59,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -113,7 +115,8 @@ public class StandaloneRoundManagement {
             ForkJoinPool.commonPool(),
             new TssLibraryImpl(appContext),
             ForkJoinPool.commonPool(),
-            new NoOpMetrics());
+            new NoOpMetrics(),
+            () -> new ReadableRosterStoreImpl(new FakeState().getReadableStates(RosterService.NAME)));
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
             NoopBlockItemWriter::new,
             ForkJoinPool.commonPool(),

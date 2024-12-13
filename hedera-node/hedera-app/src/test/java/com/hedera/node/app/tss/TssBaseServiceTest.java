@@ -120,7 +120,8 @@ public class TssBaseServiceTest {
                 mock(Executor.class),
                 tssLibrary,
                 executor,
-                mock(Metrics.class));
+                mock(Metrics.class),
+                () -> readableRosterStore);
         given(handleContext.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
         given(handleContext.networkInfo()).willReturn(networkInfo);
         given(networkInfo.selfNodeInfo())

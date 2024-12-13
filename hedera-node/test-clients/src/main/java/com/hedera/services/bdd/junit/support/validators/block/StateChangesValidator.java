@@ -223,13 +223,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
+                (appContext, readableRosterStoreSupplier) -> new TssBaseServiceImpl(
                         appContext,
                         ForkJoinPool.commonPool(),
                         ForkJoinPool.commonPool(),
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
-                        metrics),
+                        metrics,
+                        readableRosterStoreSupplier),
                 DiskStartupNetworks::new,
                 NodeId.of(0L));
         this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();

@@ -18,15 +18,12 @@ package com.hedera.node.app.roster.schemas;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
@@ -37,7 +34,6 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -89,17 +85,11 @@ class V057RosterSchemaTest {
     @Mock
     private ReadablePlatformStateStore platformStateStore;
 
-    @Mock
-    private Supplier<WritableTssStore> tssStoreFactory;
-
-    @Mock
-    private WritableTssStore tssStore;
-
     private V057RosterSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory, tssStoreFactory);
+        subject = new V057RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory);
     }
 
     @Test
@@ -114,15 +104,11 @@ class V057RosterSchemaTest {
     @Test
     void setsActiveFromStartupNetworksAtGenesis() {
         givenContextWith(CurrentVersion.NA, RosterLifecycle.ON, AvailableNetwork.GENESIS);
-        final var rosterEntries =
-                new HashSet<>(List.of(EntityNumber.newBuilder().number(1L).build()));
         given(context.isGenesis()).willReturn(true);
-        given(tssStoreFactory.get()).willReturn(tssStore);
-        given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
+
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, 0L);
-        verify(tssStore).removeIfNotPresent(rosterEntries);
     }
 
     @Test
@@ -156,7 +142,6 @@ class V057RosterSchemaTest {
         given(context.roundNumber()).willReturn(ROUND_NO);
         given(platformStateStoreFactory.get()).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
-        given(tssStoreFactory.get()).willReturn(tssStore);
 
         subject.restart(context);
 
@@ -166,20 +151,15 @@ class V057RosterSchemaTest {
     @Test
     void adoptsCandidateAtUpgradeBoundaryIfTestPasses() {
         givenContextWith(CurrentVersion.NEW, RosterLifecycle.ON, AvailableNetwork.NONE);
-        final var rosterEntries =
-                new HashSet<>(List.of(EntityNumber.newBuilder().number(1L).build()));
         given(context.previousVersion()).willReturn(THEN);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
         given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(canAdopt.test(ROSTER)).willReturn(true);
         given(context.roundNumber()).willReturn(ROUND_NO);
-        given(tssStoreFactory.get()).willReturn(tssStore);
-        given(rosterStore.getCombinedRosterEntriesNodeIds()).willReturn(rosterEntries);
 
         subject.restart(context);
 
         verify(rosterStore).adoptCandidateRoster(ROUND_NO + 1);
-        verify(tssStore).removeIfNotPresent(rosterEntries);
     }
 
     @Test
@@ -189,13 +169,11 @@ class V057RosterSchemaTest {
         given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
         given(platformStateStoreFactory.get()).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
-        given(tssStoreFactory.get()).willReturn(tssStore);
 
         subject.restart(context);
 
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1);
         verify(startupNetworks).setOverrideRound(ROUND_NO);
-        verify(tssStore, times(2)).removeIfNotPresent(new HashSet<>());
     }
 
     private enum CurrentVersion {

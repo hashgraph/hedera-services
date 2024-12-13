@@ -35,6 +35,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -48,6 +49,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -91,14 +93,17 @@ public class FakeTssBaseService implements TssBaseService {
     private Signing signing = Signing.DELEGATE;
     private boolean ignoreRequests = false;
 
-    public FakeTssBaseService(@NonNull final AppContext appContext) {
+    public FakeTssBaseService(
+            @NonNull final AppContext appContext,
+            @NonNull final Supplier<ReadableRosterStore> readableRosterStoreSupplier) {
         delegate = new TssBaseServiceImpl(
                 appContext,
                 ForkJoinPool.commonPool(),
                 pendingTssSubmission::offer,
                 tssLibrary,
                 pendingTssSubmission::offer,
-                new NoOpMetrics());
+                new NoOpMetrics(),
+                readableRosterStoreSupplier);
     }
 
     /**

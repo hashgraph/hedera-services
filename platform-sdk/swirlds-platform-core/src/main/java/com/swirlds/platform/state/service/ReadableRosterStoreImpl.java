@@ -136,8 +136,10 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     }
 
     /**
-     * @return the node ids from the roster entries of both active and candidate rosters combined
+     * {@inheritDoc}
      */
+    @NonNull
+    @Override
     public Set<EntityNumber> getCombinedRosterEntriesNodeIds() {
         final var activeRoster = getActiveRoster();
         final var candidateRoster = getCandidateRoster();

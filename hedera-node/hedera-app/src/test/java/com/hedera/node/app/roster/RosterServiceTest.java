@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V057RosterSchema;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.lifecycle.Schema;
@@ -46,14 +45,11 @@ class RosterServiceTest {
     @Mock
     private Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
 
-    @Mock
-    private Supplier<WritableTssStore> writableTssStoreSupplier;
-
     private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterService(canAdopt, platformStateStoreFactory, writableTssStoreSupplier);
+        rosterService = new RosterService(canAdopt, platformStateStoreFactory);
     }
 
     @Test

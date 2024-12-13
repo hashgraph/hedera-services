@@ -64,7 +64,6 @@ import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -79,6 +78,7 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -142,6 +142,9 @@ class DiskStartupNetworksTest {
 
     @Mock
     private AppContext appContext;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableRosterStore readableRosterStore;
 
     @Mock
     private TssLibrary tssLibrary;
@@ -307,7 +310,8 @@ class DiskStartupNetworksTest {
                 ForkJoinPool.commonPool(),
                 tssLibrary,
                 ForkJoinPool.commonPool(),
-                NO_OP_METRICS);
+                NO_OP_METRICS,
+                () -> readableRosterStore);
         Set.of(
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,
@@ -315,8 +319,7 @@ class DiskStartupNetworksTest {
                         new RosterService(
                                 roster -> true,
                                 () -> new ReadablePlatformStateStore(
-                                        state.getReadableStates(PlatformStateService.NAME)),
-                                () -> new WritableTssStore(state.getWritableStates(TssBaseService.NAME))),
+                                        state.getReadableStates(PlatformStateService.NAME))),
                         new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();

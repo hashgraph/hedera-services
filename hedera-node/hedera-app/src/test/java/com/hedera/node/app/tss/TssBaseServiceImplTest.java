@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -65,6 +66,9 @@ class TssBaseServiceImplTest {
     private AppContext appContext;
 
     @Mock
+    private ReadableRosterStore readableRosterStore;
+
+    @Mock
     private Metrics metrics;
 
     private TssBaseServiceImpl subject;
@@ -81,7 +85,8 @@ class TssBaseServiceImplTest {
                 ForkJoinPool.commonPool(),
                 new TssLibraryImpl(appContext),
                 ForkJoinPool.commonPool(),
-                metrics);
+                metrics,
+                () -> readableRosterStore);
     }
 
     @Test

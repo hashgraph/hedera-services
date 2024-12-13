@@ -138,6 +138,7 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -311,6 +312,16 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private HederaInjectionComponent daggerApp;
 
     /**
+     * When applying and migrating schemas to a target state, it is set here to support
+     * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
+     * and {@link TssBaseService} schemas access to a {@link ReadableRosterStore}
+     * before the roster lifecycle is adopted.
+     */
+    @Nullable
+    @Deprecated
+    private State initState;
+
+    /**
      * The metrics object being used for reporting.
      */
     private Metrics metrics;
@@ -354,7 +365,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @FunctionalInterface
     public interface TssBaseServiceFactory {
         @NonNull
-        TssBaseService apply(@NonNull AppContext appContext);
+        TssBaseService apply(
+                @NonNull AppContext appContext,
+                @NonNull final Supplier<ReadableRosterStore> readableRosterStoreSupplier);
     }
 
     @FunctionalInterface
@@ -435,7 +448,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        tssBaseService = tssBaseServiceFactory.apply(appContext);
+        tssBaseService = tssBaseServiceFactory.apply(
+                appContext,
+                () -> new ReadableRosterStoreImpl(requireNonNull(initState).getReadableStates(RosterService.NAME)));
         contractServiceImpl = new ContractServiceImpl(appContext);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
@@ -462,12 +477,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         // RosterKeys with the ledger id for the given roster
                         new RosterService(
                                 roster -> true,
-                                () -> {
-                                    throw new AssertionError("Not implemented");
-                                },
-                                () -> {
-                                    throw new AssertionError("Not implemented");
-                                }),
+                                () -> new ReadablePlatformStateStore(
+                                        requireNonNull(initState).getReadableStates(PlatformStateService.NAME))),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -662,6 +673,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         PLATFORM_STATE_SERVICE.setAppVersionFn(() -> version);
         PLATFORM_STATE_SERVICE.setActiveRosterFn(
                 () -> new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)).getActiveRoster());
+        this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -674,6 +686,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 genesisNetworkInfo,
                 metrics,
                 startupNetworks);
+        this.initState = null;
         PLATFORM_STATE_SERVICE.clearActiveRosterFn();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();

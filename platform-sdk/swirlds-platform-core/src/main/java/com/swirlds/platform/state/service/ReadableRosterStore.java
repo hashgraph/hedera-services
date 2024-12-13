@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.state.service;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Read-only implementation for accessing rosters states.
@@ -85,4 +87,10 @@ public interface ReadableRosterStore {
      */
     @Nullable
     Bytes getPreviousRosterHash();
+
+    /**
+     * @return the node ids from the roster entries of both active and candidate rosters combined
+     */
+    @NonNull
+    Set<EntityNumber> getCombinedRosterEntriesNodeIds();
 }
