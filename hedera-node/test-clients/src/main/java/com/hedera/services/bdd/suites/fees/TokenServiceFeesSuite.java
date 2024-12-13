@@ -84,11 +84,13 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
@@ -122,6 +124,8 @@ public class TokenServiceFeesSuite {
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String RECEIVER_WITH_0_AUTO_ASSOCIATIONS = "receiverWith0AutoAssociations";
 
+    private static final String TOKEN_UPDATE_METADATA = "tokenUpdateMetadata";
+
     private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
@@ -132,6 +136,8 @@ public class TokenServiceFeesSuite {
     private static final double EXPECTED_FUNGIBLE_MINT_PRICE_USD = 0.001;
     private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.001;
+    private static final double EXPECTED_ASSOCIATE_TOKEN_PRICE = 0.05;
+    private static final double EXPECTED_NFT_UPDATE_PRICE = 0.001;
     private static final String OWNER = "owner";
 
     @HapiTest
@@ -903,6 +909,123 @@ public class TokenServiceFeesSuite {
                         .payingWith(TOKEN_TREASURY)
                         .via("nftUpdateTxn"),
                 validateChargedUsd("nftUpdateTxn", expectedTokenUpdateNfts));
+    }
+
+    // verify bulk operations base fees
+    @Nested
+    @DisplayName("Token Bulk Operations - without custom fees")
+    class BulkTokenOperationsWithoutCustomFeesTest extends BulkOperationsBase {
+
+        @HapiTest
+        final Stream<DynamicTest> mintOneNftTokenWithoutCustomFees() {
+            return mintBulkNftAndValidateFees(1);
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> mintFiveBulkNftTokenWithoutCustomFees() {
+            return mintBulkNftAndValidateFees(5);
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> mintTenBulkNftTokensWithoutCustomFees() {
+            return mintBulkNftAndValidateFees(10);
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> associateOneFtTokenWithoutCustomFees() {
+            return associateBulkTokensAndValidateFees(List.of(FT_TOKEN));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> associateBulkFtTokensWithoutCustomFees() {
+            return associateBulkTokensAndValidateFees(List.of(FT_TOKEN, NFT_TOKEN, NFT_BURN_TOKEN, NFT_BURN_ONE_TOKEN));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> updateOneNftTokenWithoutCustomFees() {
+            return updateBulkNftTokensAndValidateFees(10, Arrays.asList(1L));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> updateFiveBulkNftTokensWithoutCustomFees() {
+            return updateBulkNftTokensAndValidateFees(10, Arrays.asList(1L, 2L, 3L, 4L, 5L));
+        }
+
+        @HapiTest
+        final Stream<DynamicTest> updateTenBulkNftTokensWithoutCustomFees() {
+            return updateBulkNftTokensAndValidateFees(10, Arrays.asList(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L));
+        }
+
+        // define reusable methods
+        private Stream<DynamicTest> mintBulkNftAndValidateFees(final int rangeAmount) {
+            final var supplyKey = "supplyKey";
+            return hapiTest(
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).key(supplyKey),
+                    tokenCreate(NFT_TOKEN)
+                            .treasury(OWNER)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .supplyKey(supplyKey)
+                            .supplyType(TokenSupplyType.INFINITE)
+                            .initialSupply(0),
+                    mintToken(
+                                    NFT_TOKEN,
+                                    IntStream.range(0, rangeAmount)
+                                            .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                            .toList())
+                            .payingWith(OWNER)
+                            .signedBy(supplyKey)
+                            .blankMemo()
+                            .via("mintTxn"),
+                    validateChargedUsdWithin(
+                            "mintTxn", EXPECTED_NFT_MINT_PRICE_USD * rangeAmount, ALLOWED_DIFFERENCE_PERCENTAGE));
+        }
+
+        private Stream<DynamicTest> associateBulkTokensAndValidateFees(final List<String> tokens) {
+            final var supplyKey = "supplyKey";
+            return hapiTest(flattened(
+                    createTokensAndAccounts(),
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(ASSOCIATE_ACCOUNT).balance(ONE_HUNDRED_HBARS).key(supplyKey),
+                    tokenAssociate(ASSOCIATE_ACCOUNT, tokens)
+                            .payingWith(ASSOCIATE_ACCOUNT)
+                            .via("associateTxn"),
+                    validateChargedUsdWithin(
+                            "associateTxn",
+                            EXPECTED_ASSOCIATE_TOKEN_PRICE * tokens.size(),
+                            ALLOWED_DIFFERENCE_PERCENTAGE)));
+        }
+
+        private Stream<DynamicTest> updateBulkNftTokensAndValidateFees(
+                final int mintAmount, final List<Long> updateAmounts) {
+            final var supplyKey = "supplyKey";
+            return hapiTest(
+                    newKeyNamed(supplyKey),
+                    cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).key(supplyKey),
+                    tokenCreate(NFT_TOKEN)
+                            .treasury(OWNER)
+                            .tokenType(NON_FUNGIBLE_UNIQUE)
+                            .supplyKey(supplyKey)
+                            .supplyType(TokenSupplyType.INFINITE)
+                            .initialSupply(0),
+                    mintToken(
+                                    NFT_TOKEN,
+                                    IntStream.range(0, mintAmount)
+                                            .mapToObj(a -> ByteString.copyFromUtf8(String.valueOf(a)))
+                                            .toList())
+                            .payingWith(OWNER)
+                            .signedBy(supplyKey)
+                            .blankMemo(),
+                    tokenUpdateNfts(NFT_TOKEN, TOKEN_UPDATE_METADATA, updateAmounts)
+                            .payingWith(OWNER)
+                            .signedBy(supplyKey)
+                            .blankMemo()
+                            .via("updateTxn"),
+                    validateChargedUsdWithin(
+                            "updateTxn",
+                            EXPECTED_NFT_UPDATE_PRICE * updateAmounts.size(),
+                            ALLOWED_DIFFERENCE_PERCENTAGE));
+        }
     }
 
     private String txnFor(String tokenSubType) {
