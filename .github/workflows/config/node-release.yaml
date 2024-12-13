@@ -1,7 +1,7 @@
 release:
   branching:
     execution:
-      time: "14:00:00"
+      time: "18:00:00"
     schedule:
       - on: "2024-12-13"
         name: release/0.58
