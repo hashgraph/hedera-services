@@ -69,7 +69,6 @@ import "auxiliary/tss/tss_vote.proto";
 import "state/tss/tss_encryption_keys.proto";
 import "state/tss/tss_message_map_key.proto";
 import "state/tss/tss_vote_map_key.proto";
-import "state/tss/tss_status.proto";
 
 /**
  * A set of state changes.
@@ -609,11 +608,6 @@ message SingletonUpdateChange {
          * A change to the roster state singleton.
          */
         com.hedera.hapi.node.state.roster.RosterState roster_state_value = 13;
-
-        /**
-         * A change to the tss status state singleton.
-         */
-        com.hedera.hapi.node.state.tss.TssStatus tss_status_state_value = 14;
     }
 }
 

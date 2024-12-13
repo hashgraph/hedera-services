@@ -428,7 +428,7 @@ public class WorkingDirUtils {
                                     "node" + (nodeId + 1),
                                     gossipEndpoints,
                                     List.of(),
-                                    mockCert,
+                                    AddressBookUtils.testCertFor(nodeId),
                                     // The gRPC certificate hash is irrelevant for PR checks
                                     Bytes.EMPTY,
                                     weight,

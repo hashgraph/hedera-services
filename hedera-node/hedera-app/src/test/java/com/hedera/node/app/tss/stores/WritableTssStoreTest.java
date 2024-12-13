@@ -19,18 +19,15 @@ package com.hedera.node.app.tss.stores;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
-import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_STATUS_KEY;
 import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.Iterator;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,9 +48,6 @@ class WritableTssStoreTest {
     private WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
 
     @Mock
-    private WritableSingletonState<TssStatus> tssStatusState;
-
-    @Mock
     private WritableStates states;
 
     private WritableTssStore tssStore;
@@ -66,7 +60,6 @@ class WritableTssStoreTest {
                 .thenReturn(tssVoteState);
         when(states.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEYS_KEY))
                 .thenReturn(tssEncryptionKeyState);
-        when(states.<TssStatus>getSingleton(TSS_STATUS_KEY)).thenReturn(tssStatusState);
 
         tssStore = new WritableTssStore(states);
     }
@@ -93,13 +86,6 @@ class WritableTssStoreTest {
         TssEncryptionKeyTransactionBody body = TssEncryptionKeyTransactionBody.DEFAULT;
         tssStore.put(entityNumber, body);
         verify(tssEncryptionKeyState).put(entityNumber, body);
-    }
-
-    @Test
-    void testPutTssStatus() {
-        TssStatus status = TssStatus.DEFAULT;
-        tssStore.put(status);
-        verify(tssStatusState).put(status);
     }
 
     @Test
@@ -134,6 +120,5 @@ class WritableTssStoreTest {
         verify(tssVoteState).keys();
         verify(tssMessageState).keys();
         verify(tssEncryptionKeyState).keys();
-        verify(tssStatusState).put(TssStatus.DEFAULT);
     }
 }

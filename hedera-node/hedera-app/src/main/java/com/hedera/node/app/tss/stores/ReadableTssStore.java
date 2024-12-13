@@ -22,7 +22,6 @@ import static java.util.stream.Collectors.toMap;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -172,11 +171,4 @@ public interface ReadableTssStore {
      */
     @Nullable
     TssEncryptionKeys getTssEncryptionKeys(long nodeID);
-
-    /**
-     * Get the Tss status.
-     * @return The Tss status.
-     */
-    @NonNull
-    TssStatus getTssStatus();
 }

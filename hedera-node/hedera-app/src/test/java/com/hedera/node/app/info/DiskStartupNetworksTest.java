@@ -20,6 +20,7 @@ import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.info.DiskStartupNetworks.ARCHIVE;
 import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
+import static com.hedera.node.app.info.DiskStartupNetworks.fromLegacyAddressBook;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
@@ -46,7 +47,6 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -63,7 +63,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -75,10 +74,12 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -95,6 +96,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -186,6 +188,33 @@ class DiskStartupNetworksTest {
         putJsonAt(OVERRIDE_NETWORK_JSON, WithTssKeys.YES);
         final var network = subject.migrationNetworkOrThrow();
         assertThat(network).isEqualTo(networkWithTssKeys);
+    }
+
+    @Test
+    void computesFromLegacyAddressBook() {
+        final int n = 3;
+        final var legacyBook = new AddressBook(IntStream.range(0, n)
+                .mapToObj(i -> new Address(
+                        NodeId.of(i),
+                        "" + i,
+                        "node" + (i + 1),
+                        1L,
+                        "localhost",
+                        i + 1,
+                        "127.0.0.1",
+                        i + 2,
+                        null,
+                        null,
+                        "0.0." + (i + 3)))
+                .toList());
+        final var network = fromLegacyAddressBook(legacyBook);
+        for (int i = 0; i < n; i++) {
+            final var rosterEntry = network.nodeMetadata().get(i).rosterEntryOrThrow();
+            assertThat(rosterEntry.nodeId()).isEqualTo(i);
+            assertThat(rosterEntry.gossipEndpoint().getFirst().ipAddressV4())
+                    .isEqualTo(Bytes.wrap(new byte[] {127, 0, 0, 1}));
+            assertThat(rosterEntry.gossipEndpoint().getLast().domainName()).isEqualTo("localhost");
+        }
     }
 
     @Test
@@ -395,8 +424,6 @@ class DiskStartupNetworksTest {
             tssEncryptionKey.put(key, value);
         }
 
-        final var tssStatus = writableStates.<TssStatus>getSingleton(V0580TssBaseSchema.TSS_STATUS_KEY);
-        tssStatus.put(TssStatus.DEFAULT);
         ((CommittableWritableStates) writableStates).commit();
     }
 

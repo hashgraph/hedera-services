@@ -95,7 +95,8 @@ public interface TssBaseTransplantSchema {
         if (ops.isEmpty()) {
             return;
         }
-        final AtomicLong seqNo = new AtomicLong(1);
+        // We treat these messages as having come in this exact order
+        final AtomicLong seqNo = new AtomicLong(0);
         final var roster = RosterUtils.rosterFrom(network);
         final var rosterHash = RosterUtils.hash(roster).getBytes();
         network.tssMessages()

@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.base.AccountID;
@@ -41,6 +42,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,6 +57,8 @@ import java.util.stream.Stream;
  * Utility class for generating an address book configuration file.
  */
 public class AddressBookUtils {
+    private static Map<Long, Bytes> TEST_GOSSIP_X509_CERTS;
+
     public static final long CLASSIC_FIRST_NODE_ACCOUNT_NUM = 3;
     public static final String[] CLASSIC_NODE_NAMES =
             new String[] {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8"};
@@ -84,6 +88,30 @@ public class AddressBookUtils {
                 .toList();
         return new TssKeyMaterial(Bytes.wrap(FAKE_LEDGER_ID.toBytes()), tssMessageOps);
     };
+
+    /**
+     * Returns the ASN.1 DER encoding of the X.509 certificate the platform generates for the given node id
+     * in test environments.
+     * @param nodeId the node id
+     * @return the ASN.1 DER encoding of the X.509 certificate
+     */
+    @SuppressWarnings("unchecked")
+    public static Bytes testCertFor(final long nodeId) {
+        if (TEST_GOSSIP_X509_CERTS == null) {
+            try {
+                TEST_GOSSIP_X509_CERTS = ((Map<Long, String>) new ObjectMapper()
+                                .readValue(
+                                        AddressBookUtils.class
+                                                .getClassLoader()
+                                                .getResourceAsStream("hapi-test-gossip-certs.json"),
+                                        Map.class))
+                        .entrySet().stream().collect(toMap(Map.Entry::getKey, e -> Bytes.fromBase64(e.getValue())));
+            } catch (IOException e) {
+                throw new IllegalStateException("Could not load gossip certs", e);
+            }
+        }
+        return TEST_GOSSIP_X509_CERTS.get(nodeId);
+    }
 
     private AddressBookUtils() {
         throw new UnsupportedOperationException("Utility Class");

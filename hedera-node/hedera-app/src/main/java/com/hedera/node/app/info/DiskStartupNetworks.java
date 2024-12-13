@@ -44,6 +44,8 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.AddressBook;
@@ -165,46 +167,54 @@ public class DiskStartupNetworks implements StartupNetworks {
                 new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME)),
                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME)),
                 new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)),
+                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME)),
                 path);
     }
 
     /**
      * Writes a JSON representation of the {@link Network} information in the given state to a given path.
      *
+     * @param platformStateStore the platform state store to read the network information from
      * @param path the path to write the JSON network information to.
      */
     public static void writeNetworkInfo(
             @NonNull final ReadableTssStore tssStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableRosterStore rosterStore,
+            @NonNull final ReadablePlatformStateStore platformStateStore,
             @NonNull final Path path) {
         requireNonNull(tssStore);
         requireNonNull(nodeStore);
         requireNonNull(rosterStore);
         requireNonNull(path);
-        Optional.ofNullable(rosterStore.getActiveRoster()).ifPresent(activeRoster -> {
-            final var network = Network.newBuilder();
-            final List<NodeMetadata> nodeMetadata = new ArrayList<>();
-            rosterStore.getActiveRoster().rosterEntries().forEach(entry -> {
-                final var node = requireNonNull(nodeStore.get(entry.nodeId()));
-                final var encryptionKey = Optional.ofNullable(tssStore.getTssEncryptionKeys(node.nodeId()))
-                        .map(TssEncryptionKeys::currentEncryptionKey)
-                        .orElse(Bytes.EMPTY);
-                nodeMetadata.add(new NodeMetadata(entry, node, encryptionKey));
-            });
-            network.nodeMetadata(nodeMetadata);
-            final var sourceRosterHash =
-                    Optional.ofNullable(rosterStore.getPreviousRosterHash()).orElse(Bytes.EMPTY);
-            tssStore.consensusRosterKeys(
-                            sourceRosterHash, requireNonNull(rosterStore.getCurrentRosterHash()), rosterStore)
-                    .ifPresent(rosterKeys ->
-                            network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
-            try (final var fout = Files.newOutputStream(path)) {
-                Network.JSON.write(network.build(), new WritableStreamingData(fout));
-            } catch (IOException e) {
-                log.warn("Failed to write network info", e);
-            }
-        });
+        requireNonNull(platformStateStore);
+        Optional.ofNullable(rosterStore.getActiveRoster())
+                .or(() -> Optional.ofNullable(buildRoster(platformStateStore.getAddressBook())))
+                .ifPresent(activeRoster -> {
+                    final var network = Network.newBuilder();
+                    final List<NodeMetadata> nodeMetadata = new ArrayList<>();
+                    activeRoster.rosterEntries().forEach(entry -> {
+                        final var node = requireNonNull(nodeStore.get(entry.nodeId()));
+                        final var encryptionKey = Optional.ofNullable(tssStore.getTssEncryptionKeys(node.nodeId()))
+                                .map(TssEncryptionKeys::currentEncryptionKey)
+                                .orElse(Bytes.EMPTY);
+                        nodeMetadata.add(new NodeMetadata(entry, node, encryptionKey));
+                    });
+                    network.nodeMetadata(nodeMetadata);
+                    final var currentRosterHash = rosterStore.getCurrentRosterHash();
+                    if (currentRosterHash != null) {
+                        final var sourceRosterHash = Optional.ofNullable(rosterStore.getPreviousRosterHash())
+                                .orElse(Bytes.EMPTY);
+                        tssStore.consensusRosterKeys(sourceRosterHash, currentRosterHash, rosterStore)
+                                .ifPresent(rosterKeys ->
+                                        network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
+                    }
+                    try (final var fout = Files.newOutputStream(path)) {
+                        Network.JSON.write(network.build(), new WritableStreamingData(fout));
+                    } catch (IOException e) {
+                        log.warn("Failed to write network info", e);
+                    }
+                });
     }
 
     /**
