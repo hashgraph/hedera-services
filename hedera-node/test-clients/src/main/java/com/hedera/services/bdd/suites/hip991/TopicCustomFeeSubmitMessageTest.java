@@ -23,8 +23,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -41,6 +43,7 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.stream.Stream;
@@ -409,6 +412,97 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     // only second fee should be paid
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L),
                     getAccountBalance(secondCollector).hasTokenBalance(SECOND_TOKEN, 1L));
+        }
+
+        @HapiTest
+        // TOPIC_FEE_177
+        @DisplayName("Submits messages with account excluded and included from FEKL")
+        final Stream<DynamicTest> submitWithoutAndWittFEKL() {
+            final var alice = "alice";
+            final var collector = "collector";
+            final var topicAdmin = "topicAdmin";
+
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+
+            return hapiTest(
+                    cryptoCreate(alice),
+                    cryptoCreate(collector),
+                    newKeyNamed(topicAdmin),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
+                            .signedByPayerAnd(SUBMITTER),
+
+                    // Create a topic without alice in the fee exempt key list and verify that she pays
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice).acceptAllCustomFees(true),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0),
+
+                    // Add alice to the fee exempt key list and verify that she doesn't pay
+                    updateTopic(TOPIC).feeExemptKeys(alice).signedByPayerAnd(topicAdmin),
+                    // even though alice doesn't have any tokens, the transaction should still be successful
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice).acceptAllCustomFees(true),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
+        }
+
+        @HapiTest
+        // TOPIC_FEE_178
+        @DisplayName("Submits messages with account included and excluded from FEKL")
+        final Stream<DynamicTest> submitWithAndWithoutFEKL() {
+            final var alice = "alice";
+            final var collector = "collector";
+            final var topicAdmin = "topicAdmin";
+
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+
+            return hapiTest(
+                    cryptoCreate(alice),
+                    cryptoCreate(collector),
+                    newKeyNamed(topicAdmin),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
+                            .signedByPayerAnd(SUBMITTER),
+
+                    // Add alice to the fee exempt key list and verify that she doesn't pay
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee1)
+                            .feeExemptKeys(alice)
+                            .adminKeyName(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 1),
+
+                    // Remove alice from the fee exempt key list and verify that she pays
+                    updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice).acceptAllCustomFees(true),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
+        }
+    }
+
+    @Nested
+    @DisplayName("Negative scenarios")
+    class SubmitMessagesNegativeScenarios {
+
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+            lifecycle.doAdhoc(associateFeeTokensAndSubmitter());
+        }
+
+        @HapiTest
+        // TOPIC_FEE_179
+        @DisplayName("Collector submits a message to a deleted topic.")
+        final Stream<DynamicTest> submitMessageToDeletedTopic() {
+            final var collector = "collector";
+            final var admin = "admin";
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    newKeyNamed(admin),
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(admin),
+                    deleteTopic(TOPIC).signedByPayerAnd(admin),
+                    submitMessageTo(TOPIC).message("TEST").hasKnownStatus(ResponseCodeEnum.INVALID_TOPIC_ID));
         }
     }
 }
