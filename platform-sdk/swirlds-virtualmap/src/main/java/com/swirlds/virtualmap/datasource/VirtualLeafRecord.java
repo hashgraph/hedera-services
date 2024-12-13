@@ -16,18 +16,13 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.internal.Path;
-import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
-import com.swirlds.virtualmap.serialize.KeySerializer;
-import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -37,182 +32,104 @@ import java.util.Objects;
  * to take leaf records from caches that are not yet flushed to disk and write them to the stream.
  * We never send hashes in the stream.
  */
-public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
+public final class VirtualLeafRecord<V> {
 
-    private static final long CLASS_ID = 0x410f45f0acd3264L;
+    private final long path;
 
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-    }
+    private final Bytes keyBytes;
 
-    /**
-     * The path for this record. The path can change over time as nodes are added or removed.
-     */
-    private volatile long path;
-
-    // key and value are effectively immutable, as they are being set only in the constructor and deserialize method,
-    // therefore they don't need to be volatile. They can't be final because of the deserialize method.
-    private K key;
     private V value;
+    private Codec<V> valueCodec;
+    private Bytes valueBytes;
 
-    /**
-     * Create a new leaf record. This constructor is <strong>only</strong> used by the serialization engine.
-     * It creates a leaf with a totally invalid leaf path.
-     */
-    public VirtualLeafRecord() {
-        path = -1;
-    }
-
-    /**
-     * Create a new leaf record, supplying all data required by the record.
-     *
-     * @param path
-     * 		The path. Must be positive (since 0 represents a root node, which is never a leaf),
-     * 		or {@link Path#INVALID_PATH}.
-     * @param key
-     * 		The key for this record. This should normally never be null, but may be for
-     *        {@link VirtualNodeCache#DELETED_LEAF_RECORD}
-     * 		or other uses where the leaf record is meant to represent some invalid state.
-     * @param value
-     * 		The value for this record, which can be null.
-     */
-    public VirtualLeafRecord(final long path, final K key, final V value) {
+    private VirtualLeafRecord(
+            final long path,
+            @NonNull final Bytes keyBytes,
+            @Nullable final V value,
+            @Nullable final Codec<V> valueCodec,
+            @Nullable final Bytes valueBytes) {
         this.path = path;
-        this.key = key;
+        this.keyBytes = Objects.requireNonNull(keyBytes);
         this.value = value;
+        this.valueCodec = valueCodec;
+        this.valueBytes = valueBytes;
+        if ((value != null) && (valueBytes != null)) {
+            throw new IllegalStateException("Either value or valueBytes may be not null, but not both");
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    public VirtualLeafRecord<K, V> copy() {
-        return new VirtualLeafRecord<>(path, key, (V) value.copy());
+    public VirtualLeafRecord(
+            final long path,
+            @NonNull final Bytes keyBytes,
+            @Nullable final V value,
+            @Nullable final Codec<V> valueCodec) {
+        this(path, keyBytes, value, valueCodec, null);
     }
 
-    /**
-     * Gets the key.
-     * @return
-     *        The key. This <strong>may</strong> be null in some cases, such as when the record is meant to
-     *		represent an invalid state, or when it is in the middle of serialization. No leaf that represnts
-     *		an actual leaf will ever return null here.
-     */
-    public K getKey() {
-        return key;
-    }
-
-    /**
-     * Gets the value.
-     * @return
-     *        The value. May be null.
-     */
-    public V getValue() {
-        return value;
-    }
-
-    public void setPath(long path) {
-        this.path = path;
+    public VirtualLeafRecord(@NonNull final VirtualLeafBytes<V> leafBytes) {
+        this(leafBytes.path(), leafBytes.keyBytes(), null, null, leafBytes.valueBytes());
     }
 
     public long getPath() {
         return path;
     }
 
-    /**
-     * Sets the value. May be null. Must set the hash to null if the value has changed.
-     *
-     * @param value
-     * 		The value.
-     */
-    public void setValue(final V value) {
-        if (this.value != value) {
-            this.value = value;
-        }
+    @NonNull
+    public Bytes getKeyBytes() {
+        return keyBytes;
     }
 
-    public VirtualLeafBytes toBytes(final KeySerializer<K> keySerializer, final ValueSerializer<V> valueSerializer) {
-        if (key == null) {
-            throw new IllegalStateException("Leaf records with null keys should not be serialized");
-        }
-        final byte[] keyBytes = new byte[keySerializer.getSerializedSize(key)];
-        keySerializer.serialize(key, BufferedData.wrap(keyBytes));
-        final byte[] valueBytes;
-        if (value != null) {
-            valueBytes = new byte[valueSerializer.getSerializedSize(value)];
-            valueSerializer.serialize(value, BufferedData.wrap(valueBytes));
+    @Nullable
+    public V getValue(final Codec<V> valueCodec) {
+        if (value == null) {
+            // No synchronization here. In the worst case, value will be initialized multiple
+            // times, but always to the same object
+            if (valueBytes != null) {
+                assert this.valueCodec == null;
+                this.valueCodec = valueCodec;
+                try {
+                    value = valueCodec.parse(valueBytes);
+                } catch (final ParseException e) {
+                    throw new RuntimeException("Failed to deserialize a value from bytes", e);
+                }
+            } else {
+                // valueBytes is null, so the value should be null, too. Does it make sense to
+                // do anything to the codec here? Perhaps not
+            }
         } else {
-            valueBytes = null;
+            // The value is provided or already parsed from bytes. Check the codec
+            assert valueCodec != null;
+            if (!this.valueCodec.equals(valueCodec)) {
+                throw new IllegalStateException("Value codec mismatch");
+            }
         }
-        return new VirtualLeafBytes(path, Bytes.wrap(keyBytes), valueBytes != null ? Bytes.wrap(valueBytes) : null);
+        return value;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(path);
-        out.writeSerializable(key, true);
-        out.writeSerializable(value, true);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.path = in.readLong();
-        this.key = in.readSerializable();
-        this.value = in.readSerializable();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
+    @Nullable
+    public Bytes getValueBytes() {
+        if (valueBytes == null) {
+            assert (value == null) || (valueCodec != null);
+            // No synchronization here. In the worst case, valueBytes will be initialized multiple
+            // times, but always to the same value
+            if (value != null) {
+                final byte[] vb = new byte[valueCodec.measureRecord(value)];
+                try {
+                    valueCodec.write(value, BufferedData.wrap(vb));
+                    valueBytes = Bytes.wrap(vb);
+                } catch (final IOException e) {
+                    throw new RuntimeException("Failed to serialize a value to bytes", e);
+                }
+            }
         }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final VirtualLeafRecord<?, ?> that = (VirtualLeafRecord<?, ?>) o;
-        return path == that.path && Objects.equals(key, that.key) && Objects.equals(value, that.value);
+        return valueBytes;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(path, key, value);
+    public VirtualLeafRecord<V> withPath(final long newPath) {
+        return new VirtualLeafRecord<>(newPath, keyBytes, value, valueCodec, valueBytes);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("key", key)
-                .append("value", value)
-                .append("path", path)
-                .toString();
+    public VirtualLeafRecord<V> withValue(final V newValue) {
+        return new VirtualLeafRecord<>(path, keyBytes, newValue, valueCodec, null);
     }
 }

@@ -37,8 +37,6 @@ import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
-import com.swirlds.virtualmap.test.fixtures.TestKey;
-import com.swirlds.virtualmap.test.fixtures.TestValue;
 import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Assertions;
 
@@ -87,8 +85,8 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
         registry.registerConstructable(new ClassConstructorPair(
                 VirtualRootNode.class, () -> new VirtualRootNode(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
-        registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
-        registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
+        //        registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
+        //        registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap map) {

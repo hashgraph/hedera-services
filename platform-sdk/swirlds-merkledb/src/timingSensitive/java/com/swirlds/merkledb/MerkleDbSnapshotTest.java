@@ -152,8 +152,8 @@ class MerkleDbSnapshotTest {
                 root.enableFlush();
                 for (int k = 0; k < ROUND_CHANGES; k++) {
                     final Bytes key = ExampleLongKey.longToKey(keyId++);
-                    final Bytes value = ExampleFixedValue.intToValue(RANDOM.nextInt());
-                    vm.put(key, value);
+                    final ExampleFixedValue value = new ExampleFixedValue(RANDOM.nextInt());
+                    vm.put(key, value, ExampleFixedValue.CODEC);
                 }
             }
             if (j == ITERATIONS / 2) {
@@ -205,8 +205,8 @@ class MerkleDbSnapshotTest {
                             root.enableFlush();
                             for (int k = 0; k < ROUND_CHANGES; k++) {
                                 final Bytes key = ExampleLongKey.longToKey(keyId++);
-                                final Bytes value = ExampleFixedValue.intToValue(RANDOM.nextInt());
-                                vm.put(key, value);
+                                final ExampleFixedValue value = new ExampleFixedValue(RANDOM.nextInt());
+                                vm.put(key, value, ExampleFixedValue.CODEC);
                             }
                         }
                         if (j == ITERATIONS / 2) {

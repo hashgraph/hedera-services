@@ -45,6 +45,7 @@ import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -105,7 +106,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode fcm = new VirtualRootNode(builder, CONFIGURATION.getConfigData(VirtualMapConfig.class));
         fcm.postInit(new DummyVirtualStateAccessor());
         fcm.enableFlush();
-        fcm.put(A_KEY, APPLE);
+        fcm.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
 
         final VirtualRootNode copy = fcm.copy();
         copy.postInit(fcm.getState());
@@ -130,14 +131,14 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
         final VirtualRootNode fcm = createRoot();
         fcm.enableFlush();
-        fcm.put(A_KEY, APPLE);
+        fcm.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
 
         final VirtualRootNode copy = fcm.copy();
         copy.postInit(fcm.getState());
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final Bytes removed = copy.remove(A_KEY);
+        final TestValue removed = copy.remove(A_KEY, TestValueCodec.INSTANCE);
         assertEquals(APPLE, removed, "Wrong value");
 
         // FUTURE WORK validate hashing works as expected
@@ -150,17 +151,17 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void removeElementTwice() throws ExecutionException, InterruptedException {
         final VirtualRootNode fcm = createRoot();
         fcm.enableFlush();
-        fcm.put(A_KEY, APPLE);
-        fcm.put(B_KEY, BANANA);
-        fcm.put(C_KEY, CHERRY);
+        fcm.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+        fcm.put(B_KEY, BANANA, TestValueCodec.INSTANCE);
+        fcm.put(C_KEY, CHERRY, TestValueCodec.INSTANCE);
 
         final VirtualRootNode copy = fcm.copy();
         copy.postInit(fcm.getState());
         fcm.release();
         fcm.waitUntilFlushed();
 
-        final Bytes removed = copy.remove(B_KEY);
-        final Bytes removed2 = copy.remove(B_KEY);
+        final TestValue removed = copy.remove(B_KEY, TestValueCodec.INSTANCE);
+        final TestValue removed2 = copy.remove(B_KEY, TestValueCodec.INSTANCE);
         assertEquals(BANANA, removed, "Wrong value");
         assertNull(removed2, "Expected null");
         copy.release();
@@ -171,32 +172,32 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void removeInReverseOrder() throws ExecutionException, InterruptedException {
         final VirtualRootNode fcm = createRoot();
         fcm.enableFlush();
-        fcm.put(A_KEY, APPLE);
-        fcm.put(B_KEY, BANANA);
-        fcm.put(C_KEY, CHERRY);
-        fcm.put(D_KEY, DATE);
-        fcm.put(E_KEY, EGGPLANT);
-        fcm.put(F_KEY, FIG);
-        fcm.put(G_KEY, GRAPE);
+        fcm.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+        fcm.put(B_KEY, BANANA, TestValueCodec.INSTANCE);
+        fcm.put(C_KEY, CHERRY, TestValueCodec.INSTANCE);
+        fcm.put(D_KEY, DATE, TestValueCodec.INSTANCE);
+        fcm.put(E_KEY, EGGPLANT, TestValueCodec.INSTANCE);
+        fcm.put(F_KEY, FIG, TestValueCodec.INSTANCE);
+        fcm.put(G_KEY, GRAPE, TestValueCodec.INSTANCE);
 
         final VirtualRootNode copy = fcm.copy();
         copy.postInit(fcm.getState());
         fcm.release();
         fcm.waitUntilFlushed();
 
-        assertEquals(GRAPE, copy.remove(G_KEY), "Wrong value");
+        assertEquals(GRAPE, copy.remove(G_KEY, TestValueCodec.INSTANCE), "Wrong value");
         //        assertLeafOrder(fcm, A_KEY, E_KEY, C_KEY, F_KEY, B_KEY, D_KEY);
-        assertEquals(FIG, copy.remove(F_KEY), "Wrong value");
+        assertEquals(FIG, copy.remove(F_KEY, TestValueCodec.INSTANCE), "Wrong value");
         //        assertLeafOrder(fcm, A_KEY, E_KEY, C_KEY, B_KEY, D_KEY);
-        assertEquals(EGGPLANT, copy.remove(E_KEY), "Wrong value");
+        assertEquals(EGGPLANT, copy.remove(E_KEY, TestValueCodec.INSTANCE), "Wrong value");
         //        assertLeafOrder(fcm, A_KEY, C_KEY, B_KEY, D_KEY);
-        assertEquals(DATE, copy.remove(D_KEY), "Wrong value");
+        assertEquals(DATE, copy.remove(D_KEY, TestValueCodec.INSTANCE), "Wrong value");
         //        assertLeafOrder(fcm, A_KEY, C_KEY, B_KEY);
-        assertEquals(CHERRY, copy.remove(C_KEY), "Wrong value");
+        assertEquals(CHERRY, copy.remove(C_KEY, TestValueCodec.INSTANCE), "Wrong value");
         //        assertLeafOrder(fcm, A_KEY, B_KEY);
-        assertEquals(BANANA, copy.remove(B_KEY), "Wrong value");
+        assertEquals(BANANA, copy.remove(B_KEY, TestValueCodec.INSTANCE), "Wrong value");
         //        assertLeafOrder(fcm, A_KEY);
-        assertEquals(APPLE, copy.remove(A_KEY), "Wrong value");
+        assertEquals(APPLE, copy.remove(A_KEY, TestValueCodec.INSTANCE), "Wrong value");
 
         // FUTURE WORK validate hashing works as expected
 
@@ -225,9 +226,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
             root.postInit(new DummyVirtualStateAccessor());
             for (int i = 0; i < 100; i++) {
                 if (i % 7 != 0) {
-                    assertEquals(TestValue.longToValue(i), root.get(TestKey.longToKey(i)));
+                    assertEquals(new TestValue(i).toBytes(), root.getBytes(TestKey.longToKey(i)));
+                    assertEquals(new TestValue(i), root.get(TestKey.longToKey(i), TestValueCodec.INSTANCE));
                 } else {
-                    assertNull(root.get(TestKey.longToKey(i)));
+                    assertNull(root.get(TestKey.longToKey(i), null));
                 }
             }
             root.release();
@@ -251,14 +253,14 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
         Set<Bytes> keysToRemove = new HashSet<>();
         for (int i = 0; i < 1000; i++) {
-            root.put(TestKey.longToKey(i), TestValue.longToValue(i));
+            root.put(TestKey.longToKey(i), new TestValue(i), TestValueCodec.INSTANCE);
             if (i % 7 == 0) {
                 keysToRemove.add(TestKey.longToKey(i));
             }
         }
 
         for (Bytes key : keysToRemove) {
-            root.remove(key);
+            root.remove(key, null);
         }
         root.computeHash();
         root.setImmutable(true);
@@ -279,23 +281,23 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode root1 = createRoot();
         for (int index = 0; index < totalSize; index++) {
             final Bytes key = TestKey.longToKey(index);
-            final Bytes value = TestValue.longToValue(index);
-            root1.put(key, value);
+            final TestValue value = new TestValue(index);
+            root1.put(key, value, TestValueCodec.INSTANCE);
         }
 
         final VirtualRootNode root2 = createRoot();
         final long firstLeafPath = root1.getState().getFirstLeafPath();
         final long lastLeafPath = root1.getState().getLastLeafPath();
         for (long index = firstLeafPath; index <= lastLeafPath; index++) {
-            final VirtualLeafBytes leaf = root1.getRecords().findLeafRecord(index, false);
+            final VirtualLeafBytes leaf = root1.getRecords().findLeafRecord(index);
             final Bytes key = leaf.keyBytes().replicate();
             final Bytes value = leaf.valueBytes().replicate();
-            root2.put(key, value);
+            root2.putBytes(key, value);
         }
 
         for (int index = 0; index < totalSize; index++) {
             final Bytes key = TestKey.longToKey(index);
-            root1.remove(key);
+            root1.remove(key, null);
         }
 
         assertTrue(root1.isEmpty(), "All elements have been removed");
@@ -305,8 +307,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
         assertEquals(totalSize, root2.size(), "New map still has all data");
         for (int index = 0; index < totalSize; index++) {
             final Bytes key = TestKey.longToKey(index);
-            final Bytes expectedValue = TestValue.longToValue(index);
-            final Bytes value = root2.get(key);
+            final TestValue expectedValue = new TestValue(index);
+            final TestValue value = root2.get(key, TestValueCodec.INSTANCE);
             assertEquals(expectedValue, value, "Values have the same content");
         }
     }
@@ -473,7 +475,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
         // add 100 elements
         IntStream.range(1, 101).forEach(index -> {
-            root.put(TestKey.longToKey(index), TestValue.longToValue(nextInt()));
+            root.put(TestKey.longToKey(index), new TestValue(nextInt()), TestValueCodec.INSTANCE);
         });
 
         // make sure that the elements have no hashes

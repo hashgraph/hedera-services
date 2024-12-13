@@ -37,7 +37,6 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.constructable.constructors.VirtualNodeCacheConstructor;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -63,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  * A cache for virtual merkel trees.
  * <p>
  * At genesis, a virtual merkel tree has an empty {@link VirtualNodeCache} and no data on disk. As values
- * are added to the tree, corresponding {@link VirtualLeafRecord}s are added to the cache. When the round
+ * are added to the tree, corresponding {@link VirtualLeafBytes}' are added to the cache. When the round
  * completes, a fast-copy of the tree is made, along with a fast-copy of the cache. Any new changes to the
  * modifiable tree are done through the corresponding copy of the cache. The original tree and original
  * cache have <strong>IMMUTABLE</strong> leaf data. The original tree is then submitted to multiple hashing
@@ -100,7 +99,7 @@ import org.apache.logging.log4j.Logger;
  * {@link #keyToDirtyLeafIndex}, {@link #pathToDirtyLeafIndex}, and {@link #pathToDirtyHashIndex}.
  * Each of these is a map from either the leaf key or a path (long) to a custom linked list data structure. Each element
  * in the list is a {@link Mutation} with a reference to the data item (either a {@link VirtualHashRecord}
- * or a {@link VirtualLeafRecord}, depending on the list), and a reference to the next {@link Mutation}
+ * or a {@link VirtualLeafBytes}, depending on the list), and a reference to the next {@link Mutation}
  * in the list. In this way, given a leaf key or path (based on the index), you can get the linked list and
  * walk the links from mutation to mutation. The most recent mutation is first in the list, the oldest mutation
  * is last. There is at most one mutation per cache per entry in one of these indexes. If a leaf value is modified
@@ -132,7 +131,7 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
      * will ask the cache for a leaf either by key or path. At such times, if we determine by looking at
      * the mutation that the leaf has been deleted, we will return this singleton instance.
      */
-    public static final VirtualLeafBytes DELETED_LEAF_RECORD = new VirtualLeafBytes(-1, Bytes.EMPTY, null);
+    public static final VirtualLeafBytes DELETED_LEAF_RECORD = new VirtualLeafBytes(-1, Bytes.EMPTY, null, null);
 
     /**
      * A special {@link Hash} used to indicate that the record associated with a particular
@@ -146,7 +145,7 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
     /**
      * Another marker {@link Hash} instance used to store null hashes instead of {@code null}s, which
      * are only used for deleted hashes. Before hashes are returned to callers in {@link #dirtyHashes}
-     * or {@link #lookupHashByPath(long, boolean)}, this value is converted to {@code null}.
+     * or {@link #lookupHashByPath(long)}, this value is converted to {@code null}.
      */
     public static final Hash NULL_HASH = new Hash();
 
@@ -565,7 +564,7 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
      * @throws MutabilityException
      * 		if the cache is immutable for leaf changes
      */
-    public VirtualLeafBytes putLeaf(@NonNull final VirtualLeafBytes leaf) {
+    public void putLeaf(@NonNull final VirtualLeafBytes leaf) {
         throwIfLeafImmutable();
         requireNonNull(leaf);
 
@@ -578,7 +577,7 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
 
         // Get the first data element (mutation) in the list based on the key,
         // and then create or update the associated mutation.
-        return keyToDirtyLeafIndex.compute(key, (k, mutations) -> mutate(leaf, mutations)).value;
+        keyToDirtyLeafIndex.compute(key, (k, mutations) -> mutate(leaf, mutations));
     }
 
     /**
@@ -647,22 +646,14 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
      *
      * @param key
      * 		The key to use to lookup. Cannot be null.
-     * @param forModify
-     * 		pass {@code true} if you intend to modify the returned record. The cache will
-     * 		either return the same instance already in the cache or, if the instance is
-     * 		in an older copy in the cache-chain, it will create a new instance and register
-     * 		it as a mutation in this cache instance. In this way, you can safely modify the
-     * 		returned record, if it exists. Be sure to call
-     *        {@link #putLeaf(VirtualLeafBytes)} if the leaf path is modified. If you only
-     * 		modify the value, then you do not need to make any additional calls.
-     * @return A {@link VirtualLeafRecord} if there is one in the cache (this instance or a previous
+     * @return A {@link VirtualLeafBytes} if there is one in the cache (this instance or a previous
      * 		copy in the chain), or null if there is not one.
      * @throws NullPointerException
      * 		if the key is null
      * @throws com.swirlds.common.exceptions.ReferenceCountException
      * 		if the cache has already been released
      */
-    public VirtualLeafBytes lookupLeafByKey(final Bytes key, final boolean forModify) {
+    public VirtualLeafBytes lookupLeafByKey(final Bytes key) {
         requireNonNull(key);
 
         // The only way to be released is to be in a condition where the data source has
@@ -686,18 +677,6 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
             return DELETED_LEAF_RECORD;
         }
 
-        // If "forModify" was set and the mutation version is older than this cache version, then
-        // create a new value and a new mutation and return the new mutation.
-        if (forModify && mutation.version < fastCopyVersion.get()) {
-            assert !leafIndexesAreImmutable.get() : "You cannot create leaf records at this time!";
-            @SuppressWarnings("unchecked")
-            final VirtualLeafBytes leaf = new VirtualLeafBytes(
-                    mutation.value.path(),
-                    mutation.value.keyBytes(),
-                    mutation.value.valueBytes().replicate());
-            return putLeaf(leaf);
-        }
-
         return mutation.value;
     }
 
@@ -712,20 +691,12 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
      *
      * @param path
      * 		The path to use to lookup.
-     * @param forModify
-     * 		pass {@code true} if you intend to modify the returned record. The cache will
-     * 		either return the same instance already in the cache or, if the instance is
-     * 		in an older copy in the cache-chain, it will create a new instance and register
-     * 		it as a mutation in this cache instance. In this way, you can safely modify the
-     * 		returned record, if it exists. Be sure to call
-     *        {@link #putLeaf(VirtualLeafBytes)} if the leaf path is modified. If you only
-     * 		modify the value, then you do not need to make any additional calls.
-     * @return A {@link VirtualLeafRecord} if there is one in the cache (this instance or a previous
+     * @return A {@link VirtualLeafBytes} if there is one in the cache (this instance or a previous
      * 		copy in the chain), or null if there is not one.
      * @throws com.swirlds.common.exceptions.ReferenceCountException
      * 		if the cache has already been released
      */
-    public VirtualLeafBytes lookupLeafByPath(final long path, final boolean forModify) {
+    public VirtualLeafBytes lookupLeafByPath(final long path) {
         // The only way to be released is to be in a condition where the data source has
         // the data that was once in this cache but was merged and is therefore now released.
         // So we can return null and know the caller can find the data in the data source.
@@ -744,7 +715,7 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
             return null;
         }
 
-        return mutation.isDeleted() ? DELETED_LEAF_RECORD : lookupLeafByKey(mutation.value, forModify);
+        return mutation.isDeleted() ? DELETED_LEAF_RECORD : lookupLeafByKey(mutation.value);
     }
 
     /**
@@ -932,18 +903,12 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
      *
      * @param path
      * 		The path to use to lookup.
-     * @param forModify
-     * 		pass {@code true} if you intend to modify the returned record. The cache will
-     * 		either return the same instance already in the cache or, if the instance is
-     * 		in an older copy in the cache-chain, it will create a new instance and register
-     * 		it as a mutation in this cache instance. In this way, you can safely modify the
-     * 		returned record, if it exists.
      * @return A {@link Hash} if there is one in the cache (this instance or a previous
      * 		copy in the chain), or null if there is not one.
      * @throws com.swirlds.common.exceptions.ReferenceCountException
      * 		if the cache has already been released
      */
-    public Hash lookupHashByPath(final long path, final boolean forModify) {
+    public Hash lookupHashByPath(final long path) {
         // The only way to be released is to be in a condition where the data source has
         // the data that was once in this cache but was merged and is therefore now released.
         // So we can return null and know the caller can find the data in the data source.
@@ -961,14 +926,6 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
         // If the mutation was deleted, return our marker instance
         if (mutation.isDeleted()) {
             return DELETED_HASH;
-        }
-
-        // If "forModify" was set and the mutation version is older than my version, then
-        // create a new value and a new mutation and return the new mutation.
-        if (forModify && mutation.version < fastCopyVersion.get()) {
-            assert !hashesAreImmutable.get() : "You cannot create internal records at this time!";
-            updatePaths(NULL_HASH, h -> h.getSerializedLength(), path, pathToDirtyHashIndex, dirtyHashes);
-            return null;
         }
 
         return mutation.value;
@@ -1264,7 +1221,8 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
             final Mutation<Bytes, VirtualLeafBytes> newerMutation =
                     new Mutation<>(mutation, leaf.keyBytes(), leaf, fastCopyVersion.get());
             dirtyLeaves.add(newerMutation);
-            estimatedSizeInBytes.addAndGet(Math.toIntExact(leaf.keyBytes().length() + leaf.getSizeInBytes()));
+            // Don't add key size to estimatedSizeInBytes, since the key is a part of the leaf
+            estimatedSizeInBytes.addAndGet(leaf.getSizeInBytes());
             mutation = newerMutation;
         } else if (mutation.value != leaf) {
             // A different value (leaf) has arrived, but the mutation already exists for this version.
@@ -1589,7 +1547,8 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
             map.put(key, mutation);
             dirtyLeaves.add(mutation);
             // getSizeInBytes() is good estimation
-            estimatedSizeInBytes.addAndGet(Math.toIntExact(key.length() + leafRecord.getSizeInBytes()));
+            // Don't add key size to estimatedSizeInBytes, since the key is a part of the leaf
+            estimatedSizeInBytes.addAndGet(leafRecord.getSizeInBytes());
         }
     }
 

@@ -39,6 +39,7 @@ import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -168,8 +169,7 @@ public class RecordAccessorImplTest {
     @Test
     @DisplayName("findLeafRecord of invalid path throws")
     void findLeafRecordInvalidPathThrows() {
-        assertThrows(AssertionError.class, () -> records.findLeafRecord(INVALID_PATH, false), "Should throw");
-        assertThrows(AssertionError.class, () -> records.findLeafRecord(INVALID_PATH, true), "Should throw");
+        assertThrows(AssertionError.class, () -> records.findLeafRecord(INVALID_PATH), "Should throw");
     }
 
     // findLeafRecord by key with "true" puts it in the cache
@@ -178,44 +178,32 @@ public class RecordAccessorImplTest {
     @Test
     @DisplayName("findLeafRecord by key of bogus key returns null")
     void findLeafRecordBogusKey() {
-        assertNull(records.findLeafRecord(TestKey.longToKey(BOGUS_LEAF_PATH), false), "Should be null");
-        assertNull(records.findLeafRecord(TestKey.longToKey(BOGUS_LEAF_PATH), true), "Should be null");
+        assertNull(records.findLeafRecord(TestKey.longToKey(BOGUS_LEAF_PATH)), "Should be null");
     }
 
     @Test
     @DisplayName("findLeafRecord by key in cache returns same instance")
     void findLeafRecordByKeyInCacheReturnsSameInstance() {
-        final var leaf = records.findLeafRecord(TestKey.longToKey(CHANGED_LEAF_KEY), false);
+        final var leaf = records.findLeafRecord(TestKey.longToKey(CHANGED_LEAF_KEY));
         assertNotNull(leaf, "Did not find record");
         assertEquals(CHANGED_LEAF_PATH, leaf.path(), "Unexpected path in record");
         assertEquals(TestKey.longToKey(CHANGED_LEAF_KEY), leaf.keyBytes(), "Unexpected key in record");
         assertSame(
                 leaf,
-                records.findLeafRecord(TestKey.longToKey(CHANGED_LEAF_KEY), false),
+                records.findLeafRecord(TestKey.longToKey(CHANGED_LEAF_KEY)),
                 "Did not find the same in memory instance!");
     }
 
     @Test
     @DisplayName("findLeafRecord by key of record on disk works")
     void findLeafRecordByKeyOnDiskReturns() {
-        final var leaf = records.findLeafRecord(TestKey.longToKey(UNCHANGED_LEAF_PATH), false);
+        final var leaf = records.findLeafRecord(TestKey.longToKey(UNCHANGED_LEAF_PATH));
         assertNotNull(leaf, "Did not find record");
         assertEquals(UNCHANGED_LEAF_PATH, leaf.path(), "Unexpected path in record");
         assertSame(
                 leaf,
-                records.findLeafRecord(TestKey.longToKey(UNCHANGED_LEAF_PATH), false),
+                records.findLeafRecord(TestKey.longToKey(UNCHANGED_LEAF_PATH)),
                 "Found the same instance on disk? Shouldn't happen!");
-    }
-
-    @Test
-    @DisplayName("findLeafRecord by key on disk 'copy' true returns a record that is now in the cache")
-    void findLeafRecordOnDiskKeyCopy() {
-        final var record = mutableRecords.findLeafRecord(TestKey.longToKey(UNCHANGED_LEAF_PATH), true);
-        assertNotNull(record, "Should not be null");
-        assertSame(
-                record,
-                mutableRecords.findLeafRecord(TestKey.longToKey(UNCHANGED_LEAF_PATH), false),
-                "Should have been the same");
     }
 
     @Test
@@ -225,51 +213,49 @@ public class RecordAccessorImplTest {
         final Bytes key = TestKey.longToKey(UNCHANGED_LEAF_PATH);
         assertThrows(
                 UncheckedIOException.class,
-                () -> records.findLeafRecord(key, false),
+                () -> records.findLeafRecord(key),
                 "Should have thrown UncheckedIOException");
     }
 
     @Test
     @DisplayName("findLeafRecord by key of deleted record returns null")
     void findLeafRecordByKeyWhenDeletedIsNull() {
-        assertNull(
-                records.findLeafRecord(TestKey.longToKey(DELETED_LEAF_PATH), false), "Deleted records should be null");
+        assertNull(records.findLeafRecord(TestKey.longToKey(DELETED_LEAF_PATH)), "Deleted records should be null");
     }
 
     @Test
     @DisplayName("findLeafRecord of bad path returns null")
     void findLeafRecordBadPath() {
-        assertNull(records.findLeafRecord(BOGUS_LEAF_PATH, false), "Should be null");
-        assertNull(records.findLeafRecord(BOGUS_LEAF_PATH, true), "Should be null");
+        assertNull(records.findLeafRecord(BOGUS_LEAF_PATH), "Should be null");
     }
 
     @Test
     @DisplayName("findLeafRecord by path in cache returns same instance")
     void findLeafRecordByPathInCacheReturnsSameInstance() {
-        final var leaf = records.findLeafRecord(CHANGED_LEAF_PATH, false);
+        final var leaf = records.findLeafRecord(CHANGED_LEAF_PATH);
         assertNotNull(leaf, "Did not find record");
         assertEquals(CHANGED_LEAF_PATH, leaf.path(), "Unexpected path in record");
-        assertSame(leaf, records.findLeafRecord(CHANGED_LEAF_PATH, false), "Did not find the same in memory instance!");
+        assertSame(leaf, records.findLeafRecord(CHANGED_LEAF_PATH), "Did not find the same in memory instance!");
     }
 
     @Test
     @DisplayName("findLeafRecord by path of record on disk works")
     void findLeafRecordByPathOnDiskReturns() {
-        final var leaf = records.findLeafRecord(UNCHANGED_LEAF_PATH, false);
+        final var leaf = records.findLeafRecord(UNCHANGED_LEAF_PATH);
         assertNotNull(leaf, "Did not find record");
         assertEquals(UNCHANGED_LEAF_PATH, leaf.path(), "Unexpected path in record");
         assertSame(
                 leaf,
-                records.findLeafRecord(UNCHANGED_LEAF_PATH, false),
+                records.findLeafRecord(UNCHANGED_LEAF_PATH),
                 "Found the same instance on disk? Shouldn't happen!");
     }
 
     @Test
     @DisplayName("findLeafRecord by key on disk 'copy' true returns a record that is now in the cache")
     void findLeafRecordOnDiskPathCopy() {
-        final var record = mutableRecords.findLeafRecord(UNCHANGED_LEAF_PATH, true);
+        final var record = mutableRecords.findLeafRecord(UNCHANGED_LEAF_PATH);
         assertNotNull(record, "Should not be null");
-        assertSame(record, mutableRecords.findLeafRecord(UNCHANGED_LEAF_PATH, false), "Should have been the same");
+        assertSame(record, mutableRecords.findLeafRecord(UNCHANGED_LEAF_PATH), "Should have been the same");
     }
 
     @Test
@@ -278,14 +264,14 @@ public class RecordAccessorImplTest {
         dataSource.throwExceptionOnLoadLeafRecordByPath = true;
         assertThrows(
                 UncheckedIOException.class,
-                () -> records.findLeafRecord(UNCHANGED_LEAF_PATH, false),
+                () -> records.findLeafRecord(UNCHANGED_LEAF_PATH),
                 "Should have thrown UncheckedIOException");
     }
 
     @Test
     @DisplayName("findLeafRecord by path of deleted record returns null")
     void findLeafRecordByPathWhenDeletedIsNull() {
-        assertNull(records.findLeafRecord(DELETED_LEAF_PATH, false), "Deleted records should be null");
+        assertNull(records.findLeafRecord(DELETED_LEAF_PATH), "Deleted records should be null");
     }
 
     @Test
@@ -293,7 +279,7 @@ public class RecordAccessorImplTest {
     void findLeafRecordByKeyByPath() {
         final Bytes key = TestKey.longToKey(UNCHANGED_LEAF_PATH);
         final long path = records.findKey(key);
-        final VirtualLeafBytes record = records.findLeafRecord(path, false);
+        final VirtualLeafBytes<?> record = records.findLeafRecord(path);
         assertEquals(key, record.keyBytes());
     }
 
@@ -305,7 +291,7 @@ public class RecordAccessorImplTest {
         boolean throwExceptionOnLoadHashByPath = false;
 
         @Override
-        public VirtualLeafBytes loadLeafRecord(final Bytes key) throws IOException {
+        public VirtualLeafBytes<?> loadLeafRecord(final Bytes key) throws IOException {
             if (throwExceptionOnLoadLeafRecordByKey) {
                 throw new IOException("Thrown by loadLeafRecord by key");
             }
@@ -313,7 +299,7 @@ public class RecordAccessorImplTest {
         }
 
         @Override
-        public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
+        public VirtualLeafBytes<?> loadLeafRecord(final long path) throws IOException {
             if (throwExceptionOnLoadLeafRecordByPath) {
                 throw new IOException("Thrown by loadLeafRecord by path");
             }
@@ -402,7 +388,7 @@ public class RecordAccessorImplTest {
         return new VirtualHashRecord(num, CRYPTO.digestSync(("" + num).getBytes(StandardCharsets.UTF_8)));
     }
 
-    private static VirtualLeafBytes leaf(long num) {
-        return new VirtualLeafBytes(num, TestKey.longToKey(num), TestValue.longToValue(num));
+    private static VirtualLeafBytes<TestValue> leaf(long num) {
+        return new VirtualLeafBytes<>(num, TestKey.longToKey(num), new TestValue(num), TestValueCodec.INSTANCE);
     }
 }

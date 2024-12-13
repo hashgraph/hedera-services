@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils;
 import java.security.SecureRandom;
 import java.util.Random;
@@ -96,14 +97,14 @@ class VirtualMapLifecycleTests {
 
     private void updateKeyValue(final int index, final AtomicReference<VirtualMap> atomicMap) {
         final Bytes key = TestKey.longToKey(index);
-        final Bytes value = TestValue.longToValue(index + RANDOM.nextInt());
-        atomicMap.get().put(key, value);
+        final TestValue value = new TestValue(index + RANDOM.nextInt());
+        atomicMap.get().put(key, value, TestValueCodec.INSTANCE);
     }
 
     private void createKeyValue(final int index, final AtomicReference<VirtualMap> atomicMap) {
         final Bytes key = TestKey.longToKey(index);
-        final Bytes value = TestValue.longToValue(index);
-        atomicMap.get().put(key, value);
+        final TestValue value = new TestValue(index);
+        atomicMap.get().put(key, value, TestValueCodec.INSTANCE);
     }
 
     private void executeTransactions(
@@ -141,11 +142,11 @@ class VirtualMapLifecycleTests {
                     final long size = map.size();
                     assertTrue(map.isImmutable(), "Query on immutable copies only");
                     assertFalse(map.isDestroyed(), "Map shouldn't be destroyed yet");
-                    Bytes value;
+                    TestValue value;
                     do {
                         final long keyIndex = random.nextInt((int) size);
                         final Bytes key = TestKey.longToKey(keyIndex);
-                        value = map.get(key);
+                        value = map.get(key, TestValueCodec.INSTANCE);
                     } while (value == null);
                 } while (queue.isEmpty());
                 map.release();

@@ -21,6 +21,7 @@ import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 import static com.swirlds.virtualmap.VirtualMap.CLASS_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableClass;
 import com.swirlds.common.io.ExternalSelfSerializable;
@@ -110,8 +111,8 @@ import java.util.List;
  * <p><strong>Map-like Behavior</strong></p>
  * <p>
  * This class presents a map-like interface for getting and putting values. These values are stored
- * in the leaf nodes of this node's sub-tree. The map-like methods {@link #get(Bytes)},
- * {@link #put(Bytes, Bytes)}, and {@link #remove(Bytes)}
+ * in the leaf nodes of this node's sub-tree. The map-like methods {@link #get(Bytes, Codec)},
+ * {@link #put(Bytes, Object, Codec)}, and {@link #remove(Bytes, Codec)}
  * can be used as a fast and convenient way to read, add, modify, or delete the corresponding leaf nodes and
  * internal nodes. Indeed, you <strong>MUST NOT</strong> modify the tree structure directly, only
  * through the map-like methods.
@@ -447,8 +448,12 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
      * @return The value, or {@code null} if no value exists in the map for the key
      */
     @Nullable
-    public Bytes get(@NonNull final Bytes key) {
-        return root.get(key);
+    public <V> V get(@NonNull final Bytes key, @NonNull final Codec<V> codec) {
+        return root.get(key, codec);
+    }
+
+    public Bytes getBytes(@NonNull final Bytes key) {
+        return root.getBytes(key);
     }
 
     /**
@@ -459,8 +464,16 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
      * @param key Ghe key, must not be null
      * @param value The value, may be null.
      */
-    public void put(@NonNull final Bytes key, @Nullable final Bytes value) {
-        root.put(key, value);
+    public <V> void put(@NonNull final Bytes key, @Nullable final V value, @Nullable final Codec<V> codec) {
+        root.put(key, value, codec);
+    }
+
+    public void putBytes(@NonNull final Bytes key, @Nullable final Bytes valueBytes) {
+        root.putBytes(key, valueBytes);
+    }
+
+    public void remove(@NonNull final Bytes key) {
+        remove(key, null);
     }
 
     /**
@@ -468,10 +481,12 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
      * if the key didn't exist.
      *
      * @param key The key to remove, must not be null
+     * @param valueCodec Value codec to decode the removed value. If the codec is null, this
+     *                   method always returns null
      * @return The removed value. May return null if there was no value to remove or if the value was null.
      */
-    public Bytes remove(@NonNull final Bytes key) {
-        return root.remove(key);
+    public <V> V remove(@NonNull final Bytes key, @Nullable final Codec<V> valueCodec) {
+        return root.remove(key, valueCodec);
     }
 
     /**

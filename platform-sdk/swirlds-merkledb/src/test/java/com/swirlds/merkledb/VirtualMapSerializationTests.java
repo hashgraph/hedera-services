@@ -121,7 +121,7 @@ class VirtualMapSerializationTests {
                 final Bytes key = leaf.getKey();
                 final Bytes value = leaf.getValue();
 
-                assertEquals(value, deserializedMap.get(key), "expected values to match");
+                assertEquals(value, deserializedMap.getBytes(key), "expected values to match");
             }
 
             if (node instanceof VirtualLeafNode || node instanceof VirtualInternalNode) {
@@ -162,9 +162,9 @@ class VirtualMapSerializationTests {
             final int v = random.nextInt();
 
             final Bytes key = ExampleLongKey.longToKey(i + offset);
-            final Bytes value = ExampleFixedValue.intToValue(v);
+            final ExampleFixedValue value = new ExampleFixedValue(v);
 
-            map.put(key, value);
+            map.put(key, value, ExampleFixedValue.CODEC);
         }
     }
 

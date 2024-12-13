@@ -35,6 +35,7 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric.ValueType;
@@ -566,7 +567,7 @@ class MerkleDbDataSourceTest {
             for (int i = 0; i < 31; i++) {
                 keys.add(testType.dataType().createVirtualLongKey(i));
             }
-            final List<Bytes> values = new ArrayList<>(31);
+            final List<ExampleByteArrayVirtualValue> values = new ArrayList<>(31);
             for (int i = 0; i < 31; i++) {
                 values.add(testType.dataType().createVirtualValue(i + 1));
             }
@@ -576,7 +577,12 @@ class MerkleDbDataSourceTest {
                     10,
                     20,
                     IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 1)),
-                    IntStream.range(10, 21).mapToObj(i -> new VirtualLeafBytes(i, keys.get(i), values.get(i))),
+                    IntStream.range(10, 21)
+                            .mapToObj(i -> new VirtualLeafBytes(
+                                    i,
+                                    keys.get(i),
+                                    values.get(i),
+                                    testType.dataType().getCodec())),
                     Stream.empty(),
                     true);
 
@@ -594,7 +600,12 @@ class MerkleDbDataSourceTest {
                     10,
                     20,
                     IntStream.range(0, 21).mapToObj(i -> createVirtualInternalRecord(i, i + 2)),
-                    IntStream.range(10, 21).mapToObj(i -> new VirtualLeafBytes(i, keys.get(i - 5), values.get(i - 5))),
+                    IntStream.range(10, 21)
+                            .mapToObj(i -> new VirtualLeafBytes(
+                                    i,
+                                    keys.get(i - 5),
+                                    values.get(i - 5),
+                                    testType.dataType().getCodec())),
                     oldLeaves.subList(6, 11).stream(),
                     true);
 
@@ -610,7 +621,7 @@ class MerkleDbDataSourceTest {
                 // // key 10 is moved to path 15, key 11 is moved to path 16, etc.
                 assertEquals(i + 5, leaf.path(), "Leaf path mismatch at path " + i);
                 assertEquals(keys.get(i), leaf.keyBytes(), "Wrong key at path " + i);
-                assertEquals(values.get(i), leaf.valueBytes(), "Wrong value at path " + i);
+                assertEquals(values.get(i), leaf.value(testType.dataType().getCodec()), "Wrong value at path " + i);
             }
             for (int i = 16; i < 21; i++) {
                 final VirtualLeafBytes leafBytes = dataSource.loadLeafRecord(keys.get(i));
@@ -639,7 +650,7 @@ class MerkleDbDataSourceTest {
                 // // key 10 was moved to path 15, key 11 is moved to path 16, etc.
                 assertEquals(i + 5, leaf.path(), "Leaf path mismatch at path " + i);
                 assertEquals(keys.get(i), leaf.keyBytes(), "Wrong key at path " + i);
-                assertEquals(values.get(i), leaf.valueBytes(), "Wrong value at path " + i);
+                assertEquals(values.get(i), leaf.value(testType.dataType().getCodec()), "Wrong value at path " + i);
             }
         });
     }
@@ -661,7 +672,8 @@ class MerkleDbDataSourceTest {
                     .mapToObj(t -> new VirtualLeafBytes(
                             t,
                             testType.dataType().createVirtualLongKey(t),
-                            testType.dataType().createVirtualValue(t)))
+                            testType.dataType().createVirtualValue(t),
+                            testType.dataType().getCodec()))
                     .toList();
             // No dirty/deleted leaves - no new files created
             dataSource.saveRecords(15, 30, Stream.empty(), Stream.empty(), Stream.empty(), false);

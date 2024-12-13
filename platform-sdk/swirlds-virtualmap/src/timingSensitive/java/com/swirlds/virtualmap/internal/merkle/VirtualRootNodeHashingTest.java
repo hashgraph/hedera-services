@@ -29,6 +29,7 @@ import com.swirlds.virtualmap.internal.hash.VirtualHasher;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -67,7 +68,7 @@ class VirtualRootNodeHashingTest {
     @DisplayName("Hash Root With One Entry")
     void hashMapWithOneEntry() {
         final VirtualRootNode root = createRoot();
-        root.put(TestKey.longToKey('a'), TestValue.stringToValue("a"));
+        root.put(TestKey.longToKey('a'), new TestValue("a"), TestValueCodec.INSTANCE);
         final VirtualRootNode copy = root.copy();
 
         assertNotNull(root.getHash(), "hash should not be null");
@@ -82,7 +83,7 @@ class VirtualRootNodeHashingTest {
     void hashMapWithManyEntries() {
         final VirtualRootNode root0 = createRoot();
         for (int i = 0; i < 100; i++) {
-            root0.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            root0.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualRootNode root1 = root0.copy();
@@ -91,7 +92,7 @@ class VirtualRootNodeHashingTest {
         assertNotNull(hash0, "hash should not be null");
 
         for (int i = 100; i < 200; i++) {
-            root1.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            root1.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualRootNode root2 = root1.copy();
@@ -114,7 +115,7 @@ class VirtualRootNodeHashingTest {
 
         final VirtualRootNode rootA = createRoot();
         for (int i = 0; i < 100; i++) {
-            rootA.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            rootA.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualRootNode copyA = rootA.copy();
         final Hash hashA = rootA.getHash();
@@ -122,7 +123,7 @@ class VirtualRootNodeHashingTest {
 
         final VirtualRootNode rootB = createRoot();
         for (int i = 0; i < 100; i++) {
-            rootB.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            rootB.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualRootNode copyB = rootB.copy();
         final Hash hashB = MerkleCryptoFactory.getInstance().digestTreeSync(rootA);
@@ -142,7 +143,7 @@ class VirtualRootNodeHashingTest {
 
         final VirtualRootNode rootA = createRoot();
         for (int i = 0; i < 100; i++) {
-            rootA.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            rootA.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualRootNode copyA = rootA.copy();
         final Hash hashA = rootA.getHash();
@@ -150,7 +151,7 @@ class VirtualRootNodeHashingTest {
 
         final VirtualRootNode rootB = createRoot();
         for (int i = 0; i < 100; i++) {
-            rootB.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            rootB.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualRootNode copyB = rootB.copy();
         final Hash hashB =
@@ -170,14 +171,14 @@ class VirtualRootNodeHashingTest {
     @DisplayName("Delete some tree nodes and hash")
     void hashBugFoundByPTT(long delete1, long delete2) {
         final VirtualRootNode root0 = createRoot();
-        root0.put(TestKey.longToKey(1), TestValue.longToValue(1));
-        root0.put(TestKey.longToKey(2), TestValue.longToValue(2));
-        root0.put(TestKey.longToKey(3), TestValue.longToValue(3));
-        root0.put(TestKey.longToKey(4), TestValue.longToValue(4));
-        root0.put(TestKey.longToKey(5), TestValue.longToValue(5));
+        root0.put(TestKey.longToKey(1), new TestValue(1), TestValueCodec.INSTANCE);
+        root0.put(TestKey.longToKey(2), new TestValue(2), TestValueCodec.INSTANCE);
+        root0.put(TestKey.longToKey(3), new TestValue(3), TestValueCodec.INSTANCE);
+        root0.put(TestKey.longToKey(4), new TestValue(4), TestValueCodec.INSTANCE);
+        root0.put(TestKey.longToKey(5), new TestValue(5), TestValueCodec.INSTANCE);
 
-        root0.remove(TestKey.longToKey(delete1));
-        root0.remove(TestKey.longToKey(delete2));
+        root0.remove(TestKey.longToKey(delete1), null);
+        root0.remove(TestKey.longToKey(delete2), null);
 
         final VirtualRootNode root1 = root0.copy();
         final Hash hash0 = root0.getHash();

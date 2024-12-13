@@ -22,7 +22,6 @@ import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import com.swirlds.virtualmap.VirtualMap;
@@ -69,16 +68,11 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var k = keyCodec.toBytes(key);
-        final var v = virtualMap.get(k);
-        try {
-            final var value = v == null ? null : valueCodec.parse(v);
-            // Log to transaction state log, what was read
-            logMapGet(getStateKey(), key, value);
-            return value;
-        } catch (final ParseException e) {
-            throw new RuntimeException("Failed to parse value from the data store (type mismatch?)", e);
-        }
+        final var kb = keyCodec.toBytes(key);
+        final var value = virtualMap.get(kb, valueCodec);
+        // Log to transaction state log, what was read
+        logMapGet(getStateKey(), key, value);
+        return value;
     }
 
     /** {@inheritDoc} */

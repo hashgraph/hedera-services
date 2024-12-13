@@ -31,6 +31,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -340,7 +341,8 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final long firstLeafPath = 105L;
         final long lastLeafPath = 211L;
         final Iterator<VirtualLeafBytes> dirtyLeaves = LongStream.range(firstLeafPath, lastLeafPath)
-                .mapToObj(path -> new VirtualLeafBytes(path, TestKey.longToKey(path), TestValue.longToValue(path)))
+                .mapToObj(path -> new VirtualLeafBytes(
+                        path, TestKey.longToKey(path), new TestValue(path), TestValueCodec.INSTANCE))
                 .iterator();
 
         final LongFunction<Hash> hashReader = path -> {

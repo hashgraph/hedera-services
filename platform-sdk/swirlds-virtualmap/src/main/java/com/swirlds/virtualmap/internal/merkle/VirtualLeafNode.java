@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -25,7 +26,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -33,6 +33,7 @@ import java.util.Objects;
  * Implementation of a VirtualLeaf
  */
 @ConstructableIgnored
+@SuppressWarnings("rawtypes")
 public final class VirtualLeafNode extends PartialMerkleLeaf implements MerkleLeaf, VirtualNode {
 
     public static final long CLASS_ID = 0x499677a326fb04caL;
@@ -43,7 +44,7 @@ public final class VirtualLeafNode extends PartialMerkleLeaf implements MerkleLe
     }
 
     /**
-     * The {@link VirtualLeafRecord} is the backing data for this node.
+     * The {@link VirtualLeafBytes} is the backing data for this node.
      */
     private final VirtualLeafBytes virtualRecord;
 
@@ -73,6 +74,11 @@ public final class VirtualLeafNode extends PartialMerkleLeaf implements MerkleLe
      */
     public Bytes getValue() {
         return virtualRecord.valueBytes();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <V> V getValue(final Codec<V> valueCodec) {
+        return ((VirtualLeafBytes<V>) virtualRecord).value(valueCodec);
     }
 
     /**

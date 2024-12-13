@@ -164,7 +164,7 @@ public final class VirtualInternalNode extends PartialBinaryMerkleInternal imple
         assert path != INVALID_PATH : "Cannot happen. Path will be a child of virtual record path every time.";
 
         assert path < root.getState().getFirstLeafPath();
-        Hash hash = root.getCache().lookupHashByPath(path, false);
+        Hash hash = root.getCache().lookupHashByPath(path);
         if (hash == null) {
             try {
                 hash = root.getDataSource().loadHash(path);
@@ -196,7 +196,7 @@ public final class VirtualInternalNode extends PartialBinaryMerkleInternal imple
         }
 
         // Check the cache first
-        VirtualLeafBytes rec = root.getCache().lookupLeafByPath(path, false);
+        VirtualLeafBytes rec = root.getCache().lookupLeafByPath(path);
 
         // On cache miss, check the data source. It *has* to be there.
         if (rec == null) {
@@ -213,7 +213,7 @@ public final class VirtualInternalNode extends PartialBinaryMerkleInternal imple
             }
         }
 
-        Hash hash = root.getCache().lookupHashByPath(path, false);
+        Hash hash = root.getCache().lookupHashByPath(path);
         if (hash == null) {
             try {
                 hash = root.getDataSource().loadHash(path);

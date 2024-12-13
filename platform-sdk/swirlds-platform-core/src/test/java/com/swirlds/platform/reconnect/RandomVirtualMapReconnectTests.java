@@ -201,8 +201,8 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
             final String key = randomWord(random, config.maximumKey());
             final String value = randomWord(random, ZZZZZ);
             // treat the hashCode of the key as a long value for the TestKey
-            teacherMap.put(TestKey.longToKey(wordToKey(key)), TestValue.stringToBytes(value));
-            learnerMap.put(TestKey.longToKey(wordToKey(key)), TestValue.stringToBytes(value));
+            teacherMap.put(TestKey.longToKey(wordToKey(key)), new TestValue(value), TestValueCodec.INSTANCE);
+            learnerMap.put(TestKey.longToKey(wordToKey(key)), new TestValue(value), TestValueCodec.INSTANCE);
             usedKeys.add(key);
         }
         final Queue<VirtualMap> copiesQueue = new LinkedList<>();
@@ -216,14 +216,14 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
                     key = randomWord(random, config.maximumKey());
                 }
                 final String value = randomWord(random, ZZZZZ);
-                teacherMap.put(TestKey.longToKey(wordToKey(key)), TestValue.stringToBytes(value));
+                teacherMap.put(TestKey.longToKey(wordToKey(key)), new TestValue(value), TestValueCodec.INSTANCE);
                 usedKeys.add(key);
                 removedKeys.remove(key);
             } else if (op < config.createWeight() + config.updateWeight()) {
                 // update an existing key from the teacherMap
                 final String key = usedKeys.get(random);
                 final String value = randomWord(random, ZZZZZ);
-                teacherMap.put(TestKey.longToKey(wordToKey(key)), TestValue.stringToBytes(value));
+                teacherMap.put(TestKey.longToKey(wordToKey(key)), new TestValue(value), TestValueCodec.INSTANCE);
             } else {
                 // remove an existing key from the teacherMap
                 final String key = usedKeys.get(random);
@@ -256,7 +256,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
         for (final String key : removedKeys) {
             try {
                 assertNull(
-                        afterMap.get(TestKey.longToKey(wordToKey(key))),
+                        afterMap.get(TestKey.longToKey(wordToKey(key)), TestValueCodec.INSTANCE),
                         "Key " + key + " should no longer be present after reconnect.");
             } catch (AssertionError ae) {
                 assertEquals(

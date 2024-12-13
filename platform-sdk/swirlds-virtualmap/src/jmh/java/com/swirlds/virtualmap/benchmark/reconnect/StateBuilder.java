@@ -51,21 +51,21 @@ public class StateBuilder {
             final long size,
             final double learnerMissingProbability,
             final double learnerDifferentProbability,
-            final BiConsumer<Bytes, Bytes> teacherPopulator,
-            final BiConsumer<Bytes, Bytes> learnerPopulator) {
+            final BiConsumer<Bytes, TestValue> teacherPopulator,
+            final BiConsumer<Bytes, TestValue> learnerPopulator) {
         LongStream.range(1, size).forEach(i -> {
             final Bytes key = TestKey.longToKey(i);
 
-            final Bytes teacherValue = TestValue.stringToValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
+            final TestValue teacherValue = new TestValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
             teacherPopulator.accept(key, teacherValue);
 
             if (isRandomOutcome(random, learnerMissingProbability)) {
                 return;
             }
 
-            final Bytes learnerValue;
+            final TestValue learnerValue;
             if (isRandomOutcome(random, learnerDifferentProbability)) {
-                learnerValue = TestValue.stringToValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
+                learnerValue = new TestValue(RandomUtils.randomString(random, random.nextInt(1, 64)));
             } else {
                 learnerValue = teacherValue;
             }

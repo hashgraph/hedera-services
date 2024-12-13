@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -55,7 +54,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     protected static final String SAVED = "saved";
     protected static final String SERDE_SUFFIX = ".serde";
     protected static final String SNAPSHOT = "snapshot";
-    protected static final long SNAPSHOT_DELAY = 60_000;
+    protected static final long SNAPSHOT_DELAY = 20_000;
 
     /* This map may be pre-created on demand and reused between benchmarks/iterations */
     protected VirtualMap virtualMapP;
@@ -131,9 +130,10 @@ public abstract class VirtualMapBaseBench extends BaseBench {
                 IntStream.range(0, parallelism).parallel().forEach(idx -> {
                     long count = 0L;
                     for (int i = idx; i < map.length; i += parallelism) {
-                        final Bytes value = srcMap.get(BenchmarkKey.longToKey(i));
+                        final BenchmarkValue value =
+                                srcMap.get(BenchmarkKey.longToKey(i), BenchmarkValueCodec.INSTANCE);
                         if (value != null) {
-                            map[i] = BenchmarkValue.valueToLong(value);
+                            map[i] = value.toLong();
                             ++count;
                         }
                     }
@@ -234,12 +234,12 @@ public abstract class VirtualMapBaseBench extends BaseBench {
         IntStream.range(0, 64).parallel().forEach(thread -> {
             int idx;
             while ((idx = index.getAndIncrement()) < map.length) {
-                Bytes dataItem = virtualMap.get(BenchmarkKey.longToKey(idx));
+                BenchmarkValue dataItem = virtualMap.get(BenchmarkKey.longToKey(idx), BenchmarkValueCodec.INSTANCE);
                 if (dataItem == null) {
                     if (map[idx] != 0L) {
                         countMissing.getAndIncrement();
                     }
-                } else if (!dataItem.equals(BenchmarkValue.longToValue(map[idx]))) {
+                } else if (!dataItem.equals(new BenchmarkValue(map[idx]))) {
                     countBad.getAndIncrement();
                 } else {
                     countGood.getAndIncrement();

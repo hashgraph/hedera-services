@@ -41,7 +41,7 @@ class VirtualMapRandomTest {
                 final Bytes key = randomKey();
                 Bytes toMutate = v.get(key);
                 if (toMutate != null) {
-                    toMutate = TestValue.stringToValue(randomString());
+                    toMutate = new TestValue(randomString()).toBytes();
                     v.put(key, toMutate);
                 }
             },
@@ -54,7 +54,7 @@ class VirtualMapRandomTest {
     }
 
     private static Bytes randomValue() {
-        return TestValue.longToValue(RANDOM.nextLong());
+        return new TestValue(RANDOM.nextLong()).toBytes();
     }
 
     private static String randomString() {

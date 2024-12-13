@@ -64,20 +64,20 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
             for (int j = 0; j < numRecords; ++j) {
                 long id = Utils.randomLong(maxKey);
                 Bytes key = BenchmarkKey.longToKey(id);
-                Bytes value = virtualMap.get(key);
+                BenchmarkValue value = virtualMap.get(key, BenchmarkValueCodec.INSTANCE);
                 long val = nextValue();
                 if (value != null) {
                     if ((val & 0xff) == 0) {
                         virtualMap.remove(key);
                         if (verify) map[(int) id] = 0L;
                     } else {
-                        value = BenchmarkValue.updatedValue(value, l -> l + val);
-                        virtualMap.put(key, value);
+                        value.update(l -> l + val);
+                        virtualMap.put(key, value, BenchmarkValueCodec.INSTANCE);
                         if (verify) map[(int) id] += val;
                     }
                 } else {
-                    value = BenchmarkValue.longToValue(val);
-                    virtualMap.put(key, value);
+                    value = new BenchmarkValue(val);
+                    virtualMap.put(key, value, BenchmarkValueCodec.INSTANCE);
                     if (verify) map[(int) id] = val;
                 }
             }
@@ -117,8 +117,8 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
                 long id = Utils.randomLong(maxKey);
                 final Bytes key = BenchmarkKey.longToKey(id);
                 final long val = nextValue();
-                final Bytes value = BenchmarkValue.longToValue(val);
-                virtualMap.put(key, value);
+                final BenchmarkValue value = new BenchmarkValue(val);
+                virtualMap.put(key, value, BenchmarkValueCodec.INSTANCE);
                 if (verify) {
                     map[(int) id] = val;
                 }
@@ -166,15 +166,15 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
             for (int j = 0; j < numRecords; ++j) {
                 final long id = Utils.randomLong(maxKey);
                 final Bytes key = BenchmarkKey.longToKey(id);
-                Bytes value = virtualMap.get(key);
+                BenchmarkValue value = virtualMap.get(key, BenchmarkValueCodec.INSTANCE);
                 final long val = nextValue();
                 if (value != null) {
-                    value = BenchmarkValue.updatedValue(value, l -> l + val);
-                    virtualMap.put(key, value);
+                    value.update(l -> l + val);
+                    virtualMap.put(key, value, BenchmarkValueCodec.INSTANCE);
                     if (verify) map[(int) id] += val;
                 } else {
-                    value = BenchmarkValue.longToValue(val);
-                    virtualMap.put(key, value);
+                    value = new BenchmarkValue(val);
+                    virtualMap.put(key, value, BenchmarkValueCodec.INSTANCE);
                     if (verify) map[(int) id] = val;
                 }
                 expirables.addLast(new Expirable(System.currentTimeMillis() + EXPIRY_DELAY, id));
@@ -219,8 +219,8 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
         int count = 0;
         for (int i = 0; i < maxKey; i++) {
             Bytes key = BenchmarkKey.longToKey(i);
-            Bytes value = BenchmarkValue.longToValue(nextValue());
-            virtualMapP.put(key, value);
+            BenchmarkValue value = new BenchmarkValue(nextValue());
+            virtualMapP.put(key, value, BenchmarkValueCodec.INSTANCE);
 
             if (++count == maxKey / numFiles) {
                 count = 0;
@@ -250,7 +250,7 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
             long sum = 0;
             for (int i = 0; i < numRecords; ++i) {
                 final long id = Utils.randomLong(maxKey);
-                Bytes value = virtualMapP.get(BenchmarkKey.longToKey(id));
+                final BenchmarkValue value = virtualMapP.get(BenchmarkKey.longToKey(id), BenchmarkValueCodec.INSTANCE);
                 sum += value.hashCode();
             }
             total.addAndGet(sum);

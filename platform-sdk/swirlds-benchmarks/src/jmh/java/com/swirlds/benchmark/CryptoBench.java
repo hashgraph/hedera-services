@@ -74,12 +74,12 @@ public abstract class CryptoBench extends VirtualMapBench {
 
     private void initializeFixedAccounts(VirtualMap virtualMap) {
         fixedKey1 = BenchmarkKey.longToKey(FIXED_KEY_ID1);
-        if (virtualMap.get(fixedKey1) == null) {
-            virtualMap.put(fixedKey1, BenchmarkValue.longToValue(0));
+        if (virtualMap.get(fixedKey1, BenchmarkValueCodec.INSTANCE) == null) {
+            virtualMap.put(fixedKey1, new BenchmarkValue(0), BenchmarkValueCodec.INSTANCE);
         }
         fixedKey2 = BenchmarkKey.longToKey(FIXED_KEY_ID2);
-        if (virtualMap.get(fixedKey2) == null) {
-            virtualMap.put(fixedKey2, BenchmarkValue.longToValue(0));
+        if (virtualMap.get(fixedKey2, BenchmarkValueCodec.INSTANCE) == null) {
+            virtualMap.put(fixedKey2, new BenchmarkValue(0), BenchmarkValueCodec.INSTANCE);
         }
     }
 
@@ -148,29 +148,31 @@ public abstract class CryptoBench extends VirtualMapBench {
                 int keyId2 = keys[j * KEYS_PER_RECORD + 1];
                 Bytes key1 = BenchmarkKey.longToKey(keyId1);
                 Bytes key2 = BenchmarkKey.longToKey(keyId2);
-                Bytes value1 = virtualMap.get(key1);
-                Bytes value2 = virtualMap.get(key2);
+                BenchmarkValue value1 = virtualMap.get(key1, BenchmarkValueCodec.INSTANCE);
+                BenchmarkValue value2 = virtualMap.get(key2, BenchmarkValueCodec.INSTANCE);
 
                 long amount = Utils.randomLong(MAX_AMOUNT);
                 if (value1 == null) {
-                    value1 = BenchmarkValue.longToValue(amount);
+                    value1 = new BenchmarkValue(amount);
                 } else {
-                    value1 = BenchmarkValue.updatedValue(value1, l -> l + amount);
+                    value1.update(l -> l + amount);
                 }
-                virtualMap.put(key1, value1);
+                virtualMap.put(key1, value1, BenchmarkValueCodec.INSTANCE);
 
                 if (value2 == null) {
-                    value2 = BenchmarkValue.longToValue(-amount);
+                    value2 = new BenchmarkValue(-amount);
                 } else {
-                    value2 = BenchmarkValue.updatedValue(value2, l -> l - amount);
+                    value2.update(l -> l - amount);
                 }
-                virtualMap.put(key2, value2);
+                virtualMap.put(key2, value2, BenchmarkValueCodec.INSTANCE);
 
                 // Model fees
-                value1 = virtualMap.get(fixedKey1);
-                virtualMap.put(fixedKey1, BenchmarkValue.updatedValue(value1, l -> l + 1));
-                value2 = virtualMap.get(fixedKey2);
-                virtualMap.put(fixedKey2, BenchmarkValue.updatedValue(value2, l -> l + 1));
+                value1 = virtualMap.get(fixedKey1, BenchmarkValueCodec.INSTANCE);
+                value1.update(l -> l + 1);
+                virtualMap.put(fixedKey1, value1, BenchmarkValueCodec.INSTANCE);
+                value2 = virtualMap.get(fixedKey2, BenchmarkValueCodec.INSTANCE);
+                value2.update(l -> l + 1);
+                virtualMap.put(fixedKey2, value2, BenchmarkValueCodec.INSTANCE);
 
                 if (verify) {
                     map[keyId1] += amount;
@@ -257,29 +259,31 @@ public abstract class CryptoBench extends VirtualMapBench {
                 int keyId2 = keys[j * KEYS_PER_RECORD + 1];
                 Bytes key1 = BenchmarkKey.longToKey(keyId1);
                 Bytes key2 = BenchmarkKey.longToKey(keyId2);
-                Bytes value1 = virtualMap.get(key1);
-                Bytes value2 = virtualMap.get(key2);
+                BenchmarkValue value1 = virtualMap.get(key1, BenchmarkValueCodec.INSTANCE);
+                BenchmarkValue value2 = virtualMap.get(key2, BenchmarkValueCodec.INSTANCE);
 
                 long amount = Utils.randomLong(MAX_AMOUNT);
                 if (value1 == null) {
-                    value1 = BenchmarkValue.longToValue(amount);
+                    value1 = new BenchmarkValue(amount);
                 } else {
-                    value1 = BenchmarkValue.updatedValue(value1, l -> l + amount);
+                    value1.update(l -> l + amount);
                 }
-                virtualMap.put(key1, value1);
+                virtualMap.put(key1, value1, BenchmarkValueCodec.INSTANCE);
 
                 if (value2 == null) {
-                    value2 = BenchmarkValue.longToValue(-amount);
+                    value2 = new BenchmarkValue(-amount);
                 } else {
-                    value2 = BenchmarkValue.updatedValue(value2, l -> l - amount);
+                    value2.update(l -> l - amount);
                 }
-                virtualMap.put(key2, value2);
+                virtualMap.put(key2, value2, BenchmarkValueCodec.INSTANCE);
 
                 // Model fees
-                value1 = virtualMap.get(fixedKey1);
-                virtualMap.put(fixedKey1, BenchmarkValue.updatedValue(value1, l -> l + 1));
-                value2 = virtualMap.get(fixedKey2);
-                virtualMap.put(fixedKey2, BenchmarkValue.updatedValue(value2, l -> l + 1));
+                value1 = virtualMap.get(fixedKey1, BenchmarkValueCodec.INSTANCE);
+                value1.update(l -> l + 1);
+                virtualMap.put(fixedKey1, value1, BenchmarkValueCodec.INSTANCE);
+                value2 = virtualMap.get(fixedKey2, BenchmarkValueCodec.INSTANCE);
+                value2.update(l -> l + 1);
+                virtualMap.put(fixedKey2, value2, BenchmarkValueCodec.INSTANCE);
 
                 if (verify) {
                     map[keyId1] += amount;
@@ -338,12 +342,12 @@ public abstract class CryptoBench extends VirtualMapBench {
         tps = BenchmarkMetrics.registerTPS();
 
         final int QUEUE_CAPACITY = 1000;
-        final List<BlockingQueue<Optional<Bytes>>> queues = new ArrayList<>(numThreads);
+        final List<BlockingQueue<Optional<BenchmarkValue>>> queues = new ArrayList<>(numThreads);
         for (int i = 0; i < numThreads; ++i) {
             queues.add(new LinkedBlockingQueue<>(QUEUE_CAPACITY));
         }
 
-        final List<Deque<Optional<Bytes>>> buffers = new ArrayList<>(numThreads);
+        final List<Deque<Optional<BenchmarkValue>>> buffers = new ArrayList<>(numThreads);
         for (int i = 0; i < numThreads; ++i) {
             buffers.add(new ArrayDeque<>(QUEUE_CAPACITY));
         }
@@ -361,10 +365,12 @@ public abstract class CryptoBench extends VirtualMapBench {
                 final int idx = thread;
                 prefetchPool.execute(() -> {
                     try {
-                        final BlockingQueue<Optional<Bytes>> queue = queues.get(idx);
+                        final BlockingQueue<Optional<BenchmarkValue>> queue = queues.get(idx);
                         for (int j = idx * KEYS_PER_RECORD; j < keys.length; j += numThreads * KEYS_PER_RECORD) {
-                            queue.put(Optional.ofNullable(currentMap.get(BenchmarkKey.longToKey(keys[j]))));
-                            queue.put(Optional.ofNullable(currentMap.get(BenchmarkKey.longToKey(keys[j + 1]))));
+                            queue.put(Optional.ofNullable(
+                                    currentMap.get(BenchmarkKey.longToKey(keys[j]), BenchmarkValueCodec.INSTANCE)));
+                            queue.put(Optional.ofNullable(
+                                    currentMap.get(BenchmarkKey.longToKey(keys[j + 1]), BenchmarkValueCodec.INSTANCE)));
                         }
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
@@ -376,25 +382,27 @@ public abstract class CryptoBench extends VirtualMapBench {
             // Update values in order
             for (int j = 0; j < numRecords; ++j) {
                 final int idx = j % queues.size();
-                Deque<Optional<Bytes>> buffer = buffers.get(idx);
+                Deque<Optional<BenchmarkValue>> buffer = buffers.get(idx);
                 while (buffer.size() < KEYS_PER_RECORD) {
                     queues.get(idx).drainTo(buffer, QUEUE_CAPACITY);
                 }
-                Bytes value1 = buffer.removeFirst().orElse(BenchmarkValue.longToValue(0));
-                Bytes value2 = buffer.removeFirst().orElse(BenchmarkValue.longToValue(0));
+                BenchmarkValue value1 = buffer.removeFirst().orElse(new BenchmarkValue(0));
+                BenchmarkValue value2 = buffer.removeFirst().orElse(new BenchmarkValue(0));
                 long amount = Utils.randomLong(MAX_AMOUNT);
-                value1 = BenchmarkValue.updatedValue(value1, l -> l + amount);
-                value2 = BenchmarkValue.updatedValue(value2, l -> l - amount);
+                value1.update(l -> l + amount);
+                value2.update(l -> l - amount);
                 int keyId1 = keys[j * KEYS_PER_RECORD];
                 int keyId2 = keys[j * KEYS_PER_RECORD + 1];
-                currentMap.put(BenchmarkKey.longToKey(keyId1), value1);
-                currentMap.put(BenchmarkKey.longToKey(keyId2), value2);
+                currentMap.put(BenchmarkKey.longToKey(keyId1), value1, BenchmarkValueCodec.INSTANCE);
+                currentMap.put(BenchmarkKey.longToKey(keyId2), value2, BenchmarkValueCodec.INSTANCE);
 
                 // Model fees
-                value1 = virtualMap.get(fixedKey1);
-                virtualMap.put(fixedKey1, BenchmarkValue.updatedValue(value1, l -> l + 1));
-                value2 = virtualMap.get(fixedKey2);
-                virtualMap.put(fixedKey2, BenchmarkValue.updatedValue(value2, l -> l + 1));
+                value1 = virtualMap.get(fixedKey1, BenchmarkValueCodec.INSTANCE);
+                value1.update(l -> l + 1);
+                virtualMap.put(fixedKey1, value1, BenchmarkValueCodec.INSTANCE);
+                value2 = virtualMap.get(fixedKey2, BenchmarkValueCodec.INSTANCE);
+                value2.update(l -> l + 1);
+                virtualMap.put(fixedKey2, value2, BenchmarkValueCodec.INSTANCE);
 
                 if (verify) {
                     map[keyId1] += amount;

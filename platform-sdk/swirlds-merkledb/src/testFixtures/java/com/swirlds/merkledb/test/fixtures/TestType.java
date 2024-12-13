@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -117,18 +118,29 @@ public enum TestType {
             }
         }
 
-        public Bytes createVirtualValue(final int i) {
+        public ExampleByteArrayVirtualValue createVirtualValue(final int i) {
             switch (testType) {
                 default:
                 case long_fixed:
                 case longLong_fixed:
                 case variable_fixed:
-                    return ExampleFixedValue.intToValue(i);
+                    return new ExampleFixedValue(i);
                 case long_variable:
                 case longLong_variable:
                 case variable_variable:
-                    return ExampleVariableValue.intToValue(i);
+                    return new ExampleVariableValue(i);
             }
+        }
+
+        public Codec<? extends ExampleByteArrayVirtualValue> getCodec() {
+            return switch (testType) {
+                case long_fixed -> ExampleFixedValue.CODEC;
+                case longLong_fixed -> ExampleFixedValue.CODEC;
+                case variable_fixed -> ExampleFixedValue.CODEC;
+                case long_variable -> ExampleVariableValue.CODEC;
+                case longLong_variable -> ExampleVariableValue.CODEC;
+                case variable_variable -> ExampleVariableValue.CODEC;
+            };
         }
 
         /**
@@ -181,24 +193,28 @@ public enum TestType {
             return new VirtualHashRecord(i, MerkleDbTestUtils.hash(i));
         }
 
+        @SuppressWarnings("rawtypes")
         public VirtualLeafBytes createVirtualLeafRecord(final int i) {
             return createVirtualLeafRecord(i, i, i);
         }
 
+        @SuppressWarnings("rawtypes")
         public VirtualLeafBytes createVirtualLeafRecord(final long path, final int i, final int valueIndex) {
-
             switch (testType) {
                 default:
                 case long_fixed:
                 case longLong_fixed:
                 case variable_fixed:
-                    return new VirtualLeafBytes(
-                            path, createVirtualLongKey(i), ExampleFixedValue.intToValue(valueIndex));
+                    return new VirtualLeafBytes<>(
+                            path, createVirtualLongKey(i), new ExampleFixedValue(valueIndex), ExampleFixedValue.CODEC);
                 case long_variable:
                 case longLong_variable:
                 case variable_variable:
-                    return new VirtualLeafBytes(
-                            path, createVirtualLongKey(i), ExampleVariableValue.intToValue(valueIndex));
+                    return new VirtualLeafBytes<>(
+                            path,
+                            createVirtualLongKey(i),
+                            new ExampleVariableValue(valueIndex),
+                            ExampleVariableValue.CODEC);
             }
         }
     }

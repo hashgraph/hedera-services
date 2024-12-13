@@ -26,6 +26,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.util.ArrayList;
 import java.util.List;
@@ -150,14 +151,14 @@ public class VirtualHasherTestBase extends VirtualTestBase {
             return getInternal(path).hash();
         }
 
-        VirtualLeafBytes getLeaf(final long path) {
+        VirtualLeafBytes<TestValue> getLeaf(final long path) {
             if (path < firstLeafPath || path > lastLeafPath) {
                 return null;
             }
 
             final Bytes key = TestKey.longToKey(path);
-            final Bytes value = TestValue.stringToValue("Value: " + path);
-            return new VirtualLeafBytes(path, key, value);
+            final TestValue value = new TestValue("Value: " + path);
+            return new VirtualLeafBytes<>(path, key, value, TestValueCodec.INSTANCE);
         }
 
         VirtualHashRecord getInternal(final long path) {
@@ -170,7 +171,7 @@ public class VirtualHasherTestBase extends VirtualTestBase {
                 if (path < firstLeafPath) {
                     hash = CRYPTO.getNullHash();
                 } else {
-                    final VirtualLeafBytes leaf = getLeaf(path);
+                    final VirtualLeafBytes<TestValue> leaf = getLeaf(path);
                     assert leaf != null;
                     // HASH_BUILDER is not thread safe
                     synchronized (HASH_BUILDER) {

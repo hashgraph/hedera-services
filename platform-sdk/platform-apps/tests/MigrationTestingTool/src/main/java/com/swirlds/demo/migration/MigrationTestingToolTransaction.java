@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapKey;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
+import com.swirlds.demo.migration.virtual.AccountVirtualMapValueCodec;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
@@ -108,7 +109,7 @@ public class MigrationTestingToolTransaction implements SelfSerializable {
         final AccountVirtualMapValue value = new AccountVirtualMapValue(
                 random.nextLong(), random.nextLong(), random.nextLong(), random.nextBoolean(), random.nextLong());
 
-        map.put(key.toBytes(), value.toBytes());
+        map.put(key.toBytes(), value, AccountVirtualMapValueCodec.INSTANCE);
     }
 
     /**

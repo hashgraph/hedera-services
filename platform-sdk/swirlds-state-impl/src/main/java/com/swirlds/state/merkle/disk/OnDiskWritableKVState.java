@@ -24,7 +24,6 @@ import static com.swirlds.state.merkle.logging.StateLogger.logMapRemove;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
@@ -75,16 +74,11 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var k = keyCodec.toBytes(key);
-        final var v = virtualMap.get(k);
-        try {
-            final var value = v == null ? null : valueCodec.parse(v);
-            // Log to transaction state log, what was read
-            logMapGet(getStateKey(), key, value);
-            return value;
-        } catch (final ParseException e) {
-            throw new RuntimeException("Failed to parse value from the data store (type mismatch?)", e);
-        }
+        final var kb = keyCodec.toBytes(key);
+        final var value = virtualMap.get(kb, valueCodec);
+        // Log to transaction state log, what was read
+        logMapGet(getStateKey(), key, value);
+        return value;
     }
 
     /** {@inheritDoc} */
@@ -99,13 +93,12 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
-        final Bytes k = keyCodec.toBytes(key);
-        assert k != null;
-        final Bytes v = valueCodec.toBytes(value);
+        final Bytes kb = keyCodec.toBytes(key);
+        assert kb != null;
         // If we expect a lot of empty values, Bytes.EMPTY optimization below may be helpful, but
         // for now it just adds a call to measureRecord(), but benefits are unclear
         // final Bytes v = valueCodec.measureRecord(value) == 0 ? Bytes.EMPTY : valueCodec.toBytes(value);
-        virtualMap.put(k, v);
+        virtualMap.put(kb, value, valueCodec);
         // Log to transaction state log, what was put
         logMapPut(getStateKey(), key, value);
     }
@@ -114,9 +107,9 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected void removeFromDataSource(@NonNull K key) {
         final var k = keyCodec.toBytes(key);
-        final var removed = virtualMap.remove(k);
+        final var removed = virtualMap.remove(k, valueCodec);
         // Log to transaction state log, what was removed
-        logMapRemove(getStateKey(), key, removed, valueCodec);
+        logMapRemove(getStateKey(), key, removed);
     }
 
     /** {@inheritDoc} */

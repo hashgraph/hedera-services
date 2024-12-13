@@ -27,9 +27,8 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKeySerializer;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValue;
-import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValueSerializer;
+import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValueCodec;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
@@ -53,8 +52,6 @@ class VirtualMerkleLeafHasherTest {
             .withConfigDataType(StateCommonConfig.class)
             .build();
     static Path storeDir;
-    static SmartContractByteCodeMapKeySerializer keySerializer;
-    static SmartContractByteCodeMapValueSerializer valueSerializer;
     static MerkleDbDataSourceBuilder dataSourceBuilder;
 
     @BeforeAll
@@ -65,9 +62,6 @@ class VirtualMerkleLeafHasherTest {
         } catch (IOException e) {
             e.printStackTrace(System.err);
         }
-
-        keySerializer = new SmartContractByteCodeMapKeySerializer();
-        valueSerializer = new SmartContractByteCodeMapValueSerializer();
 
         final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
         final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
@@ -93,7 +87,7 @@ class VirtualMerkleLeafHasherTest {
         SmartContractByteCodeMapKey key = new SmartContractByteCodeMapKey(keyInput);
         SmartContractByteCodeMapValue value = new SmartContractByteCodeMapValue(valueInput);
 
-        virtualMap.put(key.toBytes(), value.toBytes());
+        virtualMap.put(key.toBytes(), value, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         Hash before = computeNextHash(null, key.toBytes(), value.toBytes());
 
@@ -105,7 +99,7 @@ class VirtualMerkleLeafHasherTest {
         key = new SmartContractByteCodeMapKey(keyInput);
         value = new SmartContractByteCodeMapValue(valueInput);
 
-        virtualMap.put(key.toBytes(), value.toBytes());
+        virtualMap.put(key.toBytes(), value, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         // include previous hash first
         Hash after = computeNextHash(before, key.toBytes(), value.toBytes());
@@ -126,21 +120,21 @@ class VirtualMerkleLeafHasherTest {
         SmartContractByteCodeMapKey key1 = new SmartContractByteCodeMapKey(keyInput1);
         SmartContractByteCodeMapValue value1 = new SmartContractByteCodeMapValue(valueInput1);
 
-        virtualMap.put(key1.toBytes(), value1.toBytes());
+        virtualMap.put(key1.toBytes(), value1, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         final Long keyInput2 = 2L;
         final byte[] valueInput2 = "second".getBytes();
         SmartContractByteCodeMapKey key2 = new SmartContractByteCodeMapKey(keyInput2);
         SmartContractByteCodeMapValue value2 = new SmartContractByteCodeMapValue(valueInput2);
 
-        virtualMap.put(key2.toBytes(), value2.toBytes());
+        virtualMap.put(key2.toBytes(), value2, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         final Long keyInput3 = 3L;
         final byte[] valueInput3 = "third".getBytes();
         SmartContractByteCodeMapKey key3 = new SmartContractByteCodeMapKey(keyInput3);
         SmartContractByteCodeMapValue value3 = new SmartContractByteCodeMapValue(valueInput3);
 
-        virtualMap.put(key3.toBytes(), value3.toBytes());
+        virtualMap.put(key3.toBytes(), value3, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         // include previous hash first
         Hash hash = null;
@@ -165,28 +159,28 @@ class VirtualMerkleLeafHasherTest {
         SmartContractByteCodeMapKey key1 = new SmartContractByteCodeMapKey(keyInput1);
         SmartContractByteCodeMapValue value1 = new SmartContractByteCodeMapValue(valueInput1);
 
-        virtualMap.put(key1.toBytes(), value1.toBytes());
+        virtualMap.put(key1.toBytes(), value1, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         final Long keyInput2 = 2L;
         final byte[] valueInput2 = "second".getBytes();
         SmartContractByteCodeMapKey key2 = new SmartContractByteCodeMapKey(keyInput2);
         SmartContractByteCodeMapValue value2 = new SmartContractByteCodeMapValue(valueInput2);
 
-        virtualMap.put(key2.toBytes(), value2.toBytes());
+        virtualMap.put(key2.toBytes(), value2, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         final Long keyInput3 = 3L;
         final byte[] valueInput3 = "third".getBytes();
         SmartContractByteCodeMapKey key3 = new SmartContractByteCodeMapKey(keyInput3);
         SmartContractByteCodeMapValue value3 = new SmartContractByteCodeMapValue(valueInput3);
 
-        virtualMap.put(key3.toBytes(), value3.toBytes());
+        virtualMap.put(key3.toBytes(), value3, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         final Long keyInput4 = 4L;
         final byte[] valueInput4 = "fourth".getBytes();
         SmartContractByteCodeMapKey key4 = new SmartContractByteCodeMapKey(keyInput4);
         SmartContractByteCodeMapValue value4 = new SmartContractByteCodeMapValue(valueInput4);
 
-        virtualMap.put(key4.toBytes(), value4.toBytes());
+        virtualMap.put(key4.toBytes(), value4, SmartContractByteCodeMapValueCodec.INSTANCE);
 
         // include previous hash first
         Hash hash = null;

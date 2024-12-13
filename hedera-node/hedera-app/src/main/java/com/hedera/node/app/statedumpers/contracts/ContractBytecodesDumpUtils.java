@@ -98,7 +98,7 @@ public class ContractBytecodesDumpUtils {
             final var bytecode = Bytecode.PROTOBUF.parse(bytecodeBytes);
             final var accountId = AccountID.PROTOBUF.toBytes(
                     AccountID.newBuilder().accountNum(id.contractNum()).build());
-            final var account = Account.PROTOBUF.parse(accounts.get(accountId));
+            final var account = accounts.get(accountId, Account.PROTOBUF);
             final var isDeleted = account.deleted();
 
             final var c = new BBMContract(

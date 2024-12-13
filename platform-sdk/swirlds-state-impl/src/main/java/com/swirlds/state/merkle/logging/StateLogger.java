@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
@@ -181,27 +180,16 @@ public class StateLogger {
      * @param label The label of the map
      * @param key The key removed from the map
      * @param value The value bytes removed from the map
-     * @param valueCodec The value codec
      * @param <K> The type of the key
      * @param <V> The type of the value
      */
-    public static <K, V> void logMapRemove(
-            @NonNull final String label,
-            @NonNull final K key,
-            @Nullable final Bytes value,
-            @NonNull final Codec<V> valueCodec) {
+    public static <K, V> void logMapRemove(@NonNull final String label, @NonNull final K key, @Nullable final V value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
-            final V v;
-            try {
-                v = (value == null) ? null : valueCodec.parse(value);
-            } catch (final ParseException e) {
-                throw new RuntimeException(e);
-            }
             logger.debug(
                     "      REMOVE from map {} key {} removed value {}",
                     label,
                     formatKey(key),
-                    v == null ? "null" : v.toString());
+                    value == null ? "null" : value.toString());
         }
     }
 

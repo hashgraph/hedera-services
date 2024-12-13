@@ -117,12 +117,12 @@ public class ReconnectBench extends VirtualMapBaseBench {
      * @param mapRef a reference to a VirtualMap instance
      * @return a populator for the map
      */
-    private static BiConsumer<Bytes, Bytes> buildVMPopulator(final AtomicReference<VirtualMap> mapRef) {
+    private static BiConsumer<Bytes, BenchmarkValue> buildVMPopulator(final AtomicReference<VirtualMap> mapRef) {
         return (k, v) -> {
             if (v == null) {
-                mapRef.get().remove(k);
+                mapRef.get().remove(k, BenchmarkValueCodec.INSTANCE);
             } else {
-                mapRef.get().put(k, v);
+                mapRef.get().put(k, v, BenchmarkValueCodec.INSTANCE);
             }
         };
     }
@@ -141,7 +141,7 @@ public class ReconnectBench extends VirtualMapBaseBench {
             final AtomicReference<VirtualMap> teacherRef = new AtomicReference<>(createEmptyMap("teacher" + mapIndex));
             final AtomicReference<VirtualMap> learnerRef = new AtomicReference<>(createEmptyMap("learner" + mapIndex));
 
-            new StateBuilder(BenchmarkKey::longToKey, BenchmarkValue::longToValue)
+            new StateBuilder(BenchmarkKey::longToKey, BenchmarkValue::new)
                     .buildState(
                             random,
                             (long) numRecords * numFiles,

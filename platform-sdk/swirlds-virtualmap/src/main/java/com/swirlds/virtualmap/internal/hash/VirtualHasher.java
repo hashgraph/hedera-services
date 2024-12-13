@@ -171,7 +171,7 @@ public final class VirtualHasher {
         private HashHoldingTask out;
 
         // If not null, the task hashes the leaf. If null, the task processes the input hashes
-        private VirtualLeafBytes leaf;
+        private VirtualLeafBytes<?> leaf;
 
         ChunkHashTask(final ForkJoinPool pool, final long path, final int height) {
             super(pool, 1 + (1 << height), height > 0 ? 1 << height : 0);
@@ -184,7 +184,7 @@ public final class VirtualHasher {
             send();
         }
 
-        void setLeaf(final VirtualLeafBytes leaf) {
+        void setLeaf(final VirtualLeafBytes<?> leaf) {
             assert leaf != null && path == leaf.path() && height == 0;
             this.leaf = leaf;
             send();
@@ -366,7 +366,7 @@ public final class VirtualHasher {
         // it completes all task dependencies, so the task is executed.
 
         while (sortedDirtyLeaves.hasNext()) {
-            VirtualLeafBytes leaf = sortedDirtyLeaves.next();
+            VirtualLeafBytes<?> leaf = sortedDirtyLeaves.next();
             long curPath = leaf.path();
             ChunkHashTask curTask = map.remove(curPath);
             if (curTask == null) {

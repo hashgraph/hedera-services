@@ -34,6 +34,7 @@ import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.IntStream;
@@ -67,7 +68,7 @@ class VirtualMapHashingTest {
     @DisplayName("Hash Map With One Entry")
     void hashMapWithOneEntry() {
         final VirtualMap map = createMap();
-        map.put(TestKey.charToKey('a'), TestValue.stringToValue("a"));
+        map.put(TestKey.charToKey('a'), new TestValue("a"), TestValueCodec.INSTANCE);
         final VirtualMap copy = map.copy();
 
         final Hash hash = MerkleCryptoFactory.getInstance().digestTreeSync(map);
@@ -83,7 +84,7 @@ class VirtualMapHashingTest {
     void hashMapWithManyEntries() {
         final VirtualMap map0 = createMap();
         for (int i = 0; i < 100; i++) {
-            map0.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map0.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualMap map1 = map0.copy();
@@ -91,7 +92,7 @@ class VirtualMapHashingTest {
         assertNotNull(hash0, "hash should not be null");
 
         for (int i = 100; i < 200; i++) {
-            map1.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map1.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualMap map2 = map1.copy();
@@ -114,7 +115,7 @@ class VirtualMapHashingTest {
 
         final VirtualMap mapA = createMap();
         for (int i = 0; i < 100; i++) {
-            mapA.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            mapA.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualMap copyA = mapA.copy();
         final Hash hashA = MerkleCryptoFactory.getInstance().digestTreeSync(mapA);
@@ -122,7 +123,7 @@ class VirtualMapHashingTest {
 
         final VirtualMap mapB = createMap();
         for (int i = 0; i < 100; i++) {
-            mapB.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            mapB.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualMap copyB = mapB.copy();
         final Hash hashB = MerkleCryptoFactory.getInstance().digestTreeSync(mapB);
@@ -141,7 +142,7 @@ class VirtualMapHashingTest {
 
         final VirtualMap mapA = createMap();
         for (int i = 0; i < 100; i++) {
-            mapA.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            mapA.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualMap copyA = mapA.copy();
         final Hash hashA = MerkleCryptoFactory.getInstance().digestTreeSync(mapA);
@@ -149,7 +150,7 @@ class VirtualMapHashingTest {
 
         final VirtualMap mapB = createMap();
         for (int i = 0; i < 100; i++) {
-            mapB.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            mapB.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
         final VirtualMap copyB = mapB.copy();
         final Hash hashB = MerkleCryptoFactory.getInstance().digestTreeSync(mapB);
@@ -168,7 +169,7 @@ class VirtualMapHashingTest {
 
         final VirtualMap map = createMap();
         for (int i = 0; i < 100; i++) {
-            map.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final MerkleInternal root = MerkleTestUtils.buildLessSimpleTreeExtended();
@@ -200,7 +201,7 @@ class VirtualMapHashingTest {
 
         final VirtualMap map = createMap();
         for (int i = 0; i < 100; i++) {
-            map.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final MerkleInternal root = MerkleTestUtils.buildLessSimpleTreeExtended();
@@ -232,17 +233,17 @@ class VirtualMapHashingTest {
 
         final VirtualMap map0 = createMap();
         for (int i = 0; i < 100; i++) {
-            map0.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map0.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualMap map1 = createMap();
         for (int i = 100; i < 200; i++) {
-            map1.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map1.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualMap map2 = createMap();
         for (int i = 200; i < 300; i++) {
-            map2.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            map2.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final MerkleInternal root = MerkleTestUtils.buildLessSimpleTreeExtended();
@@ -281,11 +282,11 @@ class VirtualMapHashingTest {
     @DisplayName("Delete some tree nodes and hash")
     void hashBugFoundByPTT(long delete1, long delete2) {
         final VirtualMap map0 = createMap();
-        map0.put(TestKey.longToKey(1), TestValue.longToValue(1));
-        map0.put(TestKey.longToKey(2), TestValue.longToValue(2));
-        map0.put(TestKey.longToKey(3), TestValue.longToValue(3));
-        map0.put(TestKey.longToKey(4), TestValue.longToValue(4));
-        map0.put(TestKey.longToKey(5), TestValue.longToValue(5));
+        map0.put(TestKey.longToKey(1), new TestValue(1), TestValueCodec.INSTANCE);
+        map0.put(TestKey.longToKey(2), new TestValue(2), TestValueCodec.INSTANCE);
+        map0.put(TestKey.longToKey(3), new TestValue(3), TestValueCodec.INSTANCE);
+        map0.put(TestKey.longToKey(4), new TestValue(4), TestValueCodec.INSTANCE);
+        map0.put(TestKey.longToKey(5), new TestValue(5), TestValueCodec.INSTANCE);
 
         map0.remove(TestKey.longToKey(delete1));
         map0.remove(TestKey.longToKey(delete2));
@@ -310,7 +311,7 @@ class VirtualMapHashingTest {
     void internalNodeSynchronization(int nKeys) throws ExecutionException, InterruptedException {
         VirtualMap current = createMap();
         for (int i = 0; i < nKeys; ++i) {
-            current.put(TestKey.longToKey(i), TestValue.stringToValue(Integer.toString(i)));
+            current.put(TestKey.longToKey(i), new TestValue(Integer.toString(i)), TestValueCodec.INSTANCE);
         }
 
         final VirtualMap prev = current;
@@ -328,7 +329,7 @@ class VirtualMapHashingTest {
         final VirtualNodeCache cache = current.getRoot().getCache();
         int deletedInternals = 1; // path 0 internal node is preserved for an empty map
         for (int path = 1; path < numInternals; ++path) {
-            final Hash hash = cache.lookupHashByPath(path, false);
+            final Hash hash = cache.lookupHashByPath(path);
             assertNotNull(hash, "Unexpected null");
             if (hash == VirtualNodeCache.DELETED_HASH) {
                 deletedInternals++;
@@ -344,7 +345,7 @@ class VirtualMapHashingTest {
 
         // add n elements
         IntStream.range(1, nEntries)
-                .forEach(index -> map.put(TestKey.longToKey(index), TestValue.longToValue(nextInt())));
+                .forEach(index -> map.put(TestKey.longToKey(index), new TestValue(nextInt()), TestValueCodec.INSTANCE));
 
         VirtualRootNode root = map.getRoot();
         root.enableFlush();
@@ -369,8 +370,8 @@ class VirtualMapHashingTest {
         VirtualMap map = createMap();
 
         try {
-            map.put(TestKey.longToKey(1), TestValue.stringToValue("a"));
-            map.put(TestKey.longToKey(2), TestValue.stringToValue("b"));
+            map.put(TestKey.longToKey(1), new TestValue("a"), TestValueCodec.INSTANCE);
+            map.put(TestKey.longToKey(2), new TestValue("b"), TestValueCodec.INSTANCE);
 
             VirtualMap copy = map.copy();
             final Hash hash1 = map.getRight().getHash(); // virtual root node hash
@@ -399,8 +400,8 @@ class VirtualMapHashingTest {
 
             // Now check the other order: remove leaf 1 first, then leaf 2
 
-            map.put(TestKey.longToKey(1), TestValue.stringToValue("a"));
-            map.put(TestKey.longToKey(2), TestValue.stringToValue("b"));
+            map.put(TestKey.longToKey(1), new TestValue("a"), TestValueCodec.INSTANCE);
+            map.put(TestKey.longToKey(2), new TestValue("b"), TestValueCodec.INSTANCE);
 
             copy = map.copy();
             final Hash hash4 = map.getRight().getHash(); // virtual root node hash

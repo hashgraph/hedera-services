@@ -46,7 +46,7 @@ public interface VirtualHashListener {
      * @param leaf
      * 		A non-null leaf record representing the hashed leaf.
      */
-    default void onLeafHashed(VirtualLeafBytes leaf) {}
+    default void onLeafHashed(VirtualLeafBytes<?> leaf) {}
 
     /**
      * Called when all hashing has completed.

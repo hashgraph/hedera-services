@@ -47,7 +47,7 @@ public class VirtualMapValidator {
     @SuppressWarnings("unchecked")
     public void put(final Bytes key, final Bytes value) {
         reference.put(key, value);
-        subject.put(key, value);
+        subject.putBytes(key, value);
         if (!history.containsKey(key)) {
             history.put(key, new ArrayList<>());
         }
@@ -67,11 +67,11 @@ public class VirtualMapValidator {
 
     public Bytes get(final Bytes key) {
         final Bytes expected = reference.get(key);
-        final Bytes actual = subject.get(key);
+        final Bytes actual = subject.getBytes(key);
         if (expected != null && !expected.equals(actual)) {
             // Failed to match. Print out debug info.
             dumpHistory(key);
-            System.out.printf("Get Actual: [%s]:  %s%n", key, subject.get(key));
+            System.out.printf("Get Actual: [%s]:  %s%n", key, subject.getBytes(key));
         }
         assertEquals(expected, actual);
         return actual;
@@ -88,7 +88,7 @@ public class VirtualMapValidator {
         // Snapshot all references at time of copy
         final Map<Bytes, Bytes> referenceCopy = new HashMap<>();
         for (final Bytes key : reference.keySet()) {
-            final Bytes snapshotValue = subject.get(key);
+            final Bytes snapshotValue = subject.getBytes(key);
             referenceCopy.put(key, snapshotValue);
             if (!history.containsKey(key)) {
                 history.put(key, new ArrayList<>());
@@ -128,11 +128,11 @@ public class VirtualMapValidator {
     private void verifyMatch(final int round, final VirtualMap snapshot, final Map<Bytes, Bytes> reference) {
         assertEquals(reference.size(), snapshot.size());
         for (final Bytes key : reference.keySet()) {
-            if (!reference.get(key).equals(snapshot.get(key))) {
+            if (!reference.get(key).equals(snapshot.getBytes(key))) {
                 // Failed to match. Print out debug info.
                 System.out.printf(
                         "Failed on key %s for round %d. Expected %s. Actual %s%n",
-                        key, round, reference.get(key), snapshot.get(key));
+                        key, round, reference.get(key), snapshot.getBytes(key));
                 dumpHistory(key);
                 fail("Snapshot failed to match expected reference.");
             }

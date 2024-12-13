@@ -116,7 +116,7 @@ public class ReconnectNodeRemover {
         if (oldLastLeafPath > 0) {
             // no-op if new first leaf path is less or equal to old first leaf path
             for (long path = oldFirstLeafPath; path < Math.min(newFirstLeafPath, oldLastLeafPath + 1); path++) {
-                final VirtualLeafBytes oldRecord = oldRecords.findLeafRecord(path, false);
+                final VirtualLeafBytes oldRecord = oldRecords.findLeafRecord(path);
                 assert oldRecord != null;
                 leavesToDelete.add(oldRecord);
             }
@@ -133,7 +133,7 @@ public class ReconnectNodeRemover {
      * 		the key of the new leaf node
      */
     public synchronized void newLeafNode(final long path, final Bytes newKey) {
-        final VirtualLeafBytes oldRecord = oldRecords.findLeafRecord(path, false);
+        final VirtualLeafBytes oldRecord = oldRecords.findLeafRecord(path);
         if ((oldRecord != null) && !newKey.equals(oldRecord.keyBytes())) {
             leavesToDelete.add(oldRecord);
         }
@@ -149,7 +149,7 @@ public class ReconnectNodeRemover {
                 RECONNECT.getMarker(),
                 "allNodesReceived(): newLastLeafPath = " + newLastLeafPath + ", oldLastLeafPath = " + oldLastLeafPath);
         for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
-            final VirtualLeafBytes oldExtraLeafRecord = oldRecords.findLeafRecord(p, false);
+            final VirtualLeafBytes oldExtraLeafRecord = oldRecords.findLeafRecord(p);
             assert oldExtraLeafRecord != null || p < oldFirstLeafPath;
             if (oldExtraLeafRecord != null) {
                 leavesToDelete.add(oldExtraLeafRecord);

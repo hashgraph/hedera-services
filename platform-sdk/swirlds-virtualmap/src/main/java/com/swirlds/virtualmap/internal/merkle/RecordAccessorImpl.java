@@ -35,6 +35,7 @@ import java.util.Objects;
  * Implementation of {@link RecordAccessor} which, given a state, cache, and data source, provides access
  * to all records.
  */
+@SuppressWarnings("rawtypes")
 public class RecordAccessorImpl implements RecordAccessor {
 
     private final VirtualStateAccessor state;
@@ -88,7 +89,7 @@ public class RecordAccessorImpl implements RecordAccessor {
     @Override
     public Hash findHash(final long path) {
         assert path >= 0;
-        final Hash hash = cache.lookupHashByPath(path, false);
+        final Hash hash = cache.lookupHashByPath(path);
         if (hash == VirtualNodeCache.DELETED_HASH) {
             return null;
         }
@@ -108,7 +109,7 @@ public class RecordAccessorImpl implements RecordAccessor {
     @Override
     public boolean findAndWriteHash(long path, SerializableDataOutputStream out) throws IOException {
         assert path >= 0;
-        final Hash hash = cache.lookupHashByPath(path, false);
+        final Hash hash = cache.lookupHashByPath(path);
         if (hash == VirtualNodeCache.DELETED_HASH) {
             return false;
         }
@@ -123,17 +124,14 @@ public class RecordAccessorImpl implements RecordAccessor {
      * {@inheritDoc}
      */
     @Override
-    public VirtualLeafBytes findLeafRecord(final Bytes key, final boolean copy) {
-        VirtualLeafBytes rec = cache.lookupLeafByKey(key, copy);
+    public VirtualLeafBytes findLeafRecord(final Bytes key) {
+        VirtualLeafBytes rec = cache.lookupLeafByKey(key);
         if (rec == null) {
             try {
                 rec = dataSource.loadLeafRecord(key);
                 if (rec != null) {
                     assert rec.keyBytes().equals(key)
                             : "The key we found from the DB does not match the one we were looking for! key=" + key;
-                    if (copy) {
-                        cache.putLeaf(rec);
-                    }
                 }
             } catch (final IOException ex) {
                 throw new UncheckedIOException("Failed to read a leaf record from the data source by key", ex);
@@ -147,7 +145,7 @@ public class RecordAccessorImpl implements RecordAccessor {
      * {@inheritDoc}
      */
     @Override
-    public VirtualLeafBytes findLeafRecord(final long path, final boolean copy) {
+    public VirtualLeafBytes findLeafRecord(final long path) {
         assert path != INVALID_PATH;
         assert path != ROOT_PATH;
 
@@ -155,14 +153,13 @@ public class RecordAccessorImpl implements RecordAccessor {
             return null;
         }
 
-        VirtualLeafBytes rec = cache.lookupLeafByPath(path, copy);
+        VirtualLeafBytes rec = cache.lookupLeafByPath(path);
         if (rec == null) {
             try {
                 rec = dataSource.loadLeafRecord(path);
                 if (rec != null) {
-                    if (copy) {
-                        cache.putLeaf(rec);
-                    }
+                    assert rec.path() == path
+                            : "The path we found from the DB does not match the one we were looking for! path=" + path;
                 }
             } catch (final IOException ex) {
                 throw new UncheckedIOException("Failed to read a leaf record from the data source by path", ex);
@@ -177,7 +174,7 @@ public class RecordAccessorImpl implements RecordAccessor {
      */
     @Override
     public long findKey(final Bytes key) {
-        final VirtualLeafBytes rec = cache.lookupLeafByKey(key, false);
+        final VirtualLeafBytes rec = cache.lookupLeafByKey(key);
         if (rec != null) {
             return rec.path();
         }

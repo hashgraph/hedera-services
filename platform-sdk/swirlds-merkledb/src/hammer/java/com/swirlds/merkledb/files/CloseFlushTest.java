@@ -88,8 +88,8 @@ public class CloseFlushTest {
             VirtualMap map = new VirtualMap("closeFlushTest", builder, CONFIGURATION);
             for (int i = 0; i < count; i++) {
                 final Bytes key = ExampleLongKey.longToKey(i);
-                final Bytes value = ExampleFixedValue.intToValue(i);
-                map.put(key, value);
+                final ExampleFixedValue value = new ExampleFixedValue(i);
+                map.put(key, value, ExampleFixedValue.CODEC);
             }
             VirtualMap copy;
             final CountDownLatch shutdownLatch = new CountDownLatch(1);

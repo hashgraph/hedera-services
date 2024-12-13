@@ -26,6 +26,7 @@ import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Disabled;
@@ -53,8 +54,8 @@ class VirtualHasherHugeTest extends VirtualHasherTestBase {
 
         // Every leaf has a null hash for this test, and we never ask for the same leaf twice, so we
         // can have a simple function for creating virtual leaf records.
-        final LongFunction<VirtualLeafBytes> leafGetter =
-                (path) -> new VirtualLeafBytes(path, TestKey.longToKey(path), TestValue.stringToValue("" + path));
+        final LongFunction<VirtualLeafBytes> leafGetter = (path) ->
+                new VirtualLeafBytes(path, TestKey.longToKey(path), new TestValue("" + path), TestValueCodec.INSTANCE);
 
         // Since we're hashing every internal node, we can generate new ones with null hashes. None are ever
         // asked for twice.

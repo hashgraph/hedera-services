@@ -136,8 +136,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         }
 
         String readValueFromMerkleMap(String key) throws ParseException {
-            final var val = fruitVirtualMap.get(STRING_CODEC.toBytes(key));
-            return val == null ? null : STRING_CODEC.parse(val);
+            return fruitVirtualMap.get(STRING_CODEC.toBytes(key), STRING_CODEC);
         }
 
         @Test

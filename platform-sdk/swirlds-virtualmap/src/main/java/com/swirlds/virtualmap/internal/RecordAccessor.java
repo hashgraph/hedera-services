@@ -28,6 +28,7 @@ import java.io.UncheckedIOException;
 /**
  * Provides access to all records.
  */
+@SuppressWarnings("rawtypes")
 public interface RecordAccessor {
 
     /**
@@ -67,14 +68,12 @@ public interface RecordAccessor {
      *
      * @param key
      * 		The key. Must not be null.
-     * @param copy
-     * 		Whether to make a fast copy if needed.
      * @return The leaf, or null if there is not one.
      * @throws UncheckedIOException
      * 		If we fail to access the data store, then a catastrophic error occurred and
      * 		an UncheckedIOException is thrown.
      */
-    VirtualLeafBytes findLeafRecord(final Bytes key, final boolean copy);
+    VirtualLeafBytes findLeafRecord(final Bytes key);
 
     /**
      * Locates and returns a leaf node based on the path. If the leaf
@@ -85,14 +84,12 @@ public interface RecordAccessor {
      *
      * @param path
      * 		The path
-     * @param copy
-     * 		Whether to make a fast copy if needed.
      * @return The leaf, or null if there is not one.
      * @throws UncheckedIOException
      * 		If we fail to access the data store, then a catastrophic error occurred and
      * 		an UncheckedIOException is thrown.
      */
-    VirtualLeafBytes findLeafRecord(final long path, final boolean copy);
+    VirtualLeafBytes findLeafRecord(final long path);
 
     /**
      * Finds the path of the given key.

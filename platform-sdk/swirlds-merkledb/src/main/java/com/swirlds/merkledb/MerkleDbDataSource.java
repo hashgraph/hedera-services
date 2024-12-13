@@ -344,7 +344,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                         validLeafPathRange.getMinValidKey(), validLeafPathRange.getMaxValidKey());
             }
             leafRecordLoadedCallback = (dataLocation, leafData) -> {
-                final VirtualLeafBytes leafBytes = VirtualLeafBytes.parseFrom(leafData);
+                final VirtualLeafBytes<?> leafBytes = VirtualLeafBytes.parseFrom(leafData);
                 pathToDiskLocationLeafNodes.put(leafBytes.path(), dataLocation);
             };
         } else {
@@ -547,12 +547,12 @@ public final class MerkleDbDataSource implements VirtualDataSource {
      */
     @Nullable
     @Override
-    public VirtualLeafBytes loadLeafRecord(final Bytes keyBytes) throws IOException {
+    public VirtualLeafBytes<?> loadLeafRecord(final Bytes keyBytes) throws IOException {
         requireNonNull(keyBytes);
         final int keyHashCode = keyBytes.hashCode();
 
         final long path;
-        VirtualLeafBytes cached = null;
+        VirtualLeafBytes<?> cached = null;
         int cacheIndex = -1;
         if (leafRecordCache != null) {
             cacheIndex = Math.abs(keyHashCode % leafRecordCacheSize);
@@ -596,7 +596,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         statisticsUpdater.countLeafReads();
         // Go ahead and lookup the value.
-        VirtualLeafBytes leafBytes = VirtualLeafBytes.parseFrom(pathToKeyValue.get(path));
+        VirtualLeafBytes<?> leafBytes = VirtualLeafBytes.parseFrom(pathToKeyValue.get(path));
         assert leafBytes != null && leafBytes.keyBytes().equals(keyBytes);
 
         if (leafRecordCache != null) {
@@ -617,7 +617,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
      */
     @Nullable
     @Override
-    public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
+    public VirtualLeafBytes<?> loadLeafRecord(final long path) throws IOException {
         if (path < 0) {
             throw new IllegalArgumentException("Path (" + path + ") is not valid");
         }
@@ -646,7 +646,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         if (leafRecordCache != null) {
             cacheIndex = Math.abs(keyHashCode % leafRecordCacheSize);
             // No synchronization is needed here. See the comment in loadLeafRecord(key) above
-            final VirtualLeafBytes cached = leafRecordCache[cacheIndex];
+            final VirtualLeafBytes<?> cached = leafRecordCache[cacheIndex];
             if (cached != null && keyBytes.equals(cached.keyBytes())) {
                 // Cached path may be a valid path or INVALID_PATH, both are legal here
                 return cached.path();
@@ -1138,7 +1138,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         // Iterate over leaf records
         while (dirtyIterator.hasNext()) {
-            final VirtualLeafBytes leafBytes = dirtyIterator.next();
+            final VirtualLeafBytes<?> leafBytes = dirtyIterator.next();
             final long path = leafBytes.path();
             // Update key to path index
             keyToPath.put(leafBytes.keyBytes(), path);
@@ -1159,7 +1159,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
 
         // Iterate over leaf records to delete
         while (deletedIterator.hasNext()) {
-            final VirtualLeafBytes leafBytes = deletedIterator.next();
+            final VirtualLeafBytes<?> leafBytes = deletedIterator.next();
             final long path = leafBytes.path();
             // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
             // deletedLeaves stream have been moved to different paths in the tree. This is good
@@ -1210,7 +1210,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         }
         final int keyHashCode = keyBytes.hashCode();
         final int cacheIndex = Math.abs(keyHashCode % leafRecordCacheSize);
-        final VirtualLeafBytes cached = leafRecordCache[cacheIndex];
+        final VirtualLeafBytes<?> cached = leafRecordCache[cacheIndex];
         if ((cached != null) && keyBytes.equals(cached.keyBytes())) {
             leafRecordCache[cacheIndex] = null;
         }

@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -43,23 +42,6 @@ public class BenchmarkValue implements VirtualValue {
         return valueSize;
     }
 
-    public static Bytes longToValue(final long seed) {
-        final byte[] valueBytes = new byte[valueSize];
-        Utils.toBytes(seed, valueBytes);
-        return Bytes.wrap(valueBytes);
-    }
-
-    public static long valueToLong(final Bytes value) {
-        return Utils.fromBytes(value);
-    }
-
-    public static Bytes updatedValue(final Bytes value, final LongUnaryOperator updater) {
-        final long seed = Utils.fromBytes(value);
-        final byte[] valueBytes = new byte[valueSize];
-        Utils.toBytes(updater.applyAsLong(seed), valueBytes);
-        return Bytes.wrap(valueBytes);
-    }
-
     public BenchmarkValue() {
         // default constructor for deserialize
     }
@@ -71,6 +53,12 @@ public class BenchmarkValue implements VirtualValue {
 
     public BenchmarkValue(BenchmarkValue other) {
         valueBytes = Arrays.copyOf(other.valueBytes, other.valueBytes.length);
+    }
+
+    public BenchmarkValue(final ReadableSequentialData in) {
+        final int len = in.readInt();
+        valueBytes = new byte[len];
+        in.readBytes(valueBytes);
     }
 
     public long toLong() {
@@ -93,8 +81,13 @@ public class BenchmarkValue implements VirtualValue {
         return new BenchmarkValue(this);
     }
 
-    public static int getSerializedSize() {
-        return Integer.BYTES + valueSize;
+    public int getSizeInBytes() {
+        return Integer.BYTES + valueBytes.length;
+    }
+
+    public void writeTo(final WritableSequentialData out) {
+        out.writeInt(valueBytes.length);
+        out.writeBytes(valueBytes);
     }
 
     @Override

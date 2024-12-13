@@ -29,7 +29,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.time.Duration;
 import java.util.Collections;
@@ -81,7 +80,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         appleLeaf0 = appleLeaf0.withPath(3);
         cache0.clearLeafPath(1);
         cache0.putLeaf(appleLeaf0);
-        assertEquals(DELETED_LEAF_RECORD, cache0.lookupLeafByPath(1, false), "leaf should have been deleted");
+        assertEquals(DELETED_LEAF_RECORD, cache0.lookupLeafByPath(1), "leaf should have been deleted");
         validateLeaves(cache0, 2, asList(bananaLeaf0, appleLeaf0));
 
         // Add cherry to path 4
@@ -100,11 +99,11 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache0.putHash(rootInternal0);
         cache0.seal();
         validateTree(cache0, asList(rootInternal0, leftInternal0, bananaLeaf0, appleLeaf0, cherryLeaf0));
-        final Hash bananaLeaf0intHash = cache0.lookupHashByPath(bananaLeaf0.path(), false);
+        final Hash bananaLeaf0intHash = cache0.lookupHashByPath(bananaLeaf0.path());
         assertNull(bananaLeaf0intHash);
-        final Hash appleLeaf0intHash = cache0.lookupHashByPath(appleLeaf0.path(), false);
+        final Hash appleLeaf0intHash = cache0.lookupHashByPath(appleLeaf0.path());
         assertNull(appleLeaf0intHash);
-        final Hash cherryLeaf0intHash = cache0.lookupHashByPath(cherryLeaf0.path(), false);
+        final Hash cherryLeaf0intHash = cache0.lookupHashByPath(cherryLeaf0.path());
         assertNull(cherryLeaf0intHash);
         // This check (and many similar checks below) is arguable. In real world, dirtyHashes() is only
         // called when a cache is flushed to disk, and it happens only after VirtualMap copy is hashed, all
@@ -122,7 +121,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache1.putLeaf(bananaLeaf1);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache1.lookupLeafByPath(2, false),
+                cache1.lookupLeafByPath(2),
                 "value that was looked up should match original value");
         validateLeaves(cache1, 3, asList(appleLeaf0, cherryLeaf0, bananaLeaf1));
 
@@ -137,7 +136,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache1.putLeaf(appleLeaf1);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache1.lookupLeafByPath(3, false),
+                cache1.lookupLeafByPath(3),
                 "value that was looked up should match original value");
         validateLeaves(cache1, 4, asList(cherryLeaf0, bananaLeaf1, dateLeaf1, appleLeaf1));
 
@@ -184,7 +183,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache2.putLeaf(cherryLeaf2);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache2.lookupLeafByPath(4, false),
+                cache2.lookupLeafByPath(4),
                 "value that was looked up should match original value");
         validateLeaves(cache2, 5, asList(bananaLeaf1, dateLeaf1, appleLeaf1, eggplantLeaf1, cherryLeaf2));
 
@@ -199,7 +198,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache2.putLeaf(bananaLeaf2);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache2.lookupLeafByPath(5, false),
+                cache2.lookupLeafByPath(5),
                 "value that was looked up should match original value");
         validateLeaves(cache2, 6, asList(dateLeaf1, appleLeaf1, eggplantLeaf1, cherryLeaf2, figLeaf2, bananaLeaf2));
 
@@ -256,7 +255,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache3.deleteLeaf(appleLeaf3);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache3.lookupLeafByPath(7, false),
+                cache3.lookupLeafByPath(7),
                 "value that was looked up should match original value");
 
         final VirtualLeafBytes grapeLeaf3 = grapeLeaf(7);
@@ -264,7 +263,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache3.putLeaf(grapeLeaf3);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache3.lookupLeafByPath(12, false),
+                cache3.lookupLeafByPath(12),
                 "value that was looked up should match original value");
 
         VirtualLeafBytes bananaLeaf3 = bananaLeaf(5);
@@ -273,12 +272,9 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache3.deleteHash(5);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache3.lookupLeafByPath(11, false),
+                cache3.lookupLeafByPath(11),
                 "value that was looked up should match original value");
-        assertEquals(
-                DELETED_HASH,
-                cache3.lookupHashByPath(5, false),
-                "value that was looked up should match original value");
+        assertEquals(DELETED_HASH, cache3.lookupHashByPath(5), "value that was looked up should match original value");
 
         validateLeaves(cache3, 5, asList(bananaLeaf3, dateLeaf1, grapeLeaf3, eggplantLeaf1, cherryLeaf2, figLeaf2));
 
@@ -290,7 +286,7 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         cache3.clearLeafPath(5);
         assertEquals(
                 DELETED_LEAF_RECORD,
-                cache3.lookupLeafByPath(5, false),
+                cache3.lookupLeafByPath(5),
                 "value that was looked up should match original value");
 
         validateLeaves(
@@ -918,12 +914,10 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         for (final VirtualLeafBytes leaf : leaves) {
             assertEquals(expectedPath, leaf.path(), "path should match expected path");
             assertEquals(
-                    leaf,
-                    cache.lookupLeafByPath(leaf.path(), false),
-                    "value that was looked up should match original value");
+                    leaf, cache.lookupLeafByPath(leaf.path()), "value that was looked up should match original value");
             assertEquals(
                     leaf,
-                    cache.lookupLeafByKey(leaf.keyBytes(), false),
+                    cache.lookupLeafByKey(leaf.keyBytes()),
                     "value that was looked up should match original value");
             expectedPath++;
         }
@@ -950,25 +944,25 @@ class VirtualNodeCacheHammerTest extends VirtualTestBase {
         for (final Object node : nodes) {
             if (node == null) {
                 // This signals that a leaf has fallen out of the cache.
-                assertNull(cache.lookupLeafByPath(expectedPath, false), "no value should be found");
-                assertNull(cache.lookupHashByPath(expectedPath, false), "no value should be found");
+                assertNull(cache.lookupLeafByPath(expectedPath), "no value should be found");
+                assertNull(cache.lookupHashByPath(expectedPath), "no value should be found");
                 expectedPath++;
             } else {
-                if (node instanceof VirtualLeafRecord virtualLeafRecord) {
-                    assertEquals(expectedPath, virtualLeafRecord.getPath(), "path should match the expected value");
+                if (node instanceof VirtualLeafBytes virtualLeafRecord) {
+                    assertEquals(expectedPath, virtualLeafRecord.path(), "path should match the expected value");
                     final VirtualLeafBytes leaf = (VirtualLeafBytes) node;
                     assertEquals(
                             leaf,
-                            cache.lookupLeafByPath(leaf.path(), false),
+                            cache.lookupLeafByPath(leaf.path()),
                             "value that was looked up should match original value");
                     assertEquals(
                             leaf,
-                            cache.lookupLeafByKey(leaf.keyBytes(), false),
+                            cache.lookupLeafByKey(leaf.keyBytes()),
                             "value that was looked up should match original value");
                 } else if (node instanceof VirtualHashRecord virtualHashRecord) {
                     assertEquals(
                             virtualHashRecord.hash(),
-                            cache.lookupHashByPath(virtualHashRecord.path(), false),
+                            cache.lookupHashByPath(virtualHashRecord.path()),
                             "value that was looked up should match original value");
                 } else {
                     throw new IllegalArgumentException("Unexpected node type: " + node.getClass());

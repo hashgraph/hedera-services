@@ -63,7 +63,7 @@ class MigrationTest {
                 map = copy;
             }
 
-            map.put(ExampleLongKey.longToKey(i), ExampleFixedValue.intToValue(i * 2));
+            map.put(ExampleLongKey.longToKey(i), new ExampleFixedValue(i * 2), ExampleFixedValue.CODEC);
         }
 
         final List<Long> firstVisitOrder = new ArrayList<>(size);
@@ -133,7 +133,7 @@ class MigrationTest {
             }
 
             random.nextBytes(value);
-            map.put(ExampleLongKey.longToKey(i), ExampleFixedValue.intToValue(i, value));
+            map.put(ExampleLongKey.longToKey(i), new ExampleFixedValue(i, value), ExampleFixedValue.CODEC);
             checkSum += bytesToLong(value);
         }
 

@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.IOException;
 import java.util.List;
@@ -106,13 +107,13 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         // returning a valid because it shouldn't.
         final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(3, null);
         final VirtualRootNode root = createRoot();
-        root.put(A_KEY, APPLE);
-        root.put(B_KEY, BANANA);
-        root.put(C_KEY, CHERRY);
-        root.put(D_KEY, DATE);
-        root.put(E_KEY, EGGPLANT);
-        root.put(F_KEY, FIG);
-        root.put(G_KEY, GRAPE);
+        root.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+        root.put(B_KEY, BANANA, TestValueCodec.INSTANCE);
+        root.put(C_KEY, CHERRY, TestValueCodec.INSTANCE);
+        root.put(D_KEY, DATE, TestValueCodec.INSTANCE);
+        root.put(E_KEY, EGGPLANT, TestValueCodec.INSTANCE);
+        root.put(F_KEY, FIG, TestValueCodec.INSTANCE);
+        root.put(G_KEY, GRAPE, TestValueCodec.INSTANCE);
         final VirtualInternalNode internalNode = new VirtualInternalNode(root, virtualHashRecord);
         final VirtualLeafNode leftChild = internalNode.getChild(0);
         final VirtualLeafNode rightChild = internalNode.getChild(1);
@@ -128,13 +129,13 @@ class VirtualInternalNodeTest extends VirtualTestBase {
     @DisplayName("Getting a child that isn't 0 or 1")
     void getInternalNodeFromCacheAndFromDisk() {
         final VirtualRootNode root = createRoot();
-        root.put(A_KEY, APPLE);
-        root.put(B_KEY, BANANA);
-        root.put(C_KEY, CHERRY);
-        root.put(D_KEY, DATE);
-        root.put(E_KEY, EGGPLANT);
-        root.put(F_KEY, FIG);
-        root.put(G_KEY, GRAPE);
+        root.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+        root.put(B_KEY, BANANA, TestValueCodec.INSTANCE);
+        root.put(C_KEY, CHERRY, TestValueCodec.INSTANCE);
+        root.put(D_KEY, DATE, TestValueCodec.INSTANCE);
+        root.put(E_KEY, EGGPLANT, TestValueCodec.INSTANCE);
+        root.put(F_KEY, FIG, TestValueCodec.INSTANCE);
+        root.put(G_KEY, GRAPE, TestValueCodec.INSTANCE);
 
         MerkleNode child = root.getChild(1);
         assertTrue(child instanceof VirtualInternalNode, "child should be an internal node");
@@ -157,13 +158,13 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         root.getState().setFirstLeafPath(6);
         root.getState().setLastLeafPath(12);
         final List<VirtualLeafBytes> leaves = List.of(
-                new VirtualLeafBytes(6, D_KEY, DATE),
-                new VirtualLeafBytes(7, A_KEY, APPLE),
-                new VirtualLeafBytes(8, E_KEY, EGGPLANT),
-                new VirtualLeafBytes(9, C_KEY, CHERRY),
-                new VirtualLeafBytes(10, F_KEY, FIG),
-                new VirtualLeafBytes(11, G_KEY, GRAPE),
-                new VirtualLeafBytes(12, B_KEY, BANANA));
+                new VirtualLeafBytes<>(6, D_KEY, DATE, TestValueCodec.INSTANCE),
+                new VirtualLeafBytes<>(7, A_KEY, APPLE, TestValueCodec.INSTANCE),
+                new VirtualLeafBytes<>(8, E_KEY, EGGPLANT, TestValueCodec.INSTANCE),
+                new VirtualLeafBytes<>(9, C_KEY, CHERRY, TestValueCodec.INSTANCE),
+                new VirtualLeafBytes<>(10, F_KEY, FIG, TestValueCodec.INSTANCE),
+                new VirtualLeafBytes<>(11, G_KEY, GRAPE, TestValueCodec.INSTANCE),
+                new VirtualLeafBytes<>(12, B_KEY, BANANA, TestValueCodec.INSTANCE));
         root.getDataSource().saveRecords(6, 12, leaves.stream().map(this::hash), leaves.stream(), Stream.empty());
 
         VirtualHashRecord virtualHashRecord = new VirtualHashRecord(2, null);

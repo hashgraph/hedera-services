@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.reconnect;
+package com.swirlds.merkledb.test.fixtures;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.nio.ByteBuffer;
+public abstract class ExampleByteArrayVirtualValue {
 
-public final class TestKey {
+    public abstract int getId();
 
-    public static Bytes longToKey(final long k) {
-        final byte[] bytes = new byte[Long.BYTES];
-        ByteBuffer.wrap(bytes).putLong(k);
-        return Bytes.wrap(bytes);
+    public abstract byte[] getData();
+
+    @Override
+    public int hashCode() {
+        return getId();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof ExampleByteArrayVirtualValue that)) {
+            return false;
+        }
+        return getId() == that.getId();
     }
 }

@@ -148,7 +148,7 @@ public abstract class AbstractHashListener implements VirtualHashListener {
     }
 
     @Override
-    public synchronized void onLeafHashed(final VirtualLeafBytes leaf) {
+    public synchronized void onLeafHashed(final VirtualLeafBytes<?> leaf) {
         leaves.add(leaf);
     }
 

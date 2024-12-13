@@ -37,6 +37,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -187,7 +188,7 @@ class ReconnectHashListenerTest {
 
         assertEquals(size, allLeafRecords.size(), "Some leaf records were not written!");
         expected = size;
-        for (VirtualLeafBytes rec : allLeafRecords) {
+        for (VirtualLeafBytes<TestValue> rec : allLeafRecords) {
             final long path = rec.path();
             assertEquals(expected, path, "Path did not match expectation. path=" + path + ", expected=" + expected);
             expected++;
@@ -195,7 +196,7 @@ class ReconnectHashListenerTest {
     }
 
     private VirtualLeafBytes leaf(long path) {
-        return new VirtualLeafBytes(path, TestKey.longToKey(path), TestValue.longToValue(path));
+        return new VirtualLeafBytes(path, TestKey.longToKey(path), new TestValue(path), TestValueCodec.INSTANCE);
     }
 
     private Hash hash(long path) {

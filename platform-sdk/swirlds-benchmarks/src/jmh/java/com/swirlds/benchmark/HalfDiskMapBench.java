@@ -63,16 +63,14 @@ public class HalfDiskMapBench extends BaseBench {
         System.out.println();
 
         // Write files
-        final BenchmarkKeySerializer keySerializer = new BenchmarkKeySerializer();
         long start = System.currentTimeMillis();
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
             resetKeys();
             for (int j = 0; j < numRecords; ++j) {
                 long id = nextAscKey();
-                BenchmarkKey key = new BenchmarkKey(id);
                 long value = nextValue();
-                store.put(keySerializer.toBytes(key), value);
+                store.put(BenchmarkKey.longToKey(id), value);
                 if (verify) map[(int) id] = value;
             }
             store.endWriting();
@@ -88,8 +86,7 @@ public class HalfDiskMapBench extends BaseBench {
         if (verify) {
             start = System.currentTimeMillis();
             for (int id = 0; id < map.length; ++id) {
-                final BenchmarkKey key = new BenchmarkKey(id);
-                long value = store.get(keySerializer.toBytes(key), INVALID_PATH);
+                long value = store.get(BenchmarkKey.longToKey(id), INVALID_PATH);
                 if (value != map[id]) {
                     throw new RuntimeException("Bad value");
                 }

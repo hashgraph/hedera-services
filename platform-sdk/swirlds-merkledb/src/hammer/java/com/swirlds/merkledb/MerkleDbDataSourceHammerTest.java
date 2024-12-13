@@ -21,6 +21,7 @@ import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
@@ -56,7 +57,7 @@ public class MerkleDbDataSourceHammerTest {
         for (int i = 0; i < count; i++) {
             keys.add(testType.dataType().createVirtualLongKey(i));
         }
-        final List<Bytes> values = new ArrayList<>(count);
+        final List<ExampleByteArrayVirtualValue> values = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             values.add(testType.dataType().createVirtualValue(i + 1));
         }
@@ -83,7 +84,11 @@ public class MerkleDbDataSourceHammerTest {
                         2 * count - 2,
                         IntStream.range(0, count).mapToObj(j -> new VirtualHashRecord(k + j, hash(k + j + 1))),
                         IntStream.range(count - 1, count)
-                                .mapToObj(j -> new VirtualLeafBytes(k + j, keys.get(k), values.get((k + j) % count))),
+                                .mapToObj(j -> new VirtualLeafBytes(
+                                        k + j,
+                                        keys.get(k),
+                                        values.get((k + j) % count),
+                                        testType.dataType().getCodec())),
                         Stream.empty(),
                         true);
             } catch (Exception z) {

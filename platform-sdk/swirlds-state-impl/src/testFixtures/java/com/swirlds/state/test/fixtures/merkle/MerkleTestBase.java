@@ -274,7 +274,7 @@ public class MerkleTestBase extends StateTestBase {
 
     /** A convenience method for adding a k/v pair to a virtual map */
     protected void add(VirtualMap map, Codec<String> keyCodec, Codec<String> valueCodec, String key, String value) {
-        map.put(keyCodec.toBytes(key), valueCodec.toBytes(value));
+        map.put(keyCodec.toBytes(key), value, valueCodec);
     }
 
     /** A convenience method used to serialize a merkle tree */

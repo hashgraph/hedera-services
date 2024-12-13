@@ -144,7 +144,7 @@ public final class TeacherPullVirtualTreeView extends VirtualTreeViewBase implem
             out.writeLong(reconnectState.getLastLeafPath());
         }
         if (!isClean && isLeaf(path) && (reconnectState.getFirstLeafPath() > 0)) {
-            VirtualReconnectUtils.writeLeafRecord(out, records.findLeafRecord(path, false));
+            VirtualReconnectUtils.writeLeafRecord(out, records.findLeafRecord(path));
         }
     }
 
