@@ -118,7 +118,7 @@ class MinioBucketUploaderTest {
         uploader = new MinioBucketUploader(bucketConfigurationManager, executorService, configProvider);
     }
 
-//    @Test
+    //    @Test
     void testUploadBlockSuccess() throws Exception {
         // Create a temporary file to simulate the block file
         Path tempFile = Files.createTempFile("test", ".blk.gz");
@@ -129,9 +129,7 @@ class MinioBucketUploaderTest {
         when(minioClient.statObject(any(StatObjectArgs.class)))
                 .thenThrow(new ErrorResponseException(new ErrorResponse(), null, null));
 
-        doAnswer(invocation -> null)
-                .when(minioClient)
-                .uploadObject(any(UploadObjectArgs.class));
+        doAnswer(invocation -> null).when(minioClient).uploadObject(any(UploadObjectArgs.class));
         // Spy on the uploader
         uploader = spy(new MinioBucketUploader(bucketConfigurationManager, executorService, configProvider));
 
@@ -169,15 +167,14 @@ class MinioBucketUploaderTest {
             try (OutputStream outputStream = Files.newOutputStream(blockFile)) {
                 inputStream.transferTo(outputStream);
             }
-            CompletableFuture<Void> result  = uploader.uploadBlock(blockFile);
-//            assertDoesNotThrow(result::join); // Ensure no exceptions are thrown
+            CompletableFuture<Void> result = uploader.uploadBlock(blockFile);
+            //            assertDoesNotThrow(result::join); // Ensure no exceptions are thrown
             assertThrows(CompletionException.class, result::join);
         }
     }
 
     @Test
-    void testUploadBlockFailsIfFileDoesNotExist()
-            throws Exception {
+    void testUploadBlockFailsIfFileDoesNotExist() throws Exception {
 
         // Create a temporary file to simulate the block file (this file will not exist after deletion)
         Path tempFile = Files.createTempFile("nonexistent", ".blk.gz");
@@ -189,7 +186,8 @@ class MinioBucketUploaderTest {
         CompletionException exception = assertThrows(CompletionException.class, result::join);
         // Assert that the cause of the CompletionException is that the file does not exist
         assertTrue(exception.getCause() instanceof IllegalArgumentException);
-        assertEquals("Block path does not exist: " + tempFile, exception.getCause().getMessage());
+        assertEquals(
+                "Block path does not exist: " + tempFile, exception.getCause().getMessage());
 
         verify(minioClient, never()).uploadObject(any());
     }
@@ -203,7 +201,9 @@ class MinioBucketUploaderTest {
         CompletionException exception = assertThrows(CompletionException.class, result::join);
         // Assert that the exception cause is an Unknown Host Exception
         assertTrue(exception.getCause() instanceof UnknownHostException);
-        assertEquals("aws-endpoint: nodename nor servname provided, or not known", exception.getCause().getMessage());
+        assertEquals(
+                "aws-endpoint: nodename nor servname provided, or not known",
+                exception.getCause().getMessage());
     }
 
     private Map<String, InputStream> loadAllBlockFilesFromDirectory() {

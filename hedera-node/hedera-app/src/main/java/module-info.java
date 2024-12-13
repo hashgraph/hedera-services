@@ -29,6 +29,7 @@ module com.hedera.node.app {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
+    requires transitive io.minio;
     requires transitive javax.inject;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
@@ -53,7 +54,6 @@ module com.hedera.node.app {
     requires io.helidon.common.tls;
     requires io.helidon.webclient.api;
     requires io.helidon.webclient.grpc;
-    requires transitive io.minio;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
