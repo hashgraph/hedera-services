@@ -197,6 +197,7 @@ public class StartupStateUtilsTests {
         }
 
         final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
+        MerkleDb.resetDefaultInstancePath();
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
                         recycleBin,
@@ -272,6 +273,7 @@ public class StartupStateUtilsTests {
             }
         }
 
+        MerkleDb.resetDefaultInstancePath();
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
                         recycleBin,

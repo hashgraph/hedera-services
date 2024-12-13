@@ -151,6 +151,7 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(stateFile), "signed state file should be present");
         assertTrue(exists(signatureSetFile), "signature set file should be present");
 
+        MerkleDb.resetDefaultInstancePath();
         final DeserializedSignedState deserializedSignedState =
                 readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
         MerkleCryptoFactory.getInstance()
@@ -198,6 +199,7 @@ class SignedStateFileReadWriteTest {
 
         assertTrue(exists(stateFile), "signed state file should be present");
 
+        MerkleDb.resetDefaultInstancePath();
         final DeserializedSignedState deserializedSignedState =
                 readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
         MerkleCryptoFactory.getInstance()
