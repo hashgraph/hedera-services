@@ -284,11 +284,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final StartupNetworksFactory startupNetworksFactory;
 
     /**
-     * The id of this node.
-     */
-    private final NodeId selfNodeId;
-
-    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -307,6 +302,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * basis for applying consensus transactions.
      */
     private HederaInjectionComponent daggerApp;
+
+    /**
+     * When applying and migrating schemas to a target state, it is set here to support
+     * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
+     * before the roster lifecycle is adopted.
+     */
+    @Nullable
+    @Deprecated
+    private State initState;
 
     /**
      * The metrics object being used for reporting.
@@ -379,7 +383,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param migrator the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
      * @param startupNetworksFactory the factory for the startup networks
-     * @param selfNodeId the node ID of this node
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -387,11 +390,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
-            @NonNull final StartupNetworksFactory startupNetworksFactory,
-            @NonNull final NodeId selfNodeId) {
+            @NonNull final StartupNetworksFactory startupNetworksFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
-        this.selfNodeId = requireNonNull(selfNodeId);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         logger.info(
@@ -457,9 +458,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         // FUTURE: a lambda that tests if a ReadableTssStore
                         // constructed from the migration state returns a
                         // RosterKeys with the ledger id for the given roster
-                        new RosterService(roster -> true, () -> {
-                            throw new AssertionError("Not implemented");
-                        }),
+                        new RosterService(
+                                roster -> true,
+                                () -> new ReadablePlatformStateStore(
+                                        requireNonNull(initState).getReadableStates(PlatformStateService.NAME))),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -655,6 +657,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (diskAddressBook != null) {
             PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
         }
+        this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -667,6 +670,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 genesisNetworkInfo,
                 metrics,
                 startupNetworks);
+        this.initState = null;
         PLATFORM_STATE_SERVICE.clearDiskAddressBook();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
