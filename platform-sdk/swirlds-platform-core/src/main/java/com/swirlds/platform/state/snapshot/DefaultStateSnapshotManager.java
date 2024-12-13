@@ -210,6 +210,10 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
 
         // don't log an error if this is a freeze state. they are expected to lack signatures
         if (reservedState.isFreezeState()) {
+            final double signingWeightPercent = (((double) reservedState.getSigningWeight())
+                            / ((double) reservedState.getAddressBook().getTotalWeight()))
+                    * 100.0;
+
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     """
@@ -219,10 +223,11 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
                     reservedState.getRound(),
                     reservedState.getSigningWeight(),
                     reservedState.getAddressBook().getTotalWeight(),
-                    reservedState.getSigningWeight()
-                            / reservedState.getAddressBook().getTotalWeight()
-                            * 100.0);
+                    signingWeightPercent);
         } else {
+            final double signingWeight1Percent = (((double) signingWeight1) / ((double) totalWeight1)) * 100.0;
+            final double signingWeight2Percent = (((double) signingWeight2) / ((double) totalWeight2)) * 100.0;
+
             logger.error(
                     EXCEPTION.getMarker(),
                     new InsufficientSignaturesPayload(
@@ -235,10 +240,10 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
                                             reservedState.getRound(),
                                             signingWeight1,
                                             totalWeight1,
-                                            signingWeight1 / totalWeight1 * 100.0,
+                                            signingWeight1Percent,
                                             signingWeight2,
                                             totalWeight2,
-                                            signingWeight2 / totalWeight2 * 100.0,
+                                            signingWeight2Percent,
                                             Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
                                             Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2)))));
         }
