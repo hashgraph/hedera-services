@@ -403,6 +403,9 @@ public class TssBaseServiceImpl implements TssBaseService {
             final boolean isStakePeriodBoundary,
             final Instant consensusNow,
             final StoreMetricsService storeMetricsService) {
+        if (!appContext.configSupplier().get().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            return;
+        }
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
         final var rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
