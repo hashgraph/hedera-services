@@ -63,7 +63,6 @@ public class CryptocurrencyDemoMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(CryptocurrencyDemoState.class, () -> {
                 CryptocurrencyDemoState cryptocurrencyDemoState = new CryptocurrencyDemoState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(cryptocurrencyDemoState);
                 return cryptocurrencyDemoState;
             }));
             registerMerkleStateRootClassIds();
@@ -206,7 +205,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new CryptocurrencyDemoState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

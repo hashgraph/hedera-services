@@ -166,6 +166,10 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
                 .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
+
+        // check that invalid contract id is rejected
+        final var txn3 = contractCallTransactionWithInvalidContractId();
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn3));
     }
 
     @Test
@@ -198,6 +202,16 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder())
+                .build();
+    }
+
+    private TransactionBody contractCallTransactionWithInvalidContractId() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
+                        .contractID(invalidContract))
                 .build();
     }
 

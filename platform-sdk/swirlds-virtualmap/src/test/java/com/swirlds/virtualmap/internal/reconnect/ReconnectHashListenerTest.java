@@ -75,7 +75,7 @@ class ReconnectHashListenerTest {
                         TestKeySerializer.INSTANCE,
                         TestValueSerializer.INSTANCE,
                         null,
-                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
                         statistics,
                         nodeRemover),
                 "A null data source should produce an NPE");
@@ -94,7 +94,7 @@ class ReconnectHashListenerTest {
                         TestKeySerializer.INSTANCE,
                         TestValueSerializer.INSTANCE,
                         ds,
-                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
                         null,
                         nodeRemover),
                 "A null statistics should produce an NPE");
@@ -113,7 +113,7 @@ class ReconnectHashListenerTest {
                         TestKeySerializer.INSTANCE,
                         TestValueSerializer.INSTANCE,
                         ds,
-                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
                         statistics,
                         null),
                 "A null node remover should produce an NPE");
@@ -143,7 +143,7 @@ class ReconnectHashListenerTest {
                         TestKeySerializer.INSTANCE,
                         TestValueSerializer.INSTANCE,
                         ds,
-                        VIRTUAL_MAP_CONFIG.flushInterval(),
+                        VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
                         statistics,
                         nodeRemover),
                 "Should have thrown IllegalArgumentException");
@@ -163,7 +163,7 @@ class ReconnectHashListenerTest {
                     TestKeySerializer.INSTANCE,
                     TestValueSerializer.INSTANCE,
                     ds,
-                    VIRTUAL_MAP_CONFIG.flushInterval(),
+                    VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
                     statistics,
                     nodeRemover);
         } catch (Exception e) {
@@ -189,7 +189,7 @@ class ReconnectHashListenerTest {
                 TestKeySerializer.INSTANCE,
                 TestValueSerializer.INSTANCE,
                 ds,
-                VIRTUAL_MAP_CONFIG.flushInterval(),
+                VIRTUAL_MAP_CONFIG.reconnectFlushInterval(),
                 statistics,
                 nodeRemover);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
@@ -252,8 +252,8 @@ class ReconnectHashListenerTest {
         }
 
         @Override
-        public void close() throws IOException {
-            delegate.close();
+        public void close(final boolean keepData) throws IOException {
+            delegate.close(keepData);
         }
 
         @Override

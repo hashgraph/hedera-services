@@ -26,4 +26,4 @@ import com.swirlds.config.api.ConfigProperty;
  *                   a node can never lose an event that it has created due to a crash
  */
 @ConfigData("platformWiring")
-public record ComponentWiringConfig(@ConfigProperty(defaultValue = "false") boolean inlinePces) {}
+public record ComponentWiringConfig(@ConfigProperty(defaultValue = "true") boolean inlinePces) {}

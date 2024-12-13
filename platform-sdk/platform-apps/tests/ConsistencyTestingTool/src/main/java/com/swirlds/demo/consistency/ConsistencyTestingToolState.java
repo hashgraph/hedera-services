@@ -22,9 +22,11 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -42,9 +44,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,8 +65,9 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    private static final int STATE_LONG_INDEX = 1;
-    private static final int ROUND_HANDLED_INDEX = 2;
+    // Nodes at indices 0, 1, and 2 are used by the PlatformState, RosterMap, and RosterState.
+    private static final int STATE_LONG_INDEX = 3;
+    private static final int ROUND_HANDLED_INDEX = 4;
 
     /**
      * The history of transactions that have been handled by this app.
@@ -175,7 +180,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         }
 
         transactionHandlingHistory.init(logFilePath);
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(this);
     }
 
     /**
@@ -239,7 +244,11 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * Keeps track of which transactions have been prehandled.
      */
     @Override
-    public void preHandle(@NonNull final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         event.forEachTransaction(transaction -> {
             if (transaction.isSystem()) {
                 return;
@@ -260,7 +269,12 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * Writes the round and its contents to a log on disk
      */
     @Override
-    public void handleConsensusRound(final @NonNull Round round, final @NonNull PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            final @NonNull Round round,
+            final @NonNull PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         Objects.requireNonNull(round);
         Objects.requireNonNull(platformState);
 
