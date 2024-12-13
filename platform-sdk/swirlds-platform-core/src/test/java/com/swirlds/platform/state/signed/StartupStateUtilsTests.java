@@ -212,6 +212,7 @@ public class StartupStateUtilsTests {
 
         assertEquals(latestState.getRound(), loadedState.getRound());
         assertEquals(latestState.getState().getHash(), loadedState.getState().getHash());
+        RandomSignedStateGenerator.releaseReservable(loadedState.getState());
     }
 
     @Test
@@ -272,6 +273,7 @@ public class StartupStateUtilsTests {
                 latestUncorruptedState = state;
             }
         }
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
 
         MerkleDb.resetDefaultInstancePath();
         final SignedState loadedState = StartupStateUtils.loadStateFile(
@@ -293,6 +295,10 @@ public class StartupStateUtilsTests {
                     loadedState.getState().getHash());
         } else {
             assertNull(loadedState);
+        }
+
+        if (loadedState != null) {
+            RandomSignedStateGenerator.releaseReservable(loadedState.getState());
         }
 
         final Path savedStateDirectory = signedStateFilePath

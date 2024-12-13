@@ -24,6 +24,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -468,14 +469,22 @@ public class RandomSignedStateGenerator {
     }
 
     /**
+     * Keep calling release() on a given Reservable until it's completely released.
+     * @param reservable a reservable to release
+     */
+    public static void releaseReservable(@NonNull final Reservable reservable) {
+        while (reservable.getReservationCount() >= 0) {
+            reservable.release();
+        }
+    }
+
+    /**
      * Release all the SignedState objects built by this generator on the current thread,
      * and then clear the list of built states.
      */
     public static void releaseAllBuiltSignedStates() {
         builtSignedStates.get().forEach(signedState -> {
-            while (signedState.getState().getReservationCount() >= 0) {
-                signedState.getState().release();
-            }
+            releaseReservable(signedState.getState());
         });
         builtSignedStates.get().clear();
     }
