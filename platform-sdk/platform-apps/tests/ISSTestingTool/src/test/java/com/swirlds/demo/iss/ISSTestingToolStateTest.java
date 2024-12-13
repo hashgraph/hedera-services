@@ -35,6 +35,7 @@ import com.swirlds.state.merkle.singleton.StringLeaf;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.Test;
 class ISSTestingToolStateTest {
 
     private static final int RUNNING_SUM_INDEX = 3;
+    private Random random;
     private ISSTestingToolState state;
     private PlatformStateModifier platformStateModifier;
     private Round round;
@@ -53,6 +55,7 @@ class ISSTestingToolStateTest {
     @BeforeEach
     void setUp() {
         state = new ISSTestingToolState(mock(MerkleStateLifecycles.class), mock(Function.class));
+        random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
@@ -85,8 +88,18 @@ class ISSTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var bytes = Bytes.wrap(new byte[] {1, 0, 1, 1, 0, 1, 0, 0});
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(bytes);
+        final byte[] signature = new byte[384];
+        random.nextBytes(signature);
+        final byte[] hash = new byte[48];
+        random.nextBytes(hash);
+        final var stateSignatureTransaction = StateSignatureTransaction.newBuilder()
+                .signature(Bytes.wrap(signature))
+                .hash(Bytes.wrap(hash))
+                .round(round.getRoundNum())
+                .build();
+
+        final var encodedStateSignatureTransaction = state.encodeSystemTransaction(stateSignatureTransaction);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(encodedStateSignatureTransaction);
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);

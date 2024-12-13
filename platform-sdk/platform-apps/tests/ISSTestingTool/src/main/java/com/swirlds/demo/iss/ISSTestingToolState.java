@@ -33,10 +33,8 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -313,20 +311,12 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         }
 
         try {
-            final var parsedTransaction = Transaction.PROTOBUF.parseStrict(
-                    transaction.getApplicationTransaction().toReadableSequentialData());
+            final var transactionBytes = transaction.getApplicationTransaction();
 
-            Bytes bodyBytes;
-            if (parsedTransaction.signedTransactionBytes().length() > 0) {
-                bodyBytes = parsedTransaction.signedTransactionBytes();
-            } else {
-                bodyBytes = parsedTransaction.bodyBytes();
-            }
+            final var parsedStateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes.toReadableSequentialData());
 
-            final var parsedTransactionBody =
-                    TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
-
-            if (parsedTransactionBody.stateSignatureTransaction() != null) {
+            if (parsedStateSignatureTransaction.signature() != Bytes.EMPTY) {
                 return true;
             }
         } catch (ParseException e) {
