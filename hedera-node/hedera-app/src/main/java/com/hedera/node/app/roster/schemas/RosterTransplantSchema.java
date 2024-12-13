@@ -44,20 +44,23 @@ public interface RosterTransplantSchema {
      * @param ctx the migration context
      * @param rosterStoreFactory the factory to use to create the writable roster store
      */
-    default void restart(
+    default boolean restart(
             @NonNull final MigrationContext ctx,
             @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) {
         requireNonNull(ctx);
         if (ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             final long roundNumber = ctx.roundNumber();
             final var startupNetworks = ctx.startupNetworks();
-            startupNetworks.overrideNetworkFor(roundNumber).ifPresent(network -> {
+            final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
+            overrideNetwork.ifPresent(network -> {
                 final long activeRoundNumber = roundNumber + 1;
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
                 rosterStore.putActiveRoster(RosterUtils.rosterFrom(network), activeRoundNumber);
                 startupNetworks.setOverrideRound(roundNumber);
             });
+            return overrideNetwork.isPresent();
         }
+        return false;
     }
 }

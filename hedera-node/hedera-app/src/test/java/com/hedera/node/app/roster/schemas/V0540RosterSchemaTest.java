@@ -27,7 +27,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -129,13 +128,12 @@ class V0540RosterSchemaTest {
     void usesGenesisRosterIfLifecycleEnabledAndApropros() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
         given(ctx.isGenesis()).willReturn(true);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
 
-        subject.migrate(ctx);
+        subject.restart(ctx);
 
         verify(rosterStore).putActiveRoster(ROSTER, 0L);
     }
@@ -144,7 +142,6 @@ class V0540RosterSchemaTest {
     void usesAdaptedAddressBookAndMigrationRosterIfLifecycleEnabledIfApropos() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(startupNetworks.migrationNetworkOrThrow()).willReturn(NETWORK);
@@ -152,7 +149,7 @@ class V0540RosterSchemaTest {
         given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
 
-        subject.migrate(ctx);
+        subject.restart(ctx);
 
         verify(rosterStore).putActiveRoster(buildRoster(ADDRESS_BOOK), 0L);
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1L);
@@ -162,12 +159,11 @@ class V0540RosterSchemaTest {
     void noOpIfNotUpgradeAndActiveRosterPresent() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
 
-        subject.migrate(ctx);
+        subject.restart(ctx);
 
         verify(rosterStore).getActiveRoster();
         verifyNoMoreInteractions(rosterStore);
@@ -177,13 +173,12 @@ class V0540RosterSchemaTest {
     void doesNotAdoptNullCandidateRoster() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
         given(ctx.isUpgrade(any(), any())).willReturn(true);
 
-        subject.migrate(ctx);
+        subject.restart(ctx);
 
         verify(rosterStore).getActiveRoster();
         verify(rosterStore).getCandidateRoster();
@@ -194,7 +189,6 @@ class V0540RosterSchemaTest {
     void doesNotAdoptCandidateRosterIfNotSpecified() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
@@ -202,7 +196,7 @@ class V0540RosterSchemaTest {
         given(rosterStore.getCandidateRoster()).willReturn(ROSTER);
         given(canAdopt.test(ROSTER)).willReturn(false);
 
-        subject.migrate(ctx);
+        subject.restart(ctx);
 
         verify(rosterStore).getActiveRoster();
         verify(rosterStore).getCandidateRoster();
@@ -213,7 +207,6 @@ class V0540RosterSchemaTest {
     void adoptsCandidateRosterIfTestPasses() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
         given(rosterStore.getActiveRoster()).willReturn(ROSTER);
@@ -222,7 +215,7 @@ class V0540RosterSchemaTest {
         given(canAdopt.test(ROSTER)).willReturn(true);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
 
-        subject.migrate(ctx);
+        subject.restart(ctx);
 
         verify(rosterStore).getActiveRoster();
         verify(rosterStore).getCandidateRoster();
@@ -236,16 +229,6 @@ class V0540RosterSchemaTest {
         subject.restart(ctx);
 
         verifyNoMoreInteractions(ctx);
-    }
-
-    @Test
-    void restartIsNoOpIfNoOverridePresent() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
-        given(ctx.startupNetworks()).willReturn(startupNetworks);
-
-        subject.restart(ctx);
-
-        verifyNoInteractions(rosterStoreFactory);
     }
 
     @Test

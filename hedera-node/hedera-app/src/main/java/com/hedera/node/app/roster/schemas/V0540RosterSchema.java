@@ -96,9 +96,15 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
         requireNonNull(ctx);
         final var rosterState = ctx.newStates().getSingleton(ROSTER_STATES_KEY);
         if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            log.info("Setting default roster state for non-lifecycle mode");
             rosterState.put(RosterState.DEFAULT);
-        } else {
+        }
+    }
+
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        requireNonNull(ctx);
+        if (!RosterTransplantSchema.super.restart(ctx, rosterStoreFactory)
+                && ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             final var startupNetworks = ctx.startupNetworks();
             final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
             final var activeRoundNumber = ctx.roundNumber() + 1;
@@ -124,10 +130,5 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
                 }
             }
         }
-    }
-
-    @Override
-    public void restart(@NonNull MigrationContext ctx) {
-        RosterTransplantSchema.super.restart(ctx, rosterStoreFactory);
     }
 }
