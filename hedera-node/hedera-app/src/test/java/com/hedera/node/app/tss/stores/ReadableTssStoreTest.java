@@ -275,7 +275,6 @@ class ReadableTssStoreTest {
                 .tssVote(Bytes.wrap("vote".getBytes()))
                 .targetRosterHash(targetRosterHash)
                 .build();
-        when(key.rosterHash()).thenReturn(targetRosterHash);
         when(readableTssVoteState.keys()).thenReturn(singletonList(key).iterator());
         when(readableTssVoteState.get(key)).thenReturn(vote);
         when(rosterStore.get(sourceRosterHash)).thenReturn(SOURCE_ROSTER);
@@ -286,6 +285,7 @@ class ReadableTssStoreTest {
 
     @Test
     void testAnyWinningVoteFor() {
+        doCallRealMethod().when(subject).anyWinningVoteFor(any(), any());
         Bytes sourceRosterHash = Bytes.wrap("sourceHash".getBytes());
         Bytes targetRosterHash = Bytes.wrap("targetHash".getBytes());
         TssVoteMapKey key =
@@ -295,13 +295,11 @@ class ReadableTssStoreTest {
                 .tssVote(Bytes.wrap("vote".getBytes()))
                 .targetRosterHash(targetRosterHash)
                 .build();
-        when(readableTssVoteState.keys()).thenReturn(singletonList(key).iterator());
-        when(readableTssVoteState.keys()).thenReturn(List.of(key).iterator());
-        when(readableTssVoteState.get(key)).thenReturn(vote);
-        when(readableTssVoteState.size()).thenReturn(1L);
-        when(rosterStore.get(sourceRosterHash)).thenReturn(SOURCE_ROSTER);
+        when(subject.allVotes()).thenReturn(List.of(vote));
+        when(subject.anyWinningVoteFrom(any(), any(), any())).thenReturn(Optional.of(vote));
 
-        Optional<TssVoteTransactionBody> result = tssStore.anyWinningVoteFor(targetRosterHash, rosterStore);
+        Optional<TssVoteTransactionBody> result = subject.anyWinningVoteFor(targetRosterHash, rosterStore);
+
         assertTrue(result.isPresent());
     }
 }
