@@ -679,14 +679,15 @@ class DataFileCollectionTest {
         fileCompactor.compactFiles(storedOffsets, fileCollection2.getAllCompletedFiles(), 1);
         // check 1 files were opened and data is correct
         assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
-        try (Stream<Path> list = Files.list(dbDir)) {
-            assertEquals(
-                    1,
-                    list.filter(file -> file.getFileName().toString().matches(storeName + ".*pbj"))
-                            .filter(f -> !f.toString().contains("metadata"))
-                            .count(),
-                    "expected 1 db files but had [" + Arrays.toString(list.toArray()) + "]");
-        }
+        assertEquals(
+                1,
+                Files.list(dbDir)
+                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj"))
+                        .filter(f -> !f.toString().contains("metadata"))
+                        .count(),
+                "expected 1 db files but had ["
+                        + Arrays.toString(Files.list(dbDir).toArray())
+                        + "]");
         checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // close db
         fileCollection2.close();
