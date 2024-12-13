@@ -17,6 +17,7 @@
 package com.hedera.node.app.uploader;
 
 import com.hedera.node.app.annotations.CommonExecutor;
+import com.hedera.node.app.uploader.RetryUtils.SupplierWithException;
 import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -129,7 +130,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                                                     .build());
                                     return null;
                                 },
-                                maxRetryAttempts);
+                                maxRetryAttempts > 0 ? maxRetryAttempts : 3);
                     } catch (Exception e) {
                         throw new CompletionException("Failed to upload block " + objectKey, e);
                     }
@@ -193,5 +194,13 @@ public class MinioBucketUploader implements CloudBucketUploader {
         if (array != null) {
             Arrays.fill(array, '\0');
         }
+    }
+
+    protected List<MinioClient> getMinioClients() {
+        return this.minioClients;
+    }
+
+    public <T> T withRetry(SupplierWithException<T> task, int maxAttempts) throws Exception {
+        return RetryUtils.withRetry(task, maxAttempts);
     }
 }

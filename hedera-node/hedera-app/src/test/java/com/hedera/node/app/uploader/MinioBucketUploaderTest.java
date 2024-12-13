@@ -118,20 +118,61 @@ class MinioBucketUploaderTest {
         uploader = new MinioBucketUploader(bucketConfigurationManager, executorService, configProvider);
     }
 
-    //    @Test
     void testUploadBlockSuccess() throws Exception {
         // Create a temporary file to simulate the block file
         Path tempFile = Files.createTempFile("test", ".blk.gz");
         Files.write(tempFile, "test-content".getBytes());
 
         // Mock the MinioClient behavior
-        when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mockStatResponse);
-        when(minioClient.statObject(any(StatObjectArgs.class)))
-                .thenThrow(new ErrorResponseException(new ErrorResponse(), null, null));
+        MinioClient minioClientMock = MinioClient.builder()
+                .endpoint("http://127.0.0.1:9000")
+                .credentials("accessKey", "secretKey")
+                .endpoint("aws-endpoint")
+                .build();
 
-        doAnswer(invocation -> null).when(minioClient).uploadObject(any(UploadObjectArgs.class));
+        ErrorResponse errorResponse = new ErrorResponse(
+                "NoSuchKey",
+                "The specified key does not exist.",
+                "aws-bucket",
+                "test.blk.gz",
+                "resource",
+                "requestId",
+                "hostId");
+
+        // Create a mock okhttp3.Response
+        okhttp3.Response mockResponse = new okhttp3.Response.Builder()
+                .request(new okhttp3.Request.Builder()
+                        .url("http://127.0.0.1:9000")
+                        .build())
+                .protocol(okhttp3.Protocol.HTTP_1_1)
+                .code(404) // HTTP status code for "Not Found"
+                .message("Not Found")
+                .build();
+
+        // Provide an HTTP trace string
+        String httpTrace = "HTTP TRACE LOG";
+
+        when(minioClientMock.statObject(any(StatObjectArgs.class)))
+                .thenThrow(new ErrorResponseException(errorResponse, mockResponse, httpTrace));
+
+        doAnswer(invocation -> CompletableFuture.completedFuture(null))
+                .when(minioClientMock)
+                .uploadObject(any(UploadObjectArgs.class));
+
         // Spy on the uploader
         uploader = spy(new MinioBucketUploader(bucketConfigurationManager, executorService, configProvider));
+
+        // Mock the MinioBucketUploader
+        doReturn(List.of(minioClientMock)).when(uploader).getMinioClients();
+        doReturn(false).when(uploader).blockExistsOnCloud(anyString());
+
+        // Mock RetryUtils.withRetry to simulate successful retry
+        doAnswer(invocation -> {
+                    RetryUtils.SupplierWithException<?> task = invocation.getArgument(2);
+                    return task.get(); // Simulate successful retry
+                })
+                .when(uploader)
+                .withRetry(any(), anyInt());
 
         // Call the method under test
         CompletableFuture<Void> result = uploader.uploadBlock(tempFile);
@@ -139,7 +180,7 @@ class MinioBucketUploaderTest {
 
         // Verify uploadObject was called with correct arguments
         ArgumentCaptor<UploadObjectArgs> argsCaptor = ArgumentCaptor.forClass(UploadObjectArgs.class);
-        verify(minioClient).uploadObject(argsCaptor.capture());
+        verify(minioClientMock).uploadObject(argsCaptor.capture());
 
         UploadObjectArgs args = argsCaptor.getValue();
         assertEquals("aws-bucket", args.bucket());
