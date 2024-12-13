@@ -33,6 +33,7 @@ import java.util.List;
  */
 public class BulkOperationsBase {
     protected static final String OWNER = "owner";
+    protected static final String RECEIVER = "receiver";
     protected static final String ASSOCIATE_ACCOUNT = "associateAccount";
 
     protected static final String NFT_TOKEN = "nftToken";
