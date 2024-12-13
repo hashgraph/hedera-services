@@ -103,7 +103,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                         throw new IllegalArgumentException("Block path does not exist: " + blockPath);
                     }
                     String fileName = blockPath.getFileName().toString();
-                    String objectKey = fileName.endsWith(".blk")
+                    String objectKey = fileName.endsWith(".blk.gz")
                             ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
                             : "";
                     try {
