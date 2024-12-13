@@ -91,10 +91,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     private static final String ADDRESS_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
-    private static final String PROXY_PRE_BYTES = "6080604052348015600f57600080fd5b506000610";
+    private static final String PROXY_PRE_BYTES = "6080604052348015600f57600080fd5b50600061";
     private static final String PROXY_MID_BYTES = "905077";
     private static final String PROXY_POST_BYTES =
-            "fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
+            ADDRESS_BYTECODE_PATTERN + "600052366000602037600080366018016008845af43d806000803e8160008114"
+                    + "605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0"
+                    + "005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     @SuppressWarnings("java:S6418")
     // The following hex string is created by compiling the contract defined in HIP-719.
@@ -102,7 +104,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     // (0x618dc65e)
     // has been pre substituted before the ADDRESS_BYTECODE_PATTERN.
     private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY = PROXY_PRE_BYTES
-            + "167" // System contract address for HTS
+            + "0167" // System contract address for HTS
             + PROXY_MID_BYTES
             + "618dc65e" // function selector for `redirectForToken`
             + PROXY_POST_BYTES;
@@ -112,7 +114,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     // (0xe4cbd3a7)
     // has been pre substituted before the ADDRESS_BYTECODE_PATTERN.
     private static final String ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY = PROXY_PRE_BYTES
-            + "16a" // System contract address for HAS
+            + "016a" // System contract address for HAS
             + PROXY_MID_BYTES
             + "e4cbd3a7" // function selector for `redirectForAddress`
             + PROXY_POST_BYTES;
@@ -121,7 +123,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     // The only exception is that the function selector for `redirectForScheduleTxn` (0x5c3889ca)
     // has been pre substituted before the ADDRESS_BYTECODE_PATTERN.
     private static final String SCHEDULE_CALL_REDIRECT_CONTRACT_BINARY = PROXY_PRE_BYTES
-            + "16b" // System contract address for HSS
+            + "016b" // System contract address for HSS
             + PROXY_MID_BYTES
             + "5c3889ca" // function selector for `redirectForScheduleTxn`
             + PROXY_POST_BYTES;
