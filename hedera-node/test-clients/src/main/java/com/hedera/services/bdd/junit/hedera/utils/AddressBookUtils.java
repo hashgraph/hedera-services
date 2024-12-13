@@ -99,13 +99,14 @@ public class AddressBookUtils {
     public static Bytes testCertFor(final long nodeId) {
         if (TEST_GOSSIP_X509_CERTS == null) {
             try {
-                TEST_GOSSIP_X509_CERTS = ((Map<Long, String>) new ObjectMapper()
+                TEST_GOSSIP_X509_CERTS = ((Map<String, String>) new ObjectMapper()
                                 .readValue(
                                         AddressBookUtils.class
                                                 .getClassLoader()
                                                 .getResourceAsStream("hapi-test-gossip-certs.json"),
                                         Map.class))
-                        .entrySet().stream().collect(toMap(Map.Entry::getKey, e -> Bytes.fromBase64(e.getValue())));
+                        .entrySet().stream()
+                                .collect(toMap(e -> Long.parseLong(e.getKey()), e -> Bytes.fromBase64(e.getValue())));
             } catch (IOException e) {
                 throw new IllegalStateException("Could not load gossip certs", e);
             }
