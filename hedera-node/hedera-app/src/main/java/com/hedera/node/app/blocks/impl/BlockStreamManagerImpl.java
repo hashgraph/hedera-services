@@ -405,12 +405,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
      *
-     * @param message   the number of the block to finish
+     * @param message   the block hash to finish the block proof for
      * @param signature the signature to use in the block proof
      */
     @Override
     public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
-        // Find the block whose hash as the signed message, tracking any sibling hashes
+        // Find the block whose hash is the signed message, tracking any sibling hashes
         // needed for indirect proofs of earlier blocks along the way
         long blockNumber = Long.MIN_VALUE;
         boolean impliesIndirectProof = false;

@@ -103,7 +103,6 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @Tag(UPGRADE)
 @Order(Integer.MAX_VALUE - 2)
-@DisplayName("Upgrading with DAB enabled")
 @HapiTestLifecycle
 @OrderedInIsolation
 public class DabEnabledUpgradeTest implements LifecycleTest {
@@ -120,14 +119,13 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
     static SpecAccount NODE3_STAKER;
 
     @HapiTest
-    @Order(1)
-    @DisplayName("exports the original address book")
+    @Order(0)
     final Stream<DynamicTest> upgradeWithSameNodesExportsTheOriginalAddressBook() {
         final AtomicReference<SemanticVersion> startVersion = new AtomicReference<>();
         return hapiTest(
                 recordStreamMustIncludePassFrom(selectedItems(
                         EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
-                // This test asserts several things about staking behavior, hence needs to ensure it's active
+                // This test verifies staking rewards aren't paid for deleted nodes; so ensure staking is active
                 ensureStakingActivated(),
                 touchBalanceOf(NODE0_STAKER, NODE1_STAKER, NODE2_STAKER, NODE3_STAKER),
                 waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
@@ -136,101 +134,67 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 prepareFakeUpgrade(),
                 validateCandidateRoster(DabEnabledUpgradeTest::hasClassicRosterMetadata),
                 upgradeToNextConfigVersion(),
-                assertExpectedConfigVersion(startVersion::get));
+                assertGetVersionInfoMatches(startVersion::get));
     }
 
-    @Nested
+    @HapiTest
     @Order(1)
-    @DisplayName("after removing node id1")
-    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-    class AfterRemovingNodeId1 {
-        @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-            testLifecycle.doAdhoc(nodeDelete("1"));
-        }
-
-        @HapiTest
-        @Order(0)
-        @DisplayName("exports an address book without node1 and pays its stake no rewards")
-        final Stream<DynamicTest> removedNodeTest() {
-            return hapiTest(
-                    recordStreamMustIncludePassFrom(selectedItems(
-                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
-                    prepareFakeUpgrade(),
-                    validateCandidateRoster(
-                            addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED)),
-                    waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
-                    touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
-                    touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
-        }
-
-        @HapiTest
-        @Order(1)
-        @DisplayName("can still reconnect node id3 since node id0 and node id2 alone have majority weight")
-        final Stream<DynamicTest> nodeId3ReconnectTest() {
-            final AtomicReference<SemanticVersion> startVersion = new AtomicReference<>();
-            return hapiTest(
-                    getVersionInfo().exposingServicesVersionTo(startVersion::set),
-                    sourcing(() -> reconnectNode(byNodeId(3), configVersionOf(startVersion.get()))));
-        }
+    final Stream<DynamicTest> nodeId1NotInCandidateRosterAfterRemovalAndStakerNotRewardedAfterUpgrade() {
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
+                nodeDelete("1"),
+                prepareFakeUpgrade(),
+                validateCandidateRoster(
+                        addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
+                upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED)),
+                waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
+                touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
+                touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
     }
 
-    @Nested
+    @HapiTest
     @Order(2)
-    @DisplayName("after removing last node id3")
-    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-    class AfterRemovingNodeId3 {
-        @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-            testLifecycle.doAdhoc(nodeDelete("3"));
-        }
-
-        @HapiTest
-        @Order(0)
-        @DisplayName("exports an address book without node id3 and pays its stake no rewards")
-        final Stream<DynamicTest> removedNodeTest() {
-            return hapiTest(
-                    recordStreamMustIncludePassFrom(selectedItems(
-                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
-                    prepareFakeUpgrade(),
-                    validateCandidateRoster(
-                            addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
-                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED)),
-                    waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
-                    touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
-                    touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
-        }
+    final Stream<DynamicTest> nodeId3CanStillReconnectAfterRemovingNodeId1() {
+        final AtomicReference<SemanticVersion> startVersion = new AtomicReference<>();
+        return hapiTest(
+                getVersionInfo().exposingServicesVersionTo(startVersion::set),
+                sourcing(() -> reconnectNode(byNodeId(3), configVersionOf(startVersion.get()))));
     }
 
-    @Nested
+    @HapiTest
     @Order(3)
-    @DisplayName("after adding new node id4")
-    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-    class AfterAddingNodeId4 {
-        @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-            testLifecycle.doAdhoc(nodeCreate("node4")
-                    .adminKey(DEFAULT_PAYER)
-                    .accountId(classicFeeCollectorIdFor(4))
-                    .description(CLASSIC_NODE_NAMES[4])
-                    .withAvailableSubProcessPorts()
-                    .gossipCaCertificate(testCertFor(4)));
-        }
+    final Stream<DynamicTest> nodeId3NotInCandidateRosterAfterRemovalAndStakerNotRewardedAfterUpgrade() {
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
+                nodeDelete("3"),
+                prepareFakeUpgrade(),
+                validateCandidateRoster(
+                        addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
+                upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED)),
+                waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
+                touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
+                touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
+    }
 
-        @HapiTest
-        @Order(0)
-        @DisplayName("exports an address book with node id4")
-        final Stream<DynamicTest> exportedAddressBookIncludesNodeId4() {
-            return hapiTest(
-                    recordStreamMustIncludePassFrom(selectedItems(
-                            EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
-                    prepareFakeUpgrade(),
-                    // node4 was not active before this the upgrade, so it could not have written a config.txt
-                    validateCandidateRoster(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
-                            .contains(4L)),
-                    upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)));
-        }
+    @HapiTest
+    @Order(4)
+    final Stream<DynamicTest> newNodeId4InCandidateRosterAfterAddition() {
+        return hapiTest(
+                recordStreamMustIncludePassFrom(selectedItems(
+                        EXISTENCE_ONLY_VALIDATOR, 2, sysFileUpdateTo("files.nodeDetails", "files.addressBook"))),
+                nodeCreate("node4")
+                        .adminKey(DEFAULT_PAYER)
+                        .accountId(classicFeeCollectorIdFor(4))
+                        .description(CLASSIC_NODE_NAMES[4])
+                        .withAvailableSubProcessPorts()
+                        .gossipCaCertificate(testCertFor(4)),
+                prepareFakeUpgrade(),
+                // node4 was not active before this the upgrade, so it could not have written a config.txt
+                validateCandidateRoster(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
+                        .contains(4L)),
+                upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)));
     }
 
     @Nested

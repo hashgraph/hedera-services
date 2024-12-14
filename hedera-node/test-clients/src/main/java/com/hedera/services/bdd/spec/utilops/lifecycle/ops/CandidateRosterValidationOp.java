@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.roster.RosterRetriever;
@@ -47,7 +48,6 @@ import org.apache.logging.log4j.Logger;
 public class CandidateRosterValidationOp extends AbstractLifecycleOp {
     private static final Logger log = LogManager.getLogger(CandidateRosterValidationOp.class);
 
-    private static final String CANDIDATE_NETWORK_JSON = "candidate-network.json";
     private static final Duration CONFIG_TXT_TIMEOUT = Duration.ofSeconds(10);
     private final Consumer<Roster> rosterValidator;
 
@@ -62,7 +62,8 @@ public class CandidateRosterValidationOp extends AbstractLifecycleOp {
         final var rosterLifecycleEnabled = spec.startupProperties().getBoolean("addressBook.useRosterLifecycle");
         final Roster candidateRoster;
         if (rosterLifecycleEnabled) {
-            final var candidateNetworkPath = node.metadata().workingDirOrThrow().resolve(CANDIDATE_NETWORK_JSON);
+            final var candidateNetworkPath =
+                    node.metadata().workingDirOrThrow().resolve(WorkingDirUtils.CANDIDATE_NETWORK_JSON);
             final var candidateNetwork =
                     DiskStartupNetworks.loadNetworkFrom(candidateNetworkPath).orElseThrow();
             candidateRoster = RosterUtils.rosterFrom(candidateNetwork);

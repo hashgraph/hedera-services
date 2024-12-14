@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
@@ -24,7 +25,9 @@ import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBo
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -49,16 +52,20 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -78,6 +85,9 @@ class PlatformStateUpdatesTest implements TransactionFactory {
 
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
+
+    @Mock
+    private BiConsumer<State, Path> networkExportHelper;
 
     @BeforeEach
     void setUp() {
@@ -99,7 +109,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                         PlatformStateService.NAME,
                         Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
 
-        subject = new PlatformStateUpdates();
+        subject = new PlatformStateUpdates(networkExportHelper);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -161,6 +171,24 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         final var platformState = platformStateBackingStore.get();
         assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
         assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(networkExportHelper).accept(eq(state), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
+    }
+
+    @Test
+    void exportsCandidateNetworkOnPrepareUpgradeIfRequested() {
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+
+        // when
+        subject.handleTxBody(state, txBody.build(), configWith(true, false));
+
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(networkExportHelper).accept(eq(state), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
     @Test
@@ -191,6 +219,8 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         return HederaTestConfigBuilder.create()
                 .withValue("tss.keyCandidateRoster", "" + keyCandidateRoster)
                 .withValue("addressBook.useRosterLifecycle", "" + useRosterLifecycle)
+                .withValue("networkAdmin.exportCandidateNetwork", "true")
+                .withValue("networkAdmin.candidateNetworkExportFile", "candidate-network.json")
                 .getOrCreateConfig();
     }
 }

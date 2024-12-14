@@ -19,16 +19,17 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -39,7 +40,10 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -52,12 +56,15 @@ import org.apache.logging.log4j.Logger;
 public class PlatformStateUpdates {
     private static final Logger logger = LogManager.getLogger(PlatformStateUpdates.class);
 
+    private final BiConsumer<State, Path> networkExportHelper;
+
     /**
      * Creates a new instance of this class.
      */
     @Inject
-    public PlatformStateUpdates() {
+    public PlatformStateUpdates(@NonNull final BiConsumer<State, Path> networkExportHelper) {
         // For dagger
+        this.networkExportHelper = requireNonNull(networkExportHelper);
     }
 
     /**
@@ -75,7 +82,7 @@ public class PlatformStateUpdates {
         requireNonNull(config, "config must not be null");
 
         if (txBody.hasFreeze()) {
-            final FreezeType freezeType = txBody.freezeOrThrow().freezeType();
+            final var freezeType = txBody.freezeOrThrow().freezeType();
             final var platformStateStore =
                     new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME));
             if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
@@ -103,6 +110,12 @@ public class PlatformStateUpdates {
             } else if (freezeType == FREEZE_ABORT) {
                 logger.info("Aborting freeze");
                 platformStateStore.setFreezeTime(null);
+            } else if (freezeType == PREPARE_UPGRADE) {
+                final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
+                if (networkAdminConfig.exportCandidateNetwork()) {
+                    logger.info("Exporting candidate network after PREPARE_UPGRADE");
+                    networkExportHelper.accept(state, Paths.get(networkAdminConfig.candidateNetworkExportFile()));
+                }
             }
         }
     }

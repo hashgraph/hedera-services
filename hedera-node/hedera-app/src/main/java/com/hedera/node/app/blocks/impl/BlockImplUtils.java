@@ -197,7 +197,7 @@ public class BlockImplUtils {
                     case "TssBaseService" -> switch (stateKey) {
                         case "TSS_MESSAGES" -> STATE_ID_TSS_MESSAGES.protoOrdinal();
                         case "TSS_VOTES" -> STATE_ID_TSS_VOTES.protoOrdinal();
-                        case "TSS_ENCRYPTION_KEY" -> STATE_ID_TSS_ENCRYPTION_KEYS.protoOrdinal();
+                        case "TSS_ENCRYPTION_KEYS" -> STATE_ID_TSS_ENCRYPTION_KEYS.protoOrdinal();
                         case "TSS_STATUS" -> STATE_ID_TSS_STATUS.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };

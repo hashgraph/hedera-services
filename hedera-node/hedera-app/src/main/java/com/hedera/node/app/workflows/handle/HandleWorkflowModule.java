@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -37,8 +38,10 @@ import com.swirlds.state.State;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -62,6 +65,12 @@ public interface HandleWorkflowModule {
     static EthereumTransactionHandler provideEthereumTransactionHandler(
             @NonNull final ContractServiceImpl contractService) {
         return contractService.handlers().ethereumTransactionHandler();
+    }
+
+    @Provides
+    @Singleton
+    static BiConsumer<State, Path> provideNetworkExportHelper() {
+        return DiskStartupNetworks::writeNetworkInfo;
     }
 
     Runnable NO_OP = () -> {};

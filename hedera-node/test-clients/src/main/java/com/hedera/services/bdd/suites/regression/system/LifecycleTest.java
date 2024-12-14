@@ -80,7 +80,7 @@ public interface LifecycleTest {
      * @param versionSupplier the supplier of the expected version
      * @return the operation
      */
-    default HapiSpecOperation assertExpectedConfigVersion(@NonNull final Supplier<SemanticVersion> versionSupplier) {
+    default HapiSpecOperation assertGetVersionInfoMatches(@NonNull final Supplier<SemanticVersion> versionSupplier) {
         return sourcing(() -> getVersionInfo()
                 .hasProtoServicesVersion(fromBaseAndConfig(versionSupplier.get(), CURRENT_CONFIG_VERSION.get())));
     }
