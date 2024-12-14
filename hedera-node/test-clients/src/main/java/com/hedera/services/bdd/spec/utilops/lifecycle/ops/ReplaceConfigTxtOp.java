@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -38,7 +39,7 @@ public class ReplaceConfigTxtOp extends AbstractLifecycleOp {
     }
 
     @Override
-    protected void run(@NonNull final HederaNode node) {
+    protected void run(@NonNull final HederaNode node, @NonNull final HapiSpec spec) {
         final var configTxtPath = node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT);
         try {
             final var oldConfigTxt = Files.readString(configTxtPath);

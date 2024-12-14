@@ -28,6 +28,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -122,6 +123,10 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     public HapiNodeCreate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
         this.grpcEndpoints = serviceEndpoint;
         return this;
+    }
+
+    public HapiNodeCreate gossipCaCertificate(@NonNull final Bytes cert) {
+        return gossipCaCertificate(cert.toByteArray());
     }
 
     public HapiNodeCreate gossipCaCertificate(final byte[] gossipCaCertificate) {

@@ -82,7 +82,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
     }
 
     @Override
-    protected void run(@NonNull final HederaNode node) {
+    protected void run(@NonNull final HederaNode node, @NonNull HapiSpec spec) {
         log.info("Starting node '{}' - {}", node.getName(), node.metadata());
         try {
             if (!(node instanceof SubProcessNode subProcessNode)) {

@@ -20,13 +20,13 @@ import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.StreamSupport.stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.handlers.TssUtils;
@@ -106,12 +106,17 @@ public class AddressBookUtils {
                                                 .getResourceAsStream("hapi-test-gossip-certs.json"),
                                         Map.class))
                         .entrySet().stream()
-                                .collect(toMap(e -> Long.parseLong(e.getKey()), e -> Bytes.fromBase64(e.getValue())));
+                                // The test resource has one random valid cert with key "X" to be used for node ids
+                                // outside the @HapiTest range
+                                .collect(toMap(
+                                        e -> "X".equals(e.getKey()) ? Long.MAX_VALUE : Long.parseLong(e.getKey()),
+                                        e -> Bytes.fromBase64(e.getValue())));
             } catch (IOException e) {
                 throw new IllegalStateException("Could not load gossip certs", e);
             }
         }
-        return TEST_GOSSIP_X509_CERTS.get(nodeId);
+        final var hapiCert = TEST_GOSSIP_X509_CERTS.get(nodeId);
+        return hapiCert != null ? hapiCert : TEST_GOSSIP_X509_CERTS.get(Long.MAX_VALUE);
     }
 
     private AddressBookUtils() {
@@ -250,13 +255,22 @@ public class AddressBookUtils {
     }
 
     /**
-     * Returns a stream of numeric node ids from the given address book.
+     * Returns a stream of numeric node ids from the given roster.
      *
-     * @param addressBook the address book
+     * @param roster the roster
      * @return the stream of node ids
      */
-    public static Stream<Long> nodeIdsFrom(AddressBook addressBook) {
-        return stream(addressBook.spliterator(), false).map(Address::getNodeId).map(NodeId::id);
+    public static Stream<Long> nodeIdsFrom(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        return roster.rosterEntries().stream().map(RosterEntry::nodeId);
+    }
+
+    public static RosterEntry entryById(@NonNull final Roster roster, final long nodeId) {
+        requireNonNull(roster);
+        return roster.rosterEntries().stream()
+                .filter(entry -> entry.nodeId() == nodeId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No entry for node" + nodeId));
     }
 
     /**

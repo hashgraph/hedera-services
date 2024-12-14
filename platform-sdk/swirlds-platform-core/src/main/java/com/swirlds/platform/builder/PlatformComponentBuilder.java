@@ -19,6 +19,7 @@ package com.swirlds.platform.builder;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getGlobalMetrics;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
+import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
 import com.swirlds.common.merkle.utility.SerializableLong;
@@ -890,11 +891,7 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getAddressBook(),
+                    buildAddressBook(blocks.rosterHistory().getCurrentRoster()),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

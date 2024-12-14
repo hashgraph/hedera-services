@@ -272,16 +272,27 @@ public class DiskStartupNetworks implements StartupNetworks {
             @NonNull final String type, @NonNull final Configuration config, @NonNull final String... segments) {
         final var path = networksPath(config, segments);
         log.info("Loading {} network info from {}", type, path.toAbsolutePath());
+        final var maybeNetwork = loadNetworkFrom(path);
+        maybeNetwork.ifPresent(network -> {
+            log.info(
+                    "Parsed {} network info for N={} nodes from {}",
+                    type,
+                    network.nodeMetadata().size(),
+                    path.toAbsolutePath());
+            assertValidTssKeys(network);
+        });
+        return maybeNetwork;
+    }
+
+    /**
+     * Attempts to load a {@link Network} from a given file.
+     * @param path the path to the file to load the network from
+     * @return the loaded network, if it was found and successfully loaded
+     */
+    public static Optional<Network> loadNetworkFrom(@NonNull final Path path) {
         if (Files.exists(path)) {
             try (final var fin = Files.newInputStream(path)) {
-                final var network = Network.JSON.parse(new ReadableStreamingData(fin));
-                log.info(
-                        "Parsed {} network info for N={} nodes from {}",
-                        type,
-                        network.nodeMetadata().size(),
-                        path.toAbsolutePath());
-                assertValidTssKeys(network);
-                return Optional.of(network);
+                return Optional.of(Network.JSON.parse(new ReadableStreamingData(fin)));
             } catch (Exception e) {
                 log.warn("Failed to load {} network info from {}", path.toAbsolutePath(), e);
             }

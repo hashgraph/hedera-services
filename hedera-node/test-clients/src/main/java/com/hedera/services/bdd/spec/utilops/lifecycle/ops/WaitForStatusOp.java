@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,7 +55,7 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     @Override
     // assertion in production code
     @SuppressWarnings("java:S5960")
-    public void run(@NonNull final HederaNode node) {
+    public void run(@NonNull final HederaNode node, @NonNull HapiSpec spec) {
         try {
             awaitStatus(node, status, timeout);
         } catch (AssertionError error) {

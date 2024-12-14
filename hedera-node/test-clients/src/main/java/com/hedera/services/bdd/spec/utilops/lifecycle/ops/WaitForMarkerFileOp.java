@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -51,7 +52,7 @@ public class WaitForMarkerFileOp extends AbstractLifecycleOp {
     }
 
     @Override
-    protected void run(@NonNull final HederaNode node) {
+    protected void run(@NonNull final HederaNode node, @NonNull HapiSpec spec) {
         log.info(
                 "Waiting for node '{}' to write marker file '{}' within {}",
                 node.getName(),

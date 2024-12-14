@@ -134,6 +134,7 @@ public class ProcessUtils {
         environment.put("grpc.nodeOperatorPort", Integer.toString(metadata.grpcNodeOperatorPort()));
         environment.put("grpc.nodeOperatorPortEnabled", Boolean.toString(metadata.grpcNodeOperatorPortEnabled()));
         environment.put("hedera.config.version", Integer.toString(configVersion));
+        environment.put("networkAdmin.exportCandidateNetwork", "true");
         try {
             final var redirectFile = guaranteedExtantFile(
                     metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));
@@ -169,7 +170,6 @@ public class ProcessUtils {
                 "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
                 "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + RECORD_STREAMS_DIR,
                 "-Dhedera.profiles.active=DEV",
-                "-Dhedera.workflows.enabled=true",
                 "com.hedera.node.app.ServicesMain",
                 "-local",
                 Long.toString(metadata.nodeId())));

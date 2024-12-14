@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -31,7 +32,7 @@ public class PurgeUpgradeArtifactsOp extends AbstractLifecycleOp {
     }
 
     @Override
-    protected void run(@NonNull final HederaNode node) {
+    protected void run(@NonNull final HederaNode node, @NonNull final HapiSpec spec) {
         final var upgradeArtifactsLoc = node.getExternalPath(UPGRADE_ARTIFACTS_DIR);
         rm(upgradeArtifactsLoc);
         guaranteedExtantDir(upgradeArtifactsLoc);

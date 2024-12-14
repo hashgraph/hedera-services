@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -43,7 +44,7 @@ public class ShutdownWithinOp extends AbstractLifecycleOp {
     }
 
     @Override
-    protected void run(@NonNull final HederaNode node) {
+    protected void run(@NonNull final HederaNode node, @NonNull HapiSpec spec) {
         log.info("Waiting for '{}' to stop", node.getName());
         try {
             node.stopFuture().orTimeout(timeout.toMillis(), MILLISECONDS).join();

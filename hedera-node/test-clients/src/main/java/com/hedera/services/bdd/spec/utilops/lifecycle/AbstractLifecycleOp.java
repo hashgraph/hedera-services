@@ -41,12 +41,12 @@ public abstract class AbstractLifecycleOp extends UtilOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         CompletableFuture.allOf(spec.targetNetworkOrThrow().nodesFor(selector).stream()
-                        .map(node -> CompletableFuture.runAsync(() -> run(node)))
+                        .map(node -> CompletableFuture.runAsync(() -> run(node, spec)))
                         .toArray(CompletableFuture[]::new))
                 .join();
         // This operation has nothing more to do after all nodes have finished their run() methods
         return false;
     }
 
-    protected abstract void run(@NonNull final HederaNode node);
+    protected abstract void run(@NonNull HederaNode node, @NonNull HapiSpec spec);
 }

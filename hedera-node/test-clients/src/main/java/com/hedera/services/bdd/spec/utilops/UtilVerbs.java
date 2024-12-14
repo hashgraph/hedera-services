@@ -97,6 +97,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -149,7 +150,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.CandidateRosterValidationOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.PurgeUpgradeArtifactsOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
@@ -198,7 +199,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -599,12 +599,11 @@ public class UtilVerbs {
      * Returns an operation that validates that each node's generated <i>config.txt</i> in its upgrade
      * artifacts directory passes the given validator.
      *
-     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @param rosterValidator the validator to apply to each node's <i>config.txt</i>
      * @return the operation that validates the <i>config.txt</i> files
      */
-    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
-            @NonNull final Consumer<AddressBook> bookValidator) {
-        return validateUpgradeAddressBooks(NodeSelector.allNodes(), bookValidator);
+    public static CandidateRosterValidationOp validateCandidateRoster(@NonNull final Consumer<Roster> rosterValidator) {
+        return validateCandidateRoster(NodeSelector.allNodes(), rosterValidator);
     }
 
     /**
@@ -612,12 +611,12 @@ public class UtilVerbs {
      * artifacts directory passes the given validator.
      *
      * @param selector the selector for the nodes to validate
-     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @param rosterValidator the validator to apply to each node's <i>config.txt</i>
      * @return the operation that validates the <i>config.txt</i> files
      */
-    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
-            @NonNull final NodeSelector selector, @NonNull final Consumer<AddressBook> bookValidator) {
-        return new ConfigTxtValidationOp(selector, bookValidator);
+    public static CandidateRosterValidationOp validateCandidateRoster(
+            @NonNull final NodeSelector selector, @NonNull final Consumer<Roster> rosterValidator) {
+        return new CandidateRosterValidationOp(selector, rosterValidator);
     }
 
     /**

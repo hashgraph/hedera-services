@@ -48,4 +48,6 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "TssMessage,TssVote,TssShareSignature") @NetworkProperty
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
-        @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport) {}
+        @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport,
+        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateNetwork,
+        @ConfigProperty(defaultValue = "candidate-network.json") @NodeProperty String candidateNetworkExportFile) {}
