@@ -40,6 +40,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,8 +82,8 @@ public class AddressBookInitializer {
     /** The initial state. Must not be null. */
     @NonNull
     private final SignedState initialState;
-    /** The address book in the state. Must not be null */
-    @NonNull
+    /** The address book in the state. May be null only at genesis */
+    @Nullable
     private final AddressBook stateAddressBook;
     /** The address book derived from config.txt */
     @NonNull
@@ -107,12 +108,13 @@ public class AddressBookInitializer {
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
      * the SwirldState on upgrade.
      *
-     * @param selfId            The id of this node.
-     * @param currentVersion    The current version of the application.
-     * @param softwareUpgrade   Indicate that the software version has upgraded.
-     * @param initialState      The initial state to start from.
+     * @param selfId The id of this node.
+     * @param currentVersion The current version of the application.
+     * @param softwareUpgrade Indicate that the software version has upgraded.
+     * @param initialState The initial state to start from.
      * @param configAddressBook The address book derived from config.txt.
-     * @param platformContext   The context for the platform.
+     * @param platformContext The context for the platform.
+     * @param stateBookFn A function to get the address book from the state
      */
     public AddressBookInitializer(
             @NonNull final NodeId selfId,
@@ -120,7 +122,8 @@ public class AddressBookInitializer {
             final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final PlatformContext platformContext) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Function<SignedState, AddressBook> stateBookFn) {
         this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.softwareUpgrade = softwareUpgrade;
@@ -130,8 +133,8 @@ public class AddressBookInitializer {
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
 
-        this.stateAddressBook =
-                initialState.getState().getReadablePlatformState().getAddressBook();
+        final var book = stateBookFn.apply(initialState);
+        this.stateAddressBook = (book == null || book.getSize() == 0) ? null : book;
         if (stateAddressBook == null && !initialState.isGenesisState()) {
             throw new IllegalStateException("Only genesis states can have null address books.");
         }

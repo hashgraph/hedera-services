@@ -36,10 +36,7 @@ import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -295,17 +292,6 @@ public class AddressBookUtils {
             builder.setDomainName(host);
         }
         return builder.build();
-    }
-
-    /**
-     * Returns Address of the node id from the given address book.
-     *
-     * @param addressBook the address book
-     * @return the stream of node ids
-     */
-    public static Address nodeAddressFrom(@NonNull final AddressBook addressBook, final long nodeId) {
-        requireNonNull(addressBook);
-        return addressBook.getAddress(NodeId.of(nodeId));
     }
 
     /**

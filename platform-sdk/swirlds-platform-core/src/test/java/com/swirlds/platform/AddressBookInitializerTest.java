@@ -82,7 +82,8 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(true));
+                getPlatformContext(true),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -112,7 +113,8 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -139,7 +141,8 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -165,7 +168,8 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -195,7 +199,8 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 signedState.getAddressBook(),
@@ -226,7 +231,8 @@ class AddressBookInitializerTest {
                 true,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -256,7 +262,8 @@ class AddressBookInitializerTest {
                 true,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -285,7 +292,8 @@ class AddressBookInitializerTest {
                 true,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false));
+                getPlatformContext(false),
+                s -> s.getState().getReadablePlatformState().getAddressBook());
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertNotEquals(
                 configAddressBook,

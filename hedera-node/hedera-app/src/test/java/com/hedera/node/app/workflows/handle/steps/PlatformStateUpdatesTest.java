@@ -171,10 +171,6 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         final var platformState = platformStateBackingStore.get();
         assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
         assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
-        final var captor = ArgumentCaptor.forClass(Path.class);
-        verify(networkExportHelper).accept(eq(state), captor.capture());
-        final var path = captor.getValue();
-        assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
     @Test
