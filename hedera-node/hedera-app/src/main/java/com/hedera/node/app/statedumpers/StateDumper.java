@@ -65,8 +65,8 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.State;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.virtualmap.VirtualMap;
@@ -101,7 +101,7 @@ public class StateDumper {
             @NonNull final State state,
             @NonNull final DumpCheckpoint checkpoint,
             @NonNull final Set<MerkleStateChild> childrenToDump) {
-        if (!(state instanceof MerkleStateRoot merkleState)) {
+        if (!(state instanceof MerkleStateRoot<?> merkleState)) {
             throw new IllegalArgumentException("Expected a " + MerkleStateRoot.class.getSimpleName());
         }
         final SingletonNode<BlockInfo> blockInfoNode = requireNonNull(

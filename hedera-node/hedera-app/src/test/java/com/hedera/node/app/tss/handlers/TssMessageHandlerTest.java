@@ -17,8 +17,7 @@
 package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.tss.PlaceholderTssLibrary.SIGNATURE_SCHEMA;
-import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
+import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -27,6 +26,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
@@ -38,15 +39,11 @@ import com.hedera.node.app.tss.TssCryptographyManager.Vote;
 import com.hedera.node.app.tss.TssDirectoryAccessor;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPublicKey;
 import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.BitSet;
 import java.util.List;
@@ -82,7 +79,7 @@ class TssMessageHandlerTest {
     private TssCryptographyManager tssCryptographyManager;
 
     @Mock
-    private PairingPublicKey pairingPublicKey;
+    private BlsPublicKey pairingPublicKey;
 
     @Mock
     private Signature signature;
@@ -102,9 +99,8 @@ class TssMessageHandlerTest {
     private TssMessageHandler subject;
     private Vote vote;
     private TssParticipantDirectory tssParticipantDirectory = TssParticipantDirectory.createBuilder()
-            .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
-            .withSelf(0, PRIVATE_KEY)
-            .build(SIGNATURE_SCHEMA);
+            .withParticipant(0, 1, PUBLIC_KEY)
+            .build();
     private final TssKeysAccessor.TssKeys TSS_KEYS =
             new TssKeysAccessor.TssKeys(List.of(), List.of(), Bytes.EMPTY, tssParticipantDirectory, 1);
 
@@ -131,7 +127,6 @@ class TssMessageHandlerTest {
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
         given(nodeInfo.nodeId()).willReturn(1L);
         given(handleContext.body()).willReturn(getTssBody());
-        given(pairingPublicKey.publicKey()).willReturn(new FakeGroupElement(BigInteger.valueOf(10)));
 
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
@@ -143,7 +138,7 @@ class TssMessageHandlerTest {
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
         given(directoryAccessor.activeParticipantDirectory()).willReturn(TSS_KEYS.activeParticipantDirectory());
-
+        given(pairingPublicKey.toBytes()).willReturn("test".getBytes());
         subject.handle(handleContext);
 
         verify(submissionManager).submitTssVote(any(), eq(handleContext));

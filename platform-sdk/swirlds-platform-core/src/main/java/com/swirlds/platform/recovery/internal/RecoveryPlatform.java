@@ -143,15 +143,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @Override
     @NonNull
-    public AddressBook getAddressBook() {
-        return addressBook;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
     public NodeId getSelfId() {
         return selfId;
     }

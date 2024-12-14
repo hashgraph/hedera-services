@@ -110,7 +110,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
 
     protected VirtualMap createEmptyMap(String label) {
         final MerkleDbConfig merkleDbConfig = getConfig(MerkleDbConfig.class);
-        MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
+        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
                 (short) 1,
                 DigestType.SHA_384,
                 merkleDbConfig.maxNumOfKeys(),

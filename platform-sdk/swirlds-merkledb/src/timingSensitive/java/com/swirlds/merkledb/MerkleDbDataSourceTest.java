@@ -683,7 +683,7 @@ class MerkleDbDataSourceTest {
             // Now save some dirty leaves
             dataSource.saveRecords(15, 30, Stream.empty(), dirtyLeaves.stream(), Stream.empty(), false);
             assertEquals(1L, sourceCounter.get());
-            final var copy = dataSource.getDatabase().copyDataSource(dataSource, true);
+            final var copy = dataSource.getDatabase().copyDataSource(dataSource, true, false);
             try {
                 assertEquals(
                         2L, metrics.getMetric("merkle_db", "merkledb_count").get(ValueType.VALUE));

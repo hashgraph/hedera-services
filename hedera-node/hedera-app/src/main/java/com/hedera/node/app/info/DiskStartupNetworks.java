@@ -26,7 +26,6 @@ import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.node.app.tss.handlers.TssUtils;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
@@ -241,11 +240,11 @@ public class DiskStartupNetworks implements StartupNetworks {
                     .getConfiguration()
                     .getConfigData(TssConfig.class)
                     .maxSharesPerNode();
-            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode, (int) selfNodeId);
+            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode);
             final var tssMessages = network.tssMessages().stream()
                     .map(TssMessageTransactionBody::tssMessage)
                     .map(Bytes::toByteArray)
-                    .map(TssMessage::new)
+                    .map(msg -> tssBaseService.getTssMessageFromBytes(Bytes.wrap(msg), directory))
                     .toList();
             final var actualLedgerId = tssBaseService.ledgerIdFrom(directory, tssMessages);
             if (!expectedLedgerId.equals(actualLedgerId)) {

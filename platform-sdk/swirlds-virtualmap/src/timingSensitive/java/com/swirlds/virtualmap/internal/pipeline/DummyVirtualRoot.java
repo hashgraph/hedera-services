@@ -26,6 +26,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -212,7 +213,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
+    public boolean flush() {
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
@@ -261,6 +262,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         flushLatch.countDown();
 
         statistics.recordFlush(copyIndex); // Use copyIndex as flush duration
+
+        return true;
     }
 
     private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
@@ -397,9 +400,17 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public <T> T detach(final Path destination) {
+    public RecordAccessor detach() {
         this.detached = true;
         return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void snapshot(final Path destination) {
+        this.detached = true;
     }
 
     /**

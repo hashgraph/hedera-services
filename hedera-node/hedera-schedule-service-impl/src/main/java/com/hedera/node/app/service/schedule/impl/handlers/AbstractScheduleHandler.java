@@ -44,6 +44,7 @@ import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -66,7 +67,7 @@ import java.util.function.Predicate;
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
-abstract class AbstractScheduleHandler {
+public abstract class AbstractScheduleHandler {
     static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     @FunctionalInterface
@@ -278,7 +279,8 @@ abstract class AbstractScheduleHandler {
                             simpleKeyVerifier,
                             emptySet(),
                             ScheduleStreamBuilder.class,
-                            StakingRewards.ON))
+                            StakingRewards.ON,
+                            DispatchOptions.UsePresetTxnId.NO))
                     .scheduleRef(schedule.scheduleId());
             context.savepointStack()
                     .getBaseBuilder(ScheduleStreamBuilder.class)
@@ -295,7 +297,7 @@ abstract class AbstractScheduleHandler {
      * @param signatories the approving signatories
      * @return the key verifier
      */
-    static Predicate<Key> simpleKeyVerifierFrom(
+    public static Predicate<Key> simpleKeyVerifierFrom(
             @NonNull final ReadableAccountStore accountStore, @NonNull final List<Key> signatories) {
         final Set<Key> cryptoSigs = new HashSet<>();
         final Set<ContractID> contractIdSigs = new HashSet<>();

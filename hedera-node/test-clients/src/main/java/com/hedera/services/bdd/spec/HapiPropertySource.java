@@ -27,6 +27,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.types.StreamMode;
@@ -149,6 +150,11 @@ public interface HapiPropertySource {
 
     default TimeUnit getTimeUnit(String property) {
         return TimeUnit.valueOf(get(property));
+    }
+
+    default ScaleFactor getScaleFactor(@NonNull final String property) {
+        requireNonNull(property);
+        return ScaleFactor.from(get(property));
     }
 
     default double getDouble(String property) {

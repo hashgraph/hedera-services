@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
+import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import java.util.HashSet;
 import java.util.Set;
@@ -140,16 +141,13 @@ public class ReconnectNodeRemover {
     }
 
     public synchronized void allNodesReceived() {
-        if (newLastLeafPath < 0) {
-            // Empty teacher
-            return;
-        }
-        // no-op if newLastLeafPath is greater or equal to oldLastLeafPath
         logger.info(
                 RECONNECT.getMarker(),
                 "allNodesReceived(): newLastLeafPath = " + newLastLeafPath + ", oldLastLeafPath = " + oldLastLeafPath);
-        for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
-            final VirtualLeafBytes oldExtraLeafRecord = oldRecords.findLeafRecord(p);
+        final long firstOldStalePath = (newLastLeafPath == Path.INVALID_PATH) ? 1 : newLastLeafPath + 1;
+        // No-op if newLastLeafPath is greater or equal to oldLastLeafPath
+        for (long p = firstOldStalePath; p <= oldLastLeafPath; p++) {
+            final VirtualLeafBytes<?> oldExtraLeafRecord = oldRecords.findLeafRecord(p);
             assert oldExtraLeafRecord != null || p < oldFirstLeafPath;
             if (oldExtraLeafRecord != null) {
                 leavesToDelete.add(oldExtraLeafRecord);

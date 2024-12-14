@@ -129,11 +129,6 @@ public final class FakePlatform implements Platform {
     }
 
     @Override
-    public AddressBook getAddressBook() {
-        return addressBook;
-    }
-
-    @Override
     public NodeId getSelfId() {
         return selfNodeId;
     }

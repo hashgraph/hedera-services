@@ -21,11 +21,15 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DI
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.BlockStreamAccess.BLOCK_STREAM_ACCESS;
 import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.FREEZE_TIMEOUT;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
@@ -46,6 +50,7 @@ import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,6 +70,7 @@ public class StreamValidationOp extends UtilOp {
     private static final long BUFFER_MS = 500L;
     private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
     private static final String ERROR_PREFIX = "\n  - ";
+    private static final Duration STREAM_FILE_WAIT = Duration.ofSeconds(2);
 
     private static final List<RecordStreamValidator> RECORD_STREAM_VALIDATORS = List.of(
             new BlockNoValidator(),
@@ -113,9 +119,10 @@ public class StreamValidationOp extends UtilOp {
         // Freeze the network
         allRunFor(
                 spec,
-                freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
+                freezeOnly().payingWith(GENESIS).startingIn(1).seconds(),
+                spec.targetNetworkType() == SUBPROCESS_NETWORK ? waitForFrozenNetwork(FREEZE_TIMEOUT) : noOp(),
                 // Wait for the final stream files to be created
-                sleepFor(10 * BUFFER_MS));
+                sleepFor(STREAM_FILE_WAIT.toMillis()));
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {
@@ -128,6 +135,7 @@ public class StreamValidationOp extends UtilOp {
                                     .filter(factory -> factory.appliesTo(spec))
                                     .map(factory -> factory.create(spec))
                                     .flatMap(v -> v.validationErrorsIn(blocks, data))
+                                    .peek(t -> log.error("Block stream validation error", t))
                                     .map(Throwable::getMessage)
                                     .collect(joining(ERROR_PREFIX));
                             if (!maybeErrors.isBlank()) {

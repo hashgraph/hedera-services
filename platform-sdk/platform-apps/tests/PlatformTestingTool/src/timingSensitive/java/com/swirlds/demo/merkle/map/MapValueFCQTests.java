@@ -38,9 +38,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,14 +46,12 @@ import java.time.Instant;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
-@Disabled
 public class MapValueFCQTests {
 
     static final int fcqTTL = 10;
@@ -85,7 +81,6 @@ public class MapValueFCQTests {
         when(platform.getSelfId()).thenReturn(NodeId.of(0L));
         final Roster roster = RandomRosterBuilder.create(RANDOM).withSize(4).build();
         when(platform.getRoster()).thenReturn(roster);
-        state.init(platform, InitTrigger.RESTART, SoftwareVersion.NO_VERSION);
         state.initChildren();
     }
 

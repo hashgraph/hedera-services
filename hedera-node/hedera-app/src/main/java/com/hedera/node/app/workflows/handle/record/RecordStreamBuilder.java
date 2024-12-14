@@ -324,7 +324,6 @@ public class RecordStreamBuilder
             transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
         }
         // Note that internal contract creations are removed instead of reversed
-        transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);

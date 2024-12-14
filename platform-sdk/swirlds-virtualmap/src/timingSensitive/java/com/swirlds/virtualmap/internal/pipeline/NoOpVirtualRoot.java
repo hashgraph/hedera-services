@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.virtualmap.internal.RecordAccessor;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -64,7 +65,9 @@ public final class NoOpVirtualRoot extends PartialMerkleLeaf implements VirtualR
     }
 
     @Override
-    public void flush() {}
+    public boolean flush() {
+        return true;
+    }
 
     @Override
     public boolean isFlushed() {
@@ -91,9 +94,12 @@ public final class NoOpVirtualRoot extends PartialMerkleLeaf implements VirtualR
     public void computeHash() {}
 
     @Override
-    public <T> T detach(final Path destination) {
+    public RecordAccessor detach() {
         return null;
     }
+
+    @Override
+    public void snapshot(final Path destination) {}
 
     @Override
     public boolean isDetached() {

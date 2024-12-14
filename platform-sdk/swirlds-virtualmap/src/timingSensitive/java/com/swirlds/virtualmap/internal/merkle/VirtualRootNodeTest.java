@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createRoot;
@@ -31,6 +32,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -39,6 +41,8 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
+import com.swirlds.virtualmap.internal.RecordAccessor;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
@@ -47,12 +51,15 @@ import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -212,8 +219,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void testSerializeDeserialize() throws IOException {
         String fileName = "rootNode.bin";
         serializeRoot(fileName);
-        final VirtualRootNode root2 = createRoot();
-
         deserializeRootNodeAndVerify(
                 new FileInputStream(tempDir.resolve(fileName).toFile()), ClassVersion.CURRENT_VERSION);
     }
@@ -224,10 +229,16 @@ class VirtualRootNodeTest extends VirtualTestBase {
         try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
             root.deserialize(input, tempDir, version);
             root.postInit(new DummyVirtualStateAccessor());
+            final VirtualNodeCache cache = root.getCache();
             for (int i = 0; i < 100; i++) {
+                final Bytes key = TestKey.longToKey(i);
+                if (version >= ClassVersion.VERSION_3_NO_NODE_CACHE) {
+                    // Cache must be empty, all values must be in the data source
+                    assertNull(cache.lookupLeafByKey(key));
+                }
                 if (i % 7 != 0) {
-                    assertEquals(new TestValue(i).toBytes(), root.getBytes(TestKey.longToKey(i)));
-                    assertEquals(new TestValue(i), root.get(TestKey.longToKey(i), TestValueCodec.INSTANCE));
+                    assertEquals(new TestValue(i).toBytes(), root.getBytes(key));
+                    assertEquals(new TestValue(i), root.get(key, TestValueCodec.INSTANCE));
                 } else {
                     assertNull(root.get(TestKey.longToKey(i), null));
                 }
@@ -314,23 +325,89 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
-    @DisplayName("Detach Test")
-    void detachTest() {
+    @DisplayName("Snapshot Test")
+    void snapshotTest() throws IOException {
         final List<Path> paths = new LinkedList<>();
         paths.add(Path.of("asdf"));
-        paths.add(null);
         for (final Path destination : paths) {
             final VirtualMap original = new VirtualMap("test", new InMemoryBuilder(), CONFIGURATION);
             final VirtualMap copy = original.copy();
 
             final VirtualRootNode root = original.getChild(1);
             root.getHash(); // forces copy to become hashed
-            root.getPipeline().detachCopy(root, destination);
+            root.getPipeline().pausePipelineAndRun("snapshot", () -> {
+                root.snapshot(destination);
+                return null;
+            });
             assertTrue(root.isDetached(), "root should be detached");
 
             original.release();
             copy.release();
         }
+    }
+
+    @Test
+    @DisplayName("Snapshot and restore")
+    void snapshotAndRestore() throws IOException {
+        final VirtualDataSourceBuilder dsBuilder = new InMemoryBuilder();
+        final List<VirtualMap> copies = new LinkedList<>();
+        final VirtualMap copy0 = new VirtualMap("test", dsBuilder, CONFIGURATION);
+        copies.add(copy0);
+        for (int i = 1; i <= 10; i++) {
+            final VirtualMap prevCopy = copies.get(i - 1);
+            final VirtualMap copy = prevCopy.copy();
+            // i-th copy contains TestKey(i)
+            copy.put(TestKey.longToKey(i), new TestValue(i + 100), TestValueCodec.INSTANCE);
+            copies.add(copy);
+        }
+        for (VirtualMap copy : copies) {
+            // Force virtual map / root node hashing
+            copy.getRight().getHash();
+        }
+        // Take a snapshot of copy 5
+        final VirtualMap copy5 = copies.get(5);
+        final Path snapshotPath =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotAndRestore", CONFIGURATION);
+        try (final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
+            copy5.serialize(out, snapshotPath);
+            try (final ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
+                    final SerializableDataInputStream in = new SerializableDataInputStream(bin)) {
+                final VirtualMap restored = new VirtualMap(CONFIGURATION);
+                restored.deserialize(in, snapshotPath, copy0.getVersion());
+                // All keys 1 to 5 should be in the snapshot
+                for (int i = 1; i < 6; i++) {
+                    final Bytes key = TestKey.longToKey(i);
+                    assertTrue(restored.containsKey(key), "Key " + i + " not found");
+                    assertEquals(new TestValue(i + 100), restored.get(key, TestValueCodec.INSTANCE));
+                }
+                // All keys 6 to 10 should not be there
+                for (int i = 6; i < 10; i++) {
+                    final Bytes key = TestKey.longToKey(i);
+                    assertFalse(restored.containsKey(key), "Key " + i + " found");
+                    assertNull(restored.get(key, TestValueCodec.INSTANCE));
+                }
+            }
+        } finally {
+            copies.forEach(VirtualMap::release);
+        }
+    }
+
+    @Test
+    @DisplayName("Detach Test")
+    void detachTest() throws IOException {
+        final VirtualMap original = new VirtualMap("test", new InMemoryBuilder(), CONFIGURATION);
+        final VirtualMap copy = original.copy();
+
+        final VirtualRootNode root = original.getChild(1);
+        root.getHash(); // forces copy to become hashed
+        final RecordAccessor detachedCopy = root.getPipeline().pausePipelineAndRun("copy", root::detach);
+        assertTrue(root.isDetached(), "root should be detached");
+        assertNotNull(detachedCopy);
+
+        original.release();
+        copy.release();
+        detachedCopy.getDataSource().close();
     }
 
     @Test
@@ -410,6 +487,231 @@ class VirtualRootNodeTest extends VirtualTestBase {
         }
         assertFalse(root.shouldBeFlushed()); // should still have a custom flush threshold
         root.release();
+    }
+
+    @Test
+    void inMemoryAddRemoveNoFlushTest() throws InterruptedException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+
+        VirtualRootNode root =
+                new VirtualRootNode(new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
+
+        final VirtualRootNode copy0 = root;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+        for (int i = 0; i < 100; i++) {
+            final Bytes key = TestKey.longToKey(i);
+            final TestValue value = new TestValue(1000000 + i);
+            root.put(key, value, TestValueCodec.INSTANCE);
+        }
+
+        // Here is the test: in every copy, add 100 elements. In the same copy, delete all elements
+        // added in the previous copy. Every copy will contain no more than 200 elements, therefore
+        // its effective size will be small, so none of the copies should be flushed to disk
+        final int nCopies = 10000;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 100; i++) {
+                final int toAdd = copyNo * 100 + i;
+                final Bytes keyToAdd = TestKey.longToKey(toAdd);
+                final TestValue value = new TestValue(1000000 + toAdd);
+                root.put(keyToAdd, value, TestValueCodec.INSTANCE);
+                final int toRemove = (copyNo - 1) * 100 + i;
+                final Bytes keytoRemove = TestKey.longToKey(toRemove);
+                root.remove(keytoRemove, TestValueCodec.INSTANCE);
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 0; i < nCopies - 2; i++) {
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
+
+        final var lcopy = root.copy();
+        lcopy.postInit(new VirtualStateAccessorImpl(state));
+        root.enableFlush();
+        root.release();
+        root.waitUntilFlushed();
+        root = lcopy;
+
+        // Values from copies 0 to nCopies - 2 should not be there (removed)
+        for (int copyNo = 0; copyNo < nCopies - 2; copyNo++) {
+            for (int i = 0; i < 100; i++) {
+                final int toCheck = copyNo * 100 + i;
+                final Bytes keyToCheck = TestKey.longToKey(toCheck);
+                final TestValue value = root.get(keyToCheck, TestValueCodec.INSTANCE);
+                assertNull(value);
+                final VirtualLeafBytes leafRec = root.getCache().lookupLeafByKey(keyToCheck);
+                assertNull(leafRec);
+            }
+        }
+    }
+
+    @Test
+    void inMemoryAddRemoveSomeFlushesTest() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+
+        VirtualRootNode root =
+                new VirtualRootNode(new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
+
+        final int nCopies = 1000;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+
+        final VirtualRootNode copy0 = root;
+        copies[0] = copy0;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+        for (int i = 0; i < 100; i++) {
+            final Bytes key = TestKey.longToKey(i);
+            final TestValue value = new TestValue(1000000 + i);
+            root.put(key, value, TestValueCodec.INSTANCE);
+        }
+
+        final VirtualRootNode copy1 = root.copy();
+        copies[1] = copy1;
+        state = state.copy();
+        copy1.postInit(new VirtualStateAccessorImpl(state));
+        root.release();
+        root = copy1;
+        for (int i = 100; i < 200; i++) {
+            final Bytes key = TestKey.longToKey(i);
+            final TestValue value = new TestValue(1000000 + i);
+            root.put(key, value, TestValueCodec.INSTANCE);
+        }
+
+        // Here is the test: in every copy, add 100 elements. In the same copy, delete all elements
+        // added in the previous copy. In the same copy, re-add the same elements that were added
+        // two copies ago. It will cause copies to grow in size, so eventually some copies must be
+        // flushed
+        for (int copyNo = 2; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 100; i++) {
+                // Add
+                final int toAdd = copyNo * 100 + i;
+                final Bytes keyToAdd = TestKey.longToKey(toAdd);
+                final TestValue value = new TestValue(1000000 + toAdd);
+                root.put(keyToAdd, value, TestValueCodec.INSTANCE);
+                // Remove
+                final int toRemove = (copyNo - 1) * 100 + i;
+                final Bytes keytoRemove = TestKey.longToKey(toRemove);
+                root.remove(keytoRemove, TestValueCodec.INSTANCE);
+                // Re-add
+                final int toReAdd = (copyNo - 2) * 100 + i;
+                final Bytes keytoReAdd = TestKey.longToKey(toReAdd);
+                final TestValue valueToReAdd = new TestValue(1000000 + toReAdd);
+                root.put(keytoReAdd, valueToReAdd, TestValueCodec.INSTANCE);
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        int merged = 0;
+        int flushed = 0;
+        for (int i = 0; i < nCopies - 2; i++) {
+            final VirtualRootNode copy = copies[i];
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(
+                    () -> copy.isMerged() || copy.isFlushed(),
+                    Duration.ofSeconds(8),
+                    "copy " + i + " should be merged or flushed");
+            if (copy.isMerged()) {
+                merged++;
+            }
+            if (copy.isFlushed()) {
+                flushed++;
+            }
+        }
+        assertTrue(merged > 0, "At least one copy must be merged");
+        assertTrue(flushed > 0, "At least one copy must be flushed");
+        assertTrue(merged > flushed, "More copies must be merged than flushed");
+
+        // All values from copies 0 to nCopies - 2 should be available (re-added)
+        for (int copyNo = 0; copyNo < nCopies - 2; copyNo++) {
+            for (int i = 0; i < 100; i++) {
+                final int toCheck = copyNo * 100 + i;
+                final Bytes keyToCheck = TestKey.longToKey(toCheck);
+                final TestValue value = root.get(keyToCheck, TestValueCodec.INSTANCE);
+                assertNotNull(value);
+                final int expected = 1000000 + toCheck;
+                assertEquals("Value " + expected, value.getValue());
+            }
+        }
+        // Values from copy nCopies - 2 should not be there (removed)
+        for (int i = 0; i < 100; i++) {
+            final int toCheck = (nCopies - 2) * 100 + i;
+            final Bytes keyToCheck = TestKey.longToKey(toCheck);
+            final TestValue value = root.get(keyToCheck, TestValueCodec.INSTANCE);
+            assertNull(value);
+        }
+        // Values from copy nCopies - 1 should be there (added)
+        for (int i = 0; i < 100; i++) {
+            final int toCheck = (nCopies - 1) * 100 + i;
+            final Bytes keyToCheck = TestKey.longToKey(toCheck);
+            final TestValue value = root.get(keyToCheck, TestValueCodec.INSTANCE);
+            assertNotNull(value);
+            final int expected = 1000000 + toCheck;
+            assertEquals("Value " + expected, value.getValue());
+        }
+
+        root.release();
+    }
+
+    @Test
+    void inMemoryUpdateNoFlushTest() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+
+        VirtualRootNode root =
+                new VirtualRootNode(new InMemoryBuilder(), configuration.getConfigData(VirtualMapConfig.class));
+        VirtualMapState state = new VirtualMapState("label");
+        root.postInit(new VirtualStateAccessorImpl(state));
+
+        // Here is the test: add/update 1000 elements in every copy. Number of mutations in the
+        // node cache will grow, but total number of entities in the map will not. Without in-memory
+        // maps, it would result in some flushes, and with in-memory support, all copies should be
+        // GC'ed and then merged
+        final int nCopies = 1000;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            for (int i = 0; i < 1000; i++) {
+                final Bytes keyToAdd = TestKey.longToKey(i);
+                final TestValue value = new TestValue(1000000 + i);
+                root.put(keyToAdd, value, TestValueCodec.INSTANCE);
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 0; i < nCopies - 2; i++) {
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
     }
 
     @Test
@@ -493,7 +795,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(3, createRoot().getVersion());
+        assertEquals(4, createRoot().getVersion());
     }
 
     @Test

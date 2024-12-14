@@ -19,12 +19,14 @@ package com.hedera.node.app.service.contract.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,6 +63,10 @@ public class ContractServiceImpl implements ContractService {
             @Nullable final VerificationStrategies verificationStrategies,
             @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
         requireNonNull(appContext);
+        final var metricsSupplier = requireNonNull(appContext.metricsSupplier());
+        final Supplier<ContractsConfig> contractsConfigSupplier =
+                () -> appContext.configSupplier().get().getConfigData(ContractsConfig.class);
+        final var contractMetrics = new ContractMetrics(metricsSupplier, contractsConfigSupplier);
         this.component = DaggerContractServiceComponent.factory()
                 .create(
                         appContext.instantSource(),
@@ -68,13 +74,22 @@ public class ContractServiceImpl implements ContractService {
                         // C.f. https://github.com/hashgraph/hedera-services/issues/14248
                         appContext.signatureVerifier(),
                         Optional.ofNullable(verificationStrategies).orElseGet(DefaultVerificationStrategies::new),
-                        addOnTracers);
+                        addOnTracers,
+                        contractMetrics);
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ContractSchema());
         registry.register(new V0500ContractSchema());
+    }
+
+    /**
+     * Create the metrics for the smart contracts service. This needs to be delayed until _after_
+     * the metrics are available - which happens after `Hedera.initializeStatesApi`.
+     */
+    public void registerMetrics() {
+        component.contractMetrics().createContractMetrics();
     }
 
     /**

@@ -33,6 +33,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.*;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
@@ -78,9 +79,10 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.*;
 import com.swirlds.platform.system.address.AddressBook;
@@ -110,6 +112,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -122,7 +125,7 @@ import org.apache.logging.log4j.MarkerManager;
  * consists of an optional sequence number and random bytes.
  */
 @ConstructableIgnored
-public class PlatformTestingToolState extends MerkleStateRoot {
+public class PlatformTestingToolState extends PlatformMerkleStateRoot {
 
     static final long CLASS_ID = 0xc0900cfa7a24db76L;
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
@@ -238,6 +241,10 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
     private long transactionsIgnoredByExpectedMap = 0;
+
+    public PlatformTestingToolState() {
+        this(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+    }
 
     public PlatformTestingToolState(
             @NonNull final MerkleStateLifecycles lifecycles,
@@ -381,7 +388,9 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     @Override
     public boolean childHasExpectedType(final int index, final long childClassId) {
         switch (index) {
-            case ChildIndices.UNUSED:
+            case ChildIndices.UNUSED_PLATFORM_STATE:
+            case ChildIndices.UNUSED_ROSTERS:
+            case ChildIndices.UNUSED_ROSTER_STATE:
                 // We used to use this for an address book, but now we don't use this index.
                 // Ignore whatever is found at this index.
                 // platform should be here, so check for singleton if all will be ok
@@ -1035,7 +1044,12 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public synchronized void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
@@ -1287,7 +1301,7 @@ public class PlatformTestingToolState extends MerkleStateRoot {
             genesisInit();
         }
         this.invalidateHash();
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(this);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(this);
 
         // compute hash
         try {
@@ -1600,16 +1614,19 @@ public class PlatformTestingToolState extends MerkleStateRoot {
     }
 
     private static class ChildIndices {
-        public static final int UNUSED = 0; // should be platform and singleton
-        public static final int CONFIG = 1;
+        public static final int UNUSED_PLATFORM_STATE = 0;
+        public static final int UNUSED_ROSTERS = 1;
+        public static final int UNUSED_ROSTER_STATE = 2;
+
+        public static final int CONFIG = 3;
         /**
          * last sequence by each member for consensus events
          */
-        public static final int NEXT_SEQUENCE_CONSENSUS = 2;
+        public static final int NEXT_SEQUENCE_CONSENSUS = 4;
 
-        public static final int FCM_FAMILY = 3;
-        public static final int TRANSACTION_COUNTER = 4;
-        public static final int ISS_LEAF = 5;
+        public static final int FCM_FAMILY = 5;
+        public static final int TRANSACTION_COUNTER = 6;
+        public static final int ISS_LEAF = 7;
         /**
          * Migration test need this value to be able to load state file generated by v21 sdk
          */
@@ -1620,21 +1637,25 @@ public class PlatformTestingToolState extends MerkleStateRoot {
          * compression). But this is what Hedera is currently doing, so it is better to mimic their pattern and have
          * similar inefficiencies.
          */
-        public static final int NFT_LEDGER = 6;
+        public static final int NFT_LEDGER = 8;
 
-        public static final int VIRTUAL_MERKLE = 7;
+        public static final int VIRTUAL_MERKLE = 9;
 
-        public static final int VIRTUAL_MERKLE_SMART_CONTRACTS = 8;
+        public static final int VIRTUAL_MERKLE_SMART_CONTRACTS = 10;
 
-        public static final int VIRTUAL_MERKLE_SMART_CONTRACTS_BYTE_CODE = 9;
+        public static final int VIRTUAL_MERKLE_SMART_CONTRACTS_BYTE_CODE = 11;
 
-        public static final int QUORUM_RESULT = 10;
+        public static final int QUORUM_RESULT = 12;
 
-        public static final int CHILD_COUNT = 11;
+        public static final int CHILD_COUNT = 13;
     }
 
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         event.forEachTransaction(this::preHandleTransaction);
     }
 }

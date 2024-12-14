@@ -35,15 +35,16 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.signed.SigSet;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,13 +53,25 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("State Signing Tests")
 class StateSigningTests {
+
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
@@ -445,11 +458,10 @@ class StateSigningTests {
 
         final AddressBook newAddressBook = addressBook.copy();
         for (final Address address : newAddressBook) {
-            final PublicKey publicKey = mock(PublicKey.class);
-            when(publicKey.getAlgorithm()).thenReturn("RSA");
-            when(publicKey.getEncoded()).thenReturn(new byte[] {1, 2, 3});
-            final X509Certificate certificate = mock(X509Certificate.class);
-            when(certificate.getPublicKey()).thenReturn(publicKey);
+            // need to get signatures that are outside the current address book range from PreGeneratedX509Certs
+            final X509Certificate certificate = PreGeneratedX509Certs.getSigCert(
+                            50 + address.getNodeId().id())
+                    .getCertificate();
             final Address newAddress = address.copySetSigCert(certificate);
             // This replaces the old address
             newAddressBook.add(newAddress);

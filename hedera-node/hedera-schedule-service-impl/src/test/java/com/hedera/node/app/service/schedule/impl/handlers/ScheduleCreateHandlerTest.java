@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALRE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static org.assertj.core.api.BDDAssertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -33,6 +35,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
@@ -41,6 +44,7 @@ import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -51,16 +55,21 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
-import org.mockito.Mockito;
+import org.mockito.Mock;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
+    @Mock
+    private Throttle.Factory throttleFactory;
+
+    @Mock
+    private Throttle throttle;
+
     private ScheduleCreateHandler subject;
     private PreHandleContext realPreContext;
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleCreateHandler(InstantSource.system());
+        subject = new ScheduleCreateHandler(InstantSource.system(), throttleFactory);
         setUpBase();
     }
 
@@ -152,6 +161,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
+        given(throttleFactory.newThrottle(anyInt(), any())).willReturn(throttle);
+        given(throttle.allow(any(), any(), any(), any())).willReturn(true);
+        given(throttle.usageSnapshots()).willReturn(ThrottleUsageSnapshots.DEFAULT);
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -187,7 +199,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
             prepareContext(createTransaction, next.scheduleId().scheduleNum());
             // all keys are "valid" with this mock setup
-            given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+            given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             if (configuredWhitelist.contains(functionType)) {
                 throwsHandleException(
@@ -203,6 +215,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         int successCount = 0;
         // make sure we have at least four items in the whitelist to test.
         assertThat(configuredWhitelist.size()).isGreaterThan(4);
+        given(throttleFactory.newThrottle(anyInt(), any())).willReturn(throttle);
+        given(throttle.allow(any(), any(), any(), any())).willReturn(true);
+        given(throttle.usageSnapshots()).willReturn(ThrottleUsageSnapshots.DEFAULT);
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();
             final TransactionID createId = createTransaction.transactionID();
@@ -211,7 +226,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
             prepareContext(createTransaction, next.scheduleId().scheduleNum());
             // all keys are "valid" with this mock setup
-            given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+            given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
             final int startCount = scheduleMapById.size();
@@ -255,9 +270,9 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.body()).willReturn(createTransaction);
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
         given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
-        given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
+        given(mockContext.allKeysForTransaction(any(), any())).willReturn(testChildKeys);
         // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
-        given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+        given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
     }
 }

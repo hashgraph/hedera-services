@@ -215,8 +215,8 @@ class ReconnectHashListenerTest {
         }
 
         @Override
-        public void close() throws IOException {
-            delegate.close();
+        public void close(final boolean keepData) throws IOException {
+            delegate.close(keepData);
         }
 
         @Override

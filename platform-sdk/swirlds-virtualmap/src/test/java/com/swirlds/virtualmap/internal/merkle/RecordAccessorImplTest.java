@@ -338,7 +338,7 @@ public class RecordAccessorImplTest {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close(final boolean keepData) throws IOException {
             throw new UnsupportedOperationException("Not implemented by these tests");
         }
 

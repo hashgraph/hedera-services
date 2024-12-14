@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.hedera.hapi.node.base.Key;
@@ -30,7 +32,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Objects;
 
 /**
  * Provides utility methods for the schedule store.
@@ -43,27 +44,25 @@ public final class ScheduleStoreUtility {
      * Calculate bytes hash of a schedule based on the schedule's memo, admin key, scheduled transaction, expiration
      * time, and wait for expiry flag.
      *
-     * @param scheduleToHash the schedule to hash
+     * @param schedule the schedule to hash
      * @return the bytes
      */
     @SuppressWarnings("UnstableApiUsage")
-    public static Bytes calculateBytesHash(@NonNull final Schedule scheduleToHash) {
-        Objects.requireNonNull(scheduleToHash);
+    public static Bytes calculateBytesHash(@NonNull final Schedule schedule) {
+        requireNonNull(schedule);
         final Hasher hasher = Hashing.sha256().newHasher();
-        if (scheduleToHash.memo() != null) {
-            hasher.putString(scheduleToHash.memo(), StandardCharsets.UTF_8);
-        }
-        if (scheduleToHash.adminKey() != null) {
-            addToHash(hasher, scheduleToHash.adminKey());
+        hasher.putString(schedule.memo(), StandardCharsets.UTF_8);
+        if (schedule.adminKey() != null) {
+            addToHash(hasher, schedule.adminKey());
         }
         // @note We should check scheduler here, but mono doesn't, so we cannot either, yet.
-        if (scheduleToHash.scheduledTransaction() != null) {
-            addToHash(hasher, scheduleToHash.scheduledTransaction());
+        if (schedule.scheduledTransaction() != null) {
+            addToHash(hasher, schedule.scheduledTransaction());
         }
         // @todo('9447') This should be modified to use calculated expiration once
         //               differential testing completes
-        hasher.putLong(scheduleToHash.providedExpirationSecond());
-        hasher.putBoolean(scheduleToHash.waitForExpiry());
+        hasher.putLong(schedule.providedExpirationSecond());
+        hasher.putBoolean(schedule.waitForExpiry());
         return Bytes.wrap(hasher.hash().asBytes());
     }
 

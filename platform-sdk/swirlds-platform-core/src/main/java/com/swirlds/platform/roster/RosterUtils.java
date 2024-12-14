@@ -21,14 +21,15 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
@@ -62,13 +63,17 @@ public final class RosterUtils {
     }
 
     /**
-     * Fetch the gossip certificate from a given RosterEntry.
+     * Fetch the gossip certificate from a given RosterEntry.  If it cannot be parsed successfully, return null.
      *
      * @param entry a RosterEntry
      * @return a gossip certificate
      */
     public static X509Certificate fetchGossipCaCertificate(@NonNull final RosterEntry entry) {
-        return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        try {
+            return CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        } catch (final CryptographyException e) {
+            return null;
+        }
     }
 
     /**
@@ -112,6 +117,7 @@ public final class RosterUtils {
         final ServiceEndpoint serviceEndpoint = entry.gossipEndpoint().get(index);
         return serviceEndpoint.port();
     }
+
     /**
      * Create a Hash object for a given Roster instance.
      *
@@ -212,28 +218,28 @@ public final class RosterUtils {
     }
 
     /**
-     * Build an instance of RosterHistory from the current/previous AddressBook found in the PlatformState.
+     * Build an instance of RosterHistory from the current/previous rosters as reported by the RosterRetriever.
+     *
+     * The RosterRetriever implementation fetches the rosters from the RosterState/RosterMap,
+     * and automatically falls back to fetching them from the PlatformState if the RosterState is empty.
+     *
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
-     * @param readablePlatformState
+     * @param state a State object to fetch data from
      * @return a RosterHistory
      */
     @Deprecated(forRemoval = true)
     @NonNull
-    public static RosterHistory buildRosterHistory(final PlatformStateAccessor readablePlatformState) {
-        if (readablePlatformState.getAddressBook() == null) {
-            throw new IllegalStateException("Address book is null");
-        }
-
+    public static RosterHistory buildRosterHistory(final State state) {
         final List<RoundRosterPair> roundRosterPairList = new ArrayList<>();
         final Map<Bytes, Roster> rosterMap = new HashMap<>();
 
-        final Roster currentRoster = RosterRetriever.buildRoster(readablePlatformState.getAddressBook());
+        final Roster currentRoster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
         final Bytes currentHash = RosterUtils.hash(currentRoster).getBytes();
-        roundRosterPairList.add(new RoundRosterPair(readablePlatformState.getRound(), currentHash));
+        roundRosterPairList.add(new RoundRosterPair(RosterRetriever.getRound(state), currentHash));
         rosterMap.put(currentHash, currentRoster);
 
-        if (readablePlatformState.getPreviousAddressBook() != null) {
-            final Roster previousRoster = RosterRetriever.buildRoster(readablePlatformState.getPreviousAddressBook());
+        final Roster previousRoster = RosterRetriever.retrievePreviousRoster(state);
+        if (previousRoster != null) {
             final Bytes previousHash = RosterUtils.hash(previousRoster).getBytes();
             roundRosterPairList.add(new RoundRosterPair(0, previousHash));
             rosterMap.put(previousHash, previousRoster);
@@ -278,8 +284,16 @@ public final class RosterUtils {
 
         address = address.copySetNodeId(NodeId.of(entry.nodeId()));
         address = address.copySetWeight(entry.weight());
-        address = address.copySetSigCert(
-                CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray()));
+
+        X509Certificate sigCert;
+        try {
+            sigCert = CryptoStatic.decodeCertificate(entry.gossipCaCertificate().toByteArray());
+        } catch (final CryptographyException e) {
+            // Malformed or missing gossip certificates are nullified.
+            // https://github.com/hashgraph/hedera-services/issues/16648
+            sigCert = null;
+        }
+        address = address.copySetSigCert(sigCert);
 
         if (entry.gossipEndpoint().size() > 0) {
             address = address.copySetHostnameExternal(RosterUtils.fetchHostname(entry, 0));

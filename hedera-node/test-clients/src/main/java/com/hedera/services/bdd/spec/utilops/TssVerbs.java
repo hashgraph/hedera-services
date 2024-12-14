@@ -22,9 +22,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
+import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.hapi.services.auxiliary.tss.legacy.TssMessageTransactionBody;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.api.TssMessage;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -126,7 +126,7 @@ public class TssVerbs {
                         .setSourceRosterHash(fromPbj(sourceRosterHash))
                         .setTargetRosterHash(fromPbj(targetRosterHash))
                         .setShareIndex(FakeTssLibrary.getShareIndex(tssMessage))
-                        .setTssMessage(ByteString.copyFrom(tssMessage.bytes())))));
+                        .setTssMessage(ByteString.copyFrom(tssMessage.toBytes())))));
     }
 
     private static void submitRepeatable(

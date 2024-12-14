@@ -26,7 +26,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedValue;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -159,15 +158,8 @@ class MigrationTest {
         final Path defaultVirtualMapPath =
                 LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source", CONFIGURATION);
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
-        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
-        final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                        (short) 1,
-                        DigestType.SHA_384,
-                        merkleDbConfig.maxNumOfKeys(),
-                        merkleDbConfig.hashesRamToDiskThreshold())
-                .preferDiskIndices(false)
-                .hashesRamToDiskThreshold(Long.MAX_VALUE)
-                .maxNumberOfKeys(1234);
+        final MerkleDbTableConfig tableConfig =
+                new MerkleDbTableConfig((short) 1, DigestType.SHA_384, 1234, Long.MAX_VALUE);
         return new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
 }

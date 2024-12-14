@@ -22,11 +22,6 @@ import java.util.Set;
  * Utility methods for dealing with signed states on disk.
  */
 public final class SignedStateFileUtils {
-    /**
-     * Fun trivia: the file extension ".swh" stands for "SWirlds Hashgraph", although this is a bit misleading... as
-     * this file doesn't actually contain a hashgraph.
-     */
-    public static final String SIGNED_STATE_FILE_NAME = "SignedState.swh";
 
     public static final String SIGNATURE_SET_FILE_NAME = "signatureSet.bin";
 
@@ -46,8 +41,6 @@ public final class SignedStateFileUtils {
      * The supported versions of the signature set file
      */
     public static final Set<Integer> SUPPORTED_SIGSET_VERSIONS = Set.of(INIT_SIG_SET_FILE_VERSION);
-
-    public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
     private SignedStateFileUtils() {}
 }

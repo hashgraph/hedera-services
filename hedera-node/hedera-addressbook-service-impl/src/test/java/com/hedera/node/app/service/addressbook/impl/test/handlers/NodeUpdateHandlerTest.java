@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GRPC_CERTIFICATE_HASH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
@@ -41,7 +42,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -120,6 +120,18 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when grpcCertHash is empty")
+    void grpcCertHashCannotEmpty() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withGrpcCertificateHash(Bytes.EMPTY)
+                .build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GRPC_CERTIFICATE_HASH);
     }
 
     @Test
@@ -453,7 +465,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksFailWhenAccountIdNotGood() throws PreCheckException {
+    void preHandleFailedWhenAccountIdNotGood() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -464,7 +476,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksFailWhenAccountIdIsAlias() throws PreCheckException {
+    void preHandleFailedWhenAccountIdIsAlias() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -475,7 +487,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksFailWhenUpdateAccountIdNotAllowed() throws PreCheckException {
+    void preHandleFailedWhenUpdateAccountIdNotAllowed() throws PreCheckException {
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -527,17 +539,10 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("nodes.updateAccountIdAllowed", updateAccountIdAllowed)
                 .getOrCreateConfig();
-        mockPayerLookup(anotherKey, contextPayerId);
+        mockPayerLookup(anotherKey, contextPayerId, accountStore);
         final var context = new FakePreHandleContext(accountStore, txn, config);
         context.registerStore(ReadableNodeStore.class, readableStore);
         return context;
-    }
-
-    private Key mockPayerLookup(Key key, AccountID contextPayerId) {
-        final var account = mock(Account.class);
-        given(account.key()).willReturn(key);
-        given(accountStore.getAccountById(contextPayerId)).willReturn(account);
-        return key;
     }
 
     private class NodeUpdateBuilder {

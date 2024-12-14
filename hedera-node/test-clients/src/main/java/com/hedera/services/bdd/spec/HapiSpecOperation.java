@@ -65,7 +65,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -121,7 +120,6 @@ public abstract class HapiSpecOperation implements SpecOperation {
 
     protected boolean useTls = false;
     protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
-    protected Set<HederaFunctionality> skipIfAutoScheduling = Collections.emptySet();
     protected Optional<ByteString> expectedLedgerId = Optional.empty();
     protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
     protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
@@ -208,29 +206,6 @@ public abstract class HapiSpecOperation implements SpecOperation {
                 node = Optional.of(spec.setup().defaultNode());
             }
         }
-    }
-
-    /**
-     * Gives the {@link HapiSpec} author the option to skip this operation if certain
-     * functions are being auto-scheduled.
-     *
-     * @param functions the functions being auto-scheduled
-     * @return this operation
-     */
-    public HapiSpecOperation skippedIfAutoScheduling(final Set<HederaFunctionality> functions) {
-        skipIfAutoScheduling = functions;
-        return this;
-    }
-
-    /**
-     * Indicates whether this operation should be skipped, given a set of functions being
-     * auto-scheduled.
-     *
-     * @param beingAutoScheduled the functions being auto-scheduled
-     * @return true if this operation should be skipped
-     */
-    public boolean shouldSkipWhenAutoScheduling(final Set<HederaFunctionality> beingAutoScheduled) {
-        return !Collections.disjoint(skipIfAutoScheduling, beingAutoScheduled);
     }
 
     private AccountID randomNodeFrom(final HapiSpec spec) {

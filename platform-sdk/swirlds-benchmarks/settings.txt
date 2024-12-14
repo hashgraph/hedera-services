@@ -1,6 +1,6 @@
 benchmark.benchmarkData,                       data
 benchmark.saveDataDirectory,                   false
-benchmark.verifyResult,                        false
+benchmark.verifyResult,                        true
 benchmark.enableSnapshots,                     false
 benchmark.printHistogram,                      false
 benchmark.csvOutputFolder,                     data

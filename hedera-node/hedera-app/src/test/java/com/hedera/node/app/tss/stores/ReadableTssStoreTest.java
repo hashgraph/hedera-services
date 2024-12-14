@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.tss.stores;
 
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,19 +28,30 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssStatus;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -44,6 +60,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableTssStoreTest {
+
+    @Mock
+    private ReadableKVState<TssMessageMapKey, TssMessageTransactionBody> readableTssMessageState;
+
+    @Mock
+    private ReadableKVState<TssVoteMapKey, TssVoteTransactionBody> readableTssVoteState;
+
+    @Mock
+    private ReadableKVState<EntityNumber, TssEncryptionKeyTransactionBody> readableTssEncryptionKeyState;
+
+    @Mock
+    private ReadableSingletonState<TssStatus> readableTssStatusState;
+
+    @Mock
+    private ReadableStates states;
+
+    private ReadableTssStoreImpl tssStore;
+
     private static final Bytes SOURCE_HASH = Bytes.wrap("SOURCE");
     private static final Bytes TARGET_HASH = Bytes.wrap("TARGET");
     private static final Roster SOURCE_ROSTER = Roster.newBuilder()
@@ -68,6 +102,19 @@ class ReadableTssStoreTest {
     private ReadableTssStore subject;
 
     private final ArgumentCaptor<LongUnaryOperator> nodeWeightCaptor = ArgumentCaptor.forClass(LongUnaryOperator.class);
+
+    @BeforeEach
+    void setUp() {
+        when(states.<TssMessageMapKey, TssMessageTransactionBody>get(TSS_MESSAGE_MAP_KEY))
+                .thenReturn(readableTssMessageState);
+        when(states.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
+                .thenReturn(readableTssVoteState);
+        when(states.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY))
+                .thenReturn(readableTssEncryptionKeyState);
+        when(states.<TssStatus>getSingleton(TSS_STATUS_KEY)).thenReturn(readableTssStatusState);
+
+        tssStore = new ReadableTssStoreImpl(states);
+    }
 
     @Test
     void assumesSourceRosterIsEquallySizedAndEquallyWeightedWhenMissingFromStore() {
@@ -132,5 +179,93 @@ class ReadableTssStoreTest {
         final var rosterKeys = maybeRosterKeys.orElseThrow();
         assertThat(rosterKeys.tssMessages()).containsExactly(messages.get(1), messages.get(3));
         assertThat(rosterKeys.ledgerId()).isEqualTo(ledgerId);
+    }
+
+    @Test
+    void testGetMessage() {
+        TssMessageMapKey key = TssMessageMapKey.DEFAULT;
+        TssMessageTransactionBody message = TssMessageTransactionBody.DEFAULT;
+        when(readableTssMessageState.get(key)).thenReturn(message);
+
+        TssMessageTransactionBody result = tssStore.getMessage(key);
+        assertEquals(message, result);
+    }
+
+    @Test
+    void testExistsMessage() {
+        TssMessageMapKey key = TssMessageMapKey.DEFAULT;
+        when(readableTssMessageState.contains(key)).thenReturn(true);
+
+        assertTrue(tssStore.exists(key));
+    }
+
+    @Test
+    void testGetVote() {
+        TssVoteMapKey key = TssVoteMapKey.DEFAULT;
+        TssVoteTransactionBody vote = TssVoteTransactionBody.DEFAULT;
+        when(readableTssVoteState.get(key)).thenReturn(vote);
+
+        TssVoteTransactionBody result = tssStore.getVote(key);
+        assertEquals(vote, result);
+    }
+
+    @Test
+    void testExistsVote() {
+        TssVoteMapKey key = TssVoteMapKey.DEFAULT;
+        when(readableTssVoteState.contains(key)).thenReturn(true);
+
+        assertTrue(tssStore.exists(key));
+    }
+
+    @Test
+    void testGetMessagesForTarget() {
+        Bytes rosterHash = Bytes.wrap("targetHash".getBytes());
+        TssMessageMapKey key = mock(TssMessageMapKey.class);
+        TssMessageTransactionBody message = mock(TssMessageTransactionBody.class);
+        when(key.rosterHash()).thenReturn(rosterHash);
+        when(readableTssMessageState.keys()).thenReturn(singletonList(key).iterator());
+        when(readableTssMessageState.get(key)).thenReturn(message);
+
+        List<TssMessageTransactionBody> result = tssStore.getMessagesForTarget(rosterHash);
+        assertEquals(1, result.size());
+        assertEquals(message, result.get(0));
+    }
+
+    @Test
+    void testGetTssEncryptionKey() {
+        long nodeID = 123L;
+        EntityNumber entityNumber = new EntityNumber(nodeID);
+        TssEncryptionKeyTransactionBody encryptionKey = TssEncryptionKeyTransactionBody.DEFAULT;
+        when(readableTssEncryptionKeyState.get(entityNumber)).thenReturn(encryptionKey);
+
+        TssEncryptionKeyTransactionBody result = tssStore.getTssEncryptionKey(nodeID);
+        assertEquals(encryptionKey, result);
+    }
+
+    @Test
+    void testGetTssStatus() {
+        TssStatus status = TssStatus.DEFAULT;
+        when(readableTssStatusState.get()).thenReturn(status);
+
+        TssStatus result = tssStore.getTssStatus();
+        assertEquals(status, result);
+    }
+
+    @Test
+    void testAnyWinningVoteFrom() {
+        Bytes sourceRosterHash = Bytes.wrap("sourceHash".getBytes());
+        Bytes targetRosterHash = Bytes.wrap("targetHash".getBytes());
+        TssVoteMapKey key = mock(TssVoteMapKey.class);
+        TssVoteTransactionBody vote = mock(TssVoteTransactionBody.class);
+        when(key.rosterHash()).thenReturn(targetRosterHash);
+        when(vote.sourceRosterHash()).thenReturn(sourceRosterHash);
+        when(readableTssVoteState.keys()).thenReturn(singletonList(key).iterator());
+        when(readableTssVoteState.get(key)).thenReturn(vote);
+        when(vote.tssVote()).thenReturn(Bytes.wrap("vote".getBytes()));
+
+        LongUnaryOperator weightFn = nodeId -> 10L;
+        Optional<TssVoteTransactionBody> result =
+                tssStore.anyWinningVoteFrom(sourceRosterHash, targetRosterHash, 10L, weightFn);
+        assertTrue(result.isPresent());
     }
 }

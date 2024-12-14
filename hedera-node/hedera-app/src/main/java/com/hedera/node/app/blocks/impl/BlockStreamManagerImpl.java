@@ -119,6 +119,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private PendingWork pendingWork = NONE;
     // The last time at which interval-based processing was done
     private Instant lastIntervalProcessTime = Instant.EPOCH;
+    // The last time at which interval-based processing was done
+    private Instant lastHandleTime = Instant.EPOCH;
     // All this state is scoped to producing the current block
     private long blockNumber;
     // Set to the round number of the last round handled before entering a freeze period
@@ -227,6 +229,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
             pendingWork = classifyPendingWork(blockStreamInfo, version);
+            lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
             lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
             runningHashManager.startBlock(blockStreamInfo);
@@ -274,6 +277,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
+    public @NonNull final Instant lastHandleTime() {
+        return lastHandleTime;
+    }
+
+    @Override
+    public void setLastHandleTime(@NonNull final Instant lastHandleTime) {
+        this.lastHandleTime = requireNonNull(lastHandleTime);
+    }
+
+    @Override
     public void endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             // Flush all boundary state changes besides the BlockStreamInfo
@@ -306,7 +319,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     boundaryTimestamp,
                     pendingWork != POST_UPGRADE_WORK,
                     version,
-                    asTimestamp(lastIntervalProcessTime)));
+                    asTimestamp(lastIntervalProcessTime),
+                    asTimestamp(lastHandleTime)));
             ((CommittableWritableStates) writableState).commit();
 
             // Serialize and hash the final block item

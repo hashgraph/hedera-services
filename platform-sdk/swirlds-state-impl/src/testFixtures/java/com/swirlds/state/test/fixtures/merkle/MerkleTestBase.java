@@ -250,7 +250,6 @@ public class MerkleTestBase extends StateTestBase {
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
     protected VirtualMap createVirtualMap(String label) {
         final var merkleDbTableConfig = new MerkleDbTableConfig((short) 1, DigestType.SHA_384, 100, 0);
-        merkleDbTableConfig.preferDiskIndices(true); // Why?
         final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig, CONFIGURATION);
         return new VirtualMap(label, builder, CONFIGURATION);
     }

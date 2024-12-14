@@ -27,9 +27,11 @@ package com.swirlds.demo.hello;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -38,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -46,7 +49,7 @@ import java.util.function.Function;
  * order that they were handled.
  */
 @ConstructableIgnored
-public class HelloSwirldDemoState extends MerkleStateRoot {
+public class HelloSwirldDemoState extends PlatformMerkleStateRoot {
 
     /**
      * The version history of this class.
@@ -105,7 +108,12 @@ public class HelloSwirldDemoState extends MerkleStateRoot {
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public synchronized void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.tss.handlers;
 
+import static java.math.BigInteger.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -24,6 +25,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -31,16 +39,9 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.TssKeysAccessor;
 import com.hedera.node.app.tss.TssMetrics;
+import com.hedera.node.app.tss.api.FakeFieldElement;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.api.TssParticipantDirectory;
-import com.hedera.node.app.tss.api.TssPrivateShare;
-import com.hedera.node.app.tss.api.TssPublicShare;
-import com.hedera.node.app.tss.api.TssShareId;
-import com.hedera.node.app.tss.pairings.FakeFieldElement;
-import com.hedera.node.app.tss.pairings.FakeGroupElement;
-import com.hedera.node.app.tss.pairings.PairingPrivateKey;
-import com.hedera.node.app.tss.pairings.PairingSignature;
-import com.hedera.node.app.tss.pairings.SignatureSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -75,18 +76,18 @@ public class TssShareSignatureHandlerTest {
     private TssShareSignatureHandler handler;
 
     private static final SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(new byte[] {1});
-    public static final PairingPrivateKey PRIVATE_KEY =
-            new PairingPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
-    private static final PairingSignature SIGNATURE =
-            new PairingSignature(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsPrivateKey PRIVATE_KEY =
+            new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    public static final BlsPublicKey PUBLIC_KEY = new BlsPublicKey(new FakeGroupElement(ZERO), SIGNATURE_SCHEMA);
+    private static final BlsSignature SIGNATURE =
+            new BlsSignature(new FakeGroupElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     public static final TssKeysAccessor.TssKeys TSS_KEYS = new TssKeysAccessor.TssKeys(
-            List.of(new TssPrivateShare(new TssShareId(0), PRIVATE_KEY)),
-            List.of(new TssPublicShare(new TssShareId(0), PRIVATE_KEY.createPublicKey())),
+            List.of(new TssPrivateShare(0, PRIVATE_KEY)),
+            List.of(new TssPublicShare(0, PUBLIC_KEY)),
             Bytes.EMPTY,
             TssParticipantDirectory.createBuilder()
-                    .withParticipant(0, 1, PRIVATE_KEY.createPublicKey())
-                    .withSelf(0, PRIVATE_KEY)
-                    .build(SIGNATURE_SCHEMA),
+                    .withParticipant(0, 1, PUBLIC_KEY)
+                    .build(),
             1);
 
     @BeforeEach

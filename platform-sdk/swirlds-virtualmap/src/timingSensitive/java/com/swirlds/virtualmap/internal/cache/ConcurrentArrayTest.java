@@ -523,4 +523,41 @@ class ConcurrentArrayTest {
             }
         }
     }
+
+    /**
+     * Test creating a concurrent array from a stream.
+     */
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Create a concurrent array from stream")
+    void createFromFilteredStream() {
+        final Stream<String> src = Stream.of("A", "B", "C", "D", "E");
+        final ConcurrentArray<String> arr = new ConcurrentArray<>(src.filter(v -> !v.contains("C")));
+        assertEquals(4, arr.size());
+        assertEquals("A", arr.get(0));
+        assertEquals("B", arr.get(1));
+        assertEquals("D", arr.get(2));
+        assertEquals("E", arr.get(3));
+        // Arrays created from streams are sealed
+        assertTrue(arr.isImmutable(), "Array should be immutable");
+    }
+
+    /**
+     * Test creating a concurrent array from a large stream, so more than a single sub-array is used.
+     */
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Create a concurrent array from stream")
+    void createFromLargeStream() {
+        final List<Integer> src = new ArrayList<>();
+        final int N = 1_000_000;
+        for (int i = 0; i < N; i++) {
+            src.add(i);
+        }
+        final Stream<Integer> stream = src.stream().filter(v -> v % 1000 != 0);
+        final ConcurrentArray<Integer> arr = new ConcurrentArray<>(stream);
+        assertEquals(N - N / 1000, arr.size());
+        assertEquals(1, arr.get(0));
+        assertEquals(N - 1, arr.get(N - N / 1000 - 1));
+    }
 }

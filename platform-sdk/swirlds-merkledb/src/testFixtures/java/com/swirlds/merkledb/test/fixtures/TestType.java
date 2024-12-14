@@ -169,15 +169,8 @@ public enum TestType {
                 boolean preferDiskBasedIndexes)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
-            final MerkleDbConfig merkleDbConfig = database.getConfiguration().getConfigData(MerkleDbConfig.class);
-            final MerkleDbTableConfig tableConfig = new MerkleDbTableConfig(
-                            (short) 1,
-                            DigestType.SHA_384,
-                            merkleDbConfig.maxNumOfKeys(),
-                            merkleDbConfig.hashesRamToDiskThreshold())
-                    .preferDiskIndices(preferDiskBasedIndexes)
-                    .maxNumberOfKeys(size * 10L)
-                    .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
+            final MerkleDbTableConfig tableConfig =
+                    new MerkleDbTableConfig((short) 1, DigestType.SHA_384, size * 10L, hashesRamToDiskThreshold);
             MerkleDbDataSource dataSource = database.createDataSource(name, tableConfig, enableMerging);
             dataSource.registerMetrics(getMetrics());
             return dataSource;

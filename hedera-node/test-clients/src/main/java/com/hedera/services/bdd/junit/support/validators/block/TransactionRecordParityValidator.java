@@ -87,7 +87,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                 .toAbsolutePath()
                 .normalize();
         final var blocksLoc =
-                node0Data.resolve("block-streams/block-0.0.3").toAbsolutePath().normalize();
+                node0Data.resolve("blockStreams/block-0.0.3").toAbsolutePath().normalize();
         final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(blocksLoc);
         final var recordsLoc =
                 node0Data.resolve("recordStreams/record0.0.3").toAbsolutePath().normalize();

@@ -109,7 +109,7 @@ dependencies.constraints {
     api("io.github.classgraph:classgraph:4.8.65") {
         because("io.github.classgraph")
     }
-    api("io.netty:netty-handler:4.1.110.Final") {
+    api("io.netty:netty-handler:4.1.115.Final") {
         because("io.netty.handler")
     }
     api("io.netty:netty-transport:4.1.111.Final") {
@@ -133,7 +133,7 @@ dependencies.constraints {
     api("javax.inject:javax.inject:1") {
         because("javax.inject")
     }
-    api("com.goterl:lazysodium-java:5.1.1") {
+    api("com.goterl:lazysodium-java:5.1.4") {
         because("lazysodium.java")
     }
     api("net.i2p.crypto:eddsa:0.3.0") {
@@ -235,7 +235,19 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
-
     api("com.google.protobuf:protoc:3.25.4")
     api("io.grpc:protoc-gen-grpc-java:1.66.0")
+
+    api("com.hedera.cryptography:hedera-cryptography-pairings-api:0.1.1-SNAPSHOT") {
+        because("com.hedera.cryptography.pairings.api")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-altbn128:0.1.1-SNAPSHOT") {
+        because("com.hedera.cryptography.altbn128")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-bls:0.1.1-SNAPSHOT") {
+        because("com.hedera.cryptography.bls")
+    }
+    api("com.hedera.cryptography:hedera-cryptography-tss:0.1.1-SNAPSHOT") {
+        because("com.hedera.cryptography.tss")
+    }
 }

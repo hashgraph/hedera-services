@@ -92,7 +92,7 @@ public final class TeacherPullVirtualTreeView extends VirtualTreeViewBase implem
         this.reconnectConfig = reconnectConfig;
         new ThreadConfiguration(threadManager)
                 .setRunnable(() -> {
-                    records = pipeline.detachCopy(root);
+                    records = pipeline.pausePipelineAndRun("copy", root::detach);
                     ready.countDown();
                 })
                 .setComponent("virtualmap")

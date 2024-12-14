@@ -6,8 +6,10 @@ module com.swirlds.state.impl {
     exports com.swirlds.state.merkle;
 
     requires transitive com.hedera.node.hapi;
+    requires transitive com.swirlds.base;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.merkle;
+    requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;

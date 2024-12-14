@@ -61,7 +61,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
@@ -136,7 +136,7 @@ public class ReadableStoreFactory {
      */
     public ReadableStoreFactory(@NonNull final State state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
-        if (state instanceof MerkleStateRoot merkleStateRoot) {
+        if (state instanceof PlatformMerkleStateRoot merkleStateRoot) {
             this.versionFactory = merkleStateRoot.getVersionFactory();
         } else {
             this.versionFactory = UNKNOWN_VERSION_FACTORY;

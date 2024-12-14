@@ -35,7 +35,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(Scope.Thread)
 @Warmup(iterations = 1)
 @Measurement(iterations = 5)
-public abstract class VirtualMapBench extends VirtualMapBaseBench {
+public class VirtualMapBench extends VirtualMapBaseBench {
 
     String benchmarkName() {
         return "VirtualMapBench";
@@ -263,5 +263,67 @@ public abstract class VirtualMapBench extends VirtualMapBaseBench {
                 System.currentTimeMillis() - start);
 
         afterTest(true);
+    }
+
+    @Benchmark
+    public void queueMode() throws Exception {
+        beforeTest("queueMode");
+
+        final long[] map = new long[verify ? maxKey : 0];
+        VirtualMap virtualMap = createMap(map);
+
+        final int roundsPerCopy = maxKey / numFiles;
+        for (int i = 0; i < maxKey; i++) {
+            // Add
+            int index = i;
+            final Bytes keyToAdd = BenchmarkKey.longToKey(index);
+            long val = nextValue();
+            virtualMap.put(keyToAdd, new BenchmarkValue(val), BenchmarkValueCodec.INSTANCE);
+            if (verify) {
+                map[index] = val;
+            }
+            // Update
+            if (i >= numRecords / 2) {
+                index = i - numRecords / 2;
+                final Bytes keyToUpdate = BenchmarkKey.longToKey(index);
+                val = nextValue();
+                virtualMap.put(keyToUpdate, new BenchmarkValue(val), BenchmarkValueCodec.INSTANCE);
+                if (verify) {
+                    map[index] = val;
+                }
+            }
+            // Remove
+            if (i >= numRecords) {
+                index = i - numRecords;
+                final Bytes keyToRemove = BenchmarkKey.longToKey(index);
+                virtualMap.remove(keyToRemove);
+                if (verify) {
+                    map[index] = 0;
+                }
+            }
+
+            if (i % roundsPerCopy == 0) {
+                virtualMap = copyMap(virtualMap);
+            }
+        }
+
+        // Ensure the map is done with hashing/merging/flushing
+        final var finalMap = flushMap(virtualMap);
+
+        verifyMap(map, finalMap);
+
+        afterTest(true, () -> {
+            finalMap.release();
+            finalMap.getDataSource().close();
+        });
+    }
+
+    public static void main(String[] args) throws Exception {
+        final VirtualMapBench bench = new VirtualMapBench();
+        bench.setup();
+        bench.beforeTest();
+        bench.queueMode();
+        bench.afterTest();
+        bench.destroy();
     }
 }

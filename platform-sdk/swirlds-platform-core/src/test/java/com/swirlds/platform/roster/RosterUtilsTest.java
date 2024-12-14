@@ -17,6 +17,7 @@
 package com.swirlds.platform.roster;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -28,6 +29,8 @@ import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
+import java.security.cert.CertificateEncodingException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -192,5 +195,26 @@ public class RosterUtilsTest {
 
         // Verify that the method throws an IllegalStateException
         assertThrows(IllegalStateException.class, () -> RosterUtils.createRosterHistory(rosterStore));
+    }
+
+    @Test
+    void testFetchingCertificates() throws CertificateEncodingException {
+        // Positive Case
+        assertEquals(
+                PreGeneratedX509Certs.getSigCert(0).getCertificate(),
+                RosterUtils.fetchGossipCaCertificate(RosterEntry.newBuilder()
+                        .gossipCaCertificate(Bytes.wrap(PreGeneratedX509Certs.getSigCert(0)
+                                .getCertificate()
+                                .getEncoded()))
+                        .build()));
+        // Negative Cases
+        assertNull(RosterUtils.fetchGossipCaCertificate(
+                RosterEntry.newBuilder().gossipCaCertificate(null).build()));
+        assertNull(RosterUtils.fetchGossipCaCertificate(
+                RosterEntry.newBuilder().gossipCaCertificate(Bytes.EMPTY).build()));
+        assertNull(RosterUtils.fetchGossipCaCertificate(RosterEntry.newBuilder()
+                .gossipCaCertificate(
+                        Bytes.wrap(PreGeneratedX509Certs.createBadCertificate().getEncoded()))
+                .build()));
     }
 }

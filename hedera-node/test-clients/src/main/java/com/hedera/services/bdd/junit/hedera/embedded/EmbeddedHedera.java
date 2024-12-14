@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -76,6 +77,12 @@ public interface EmbeddedHedera {
      * @return the current synthetic time
      */
     Instant now();
+
+    /**
+     * Returns the embedded Hedera.
+     * @return the embedded Hedera
+     */
+    Hedera hedera();
 
     /**
      * Advances the synthetic time in the embedded Hedera node by a given duration.

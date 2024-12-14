@@ -55,6 +55,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -144,8 +146,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-        final Configuration configuration =
-                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance())
+                .autoDiscoverExtensions()
+                .build();
 
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
@@ -176,6 +181,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     @Override
+    public Hedera hedera() {
+        return hedera;
+    }
+
+    @Override
     public void stop() {
         fakePlatform().notifyListeners(FREEZE_COMPLETE_NOTIFICATION);
         executorService.shutdownNow();
@@ -203,9 +213,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             candidateNano = 0;
             nextNano.set(1);
         }
+        final var then = now().minusSeconds(validStartOffsetSecs()).minusNanos(candidateNano);
         return Timestamp.newBuilder()
-                .setSeconds(now().getEpochSecond() - validStartOffsetSecs())
-                .setNanos(candidateNano)
+                .setSeconds(then.getEpochSecond())
+                .setNanos(then.getNano())
                 .build();
     }
 
@@ -246,10 +257,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     /**
-     * If block stream is enabled, notify the block stream manager of the state hash at the end of the round.
-     * @param roundNumber the round number
+     * If block stream is enabled, notifies the block stream manager of the state hash at the end of the round
+     * given by {@code roundNumber}. (The block stream manager must have this information to construct the
+     * block hash for round {@code roundNumber + 1}.)
+     * @param roundNumber the round number of the state hash
      */
-    protected void notifyBlockStreamManagerIfEnabled(final long roundNumber) {
+    protected void notifyStateHashed(final long roundNumber) {
         if (blockStreamEnabled) {
             hedera.blockStreamManager().notify(new StateHashedNotification(roundNumber, FAKE_START_OF_STATE_HASH));
         }

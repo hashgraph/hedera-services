@@ -37,18 +37,21 @@ import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADD
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleStateLifecycles;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -58,6 +61,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -67,9 +71,11 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +84,7 @@ import org.apache.logging.log4j.Logger;
  * State for the AddressBookTestingTool.
  */
 @ConstructableIgnored
-public class AddressBookTestingToolState extends MerkleStateRoot {
+public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
@@ -97,6 +103,9 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
     }
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
+    // 0 is PLATFORM_STATE, 1 is ROSTERS, 2 is ROSTER_STATE
+    private static final int RUNNING_SUM_INDEX = 3;
+    private static final int ROUND_HANDLED_INDEX = 4;
 
     private NodeId selfId;
 
@@ -185,13 +194,37 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
         throwIfImmutable();
 
         this.selfId = platform.getSelfId();
+
+        final StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
+        if (runningSumLeaf != null && runningSumLeaf.getLabel() != null) {
+            this.runningSum = Long.parseLong(runningSumLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with state long {}.", runningSum);
+        }
+        final StringLeaf roundsHandledLeaf = getChild(ROUND_HANDLED_INDEX);
+        if (roundsHandledLeaf != null && roundsHandledLeaf.getLabel() != null) {
+            this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
+            logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
+        }
+
+        // Since this demo State doesn't call Hedera.onStateInitialized() to init States API for all services
+        // (because it doesn't call super.init(), and the FakeMerkleStateLifecycles doesn't do that anyway),
+        // we need to register PlatformService and RosterService states for the rest of the code to operate
+        // when an instance of this state is received via reconnect. In any other cases, this call
+        // should be idempotent.
+        SignedStateFileReader.registerServiceStates(this);
+        logger.info(STARTUP.getMarker(), "Registered PlatformService and RosterService states.");
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(platformState, "the platform state cannot be null");
         throwIfImmutable();
@@ -206,6 +239,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
         }
 
         roundsHandled++;
+        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
 
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -236,6 +270,7 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
+        setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
     }
 
     /**
@@ -251,6 +286,11 @@ public class AddressBookTestingToolState extends MerkleStateRoot {
      */
     @Override
     public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 

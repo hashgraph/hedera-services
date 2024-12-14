@@ -84,7 +84,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -147,9 +147,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             logger.info(STARTUP.getMarker(), "Registering PlatformTestingToolState with ConstructableRegistry");
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(PlatformTestingToolState.class, () -> {
-                        PlatformTestingToolState ptt = new PlatformTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(ptt);
+                        PlatformTestingToolState ptt = new PlatformTestingToolState();
                         return ptt;
                     }));
             logger.info(
@@ -864,11 +862,11 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public MerkleStateRoot newMerkleStateRoot() {
-        final MerkleStateRoot state = new PlatformTestingToolState(
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new PlatformTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

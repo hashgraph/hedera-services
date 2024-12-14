@@ -160,3 +160,33 @@ message ScheduleIdList {
    */
   repeated ScheduleID schedule_ids = 1;
 }
+
+/**
+ * The value of a map summarizing the counts of scheduled and processed transactions
+ * within a particular consensus second.
+ */
+message ScheduledCounts {
+    /**
+     * The number of transactions scheduled to expire at a consensus second.
+     */
+    uint32 number_scheduled = 1;
+    /**
+     * The number of scheduled transactions that have been processed at a consensus second.
+     */
+    uint32 number_processed = 2;
+}
+
+/**
+ * A key mapping to a particular ScheduleID that will execute at a given order number
+ * within a given consensus second.
+ */
+message ScheduledOrder {
+    /**
+     * The consensus second in which the transaction is expired.
+     */
+    uint64 expiry_second = 1;
+    /*
+     * The ordered position within the consensus second that the transaction will be executed.
+     */
+    uint32 order_number = 2;
+}

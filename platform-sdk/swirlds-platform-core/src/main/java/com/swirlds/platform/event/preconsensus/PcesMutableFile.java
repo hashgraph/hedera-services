@@ -122,6 +122,13 @@ public class PcesMutableFile {
     }
 
     /**
+     * Sync the buffer with the file system.
+     */
+    public void sync() throws IOException {
+        writer.sync();
+    }
+
+    /**
      * Close the file.
      */
     public void close() throws IOException {

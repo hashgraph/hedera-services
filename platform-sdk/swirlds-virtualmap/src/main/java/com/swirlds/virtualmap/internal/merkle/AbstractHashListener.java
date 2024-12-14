@@ -162,11 +162,11 @@ public abstract class AbstractHashListener implements VirtualHashListener {
             finalLeavesToFlush = leaves;
             leaves = null;
         }
-        if (!finalNodesToFlush.isEmpty() || !finalLeavesToFlush.isEmpty()) {
-            assert !flushInProgress.get() : "Flush must not be in progress when hashing is complete";
-            flushInProgress.set(true);
-            flush(finalNodesToFlush, finalLeavesToFlush);
-        }
+        assert !flushInProgress.get() : "Flush must not be in progress when hashing is complete";
+        flushInProgress.set(true);
+        // Nodes / leaves lists may be empty, but a flush is still needed to make sure
+        // all stale leaves are removed from the data source
+        flush(finalNodesToFlush, finalLeavesToFlush);
     }
 
     // Since flushes may take quite some time, this method is called outside synchronized blocks,

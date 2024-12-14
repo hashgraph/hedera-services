@@ -145,9 +145,10 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
     public static class ClassVersion {
         public static final int VERSION_1_ORIGINAL = 1;
         public static final int VERSION_2_KEYVALUE_SERIALIZERS = 2;
-        public static final int VERSION_3_BYTES = 3;
+        public static final int VERSION_3_NO_NODE_CACHE = 3;
+        public static final int VERSION_4_BYTES = 4;
 
-        public static final int CURRENT_VERSION = VERSION_3_BYTES;
+        public static final int CURRENT_VERSION = VERSION_4_BYTES;
     }
 
     /**
@@ -1115,7 +1116,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
+    public boolean flush() {
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be flushed");
         }
@@ -1126,14 +1127,25 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
             throw new IllegalStateException("a merged copy can not be flushed");
         }
 
-        final long start = System.currentTimeMillis();
-        flush(cache, state, dataSource);
-        cache.release();
-        final long end = System.currentTimeMillis();
-        flushed.set(true);
-        flushLatch.countDown();
-        statistics.recordFlush(end - start);
-        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed in {} ms", end - start);
+        // Prepare the cache for flush. It may affect cache's estimated size
+        cache.prepareForFlush();
+        if (shouldBeFlushed()) {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
+            final long start = System.currentTimeMillis();
+            flush(cache, state, dataSource);
+            cache.release();
+            final long end = System.currentTimeMillis();
+            flushed.set(true);
+            flushLatch.countDown();
+            statistics.recordFlush(end - start);
+            logger.debug(
+                    VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {} in {} ms", cache.getFastCopyVersion(), end - start);
+            return true;
+        } else {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
+            cache.garbageCollect();
+            return false;
+        }
     }
 
     private void flush(VirtualNodeCache cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource ds) {
@@ -1175,11 +1187,13 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
-        final RecordAccessor detachedRecords = pipeline.detachCopy(this, outputDirectory);
-        assert detachedRecords.getDataSource() == null : "No data source should be created.";
+        pipeline.pausePipelineAndRun("detach", () -> {
+            snapshot(outputDirectory);
+            return null;
+        });
         out.writeNormalisedString(state.getLabel());
         out.writeSerializable(dataSourceBuilder, true);
-        out.writeSerializable(detachedRecords.getCache(), true);
+        out.writeLong(cache.getFastCopyVersion());
     }
 
     /**
@@ -1191,14 +1205,10 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         final String label = in.readNormalisedString(MAX_LABEL_LENGTH);
         dataSourceBuilder = in.readSerializable();
         dataSource = dataSourceBuilder.restore(label, inputDirectory);
-        if (version < ClassVersion.VERSION_2_KEYVALUE_SERIALIZERS) {
-            // nothing to read / skip
-        } else if (version < ClassVersion.VERSION_3_BYTES) {
-            // In version 2, the serializers are a part of VirtualRootNode
-            in.readSerializable(); // skip key serializer
-            in.readSerializable(); // skip value serializer
+        if (version < ClassVersion.VERSION_4_BYTES) {
+            throw new UnsupportedOperationException("Version " + version + " is not supported");
         }
-        cache = in.readSerializable();
+        cache = new VirtualNodeCache(virtualMapConfig, in.readLong());
     }
 
     // Hashing implementation
@@ -1310,7 +1320,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public <T> T detach(final Path destination) {
+    public RecordAccessor detach() {
         if (isDestroyed()) {
             throw new IllegalStateException("detach is illegal on already destroyed copies");
         }
@@ -1321,21 +1331,45 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
             throw new IllegalStateException("copy must be hashed before it is detached");
         }
 
+        detached.set(true);
+
         // The pipeline is paused while this runs, so I can go ahead and call snapshot on the data
         // source, and also snapshot the cache. I will create a new "RecordAccessor" for the detached
         // record state.
-        final T snapshot;
-        if (destination == null) {
-            //noinspection unchecked
-            snapshot = (T) new RecordAccessorImpl(state, cache.snapshot(), dataSourceBuilder.copy(dataSource, false));
-        } else {
-            dataSourceBuilder.snapshot(destination, dataSource);
-            //noinspection unchecked
-            snapshot = (T) new RecordAccessorImpl(state, cache.snapshot(), null);
+        final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, false);
+        final VirtualNodeCache cacheSnapshot = cache.snapshot();
+        return new RecordAccessorImpl(state, cacheSnapshot, dataSourceCopy);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void snapshot(final Path destination) throws IOException {
+        if (isDestroyed()) {
+            throw new IllegalStateException("snapshot is illegal on already destroyed copies");
+        }
+        if (!isImmutable()) {
+            throw new IllegalStateException("snapshot is only allowed on immutable copies");
+        }
+        if (!isHashed()) {
+            throw new IllegalStateException("copy must be hashed before snapshot");
         }
 
         detached.set(true);
-        return snapshot;
+
+        // The pipeline is paused while this runs, so I can go ahead and call snapshot on the data
+        // source, and also snapshot the cache. I will create a new "RecordAccessor" for the detached
+        // record state.
+        final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, true);
+        try {
+            final VirtualNodeCache cacheSnapshot = cache.snapshot();
+            cacheSnapshot.prepareForFlush();
+            flush(cacheSnapshot, state, dataSourceCopy);
+            dataSourceBuilder.snapshot(destination, dataSourceCopy);
+        } finally {
+            dataSourceCopy.close();
+        }
     }
 
     /**
@@ -1386,23 +1420,32 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         // helpful and will just burn resources.
         originalMap.dataSource.stopAndDisableBackgroundCompaction();
 
-        // Take a snapshot, and use the snapshot database as my data source
-        this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true);
+        reconnectState = new ReconnectState(-1, -1);
+        reconnectRecords = originalMap.pipeline.pausePipelineAndRun("copy", () -> {
+            // shutdown background compaction on original data source as it is no longer needed to be running as all
+            // data
+            // in that data source is only there as a starting point for reconnect now. So compacting it further is not
+            // helpful and will just burn resources.
+            originalMap.dataSource.stopAndDisableBackgroundCompaction();
 
-        // The old map's cache is going to become immutable, but that's OK, because the old map
-        // will NEVER be updated again.
-        assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
-        final VirtualNodeCache snapshotCache = originalMap.cache.snapshot();
-        flush(snapshotCache, originalMap.state, this.dataSource);
+            // Take a snapshot, and use the snapshot database as my data source
+            this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true, false);
+
+            // The old map's cache is going to become immutable, but that's OK, because the old map
+            // will NEVER be updated again.
+            assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
+            final VirtualNodeCache snapshotCache = originalMap.cache.snapshot();
+            snapshotCache.prepareForFlush();
+            flush(snapshotCache, originalMap.state, this.dataSource);
+
+            return new RecordAccessorImpl(reconnectState, snapshotCache, dataSource);
+        });
 
         // Set up the VirtualHasher which we will use during reconnect.
         // Initial timeout is intentionally very long, timeout is reduced once we receive the first leaf in the tree.
         reconnectIterator = new ConcurrentBlockingIterator<>(MAX_RECONNECT_HASHING_BUFFER_SIZE);
         reconnectHashingFuture = new CompletableFuture<>();
         reconnectHashingStarted = new AtomicBoolean(false);
-
-        reconnectState = new ReconnectState(-1, -1);
-        reconnectRecords = new RecordAccessorImpl(reconnectState, snapshotCache, dataSource);
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.
@@ -1661,7 +1704,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         final VirtualLeafBytes<V> newLeaf = valueCodec != null
                 ? new VirtualLeafBytes<>(leafPath, key, value, valueCodec)
                 : new VirtualLeafBytes<>(leafPath, key, valueBytes);
-        cache.putLeaf(newLeaf);
+        cache.putLeaf(newLeaf, true);
     }
 
     @Override
