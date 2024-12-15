@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.utilops.upgrade;
 
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
-import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,15 +25,13 @@ import java.util.Objects;
 
 /**
  * Removes the selected node or nodes specified by the {@link NodeSelector} and refreshes the
- * {@link SubProcessNetwork} address book using the given {@link UpgradeConfigTxt} source.
+ * {@link SubProcessNetwork} roster.
  */
 public class RemoveNodeOp extends UtilOp {
     private final NodeSelector selector;
-    private final UpgradeConfigTxt upgradeConfigTxt;
 
-    public RemoveNodeOp(@NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+    public RemoveNodeOp(@NonNull final NodeSelector selector) {
         this.selector = Objects.requireNonNull(selector);
-        this.upgradeConfigTxt = Objects.requireNonNull(upgradeConfigTxt);
     }
 
     @Override
@@ -42,7 +39,7 @@ public class RemoveNodeOp extends UtilOp {
         if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
             throw new IllegalStateException("Can only remove nodes from a SubProcessNetwork");
         }
-        subProcessNetwork.removeNode(selector, upgradeConfigTxt);
+        subProcessNetwork.removeNode(selector);
         return false;
     }
 }

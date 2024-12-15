@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -39,6 +40,7 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiConsumer;
@@ -69,8 +71,8 @@ public interface HandleWorkflowModule {
 
     @Provides
     @Singleton
-    static BiConsumer<State, Path> provideNetworkExportHelper() {
-        return DiskStartupNetworks::writeNetworkInfo;
+    static BiConsumer<State, Path> provideRosterExportHelper() {
+        return (state, path) -> DiskStartupNetworks.writeNetworkInfo(state, path, EnumSet.of(InfoType.ROSTER));
     }
 
     Runnable NO_OP = () -> {};

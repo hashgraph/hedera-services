@@ -112,9 +112,9 @@ public class PlatformStateUpdates {
                 platformStateStore.setFreezeTime(null);
             } else if (freezeType == PREPARE_UPGRADE) {
                 final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
-                if (networkAdminConfig.exportCandidateNetwork()) {
+                if (networkAdminConfig.exportCandidateRoster()) {
                     logger.info("Exporting candidate network after PREPARE_UPGRADE");
-                    networkExportHelper.accept(state, Paths.get(networkAdminConfig.candidateNetworkExportFile()));
+                    networkExportHelper.accept(state, Paths.get(networkAdminConfig.candidateRosterExportFile()));
                 }
             }
         }

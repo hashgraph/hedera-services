@@ -215,8 +215,8 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         return HederaTestConfigBuilder.create()
                 .withValue("tss.keyCandidateRoster", "" + keyCandidateRoster)
                 .withValue("addressBook.useRosterLifecycle", "" + useRosterLifecycle)
-                .withValue("networkAdmin.exportCandidateNetwork", "true")
-                .withValue("networkAdmin.candidateNetworkExportFile", "candidate-network.json")
+                .withValue("networkAdmin.exportCandidateRoster", "true")
+                .withValue("networkAdmin.candidateRosterExportFile", "candidate-network.json")
                 .getOrCreateConfig();
     }
 }

@@ -74,7 +74,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
 
         if (nodeOperatorPortDisabled) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
-                throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
+                throw new IllegalStateException("Can only disable operator port for a SubProcessNetwork");
             }
             subProcessNetwork.assignWithDisabledNodeOperatorPort();
         }

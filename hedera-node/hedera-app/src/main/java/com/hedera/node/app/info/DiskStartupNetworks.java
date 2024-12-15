@@ -28,11 +28,9 @@ import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.handlers.TssUtils;
-import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
@@ -46,7 +44,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
@@ -59,6 +56,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -80,6 +78,15 @@ public class DiskStartupNetworks implements StartupNetworks {
     private final TssBaseService tssBaseService;
 
     private boolean isArchived = false;
+
+    /**
+     * The types of network information that could be exported to disk.
+     */
+    public enum InfoType {
+        ROSTER,
+        TSS_KEYS,
+        NODE_DETAILS,
+    }
 
     public DiskStartupNetworks(
             @NonNull final ConfigProvider configProvider, @NonNull final TssBaseService tssBaseService) {
@@ -161,33 +168,14 @@ public class DiskStartupNetworks implements StartupNetworks {
      * @param state the state to write network information from.
      * @param path the path to write the JSON network information to.
      */
-    public static void writeNetworkInfo(@NonNull final State state, @NonNull final Path path) {
-        requireNonNull(state);
-        writeNetworkInfo(
-                new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME)),
-                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME)),
-                new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)),
-                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME)),
-                path);
-    }
-
-    /**
-     * Writes a JSON representation of the {@link Network} information in the given state to a given path.
-     *
-     * @param platformStateStore the platform state store to read the network information from
-     * @param path the path to write the JSON network information to.
-     */
     public static void writeNetworkInfo(
-            @NonNull final ReadableTssStore tssStore,
-            @NonNull final ReadableNodeStore nodeStore,
-            @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final ReadablePlatformStateStore platformStateStore,
-            @NonNull final Path path) {
-        requireNonNull(tssStore);
-        requireNonNull(nodeStore);
-        requireNonNull(rosterStore);
-        requireNonNull(path);
-        requireNonNull(platformStateStore);
+            @NonNull final State state, @NonNull final Path path, @NonNull final Set<InfoType> infoTypes) {
+        requireNonNull(state);
+        final var tssStore = new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME));
+        final var nodeStore = new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+        final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
+        final var platformStateStore =
+                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         Optional.ofNullable(rosterStore.getActiveRoster())
                 .or(() -> Optional.ofNullable(buildRoster(platformStateStore.getAddressBook())))
                 .ifPresent(activeRoster -> {
@@ -198,16 +186,21 @@ public class DiskStartupNetworks implements StartupNetworks {
                         final var encryptionKey = Optional.ofNullable(tssStore.getTssEncryptionKeys(node.nodeId()))
                                 .map(TssEncryptionKeys::currentEncryptionKey)
                                 .orElse(Bytes.EMPTY);
-                        nodeMetadata.add(new NodeMetadata(entry, node, encryptionKey));
+                        nodeMetadata.add(new NodeMetadata(
+                                infoTypes.contains(InfoType.ROSTER) ? entry : null,
+                                infoTypes.contains(InfoType.NODE_DETAILS) ? node : null,
+                                infoTypes.contains(InfoType.TSS_KEYS) ? encryptionKey : Bytes.EMPTY));
                     });
                     network.nodeMetadata(nodeMetadata);
-                    final var currentRosterHash = rosterStore.getCurrentRosterHash();
-                    if (currentRosterHash != null) {
-                        final var sourceRosterHash = Optional.ofNullable(rosterStore.getPreviousRosterHash())
-                                .orElse(Bytes.EMPTY);
-                        tssStore.consensusRosterKeys(sourceRosterHash, currentRosterHash, rosterStore)
-                                .ifPresent(rosterKeys ->
-                                        network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
+                    if (infoTypes.contains(InfoType.TSS_KEYS)) {
+                        final var currentRosterHash = rosterStore.getCurrentRosterHash();
+                        if (currentRosterHash != null) {
+                            final var sourceRosterHash = Optional.ofNullable(rosterStore.getPreviousRosterHash())
+                                    .orElse(Bytes.EMPTY);
+                            tssStore.consensusRosterKeys(sourceRosterHash, currentRosterHash, rosterStore)
+                                    .ifPresent(rosterKeys -> network.ledgerId(rosterKeys.ledgerId())
+                                            .tssMessages(rosterKeys.tssMessages()));
+                        }
                     }
                     try (final var fout = Files.newOutputStream(path)) {
                         Network.JSON.write(network.build(), new WritableStreamingData(fout));

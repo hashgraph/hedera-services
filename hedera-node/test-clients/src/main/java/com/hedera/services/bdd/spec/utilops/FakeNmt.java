@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
-import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.AddNodeOp;
@@ -67,12 +66,10 @@ public class FakeNmt {
      * address books on all remaining nodes using the given <i>config.txt</i> source.
      *
      * @param selector the selector for the node to remove
-     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
      * @return the operation that removes the node
      */
-    public static RemoveNodeOp removeNode(
-            @NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
-        return new RemoveNodeOp(selector, upgradeConfigTxt);
+    public static RemoveNodeOp removeNode(@NonNull final NodeSelector selector) {
+        return new RemoveNodeOp(selector);
     }
 
     /**
@@ -80,20 +77,10 @@ public class FakeNmt {
      * address books on all remaining nodes using the given <i>config.txt</i> source.
      *
      * @param nodeId id of the node to add
-     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
      * @return the operation that removes the node
      */
-    public static AddNodeOp addNode(final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
-        return new AddNodeOp(nodeId, upgradeConfigTxt);
-    }
-
-    /**
-     * Returns an operation that restarts the network.
-     *
-     * @return the operation that restarts the network
-     */
-    public static TryToStartNodesOp restartNetwork() {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), 0, SubProcessNode.ReassignPorts.YES);
+    public static AddNodeOp addNode(final long nodeId) {
+        return new AddNodeOp(nodeId);
     }
 
     /**

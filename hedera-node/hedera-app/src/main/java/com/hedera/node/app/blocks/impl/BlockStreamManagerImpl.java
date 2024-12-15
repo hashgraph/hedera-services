@@ -53,6 +53,7 @@ import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
@@ -82,6 +83,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -363,7 +365,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         "Writing network info to disk @ {} (REASON = {})",
                         exportPath.toAbsolutePath(),
                         diskNetworkExport);
-                DiskStartupNetworks.writeNetworkInfo(state, exportPath);
+                DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
         }
     }

@@ -56,6 +56,7 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -92,6 +93,7 @@ import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -295,7 +297,7 @@ class DiskStartupNetworksTest {
     void writesExpectedStateInfo() throws IOException, ParseException {
         final var state = stateContainingInfoFrom(networkWithTssKeys);
         final var loc = tempDir.resolve("reproduced-network.json");
-        DiskStartupNetworks.writeNetworkInfo(state, loc);
+        DiskStartupNetworks.writeNetworkInfo(state, loc, EnumSet.allOf(InfoType.class));
         try (final var fin = Files.newInputStream(loc)) {
             var network = Network.JSON.parse(new ReadableStreamingData(fin));
             network = network.copyBuilder()

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.conditionFuture;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CANDIDATE_ROSTER_JSON;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBook;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -27,7 +28,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.roster.RosterRetriever;
@@ -62,10 +62,9 @@ public class CandidateRosterValidationOp extends AbstractLifecycleOp {
         final var rosterLifecycleEnabled = spec.startupProperties().getBoolean("addressBook.useRosterLifecycle");
         final Roster candidateRoster;
         if (rosterLifecycleEnabled) {
-            final var candidateNetworkPath =
-                    node.metadata().workingDirOrThrow().resolve(WorkingDirUtils.CANDIDATE_NETWORK_JSON);
+            final var candidateRosterPath = node.metadata().workingDirOrThrow().resolve(CANDIDATE_ROSTER_JSON);
             final var candidateNetwork =
-                    DiskStartupNetworks.loadNetworkFrom(candidateNetworkPath).orElseThrow();
+                    DiskStartupNetworks.loadNetworkFrom(candidateRosterPath).orElseThrow();
             candidateRoster = RosterUtils.rosterFrom(candidateNetwork);
         } else {
             final var configTxtPath =

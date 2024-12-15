@@ -30,6 +30,8 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The {@link Schema#restart(MigrationContext)} implementation whereby the {@link AddressBookService} ensures that any
@@ -38,6 +40,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <b>Important:</b> The latest {@link AddressBookService} schema should always implement this interface.
  */
 public interface AddressBookTransplantSchema {
+    Logger log = LogManager.getLogger(AddressBookTransplantSchema.class);
+
     default void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
@@ -58,6 +62,9 @@ public interface AddressBookTransplantSchema {
         network.nodeMetadata().stream()
                 .filter(NodeMetadata::hasNode)
                 .map(NodeMetadata::nodeOrThrow)
-                .forEach(node -> nodes.put(new EntityNumber(node.nodeId()), node));
+                .forEach(node -> {
+                    nodes.put(new EntityNumber(node.nodeId()), node);
+                    log.info("Adopted node{} from override network :: {}", node.nodeId(), node);
+                });
     }
 }

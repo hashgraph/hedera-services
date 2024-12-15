@@ -16,22 +16,21 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
+import static com.hedera.node.app.info.DiskStartupNetworks.fromLegacyAddressBook;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
-import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCorrelatedBindException;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
-import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toSet;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.internal.network.Network;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -48,18 +47,17 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +73,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     // We need 6 ports for each node in the network (gRPC, gRPC TLS, gRPC node operator, gossip, gossip TLS, prometheus)
     private static final int PORTS_PER_NODE = 6;
-    private static final int MAX_PORT_REASSIGNMENTS = 3;
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
     private static final int LAST_CANDIDATE_PORT = 40000;
@@ -216,36 +213,9 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                     name(),
                     Thread.currentThread().getName());
             final var deferredRun = new DeferredRun(() -> {
-                AssertionError error = null;
-                var retries = MAX_PORT_REASSIGNMENTS;
-                var bindException = false;
-                do {
-                    if (bindException) {
-                        log.warn("Bind exception detected, retrying network initialization");
-                        // Completely rebuild the network and try again
-                        nodes.forEach(node -> {
-                            node.stopFuture()
-                                    .orTimeout(ProcessUtils.STOP_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
-                                    .join();
-                            // Begins by deleting the working directory
-                            node.initWorkingDir(configTxt);
-                        });
-                        assignNewMetadata(ReassignPorts.YES);
-                        clients = null;
-                        start();
-                    }
-                    final var deadline = Instant.now().plus(timeout);
-                    try {
-                        nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
-                        this.clients = HapiClients.clientsFor(this);
-                    } catch (AssertionError e) {
-                        error = e;
-                        bindException = hadCorrelatedBindException(error);
-                    }
-                } while (clients == null && bindException && retries-- > 0);
-                if (clients == null) {
-                    throw error;
-                }
+                final var deadline = Instant.now().plus(timeout);
+                nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
+                this.clients = HapiClients.clientsFor(this);
             });
             if (ready.compareAndSet(null, deferredRun)) {
                 // We only need one thread to wait for readiness
@@ -257,6 +227,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     /**
      * Returns the genesis <i>config.txt</i> file for the network.
+     *
      * @return the genesis <i>config.txt</i> file
      */
     public String genesisConfigTxt() {
@@ -288,7 +259,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             });
         }
         nodes.forEach(node -> ((SubProcessNode) node).reassignNodeAccountIdFrom(memoOfNode(node.getNodeId())));
-        refreshNodeConfigTxt();
+        refreshNodeOverrideNetworks();
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
     }
@@ -298,7 +269,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     public void assignWithDisabledNodeOperatorPort() {
         nodes.forEach(node -> ((SubProcessNode) node).reassignWithNodeOperatorPortDisabled());
-        refreshNodeConfigTxt();
+        refreshNodeOverrideNetworks();
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
     }
@@ -308,18 +279,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * from the given source.
      *
      * @param selector the selector for the node to remove
-     * @param upgradeConfigTxt the upgrade address book source
      */
-    public void removeNode(@NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+    public void removeNode(@NonNull final NodeSelector selector) {
         requireNonNull(selector);
-        requireNonNull(upgradeConfigTxt);
         final var node = getRequiredNode(selector);
         node.stopFuture();
         nodes.remove(node);
-        configTxt = switch (upgradeConfigTxt) {
-            case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
-            case DAB_GENERATED -> consensusDabConfigTxt();};
-        refreshNodeConfigTxt();
+        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
+        refreshNodeOverrideNetworks();
     }
 
     /**
@@ -327,10 +294,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * from the given source.
      *
      * @param nodeId the id of the node to add
-     * @param upgradeConfigTxt the upgrade address book source
      */
-    public void addNode(final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
-        requireNonNull(upgradeConfigTxt);
+    public void addNode(final long nodeId) {
         final var i = Collections.binarySearch(
                 nodes.stream().map(HederaNode::getNodeId).toList(), nodeId);
         if (i >= 0) {
@@ -354,11 +319,9 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 nextPrometheusPort + (int) nodeId),
                         GRPC_PINGER,
                         PROMETHEUS_CLIENT));
-        configTxt = switch (upgradeConfigTxt) {
-            case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
-            case DAB_GENERATED -> consensusDabConfigTxt(node -> node.getNodeId() != nodeId);};
-        ((SubProcessNode) nodes.get(insertionPoint)).initWorkingDir(configTxt);
-        refreshNodeConfigTxt();
+        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
+        nodes.get(insertionPoint).initWorkingDir(configTxt);
+        refreshNodeOverrideNetworks();
     }
 
     /**
@@ -424,14 +387,29 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         return network;
     }
 
-    private void refreshNodeConfigTxt() {
-        log.info("Refreshing config.txt for network '{}' - \n{}", name(), configTxt);
+    private void refreshNodeOverrideNetworks() {
+        log.info("Refreshing override roster for network '{}' - \n{}", name(), configTxt);
         nodes.forEach(node -> {
+            // (FUTURE) Remove this once we have enabled roster lifecycle by default
             final var configTxtLoc = node.getExternalPath(ADDRESS_BOOK);
             try {
                 Files.writeString(configTxtLoc, configTxt);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            }
+            // Write the actual override-network.json for use by RosterService transplant schema
+            try {
+                final var legacyBook = parseAddressBookText(configTxt);
+                final var overrideNetwork = fromLegacyAddressBook(legacyBook);
+                try {
+                    Files.writeString(
+                            node.metadata().workingDirOrThrow().resolve(OVERRIDE_NETWORK_JSON),
+                            Network.JSON.toJSON(overrideNetwork));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            } catch (ParseException e) {
+                throw new IllegalStateException(e);
             }
         });
     }
@@ -442,22 +420,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 .map(line -> line.substring(line.lastIndexOf(",") + 2))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No metadata found for node " + id));
-    }
-
-    private String consensusDabConfigTxt() {
-        return consensusDabConfigTxt(ignore -> true);
-    }
-
-    private String consensusDabConfigTxt(@NonNull final Predicate<HederaNode> filter) {
-        final Set<String> configTxts = nodes.stream()
-                .filter(filter)
-                .map(node -> rethrowIO(() -> Files.readString(
-                        node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT))))
-                .collect(toSet());
-        if (configTxts.size() != 1) {
-            throw new IllegalStateException("DAB generated inconsistent config.txt files in network");
-        }
-        return configTxts.iterator().next();
     }
 
     private void reinitializePorts() {

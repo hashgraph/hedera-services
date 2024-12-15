@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeIds;
-import static com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt.DAB_GENERATED;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicFeeCollectorIdFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.entryById;
@@ -147,7 +146,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 prepareFakeUpgrade(),
                 validateCandidateRoster(
                         addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED)),
+                upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1))),
                 waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                 touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                 touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
@@ -172,7 +171,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 prepareFakeUpgrade(),
                 validateCandidateRoster(
                         addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L)),
-                upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3), DAB_GENERATED)),
+                upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(3))),
                 waitUntilStartOfNextStakingPeriod(1).withBackgroundTraffic(),
                 touchBalanceOf(NODE0_STAKER, NODE2_STAKER).andAssertStakingRewardCount(2),
                 touchBalanceOf(NODE3_STAKER).andAssertStakingRewardCount(0));
@@ -194,7 +193,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 // node4 was not active before this the upgrade, so it could not have written a config.txt
                 validateCandidateRoster(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
                         .contains(4L)),
-                upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)));
+                upgradeToNextConfigVersion(FakeNmt.addNode(4L)));
     }
 
     @Nested
@@ -259,9 +258,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     nodeDelete("2"),
                     validateCandidateRoster(
                             NodeSelector.allNodes(), DabEnabledUpgradeTest::validateNodeId5MultipartEdits),
-                    upgradeToNextConfigVersion(
-                            FakeNmt.removeNode(NodeSelector.byNodeId(4L), DAB_GENERATED),
-                            FakeNmt.addNode(5L, DAB_GENERATED)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(NodeSelector.byNodeId(4L)), FakeNmt.addNode(5L)),
                     // Validate that nodeId2 and nodeId5 have their new fee collector account IDs,
                     // since those were updated before the prepare upgrade
                     cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))

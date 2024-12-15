@@ -61,6 +61,9 @@ import java.util.function.LongFunction;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
+    private static final Key CLASSIC_ADMIN_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
+            .build();
     private static final Path BASE_WORKING_LOC = Path.of("./build");
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";
@@ -88,7 +91,7 @@ public class WorkingDirUtils {
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
     public static final String STATE_METADATA_FILE = "stateMetadata.txt";
     public static final String NODE_ADMIN_KEYS_JSON = "node-admin-keys.json";
-    public static final String CANDIDATE_NETWORK_JSON = "candidate-network.json";
+    public static final String CANDIDATE_ROSTER_JSON = "candidate-roster.json";
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
@@ -427,8 +430,7 @@ public class WorkingDirUtils {
                                     Bytes.EMPTY,
                                     weight,
                                     false,
-                                    // TODO - Use the real admin key
-                                    Key.DEFAULT))
+                                    CLASSIC_ADMIN_KEY))
                             .tssEncryptionKey(tssEncryptionKeyFn.apply(nodeId))
                             .build();
                 })

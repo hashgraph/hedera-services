@@ -49,5 +49,5 @@ public record NetworkAdminConfig(
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
         @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport,
-        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateNetwork,
-        @ConfigProperty(defaultValue = "candidate-network.json") @NodeProperty String candidateNetworkExportFile) {}
+        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateRoster,
+        @ConfigProperty(defaultValue = "candidate-roster.json") @NodeProperty String candidateRosterExportFile) {}
