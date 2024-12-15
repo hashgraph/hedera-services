@@ -96,6 +96,9 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
@@ -330,6 +333,16 @@ public class ServicesMain implements SwirldMain {
                         return buildAddressBook(retrieveActiveOrGenesisRoster(state));
                     });
             rosterHistory = buildRosterHistory((State) initialState.get().getState());
+        }
+        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/off/node" + selfId.id() + "/history-"
+                + Instant.now().getEpochSecond() + ".txt";
+        try (final var fout = Files.newBufferedWriter(Paths.get(loc))) {
+            fout.write(rosterHistory.getHistory().toString());
+            fout.newLine();
+            fout.write("---");
+            fout.newLine();
+            fout.write(rosterHistory.getRosters().toString());
+            fout.newLine();
         }
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,

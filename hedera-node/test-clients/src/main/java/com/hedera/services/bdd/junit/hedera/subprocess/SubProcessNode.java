@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
-import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
@@ -32,10 +31,10 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.start
 import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newLogAttempt;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -228,10 +227,10 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     /**
      * Reassigns the account ID used by this node.
      *
-     * @param memo the memo containing the new account ID to use
+     * @param accountId the new account ID
      */
-    public void reassignNodeAccountIdFrom(@NonNull final String memo) {
-        metadata = metadata.withNewAccountId(toPbj(asAccount(memo)));
+    public void reassignNodeAccountIdFrom(@NonNull final AccountID accountId) {
+        metadata = metadata.withNewAccountId(accountId);
     }
 
     /**

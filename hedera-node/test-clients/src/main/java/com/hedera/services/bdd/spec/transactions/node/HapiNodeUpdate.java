@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asPosNodeId;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
@@ -31,6 +32,7 @@ import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -146,6 +148,10 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         });
         try {
             final TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
+            final var op = txn.getNodeUpdate();
+            if (op.hasAccountId() && spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork) {
+                subProcessNetwork.updateNodeAccount(op.getNodeId(), toPbj(op.getAccountId()));
+            }
             spec.registry().saveNodeMeta(nodeName, txn.getNodeUpdate());
         } catch (final Exception impossible) {
             throw new IllegalStateException(impossible);

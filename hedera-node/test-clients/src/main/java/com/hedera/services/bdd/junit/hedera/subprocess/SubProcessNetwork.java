@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.hedera.subprocess;
 import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
@@ -31,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
@@ -57,6 +59,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,6 +101,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static int nextPrometheusPort;
     private static boolean nextPortsInitialized = false;
 
+    private final Map<Long, AccountID> pendingNodeAccounts = new HashMap<>();
     private final AtomicReference<DeferredRun> ready = new AtomicReference<>();
 
     private long maxNodeId;
@@ -243,6 +247,20 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
+     * Updates the account id for the node with the given id.
+     * @param nodeId the node id
+     * @param accountId the account id
+     */
+    public void updateNodeAccount(final long nodeId, final AccountID accountId) {
+        final var nodes = nodesFor(byNodeId(nodeId));
+        if (!nodes.isEmpty()) {
+            ((SubProcessNode) nodes.getFirst()).reassignNodeAccountIdFrom(accountId);
+        } else {
+            pendingNodeAccounts.put(nodeId, accountId);
+        }
+    }
+
+    /**
      * Assigns updated metadata to nodes from the current <i>config.txt</i>.
      * <p>Also reassigns ports and overwrites the existing <i>config.txt</i> file for each node in the
      * network with new ports if requested to avoid port binding issues in test environments.
@@ -266,7 +284,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 nextPrometheusPort + nodeId);
             });
         }
-        nodes.forEach(node -> ((SubProcessNode) node).reassignNodeAccountIdFrom(memoOfNode(node.getNodeId())));
         refreshNodeOverrideNetworks();
     }
 
@@ -317,22 +334,25 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         }
         this.maxNodeId = Math.max(maxNodeId, nodeId);
         final var insertionPoint = -i - 1;
-        nodes.add(
-                insertionPoint,
-                new SubProcessNode(
-                        classicMetadataFor(
-                                (int) nodeId,
-                                name(),
-                                SUBPROCESS_HOST,
-                                SHARED_NETWORK_NAME.equals(name()) ? null : name(),
-                                nextGrpcPort + (int) nodeId * 2,
-                                nextNodeOperatorPort + (int) nodeId * 2,
-                                true,
-                                nextGossipPort + (int) nodeId * 2,
-                                nextGossipTlsPort + (int) nodeId * 2,
-                                nextPrometheusPort + (int) nodeId),
-                        GRPC_PINGER,
-                        PROMETHEUS_CLIENT));
+        final var node = new SubProcessNode(
+                classicMetadataFor(
+                        (int) nodeId,
+                        name(),
+                        SUBPROCESS_HOST,
+                        SHARED_NETWORK_NAME.equals(name()) ? null : name(),
+                        nextGrpcPort + (int) nodeId * 2,
+                        nextNodeOperatorPort + (int) nodeId * 2,
+                        true,
+                        nextGossipPort + (int) nodeId * 2,
+                        nextGossipTlsPort + (int) nodeId * 2,
+                        nextPrometheusPort + (int) nodeId),
+                GRPC_PINGER,
+                PROMETHEUS_CLIENT);
+        final var accountId = pendingNodeAccounts.remove(nodeId);
+        if (accountId != null) {
+            node.reassignNodeAccountIdFrom(accountId);
+        }
+        nodes.add(insertionPoint, node);
         configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
         nodes.get(insertionPoint).initWorkingDir(configTxt);
         refreshNodeOverrideNetworks();
@@ -422,14 +442,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 throw new UncheckedIOException(e);
             }
         });
-    }
-
-    private String memoOfNode(final long id) {
-        return Arrays.stream(configTxt.split("\n"))
-                .filter(line -> line.startsWith("address, " + id))
-                .map(line -> line.substring(line.lastIndexOf(",") + 2))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No metadata found for node " + id));
     }
 
     private void reinitializePorts() {

@@ -177,6 +177,7 @@ public class HapiClients {
     }
 
     private HapiClients(final List<HederaNode> nodes) {
+        log.info("Constructing clients for nodes: {}", nodes);
         this.nodes = nodes;
         this.nodeInfos = Collections.emptyList();
         stubIds = nodes.stream()
