@@ -48,6 +48,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -72,6 +73,7 @@ public class WorkingDirUtils {
     private static final String PROJECT_BOOTSTRAP_ASSETS_LOC = "hedera-node/configuration/dev";
     private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
     private static final X509Certificate SIG_CERT;
+    public static final Bytes VALID_CERT;
 
     static {
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
@@ -79,6 +81,11 @@ public class WorkingDirUtils {
                 .withRealKeysEnabled(true)
                 .build();
         SIG_CERT = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+        try {
+            VALID_CERT = Bytes.wrap(SIG_CERT.getEncoded());
+        } catch (CertificateEncodingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static final String DATA_DIR = "data";
@@ -392,6 +399,12 @@ public class WorkingDirUtils {
                 .toList());
     }
 
+    /**
+     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
+     * to set its gossip certificates to the same certificates used in each position by a test network.
+     * @param path the path to the address book file
+     * @return the loaded address book
+     */
     public static AddressBook loadAddressBookWithDeterministicCerts(@NonNull final Path path) {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
@@ -404,10 +417,20 @@ public class WorkingDirUtils {
         }
     }
 
-    private static Network networkFrom(
+    /**
+     * Creates a network from the given <i>config.txt</i> file, using the given functions to provide
+     * TSS encryption keys and TSS key material. The network's roster entries will have the gossip certificates
+     * set to the same certificates used in each position by a test network.
+     * @param configTxt the contents of the <i>config.txt</i> file
+     * @param tssEncryptionKeyFn a function that returns the TSS encryption key for a given node ID
+     * @param tssKeyMaterialFn a function that returns the TSS key material for the network, if available
+     * @return the network
+     */
+    public static Network networkFrom(
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
             @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+        final var certs = AddressBookUtils.certsFor(configTxt);
         final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
                 .filter(line -> line.contains("address, "))
                 .map(line -> {
@@ -416,7 +439,7 @@ public class WorkingDirUtils {
                     final long weight = Long.parseLong(parts[4]);
                     final var gossipEndpoints =
                             List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
-                    final var cert = AddressBookUtils.testCertFor(nodeId);
+                    final var cert = certs.get(nodeId);
                     return NodeMetadata.newBuilder()
                             .rosterEntry(new RosterEntry(nodeId, weight, cert, gossipEndpoints))
                             .node(new Node(

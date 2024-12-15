@@ -82,12 +82,12 @@ public class StreamFileAlterationListener extends FileAlterationListenerAdaptor 
         while (true) {
             retryCount++;
             try {
+                exposure.accept(f);
                 log.info(
-                        "Listener@{} giving validators access to {} file {}",
+                        "Listener@{} gave validators access to {} file {}",
                         System.identityHashCode(this),
                         fileType,
                         f.getAbsolutePath());
-                exposure.accept(f);
                 return;
             } catch (Exception e) {
                 if (retryCount < NUM_RETRIES) {

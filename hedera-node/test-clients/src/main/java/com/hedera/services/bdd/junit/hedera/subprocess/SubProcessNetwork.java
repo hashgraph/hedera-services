@@ -17,20 +17,26 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
-import static com.hedera.node.app.info.DiskStartupNetworks.fromLegacyAddressBook;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CANDIDATE_ROSTER_JSON;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -47,12 +53,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -292,7 +299,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         final var node = getRequiredNode(selector);
         node.stopFuture();
         nodes.remove(node);
-        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
+        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
         refreshNodeOverrideNetworks();
     }
 
@@ -326,7 +333,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                 nextPrometheusPort + (int) nodeId),
                         GRPC_PINGER,
                         PROMETHEUS_CLIENT));
-        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
+        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
         nodes.get(insertionPoint).initWorkingDir(configTxt);
         refreshNodeOverrideNetworks();
     }
@@ -405,18 +412,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 throw new UncheckedIOException(e);
             }
             // Write the actual override-network.json for use by RosterService transplant schema
+            final var overrideNetwork =
+                    WorkingDirUtils.networkFrom(configTxt, i -> Bytes.EMPTY, rosterEntries -> Optional.empty());
             try {
-                final var legacyBook = parseAddressBookText(configTxt);
-                final var overrideNetwork = fromLegacyAddressBook(legacyBook);
-                try {
-                    Files.writeString(
-                            node.metadata().workingDirOrThrow().resolve(OVERRIDE_NETWORK_JSON),
-                            Network.JSON.toJSON(overrideNetwork));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            } catch (ParseException e) {
-                throw new IllegalStateException(e);
+                Files.writeString(
+                        node.getExternalPath(DATA_CONFIG_DIR).resolve(OVERRIDE_NETWORK_JSON),
+                        Network.JSON.toJSON(overrideNetwork));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         });
     }
@@ -496,5 +499,22 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                     }
                 })
                 .collect(Collectors.joining("\n"));
+    }
+
+    /**
+     * Loads and returns the node weights for the latest candidate roster.
+     * @return the node weights
+     */
+    private Map<Long, Long> latestCandidateWeights() {
+        final var candidateRosterPath =
+                nodes().getFirst().metadata().workingDirOrThrow().resolve(CANDIDATE_ROSTER_JSON);
+        try (final var fin = Files.newInputStream(candidateRosterPath)) {
+            final var network = Network.JSON.parse(new ReadableStreamingData(fin));
+            return network.nodeMetadata().stream()
+                    .map(NodeMetadata::rosterEntryOrThrow)
+                    .collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
+        } catch (IOException | ParseException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

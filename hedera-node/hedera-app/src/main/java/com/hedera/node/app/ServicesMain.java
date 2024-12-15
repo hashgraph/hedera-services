@@ -61,6 +61,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -262,10 +263,15 @@ public class ServicesMain implements SwirldMain {
         // --- Construct the Hedera instance and use it to initialize the starting state ---
         hedera = newHedera(selfId, metrics);
         final var version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
         final var isGenesis = new AtomicBoolean(false);
         // We want to be able to see the schema migration logs, so init logging here
         initLogging();
+        logger.info("Starting node {} with version {}", selfId, version);
+        logger.info(
+                "As node{}, I think my gossip cert hash is {}",
+                selfId.id(),
+                CommonUtils.hex(com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
+                        keysAndCerts.sigCert().getEncoded())));
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,

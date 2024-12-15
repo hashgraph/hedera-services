@@ -34,6 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -84,7 +85,7 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
 
     @Override
     public Optional<Network> startupNetwork() {
-        return getStartupAddressBook(getExternalPath(DATA_CONFIG_DIR));
+        return getPossiblyArchivedStartupAddressBook(getExternalPath(DATA_CONFIG_DIR));
     }
 
     protected abstract T self();
@@ -98,10 +99,17 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
      * @param path the path to search
      * @return the address book, if found
      */
-    private Optional<Network> getStartupAddressBook(@NonNull final Path path) {
+    private Optional<Network> getPossiblyArchivedStartupAddressBook(@NonNull final Path path) {
         return getStartupAddressBookIn(path).or(() -> getStartupAddressBookIn(path.resolve(ARCHIVE)));
     }
 
+    /**
+     * Tries to find a startup address book in the given directory. This may be either a {@code genesis-network.json}
+     * or a {@code override-network.json} file; which may itself be "scoped" inside a numbered round directory, in
+     * which case we always choose the override network for the highest round number.
+     * @param path the path to search
+     * @return the address book, if found
+     */
     private Optional<Network> getStartupAddressBookIn(@NonNull final Path path) {
         return getStartupAddressBookAt(path.resolve(GENESIS_NETWORK_JSON))
                 .or(() -> getStartupAddressBookAt(path.resolve(OVERRIDE_NETWORK_JSON)))
@@ -113,6 +121,9 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
                                 .filter(dir -> ROUND_DIR_PATTERN
                                         .matcher(dir.getFileName().toString())
                                         .matches())
+                                .sorted(Comparator.<Path>comparingLong(dir ->
+                                                Long.parseLong(dir.getFileName().toString()))
+                                        .reversed())
                                 .map(dir -> getStartupAddressBookAt(dir.resolve(OVERRIDE_NETWORK_JSON)))
                                 .flatMap(Optional::stream)
                                 .findFirst();

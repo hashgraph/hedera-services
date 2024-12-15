@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
-import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
-import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
-import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
-import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.DISTINCT;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -43,7 +42,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.List;
+import java.util.Spliterators;
 import java.util.function.BiConsumer;
+import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -103,6 +105,7 @@ public class PlatformStateUpdates {
                     platformStateStore.setFreezeTime(null);
                 }
                 case PREPARE_UPGRADE -> {
+                    final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
                     // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
                     if (config.getConfigData(AddressBookConfig.class).useRosterLifecycle()
@@ -114,17 +117,39 @@ public class PlatformStateUpdates {
                         final var candidateRoster = nodeStore.snapshotOfFutureRoster();
                         logger.info("Candidate roster is {}", candidateRoster);
                         rosterStore.putCandidateRoster(candidateRoster);
-                        final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
                         if (networkAdminConfig.exportCandidateRoster()) {
-                            final var exportPath = Paths.get(networkAdminConfig.candidateRosterExportFile());
-                            logger.info(
-                                    "Exporting candidate roster after PREPARE_UPGRADE to '{}'",
-                                    exportPath.toAbsolutePath());
-                            rosterExportHelper.accept(candidateRoster, exportPath);
+                            doExport(candidateRoster, networkAdminConfig);
                         }
+                    } else if (networkAdminConfig.exportCandidateRoster()) {
+                        // Having the option to export candidate-roster.json even without roster lifecycle
+                        // enabled simplifies test automation in the lifecycle adoption phase
+                        final var nodeStore =
+                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+                        final var candidateRoster = new Roster(StreamSupport.stream(
+                                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT),
+                                        false)
+                                .mapToLong(EntityNumber::number)
+                                .sorted()
+                                .mapToObj(nodeStore::get)
+                                .filter(node -> node != null && !node.deleted())
+                                .map(node -> new RosterEntry(
+                                        node.nodeId(),
+                                        node.weight(),
+                                        node.gossipCaCertificate(),
+                                        List.of(
+                                                node.gossipEndpoint().getLast(),
+                                                node.gossipEndpoint().getFirst())))
+                                .toList());
+                        doExport(candidateRoster, networkAdminConfig);
                     }
                 }
             }
         }
+    }
+
+    private void doExport(@NonNull final Roster candidateRoster, @NonNull final NetworkAdminConfig networkAdminConfig) {
+        final var exportPath = Paths.get(networkAdminConfig.candidateRosterExportFile());
+        logger.info("Exporting candidate roster after PREPARE_UPGRADE to '{}'", exportPath.toAbsolutePath());
+        rosterExportHelper.accept(candidateRoster, exportPath);
     }
 }

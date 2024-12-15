@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSI
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicFeeCollectorIdFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.entryById;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.nodeIdsFrom;
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.testCertFor;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.VALID_CERT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asReadableIp;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -188,7 +188,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                         .accountId(classicFeeCollectorIdFor(4))
                         .description(CLASSIC_NODE_NAMES[4])
                         .withAvailableSubProcessPorts()
-                        .gossipCaCertificate(testCertFor(4)),
+                        .gossipCaCertificate(VALID_CERT),
                 prepareFakeUpgrade(),
                 // node4 was not active before this the upgrade, so it could not have written a config.txt
                 validateCandidateRoster(exceptNodeIds(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
@@ -216,19 +216,19 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                             .accountId(classicFeeCollectorIdFor(5))
                             .description(CLASSIC_NODE_NAMES[5])
                             .withAvailableSubProcessPorts()
-                            .gossipCaCertificate(testCertFor(5L)),
+                            .gossipCaCertificate(VALID_CERT),
                     nodeCreate("toBeDeletedNode6")
                             .adminKey(DEFAULT_PAYER)
                             .accountId(classicFeeCollectorIdFor(6))
                             .description(CLASSIC_NODE_NAMES[6])
                             .withAvailableSubProcessPorts()
-                            .gossipCaCertificate(testCertFor(6L)),
+                            .gossipCaCertificate(VALID_CERT),
                     nodeCreate("disallowedNode7")
                             .adminKey(DEFAULT_PAYER)
                             .accountId(classicFeeCollectorIdFor(7))
                             .description(CLASSIC_NODE_NAMES[7])
                             .withAvailableSubProcessPorts()
-                            .gossipCaCertificate(testCertFor(7L))
+                            .gossipCaCertificate(VALID_CERT)
                             .hasKnownStatus(MAX_NODES_CREATED),
                     // Delete a pending node
                     nodeDelete("6"),
@@ -278,7 +278,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
      */
     private static void validateNodeId5MultipartEdits(@NonNull final Roster roster) {
         final var node5 = entryById(roster, 5L);
-        final var externalEndpoint = node5.gossipEndpoint().getLast();
+        final var externalEndpoint = node5.gossipEndpoint().getFirst();
         final var internalEndpoint = node5.gossipEndpoint().getLast();
         assertEquals("127.0.0.1", asReadableIp(internalEndpoint.ipAddressV4()));
         assertEquals(33000, internalEndpoint.port());

@@ -19,6 +19,7 @@ package com.hedera.node.app.roster.schemas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.roster.RosterService;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -27,6 +28,7 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,7 +58,17 @@ public interface RosterTransplantSchema {
                 final long activeRoundNumber = roundNumber + 1;
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
-                rosterStore.putActiveRoster(RosterUtils.rosterFrom(network), activeRoundNumber);
+                final var roster = RosterUtils.rosterFrom(network);
+                rosterStore.putActiveRoster(roster, activeRoundNumber);
+                log.info(
+                        "Cert hashes are, \n  {}",
+                        roster.rosterEntries().stream()
+                                .map(entry -> "node" + entry.nodeId() + " => "
+                                        + CommonUtils.hex(
+                                                com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
+                                                        entry.gossipCaCertificate()
+                                                                .toByteArray())))
+                                .collect(Collectors.joining("\n  ")));
                 startupNetworks.setOverrideRound(roundNumber);
             });
             return overrideNetwork.isPresent();

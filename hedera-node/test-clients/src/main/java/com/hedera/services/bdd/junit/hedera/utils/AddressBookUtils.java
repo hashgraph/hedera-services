@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.working
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.base.AccountID;
@@ -36,12 +35,15 @@ import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.security.cert.CertificateEncodingException;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -54,8 +56,6 @@ import java.util.stream.Stream;
  * Utility class for generating an address book configuration file.
  */
 public class AddressBookUtils {
-    private static Map<Long, Bytes> TEST_GOSSIP_X509_CERTS;
-
     public static final long CLASSIC_FIRST_NODE_ACCOUNT_NUM = 3;
     public static final String[] CLASSIC_NODE_NAMES =
             new String[] {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8"};
@@ -87,33 +87,35 @@ public class AddressBookUtils {
     };
 
     /**
-     * Returns the ASN.1 DER encoding of the X.509 certificate the platform generates for the given node id
-     * in test environments.
-     * @param nodeId the node id
-     * @return the ASN.1 DER encoding of the X.509 certificate
+     * Given a config.txt file, generates the same map of node ids to ASN.1 DER encodings of X.509 certificates
+     * as will be produced in a test network.
+     * @param configTxt the contents of a config.txt file
+     * @return the map of node IDs to their cert encodings
      */
-    @SuppressWarnings("unchecked")
-    public static Bytes testCertFor(final long nodeId) {
-        if (TEST_GOSSIP_X509_CERTS == null) {
-            try {
-                TEST_GOSSIP_X509_CERTS = ((Map<String, String>) new ObjectMapper()
-                                .readValue(
-                                        AddressBookUtils.class
-                                                .getClassLoader()
-                                                .getResourceAsStream("hapi-test-gossip-certs.json"),
-                                        Map.class))
-                        .entrySet().stream()
-                                // The test resource has one random valid cert with key "X" to be used for node ids
-                                // outside the @HapiTest range
-                                .collect(toMap(
-                                        e -> "X".equals(e.getKey()) ? Long.MAX_VALUE : Long.parseLong(e.getKey()),
-                                        e -> Bytes.fromBase64(e.getValue())));
-            } catch (IOException e) {
-                throw new IllegalStateException("Could not load gossip certs", e);
-            }
+    public static Map<Long, Bytes> certsFor(@NonNull final String configTxt) {
+        final AddressBook synthBook;
+        try {
+            synthBook = com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText(configTxt);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(e);
         }
-        final var hapiCert = TEST_GOSSIP_X509_CERTS.get(nodeId);
-        return hapiCert != null ? hapiCert : TEST_GOSSIP_X509_CERTS.get(Long.MAX_VALUE);
+        try {
+            CryptoStatic.generateKeysAndCerts(synthBook);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error generating keys and certs", e);
+        }
+        return IntStream.range(0, synthBook.getSize())
+                .boxed()
+                .collect(toMap(j -> synthBook.getNodeId(j).id(), j -> {
+                    try {
+                        return Bytes.wrap(requireNonNull(synthBook
+                                        .getAddress(synthBook.getNodeId(j))
+                                        .getSigCert())
+                                .getEncoded());
+                    } catch (CertificateEncodingException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }));
     }
 
     private AddressBookUtils() {
@@ -134,6 +136,25 @@ public class AddressBookUtils {
             @NonNull final List<HederaNode> nodes,
             final int nextInternalGossipPort,
             final int nextExternalGossipPort) {
+        return configTxtForLocal(networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, Map.of());
+    }
+
+    /**
+     * Returns the contents of a <i>config.txt</i> file for the given network, with the option to override the
+     * weights of the nodes.
+     * @param networkName the name of the network
+     * @param nodes the nodes in the network
+     * @param nextInternalGossipPort the next gossip port to use
+     * @param nextExternalGossipPort the next gossip TLS port to use
+     * @param overrideWeights the map of node IDs to their weights
+     * @return the contents of the <i>config.txt</i> file
+     */
+    public static String configTxtForLocal(
+            @NonNull final String networkName,
+            @NonNull final List<HederaNode> nodes,
+            final int nextInternalGossipPort,
+            final int nextExternalGossipPort,
+            @NonNull final Map<Long, Long> overrideWeights) {
         final var sb = new StringBuilder();
         sb.append("swirld, ")
                 .append(networkName)
@@ -149,7 +170,9 @@ public class AddressBookUtils {
                     .append(node.getNodeId())
                     .append(", ")
                     .append(node.getName())
-                    .append(", 1, 127.0.0.1, ")
+                    .append(", ")
+                    .append(overrideWeights.getOrDefault(node.getNodeId(), 1L))
+                    .append(", 127.0.0.1, ")
                     .append(nextInternalGossipPort + (node.getNodeId() * 2))
                     .append(", 127.0.0.1, ")
                     .append(nextExternalGossipPort + (node.getNodeId() * 2))
@@ -211,6 +234,7 @@ public class AddressBookUtils {
      * Returns the "classic" metadata for a node in the network, matching the names
      * used by {@link #configTxtForLocal(String, List, int, int)} to generate the
      * <i>config.txt</i> file.
+     *
      * @param nodeId the ID of the node
      * @param networkName the name of the network
      * @param host the host name or IP address
@@ -271,7 +295,7 @@ public class AddressBookUtils {
     }
 
     /**
-     *  Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
+     * Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
      *
      * @param host is an ip or domain name, do not pass in an invalid ip such as "130.0.0.1", will set it as domain name otherwise.
      * @param port the port number
@@ -296,6 +320,7 @@ public class AddressBookUtils {
 
     /**
      * Returns the classic fee collector account ID for a given node ID.
+     *
      * @param nodeId the node ID
      * @return the classic fee collector account ID
      */
