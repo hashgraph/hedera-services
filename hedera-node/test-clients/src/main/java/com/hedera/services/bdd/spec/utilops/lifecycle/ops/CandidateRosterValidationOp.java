@@ -48,7 +48,7 @@ import org.apache.logging.log4j.Logger;
 public class CandidateRosterValidationOp extends AbstractLifecycleOp {
     private static final Logger log = LogManager.getLogger(CandidateRosterValidationOp.class);
 
-    private static final Duration CONFIG_TXT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration CANDIDATE_ROSTER_EXPORT_TIMEOUT = Duration.ofSeconds(10);
     private final Consumer<Roster> rosterValidator;
 
     public CandidateRosterValidationOp(
@@ -63,6 +63,13 @@ public class CandidateRosterValidationOp extends AbstractLifecycleOp {
         final Roster candidateRoster;
         if (rosterLifecycleEnabled) {
             final var candidateRosterPath = node.metadata().workingDirOrThrow().resolve(CANDIDATE_ROSTER_JSON);
+            try {
+                conditionFuture(() -> candidateRosterPath.toFile().exists())
+                        .get(CANDIDATE_ROSTER_EXPORT_TIMEOUT.toMillis(), MILLISECONDS);
+            } catch (Exception e) {
+                log.error("Unable to locate candidate roster at '{}')", candidateRosterPath.toAbsolutePath(), e);
+                throw new IllegalStateException(e);
+            }
             final var candidateNetwork =
                     DiskStartupNetworks.loadNetworkFrom(candidateRosterPath).orElseThrow();
             candidateRoster = RosterUtils.rosterFrom(candidateNetwork);
@@ -73,7 +80,7 @@ public class CandidateRosterValidationOp extends AbstractLifecycleOp {
             log.info("Loading legacy address book at {}", configTxtPath);
             try {
                 conditionFuture(() -> containsLoadableAddressBook(configTxtPath, lastFailure::set))
-                        .get(CONFIG_TXT_TIMEOUT.toMillis(), MILLISECONDS);
+                        .get(CANDIDATE_ROSTER_EXPORT_TIMEOUT.toMillis(), MILLISECONDS);
             } catch (Exception e) {
                 log.error(
                         "Unable to validate address book from {} (last error='{}')",

@@ -200,7 +200,7 @@ public class HapiClients {
     }
 
     public static HapiClients clientsFor(HapiSpecSetup setup) {
-        return new HapiClients(() -> setup.nodes());
+        return new HapiClients(setup::nodes);
     }
 
     public static HapiClients clientsFor(@NonNull final HederaNetwork network) {

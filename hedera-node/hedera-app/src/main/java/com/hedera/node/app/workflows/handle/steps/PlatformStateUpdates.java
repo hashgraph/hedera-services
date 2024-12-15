@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeS
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -38,7 +39,6 @@ import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,15 +56,14 @@ import org.apache.logging.log4j.Logger;
 public class PlatformStateUpdates {
     private static final Logger logger = LogManager.getLogger(PlatformStateUpdates.class);
 
-    private final BiConsumer<State, Path> networkExportHelper;
+    private final BiConsumer<Roster, Path> rosterExportHelper;
 
     /**
      * Creates a new instance of this class.
      */
     @Inject
-    public PlatformStateUpdates(@NonNull final BiConsumer<State, Path> networkExportHelper) {
-        // For dagger
-        this.networkExportHelper = requireNonNull(networkExportHelper);
+    public PlatformStateUpdates(@NonNull final BiConsumer<Roster, Path> rosterExportHelper) {
+        this.rosterExportHelper = requireNonNull(rosterExportHelper);
     }
 
     /**
@@ -85,36 +84,45 @@ public class PlatformStateUpdates {
             final var freezeType = txBody.freezeOrThrow().freezeType();
             final var platformStateStore =
                     new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME));
-            if (freezeType == FREEZE_UPGRADE || freezeType == FREEZE_ONLY) {
-                logger.info("Transaction freeze of type {} detected", freezeType);
-                if (freezeType == FREEZE_UPGRADE) {
-                    final var keyCandidateRoster =
-                            config.getConfigData(TssConfig.class).keyCandidateRoster();
-                    final var useRosterLifecycle =
-                            config.getConfigData(AddressBookConfig.class).useRosterLifecycle();
-                    if (!keyCandidateRoster && useRosterLifecycle) {
+            switch (freezeType) {
+                case UNKNOWN_FREEZE_TYPE, TELEMETRY_UPGRADE -> {
+                    // No-op
+                }
+                case FREEZE_UPGRADE, FREEZE_ONLY -> {
+                    logger.info("Transaction freeze of type {} detected", freezeType);
+                    // Copy freeze time to platform state
+                    final var states = state.getReadableStates(FreezeService.NAME);
+                    final ReadableSingletonState<Timestamp> freezeTimeState = states.getSingleton(FREEZE_TIME_KEY);
+                    final var freezeTime = requireNonNull(freezeTimeState.get());
+                    final var freezeTimeInstant = Instant.ofEpochSecond(freezeTime.seconds(), freezeTime.nanos());
+                    logger.info("Freeze time will be {}", freezeTimeInstant);
+                    platformStateStore.setFreezeTime(freezeTimeInstant);
+                }
+                case FREEZE_ABORT -> {
+                    logger.info("Aborting freeze");
+                    platformStateStore.setFreezeTime(null);
+                }
+                case PREPARE_UPGRADE -> {
+                    // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
+                    // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
+                    if (config.getConfigData(AddressBookConfig.class).useRosterLifecycle()
+                            && !config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                        logger.info("Creating candidate roster at PREPARE_UPGRADE since TSS is inactive");
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
                         final var candidateRoster = nodeStore.snapshotOfFutureRoster();
+                        logger.info("Candidate roster is {}", candidateRoster);
                         rosterStore.putCandidateRoster(candidateRoster);
+                        final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
+                        if (networkAdminConfig.exportCandidateRoster()) {
+                            final var exportPath = Paths.get(networkAdminConfig.candidateRosterExportFile());
+                            logger.info(
+                                    "Exporting candidate roster after PREPARE_UPGRADE to '{}'",
+                                    exportPath.toAbsolutePath());
+                            rosterExportHelper.accept(candidateRoster, exportPath);
+                        }
                     }
-                }
-                // copy freeze state to platform state
-                final ReadableStates states = state.getReadableStates(FreezeService.NAME);
-                final ReadableSingletonState<Timestamp> freezeTimeState = states.getSingleton(FREEZE_TIME_KEY);
-                final var freezeTime = requireNonNull(freezeTimeState.get());
-                final Instant freezeTimeInstant = Instant.ofEpochSecond(freezeTime.seconds(), freezeTime.nanos());
-                logger.info("Freeze time will be {}", freezeTimeInstant);
-                platformStateStore.setFreezeTime(freezeTimeInstant);
-            } else if (freezeType == FREEZE_ABORT) {
-                logger.info("Aborting freeze");
-                platformStateStore.setFreezeTime(null);
-            } else if (freezeType == PREPARE_UPGRADE) {
-                final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
-                if (networkAdminConfig.exportCandidateRoster()) {
-                    logger.info("Exporting candidate network after PREPARE_UPGRADE");
-                    networkExportHelper.accept(state, Paths.get(networkAdminConfig.candidateRosterExportFile()));
                 }
             }
         }

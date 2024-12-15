@@ -16,12 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
-import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.STOP_TIMEOUT;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
-import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCorrelatedBindException;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
-import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.PORT_UNBINDING_WAIT_PERIOD;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -31,7 +26,6 @@ import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,22 +50,7 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     // assertion in production code
     @SuppressWarnings("java:S5960")
     public void run(@NonNull final HederaNode node, @NonNull HapiSpec spec) {
-        try {
-            awaitStatus(node, status, timeout);
-        } catch (AssertionError error) {
-            // Try once to overcome a known issue with port unbinding, then fail if the issue persists
-            if (status == ACTIVE && hadCorrelatedBindException(error)) {
-                node.stopFuture()
-                        .orTimeout(STOP_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
-                        .join();
-                log.info("Sleeping for {} to allow port unbinding", PORT_UNBINDING_WAIT_PERIOD);
-                doIfNotInterrupted(() -> Thread.sleep(PORT_UNBINDING_WAIT_PERIOD.toMillis()));
-                node.start();
-                awaitStatus(node, status, timeout);
-            } else {
-                throw error;
-            }
-        }
+        awaitStatus(node, status, timeout);
     }
 
     @Override

@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.info.DiskStartupNetworks;
-import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
+import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
+
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -34,13 +35,15 @@ import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.State;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiConsumer;
@@ -71,8 +74,15 @@ public interface HandleWorkflowModule {
 
     @Provides
     @Singleton
-    static BiConsumer<State, Path> provideRosterExportHelper() {
-        return (state, path) -> DiskStartupNetworks.writeNetworkInfo(state, path, EnumSet.of(InfoType.ROSTER));
+    static BiConsumer<Roster, Path> provideRosterExportHelper() {
+        return (roster, path) -> {
+            final var network = Network.newBuilder()
+                    .nodeMetadata(roster.rosterEntries().stream()
+                            .map(entry -> new NodeMetadata(entry, null, Bytes.EMPTY))
+                            .toList())
+                    .build();
+            tryToExport(network, path);
+        };
     }
 
     Runnable NO_OP = () -> {};

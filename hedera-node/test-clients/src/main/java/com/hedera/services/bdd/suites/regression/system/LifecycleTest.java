@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.b
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -205,6 +206,7 @@ public interface LifecycleTest {
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
                 waitForActiveNetwork(RESTART_TIMEOUT),
+                doingContextual(spec -> ((SubProcessNetwork) spec.targetNetworkOrThrow()).refreshClients()),
                 cryptoCreate("postUpgradeAccount"),
                 // Ensure we have a post-upgrade transaction in a new period to trigger
                 // system file exports while still streaming records

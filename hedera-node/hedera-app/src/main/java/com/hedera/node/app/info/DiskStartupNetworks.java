@@ -202,12 +202,21 @@ public class DiskStartupNetworks implements StartupNetworks {
                                             .tssMessages(rosterKeys.tssMessages()));
                         }
                     }
-                    try (final var fout = Files.newOutputStream(path)) {
-                        Network.JSON.write(network.build(), new WritableStreamingData(fout));
-                    } catch (IOException e) {
-                        log.warn("Failed to write network info", e);
-                    }
+                    tryToExport(network.build(), path);
                 });
+    }
+
+    /**
+     * Attempts to export the given {@link Network} to the given path.
+     * @param network the network to export
+     * @param path the path to export the network to
+     */
+    public static void tryToExport(@NonNull final Network network, @NonNull final Path path) {
+        try (final var fout = Files.newOutputStream(path)) {
+            Network.JSON.write(network, new WritableStreamingData(fout));
+        } catch (IOException e) {
+            log.warn("Failed to write network info", e);
+        }
     }
 
     /**
@@ -264,21 +273,24 @@ public class DiskStartupNetworks implements StartupNetworks {
     private Optional<Network> loadNetwork(
             @NonNull final String type, @NonNull final Configuration config, @NonNull final String... segments) {
         final var path = networksPath(config, segments);
-        log.info("Loading {} network info from {}", type, path.toAbsolutePath());
+        log.info("Checking for {} network info at {}", type, path.toAbsolutePath());
         final var maybeNetwork = loadNetworkFrom(path);
-        maybeNetwork.ifPresent(network -> {
-            log.info(
-                    "Parsed {} network info for N={} nodes from {}",
-                    type,
-                    network.nodeMetadata().size(),
-                    path.toAbsolutePath());
-            assertValidTssKeys(network);
-        });
+        maybeNetwork.ifPresentOrElse(
+                network -> {
+                    log.info(
+                            "  -> Parsed {} network info for N={} nodes from {}",
+                            type,
+                            network.nodeMetadata().size(),
+                            path.toAbsolutePath());
+                    assertValidTssKeys(network);
+                },
+                () -> log.info("  -> N/A"));
         return maybeNetwork;
     }
 
     /**
      * Attempts to load a {@link Network} from a given file.
+     *
      * @param path the path to the file to load the network from
      * @return the loaded network, if it was found and successfully loaded
      */

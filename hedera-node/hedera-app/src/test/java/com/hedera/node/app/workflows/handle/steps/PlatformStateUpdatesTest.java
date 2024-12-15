@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBo
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,7 +52,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.nio.file.Path;
@@ -87,7 +86,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     protected WritableStates writableStates;
 
     @Mock
-    private BiConsumer<State, Path> networkExportHelper;
+    private BiConsumer<Roster, Path> rosterExportHelper;
 
     @BeforeEach
     void setUp() {
@@ -109,7 +108,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                         PlatformStateService.NAME,
                         Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
 
-        subject = new PlatformStateUpdates(networkExportHelper);
+        subject = new PlatformStateUpdates(rosterExportHelper);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -174,26 +173,12 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
-    void exportsCandidateNetworkOnPrepareUpgradeIfRequested() {
-        final var txBody = TransactionBody.newBuilder()
-                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
-
-        // when
-        subject.handleTxBody(state, txBody.build(), configWith(true, false));
-
-        final var captor = ArgumentCaptor.forClass(Path.class);
-        verify(networkExportHelper).accept(eq(state), captor.capture());
-        final var path = captor.getValue();
-        assertEquals("candidate-network.json", path.getFileName().toString());
-    }
-
-    @Test
     void putsCandidateRosterWhenNotKeyingButUsingRosterLifecycle() {
         // given
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
         final var txBody = TransactionBody.newBuilder()
-                .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
         nodes.put(
                 new EntityNumber(0L),
                 Node.newBuilder()
@@ -206,9 +191,10 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build(), configWith(false, true));
 
         // then
-        final var platformState = platformStateBackingStore.get();
-        assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
-        assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(rosterExportHelper).accept(any(), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
     private Configuration configWith(final boolean keyCandidateRoster, final boolean useRosterLifecycle) {
