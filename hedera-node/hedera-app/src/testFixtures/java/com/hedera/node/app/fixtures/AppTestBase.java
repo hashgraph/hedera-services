@@ -100,6 +100,9 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
+            .withValue("addressBook.useRosterLifecycle", true)
+            .getOrCreateConfig();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
@@ -324,7 +327,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 realSelfNodeInfo = new NodeInfoImpl(
                         selfNodeInfo.nodeId(),
                         selfNodeInfo.accountId(),
-                        selfNodeInfo.stake(),
+                        selfNodeInfo.weight(),
                         selfNodeInfo.gossipEndpoints(),
                         selfNodeInfo.sigCertBytes());
             }
@@ -335,19 +338,20 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var addresses = nodes.stream()
                     .map(nodeInfo -> new Address()
                             .copySetNodeId(NodeId.of(nodeInfo.nodeId()))
-                            .copySetWeight(nodeInfo.zeroStake() ? 0 : 10))
+                            .copySetWeight(nodeInfo.zeroWeight() ? 0 : 10))
                     .toList();
             final var addressBook = new AddressBook(addresses);
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), addressBook);
             final var initialState = new FakeState();
             final var genesisRoster = buildRoster(addressBook);
-            final var networkInfo = new GenesisNetworkInfo(genesisRoster, Bytes.fromHex("03"));
-            final var startupNetworks = new FakeStartupNetworks(Network.newBuilder()
+            final var genesisNetwork = Network.newBuilder()
                     .nodeMetadata(genesisRoster.rosterEntries().stream()
                             .map(entry ->
                                     NodeMetadata.newBuilder().rosterEntry(entry).build())
                             .toList())
-                    .build());
+                    .build();
+            final var networkInfo = new GenesisNetworkInfo(genesisNetwork, Bytes.fromHex("03"));
+            final var startupNetworks = new FakeStartupNetworks(genesisNetwork);
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
                 svc.registerSchemas(reg);

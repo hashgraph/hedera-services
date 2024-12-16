@@ -104,6 +104,7 @@ public class TssCryptographyManager {
         final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
         final var voteKey = new TssVoteMapKey(
                 targetRosterHash, context.networkInfo().selfNodeInfo().nodeId());
+        // We only vote once for a given target roster hash
         if (tssStore.getVote(voteKey) == null) {
             return computeVote(tssMessageBodies, directory).exceptionally(e -> {
                 log.error("Error computing public keys and signing", e);

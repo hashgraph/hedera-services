@@ -52,7 +52,7 @@ public class V0490FeeSchema extends Schema {
         if (isGenesis) {
             // Set the initial exchange rates (from the bootstrap config) as the midnight rates
             final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
-            final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+            final var bootstrapConfig = ctx.appConfig().getConfigData(BootstrapConfig.class);
             final var exchangeRateSet = ExchangeRateSet.newBuilder()
                     .currentRate(ExchangeRate.newBuilder()
                             .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())
