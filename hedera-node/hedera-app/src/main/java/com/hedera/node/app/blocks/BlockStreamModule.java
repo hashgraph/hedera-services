@@ -30,7 +30,7 @@ import java.nio.file.FileSystem;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module()
+@Module
 public interface BlockStreamModule {
     @Binds
     @Singleton
