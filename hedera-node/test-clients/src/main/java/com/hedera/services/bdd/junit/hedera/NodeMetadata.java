@@ -31,8 +31,8 @@ public record NodeMetadata(
         int grpcPort,
         int grpcNodeOperatorPort,
         boolean grpcNodeOperatorPortEnabled,
-        int gossipPort,
-        int gossipTlsPort,
+        int internalGossipPort,
+        int externalGossipPort,
         int prometheusPort,
         @Nullable Path workingDir) {
     public static final int UNKNOWN_PORT = -1;
@@ -42,16 +42,16 @@ public record NodeMetadata(
      *
      * @param grpcPort the new grpc port
      * @param grpcNodeOperatorPort the new grpc node operator port
-     * @param gossipPort the new gossip port
-     * @param tlsGossipPort the new tls gossip port
+     * @param internalGossipPort the new internal gossip port
+     * @param externalGossipPort the new external gossip port
      * @param prometheusPort the new prometheus port
      * @return a new instance with the same values as this instance, but different ports
      */
     public NodeMetadata withNewPorts(
             final int grpcPort,
             final int grpcNodeOperatorPort,
-            final int gossipPort,
-            final int tlsGossipPort,
+            final int internalGossipPort,
+            final int externalGossipPort,
             final int prometheusPort) {
         return new NodeMetadata(
                 nodeId,
@@ -61,8 +61,8 @@ public record NodeMetadata(
                 grpcPort,
                 grpcNodeOperatorPort,
                 grpcNodeOperatorPortEnabled,
-                gossipPort,
-                tlsGossipPort,
+                internalGossipPort,
+                externalGossipPort,
                 prometheusPort,
                 workingDir);
     }
@@ -82,8 +82,8 @@ public record NodeMetadata(
                 grpcPort,
                 grpcNodeOperatorPort,
                 grpcNodeOperatorPortEnabled,
-                gossipPort,
-                gossipTlsPort,
+                internalGossipPort,
+                externalGossipPort,
                 prometheusPort,
                 workingDir);
     }
@@ -101,8 +101,8 @@ public record NodeMetadata(
                 grpcPort,
                 grpcNodeOperatorPort,
                 false,
-                gossipPort,
-                gossipTlsPort,
+                internalGossipPort,
+                externalGossipPort,
                 prometheusPort,
                 workingDir);
     }

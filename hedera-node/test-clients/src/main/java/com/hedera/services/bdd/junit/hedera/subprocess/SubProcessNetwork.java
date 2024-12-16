@@ -85,7 +85,7 @@ import org.apache.logging.log4j.Logger;
 public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetwork {
     private static final Logger log = LogManager.getLogger(SubProcessNetwork.class);
 
-    // We need 6 ports for each node in the network (gRPC, gRPC TLS, gRPC node operator, gossip, gossip TLS, prometheus)
+    // 3 gRPC ports, 2 gossip ports, 1 Prometheus
     private static final int PORTS_PER_NODE = 6;
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
@@ -97,11 +97,10 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
     private static final PrometheusClient PROMETHEUS_CLIENT = new PrometheusClient();
 
-    // We initialize these randomly to reduce risk of port binding conflicts in CI runners
     private static int nextGrpcPort;
     private static int nextNodeOperatorPort;
-    private static int nextGossipPort;
-    private static int nextGossipTlsPort;
+    private static int nextInternalGossipPort;
+    private static int nextExternalGossipPort;
     private static int nextPrometheusPort;
     private static boolean nextPortsInitialized = false;
 
@@ -171,7 +170,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
         this.maxNodeId =
                 Collections.max(nodes.stream().map(SubProcessNode::getNodeId).toList());
-        this.configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
+        this.configTxt = configTxtForLocal(name(), nodes(), nextInternalGossipPort, nextExternalGossipPort);
         this.genesisConfigTxt = configTxt;
     }
 
@@ -279,12 +278,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                     .reassignPorts(
                             nextGrpcPort + nodeId * 2,
                             nextNodeOperatorPort + nodeId,
-                            nextGossipPort + nodeId * 2,
-                            nextGossipTlsPort + nodeId * 2,
+                            nextInternalGossipPort + nodeId * 2,
+                            nextExternalGossipPort + nodeId * 2,
                             nextPrometheusPort + nodeId);
         });
         final var weights = maybeLatestCandidateWeights();
-        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, weights);
+        configTxt = configTxtForLocal(networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, weights);
         refreshOverrideNetworks(ReassignPorts.YES);
     }
 
@@ -317,7 +316,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         final var node = getRequiredNode(selector);
         node.stopFuture();
         nodes.remove(node);
-        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
+        configTxt = configTxtForLocal(
+                networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, latestCandidateWeights());
         refreshOverrideNetworks(ReassignPorts.NO);
     }
 
@@ -342,10 +342,10 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         SUBPROCESS_HOST,
                         SHARED_NETWORK_NAME.equals(name()) ? null : name(),
                         nextGrpcPort + (int) nodeId * 2,
-                        nextNodeOperatorPort + (int) nodeId * 2,
+                        nextNodeOperatorPort + (int) nodeId,
                         true,
-                        nextGossipPort + (int) nodeId * 2,
-                        nextGossipTlsPort + (int) nodeId * 2,
+                        nextInternalGossipPort + (int) nodeId * 2,
+                        nextExternalGossipPort + (int) nodeId * 2,
                         nextPrometheusPort + (int) nodeId),
                 GRPC_PINGER,
                 PROMETHEUS_CLIENT);
@@ -354,7 +354,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             node.reassignNodeAccountIdFrom(accountId);
         }
         nodes.add(insertionPoint, node);
-        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
+        configTxt = configTxtForLocal(
+                networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, latestCandidateWeights());
         nodes.get(insertionPoint).initWorkingDir(configTxt);
         refreshOverrideNetworks(ReassignPorts.NO);
     }
@@ -368,8 +369,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     public List<ServiceEndpoint> gossipEndpointsForNextNodeId() {
         final var nextNodeId = maxNodeId + 1;
         return List.of(
-                endpointFor(nextGossipPort + (int) nextNodeId * 2),
-                endpointFor(nextGossipTlsPort + (int) nextNodeId * 2));
+                endpointFor(nextInternalGossipPort + (int) nextNodeId * 2),
+                endpointFor(nextExternalGossipPort + (int) nextNodeId * 2));
     }
 
     /**
@@ -412,8 +413,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                                         nextGrpcPort,
                                         nextNodeOperatorPort,
                                         true,
-                                        nextGossipPort,
-                                        nextGossipTlsPort,
+                                        nextInternalGossipPort,
+                                        nextExternalGossipPort,
                                         nextPrometheusPort),
                                 GRPC_PINGER,
                                 PROMETHEUS_CLIENT))
@@ -527,9 +528,9 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         //   - prometheusPort = 10020, 10021, 10022, 10023
         nextGrpcPort = firstGrpcPort;
         nextNodeOperatorPort = nextGrpcPort + 2 * size;
-        nextGossipPort = nextNodeOperatorPort + size;
-        nextGossipTlsPort = nextGossipPort + 1;
-        nextPrometheusPort = nextGossipPort + 2 * size;
+        nextInternalGossipPort = nextNodeOperatorPort + size;
+        nextExternalGossipPort = nextInternalGossipPort + 1;
+        nextPrometheusPort = nextInternalGossipPort + 2 * size;
         nextPortsInitialized = true;
     }
 

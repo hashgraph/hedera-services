@@ -64,7 +64,6 @@ public class ProcessUtils {
     private static final long WAIT_SLEEP_MILLIS = 100L;
 
     public static final Executor EXECUTOR = Executors.newCachedThreadPool();
-    public static final Duration STOP_TIMEOUT = Duration.ofSeconds(10);
 
     private ProcessUtils() {
         throw new UnsupportedOperationException("Utility Class");

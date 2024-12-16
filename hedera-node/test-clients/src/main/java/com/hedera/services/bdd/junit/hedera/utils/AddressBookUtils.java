@@ -222,7 +222,7 @@ public class AddressBookUtils {
                         .build(),
                 host,
                 nextGrpcPort + nodeId * 2,
-                nextNodeOperatorPort + nodeId * 2,
+                nextNodeOperatorPort + nodeId,
                 nextNodeOperatorPortEnabled,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
