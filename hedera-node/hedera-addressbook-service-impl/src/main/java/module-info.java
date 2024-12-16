@@ -10,12 +10,12 @@ module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires transitive org.apache.logging.log4j;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.common;
     requires com.swirlds.platform.core;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
-    requires org.apache.logging.log4j;
     requires static transitive java.compiler;
     requires static com.github.spotbugs.annotations;
 
