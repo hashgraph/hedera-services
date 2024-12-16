@@ -45,7 +45,6 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.fixtures.state.FakeState;
@@ -453,8 +452,10 @@ class TssBaseServiceImplTest {
         given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
         given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
-        given(tssStore.getTssEncryptionKeys(anyLong())).willReturn(TssEncryptionKeys.newBuilder()
-                .currentEncryptionKey(Bytes.wrap("test")).build());
+        given(tssStore.getTssEncryptionKeys(anyLong()))
+                .willReturn(TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(Bytes.wrap("test"))
+                        .build());
 
         subject.ensureParticipantDirectoryKnown(state);
         final var tssStatus = subject.computeInitialTssStatus(tssStore, rosterStore);
@@ -477,8 +478,10 @@ class TssBaseServiceImplTest {
         given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
         given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
-        given(tssStore.getTssEncryptionKeys(anyLong())).willReturn(TssEncryptionKeys.newBuilder()
-                .currentEncryptionKey(Bytes.wrap("test")).build());
+        given(tssStore.getTssEncryptionKeys(anyLong()))
+                .willReturn(TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(Bytes.wrap("test"))
+                        .build());
         given(tssStore.getMessagesForTarget(any())).willReturn(messages);
 
         subject.ensureParticipantDirectoryKnown(state);
@@ -496,9 +499,10 @@ class TssBaseServiceImplTest {
         given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
         given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
-        given(tssStore.getTssEncryptionKeys(anyLong())).willReturn(TssEncryptionKeys.newBuilder()
-                .currentEncryptionKey(Bytes.wrap("test"))
-                .build());
+        given(tssStore.getTssEncryptionKeys(anyLong()))
+                .willReturn(TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(Bytes.wrap("test"))
+                        .build());
         given(tssStore.getMessage(any()))
                 .willReturn(new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, 1L, Bytes.EMPTY));
         given(tssStore.anyWinningVoteFor(SOURCE_HASH, rosterStore))
@@ -520,8 +524,10 @@ class TssBaseServiceImplTest {
         given(tssLibrary.computePublicShares(any(), any())).willReturn(List.of(new TssPublicShare(1, FAKE_PUBLIC_KEY)));
         given(tssLibrary.aggregatePublicShares(any())).willReturn(FAKE_PUBLIC_KEY);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
-        given(tssStore.getTssEncryptionKeys(anyLong())).willReturn(TssEncryptionKeys.newBuilder()
-                .currentEncryptionKey(Bytes.wrap("test")).build());
+        given(tssStore.getTssEncryptionKeys(anyLong()))
+                .willReturn(TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(Bytes.wrap("test"))
+                        .build());
         given(tssStore.getMessage(any()))
                 .willReturn(new TssMessageTransactionBody(SOURCE_HASH, TARGET_HASH, 1L, Bytes.EMPTY));
         given(tssStore.anyWinningVoteFor(SOURCE_HASH, rosterStore))
