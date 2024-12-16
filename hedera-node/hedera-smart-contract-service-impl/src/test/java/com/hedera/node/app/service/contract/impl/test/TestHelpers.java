@@ -44,6 +44,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -77,6 +78,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
@@ -205,6 +207,8 @@ public class TestHelpers {
             ContractID.newBuilder().contractNum(777).build();
     public static final AccountID CALLED_EOA_ID =
             AccountID.newBuilder().accountNum(666).build();
+    public static final ScheduleID CALLED_SCHEDULE_ID =
+            ScheduleID.newBuilder().scheduleNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
     public static final ContractID VALID_CONTRACT_ADDRESS = ContractID.newBuilder()
@@ -907,6 +911,14 @@ public class TestHelpers {
         return org.apache.tuweni.bytes.Bytes.concatenate(
                 org.apache.tuweni.bytes.Bytes.wrap(HasCallAttempt.REDIRECT_FOR_ACCOUNT.selector()),
                 accountAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectScheduleTxn(
+            final byte[] subSelector, final Address scheduleAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HssCallAttempt.REDIRECT_FOR_SCHEDULE_TXN.selector()),
+                scheduleAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 

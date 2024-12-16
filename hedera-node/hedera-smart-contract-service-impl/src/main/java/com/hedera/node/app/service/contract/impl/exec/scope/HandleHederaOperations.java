@@ -26,7 +26,8 @@ import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synt
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationForExternalization;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
@@ -55,7 +56,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -388,21 +389,19 @@ public class HandleHederaOperations implements HederaOperations {
         // in the contract creation body for the dispatched crypto create body. This child transaction will not
         // be throttled at consensus.
         final var isTopLevelCreation = bodyToExternalize == null;
-        final var recordBuilder = context.dispatchRemovableChildTransaction(
-                TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build(),
-                ContractCreateStreamBuilder.class,
-                null,
-                context.payer(),
-                isTopLevelCreation
-                        ? SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER
-                        : contractBodyCustomizerFor(number, bodyToExternalize),
-                HandleContext.ConsensusThrottling.OFF);
-        if (recordBuilder.status() != SUCCESS) {
+        final var body =
+                TransactionBody.newBuilder().cryptoCreateAccount(bodyToDispatch).build();
+        final var transactionCustomizer = isTopLevelCreation
+                ? SUPPRESSING_TRANSACTION_CUSTOMIZER
+                : contractBodyCustomizerFor(number, bodyToExternalize);
+        final var streamBuilder = context.dispatch(
+                stepDispatch(context.payer(), body, ContractCreateStreamBuilder.class, transactionCustomizer));
+        if (streamBuilder.status() != SUCCESS) {
             // The only plausible failure mode (MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED) should
             // have been pre-validated in ProxyWorldUpdater.createAccount() so this is an invariant failure
-            throw new IllegalStateException("Unexpected failure creating new contract - " + recordBuilder.status());
+            throw new IllegalStateException("Unexpected failure creating new contract - " + streamBuilder.status());
         }
-        recordBuilder.functionality(CONTRACT_CREATE);
+        streamBuilder.functionality(CONTRACT_CREATE);
         // If this creation runs to a successful completion, its ContractBytecode sidecar
         // goes in the top-level record or the just-created child record depending on whether
         // we are doing this on behalf of a HAPI ContractCreate call; we only include the
@@ -410,11 +409,11 @@ public class HandleHederaOperations implements HederaOperations {
         final var pendingCreationMetadata = new PendingCreationMetadata(
                 isTopLevelCreation
                         ? context.savepointStack().getBaseBuilder(ContractOperationStreamBuilder.class)
-                        : recordBuilder,
+                        : streamBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);
-        recordBuilder
+        streamBuilder
                 .contractID(contractId)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
@@ -426,7 +425,7 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    private ExternalizedRecordCustomizer contractBodyCustomizerFor(
+    private StreamBuilder.TransactionCustomizer contractBodyCustomizerFor(
             final long createdNumber, @NonNull final ContractCreateTransactionBody op) {
         return transaction -> {
             try {

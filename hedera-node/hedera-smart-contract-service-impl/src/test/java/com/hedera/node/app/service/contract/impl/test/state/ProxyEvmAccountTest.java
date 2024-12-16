@@ -59,6 +59,11 @@ class ProxyEvmAccountTest {
     }
 
     @Test
+    void notScheduleTxnFacade() {
+        assertFalse(subject.isScheduleTxnFacade());
+    }
+
+    @Test
     void returnsEvmCodeOfProxy() {
         final var accountInHex = String.format("%040X", ACCOUNT_NUM);
         final var expected = org.apache.tuweni.bytes.Bytes.fromHexString(

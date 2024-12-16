@@ -16,17 +16,19 @@
 
 package com.swirlds.platform.gossip;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.AddressBook;
-import java.util.Set;
+import com.swirlds.common.test.fixtures.ResettableRandom;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterEntryBuilder;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 @DisplayName("DefaultIntakeEventCounter Tests")
 class DefaultIntakeEventCounterTests {
@@ -37,10 +39,15 @@ class DefaultIntakeEventCounterTests {
 
     @BeforeEach
     void setup() {
-        final AddressBook addressBook = mock(AddressBook.class);
-        Mockito.when(addressBook.getNodeIdSet()).thenReturn(Set.of(nodeId1, nodeId2));
+        final ResettableRandom random = getRandomPrintSeed();
+        final ArrayList<RosterEntry> rosterEntries = new ArrayList<>();
+        rosterEntries.add(
+                RandomRosterEntryBuilder.create(random).withNodeId(nodeId1.id()).build());
+        rosterEntries.add(
+                RandomRosterEntryBuilder.create(random).withNodeId(nodeId2.id()).build());
 
-        this.intakeCounter = new DefaultIntakeEventCounter(addressBook);
+        this.intakeCounter = new DefaultIntakeEventCounter(
+                Roster.newBuilder().rosterEntries(rosterEntries).build());
     }
 
     @Test

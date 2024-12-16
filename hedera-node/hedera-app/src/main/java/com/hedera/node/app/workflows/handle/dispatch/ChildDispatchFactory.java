@@ -16,13 +16,20 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId.NO;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySortedSet;
+import static java.util.Collections.unmodifiableSortedSet;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -31,6 +38,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
@@ -50,15 +58,16 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -70,7 +79,6 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
-import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -85,6 +93,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -95,7 +107,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ChildDispatchFactory {
+    private static final KeyComparator KEY_COMPARATOR = new KeyComparator();
     public static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
+    private static final Set<HederaFunctionality> RECURSIVE_FUNCTIONS =
+            EnumSet.of(CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
 
     private final TransactionDispatcher dispatcher;
     private final Authorizer authorizer;
@@ -130,12 +145,6 @@ public class ChildDispatchFactory {
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction. This method also computes a pre-handle result for the child transaction.
      *
-     * @param txBody the transaction body
-     * @param callback the key verifier for child dispatch
-     * @param syntheticPayerId the synthetic payer id
-     * @param category the transaction category
-     * @param customizer the externalized record customizer
-     * @param reversingBehavior the reversing behavior
      * @param config the configuration
      * @param stack the savepoint stack
      * @param readableStoreFactory the readable store factory
@@ -143,17 +152,11 @@ public class ChildDispatchFactory {
      * @param topLevelFunction the top level functionality
      * @param consensusNow the consensus time
      * @param blockRecordInfo the block record info
-     * @param throttleStrategy     the throttle strategy
+     * @param options the dispatch options
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
     public Dispatch createChildDispatch(
-            @NonNull final TransactionBody txBody,
-            @Nullable final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId,
-            @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final RecordStreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final Configuration config,
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
@@ -162,19 +165,44 @@ public class ChildDispatchFactory {
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final Instant consensusNow,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
-        final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
-        final var childVerifier = getKeyVerifier(callback, config);
-        final var childTxnInfo = getTxnInfoFrom(syntheticPayerId, txBody);
+            @NonNull final DispatchOptions<?> options) {
+        requireNonNull(config);
+        requireNonNull(stack);
+        requireNonNull(readableStoreFactory);
+        requireNonNull(creatorInfo);
+        requireNonNull(topLevelFunction);
+        requireNonNull(throttleAdviser);
+        requireNonNull(consensusNow);
+        requireNonNull(blockRecordInfo);
+        requireNonNull(options);
+
+        final var preHandleResult = preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);
+        final var childVerifier = getKeyVerifier(options.effectiveKeyVerifier(), config, options.authorizingKeys());
+        boolean isLastAllowedPreset = false;
+        if (options.body().hasScheduleCreate()) {
+            final var scheduledFunction = functionalityForType(options.body()
+                    .scheduleCreateOrThrow()
+                    .scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT)
+                    .data()
+                    .kind());
+            isLastAllowedPreset = RECURSIVE_FUNCTIONS.contains(scheduledFunction);
+        }
+        final var body = options.usePresetTxnId() == NO
+                ? options.body()
+                : options.body()
+                        .copyBuilder()
+                        .transactionID(stack.nextPresetTxnId(isLastAllowedPreset))
+                        .build();
+        final var childTxnInfo = getTxnInfoFrom(options.payerId(), body);
         final var streamMode = config.getConfigData(BlockStreamConfig.class).streamMode();
-        final var childStack =
-                SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer, streamMode);
+        final var childStack = SavepointStackImpl.newChildStack(
+                stack, options.reversingBehavior(), options.category(), options.transactionCustomizer(), streamMode);
         final var streamBuilder = initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,
                 childTxnInfo,
-                syntheticPayerId,
-                category,
+                options.payerId(),
+                options.category(),
                 childStack,
                 preHandleResult,
                 childVerifier,
@@ -192,7 +220,7 @@ public class ChildDispatchFactory {
                 storeMetricsService,
                 exchangeRateManager,
                 dispatcher,
-                throttleStrategy);
+                options.throttling());
     }
 
     private RecordDispatch newChildDispatch(
@@ -400,12 +428,23 @@ public class ChildDispatchFactory {
      *
      * @param callback the callback
      * @param config the configuration
+     * @param authorizingKeys any simple keys that authorized this verifier
      * @return the key verifier
      */
     public static AppKeyVerifier getKeyVerifier(
-            @Nullable final Predicate<Key> callback, @NonNull final Configuration config) {
+            @Nullable final Predicate<Key> callback,
+            @NonNull final Configuration config,
+            @NonNull final Set<Key> authorizingKeys) {
+        final var keys = asSortedSet(authorizingKeys);
         return callback == null
-                ? NO_OP_KEY_VERIFIER
+                ? authorizingKeys.isEmpty()
+                        ? NO_OP_KEY_VERIFIER
+                        : new NoOpKeyVerifier() {
+                            @Override
+                            public SortedSet<Key> authorizingSimpleKeys() {
+                                return keys;
+                            }
+                        }
                 : new AppKeyVerifier() {
                     private final AppKeyVerifier verifier =
                             new DefaultKeyVerifier(0, config.getConfigData(HederaConfig.class), emptyMap());
@@ -422,8 +461,7 @@ public class ChildDispatchFactory {
                     @Override
                     public SignatureVerification verificationFor(
                             @NonNull final Key key, @NonNull final VerificationAssistant callback) {
-                        // We do not yet support signing scheduled transactions from within the EVM
-                        throw new UnsupportedOperationException();
+                        return verifier.verificationFor(key, callback);
                     }
 
                     @NonNull
@@ -437,6 +475,11 @@ public class ChildDispatchFactory {
                     public int numSignaturesVerified() {
                         return 0;
                     }
+
+                    @Override
+                    public SortedSet<Key> authorizingSimpleKeys() {
+                        return keys;
+                    }
                 };
     }
 
@@ -449,6 +492,8 @@ public class ChildDispatchFactory {
      */
     public static TransactionInfo getTxnInfoFrom(
             @NonNull final AccountID payerId, @NonNull final TransactionBody txBody) {
+        requireNonNull(payerId);
+        requireNonNull(txBody);
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
                 SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
@@ -459,7 +504,7 @@ public class ChildDispatchFactory {
         return new TransactionInfo(
                 transaction,
                 txBody,
-                TransactionID.DEFAULT,
+                txBody.transactionIDOrElse(TransactionID.DEFAULT),
                 payerId,
                 SignatureMap.DEFAULT,
                 signedTransactionBytes,
@@ -497,5 +542,20 @@ public class ChildDispatchFactory {
             builder.transactionID(transactionID);
         }
         return builder;
+    }
+
+    /**
+     * Returns the given set of keys as a sorted set.
+     * @param keys the keys
+     * @return the sorted set
+     */
+    private static SortedSet<Key> asSortedSet(@NonNull final Set<Key> keys) {
+        return keys.isEmpty()
+                ? emptySortedSet()
+                : unmodifiableSortedSet(new TreeSet<>(KEY_COMPARATOR) {
+                    {
+                        addAll(keys);
+                    }
+                });
     }
 }

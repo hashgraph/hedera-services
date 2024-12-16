@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -55,12 +54,10 @@ public class ContractGetInfoSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var contract = "Multipurpose";
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).entityMemo(MEMO).autoRenewSecs(6999999L))
-                .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getContractInfo(contract)));
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).entityMemo(MEMO).autoRenewSecs(6999999L),
+                sendModified(withSuccessivelyVariedQueryIds(), () -> getContractInfo(contract)));
     }
 
     @HapiTest
@@ -101,20 +98,14 @@ public class ContractGetInfoSuite {
 
     @HapiTest
     final Stream<DynamicTest> invalidContractFromCostAnswer() {
-        return defaultHapiSpec("InvalidContractFromCostAnswer")
-                .given()
-                .when()
-                .then(getContractInfo(NON_EXISTING_CONTRACT)
-                        .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+        return hapiTest(
+                getContractInfo(NON_EXISTING_CONTRACT).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
     @HapiTest
     final Stream<DynamicTest> invalidContractFromAnswerOnly() {
-        return defaultHapiSpec("InvalidContractFromAnswerOnly")
-                .given()
-                .when()
-                .then(getContractInfo(NON_EXISTING_CONTRACT)
-                        .nodePayment(27_159_182L)
-                        .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+        return hapiTest(getContractInfo(NON_EXISTING_CONTRACT)
+                .nodePayment(27_159_182L)
+                .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 }

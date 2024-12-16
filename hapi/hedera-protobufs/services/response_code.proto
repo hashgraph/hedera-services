@@ -1593,4 +1593,34 @@ enum ResponseCodeEnum {
      * airdrop and whether the sender can fulfill the offer.
      */
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
+
+    /**
+     * A scheduled transaction configured to wait for expiry to execute was given
+     * an expiry time at which there is already too many transactions scheduled to
+     * expire; its creation must be retried with a different expiry.
+     */
+    SCHEDULE_EXPIRY_IS_BUSY = 370;
+
+    /**
+     * The provided gRPC certificate hash is invalid.
+     */
+    INVALID_GRPC_CERTIFICATE_HASH = 371;
+
+    /**
+     * A scheduled transaction configured to wait for expiry to execute was not
+     * given an explicit expiration time.
+     */
+    MISSING_EXPIRY_TIME = 372;
+
+    /**
+     * A contract operation attempted to schedule another transaction after it
+     * had already scheduled a recursive contract call.
+     */
+    NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION = 373;
+
+    /**
+     * A contract can schedule recursive calls a finite number of times (this is
+     * approximately four million times with typical network configuration.)
+     */
+    RECURSIVE_SCHEDULING_LIMIT_REACHED = 374;
 }

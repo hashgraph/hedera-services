@@ -37,6 +37,8 @@ import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -48,12 +50,13 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.common.RosterStateId;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
+import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -133,7 +136,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 appContext -> {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return tssBaseService;
-                });
+                },
+                DiskStartupNetworks::new,
+                NodeId.of(0L));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
@@ -141,29 +146,43 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
-        final Configuration configuration =
-                ConfigurationBuilder.create().autoDiscoverExtensions().build();
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance())
+                .autoDiscoverExtensions()
+                .build();
 
         hedera.initializeStatesApi(
                 state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
+
+        // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
+        // and we are running all CI tests with the Roster lifecycle enabled
         final var writableStates = state.getWritableStates(PlatformStateService.NAME);
-        final var writableRosterStates = state.getWritableStates(RosterStateId.NAME);
         final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
-        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
         final var currentState = requireNonNull(platformState.get());
         platformState.put(currentState
                 .copyBuilder()
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
-        writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
         ((CommittableWritableStates) writableStates).commit();
-        ((CommittableWritableStates) writableRosterStates).commit();
+        if (!hedera.isRosterLifecycleEnabled()) {
+            final var writableRosterStates = state.getWritableStates(RosterService.NAME);
+            final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
+            writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
+            ((CommittableWritableStates) writableRosterStates).commit();
+        }
+        // --- end of temporary code block ---
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);
         hedera.init(fakePlatform(), defaultNodeId);
         fakePlatform().start();
         fakePlatform().notifyListeners(ACTIVE_NOTIFICATION);
+    }
+
+    @Override
+    public Hedera hedera() {
+        return hedera;
     }
 
     @Override
@@ -194,14 +213,16 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             candidateNano = 0;
             nextNano.set(1);
         }
+        final var then = now().minusSeconds(validStartOffsetSecs()).minusNanos(candidateNano);
         return Timestamp.newBuilder()
-                .setSeconds(now().getEpochSecond() - validStartOffsetSecs())
-                .setNanos(candidateNano)
+                .setSeconds(then.getEpochSecond())
+                .setNanos(then.getNano())
                 .build();
     }
 
     @Override
-    public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
+    public Response send(
+            @NonNull final Query query, @NonNull final AccountID nodeAccountId, final boolean asNodeOperator) {
         requireNonNull(query);
         requireNonNull(nodeAccountId);
         if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
@@ -209,7 +230,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             log.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
         }
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
-        hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        if (asNodeOperator) {
+            hedera.operatorQueryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        } else {
+            hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        }
         return parseQueryResponse(responseBuffer);
     }
 
@@ -232,10 +257,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     }
 
     /**
-     * If block stream is enabled, notify the block stream manager of the state hash at the end of the round.
-     * @param roundNumber the round number
+     * If block stream is enabled, notifies the block stream manager of the state hash at the end of the round
+     * given by {@code roundNumber}. (The block stream manager must have this information to construct the
+     * block hash for round {@code roundNumber + 1}.)
+     * @param roundNumber the round number of the state hash
      */
-    protected void notifyBlockStreamManagerIfEnabled(final long roundNumber) {
+    protected void notifyStateHashed(final long roundNumber) {
         if (blockStreamEnabled) {
             hedera.blockStreamManager().notify(new StateHashedNotification(roundNumber, FAKE_START_OF_STATE_HASH));
         }

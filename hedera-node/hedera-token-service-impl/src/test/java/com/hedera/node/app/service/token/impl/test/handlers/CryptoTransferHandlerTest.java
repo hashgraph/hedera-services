@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -461,8 +461,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         givenTxn();
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -495,8 +496,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -579,8 +581,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         givenTxn(txnBody, payerId);
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -627,8 +630,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         givenTxn(txnBody, payerId);
 
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateStreamBuilder.class), eq(null), eq(payerId), any()))
+        given(handleContext.dispatch(
+                        argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
+                                && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();

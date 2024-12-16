@@ -528,7 +528,9 @@ class HevmTransactionFactoryTest {
 
     @Test
     void fromHapiTransactionThrowsOnNonContractOperation() {
-        assertThrows(IllegalArgumentException.class, () -> subject.fromHapiTransaction(TransactionBody.DEFAULT));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.fromHapiTransaction(TransactionBody.DEFAULT, AccountID.DEFAULT));
     }
 
     @Test
@@ -627,53 +629,65 @@ class HevmTransactionFactoryTest {
             @NonNull final Consumer<ContractCreateTransactionBody.Builder> spec) {
         assertFailsWith(
                 status,
-                () -> subject.fromHapiTransaction(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
-                        .contractCreateInstance(createWith(spec))
-                        .build()));
+                () -> subject.fromHapiTransaction(
+                        TransactionBody.newBuilder()
+                                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                                .contractCreateInstance(createWith(spec))
+                                .build(),
+                        SENDER_ID));
     }
 
     private void assertCallFailsWith(
             @NonNull final ResponseCodeEnum status, @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
         assertFailsWith(
                 status,
-                () -> subject.fromHapiTransaction(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
-                        .contractCall(callWith(spec))
-                        .build()));
+                () -> subject.fromHapiTransaction(
+                        TransactionBody.newBuilder()
+                                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                                .contractCall(callWith(spec))
+                                .build(),
+                        SENDER_ID));
     }
 
     private void assertEthTxFailsWith(
             @NonNull final ResponseCodeEnum status, @NonNull final Consumer<EthereumTransactionBody.Builder> spec) {
         assertFailsWith(
                 status,
-                () -> subject.fromHapiTransaction(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
-                        .ethereumTransaction(ethTxWith(spec))
-                        .build()));
+                () -> subject.fromHapiTransaction(
+                        TransactionBody.newBuilder()
+                                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                                .ethereumTransaction(ethTxWith(spec))
+                                .build(),
+                        SENDER_ID));
     }
 
     private HederaEvmTransaction getManufacturedEthTx(@NonNull final Consumer<EthereumTransactionBody.Builder> spec) {
-        return subject.fromHapiTransaction(TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(RELAYER_ID))
-                .ethereumTransaction(ethTxWith(spec))
-                .build());
+        return subject.fromHapiTransaction(
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(RELAYER_ID))
+                        .ethereumTransaction(ethTxWith(spec))
+                        .build(),
+                RELAYER_ID);
     }
 
     private HederaEvmTransaction getManufacturedCreation(
             @NonNull final Consumer<ContractCreateTransactionBody.Builder> spec) {
-        return subject.fromHapiTransaction(TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
-                .contractCreateInstance(createWith(spec))
-                .build());
+        return subject.fromHapiTransaction(
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                        .contractCreateInstance(createWith(spec))
+                        .build(),
+                SENDER_ID);
     }
 
     private HederaEvmTransaction getManufacturedCall(
             @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
-        return subject.fromHapiTransaction(TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
-                .contractCall(callWith(spec))
-                .build());
+        return subject.fromHapiTransaction(
+                TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                        .contractCall(callWith(spec))
+                        .build(),
+                SENDER_ID);
     }
 
     private HederaEvmTransaction getManufacturedCallException(

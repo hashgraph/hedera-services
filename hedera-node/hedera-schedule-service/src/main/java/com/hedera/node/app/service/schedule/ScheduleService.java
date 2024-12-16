@@ -16,21 +16,14 @@
 
 package com.hedera.node.app.service.schedule;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.RpcServiceFactory;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Implements the HAPI <a
@@ -69,24 +62,17 @@ public interface ScheduleService extends RpcService {
     }
 
     /**
-     * An executable transaction with the verifier to use for child signature verifications. If set,
-     * "not before" (nbf) time is the earliest consensus time at which the transaction could be executed.
-     */
-    record ExecutableTxn(
-            TransactionBody body,
-            VerificationAssistant verificationAssistant,
-            AccountID payerId,
-            @Nullable Instant nbf) {}
-
-    /**
-     * Given a [start, end) interval and a supplier of a StoreFactory that can be used in the returned
-     * iterator's remove() implementation to get a StoreFactory to purge a successfully executed txn,
+     * Given the endpoints of a closed interval in consensus time, returns an iterator over all
+     * {@link ExecutableTxn} instances that this service wants to execute in the interval. The
+     * given {@link StoreFactory} is used to access the state of the service to discover these
+     * executable transactions; and the returned iterator can use the same instance to remove
+     * any state that is no longer needed after the last-returned transaction has been executed.
      *
-     * @return an iterator over all ExecutableTxn this service wants to execute in the interval.
+     * @param start the start of the interval
+     * @param end the end of the interval
+     * @param storeFactory the factory for creating service stores
+     * @return an iterator over all transactions that should be executed in the interval
      */
-    default Iterator<ExecutableTxn> iterTxnsForInterval(
-            Instant start, Instant end, Supplier<StoreFactory> cleanupStoreFactory) {
-        // Default implementation returns an empty iterator
-        return Collections.emptyIterator();
-    }
+    ExecutableTxnIterator executableTxns(
+            @NonNull Instant start, @NonNull Instant end, @NonNull StoreFactory storeFactory);
 }

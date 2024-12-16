@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
@@ -36,6 +37,8 @@ import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +72,16 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
         };
     }
 
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
+
     @Test
     @DisplayName("Postconsensus signatures")
     void postconsensusSignatureTests() throws InterruptedException {
@@ -85,6 +98,7 @@ class PostconsensusSignaturesTest extends AbstractStateSignatureCollectorTest {
         // Create a series of signed states.
         final List<SignedState> states = new ArrayList<>();
         for (int round = 0; round < count; round++) {
+            MerkleDb.resetDefaultInstancePath();
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setAddressBook(addressBook)
                     .setRound(round)

@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -53,15 +53,14 @@ public class ContractCallHapiOnlySuite {
     @HapiTest
     final Stream<DynamicTest> callFailsWhenAmountIsNegativeButStillChargedFee() {
         final var payer = "payer";
-        return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .adminKey(THRESHOLD)
-                                .gas(1_000_000)
-                                .refusingEthConversion(),
-                        cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
-                .when(withOpContext((spec, ignore) -> {
+        return hapiTest(
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT)
+                        .adminKey(THRESHOLD)
+                        .gas(1_000_000)
+                        .refusingEthConversion(),
+                cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS),
+                withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot("balanceBefore0", payer);
                     final var subop2 = contractCall(PAY_RECEIVABLE_CONTRACT)
                             .via(PAY_TXN)
@@ -78,7 +77,6 @@ public class ContractCallHapiOnlySuite {
                     final var subop4 =
                             getAccountBalance(payer).hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
                     allRunFor(spec, subop4);
-                }))
-                .then();
+                }));
     }
 }

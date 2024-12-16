@@ -41,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
  * Defines API for constructing stream items of a single transaction dispatch.
@@ -303,5 +304,48 @@ public interface StreamBuilder {
         return Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
+    }
+
+    /**
+     * Allows a {@link com.hedera.node.app.spi.workflows.TransactionHandler} that dispatches child transactions
+     * to customize exactly how these records are externalized. Specifically, it allows the handler to,
+     * <ul>
+     *     <li>Completely suppress the record because it contains redundant information (as in the case of
+     *     the child transaction dispatched to implement a top-level HAPI {@code ContractCreate}).</li>
+     *     <li>Transform the dispatched {@link Transaction} immediately before it is externalized (as
+     *     in the case of the child {@link com.hedera.hapi.node.token.CryptoCreateTransactionBody} dispatched
+     *     to implement an internal contract creation, which should be externalized as an equivalent
+     *     {@link com.hedera.hapi.node.contract.ContractCreateTransactionBody}.</li>
+     * </ul>
+     *
+     * <b>IMPORTANT:</b> implementations that suppress the record should throw if they nonetheless receive an
+     * {@link TransactionCustomizer#apply(Object)} call. (With the current scope of this interface, the
+     * provided {@link #SUPPRESSING_TRANSACTION_CUSTOMIZER} can simply be used.)
+     */
+    @FunctionalInterface
+    interface TransactionCustomizer extends UnaryOperator<Transaction> {
+        TransactionCustomizer NOOP_TRANSACTION_CUSTOMIZER = t -> t;
+
+        TransactionCustomizer SUPPRESSING_TRANSACTION_CUSTOMIZER = new TransactionCustomizer() {
+            @Override
+            public Transaction apply(@NonNull final Transaction transaction) {
+                throw new UnsupportedOperationException(
+                        "Will not customize a transaction that should have been suppressed");
+            }
+
+            @Override
+            public boolean isSuppressed() {
+                return true;
+            }
+        };
+
+        /**
+         * Indicates whether the record of a dispatched transaction should be suppressed.
+         *
+         * @return {@code true} if the record should be suppressed; {@code false} otherwise
+         */
+        default boolean isSuppressed() {
+            return false;
+        }
     }
 }
