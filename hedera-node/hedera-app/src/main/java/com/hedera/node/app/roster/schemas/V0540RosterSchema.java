@@ -105,6 +105,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
         requireNonNull(ctx);
         if (!RosterTransplantSchema.super.restart(ctx, rosterStoreFactory)
                 && ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            log.info("Surprisingly, here");
             final var startupNetworks = ctx.startupNetworks();
             final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
             final var activeRoundNumber = ctx.roundNumber() + 1;

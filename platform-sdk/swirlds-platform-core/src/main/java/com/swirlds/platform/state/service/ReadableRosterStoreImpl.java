@@ -128,4 +128,8 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
                 .filter(pair -> rosterMap.contains(new ProtoBytes(pair.activeRosterHash())))
                 .toList();
     }
+
+    public RosterState getCurrentRosterState() {
+        return rosterState.get();
+    }
 }

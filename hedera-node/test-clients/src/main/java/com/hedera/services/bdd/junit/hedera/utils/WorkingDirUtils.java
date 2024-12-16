@@ -151,10 +151,10 @@ public class WorkingDirUtils {
                 workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
         // Write the address book (config.txt) and genesis network (genesis-network.json) files
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
-        final var network = networkFrom(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
-        final var networkJson = Network.JSON.toJSON(network);
+        final var network = networkFrom(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn, OnlyRoster.NO);
         writeStringUnchecked(
-                workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON), networkJson);
+                workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
+                Network.JSON.toJSON(network));
         // Copy the bootstrap assets into the working directory
         copyBootstrapAssets(bootstrapAssetsLoc(), workingDir);
         // Update the log4j2.xml file with the correct output directory
@@ -418,18 +418,33 @@ public class WorkingDirUtils {
     }
 
     /**
+     * Whether only the {@link RosterEntry} entries should be set in a network resource.
+     */
+    public enum OnlyRoster {
+        YES,
+        NO
+    }
+
+    /**
      * Creates a network from the given <i>config.txt</i> file, using the given functions to provide
      * TSS encryption keys and TSS key material. The network's roster entries will have the gossip certificates
      * set to the same certificates used in each position by a test network.
+     *
      * @param configTxt the contents of the <i>config.txt</i> file
      * @param tssEncryptionKeyFn a function that returns the TSS encryption key for a given node ID
      * @param tssKeyMaterialFn a function that returns the TSS key material for the network, if available
+     * @param onlyRoster if true, only the roster entries will be set in the network
      * @return the network
      */
     public static Network networkFrom(
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn,
+            @NonNull final OnlyRoster onlyRoster) {
+        requireNonNull(configTxt);
+        requireNonNull(tssEncryptionKeyFn);
+        requireNonNull(tssKeyMaterialFn);
+        requireNonNull(onlyRoster);
         final var certs = AddressBookUtils.certsFor(configTxt);
         final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
                 .filter(line -> line.contains("address, "))
@@ -440,22 +455,24 @@ public class WorkingDirUtils {
                     final var gossipEndpoints =
                             List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
                     final var cert = certs.get(nodeId);
-                    return NodeMetadata.newBuilder()
-                            .rosterEntry(new RosterEntry(nodeId, weight, cert, gossipEndpoints))
-                            .node(new Node(
-                                    nodeId,
-                                    toPbj(HapiPropertySource.asAccount(parts[9])),
-                                    "node" + (nodeId + 1),
-                                    gossipEndpoints,
-                                    List.of(),
-                                    cert,
-                                    // The gRPC certificate hash is irrelevant for PR checks
-                                    Bytes.EMPTY,
-                                    weight,
-                                    false,
-                                    CLASSIC_ADMIN_KEY))
-                            .tssEncryptionKey(tssEncryptionKeyFn.apply(nodeId))
-                            .build();
+                    final var metadata = NodeMetadata.newBuilder()
+                            .rosterEntry(new RosterEntry(nodeId, weight, cert, gossipEndpoints));
+                    if (onlyRoster == OnlyRoster.NO) {
+                        metadata.node(new Node(
+                                        nodeId,
+                                        toPbj(HapiPropertySource.asAccount(parts[9])),
+                                        "node" + (nodeId + 1),
+                                        gossipEndpoints,
+                                        List.of(),
+                                        cert,
+                                        // The gRPC certificate hash is irrelevant for PR checks
+                                        Bytes.EMPTY,
+                                        weight,
+                                        false,
+                                        CLASSIC_ADMIN_KEY))
+                                .tssEncryptionKey(tssEncryptionKeyFn.apply(nodeId));
+                    }
+                    return metadata.build();
                 })
                 .toList();
         final var roster = nodeMetadata.stream().map(NodeMetadata::rosterEntry).toList();

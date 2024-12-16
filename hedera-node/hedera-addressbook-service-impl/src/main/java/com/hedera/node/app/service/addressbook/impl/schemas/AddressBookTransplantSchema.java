@@ -45,12 +45,11 @@ public interface AddressBookTransplantSchema {
 
     default void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            return;
+        if (ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            ctx.startupNetworks()
+                    .overrideNetworkFor(ctx.roundNumber())
+                    .ifPresent(network -> setNodeMetadata(network, ctx.newStates()));
         }
-        ctx.startupNetworks()
-                .overrideNetworkFor(ctx.roundNumber())
-                .ifPresent(network -> setNodeMetadata(network, ctx.newStates()));
     }
 
     /**

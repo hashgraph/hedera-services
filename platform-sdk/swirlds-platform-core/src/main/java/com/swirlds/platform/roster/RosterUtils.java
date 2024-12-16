@@ -265,7 +265,6 @@ public final class RosterUtils {
                 .collect(Collectors.toMap(
                         RoundRosterPair::activeRosterHash,
                         pair -> Objects.requireNonNull(rosterStore.get(pair.activeRosterHash()))));
-
         return new RosterHistory(roundRosterPairs, rosterMap);
     }
 

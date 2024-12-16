@@ -102,6 +102,9 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     @Override
     public Optional<Network> overrideNetworkFor(final long roundNumber) {
+        if (roundNumber == 0) {
+            return Optional.empty();
+        }
         final var config = configProvider.getConfiguration();
         final var unscopedNetwork = loadNetwork("override", config, OVERRIDE_NETWORK_JSON);
         if (unscopedNetwork.isPresent()) {
@@ -149,7 +152,12 @@ public class DiskStartupNetworks implements StartupNetworks {
                     .filter(dir -> ROUND_DIR_PATTERN
                             .matcher(dir.getFileName().toString())
                             .matches())
-                    .forEach(dir -> archiveIfPresent(config, dir.getFileName().toString(), OVERRIDE_NETWORK_JSON));
+                    .forEach(dir -> {
+                        archiveIfPresent(config, dir.getFileName().toString(), OVERRIDE_NETWORK_JSON);
+                        if (!dir.toFile().delete()) {
+                            log.warn("Failed to delete round override network directory {}", dir);
+                        }
+                    });
         } catch (IOException e) {
             log.warn("Failed to list round override network files", e);
         }

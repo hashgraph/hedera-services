@@ -72,7 +72,6 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -309,13 +308,11 @@ public class ServicesMain implements SwirldMain {
 
         // --- Now build the platform and start it ---
         final var stateRoot = (PlatformMerkleStateRoot) initialState.get().getState();
-        // Roster history naturally derives from RosterService state if the roster
-        // lifecycle is enabled; but until then, is translated from the legacy
-        // previous and current AddressBook fields in the PlatformState
         final RosterHistory rosterHistory;
-        if (platformConfig.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (hedera.isRosterLifecycleEnabled()) {
             final var rosterStore = new ReadableStoreFactory(stateRoot).getStore(ReadableRosterStore.class);
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
+            logger.info("History {}", rosterHistory.getHistory());
         } else {
             // This constructor both does extensive validation and has the side effect of
             // moving unused config.txt files to an archive directory; so keep calling it
@@ -334,7 +331,9 @@ public class ServicesMain implements SwirldMain {
                     });
             rosterHistory = buildRosterHistory((State) initialState.get().getState());
         }
-        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/off/node" + selfId.id() + "/history-"
+        //        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/off/node" + selfId.id() + "/history-"
+        //                + Instant.now().getEpochSecond() + ".txt";
+        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/on/node" + selfId.id() + "/history-"
                 + Instant.now().getEpochSecond() + ".txt";
         try (final var fout = Files.newBufferedWriter(Paths.get(loc))) {
             fout.write(rosterHistory.getHistory().toString());

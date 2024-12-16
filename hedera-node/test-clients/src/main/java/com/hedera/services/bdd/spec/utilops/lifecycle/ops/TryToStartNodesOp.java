@@ -69,7 +69,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
             }
-            subProcessNetwork.assignNewMetadata(ReassignPorts.YES);
+            subProcessNetwork.refreshOverrideWithNewPorts();
         }
 
         if (nodeOperatorPortDisabled) {

@@ -59,7 +59,14 @@ public interface RosterTransplantSchema {
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
                 final var roster = RosterUtils.rosterFrom(network);
+                final var rosterHash = RosterUtils.hash(roster);
+                log.info(
+                        "Before putting {} ({} nodes), state was {}",
+                        rosterHash,
+                        roster.rosterEntries().size(),
+                        rosterStore.getCurrentRosterState());
                 rosterStore.putActiveRoster(roster, activeRoundNumber);
+                log.info("After putting {}, state was {}", rosterHash, rosterStore.getCurrentRosterState());
                 log.info(
                         "Cert hashes are, \n  {}",
                         roster.rosterEntries().stream()

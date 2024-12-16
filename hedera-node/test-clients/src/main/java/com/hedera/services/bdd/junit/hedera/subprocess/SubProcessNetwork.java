@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
@@ -34,6 +35,7 @@ import static java.util.stream.Collectors.toMap;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.ParseException;
@@ -46,9 +48,11 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode.ReassignPorts;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OnlyRoster;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
+import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -248,6 +252,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     /**
      * Updates the account id for the node with the given id.
+     *
      * @param nodeId the node id
      * @param accountId the account id
      */
@@ -261,30 +266,26 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
-     * Assigns updated metadata to nodes from the current <i>config.txt</i>.
-     * <p>Also reassigns ports and overwrites the existing <i>config.txt</i> file for each node in the
-     * network with new ports if requested to avoid port binding issues in test environments.
+     * Refreshes the node <i>override-network.json</i> files with the weights from the latest
+     * <i>candidate-roster.json</i> (if present); and reassigns ports to avoid binding conflicts.
      */
-    public void assignNewMetadata(@NonNull final ReassignPorts reassignPorts) {
-        requireNonNull(reassignPorts);
-        if (reassignPorts == ReassignPorts.YES) {
-            log.info("Reassigning ports for network '{}' starting from {}", name(), nextGrpcPort);
-            reinitializePorts();
-            log.info("  -> Network '{}' ports now starting from {}", name(), nextGrpcPort);
-            nodes.forEach(node -> {
-                final int nodeId = (int) node.getNodeId();
-                configTxt = withReassignedPorts(
-                        configTxt, nodeId, nextGossipPort + nodeId * 2, nextGossipTlsPort + nodeId * 2);
-                ((SubProcessNode) node)
-                        .reassignPorts(
-                                nextGrpcPort + nodeId * 2,
-                                nextNodeOperatorPort + nodeId,
-                                nextGossipPort + nodeId * 2,
-                                nextGossipTlsPort + nodeId * 2,
-                                nextPrometheusPort + nodeId);
-            });
-        }
-        refreshNodeOverrideNetworks();
+    public void refreshOverrideWithNewPorts() {
+        log.info("Reassigning ports for network '{}' starting from {}", name(), nextGrpcPort);
+        reinitializePorts();
+        log.info("  -> Network '{}' ports now starting from {}", name(), nextGrpcPort);
+        nodes.forEach(node -> {
+            final int nodeId = (int) node.getNodeId();
+            ((SubProcessNode) node)
+                    .reassignPorts(
+                            nextGrpcPort + nodeId * 2,
+                            nextNodeOperatorPort + nodeId,
+                            nextGossipPort + nodeId * 2,
+                            nextGossipTlsPort + nodeId * 2,
+                            nextPrometheusPort + nodeId);
+        });
+        final var weights = maybeLatestCandidateWeights();
+        configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, weights);
+        refreshOverrideNetworks(ReassignPorts.YES);
     }
 
     /**
@@ -300,7 +301,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     public void assignWithDisabledNodeOperatorPort() {
         nodes.forEach(node -> ((SubProcessNode) node).reassignWithNodeOperatorPortDisabled());
-        refreshNodeOverrideNetworks();
+        refreshOverrideNetworks(ReassignPorts.NO);
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
     }
@@ -317,7 +318,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         node.stopFuture();
         nodes.remove(node);
         configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
-        refreshNodeOverrideNetworks();
+        refreshOverrideNetworks(ReassignPorts.NO);
     }
 
     /**
@@ -355,7 +356,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         nodes.add(insertionPoint, node);
         configTxt = configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort, latestCandidateWeights());
         nodes.get(insertionPoint).initWorkingDir(configTxt);
-        refreshNodeOverrideNetworks();
+        refreshOverrideNetworks(ReassignPorts.NO);
     }
 
     /**
@@ -421,8 +422,15 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         return network;
     }
 
-    private void refreshNodeOverrideNetworks() {
-        log.info("Refreshing override roster for network '{}' - \n{}", name(), configTxt);
+    /**
+     * Writes the override <i>config.txt</i> and <i>override-network.json</i> files for each node in the network,
+     * as implied by the current {@link SubProcessNetwork#configTxt} field. (Note the weights in this {@code configTxt}
+     * field are maintained in very brittle fashion by getting up-to-date values from {@code node0}'s
+     * <i>candidate-roster.json</i> file during the {@link FakeNmt} operations that precede the upgrade; once
+     * the roster lifecycle is on by default in production, we should clean this up.)
+     */
+    private void refreshOverrideNetworks(@NonNull final ReassignPorts reassignPorts) {
+        log.info("Refreshing override networks for '{}' - \n{}", name(), configTxt);
         nodes.forEach(node -> {
             // (FUTURE) Remove this once we have enabled roster lifecycle by default
             final var configTxtLoc = node.getExternalPath(ADDRESS_BOOK);
@@ -431,17 +439,58 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            // Write the actual override-network.json for use by RosterService transplant schema
-            final var overrideNetwork =
-                    WorkingDirUtils.networkFrom(configTxt, i -> Bytes.EMPTY, rosterEntries -> Optional.empty());
-            try {
-                Files.writeString(
-                        node.getExternalPath(DATA_CONFIG_DIR).resolve(OVERRIDE_NETWORK_JSON),
-                        Network.JSON.toJSON(overrideNetwork));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            final var overrideNetwork = WorkingDirUtils.networkFrom(
+                    configTxt, i -> Bytes.EMPTY, rosterEntries -> Optional.empty(), OnlyRoster.YES);
+            final var genesisNetworkPath = node.getExternalPath(DATA_CONFIG_DIR).resolve(GENESIS_NETWORK_JSON);
+            final var isGenesis = genesisNetworkPath.toFile().exists();
+            // Only write override-network.json if a node is not starting from genesis; otherwise it will adopt
+            // an override roster in a later round after its genesis reconnect and immediately ISS
+            if (!isGenesis) {
+                try {
+                    Files.writeString(
+                            node.getExternalPath(DATA_CONFIG_DIR).resolve(OVERRIDE_NETWORK_JSON),
+                            Network.JSON.toJSON(overrideNetwork));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            } else if (reassignPorts == ReassignPorts.YES) {
+                // If reassigning points, ensure any genesis-network.json for this node has the new ports
+                final var genesisNetwork =
+                        DiskStartupNetworks.loadNetworkFrom(genesisNetworkPath).orElseThrow();
+                final var nodePorts = overrideNetwork.nodeMetadata().stream()
+                        .map(NodeMetadata::rosterEntryOrThrow)
+                        .collect(toMap(RosterEntry::nodeId, RosterEntry::gossipEndpoint));
+                final var updatedNetwork = genesisNetwork
+                        .copyBuilder()
+                        .nodeMetadata(genesisNetwork.nodeMetadata().stream()
+                                .map(metadata -> withReassignedPorts(
+                                        metadata,
+                                        nodePorts.get(
+                                                metadata.rosterEntryOrThrow().nodeId())))
+                                .toList())
+                        .build();
+                try {
+                    Files.writeString(genesisNetworkPath, Network.JSON.toJSON(updatedNetwork));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
         });
+    }
+
+    private NodeMetadata withReassignedPorts(
+            @NonNull final NodeMetadata metadata,
+            @NonNull final List<com.hedera.hapi.node.base.ServiceEndpoint> endpoints) {
+        return new NodeMetadata(
+                metadata.rosterEntryOrThrow()
+                        .copyBuilder()
+                        .gossipEndpoint(endpoints)
+                        .build(),
+                metadata.nodeOrThrow()
+                        .copyBuilder()
+                        .gossipEndpoint(endpoints.getLast(), endpoints.getFirst())
+                        .build(),
+                metadata.tssEncryptionKey());
     }
 
     private void reinitializePorts() {
@@ -514,8 +563,23 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
+     * Loads and returns the node weights for the latest candidate roster, if available.
+     *
+     * @return the node weights, or an empty map if there is no <i>candidate-roster.json</i>
+     */
+    private Map<Long, Long> maybeLatestCandidateWeights() {
+        try {
+            return latestCandidateWeights();
+        } catch (Exception ignore) {
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
      * Loads and returns the node weights for the latest candidate roster.
+     *
      * @return the node weights
+     * @throws IllegalStateException if the <i>candidate-roster.json</i> file cannot be read or parsed
      */
     private Map<Long, Long> latestCandidateWeights() {
         final var candidateRosterPath =
