@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,8 +40,8 @@ public class BlockStreamBucketMetrics {
      */
     @Inject
     public BlockStreamBucketMetrics(@NonNull final Metrics metrics) {
-        final var category =
-                "hedera.blocks.bucket.<provider>.<nodeId>"; // TODO: hedera.blocks.bucket.<provider>.<nodeId>
+        final var nodeId = ((PlatformMetrics) metrics).getNodeId();
+        final var category = String.format("hedera.blocks.bucket.%s", nodeId);
         final LongGauge.Config blocksRetainedConfig =
                 new LongGauge.Config(category, BLOCKS_RETAINED).withDescription(BLOCKS_RETAINED_DESC);
         blocksRetained = metrics.getOrCreate(blocksRetainedConfig);
