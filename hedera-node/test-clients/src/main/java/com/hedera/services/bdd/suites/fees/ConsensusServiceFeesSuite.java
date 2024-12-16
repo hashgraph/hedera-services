@@ -33,65 +33,81 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import com.hedera.services.bdd.junit.HapiTest;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 public class ConsensusServiceFeesSuite {
+    private static final double BASE_FEE_TOPIC_CREATE = 0.01;
+    private static final double BASE_FEE_TOPIC_UPDATE = 0.00022;
+    private static final double BASE_FEE_TOPIC_DELETE = 0.005;
+    private static final double BASE_FEE_TOPIC_SUBMIT_MESSAGE = 0.0001;
+    private static final double BASE_FEE_TOPIC_GET_INFO = 0.0001;
+
+    private static final String PAYER = "payer";
+    private static final String TOPIC_NAME = "testTopic";
+
     @HapiTest
-    final Stream<DynamicTest> topicCreateFeeAsExpected() {
+    @DisplayName("Topic create base USD fee as expected")
+    final Stream<DynamicTest> topicCreateBaseUSDFee() {
         return hapiTest(
-                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                createTopic("testTopic").blankMemo().payingWith("payer").via("topicCreate"),
-                validateChargedUsd("topicCreate", 0.01));
+                cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                createTopic(TOPIC_NAME).blankMemo().payingWith(PAYER).via("topicCreate"),
+                validateChargedUsd("topicCreate", BASE_FEE_TOPIC_CREATE));
     }
 
     @HapiTest
-    final Stream<DynamicTest> topicUpdateFeeAsExpected() {
+    @DisplayName("Topic update base USD fee as expected")
+    final Stream<DynamicTest> topicUpdateBaseUSDFee() {
         return hapiTest(
                 cryptoCreate("autoRenewAccount"),
-                cryptoCreate("payer"),
-                createTopic("testTopic")
+                cryptoCreate(PAYER),
+                createTopic(TOPIC_NAME)
                         .autoRenewAccountId("autoRenewAccount")
                         .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
-                        .adminKeyName("payer"),
-                updateTopic("testTopic")
-                        .payingWith("payer")
+                        .adminKeyName(PAYER),
+                updateTopic(TOPIC_NAME)
+                        .payingWith(PAYER)
                         .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                         .via("updateTopic"),
-                validateChargedUsdWithin("updateTopic", 0.00022, 3.0));
+                validateChargedUsdWithin("updateTopic", BASE_FEE_TOPIC_UPDATE, 3.0));
     }
 
     @HapiTest
-    final Stream<DynamicTest> topicDeleteFeeAsExpected() {
+    @DisplayName("Topic delete base USD fee as expected")
+    final Stream<DynamicTest> topicDeleteBaseUSDFee() {
         return hapiTest(
-                cryptoCreate("payer"),
-                createTopic("testTopic").adminKeyName("payer"),
-                deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"),
-                validateChargedUsd("topicDelete", 0.005));
+                cryptoCreate(PAYER),
+                createTopic(TOPIC_NAME).adminKeyName(PAYER),
+                deleteTopic(TOPIC_NAME).blankMemo().payingWith(PAYER).via("topicDelete"),
+                validateChargedUsd("topicDelete", BASE_FEE_TOPIC_DELETE));
     }
 
     @HapiTest
-    final Stream<DynamicTest> topicSubmitMessageBasicFeeAsExpected() {
+    @DisplayName("Topic submit message base USD fee as expected")
+    final Stream<DynamicTest> topicSubmitMessageBaseUSDFee() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return hapiTest(
-                cryptoCreate("payer").hasRetryPrecheckFrom(BUSY),
-                createTopic("testTopic").submitKeyName("payer").hasRetryPrecheckFrom(BUSY),
-                submitMessageTo("testTopic")
+                cryptoCreate(PAYER).hasRetryPrecheckFrom(BUSY),
+                createTopic(TOPIC_NAME).submitKeyName(PAYER).hasRetryPrecheckFrom(BUSY),
+                submitMessageTo(TOPIC_NAME)
                         .blankMemo()
-                        .payingWith("payer")
+                        .payingWith(PAYER)
                         .message(new String(messageBytes))
                         .hasRetryPrecheckFrom(BUSY)
                         .via("submitMessage"),
                 sleepFor(1000),
-                validateChargedUsd("submitMessage", 0.0001));
+                validateChargedUsd("submitMessage", BASE_FEE_TOPIC_SUBMIT_MESSAGE));
     }
 
     @HapiTest
-    final Stream<DynamicTest> getTopicFeeAsExpected() {
+    @DisplayName("Topic get info base USD fee as expected")
+    final Stream<DynamicTest> tokenGetTopicInfoBaseUSDFee() {
         return hapiTest(
-                cryptoCreate("payer"),
-                createTopic("testTopic").adminKeyName("payer"),
-                getTopicInfo("testTopic").payingWith("payer").via("getTopic"),
-                validateChargedUsd("getTopic", 0.0001));
+                cryptoCreate(PAYER),
+                createTopic(TOPIC_NAME).adminKeyName(PAYER),
+                getTopicInfo(TOPIC_NAME).payingWith(PAYER).via("getTopic"),
+                sleepFor(1000),
+                validateChargedUsd("getTopic", BASE_FEE_TOPIC_GET_INFO));
     }
 }

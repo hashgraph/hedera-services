@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadScheduledContractPrices;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -46,10 +47,17 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
 public class ScheduleServiceFeesSuite {
+    private static final double BASE_FEE_SCHEDULE_CREATE = 0.01;
+    private static final double BASE_FEE_SCHEDULE_SIGN = 0.001;
+    private static final double BASE_FEE_SCHEDULE_DELETE = 0.001;
+    private static final double BASE_FEE_SCHEDULE_INFO = 0.0001;
+    private static final double BASE_FEE_CONTRACT_CALL = 0.1;
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of(
@@ -57,7 +65,9 @@ public class ScheduleServiceFeesSuite {
     }
 
     @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
-    final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
+    @DisplayName("Schedule ops have expected USD fees")
+    final Stream<DynamicTest> scheduleOpsBaseUSDFees() {
+        final String SCHEDULE_NAME = "canonical";
         return hapiTest(
                 uploadScheduledContractPrices(GENESIS),
                 uploadInitCode(SIMPLE_UPDATE),
@@ -66,7 +76,7 @@ public class ScheduleServiceFeesSuite {
                 cryptoCreate(RECEIVER).receiverSigRequired(true),
                 contractCreate(SIMPLE_UPDATE).gas(300_000L),
                 scheduleCreate(
-                                "canonical",
+                                SCHEDULE_NAME,
                                 cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
                                         .memo("")
                                         .fee(ONE_HBAR))
@@ -74,7 +84,7 @@ public class ScheduleServiceFeesSuite {
                         .via("canonicalCreation")
                         .alsoSigningWith(PAYING_SENDER)
                         .adminKey(OTHER_PAYER),
-                scheduleSign("canonical")
+                scheduleSign(SCHEDULE_NAME)
                         .via("canonicalSigning")
                         .payingWith(PAYING_SENDER)
                         .alsoSigningWith(RECEIVER),
@@ -95,14 +105,15 @@ public class ScheduleServiceFeesSuite {
                         .payingWith(OTHER_PAYER)
                         .via("canonicalContractCall")
                         .adminKey(OTHER_PAYER),
-                getScheduleInfo("canonical")
+                getScheduleInfo(SCHEDULE_NAME)
                         .payingWith(OTHER_PAYER)
                         .signedBy(OTHER_PAYER)
                         .via("getScheduleInfoBasic"),
-                validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
-                validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-                validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
-                validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0),
-                validateChargedUsd("getScheduleInfoBasic", 0.0001));
+                sleepFor(1000),
+                validateChargedUsdWithin("canonicalCreation", BASE_FEE_SCHEDULE_CREATE, 3.0),
+                validateChargedUsdWithin("canonicalSigning", BASE_FEE_SCHEDULE_SIGN, 3.0),
+                validateChargedUsdWithin("canonicalDeletion", BASE_FEE_SCHEDULE_DELETE, 3.0),
+                validateChargedUsdWithin("canonicalContractCall", BASE_FEE_CONTRACT_CALL, 3.0),
+                validateChargedUsd("getScheduleInfoBasic", BASE_FEE_SCHEDULE_INFO));
     }
 }

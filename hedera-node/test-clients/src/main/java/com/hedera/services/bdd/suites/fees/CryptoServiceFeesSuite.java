@@ -512,6 +512,7 @@ public class CryptoServiceFeesSuite {
     final Stream<DynamicTest> cryptoGetAccountInfoBaseUSDFee() {
         return hapiTest(
                 getAccountInfo(CIVILIAN).via("basicGetInfo").payingWith(FEES_ACCOUNT),
+                sleepFor(1000),
                 validateChargedUsd("basicGetInfo", BASE_FEE_CRYPTO_GET_ACCOUNT_INFO));
     }
 }
