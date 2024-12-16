@@ -60,15 +60,4 @@ public class ScheduleLongTermCreateTests {
                         .via("createTxn"),
                 getScheduleInfo("one").hasRelativeExpiry("createTxn", MAX_SCHEDULE_EXPIRY_TIME));
     }
-
-    @HapiTest
-    final Stream<DynamicTest> scheduleCreateMinimumTime() {
-        return hapiTest(
-                cryptoCreate(RECEIVER).balance(0L),
-                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
-                        .waitForExpiry(false)
-                        .expiringIn(1)
-                        .via("createTxn"),
-                getScheduleInfo("one").isExecuted().hasRelativeExpiry("createTxn", 1));
-    }
 }

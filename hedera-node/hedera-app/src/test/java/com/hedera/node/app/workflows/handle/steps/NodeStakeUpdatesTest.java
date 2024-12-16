@@ -164,6 +164,11 @@ public class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(Timestamp.newBuilder().seconds(1_234_567L))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
 
         subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 

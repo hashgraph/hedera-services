@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.api.FakeGroupElement;
@@ -84,6 +85,23 @@ public class TssDirectoryAccessor {
         final var maxSharesPerNode =
                 configurationSupplier.get().getConfigData(TssConfig.class).maxSharesPerNode();
         tssParticipantDirectory = computeParticipantDirectory(activeRoster, maxSharesPerNode, encryptionKeyFn);
+        return tssParticipantDirectory;
+    }
+
+    /**
+     * Generates the participant directory for the given roster.
+     *
+     * @param roster   Roster to generate participant directory for
+     */
+    public TssParticipantDirectory generateTssParticipantDirectoryFor(@NonNull final Roster roster) {
+        final LongFunction<BlsPublicKey> encryptionKeyFn =
+                nodeId -> new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(nodeId)), SIGNATURE_SCHEMA);
+        final var maxSharesPerNode =
+                configurationSupplier.get().getConfigData(TssConfig.class).maxSharesPerNode();
+        return computeParticipantDirectory(roster, maxSharesPerNode, encryptionKeyFn);
+    }
+
+    public TssParticipantDirectory activeParticipantDirectory() {
         return tssParticipantDirectory;
     }
 
