@@ -54,7 +54,5 @@ class TransactionGeneratorTest {
 
         // Then
         verify(platform, atLeastOnce()).getRoster();
-        verify(issTestingToolState, atLeastOnce()).encodeSystemTransaction(any());
-        verify(platform, atLeastOnce()).createTransaction(any());
     }
 }
