@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,7 +68,7 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
      */
     @Inject
     public BucketUploadManager(
-            @NonNull ExecutorService executorService,
+            @NonNull @Named("bucketUploadExecutor") ExecutorService executorService,
             @NonNull ConfigProvider configProvider,
             @NonNull FileSystem fileSystem) {
         this.uploaders = new ArrayList<>();

@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.standalone;
 
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.blocks.cloud.uploader.BucketUploadExecutorModule;
+import com.hedera.node.app.blocks.cloud.uploader.FileSystemModule;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -57,7 +59,9 @@ import javax.inject.Singleton;
             ServicesInjectionModule.class,
             HederaStateInjectionModule.class,
             ThrottleServiceModule.class,
-            FacilityInitModule.class
+            FacilityInitModule.class,
+            BucketUploadExecutorModule.class,
+            FileSystemModule.class
         })
 public interface ExecutorComponent {
     @Component.Builder

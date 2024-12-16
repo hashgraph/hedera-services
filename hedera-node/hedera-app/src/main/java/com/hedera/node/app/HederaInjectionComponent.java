@@ -23,6 +23,7 @@ import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamModule;
 import com.hedera.node.app.blocks.InitialStateHash;
+import com.hedera.node.app.blocks.cloud.uploader.BucketUploadExecutorModule;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -97,7 +98,8 @@ import javax.inject.Singleton;
             BlockStreamModule.class,
             PlatformModule.class,
             ThrottleServiceModule.class,
-            FacilityInitModule.class
+            FacilityInitModule.class,
+            BucketUploadExecutorModule.class
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();

@@ -38,6 +38,7 @@ import java.util.List;
  * @param localRetentionHours the time we will retain the block files locally
  * @param credentialsPath the path to the bucket credentials
  * @param buckets the buckets configuration
+ * @param maxUploadThreads the maximum number of threads to use for bucket uploads
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
@@ -53,6 +54,7 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "3") @NetworkProperty int uploadRetryAttempts,
         @ConfigProperty(defaultValue = "168") @NetworkProperty int localRetentionHours,
         @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
+        @ConfigProperty(defaultValue = "10") @Min(1) @Max(100) @NetworkProperty int maxUploadThreads,
 
         // Bucket configurations with default AWS and GCP public buckets
         @ConfigProperty(

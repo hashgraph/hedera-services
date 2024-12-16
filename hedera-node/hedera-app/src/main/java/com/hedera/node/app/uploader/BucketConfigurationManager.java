@@ -82,7 +82,7 @@ public class BucketConfigurationManager {
     /**
      * Combines the buckets configuration with their respective credentials.
      */
-    private void loadCompleteBucketConfigs() {
+    public void loadCompleteBucketConfigs() {
         final Path credentialsPath = Path.of(bucketCredentialsPath);
         try {
             credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
