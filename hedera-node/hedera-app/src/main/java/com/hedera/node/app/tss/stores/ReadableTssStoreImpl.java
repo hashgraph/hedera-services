@@ -19,16 +19,16 @@ package com.hedera.node.app.tss.stores;
 import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.Streams;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -51,7 +51,8 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
 
     private final ReadableKVState<TssVoteMapKey, TssVoteTransactionBody> readableTssVoteState;
 
-    private final ReadableKVState<EntityNumber, TssEncryptionKeyTransactionBody> readableTssEncryptionKeyState;
+    private final ReadableKVState<EntityNumber, TssEncryptionKeys> readableTssEncryptionKeyState;
+
     /**
      * Create a new {@link ReadableTssStoreImpl} instance.
      *
@@ -61,7 +62,7 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
         requireNonNull(states);
         this.readableTssMessageState = states.get(TSS_MESSAGE_MAP_KEY);
         this.readableTssVoteState = states.get(TSS_VOTE_MAP_KEY);
-        this.readableTssEncryptionKeyState = states.get(TSS_ENCRYPTION_KEY_MAP_KEY);
+        this.readableTssEncryptionKeyState = states.get(TSS_ENCRYPTION_KEYS_KEY);
     }
 
     @Override
@@ -155,7 +156,7 @@ public class ReadableTssStoreImpl implements ReadableTssStore {
      * {@inheritDoc}
      */
     @Override
-    public TssEncryptionKeyTransactionBody getTssEncryptionKey(long nodeID) {
+    public TssEncryptionKeys getTssEncryptionKeys(final long nodeID) {
         return readableTssEncryptionKeyState.get(
                 EntityNumber.newBuilder().number(nodeID).build());
     }

@@ -18,11 +18,12 @@ package com.hedera.node.app.tss.stores;
 
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,9 +36,9 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -66,7 +67,7 @@ class ReadableTssStoreTest {
     private ReadableKVState<TssVoteMapKey, TssVoteTransactionBody> readableTssVoteState;
 
     @Mock
-    private ReadableKVState<EntityNumber, TssEncryptionKeyTransactionBody> readableTssEncryptionKeyState;
+    private ReadableKVState<EntityNumber, TssEncryptionKeys> readableTssEncryptionKeyState;
 
     @Mock
     private ReadableStates states;
@@ -104,8 +105,9 @@ class ReadableTssStoreTest {
                 .thenReturn(readableTssMessageState);
         when(states.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
                 .thenReturn(readableTssVoteState);
-        when(states.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY))
+        when(states.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .thenReturn(readableTssEncryptionKeyState);
+
         tssStore = new ReadableTssStoreImpl(states);
     }
 
@@ -240,11 +242,9 @@ class ReadableTssStoreTest {
     void testGetTssEncryptionKey() {
         long nodeID = 123L;
         EntityNumber entityNumber = new EntityNumber(nodeID);
-        TssEncryptionKeyTransactionBody encryptionKey = TssEncryptionKeyTransactionBody.DEFAULT;
-        when(readableTssEncryptionKeyState.get(entityNumber)).thenReturn(encryptionKey);
-
-        TssEncryptionKeyTransactionBody result = tssStore.getTssEncryptionKey(nodeID);
-        assertEquals(encryptionKey, result);
+        when(readableTssEncryptionKeyState.get(entityNumber)).thenReturn(TssEncryptionKeys.DEFAULT);
+        final var keys = tssStore.getTssEncryptionKeys(nodeID);
+        assertSame(TssEncryptionKeys.DEFAULT, keys);
     }
 
     @Test

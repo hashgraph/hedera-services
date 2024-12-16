@@ -72,6 +72,11 @@ public interface TssBaseService extends Service {
         return NAME;
     }
 
+    @Override
+    default int migrationOrder() {
+        return MIGRATION_ORDER;
+    }
+
     /**
      * Returns the status of the TSS service relative to the given roster, ledger id, and given TSS base state.
      *
@@ -162,7 +167,7 @@ public interface TssBaseService extends Service {
      * Generates the participant directory for the active roster.
      * @param state the network state
      */
-    void generateParticipantDirectory(@NonNull State state);
+    void ensureParticipantDirectoryKnown(@NonNull State state);
 
     /**
      * Returns the ledger id from the given TSS participant directory and TSS messages.

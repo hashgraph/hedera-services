@@ -19,10 +19,11 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
+import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
+import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
@@ -34,12 +35,14 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.Hedera.TssBaseServiceFactory;
+import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.DiskStartupNetworks;
-import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -50,17 +53,14 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
-import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -106,9 +106,9 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
-    protected final FakeState state = new FakeState();
     protected final AccountID defaultNodeAccountId;
     protected final AddressBook addressBook;
+    protected final Network network;
     protected final Roster roster;
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
@@ -116,17 +116,33 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
+    /**
+     * Non-final because a "saved state" may be provided via {@link EmbeddedHedera#restart(FakeState)}.
+     */
+    protected FakeState state;
+    /**
+     * Non-final because the compiler can't tell that the {@link TssBaseServiceFactory} lambda we give the
+     * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.tss.TssBaseServiceImpl}
+     * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
+     */
     protected FakeTssBaseService tssBaseService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
         addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
-        roster = buildRoster(addressBook);
-        nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .collect(toMap(AbstractEmbeddedHedera::accountIdOf, Address::getNodeId));
-        accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
-        defaultNodeId = addressBook.getNodeId(0);
+        network = node.startupNetwork().orElseThrow();
+        roster = rosterFrom(network);
+        nodeIds = network.nodeMetadata().stream()
+                .map(metadata -> Pair.of(
+                        fromPbj(metadata.nodeOrThrow().accountIdOrThrow()),
+                        NodeId.of(metadata.rosterEntryOrThrow().nodeId())))
+                .collect(toMap(Pair::left, Pair::right));
+        accountIds = network.nodeMetadata().stream()
+                .map(metadata -> Pair.of(
+                        NodeId.of(metadata.rosterEntryOrThrow().nodeId()),
+                        metadata.nodeOrThrow().accountIdOrThrow()))
+                .collect(toMap(Pair::left, Pair::right));
+        defaultNodeId = NodeId.FIRST_NODE_ID;
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
@@ -135,25 +151,36 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 this::now,
                 appContext -> {
                     this.tssBaseService = new FakeTssBaseService(appContext);
-                    return tssBaseService;
+                    return this.tssBaseService;
                 },
-                DiskStartupNetworks::new,
-                NodeId.of(0L));
+                DiskStartupNetworks::new);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
     @Override
-    public void start() {
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance())
-                .autoDiscoverExtensions()
-                .build();
+    public void restart(@NonNull final FakeState state) {
+        this.state = requireNonNull(state);
+        start();
+    }
 
+    @Override
+    public void start() {
+        final InitTrigger trigger;
+        if (state == null) {
+            trigger = GENESIS;
+            state = new FakeState();
+        } else {
+            trigger = RESTART;
+        }
         hedera.initializeStatesApi(
-                state, fakePlatform().getContext().getMetrics(), GENESIS, addressBook, configuration);
+                state,
+                fakePlatform().getContext().getMetrics(),
+                trigger,
+                network,
+                ServicesMain.buildPlatformConfig(),
+                addressBook);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled
@@ -165,12 +192,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
         ((CommittableWritableStates) writableStates).commit();
-        if (!hedera.isRosterLifecycleEnabled()) {
-            final var writableRosterStates = state.getWritableStates(RosterService.NAME);
-            final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
-            writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
-            ((CommittableWritableStates) writableRosterStates).commit();
-        }
         // --- end of temporary code block ---
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
@@ -183,6 +204,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public Hedera hedera() {
         return hedera;
+    }
+
+    @Override
+    public Roster roster() {
+        return roster;
     }
 
     @Override

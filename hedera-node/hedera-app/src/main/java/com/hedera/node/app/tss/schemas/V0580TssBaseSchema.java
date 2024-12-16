@@ -18,7 +18,8 @@ package com.hedera.node.app.tss.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
+import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,8 +28,8 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
-public class V0570TssBaseSchema extends Schema {
-    public static final String TSS_ENCRYPTION_KEY_MAP_KEY = "TSS_ENCRYPTION_KEY";
+public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchema {
+    public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
     /**
      * This will at most be equal to the number of nodes in the network.
      */
@@ -38,22 +39,20 @@ public class V0570TssBaseSchema extends Schema {
      * The version of the schema.
      */
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(57).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(58).patch(0).build();
 
-    /**
-     * Create a new instance
-     */
-    public V0570TssBaseSchema() {
+    public V0580TssBaseSchema() {
         super(VERSION);
     }
 
-    @NonNull
     @Override
-    public Set<StateDefinition> statesToCreate() {
+    public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(StateDefinition.onDisk(
-                TSS_ENCRYPTION_KEY_MAP_KEY,
-                EntityNumber.PROTOBUF,
-                TssEncryptionKeyTransactionBody.PROTOBUF,
-                MAX_TSS_ENCRYPTION_KEYS));
+                TSS_ENCRYPTION_KEYS_KEY, EntityNumber.PROTOBUF, TssEncryptionKeys.PROTOBUF, MAX_TSS_ENCRYPTION_KEYS));
+    }
+
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        TssBaseTransplantSchema.super.restart(ctx);
     }
 }

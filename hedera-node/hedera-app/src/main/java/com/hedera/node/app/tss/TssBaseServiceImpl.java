@@ -25,6 +25,7 @@ import static com.hedera.node.app.tss.TssKeyingStatus.KEYING_COMPLETE;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
 import static com.hedera.node.app.tss.TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_VOTES;
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.hedera.node.app.tss.handlers.TssUtils.voteForValidMessages;
@@ -34,26 +35,29 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -64,13 +68,13 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -83,6 +87,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -156,7 +161,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
-        registry.register(new V0570TssBaseSchema());
+        registry.register(new V0580TssBaseSchema());
     }
 
     @Override
@@ -195,10 +200,14 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
-        final var sourceRoster = requireNonNull(
+
+        // TODO - use the real encryption keys from state
+        final LongFunction<BlsPublicKey> encryptionKeyFn =
+                nodeId -> new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(nodeId)), SIGNATURE_SCHEMA);
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, encryptionKeyFn);
+        final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
-        final var sourceRosterHash = RosterUtils.hash(sourceRoster).getBytes();
+        final var sourceRosterHash = RosterUtils.hash(activeRoster).getBytes();
 
         final var tssPrivateShares = tssKeysAccessor.accessTssKeys().activeRosterShares();
 
@@ -296,10 +305,10 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     @NonNull
     public Roster chooseRosterForNetwork(
-            @NonNull State state,
-            @NonNull InitTrigger trigger,
-            @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version,
+            @NonNull final State state,
+            @NonNull final InitTrigger trigger,
+            @NonNull final ServiceMigrator serviceMigrator,
+            @NonNull final ServicesSoftwareVersion version,
             @NonNull final Configuration configuration,
             @NonNull final Roster overrideRoster) {
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
@@ -331,7 +340,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void generateParticipantDirectory(@NonNull final State state) {
+    public void ensureParticipantDirectoryKnown(@NonNull final State state) {
         tssDirectoryAccessor.generateTssParticipantDirectory(state);
     }
 
@@ -430,10 +439,13 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         // collect tss encryption keys for all nodes in the active roster that are not null
         final var targetRoster = rosterStore.get(targetRosterHash);
-        final var targetRosterEncryptionKeys = targetRoster.rosterEntries().stream()
-                .map(entry -> tssStore.getTssEncryptionKey(entry.nodeId()))
-                .filter(Objects::nonNull)
-                .toList();
+        final List<TssEncryptionKeys> targetRosterEncryptionKeys = targetRoster == null
+                ? List.of()
+                : targetRoster.rosterEntries().stream()
+                        .map(entry -> tssStore.getTssEncryptionKeys(entry.nodeId()))
+                        .filter(Objects::nonNull)
+                        .filter(k -> k.currentEncryptionKey().equals(Bytes.EMPTY))
+                        .toList();
 
         final var voteKey = new TssVoteMapKey(
                 targetRosterHash, appContext.selfNodeInfoSupplier().get().nodeId());
@@ -497,8 +509,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     private TssKeyingStatus getTssKeyingStatus(
             final ReadableTssStore tssStore, final Bytes targetRosterHash, final Roster targetRoster) {
         final var numEncryptionKeys = requireNonNull(targetRoster).rosterEntries().stream()
-                .map(entry -> tssStore.getTssEncryptionKey(entry.nodeId()))
+                .map(entry -> tssStore.getTssEncryptionKeys(entry.nodeId()))
                 .filter(Objects::nonNull)
+                .filter(k -> !k.currentEncryptionKey().equals(Bytes.EMPTY))
                 .count();
         if (numEncryptionKeys != targetRoster.rosterEntries().size()) {
             return WAITING_FOR_ENCRYPTION_KEYS;
@@ -703,14 +716,14 @@ public class TssBaseServiceImpl implements TssBaseService {
     /**
      * A record to hold the roster and TSS information that is needed to compute new TSS status.
      *
-     * @param activeRoster     the active roster
-     * @param activeRosterHash the active roster hash
-     * @param candidateRoster  the candidate roster
-     * @param targetRosterHash the target roster hash
-     * @param tssMessages      the TSS messages for the target roster
-     * @param winningVote      the winning vote for the target roster
-     * @param targetRosterEncryptionKeys   the encryption keys for the active roster
-     * @param selfVote         the self vote for the current node
+     * @param activeRoster               the active roster
+     * @param activeRosterHash           the active roster hash
+     * @param candidateRoster            the candidate roster
+     * @param targetRosterHash           the target roster hash
+     * @param tssMessages                the TSS messages for the target roster
+     * @param winningVote                the winning vote for the target roster
+     * @param targetRosterEncryptionKeys the encryption keys for the active roster
+     * @param selfVote                   the self vote for the current node
      */
     public record RosterAndTssInfo(
             @NonNull Roster activeRoster,
@@ -719,7 +732,7 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull Bytes targetRosterHash,
             @NonNull List<TssMessageTransactionBody> tssMessages,
             @NonNull Optional<TssVoteTransactionBody> winningVote,
-            @NonNull List<TssEncryptionKeyTransactionBody> targetRosterEncryptionKeys,
+            @NonNull List<TssEncryptionKeys> targetRosterEncryptionKeys,
             TssVoteTransactionBody selfVote) {}
 
     /**

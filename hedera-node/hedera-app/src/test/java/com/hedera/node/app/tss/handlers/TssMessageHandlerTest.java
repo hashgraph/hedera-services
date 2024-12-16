@@ -135,7 +135,7 @@ class TssMessageHandlerTest {
         given(tssCryptographyManager.getVoteFuture(any(TssParticipantDirectory.class), any(), any()))
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
-        given(directoryAccessor.activeParticipantDirectory()).willReturn(TSS_KEYS.activeParticipantDirectory());
+        given(directoryAccessor.activeParticipantDirectoryOrThrow()).willReturn(TSS_KEYS.activeParticipantDirectory());
         given(pairingPublicKey.toBytes()).willReturn("test".getBytes());
         subject.handle(handleContext);
 

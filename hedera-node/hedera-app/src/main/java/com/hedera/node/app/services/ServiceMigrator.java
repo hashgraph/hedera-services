@@ -41,8 +41,8 @@ public interface ServiceMigrator {
      * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
-     * @param nodeConfiguration The configuration to use for the migrations
-     * @param platformConfiguration The platform configuration to use for subsequent object initializations
+     * @param appConfig The app configuration to use for the migrations
+     * @param platformConfig The platform configuration to use for subsequent object initializations
      * @param genesisNetworkInfo The network information to use for the migrations
      * @param metrics The metrics to use for the migrations
      * @param startupNetworks The startup networks to use for the migrations
@@ -53,8 +53,8 @@ public interface ServiceMigrator {
             @NonNull ServicesRegistry servicesRegistry,
             @Nullable SoftwareVersion previousVersion,
             @NonNull SoftwareVersion currentVersion,
-            @NonNull Configuration nodeConfiguration,
-            @NonNull Configuration platformConfiguration,
+            @NonNull Configuration appConfig,
+            @NonNull Configuration platformConfig,
             @Nullable NetworkInfo genesisNetworkInfo,
             @NonNull Metrics metrics,
             @NonNull StartupNetworks startupNetworks);
