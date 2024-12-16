@@ -427,7 +427,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(hbarFee2),
                     submitMessageTo(TOPIC)
                             .maxCustomFee(fee)
-                            .maxCustomFee(hbarFee)
+                            .maxCustomFee(fee1)
                             .message("TEST")
                             .payingWith(SUBMITTER)
                             .hasKnownStatus(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));

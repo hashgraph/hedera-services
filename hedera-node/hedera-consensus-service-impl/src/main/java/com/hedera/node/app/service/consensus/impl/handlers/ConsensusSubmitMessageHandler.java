@@ -410,7 +410,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 != htsCustomFeeLimits.size();
         final var hbarLimitsHasDuplicate = new HashSet<>(hbarCustomFeeLimits).size() != hbarCustomFeeLimits.size();
 
-        validateTrue(htsLimitHasDuplicate && hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
+        validateTrue(!htsLimitHasDuplicate && !hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
     }
 
     @NonNull
