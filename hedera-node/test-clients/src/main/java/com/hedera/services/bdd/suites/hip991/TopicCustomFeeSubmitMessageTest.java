@@ -417,7 +417,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         @HapiTest
         // TOPIC_FEE_177
         @DisplayName("Submits messages with account excluded and included from FEKL")
-        final Stream<DynamicTest> submitWithoutAndWittFEKL() {
+        final Stream<DynamicTest> submitWithoutAndWithFEKL() {
             final var alice = "alice";
             final var collector = "collector";
             final var topicAdmin = "topicAdmin";
