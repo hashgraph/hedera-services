@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.state.merkle.SigSet;
 
 /**
@@ -50,5 +50,10 @@ public interface SignedStateInfo {
      */
     boolean isComplete();
 
-    AddressBook getAddressBook();
+    /**
+     * Get the roster for this signed state.
+     *
+     * @return the roster
+     */
+    Roster getRoster();
 }

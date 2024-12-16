@@ -34,6 +34,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -161,7 +162,7 @@ public final class SignedStateFileWriter {
         writeEmergencyRecoveryFile(directory, signedState);
         if (!signedState.isGenesisState()) {
             // Genesis states do not have address books.
-            writeStateAddressBookFile(directory, signedState.getAddressBook());
+            writeStateAddressBookFile(directory, RosterUtils.buildAddressBook(signedState.getRoster()));
         }
         writeSettingsUsed(directory, platformContext.getConfiguration());
 

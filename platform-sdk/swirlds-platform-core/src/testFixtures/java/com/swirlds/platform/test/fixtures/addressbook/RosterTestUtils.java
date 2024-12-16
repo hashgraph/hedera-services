@@ -20,6 +20,8 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -67,5 +69,51 @@ public class RosterTestUtils {
 
         builder.rosterEntries(rosterEntries);
         return builder.build();
+    }
+
+    /**
+     * Removes the node associated with the specified node ID from the roster. This does NOT create a new roster, but
+     * modifies the specified one.
+     *
+     * @param roster the roster to modify
+     * @param nodeId the ID of the node to remove
+     * @return true if the node was found and removed, else false
+     */
+    public static boolean removeNode(@NonNull final Roster roster, final long nodeId) {
+        Objects.requireNonNull(roster, "roster");
+
+        final Iterator<RosterEntry> it = roster.rosterEntries().iterator();
+        while (it.hasNext()) {
+            final RosterEntry node = it.next();
+            if (node.nodeId() == nodeId) {
+                it.remove();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Replace a node in the specified roster with the provided entry.
+     *
+     * @param roster the roster to modify
+     * @param node the replacement node
+     * @return true if the roster contained a node with the same node ID as the specified replacement node and it was
+     * replaced, else false
+     */
+    public static boolean replaceNode(@NonNull final Roster roster, @NonNull final RosterEntry node) {
+        Objects.requireNonNull(roster, "roster");
+        Objects.requireNonNull(node, "node");
+
+        for (int i = 0; i < roster.rosterEntries().size(); ++i) {
+            final RosterEntry thisNode = roster.rosterEntries().get(i);
+            if (thisNode.nodeId() == node.nodeId()) {
+                roster.rosterEntries().set(i, node);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

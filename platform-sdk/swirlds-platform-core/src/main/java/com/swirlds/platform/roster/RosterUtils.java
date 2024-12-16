@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -199,12 +200,34 @@ public final class RosterUtils {
      * @throws RosterEntryNotFoundException if RosterEntry is not found in Roster
      */
     public static RosterEntry getRosterEntry(@NonNull final Roster roster, final long nodeId) {
+        final RosterEntry entry = getRosterEntryOrNull(roster, nodeId);
+        if (entry != null) {
+            return entry;
+        }
+
+        throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in Roster: " + roster);
+    }
+
+    /**
+     * Retrieves the roster entry that matches the specified node ID, returning null if one does not exist.
+     * <p>
+     * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId, then the code should use the
+     * {@link #toMap(Roster)} method and keep the map instance for the look-ups.
+     *
+     * @param roster the roster to search
+     * @param nodeId the ID of the node to retrieve
+     * @return the found roster entry that matches the specified node ID, else null
+     */
+    public static RosterEntry getRosterEntryOrNull(@NonNull final Roster roster, final long nodeId) {
+        Objects.requireNonNull(roster, "roster");
+
         for (final RosterEntry entry : roster.rosterEntries()) {
             if (entry.nodeId() == nodeId) {
                 return entry;
             }
         }
-        throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in Roster: " + roster);
+
+        return null;
     }
 
     /**
@@ -330,8 +353,12 @@ public final class RosterUtils {
      * @return an AddressBook
      */
     @Deprecated(forRemoval = true)
-    @NonNull
-    public static AddressBook buildAddressBook(@NonNull final Roster roster) {
+    @Nullable
+    public static AddressBook buildAddressBook(@Nullable final Roster roster) {
+        if (roster == null) {
+            return null;
+        }
+
         AddressBook addressBook = new AddressBook();
 
         for (final RosterEntry entry : roster.rosterEntries()) {
