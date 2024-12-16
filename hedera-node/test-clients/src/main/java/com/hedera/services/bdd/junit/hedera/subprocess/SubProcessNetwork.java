@@ -211,6 +211,10 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     @Override
     public void awaitReady(@NonNull final Duration timeout) {
         if (ready.get() == null) {
+            log.info(
+                    "Newly waiting for network '{}' to be ready in thread '{}'",
+                    name(),
+                    Thread.currentThread().getName());
             final var deferredRun = new DeferredRun(() -> {
                 AssertionError error = null;
                 var retries = MAX_PORT_REASSIGNMENTS;

@@ -42,7 +42,6 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
@@ -91,9 +90,6 @@ class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
-
-    @Mock
-    private MerkleStateLifecycles lifecycles;
 
     @Mock
     private MigrationStateChanges migrationStateChanges;

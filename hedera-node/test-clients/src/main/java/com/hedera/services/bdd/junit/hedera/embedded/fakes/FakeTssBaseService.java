@@ -253,8 +253,8 @@ public class FakeTssBaseService implements TssBaseService {
     }
 
     @Override
-    public void generateParticipantDirectory(@NonNull final State state) {
-        delegate.generateParticipantDirectory(state);
+    public void ensureParticipantDirectoryKnown(@NonNull final State state) {
+        delegate.ensureParticipantDirectoryKnown(state);
     }
 
     @Override
