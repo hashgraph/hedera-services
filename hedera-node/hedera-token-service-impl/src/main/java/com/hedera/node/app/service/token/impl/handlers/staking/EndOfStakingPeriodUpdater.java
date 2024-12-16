@@ -138,10 +138,6 @@ public class EndOfStakingPeriodUpdater {
             // The node's staking info at the end of the period, non-final because
             // we iteratively update its reward sum history,
             var nodeInfo = requireNonNull(stakingInfoStore.getForModify(nodeId));
-            if (nodeInfo.deleted()) {
-                log.info("Node {} is deleted, skipping", nodeId);
-                continue;
-            }
 
             // The return value here includes both the new reward sum history, and the reward rate
             // (tinybars-per-hbar) that will be paid to all accounts who had staked to reward for
@@ -213,9 +209,11 @@ public class EndOfStakingPeriodUpdater {
             // We rescale the weight range [0, sumOfConsensusWeights] back to [minStake, maxStake] before
             // externalizing the node stake metadata to stream consumers like mirror nodes
             final var rescaledWeight = rescaleWeight(newWeight, nodeInfo.minStake(), maxStake, totalStake, totalWeight);
-            nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
-                    nodeRewardRates.get(nodeId),
-                    nodeInfo.copyBuilder().stake(rescaledWeight).build()));
+            if(!nodeInfo.deleted()){
+                nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
+                        nodeRewardRates.get(nodeId),
+                        nodeInfo.copyBuilder().stake(rescaledWeight).build()));
+            }
             // Persist the updated staking info
             stakingInfoStore.put(nodeId, newNodeInfo);
         });
