@@ -1642,5 +1642,17 @@ enum ResponseCodeEnum {
      * The fee amount is exceeding the amount that the payer
      * is willing to pay.
      */
-    CUSTOM_FEES_LIMIT_EXCEEDED = 378;
+    MAX_CUSTOM_FEE_LIMIT_EXCEEDED = 378;
+
+    /**
+     * No provided max custom fee, or there are no corresponding
+     * topic fees.
+     */
+    NO_VALID_MAX_CUSTOM_FEE = 379;
+
+    /**
+     * The provided max custom fee list contains fees with
+     * duplicate denominations.
+     */
+    DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST = 380;
 }

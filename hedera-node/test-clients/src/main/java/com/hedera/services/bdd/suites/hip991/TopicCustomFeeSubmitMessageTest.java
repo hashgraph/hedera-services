@@ -41,6 +41,7 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.stream.Stream;
@@ -144,6 +145,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             }
             return associateTokensToCollectors.toArray(SpecOperation[]::new);
         }
+
         // TOPIC_FEE_108
         private SpecOperation createTopicWith10Different2layerFees() {
             final var collectorName = "collector_";
@@ -410,5 +412,30 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L),
                     getAccountBalance(secondCollector).hasTokenBalance(SECOND_TOKEN, 1L));
         }
+
+        @HapiTest
+        @DisplayName("Just some tests")
+        final Stream<DynamicTest> test() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var hbarFee = fixedConsensusHbarFee(1, collector);
+            final var hbarFee2 = fixedConsensusHbarFee(2, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(hbarFee2),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .maxCustomFee(hbarFee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));
+        }
+
+        // questions:
+        // topic with 2 fees with same denomination!
+        // topic with multiple denomination fees
+
     }
 }
