@@ -233,7 +233,7 @@ public class StakeInfoHelper {
             final var stakingInfo = requireNonNull(infoStore.getForModify(nodeId));
             if (!stakingInfo.deleted()) {
                 final var history = stakingInfo.rewardSumHistory();
-                final var rewardRate = stakingInfo.deleted() ? 0 : history.getFirst() - history.get(1);
+                final var rewardRate = history.getFirst() - history.get(1);
                 nodeStakes.add(fromStakingInfo(rewardRate, stakingInfo));
             }
         });

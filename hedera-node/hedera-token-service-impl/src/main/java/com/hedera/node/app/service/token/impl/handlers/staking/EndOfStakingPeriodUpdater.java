@@ -209,7 +209,7 @@ public class EndOfStakingPeriodUpdater {
             // We rescale the weight range [0, sumOfConsensusWeights] back to [minStake, maxStake] before
             // externalizing the node stake metadata to stream consumers like mirror nodes
             final var rescaledWeight = rescaleWeight(newWeight, nodeInfo.minStake(), maxStake, totalStake, totalWeight);
-            if(!nodeInfo.deleted()){
+            if (!nodeInfo.deleted()) {
                 nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
                         nodeRewardRates.get(nodeId),
                         nodeInfo.copyBuilder().stake(rescaledWeight).build()));
