@@ -230,7 +230,7 @@ public final class HandlerUtility {
      * @param schedulingTxnId the scheduling transaction ID
      * @return the scheduled transaction ID
      */
-    static TransactionID scheduledTxnIdFrom(@NonNull final TransactionID schedulingTxnId) {
+    public static TransactionID scheduledTxnIdFrom(@NonNull final TransactionID schedulingTxnId) {
         requireNonNull(schedulingTxnId);
         return schedulingTxnId.scheduled()
                 ? schedulingTxnId

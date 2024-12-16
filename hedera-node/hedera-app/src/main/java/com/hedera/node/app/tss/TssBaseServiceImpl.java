@@ -18,6 +18,7 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.tss.TssBaseService.Status.PENDING_LEDGER_ID;
+import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.tss.handlers.TssUtils.computeParticipantDirectory;
 import static com.hedera.node.app.tss.handlers.TssUtils.hasMetThreshold;
 import static com.swirlds.platform.roster.RosterRetriever.getCandidateRosterHash;
@@ -26,6 +27,7 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -34,15 +36,17 @@ import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.node.app.tss.api.TssLibrary;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
+import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -53,12 +57,12 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.LinkedHashMap;
@@ -69,6 +73,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongFunction;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,7 +98,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final Executor signingExecutor;
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
-    private final AppContext appContext;
+    private final Supplier<Configuration> configSupplier;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -105,7 +111,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
-        this.appContext = requireNonNull(appContext);
+        this.configSupplier = appContext.configSupplier();
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -127,7 +133,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
-        registry.register(new V0570TssBaseSchema());
+        registry.register(new V0580TssBaseSchema());
     }
 
     @Override
@@ -166,9 +172,11 @@ public class TssBaseServiceImpl implements TssBaseService {
 
         final var maxSharesPerNode =
                 context.configuration().getConfigData(TssConfig.class).maxSharesPerNode();
-        final var selfId = (int) context.networkInfo().selfNodeInfo().nodeId();
 
-        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode);
+        // TODO - use the real encryption keys from state
+        final LongFunction<BlsPublicKey> encryptionKeyFn =
+                nodeId -> new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(nodeId)), SIGNATURE_SCHEMA);
+        final var candidateDirectory = computeParticipantDirectory(candidateRoster, maxSharesPerNode, encryptionKeyFn);
         final var activeRoster = requireNonNull(
                 context.storeFactory().readableStore(ReadableRosterStore.class).getActiveRoster());
         final var activeRosterHash = RosterUtils.hash(activeRoster).getBytes();
@@ -206,11 +214,7 @@ public class TssBaseServiceImpl implements TssBaseService {
         final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
-                    if (appContext
-                            .configSupplier()
-                            .get()
-                            .getConfigData(TssConfig.class)
-                            .signWithLedgerId()) {
+                    if (configSupplier.get().getConfigData(TssConfig.class).signWithLedgerId()) {
                         submitShareSignatures(messageHash, lastUsedConsensusTime);
                     } else {
                         // This is only for testing purposes when the candidate roster is
@@ -269,10 +273,10 @@ public class TssBaseServiceImpl implements TssBaseService {
     @Override
     @NonNull
     public Roster chooseRosterForNetwork(
-            @NonNull State state,
-            @NonNull InitTrigger trigger,
-            @NonNull ServiceMigrator serviceMigrator,
-            @NonNull ServicesSoftwareVersion version,
+            @NonNull final State state,
+            @NonNull final InitTrigger trigger,
+            @NonNull final ServiceMigrator serviceMigrator,
+            @NonNull final ServicesSoftwareVersion version,
             @NonNull final Configuration configuration,
             @NonNull final Roster overrideRoster) {
         if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
@@ -304,7 +308,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     @Override
-    public void generateParticipantDirectory(@NonNull final State state) {
+    public void ensureParticipantDirectoryKnown(@NonNull final State state) {
         tssDirectoryAccessor.generateTssParticipantDirectory(state);
     }
 

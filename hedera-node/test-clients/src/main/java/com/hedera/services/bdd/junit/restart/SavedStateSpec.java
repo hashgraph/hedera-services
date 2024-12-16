@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.restart;
+
+import com.hedera.node.app.fixtures.state.FakeState;
+import java.util.function.Consumer;
 
 /**
- * An override for a bootstrap property.
+ * A functional interface to customize the state of a {@link FakeState} object when setting up a {@link RestartHapiTest}.
  */
-public @interface BootstrapOverride {
-    String key();
-
-    String value();
-}
+@FunctionalInterface
+public interface SavedStateSpec extends Consumer<FakeState> {}
