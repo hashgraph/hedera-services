@@ -423,27 +423,28 @@ public class TssBaseServiceImpl implements TssBaseService {
             tssStatus = computeInitialTssStatus(tssStore, rosterStore);
         }
 
-        // collect tss encryption keys for all nodes in the active roster that are not null
-        final var activeRoster = rosterStore.getActiveRoster();
-        final var encryptionKeys = activeRoster.rosterEntries().stream()
-                .map(entry -> tssStore.getTssEncryptionKey(entry.nodeId()))
-                .filter(Objects::nonNull)
-                .toList();
-
         // In order for the TSS state machine to run asynchronously in a separate thread, all the necessary
         // information is collected and passed to the manageTssStatus method.
         final var targetRosterHash = getTargetRosterHash(
                 requireNonNull(rosterStore.getActiveRoster()), rosterStore.getCandidateRoster(), tssStatus);
+
+        // collect tss encryption keys for all nodes in the active roster that are not null
+        final var targetRoster = rosterStore.get(targetRosterHash);
+        final var targetRosterEncryptionKeys = targetRoster.rosterEntries().stream()
+                .map(entry -> tssStore.getTssEncryptionKey(entry.nodeId()))
+                .filter(Objects::nonNull)
+                .toList();
+
         final var voteKey = new TssVoteMapKey(
                 targetRosterHash, appContext.selfNodeInfoSupplier().get().nodeId());
         final var info = new RosterAndTssInfo(
-                activeRoster,
+                rosterStore.getActiveRoster(),
                 requireNonNull(rosterStore.getCurrentRosterHash()),
                 rosterStore.getCandidateRoster(),
                 targetRosterHash,
                 tssStore.getMessagesForTarget(targetRosterHash),
                 tssStore.anyWinningVoteFrom(rosterStore.getCurrentRosterHash(), targetRosterHash, rosterStore),
-                encryptionKeys,
+                targetRosterEncryptionKeys,
                 tssStore.getVote(voteKey));
         CompletableFuture.runAsync(
                 () -> updateTssStatus(isStakePeriodBoundary, consensusNow, info), tssLibraryExecutor);
@@ -564,7 +565,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                 case NONE -> {
                     if (isStakePeriodBoundary) {
                         newRosterToKey = CANDIDATE_ROSTER;
-                        newKeyingStatus = TssKeyingStatus.WAITING_FOR_THRESHOLD_TSS_MESSAGES;
+                        newKeyingStatus = WAITING_FOR_ENCRYPTION_KEYS;
                         haveSentMessageForTargetRoster = false;
                         haveSentVoteForTargetRoster = false;
                     }
@@ -580,7 +581,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 activeRosterHash, candidateRosterHash);
                         case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
                                 activeRosterHash, candidateRosterHash);
-                        case WAITING_FOR_ENCRYPTION_KEYS -> validateThresholdEncryptionKeysReached(info.activeRoster());
+                        case WAITING_FOR_ENCRYPTION_KEYS -> validateThresholdEncryptionKeysReached(
+                                info.candidateRoster());
                     }
                 }
                 case ACTIVE_ROSTER -> {
@@ -591,8 +593,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 Bytes.EMPTY, info.activeRosterHash());
                         case WAITING_FOR_THRESHOLD_TSS_VOTES -> validateVotesAndSubmitIfNeeded(
                                 Bytes.EMPTY, info.activeRosterHash());
-                        case WAITING_FOR_ENCRYPTION_KEYS -> validateThresholdEncryptionKeysReached(
-                                info.candidateRoster());
+                        case WAITING_FOR_ENCRYPTION_KEYS -> validateThresholdEncryptionKeysReached(info.activeRoster());
                     }
                 }
             }
@@ -688,7 +689,7 @@ public class TssBaseServiceImpl implements TssBaseService {
          * Validates the threshold of encryption keys and creates the encryption key for self if not present.
          */
         private void validateThresholdEncryptionKeysReached(final Roster roster) {
-            var numTssEncryptionKeys = info.encryptionKeys().size();
+            var numTssEncryptionKeys = info.targetRosterEncryptionKeys().size();
             final var thresholdReached = numTssEncryptionKeys
                     >= (2 * requireNonNull(roster).rosterEntries().size()) / 3;
             if (thresholdReached) {
@@ -708,7 +709,7 @@ public class TssBaseServiceImpl implements TssBaseService {
      * @param targetRosterHash the target roster hash
      * @param tssMessages      the TSS messages for the target roster
      * @param winningVote      the winning vote for the target roster
-     * @param encryptionKeys   the encryption keys for the active roster
+     * @param targetRosterEncryptionKeys   the encryption keys for the active roster
      * @param selfVote         the self vote for the current node
      */
     public record RosterAndTssInfo(
@@ -718,13 +719,13 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull Bytes targetRosterHash,
             @NonNull List<TssMessageTransactionBody> tssMessages,
             @NonNull Optional<TssVoteTransactionBody> winningVote,
-            @NonNull List<TssEncryptionKeyTransactionBody> encryptionKeys,
+            @NonNull List<TssEncryptionKeyTransactionBody> targetRosterEncryptionKeys,
             TssVoteTransactionBody selfVote) {}
 
     /**
      * Returns the target roster hash based on the current TSS status roster to key.
      *
-     * @param activeRoster    the active roster
+     * @param sourceRoster    the active roster
      * @param candidateRoster the candidate roster
      * @param tssStatus       the TSS status
      * @return the target roster hash

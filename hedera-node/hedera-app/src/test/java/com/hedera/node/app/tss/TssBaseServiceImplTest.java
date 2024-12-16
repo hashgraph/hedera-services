@@ -220,7 +220,7 @@ class TssBaseServiceImplTest {
     @Test
     void managesTssStatusWhenRosterToKeyIsNone() {
         final var oldStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, RosterToKey.NONE, Bytes.EMPTY);
-        final var expectedTssStatus = new TssStatus(WAITING_FOR_THRESHOLD_TSS_MESSAGES, CANDIDATE_ROSTER, Bytes.EMPTY);
+        final var expectedTssStatus = new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, CANDIDATE_ROSTER, Bytes.EMPTY);
         subject.setTssStatus(oldStatus);
         subject.updateTssStatus(
                 true,
