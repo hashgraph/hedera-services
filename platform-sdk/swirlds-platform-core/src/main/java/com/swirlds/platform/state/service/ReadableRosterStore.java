@@ -42,7 +42,7 @@ public interface ReadableRosterStore {
 
     /**
      * Gets the active roster.
-     * Returns the active roster iff:
+     * Returns the active roster if:
      *      the roster state singleton is not null
      *      the list of round roster pairs is not empty
      *      the first round roster pair exists
@@ -84,12 +84,13 @@ public interface ReadableRosterStore {
     /**
      * Get the previous roster hash, if present. If the current roster is the genesis
      * roster, returns null.
+     * @return the previous roster hash.
      */
     @Nullable
     Bytes getPreviousRosterHash();
 
     /**
-     * @return the node ids from the roster entries of both active and candidate rosters combined
+     * @return the node ids from the roster entries of previous, active and candidate rosters combined.
      */
     @NonNull
     Set<EntityNumber> getCombinedRosterEntriesNodeIds();

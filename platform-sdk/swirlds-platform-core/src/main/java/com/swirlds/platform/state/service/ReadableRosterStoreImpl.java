@@ -92,6 +92,21 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     }
 
     /**
+     * Gets the previous roster from RosterHistory.
+     * Returns the previous roster, if present
+     * returns null, if the current roster is from genesis
+     * @return the active roster
+     */
+    @Nullable
+    private Roster getPreviousRoster() {
+        final var previousRosterHash = getPreviousRosterHash();
+        if (previousRosterHash == null) {
+            return null;
+        }
+        return rosterMap.get(ProtoBytes.newBuilder().value(previousRosterHash).build());
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Nullable
@@ -141,9 +156,13 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     @NonNull
     @Override
     public Set<EntityNumber> getCombinedRosterEntriesNodeIds() {
+        final var previousRoster = getPreviousRoster();
         final var activeRoster = getActiveRoster();
         final var candidateRoster = getCandidateRoster();
 
+        final Stream<Long> previousRosterEntries = previousRoster == null
+                ? Stream.empty()
+                : previousRoster.rosterEntries().stream().map(RosterEntry::nodeId);
         final Stream<Long> activeRosterEntries = activeRoster == null
                 ? Stream.empty()
                 : activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
@@ -151,7 +170,7 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
                 ? Stream.empty()
                 : candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
 
-        return Stream.concat(activeRosterEntries, candidateRosterEntries)
+        return Stream.concat(Stream.concat(previousRosterEntries, activeRosterEntries), candidateRosterEntries)
                 .map(EntityNumber::new)
                 .collect(Collectors.toCollection(HashSet::new));
     }
