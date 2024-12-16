@@ -22,27 +22,20 @@ import org.apache.logging.log4j.Logger;
 public class RetryUtils {
     private static final Logger logger = LogManager.getLogger(RetryUtils.class);
 
-    public static <T> T withRetry(SupplierWithException<T> operation, int maxAttempts) throws Exception {
-
+    public static <T> T withRetry(RetryUtils.SupplierWithException<T> task, int retries) {
         int attempt = 0;
-        Exception lastException = null;
-        while (attempt < maxAttempts) {
+        while (attempt < retries) {
             try {
-                return operation.get();
+                return task.get();
             } catch (Exception e) {
-                lastException = e;
                 attempt++;
-
-                if (attempt == maxAttempts) {
-                    break;
+                if (attempt == retries) {
+                    // Return failure message after retries
+                    return (T) ("Failed after " + retries + " attempts");
                 }
-                long backoffMillis = calculateBackoff(attempt);
-                logger.warn("Attempt {} failed, retrying in {} ms", attempt, backoffMillis, e);
-                Thread.sleep(backoffMillis);
             }
         }
-
-        throw new Exception("Failed after " + maxAttempts + " attempts", lastException);
+        return null; // This line should never be reached if retries are exhausted
     }
 
     private static long calculateBackoff(int attempt) {

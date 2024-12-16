@@ -172,7 +172,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
         }
     }
 
-    private String getBlockMd5Internal(String objectKey) {
+    String getBlockMd5Internal(String objectKey) {
         try {
             var stat = minioClients
                     .getFirst()

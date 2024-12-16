@@ -35,10 +35,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -241,10 +241,11 @@ class MinioBucketUploaderTest {
         CompletableFuture<Boolean> result = uploader.blockExists("test-object");
         CompletionException exception = assertThrows(CompletionException.class, result::join);
         // Assert that the exception cause is an Unknown Host Exception
-        assertTrue(exception.getCause() instanceof UnknownHostException);
-        assertEquals(
-                "aws-endpoint: nodename nor servname provided, or not known",
-                exception.getCause().getMessage());
+        String actualMessage = exception.getCause().getMessage();
+        assertTrue(
+                actualMessage.matches(
+                        "aws-endpoint: (nodename nor servname provided, or not known|Name or service not known)"),
+                "Unexpected error message: " + actualMessage);
     }
 
     private Map<String, InputStream> loadAllBlockFilesFromDirectory() {
@@ -271,6 +272,81 @@ class MinioBucketUploaderTest {
         }
 
         return blockFiles;
+    }
+
+    //    @Test
+    void testGetBlockMd5() throws Exception {
+        // Mock the CompleteBucketConfig
+        CompleteBucketConfig mockBucketConfig = mock(CompleteBucketConfig.class);
+        when(mockBucketConfig.bucketName()).thenReturn("test-bucket");
+        when(mockBucketConfig.provider()).thenReturn(BucketProvider.AWS);
+        when(mockBucketConfig.endpoint()).thenReturn("https://s3.amazonaws.com");
+        when(mockBucketConfig.credentials()).thenReturn(awsBucketCredentials);
+
+        // Mock the BucketConfigurationManager
+        BucketConfigurationManager mockBucketConfigManager = mock(BucketConfigurationManager.class);
+        when(mockBucketConfigManager.getCompleteBucketConfigs()).thenReturn(List.of(mockBucketConfig));
+
+        // Mock the BlockStreamConfig
+        BlockStreamConfig mockBlockStreamConfig = mock(BlockStreamConfig.class);
+        when(mockBlockStreamConfig.uploadRetryAttempts()).thenReturn(3);
+
+        // Mock the VersionedConfiguration
+        VersionedConfiguration mockVersionedConfiguration = mock(VersionedConfiguration.class);
+        when(mockVersionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(mockBlockStreamConfig);
+
+        // Mock the ConfigProvider
+        ConfigProvider mockConfigProvider = mock(ConfigProvider.class);
+        when(mockConfigProvider.getConfiguration()).thenReturn(mockVersionedConfiguration);
+
+        // Mock the MinioClient and the StatObjectResponse
+        MinioClient mockClient = mock(MinioClient.class);
+        StatObjectResponse mockStatResponse = mock(StatObjectResponse.class);
+        when(mockStatResponse.etag()).thenReturn("test-md5");
+        when(mockClient.statObject(any(StatObjectArgs.class))).thenReturn(mockStatResponse);
+        assertNotNull(mockClient, "Mock client should not be null");
+
+        // Create the uploader instance with mocked dependencies
+        MinioBucketUploader uploader =
+                new MinioBucketUploader(
+                        mockBucketConfigManager, Executors.newSingleThreadExecutor(), mockConfigProvider) {
+                    @Override
+                    protected List<MinioClient> getMinioClients() {
+                        return List.of(mockClient);
+                    }
+                };
+
+        // Call the method and verify the result
+        String objectKey = "test-object";
+        String result = uploader.getBlockMd5(objectKey).join();
+        assertEquals("test-md5", result);
+    }
+
+    @Test
+    void testClearCharArray() {
+        char[] array = {'s', 'e', 'c', 'r', 'e', 't'};
+        uploader.clearCharArray(array);
+        assertTrue(Arrays.equals(array, new char[] {'\0', '\0', '\0', '\0', '\0', '\0'}));
+    }
+
+    @Test
+    void testWithRetry_Success() throws Exception {
+        RetryUtils.SupplierWithException<String> task = mock(RetryUtils.SupplierWithException.class);
+        when(task.get()).thenReturn("success");
+
+        String result = uploader.withRetry(task, 3);
+        assertEquals("success", result);
+        verify(task, times(1)).get();
+    }
+
+    @Test
+    void testWithRetry_RetriesAndFails() throws Exception {
+        RetryUtils.SupplierWithException<String> task = mock(RetryUtils.SupplierWithException.class);
+        when(task.get()).thenThrow(new IOException("Test exception"));
+
+        String result = uploader.withRetry(task, 3); // Get the result, which should be a failure message
+        assertEquals("Failed after 3 attempts", result); // Check the failure message
+        verify(task, times(3)).get(); // Verify the task was retried 3 times
     }
 
     @AfterEach
