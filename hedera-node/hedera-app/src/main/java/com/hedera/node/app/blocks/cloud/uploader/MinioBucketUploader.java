@@ -66,53 +66,49 @@ public class MinioBucketUploader implements CloudBucketUploader {
     }
 
     @Override
-    public CompletableFuture<Void> uploadBlock(Path blockPath) {
-        return CompletableFuture.runAsync(
-                () -> {
-                    if (!Files.exists(blockPath)) {
-                        throw new IllegalArgumentException("Block path does not exist: " + blockPath);
-                    }
-                    String fileName = blockPath.getFileName().toString();
-                    String objectKey = fileName.endsWith(".blk")
-                            ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
-                            : "";
-                    try {
-                        // First check if object already exists
-                        if (blockExistsOnCloud(objectKey)) {
-                            String existingMd5 = getBlockMd5Internal(objectKey);
-                            if (existingMd5.equals(calculateMD5Hash(blockPath))) {
-                                logger.debug("Block {} already exists with matching MD5", objectKey);
-                                return;
-                            }
-                            throw new HashMismatchException(objectKey, provider.toString());
-                        }
-                        // Upload with retry logic
-                        RetryUtils.withRetry(
-                                () -> {
-                                    minioClient.uploadObject(UploadObjectArgs.builder()
-                                            .bucket(bucketName)
-                                            .object(objectKey)
-                                            .filename(blockPath.toString())
-                                            .contentType("application/octet-stream")
-                                            .build());
-                                    return null;
-                                },
-                                maxRetryAttempts);
-                    } catch (Exception e) {
-                        throw new CompletionException("Failed to upload block " + objectKey, e);
-                    }
-                },
-                uploadExecutor);
+    public void uploadBlock(Path blockPath) {
+        if (!Files.exists(blockPath)) {
+            throw new IllegalArgumentException("Block path does not exist: " + blockPath);
+        }
+        String fileName = blockPath.getFileName().toString();
+        String objectKey = fileName.endsWith(".blk")
+                ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
+                : "";
+        try {
+            // First check if object already exists
+            if (blockExistsOnCloud(objectKey)) {
+                String existingMd5 = getBlockMd5Internal(objectKey);
+                if (existingMd5.equals(calculateMD5Hash(blockPath))) {
+                    logger.debug("Block {} already exists with matching MD5", objectKey);
+                    return;
+                }
+                throw new HashMismatchException(objectKey, provider.toString());
+            }
+            // Upload with retry logic
+            RetryUtils.withRetry(
+                    () -> {
+                        minioClient.uploadObject(UploadObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(objectKey)
+                                .filename(blockPath.toString())
+                                .contentType("application/octet-stream")
+                                .build());
+                        return null;
+                    },
+                    maxRetryAttempts);
+        } catch (Exception e) {
+            throw new CompletionException("Failed to upload block " + objectKey, e);
+        }
     }
 
     @Override
-    public CompletableFuture<Boolean> blockExists(String objectKey) {
-        return CompletableFuture.supplyAsync(() -> blockExistsOnCloud(objectKey), uploadExecutor);
+    public boolean blockExists(String objectKey) {
+        return blockExistsOnCloud(objectKey);
     }
 
     @Override
-    public CompletableFuture<String> getBlockMd5(String objectKey) {
-        return CompletableFuture.supplyAsync(() -> getBlockMd5Internal(objectKey), uploadExecutor);
+    public String getBlockMd5(String objectKey) {
+        return getBlockMd5Internal(objectKey);
     }
 
     @Override

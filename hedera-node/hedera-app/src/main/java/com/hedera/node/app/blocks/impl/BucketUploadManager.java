@@ -165,8 +165,8 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
         return CompletableFuture.runAsync(
                 () -> {
                     try {
-                        uploader.uploadBlock(blockPath).get();
-                    } catch (ExecutionException | InterruptedException e) {
+                        uploader.uploadBlock(blockPath);
+                    } catch (HashMismatchException e) {
                         logger.error(
                                 "Error uploading block to {}: {}",
                                 uploader.getProvider().name(),

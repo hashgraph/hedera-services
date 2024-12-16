@@ -153,9 +153,7 @@ class MinioBucketUploaderTest {
         // Spy on the uploader
         uploader = spy(uploader);
 
-        CompletableFuture<Void> result = uploader.uploadBlock(tempFile);
-
-        assertDoesNotThrow(result::join);
+        assertDoesNotThrow(() -> uploader.uploadBlock(tempFile));
         ArgumentCaptor<UploadObjectArgs> argsCaptor = ArgumentCaptor.forClass(UploadObjectArgs.class);
         verify(minioClient).uploadObject(argsCaptor.capture());
 
@@ -187,9 +185,9 @@ class MinioBucketUploaderTest {
             }
 
             // Pass the Path to uploader.uploadBlock()
-            CompletableFuture<Void> result = uploader.uploadBlock(blockFile);
             //            assertDoesNotThrow(result::join); // Ensure no exceptions are thrown
-            assertThrows(TimeoutException.class, () -> result.get(1, TimeUnit.SECONDS));
+            Path finalBlockFile = blockFile;
+            assertThrows(TimeoutException.class, () -> uploader.uploadBlock(finalBlockFile));
         }
     }
 
@@ -204,28 +202,22 @@ class MinioBucketUploaderTest {
         Files.delete(tempFile);
 
         // Execute the uploadBlock method
-        CompletableFuture<Void> result = uploader.uploadBlock(tempFile);
-
         // Verify the behavior
-        assertThrows(TimeoutException.class, () -> result.get(1, TimeUnit.SECONDS));
+        assertThrows(TimeoutException.class, () -> uploader.uploadBlock(tempFile));
         verify(minioClient, never()).uploadObject(any());
     }
 
     //    @Test
     void testBlockExistsReturnsTrue() throws Exception {
         when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mock(io.minio.StatObjectResponse.class));
-
-        CompletableFuture<Boolean> result = uploader.blockExists("test-object");
-
-        assertTrue(result.join());
+        assertTrue( uploader.blockExists("test-object"));
     }
 
     //    @Test
     void testBlockExistsReturnsFalse() throws Exception {
         // Mock minioClient behavior
         when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mockStatResponse);
-        CompletableFuture<Boolean> result = uploader.blockExists("test-object");
-        assertFalse(result.join());
+        assertFalse(uploader.blockExists("test-object"));
     }
 
     private Map<String, InputStream> loadAllBlockFilesFromDirectory() {
