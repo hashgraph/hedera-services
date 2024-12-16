@@ -75,13 +75,12 @@ public class UpdateServerFiles extends HapiSuite {
     }
 
     private List<Stream<DynamicTest>> postiveTests() {
-        return Arrays.asList(uploadGivenDirectory());
+        return Arrays.asList(performsFreezeUpgrade());
     }
 
     // Zip all files under target directory and add an unzip and launch script to it
     // then send to server to update server
-    final Stream<DynamicTest> uploadGivenDirectory() {
-
+    final Stream<DynamicTest> performsFreezeUpgrade() {
         log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist
         if (!new File(uploadPath).exists()) {
@@ -95,9 +94,7 @@ public class UpdateServerFiles extends HapiSuite {
             final File directory = new File(temp_dir);
             if (directory.exists()) {
                 // delete everything in it recursively
-
                 FileUtils.cleanDirectory(directory);
-
             } else {
                 directory.mkdir();
             }

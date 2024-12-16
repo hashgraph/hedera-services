@@ -252,7 +252,7 @@ public class FileUpdateSuite {
                     opLog.info(
                             "New 2k   : {} ({})",
                             to2kOp.getResponseRecord().getTransactionFee(),
-                            (to2kOp.getResponseRecord().getTransactionFee() - createFee));
+                            +(to2kOp.getResponseRecord().getTransactionFee() - createFee));
                     opLog.info(
                             "Extension: {} ({})",
                             extensionOp.getResponseRecord().getTransactionFee(),
