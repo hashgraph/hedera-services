@@ -23,7 +23,6 @@ import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ec
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
-import com.esaulpaugh.headlong.rlp.RLPList;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
@@ -47,93 +46,59 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 
     public static byte[] calculateSignableMessage(EthTxData ethTx) {
         return switch (ethTx.type()) {
-            case LEGACY_ETHEREUM -> (ethTx.chainId() != null && ethTx.chainId().length > 0)
-                    ? RLPEncoder.encodeAsList(Integers.toBytes(ethTx.nonce()),
-                    ethTx.gasPrice(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData(),
-                    ethTx.chainId(),
-                    Integers.toBytes(0),
-                    Integers.toBytes(0))
-                    : RLPEncoder.encodeAsList(
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.gasPrice(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData());
+            case LEGACY_ETHEREUM -> resolveLegacy(ethTx);
             case EIP1559 -> resolveEIP1559(ethTx);
             case EIP2930 -> resolveEIP2930(ethTx);
         };
     }
 
+    static byte[] resolveLegacy(EthTxData ethTx) {
+        return ethTx.chainId() != null && ethTx.chainId().length > 0
+                ?
+                RLPEncoder.encodeAsList(
+                        Integers.toBytes(ethTx.nonce()),
+                        ethTx.gasPrice(),
+                        Integers.toBytes(ethTx.gasLimit()),
+                        ethTx.to(),
+                        Integers.toBytesUnsigned(ethTx.value()),
+                        ethTx.callData(),
+                        ethTx.chainId(),
+                        Integers.toBytes(0),
+                        Integers.toBytes(0)) :
+                RLPEncoder.encodeAsList(
+                        Integers.toBytes(ethTx.nonce()),
+                        ethTx.gasPrice(),
+                        Integers.toBytes(ethTx.gasLimit()),
+                        ethTx.to(),
+                        Integers.toBytesUnsigned(ethTx.value()),
+                        ethTx.callData());
+    }
+
     static byte[] resolveEIP1559(EthTxData ethTx) {
-        if (ethTx.accessListAsRLP() != null) {
-            return RLPEncoder.encodeSequentially(Integers.toBytes(2), new Object[] {
-                    ethTx.chainId(),
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.maxPriorityGas(),
-                    ethTx.maxGas(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData(),
-                    encodeRLPList(ethTx.accessListAsRLP())
-            });
-        }
-        else {
-            return RLPEncoder.encodeSequentially(Integers.toBytes(2), new Object[] {
-                    ethTx.chainId(),
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.maxPriorityGas(),
-                    ethTx.maxGas(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData(),
-                    new Object[0]
-            });
-        }
+        return RLPEncoder.encodeSequentially(Integers.toBytes(2), new Object[] {
+                ethTx.chainId(),
+                Integers.toBytes(ethTx.nonce()),
+                ethTx.maxPriorityGas(),
+                ethTx.maxGas(),
+                Integers.toBytes(ethTx.gasLimit()),
+                ethTx.to(),
+                Integers.toBytesUnsigned(ethTx.value()),
+                ethTx.callData(),
+                ethTx.accessListAsRlp() != null ? ethTx.accessListAsRlp() : new Object[0]
+        });
     }
 
     static byte[] resolveEIP2930(EthTxData ethTx) {
-        if (ethTx.accessListAsRLP() != null) {
-            return RLPEncoder.encodeSequentially(Integers.toBytes(1), new Object[] {
-                    ethTx.chainId(),
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.gasPrice(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData(),
-                    encodeRLPList(ethTx.accessListAsRLP())
-            });
-        }
-        else {
-            return RLPEncoder.encodeSequentially(Integers.toBytes(1), new Object[] {
-                    ethTx.chainId(),
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.gasPrice(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData(),
-                    new Object[0]
-            });
-        }
-    }
-
-    static Object[] encodeRLPList(RLPList rlpList) {
-        return rlpList.elements().stream().map(rlpItem -> {
-            if (rlpItem.isList()) {
-                return encodeRLPList(rlpItem.asRLPList());
-            }
-            else {
-                return rlpItem.data();
-            }
-        }).toArray();
+        return RLPEncoder.encodeSequentially(Integers.toBytes(1), new Object[] {
+                ethTx.chainId(),
+                Integers.toBytes(ethTx.nonce()),
+                ethTx.gasPrice(),
+                Integers.toBytes(ethTx.gasLimit()),
+                ethTx.to(),
+                Integers.toBytesUnsigned(ethTx.value()),
+                ethTx.callData(),
+                ethTx.accessListAsRlp() != null ? ethTx.accessListAsRlp() : new Object[0]
+        });
     }
 
     static byte[] recoverCompressedPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
