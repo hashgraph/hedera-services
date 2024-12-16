@@ -45,9 +45,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_VALID_MAX_CUSTOM_FEE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -55,6 +56,7 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.stream.Stream;
@@ -158,6 +160,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             }
             return associateTokensToCollectors.toArray(SpecOperation[]::new);
         }
+
         // TOPIC_FEE_108
         private SpecOperation createTopicWith10Different2layerFees() {
             final var collectorName = "collector_";
@@ -522,7 +525,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     submitMessageTo(TOPIC)
                             .message("TEST")
                             .payingWith("payingAccount")
-                            .hasKnownStatus(CUSTOM_FEES_LIMIT_EXCEEDED),
+                            .hasKnownStatus(NO_VALID_MAX_CUSTOM_FEE),
                     getAccountBalance(collector).hasTinyBars(ONE_HBAR));
         }
 
@@ -567,7 +570,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .maxCustomFee(fixedConsensusHtsFee(1, BASE_TOKEN, collector))
                             .message("TEST")
                             .payingWith(SUBMITTER)
-                            .hasKnownStatus(CUSTOM_FEES_LIMIT_EXCEEDED),
+                            .hasKnownStatus(MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0));
         }
 
@@ -587,7 +590,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .maxCustomFee(fixedConsensusHtsFee(2, SECOND_TOKEN, collector))
                             .message("TEST")
                             .payingWith(SUBMITTER)
-                            .hasKnownStatus(CUSTOM_FEES_LIMIT_EXCEEDED),
+                            .hasKnownStatus(MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
                     getAccountBalance(collector).hasTokenBalance(SECOND_TOKEN, 0));
         }
@@ -626,5 +629,73 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .payingWith(SUBMITTER)
                             .hasKnownStatus(ACCOUNT_DELETED));
         }
+
+        @HapiTest
+        @DisplayName("Just some tests")
+        final Stream<DynamicTest> test() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var hbarFee = fixedConsensusHbarFee(1, collector);
+            final var hbarFee2 = fixedConsensusHbarFee(2, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(hbarFee2),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .maxCustomFee(fee1)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));
+        }
+
+        @HapiTest
+        @DisplayName("Test multiple fees with same denomination")
+        final Stream<DynamicTest> multipleFeesSameDenom() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var correctFeeLimit = fixedConsensusHtsFee(3, BASE_TOKEN, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(fee1),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(correctFeeLimit)
+                            .message("TEST")
+                            .payingWith(SUBMITTER));
+        }
+
+        @HapiTest
+        @DisplayName("Test multiple hbar fees with")
+        final Stream<DynamicTest> multipleHbarFees() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHbarFee(2, collector);
+            final var fee1 = fixedConsensusHbarFee(1, collector);
+            final var correctFeeLimit = fixedConsensusHbarFee(3, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(fee1),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(correctFeeLimit)
+                            .message("TEST")
+                            .payingWith(SUBMITTER));
+        }
+
+        // questions:
+        // topic with 2 fees with same denomination!
+        // topic with multiple denomination fees
     }
 }
