@@ -61,7 +61,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.startup.Log4jSetup;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -95,9 +94,6 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
@@ -269,11 +265,6 @@ public class ServicesMain implements SwirldMain {
         // We want to be able to see the schema migration logs, so init logging here
         initLogging();
         logger.info("Starting node {} with version {}", selfId, version);
-        logger.info(
-                "As node{}, I think my gossip cert hash is {}",
-                selfId.id(),
-                CommonUtils.hex(com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
-                        keysAndCerts.sigCert().getEncoded())));
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
@@ -330,18 +321,6 @@ public class ServicesMain implements SwirldMain {
                         return buildAddressBook(retrieveActiveOrGenesisRoster(state));
                     });
             rosterHistory = buildRosterHistory((State) initialState.get().getState());
-        }
-        //        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/off/node" + selfId.id() + "/history-"
-        //                + Instant.now().getEpochSecond() + ".txt";
-        final var loc = "/Users/michaeltinker/AlsoDev/hedera-services/on/node" + selfId.id() + "/history-"
-                + Instant.now().getEpochSecond() + ".txt";
-        try (final var fout = Files.newBufferedWriter(Paths.get(loc))) {
-            fout.write(rosterHistory.getHistory().toString());
-            fout.newLine();
-            fout.write("---");
-            fout.newLine();
-            fout.write(rosterHistory.getRosters().toString());
-            fout.newLine();
         }
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,

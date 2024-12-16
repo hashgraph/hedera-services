@@ -125,7 +125,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -159,7 +158,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateEncodingException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -559,21 +557,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         .activeProfile(),
                 trigger,
                 deserializedVersion == null ? "<NONE>" : deserializedVersion);
-        if (diskAddressBook != null) {
-            for (int i = 0, n = diskAddressBook.getSize(); i < n; i++) {
-                final var nodeId = diskAddressBook.getNodeId(i);
-                final var address = diskAddressBook.getAddress(nodeId);
-                try {
-                    logger.info(
-                            "Generated cert hash :: node{} -> {}",
-                            nodeId,
-                            CommonUtils.hex(com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
-                                    address.getSigCert().getEncoded())));
-                } catch (CertificateEncodingException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
         if (trigger != GENESIS) {
             requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
         }

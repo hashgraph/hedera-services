@@ -24,7 +24,6 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
@@ -62,14 +61,6 @@ public interface AddressBookTransplantSchema {
         network.nodeMetadata().stream()
                 .filter(NodeMetadata::hasNode)
                 .map(NodeMetadata::nodeOrThrow)
-                .forEach(node -> {
-                    nodes.put(new EntityNumber(node.nodeId()), node);
-                    log.info("Adopted node{} from override network :: {}", node.nodeId(), node);
-                    log.info(
-                            " -> node{} cert hash is {}",
-                            node.nodeId(),
-                            CommonUtils.hex(com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
-                                    node.gossipCaCertificate().toByteArray())));
-                });
+                .forEach(node -> nodes.put(new EntityNumber(node.nodeId()), node));
     }
 }

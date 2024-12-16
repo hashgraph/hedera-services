@@ -19,7 +19,6 @@ package com.hedera.node.app.roster.schemas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.roster.RosterService;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -28,7 +27,6 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,23 +57,7 @@ public interface RosterTransplantSchema {
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
                 final var roster = RosterUtils.rosterFrom(network);
-                final var rosterHash = RosterUtils.hash(roster);
-                log.info(
-                        "Before putting {} ({} nodes), state was {}",
-                        rosterHash,
-                        roster.rosterEntries().size(),
-                        rosterStore.getCurrentRosterState());
                 rosterStore.putActiveRoster(roster, activeRoundNumber);
-                log.info("After putting {}, state was {}", rosterHash, rosterStore.getCurrentRosterState());
-                log.info(
-                        "Cert hashes are, \n  {}",
-                        roster.rosterEntries().stream()
-                                .map(entry -> "node" + entry.nodeId() + " => "
-                                        + CommonUtils.hex(
-                                                com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
-                                                        entry.gossipCaCertificate()
-                                                                .toByteArray())))
-                                .collect(Collectors.joining("\n  ")));
                 startupNetworks.setOverrideRound(roundNumber);
             });
             return overrideNetwork.isPresent();
