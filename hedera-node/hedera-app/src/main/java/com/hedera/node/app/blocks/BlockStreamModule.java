@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.blocks;
 
-import com.hedera.node.app.blocks.cloud.uploader.CloudUploaderModule;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.BucketUploadManager;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
@@ -32,7 +31,7 @@ import java.nio.file.FileSystem;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module(includes = CloudUploaderModule.class)
+@Module()
 public interface BlockStreamModule {
     @Binds
     @Singleton
