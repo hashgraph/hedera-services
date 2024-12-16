@@ -90,7 +90,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("the custom fee to 50 billion(max HBAR) + 1")
         final Stream<DynamicTest> updateTheCustomFeeTo50BillionPlusOne() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify custom fee is correct
                     createTopic(TOPIC)
                             .adminKeyName(ADMIN_KEY)
@@ -102,13 +102,13 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHbarFee(FIFTY_BILLION + 1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(FIFTY_BILLION + 1, COLLECTOR))));
+                    getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(FIFTY_BILLION + 1, COLLECTOR)));
         }
 
         @HapiTest
         @DisplayName("the fee schedule key")
         final Stream<DynamicTest> updateFeeScheduleKey() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify that the keys are correct
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                     getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
@@ -117,13 +117,13 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
-                    getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2)));
+                    getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2));
         }
 
         @HapiTest
         @DisplayName("the custom fee from FT to HBAR")
         final Stream<DynamicTest> updateCustomFeeFromFTToHBAR() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify custom fee is correct
                     createTopic(TOPIC)
                             .adminKeyName(ADMIN_KEY)
@@ -135,13 +135,13 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))));
+                    getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
         }
 
         @HapiTest
         @DisplayName("the custom fee from HBAR to FT")
         final Stream<DynamicTest> updateCustomFeeFromHBARToFT() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify custom fee is correct
                     createTopic(TOPIC)
                             .adminKeyName(ADMIN_KEY)
@@ -153,13 +153,13 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR))));
+                    getTopicInfo(TOPIC).hasCustomFee(expectedConsensusFixedHTSFee(1, TOKEN, COLLECTOR)));
         }
 
         @HapiTest
         @DisplayName("to remove the custom fees")
         final Stream<DynamicTest> updateToRemoveCustomFees() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify custom fee is correct
                     createTopic(TOPIC)
                             .adminKeyName(ADMIN_KEY)
@@ -169,13 +169,13 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                     // Update the topic removing the custom fee
                     updateTopic(TOPIC).withEmptyCustomFee().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasNoCustomFee()));
+                    getTopicInfo(TOPIC).hasNoCustomFee());
         }
 
         @HapiTest
         @DisplayName("to remove one of the two custom fees")
         final Stream<DynamicTest> updateCustomFeesToRemoveOneOfTwo() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic with two custom fees
                     createTopic(TOPIC)
                             .adminKeyName(ADMIN_KEY)
@@ -190,7 +190,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasCustomFeeSize(1).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))));
+                    getTopicInfo(TOPIC).hasCustomFeeSize(1).hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR)));
         }
 
         @HapiTest
@@ -299,14 +299,14 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("the fee schedule key to empty")
         final Stream<DynamicTest> updateTheFeeScheduleKeyToEmpty() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify that the keys are correct
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                     getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                     // Update the fee schedule to remove the fee schedule key
                     updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasNoFeeScheduleKey()));
+                    getTopicInfo(TOPIC).hasNoFeeScheduleKey());
         }
 
         @HapiTest
@@ -334,7 +334,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> updateToAddOneMoreFeeExemptKey() {
             final var key = "key";
             final var key2 = "key2";
-            return hapiTest(flattened(
+            return hapiTest(
                     newKeyNamed(key),
 
                     // Create a topic with a single key in feeExemptKeyList
@@ -351,7 +351,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC).feeExemptKeys(key, key2).signedByPayerAnd(ADMIN_KEY),
                     getTopicInfo(TOPIC)
                             .hasCustomFee(expectedConsensusFixedHbarFee(1, COLLECTOR))
-                            .hasFeeExemptKeys(List.of(key, key2))));
+                            .hasFeeExemptKeys(List.of(key, key2)));
         }
 
         @HapiTest
@@ -360,7 +360,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
             final var key = "key";
             final var key2 = "key2";
 
-            return hapiTest(flattened(
+            return hapiTest(
                     newKeyNamed(key),
                     newKeyNamed(key2),
 
@@ -373,7 +373,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                     // Update the topic to remove one of the keys
                     updateTopic(TOPIC).feeExemptKeys(key2).signedByPayerAnd(ADMIN_KEY),
-                    getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key2))));
+                    getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key2)));
         }
 
         @HapiTest
@@ -382,7 +382,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
             final var key = "key";
             final var key2 = "key2";
 
-            return hapiTest(flattened(
+            return hapiTest(
                     newKeyNamed(key),
                     newKeyNamed(key2),
 
@@ -395,7 +395,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                     // Update the topic to remove all the fee except keys
                     updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(ADMIN_KEY),
-                    getTopicInfo(TOPIC).hasEmptyFeeExemptKeyList()));
+                    getTopicInfo(TOPIC).hasEmptyFeeExemptKeyList());
         }
 
         @HapiTest
@@ -406,7 +406,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
             final var key3 = "key3";
             final var key4 = "key4";
 
-            return hapiTest(flattened(
+            return hapiTest(
                     newKeyNamed(key),
                     newKeyNamed(key2),
                     newKeyNamed(key3),
@@ -421,7 +421,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
 
                     // Update the topic to remove all the fee except keys
                     updateTopic(TOPIC).feeExemptKeys(key3, key4).signedByPayerAnd(ADMIN_KEY),
-                    getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key3, key4))));
+                    getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key3, key4)));
         }
 
         @HapiTest
@@ -493,7 +493,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("to remove the fee schedule key that doesn't exists")
         final Stream<DynamicTest> removeTheFeeScheduleKeyWhenItDoNotExists() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY),
 
@@ -501,7 +501,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withEmptyFeeScheduleKey()
                             .signedByPayerAnd(ADMIN_KEY)
-                            .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED)));
+                            .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
         }
 
         @HapiTest
@@ -643,7 +643,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("fee schedule key and sign with the old one")
         final Stream<DynamicTest> updateFeeScheduleKeySignWithOld() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify that the keys are correct
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
                     getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
@@ -652,7 +652,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                            .hasKnownStatus(INVALID_SIGNATURE)));
+                            .hasKnownStatus(INVALID_SIGNATURE));
         }
 
         @HapiTest
@@ -710,7 +710,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("the custom fee without having a custom fee and a schedule key")
         final Stream<DynamicTest> updateCustomFeeWithoutHavingCustomFeeAndScheduleKey() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY),
 
@@ -718,13 +718,13 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY)
-                            .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET)));
+                            .hasKnownStatus(FEE_SCHEDULE_KEY_NOT_SET));
         }
 
         @HapiTest
         @DisplayName("to remove the custom fees sign with admin key only")
         final Stream<DynamicTest> removeCustomFeeSignWithAdminOnly() {
-            return hapiTest(flattened(
+            return hapiTest(
                     // Create a topic and verify custom fee is correct
                     createTopic(TOPIC)
                             .adminKeyName(ADMIN_KEY)
@@ -735,7 +735,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     updateTopic(TOPIC)
                             .withEmptyCustomFee()
                             .signedByPayerAnd(ADMIN_KEY)
-                            .hasKnownStatus(INVALID_SIGNATURE)));
+                            .hasKnownStatus(INVALID_SIGNATURE));
         }
 
         @HapiTest
@@ -975,27 +975,27 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("the custom fee signed with the wrong fee schedule key")
         final Stream<DynamicTest> updateCustomFeeSingledWithTheWrongFeeScheduleKey() {
-            return hapiTest(flattened(
+            return hapiTest(
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                     // Update the fee schedule and sign with the wrong key
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2)
-                            .hasKnownStatus(INVALID_SIGNATURE)));
+                            .hasKnownStatus(INVALID_SIGNATURE));
         }
 
         @HapiTest
         @DisplayName("the custom fee without signing with the fee schedule key")
         final Stream<DynamicTest> updateCustomFeeWithoutSigningWithFeeScheduleKey() {
-            return hapiTest(flattened(
+            return hapiTest(
                     createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
 
                     // Update the fee schedule and sign with the wrong key
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(fixedConsensusHbarFee(1, COLLECTOR))
                             .signedByPayerAnd(ADMIN_KEY)
-                            .hasKnownStatus(INVALID_SIGNATURE)));
+                            .hasKnownStatus(INVALID_SIGNATURE));
         }
 
         @HapiTest
