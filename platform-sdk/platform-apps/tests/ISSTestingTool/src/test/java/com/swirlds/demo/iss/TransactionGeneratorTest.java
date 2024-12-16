@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.iss;
 
+import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -44,12 +45,15 @@ class TransactionGeneratorTest {
 
         // When
         when(platform.getRoster()).thenReturn(roster);
+        when(issTestingToolState.encodeSystemTransaction(any()))
+                .thenReturn(Bytes.wrap(intToByteArray(random.nextInt())));
 
         final var transactionGenerator =
                 new TransactionGenerator(random, platform, networkWideTransactionsPerSecond, issTestingToolState);
         transactionGenerator.start();
 
         // Then
+        verify(platform, atLeastOnce()).getRoster();
         verify(issTestingToolState, atLeastOnce()).encodeSystemTransaction(any());
         verify(platform, atLeastOnce()).createTransaction(any());
     }
