@@ -30,12 +30,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /*
  * The BlockRetentionManager is responsible for managing the lifecycle of block files in the uploaded directory after a configurable retention period.
  */
+@Singleton
 public class BlockRetentionManager {
     private static final Logger log = LogManager.getLogger(BlockRetentionManager.class);
     private final Path uploadedDir;
@@ -45,15 +48,19 @@ public class BlockRetentionManager {
     private final ExecutorService cleanupExecutor;
     public static final String BLOCK_FILE_EXTENSION = ".blk";
     public static final String BLOCK_FILE_EXTENSION_GZ = ".blk.gz";
+    private final BlockStreamBucketMetrics blockStreamBucketMetrics;
 
+    @Inject
     public BlockRetentionManager(
             @NonNull final Path uploadedDir,
             @NonNull final Duration retentionPeriod,
             @NonNull final Duration cleanupInterval,
-            final int cleanupThreadPoolSize) {
+            final int cleanupThreadPoolSize,
+            @NonNull final BlockStreamBucketMetrics blockStreamBucketMetrics) {
         this.uploadedDir = requireNonNull(uploadedDir, "uploadedDir must not be null");
         this.retentionPeriod = requireNonNull(retentionPeriod, "retentionPeriod must not be null");
         this.cleanupInterval = requireNonNull(cleanupInterval, "cleanupInterval must not be null");
+        this.blockStreamBucketMetrics = (requireNonNull(blockStreamBucketMetrics, "metrics must not be null"));
 
         this.cleanupExecutor = Executors.newFixedThreadPool(cleanupThreadPoolSize);
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -73,20 +80,29 @@ public class BlockRetentionManager {
     }
 
     private void cleanupExpiredBlocks() {
-        try (Stream<Path> files = Files.list(uploadedDir)) {
-            // Collect files into a list to avoid consuming the stream multiple times
-            List<Path> fileList =
-                    files.filter(this::isBlockFile).filter(this::isFileExpired).toList();
+        // Collect files into a list to avoid consuming the stream multiple times
+        List<Path> fileList = listFiles()
+                .filter(file -> isBlockFile(file) && isFileExpired(file))
+                .toList();
 
-            // Submit deletion tasks for each file
-            List<CompletableFuture<Void>> futures = fileList.stream()
-                    .map(file -> CompletableFuture.runAsync(() -> deleteFile(file), cleanupExecutor))
-                    .toList();
+        // Submit deletion tasks for each file
+        List<CompletableFuture<Void>> futures = fileList.stream()
+                .map(file -> CompletableFuture.runAsync(() -> deleteFile(file), cleanupExecutor))
+                .toList();
 
-            // Wait for all deletion tasks to complete
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        // Wait for all deletion tasks to complete
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        // Update the metrics
+        blockStreamBucketMetrics.updateBlocksRetainedCount(listFiles().count());
+    }
+
+    private Stream<Path> listFiles() {
+        try {
+            return Files.list(uploadedDir);
         } catch (Exception ex) {
             log.warn("Error scanning directory: {}", ex.getMessage());
+            return Stream.empty();
         }
     }
 

@@ -26,12 +26,16 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class BlockRetentionManagerTest {
     @TempDir
     private Path uploadedDir;
+
+    @Mock
+    private BlockStreamBucketMetrics blockStreamBucketMetrics;
 
     private BlockRetentionManager blockRetentionManager;
 
@@ -40,7 +44,11 @@ class BlockRetentionManagerTest {
         final long retentionPeriodMs = 10;
         final long cleanupPeriodMs = 100;
         blockRetentionManager = new BlockRetentionManager(
-                uploadedDir, Duration.ofMillis(retentionPeriodMs), Duration.ofMillis(cleanupPeriodMs), 4);
+                uploadedDir,
+                Duration.ofMillis(retentionPeriodMs),
+                Duration.ofMillis(cleanupPeriodMs),
+                4,
+                blockStreamBucketMetrics);
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
         blockRetentionManager.scheduleRepeating(cleanupTask);
 
@@ -57,7 +65,11 @@ class BlockRetentionManagerTest {
         final long retentionPeriodMs = 20;
         final long cleanupPeriodMs = 10;
         blockRetentionManager = new BlockRetentionManager(
-                uploadedDir, Duration.ofMillis(retentionPeriodMs), Duration.ofMillis(cleanupPeriodMs), 4);
+                uploadedDir,
+                Duration.ofMillis(retentionPeriodMs),
+                Duration.ofMillis(cleanupPeriodMs),
+                4,
+                blockStreamBucketMetrics);
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
         blockRetentionManager.scheduleRepeating(cleanupTask);
 
