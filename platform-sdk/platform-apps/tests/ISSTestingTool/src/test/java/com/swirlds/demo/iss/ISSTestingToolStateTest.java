@@ -113,6 +113,24 @@ class ISSTestingToolStateTest {
     }
 
     @Test
+    void handleConsensusRoundWithDeprecatedSystemTransaction() {
+        // Given
+        givenRoundAndEvent();
+
+        when(consensusTransaction.isSystem()).thenReturn(true);
+
+        // When
+        state.handleConsensusRound(round, platformStateModifier, consumer);
+
+        // Then
+        verify(round, times(1)).iterator();
+        verify(event, times(2)).getConsensusTimestamp();
+        verify(event, times(1)).consensusTransactionIterator();
+
+        assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+    }
+
+    @Test
     void handleConsensusRoundWithEmptyTransaction() {
         // Given
         givenRoundAndEvent();
