@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.blocks.cloud.uploader;
 
-import java.util.Objects;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
- * @param accessKey the access key of the bucket
- * @param secretKey the secret key of the bucket
+ * Interface for components that need to be notified when bucket configurations are loaded or updated.
  */
-public record BucketCredentials(String accessKey, String secretKey) {
-    public BucketCredentials {
-        Objects.requireNonNull(accessKey, "access key cannot be null");
-        Objects.requireNonNull(secretKey, "secret key cannot be null");
-    }
+public interface BucketConfigurationListener {
+    /**
+     * Called when bucket configurations are loaded or updated.
+     *
+     * @param configs The complete list of bucket configurations
+     */
+    void onBucketConfigurationsUpdated(@NonNull List<CompleteBucketConfig> configs);
 }

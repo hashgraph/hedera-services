@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.blocks.cloud.uploader.configs;
 
 import com.hedera.node.config.types.BucketProvider;
 

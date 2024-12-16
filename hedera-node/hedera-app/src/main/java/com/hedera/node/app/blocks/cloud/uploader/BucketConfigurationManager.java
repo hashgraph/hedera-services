@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader;
+package com.hedera.node.app.blocks.cloud.uploader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
-import com.hedera.node.app.uploader.credentials.OnDiskBucketConfig;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
+import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,6 +29,7 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,6 +52,9 @@ public class BucketConfigurationManager {
     private volatile OnDiskBucketConfig credentials;
     private final AtomicReference<List<CompleteBucketConfig>> currentConfig = new AtomicReference<>();
 
+    /** The list of registered block closed listeners */
+    private final List<BucketConfigurationListener> bucketConfigurationListeners = new ArrayList<>();
+
     /**
      * @param configProvider the configuration provider to use
      */
@@ -58,14 +62,23 @@ public class BucketConfigurationManager {
     public BucketConfigurationManager(@NonNull final ConfigProvider configProvider) {
         this.blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         this.bucketCredentialsPath = blockStreamConfig.credentialsPath();
-        loadCompleteBucketConfigs();
+        loadCompleteBucketConfigs(blockStreamConfig);
         watchCredentialsFile();
+    }
+
+    /**
+     * Register a listener for bucket configuration changes.
+     *
+     * @param listener the listener to register
+     */
+    public void registerBucketConfigurationListener(@NonNull final BucketConfigurationListener listener) {
+        bucketConfigurationListeners.add(listener);
     }
 
     /**
      * Combines the buckets configuration with their respective credentials.
      */
-    private void loadCompleteBucketConfigs() {
+    public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
         final Path credentialsPath = Path.of(bucketCredentialsPath);
         try {
             credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
@@ -93,6 +106,9 @@ public class BucketConfigurationManager {
                 .filter(Objects::nonNull)
                 .filter(CompleteBucketConfig::enabled)
                 .toList());
+
+        // Notify listeners
+        bucketConfigurationListeners.forEach(listener -> listener.onBucketConfigurationsUpdated(currentConfig.get()));
     }
 
     /**
@@ -109,7 +125,7 @@ public class BucketConfigurationManager {
                             for (WatchEvent<?> event : key.pollEvents()) {
                                 if (event.context().toString().equals(bucketCredentialsPath)) {
                                     System.out.println("Configuration file changed. Reloading...");
-                                    loadCompleteBucketConfigs();
+                                    loadCompleteBucketConfigs(blockStreamConfig);
                                 }
                             }
                             key.reset();
