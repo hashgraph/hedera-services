@@ -193,8 +193,7 @@ public class RosterUtilsTest {
         // Define behavior for the mock
         when(rosterStore.getRosterHistory()).thenReturn(null);
 
-        // Verify that the method throws an IllegalStateException
-        assertThrows(IllegalStateException.class, () -> RosterUtils.createRosterHistory(rosterStore));
+        assertThrows(NullPointerException.class, () -> RosterUtils.createRosterHistory(rosterStore));
     }
 
     @Test
