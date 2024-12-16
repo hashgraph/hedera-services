@@ -36,7 +36,7 @@ import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -47,6 +47,8 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -75,6 +77,7 @@ import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -153,6 +156,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
+        final var streamBuilder =
+                handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
+
         /* handle custom fees */
         if (!topic.customFees().isEmpty() && !isFeeExempted(topic.feeExemptKeyList(), handleContext.keyVerifier())) {
             // check payer limits or throw
@@ -161,16 +167,31 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             }
             // create synthetic body and dispatch crypto transfer
             final var syntheticBodies = customFeeAssessor.assessCustomFee(topic, handleContext);
+            // build a list with the top level custom fees
+            final var assessedCustomFees =
+                    new ArrayList<>(buildTopLevelAssessedCustomFees(handleContext.payer(), syntheticBodies));
+
+            // dispatch transfers to pay the fees, but suppress any child records. All assessed fees will be
+            // externalized in to the top level txn record/stream
             for (final var syntheticBody : syntheticBodies) {
-                final var record = handleContext.dispatch(stepDispatch(
+                final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
                         TransactionBody.newBuilder()
                                 .cryptoTransfer(syntheticBody)
                                 .build(),
                         CryptoTransferStreamBuilder.class,
-                        NOOP_TRANSACTION_CUSTOMIZER));
-                validateTrue(record.status().equals(SUCCESS), record.status());
+                        SUPPRESSING_TRANSACTION_CUSTOMIZER));
+
+                validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
+
+                // check if there is nested custom fees
+                if (!dispatchedStreamBuilder.getAssessedCustomFees().isEmpty()) {
+                    assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
+                }
             }
+
+            // externalize all custom fees
+            streamBuilder.assessedCustomFees(assessedCustomFees);
         }
 
         try {
@@ -180,9 +201,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
 
-            final var recordBuilder =
-                    handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
-            recordBuilder
+            streamBuilder
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())
                     .topicRunningHashVersion(RUNNING_HASH_VERSION);
@@ -425,5 +444,36 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + op.message().length())
                 .addNetworkRamByteSeconds((LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC)
                 .calculate();
+    }
+
+    private List<AssessedCustomFee> buildTopLevelAssessedCustomFees(
+            AccountID payer, List<CryptoTransferTransactionBody> bodies) {
+        final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
+        for (final var body : bodies) {
+            final var customFeeBuilder = AssessedCustomFee.newBuilder().effectivePayerAccountId(payer);
+            if (body.tokenTransfers().isEmpty()) {
+                final var aa = body.transfers().accountAmounts();
+                for (final var amount : aa) {
+                    if (amount.amount() > 0) {
+                        customFeeBuilder.amount(amount.amount());
+                        customFeeBuilder.feeCollectorAccountId(amount.accountID());
+                    }
+                }
+            } else {
+                final var tokenTransferLists = body.tokenTransfers();
+                for (final var tokenTransferList : tokenTransferLists) {
+                    customFeeBuilder.tokenId(tokenTransferList.token());
+                    for (final var transfer : tokenTransferList.transfers()) {
+                        if (transfer.amount() > 0) {
+                            customFeeBuilder.amount(transfer.amount());
+                            customFeeBuilder.feeCollectorAccountId(transfer.accountID());
+                        }
+                    }
+                }
+            }
+            assessedCustomFees.add(customFeeBuilder.build());
+        }
+
+        return assessedCustomFees;
     }
 }

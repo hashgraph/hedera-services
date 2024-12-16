@@ -54,6 +54,14 @@ public interface CryptoTransferStreamBuilder extends StreamBuilder {
     CryptoTransferStreamBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
 
     /**
+     * Returns all assessed custom fees for this call.
+     *
+     * @return the assessed custom fees
+     */
+    @NonNull
+    List<AssessedCustomFee> getAssessedCustomFees();
+
+    /**
      * Tracks the total custom fees assessed in the transaction.
      * @param assessedCustomFees the total custom fees assessed in the transaction
      * @return this builder

@@ -40,6 +40,7 @@ import "stream/output/util_service.proto";
 import "stream/output/crypto_service.proto";
 import "stream/output/token_service.proto";
 import "stream/output/smart_contract_service.proto";
+import "stream/output/consensus_service.proto";
 
 /**
  * Output from a transaction.
@@ -155,5 +156,10 @@ message TransactionOutput {
          * Output from a token airdrop transaction.
          */
         TokenAirdropOutput token_airdrop = 8;
+
+        /**
+         * Output from a consensus submit message transaction.
+         */
+        SubmitMessageOutput submit_message = 9;
     }
 }

@@ -182,6 +182,13 @@ public class BlockItemsTranslator {
                             recordBuilder.assessedCustomFees(cryptoOutput.assessedCustomFees());
                         }
                     }
+                    case CONSENSUS_SUBMIT_MESSAGE -> {
+                        final var submitMessageOutput = outputValueIfPresent(
+                                TransactionOutput::hasSubmitMessage, TransactionOutput::submitMessageOrThrow, outputs);
+                        if (submitMessageOutput != null) {
+                            recordBuilder.assessedCustomFees(submitMessageOutput.assessedCustomFees());
+                        }
+                    }
                     case CRYPTO_CREATE, CRYPTO_UPDATE -> recordBuilder.evmAddress(
                             ((CryptoOpContext) context).evmAddress());
                     case TOKEN_AIRDROP -> recordBuilder.newPendingAirdrops(
