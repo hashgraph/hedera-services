@@ -43,6 +43,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
@@ -77,9 +78,12 @@ import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -373,44 +377,53 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             @NonNull final List<ConsensusCustomFee> topicCustomFees,
             @NonNull final List<FixedFee> payerCustomFeeLimits,
             @NonNull final HandleContext context) {
+        // Validate the duplication of payer custom fee limits
         validateDuplicationFeeLimits(payerCustomFeeLimits);
-        for (final ConsensusCustomFee consensusCustomfee : topicCustomFees) {
-            // validate limits
-            boolean passed = false;
-            final var fee = consensusCustomfee.fixedFeeOrThrow();
 
-            if (fee.hasDenominatingTokenId()) {
-                for (FixedFee limit : payerCustomFeeLimits) {
-                    if (limit.hasDenominatingTokenId()
-                            && limit.denominatingTokenId().equals(fee.denominatingTokenId())) {
-                        validateTrue(limit.amount() >= fee.amount(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
-                        passed = true;
-                        break;
-                    }
-                }
-                // if payer is missing a limit for a token custom fee,
-                // we can check if the account is fee collector or token treasury
-                if (!passed) {
-                    if (context.payer().equals(consensusCustomfee.feeCollectorAccountId())) {
-                        passed = true;
-                    }
-                    final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
-                    final var treasury = customFeeAssessor.getTokenTreasury(fee.denominatingTokenId(), tokenStore);
-                    if (context.payer().equals(treasury)) {
-                        passed = true;
-                    }
-                }
-            } else {
-                for (FixedFee feeLimit : payerCustomFeeLimits) {
-                    if (!feeLimit.hasDenominatingTokenId()) {
-                        validateTrue(feeLimit.amount() >= fee.amount(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
-                        passed = true;
-                        break;
+        // Extract the token fees and hbar fees from the topic custom fees
+        Map<TokenID, Long> tokenFees = new HashMap<>();
+        AtomicReference<Long> hbarFee = new AtomicReference<>(0L);
+        extractFees(topicCustomFees, context, hbarFee, tokenFees);
+        // Validate payer token limits
+        tokenFees.forEach((token, feeAmount) -> {
+            final boolean isValid = payerCustomFeeLimits.stream()
+                    .filter(fee -> token.equals(fee.denominatingTokenId()))
+                    .anyMatch(fee -> {
+                        validateTrue(fee.amount() >= feeAmount, MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
+                        return true;
+                    });
+            validateTrue(isValid, NO_VALID_MAX_CUSTOM_FEE);
+        });
+        // Validate payer HBAR limit
+        if (hbarFee.get() > 0) {
+            final var payerHbarLimit = payerCustomFeeLimits.stream()
+                    .filter(fee -> !fee.hasDenominatingTokenId())
+                    .findFirst()
+                    .orElseThrow(() -> new HandleException(NO_VALID_MAX_CUSTOM_FEE));
+            validateTrue(payerHbarLimit.amount() >= hbarFee.get(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
+        }
+    }
+
+    private void extractFees(
+            @NonNull List<ConsensusCustomFee> topicCustomFees,
+            HandleContext context,
+            AtomicReference<Long> hbarFee,
+            Map<TokenID, Long> tokenFees) {
+        final var payer = context.payer();
+        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
+        for (final var fee : topicCustomFees) {
+            if (!payer.equals(fee.feeCollectorAccountId())) {
+                var fixedFee = fee.fixedFeeOrThrow();
+                if (!fixedFee.hasDenominatingTokenId()) {
+                    hbarFee.updateAndGet(v -> v + fixedFee.amount());
+                } else {
+                    final var denomTokenId = fixedFee.denominatingTokenId();
+                    final var treasury = customFeeAssessor.getTokenTreasury(denomTokenId, tokenStore);
+                    if (!context.payer().equals(treasury)) {
+                        tokenFees.put(denomTokenId, tokenFees.getOrDefault(denomTokenId, 0L) + fixedFee.amount());
                     }
                 }
             }
-            // if no limit provided for corresponding custom fee
-            validateTrue(passed, NO_VALID_MAX_CUSTOM_FEE);
         }
     }
 
