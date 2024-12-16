@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,9 +30,11 @@ import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.app.uploader.credentials.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.CloudBucketConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -154,5 +158,41 @@ public class BucketConfigurationManagerTest {
                             bucketCredentials);
                 })
                 .toList();
+    }
+
+    @Test
+    public void constructorInvalidCredentialsPathThrowsException() throws Exception {
+
+        VersionedConfigImpl invalidConfig = mock(VersionedConfigImpl.class);
+        BlockStreamConfig mockBlockStreamConfig = mock(BlockStreamConfig.class);
+        when(invalidConfig.getConfigData(BlockStreamConfig.class)).thenReturn(mockBlockStreamConfig);
+        // Stub the credentialsPath to return an invalid path
+        when(mockBlockStreamConfig.credentialsPath()).thenReturn("/invalid/path");
+        // Set up the mock ConfigProvider to return our invalid configuration
+        given(configProvider.getConfiguration()).willReturn(invalidConfig);
+        try {
+            BucketConfigurationManager manager = new BucketConfigurationManager(configProvider);
+            assertThat(manager).isNotNull();
+        } catch (RuntimeException e) {
+            assertThat(FileNotFoundException.class).isEqualTo(e.getCause().getClass());
+            assertThat(e.getMessage().contains("Failed to load bucket credentials"));
+        }
+    }
+
+    @Test
+    void getCompleteBucketConfigsValidConfig() {
+        given(configProvider.getConfiguration())
+                .willReturn(
+                        new VersionedConfigImpl(HederaTestConfigBuilder.create().getOrCreateConfig(), 1L));
+        BucketConfigurationManager manager = new BucketConfigurationManager(configProvider);
+        List<CompleteBucketConfig> result = manager.getCompleteBucketConfigs();
+        assertThat(result.size()).isEqualTo(2);
+        CompleteBucketConfig config = result.get(0);
+        assertThat("default-aws-bucket").isEqualTo(config.name());
+        assertThat("AWS").isEqualTo(config.provider().name());
+        assertThat("https://s3.amazonaws.com").isEqualTo(config.endpoint());
+        assertThat("us-east-1").isEqualTo(config.region());
+        assertThat("hedera-mainnet-blocks").isEqualTo(config.bucketName());
+        assertThat(config.enabled()).isTrue();
     }
 }
