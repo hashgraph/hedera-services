@@ -36,6 +36,7 @@ public class TopicCustomFeeBase {
     protected static final String FEE_SCHEDULE_KEY2 = "feeScheduleKey2";
     protected static final String FEE_SCHEDULE_KEY_ECDSA = "feeScheduleKeyECDSA";
     protected static final String FEE_EXEMPT_KEY_PREFIX = "feeExemptKey_";
+    protected static final String FREEZE_KEY = "freezeKey";
     protected static final String TOKEN = "TOKEN";
     protected static final String COLLECTOR = "COLLECTOR";
 
@@ -58,8 +59,12 @@ public class TopicCustomFeeBase {
             newKeyNamed(SUBMIT_KEY),
             newKeyNamed(FEE_SCHEDULE_KEY),
             newKeyNamed(FEE_SCHEDULE_KEY2),
+            newKeyNamed(FREEZE_KEY),
             cryptoCreate(COLLECTOR),
-            tokenCreate(TOKEN).tokenType(TokenType.FUNGIBLE_COMMON).initialSupply(500),
+            tokenCreate(TOKEN)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .initialSupply(500)
+                    .freezeKey(FREEZE_KEY),
             tokenAssociate(COLLECTOR, TOKEN)
         };
     }
