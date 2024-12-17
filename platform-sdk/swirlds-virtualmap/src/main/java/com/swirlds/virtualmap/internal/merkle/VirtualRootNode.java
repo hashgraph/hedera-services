@@ -1205,8 +1205,13 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         final String label = in.readNormalisedString(MAX_LABEL_LENGTH);
         dataSourceBuilder = in.readSerializable();
         dataSource = dataSourceBuilder.restore(label, inputDirectory);
-        if (version < ClassVersion.VERSION_4_BYTES) {
+        if (version < ClassVersion.VERSION_3_NO_NODE_CACHE) {
             throw new UnsupportedOperationException("Version " + version + " is not supported");
+        }
+        if (version < ClassVersion.VERSION_4_BYTES) {
+            // FUTURE WORK: clean up all serializers, once all states are of version 4+
+            in.readSerializable(); // skip key serializer
+            in.readSerializable(); // skip value serializer
         }
         cache = new VirtualNodeCache(virtualMapConfig, in.readLong());
     }

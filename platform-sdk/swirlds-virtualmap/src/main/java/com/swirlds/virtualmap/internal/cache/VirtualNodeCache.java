@@ -1068,14 +1068,13 @@ public final class VirtualNodeCache implements FastCopyable, SelfSerializable {
         if (!hashesAreImmutable.get() || !leafIndexesAreImmutable.get()) {
             throw new MutabilityException("Cannot run garbage collection for a non-sealed cache");
         }
-        final Stream<Mutation<Long, Hash>> filteredHashes = dirtyHashes.stream()
-                .filter(Mutation::notFiltered);
+        final Stream<Mutation<Long, Hash>> filteredHashes = dirtyHashes.stream().filter(Mutation::notFiltered);
         dirtyHashes = new ConcurrentArray<>(filteredHashes);
-        final Stream<Mutation<Long, Bytes>> filteredLeafPaths = dirtyLeafPaths.stream()
-                .filter(Mutation::notFiltered);
+        final Stream<Mutation<Long, Bytes>> filteredLeafPaths =
+                dirtyLeafPaths.stream().filter(Mutation::notFiltered);
         dirtyLeafPaths = new ConcurrentArray<>(filteredLeafPaths);
-        final Stream<Mutation<Bytes, VirtualLeafBytes>> filteredLeaves = dirtyLeaves.stream()
-                .filter(Mutation::notFiltered);
+        final Stream<Mutation<Bytes, VirtualLeafBytes>> filteredLeaves =
+                dirtyLeaves.stream().filter(Mutation::notFiltered);
         dirtyLeaves = new ConcurrentArray<>(filteredLeaves);
     }
 
