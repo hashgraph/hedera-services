@@ -238,6 +238,8 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
             key.getKeyList().getKeysList().forEach(k -> accumulateSimple(k, builder));
         } else if (key.hasThresholdKey()) {
             key.getThresholdKey().getKeys().getKeysList().forEach(k -> accumulateSimple(k, builder));
+        } else if (key.hasContractID()) {
+            builder.addKeys(key);
         }
     }
 

@@ -24,14 +24,15 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KE
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SchedulableDispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,7 +61,7 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
-    private static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
+    public static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
 
     /**
      * @param decoder the decoder to use for token update info calls
@@ -86,8 +87,13 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public Call callFrom(@NonNull HtsCallAttempt attempt) {
-        return new DispatchForResponseCodeHtsCall(
-                attempt, nominalBodyFor(attempt), UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
+        final var transactionBody = nominalBodyFor(attempt);
+        return new SchedulableDispatchForResponseCodeHtsCall(
+                attempt,
+                transactionBody,
+                UpdateTranslator::gasRequirement,
+                UpdateDecoder.FAILURE_CUSTOMIZER,
+                schedulableBodyFor(transactionBody));
     }
 
     /**
@@ -111,5 +117,11 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 .map(entry -> entry.getValue().decode(attempt))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private SchedulableTransactionBody schedulableBodyFor(@NonNull final TransactionBody transactionBody) {
+        return SchedulableTransactionBody.newBuilder()
+                .tokenUpdate(transactionBody.tokenUpdate())
+                .build();
     }
 }

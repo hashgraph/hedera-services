@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -149,5 +150,16 @@ public interface Call {
      */
     default boolean allowsStaticFrame() {
         return false;
+    }
+
+    /**
+     * Prepares a {@link SchedulableTransactionBody} for dispatching a scheduled call.
+     *
+     * @param frame the message frame
+     * @return the native TransactionBody implied by this call
+     */
+    @NonNull
+    default SchedulableTransactionBody asSchedulableDispatchIn(@NonNull final MessageFrame frame) {
+        throw new UnsupportedOperationException("Needs scheduleNative() support");
     }
 }

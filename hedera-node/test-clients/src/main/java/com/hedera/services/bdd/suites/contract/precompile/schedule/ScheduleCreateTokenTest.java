@@ -17,27 +17,34 @@
 package com.hedera.services.bdd.suites.contract.precompile.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 @OrderedInIsolation
+@HapiTestLifecycle
 public class ScheduleCreateTokenTest {
 
-    @Contract(contract = "HIP756Contract", creationGas = 4_000_000L)
+    @Contract(contract = "HIP756Contract", creationGas = 4_000_000L, isImmutable = true)
     static SpecContract contract;
 
     @Account
@@ -45,6 +52,11 @@ public class ScheduleCreateTokenTest {
 
     @Account
     static SpecAccount autoRenew;
+
+    @BeforeAll
+    public static void setup(TestLifecycle lifecycle) {
+        lifecycle.doAdhoc(contract.getInfo(), newKeyNamed("contractKey").shape(CONTRACT.signedWith(contract.name())));
+    }
 
     @HapiTest
     @DisplayName("Can successfully schedule a create fungible token operation")
@@ -58,7 +70,15 @@ public class ScheduleCreateTokenTest {
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateFT", scheduleID);
-            allRunFor(spec, getScheduleInfo("scheduledCreateFT").hasScheduleId("scheduledCreateFT"));
+            allRunFor(
+                    spec,
+                    getScheduleInfo("scheduledCreateFT").isNotExecuted().hasScheduleId("scheduledCreateFT"),
+                    scheduleSign("scheduledCreateFT").alsoSigningWith(treasury.name()),
+                    getScheduleInfo("scheduledCreateFT").isNotExecuted().hasSignatories("contractKey", treasury.name()),
+                    scheduleSign("scheduledCreateFT").alsoSigningWith(autoRenew.name()),
+                    getScheduleInfo("scheduledCreateFT")
+                            .isExecuted()
+                            .hasSignatories("contractKey", autoRenew.name(), treasury.name()));
         }));
     }
 
@@ -74,7 +94,19 @@ public class ScheduleCreateTokenTest {
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateNFT", scheduleID);
-            allRunFor(spec, getScheduleInfo("scheduledCreateNFT").hasScheduleId("scheduledCreateNFT"));
+            allRunFor(
+                    spec,
+                    getScheduleInfo("scheduledCreateNFT")
+                            .hasScheduleId("scheduledCreateNFT")
+                            .isNotExecuted(),
+                    scheduleSign("scheduledCreateNFT").alsoSigningWith(treasury.name()),
+                    getScheduleInfo("scheduledCreateNFT")
+                            .isNotExecuted()
+                            .hasSignatories("contractKey", treasury.name()),
+                    scheduleSign("scheduledCreateNFT").alsoSigningWith(autoRenew.name()),
+                    getScheduleInfo("scheduledCreateNFT")
+                            .isExecuted()
+                            .hasSignatories("contractKey", autoRenew.name(), treasury.name()));
         }));
     }
 }

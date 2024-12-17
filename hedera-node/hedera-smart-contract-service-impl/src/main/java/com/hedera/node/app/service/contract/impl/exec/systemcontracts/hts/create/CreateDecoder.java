@@ -470,7 +470,7 @@ public class CreateDecoder {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
     }
 
-    public TokenCreateWrapper getTokenCreateWrapper(
+    private TokenCreateWrapper getTokenCreateWrapper(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final long initSupply,
@@ -577,7 +577,7 @@ public class CreateDecoder {
         return tokenCreateWrapper;
     }
 
-    public TokenCreateWrapper getTokenCreateWrapperNonFungible(
+    private TokenCreateWrapper getTokenCreateWrapperNonFungible(
             @NonNull final Tuple tokenCreateStruct,
             @NonNull final AccountID senderId,
             @NonNull final HederaNativeOperations nativeOperations,

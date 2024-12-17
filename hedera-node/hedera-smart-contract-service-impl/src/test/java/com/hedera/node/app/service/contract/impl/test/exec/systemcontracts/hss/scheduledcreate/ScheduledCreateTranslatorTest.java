@@ -16,21 +16,21 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.scheduledcreate;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator.SCHEDULED_CREATE_FUNGIBLE;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator.SCHEDULED_CREATE_NON_FUNGIBLE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator.SCHEDULED_NATIVE_CALL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule.SignScheduleTranslator.SIGN_SCHEDULE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfig;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.create.CreateTestHelper.CREATE_FUNGIBLE_V3_TUPLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,10 +40,13 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategi
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,9 +55,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduledCreateTranslatorTest extends CallTestBase {
-
-    @Mock
-    private ScheduledCreateDecoder decoder;
 
     @Mock
     private SystemContractGasCalculator gasCalculator;
@@ -77,41 +77,39 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
     @Mock
     private HssCallAttempt attempt;
 
+    @Mock
+    private HtsCallFactory htsCallFactory;
+
+    // Mock to populate the selectors map
+    @Mock
+    private CreateDecoder decoder;
+
+    private CreateTranslator createTranslator;
+
     private ScheduledCreateTranslator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ScheduledCreateTranslator(decoder);
+        createTranslator = new CreateTranslator(decoder);
+        subject = new ScheduledCreateTranslator(htsCallFactory);
     }
 
     @Test
-    void matchesScheduleCreateFungible() {
+    void matchesScheduleCreate() {
         // given
-        final var attempt = prepareHssAttemptWithSelectorAndCustomConfig(
-                SCHEDULED_CREATE_FUNGIBLE,
+        final var attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SCHEDULED_NATIVE_CALL.encodeCallWithArgs(
+                        asHeadlongAddress(HTS_SYSTEM_CONTRACT_ADDRESS),
+                        CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                                .encodeCall(CREATE_FUNGIBLE_V3_TUPLE)
+                                .array(),
+                        asHeadlongAddress(SENDER_ID.accountNum()))),
                 subject,
                 mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
                 DEFAULT_CONFIG);
-
-        // when/then
-        assertTrue(subject.matches(attempt));
-    }
-
-    @Test
-    void matchesScheduleCreateNonFungible() {
-        // given
-        final var attempt = prepareHssAttemptWithSelectorAndCustomConfig(
-                SCHEDULED_CREATE_NON_FUNGIBLE,
-                subject,
-                mockEnhancement(),
-                addressIdConverter,
-                verificationStrategies,
-                gasCalculator,
-                DEFAULT_CONFIG);
-
         // when/then
         assertTrue(subject.matches(attempt));
     }
@@ -149,14 +147,12 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
     }
 
     @Test
-    void createsCallFromFTAttempt() {
+    void createsCall() {
 
         // given
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.senderId()).willReturn(SENDER_ID);
-        lenient().when(attempt.isSelector(SCHEDULED_CREATE_FUNGIBLE)).thenReturn(true);
-        lenient().when(attempt.isSelector(SCHEDULED_CREATE_NON_FUNGIBLE)).thenReturn(false);
-        given(decoder.decodeScheduledCreateFT(any())).willReturn(transactionBody);
+        given(attempt.isSelector(SCHEDULED_NATIVE_CALL)).willReturn(true);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
@@ -166,27 +162,5 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
         // then
         assertNotNull(call);
         assertInstanceOf(ScheduledCreateCall.class, call);
-        verify(decoder).decodeScheduledCreateFT(any());
-    }
-
-    @Test
-    void createsCallFromNFTAttempt() {
-
-        // given
-        given(attempt.enhancement()).willReturn(mockEnhancement());
-        given(attempt.senderId()).willReturn(SENDER_ID);
-        lenient().when(attempt.isSelector(SCHEDULED_CREATE_NON_FUNGIBLE)).thenReturn(true);
-        lenient().when(attempt.isSelector(SCHEDULED_CREATE_FUNGIBLE)).thenReturn(false);
-        given(decoder.decodeScheduledCreateNFT(any())).willReturn(transactionBody);
-        given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
-        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
-
-        // when
-        final var call = subject.callFrom(attempt);
-
-        // then
-        assertNotNull(call);
-        assertInstanceOf(ScheduledCreateCall.class, call);
-        verify(decoder).decodeScheduledCreateNFT(any());
     }
 }

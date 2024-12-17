@@ -46,6 +46,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -175,6 +176,16 @@ public class ClassicCreatesCall extends AbstractCall {
             }
             return gasPlus(successResult(encodedOutput, FIXED_GAS_COST, recordBuilder), status, false, nonGasCost);
         }
+    }
+
+    @NonNull
+    @Override
+    public SchedulableTransactionBody asSchedulableDispatchIn(@NonNull MessageFrame frame) {
+        requireNonNull(frame);
+        requireNonNull(syntheticCreate);
+        return SchedulableTransactionBody.newBuilder()
+                .tokenCreation(syntheticCreate.tokenCreation())
+                .build();
     }
 
     private ResponseCodeEnum validityOfSynth(@NonNull final TokenCreateTransactionBody op) {

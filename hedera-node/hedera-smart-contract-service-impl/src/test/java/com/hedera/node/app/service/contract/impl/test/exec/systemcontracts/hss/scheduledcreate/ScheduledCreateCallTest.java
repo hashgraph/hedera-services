@@ -16,13 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.scheduledcreate;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_SCHEDULE_ID;
@@ -40,10 +35,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.util.Set;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
@@ -69,86 +66,11 @@ class ScheduledCreateCallTest extends CallTestBase {
     @Mock
     private ContractCallStreamBuilder recordBuilder;
 
+    @Mock
+    private HtsCallFactory htsCallFactory;
+
     private ScheduledCreateCall subject;
     private TransactionBody syntheticScheduleCreate;
-
-    @Test
-    void executionFailsWithMissingTokenSymbol() {
-        // given
-        syntheticScheduleCreate = TransactionBody.newBuilder()
-                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
-                                .tokenCreation(TokenCreateTransactionBody.newBuilder()
-                                        .name("Test Token")
-                                        .treasury(SENDER_ID)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-
-        prepareCall();
-
-        // when
-        final var result = subject.execute(frame).fullResult();
-
-        // then
-        final var expectedOutput = gasOnly(revertResult(MISSING_TOKEN_SYMBOL, 100L), MISSING_TOKEN_SYMBOL, false)
-                .fullResult();
-        assertEquals(State.REVERT, result.result().getState());
-        assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
-    }
-
-    @Test
-    void executionFailsWithMissingTokenName() {
-        // given
-        syntheticScheduleCreate = TransactionBody.newBuilder()
-                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
-                                .tokenCreation(TokenCreateTransactionBody.newBuilder()
-                                        .symbol("TEST")
-                                        .treasury(SENDER_ID)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-
-        prepareCall();
-
-        // when
-        final var result = subject.execute(frame).fullResult();
-
-        // then
-        final var expectedOutput = gasOnly(revertResult(MISSING_TOKEN_NAME, 100L), MISSING_TOKEN_SYMBOL, false)
-                .fullResult();
-        assertEquals(State.REVERT, result.result().getState());
-        assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
-    }
-
-    @Test
-    void executionFailsWithMissingTokenTreasury() {
-        // given
-        syntheticScheduleCreate = TransactionBody.newBuilder()
-                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
-                                .tokenCreation(TokenCreateTransactionBody.newBuilder()
-                                        .symbol("TEST")
-                                        .name("Test Token")
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-
-        prepareCall();
-
-        // when
-        final var result = subject.execute(frame).fullResult();
-
-        // then
-        final var expectedOutput = gasOnly(revertResult(INVALID_ACCOUNT_ID, 100L), MISSING_TOKEN_SYMBOL, false)
-                .fullResult();
-        assertEquals(State.REVERT, result.result().getState());
-        assertEquals(expectedOutput.result().getOutput(), result.result().getOutput());
-    }
 
     @Test
     void executeHappyPath() {
@@ -189,9 +111,11 @@ class ScheduledCreateCallTest extends CallTestBase {
                 gasCalculator,
                 mockEnhancement(),
                 verificationStrategy,
-                syntheticScheduleCreate,
                 SENDER_ID,
                 (body, calc, enh, payer) -> 100L,
-                Set.of());
+                Set.of(),
+                Bytes.of(),
+                htsCallFactory,
+                false);
     }
 }

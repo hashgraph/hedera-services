@@ -16,62 +16,69 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createSelectorsMap;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.updateSelectorsMap;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.datatypes.Address.fromHexString;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
 public class ScheduledCreateTranslator extends AbstractCallTranslator<HssCallAttempt> {
-    public static final Function SCHEDULED_CREATE_FUNGIBLE = new Function(
-            "scheduleCreateFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32)",
-            ReturnTypes.RESPONSE_CODE_ADDRESS);
-    public static final Function SCHEDULED_CREATE_NON_FUNGIBLE = new Function(
-            "scheduleCreateNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))",
-            ReturnTypes.RESPONSE_CODE_ADDRESS);
 
-    private static final Map<Function, ScheduledCreateDecoderFunction> scheduledCreateSelectors = new HashMap<>();
+    public static final Function SCHEDULED_NATIVE_CALL =
+            new Function("scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
+    private static final int SCHEDULE_CONTRACT_ADDRESS = 0;
+    private static final int SCHEDULE_CALL_DATA = 1;
+    private static final int SCHEDULE_PAYER = 2;
+
+    private final HtsCallFactory htsCallFactory;
 
     @Inject
-    public ScheduledCreateTranslator(@NonNull final ScheduledCreateDecoder decoder) {
-        scheduledCreateSelectors.put(SCHEDULED_CREATE_FUNGIBLE, decoder::decodeScheduledCreateFT);
-        scheduledCreateSelectors.put(SCHEDULED_CREATE_NON_FUNGIBLE, decoder::decodeScheduledCreateNFT);
+    public ScheduledCreateTranslator(@NonNull final HtsCallFactory htsCallFactory) {
+        requireNonNull(htsCallFactory);
+        this.htsCallFactory = htsCallFactory;
     }
 
     @Override
     public boolean matches(@NonNull final HssCallAttempt attempt) {
-        final var config = attempt.configuration().getConfigData(ContractsConfig.class);
-        final var enabledScheduledTxn =
-                config.scheduledTransactions().functionalitySet().contains(HederaFunctionality.TOKEN_CREATE);
-        return attempt.isSelectorIfConfigEnabled(
-                enabledScheduledTxn, SCHEDULED_CREATE_FUNGIBLE, SCHEDULED_CREATE_NON_FUNGIBLE);
+        return attempt.isSelector(SCHEDULED_NATIVE_CALL) && innerCallValidation(attempt);
     }
 
     @Override
     public Call callFrom(@NonNull final HssCallAttempt attempt) {
+        final var call = SCHEDULED_NATIVE_CALL.decodeCall(attempt.inputBytes());
+        final var innerCallData = Bytes.wrap((byte[]) call.get(SCHEDULE_CALL_DATA));
+        final var payerID = attempt.addressIdConverter().convert(call.get(SCHEDULE_PAYER));
         return new ScheduledCreateCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.defaultVerificationStrategy(),
-                requireNonNull(bodyForClassic(attempt)),
-                attempt.senderId(),
+                payerID,
                 ScheduledCreateTranslator::gasRequirement,
-                attempt.keySetFor());
+                attempt.keySetFor(),
+                innerCallData,
+                htsCallFactory,
+                false);
     }
 
     /**
@@ -91,11 +98,24 @@ public class ScheduledCreateTranslator extends AbstractCallTranslator<HssCallAtt
         return systemContractGasCalculator.gasRequirement(body, DispatchType.SCHEDULE_CREATE, payerId);
     }
 
-    private TransactionBody bodyForClassic(@NonNull final HssCallAttempt attempt) {
-        return scheduledCreateSelectors.entrySet().stream()
-                .filter(entry -> attempt.isSelector(entry.getKey()))
-                .map(entry -> entry.getValue().decode(attempt))
-                .findFirst()
-                .orElse(TransactionBody.DEFAULT);
+    // This method is used to validate the inner call of the scheduled create call
+    // We validate that the sender contract is HTS, that the sender address is a valid account
+    // And that the inner call is one of create or update token functions
+    private boolean innerCallValidation(@NonNull final HssCallAttempt attempt) {
+        final var call = SCHEDULED_NATIVE_CALL.decodeCall(attempt.inputBytes());
+        final var contractAddress = (Address) call.get(SCHEDULE_CONTRACT_ADDRESS);
+        final var payerAddress = (Address) call.get(SCHEDULE_PAYER);
+        final var payerID = attempt.addressIdConverter().convert(payerAddress);
+        validateTrue(payerID != AccountID.DEFAULT, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        final var besuContractAddress = fromHexString(contractAddress.toString());
+        validateTrue(besuContractAddress.equals(fromHexString(HTS_EVM_ADDRESS)), ResponseCodeEnum.INVALID_CONTRACT_ID);
+        final var innerCallSelector =
+                Bytes.wrap((byte[]) call.get(SCHEDULE_CALL_DATA)).slice(0, 4).toArray();
+        final var canBeCreateToken =
+                createSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
+        final var canBeUpdateToken =
+                updateSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
+
+        return canBeCreateToken || canBeUpdateToken;
     }
 }

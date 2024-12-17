@@ -16,75 +16,78 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.token.TokenCreateTransactionBody;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ScheduledCreateCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
-    private final TransactionBody syntheticScheduleCreate;
-    private final AccountID sender;
+    private final AccountID payerID;
     private final DispatchGasCalculator dispatchGasCalculator;
     private final Set<Key> authorizingKeys;
+    private final Bytes innerCallData;
+    private final boolean waitForExpiry;
+    private final HtsCallFactory htsCallFactory;
 
     public ScheduledCreateCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final TransactionBody syntheticScheduleCreate,
-            @NonNull final AccountID sender,
+            @NonNull final AccountID payerID,
             @NonNull final DispatchGasCalculator dispatchGasCalculator,
-            @NonNull final Set<Key> authorizingKeys) {
+            @NonNull final Set<Key> authorizingKeys,
+            @NonNull final Bytes innerCallData,
+            @NonNull final HtsCallFactory htsCallFactory,
+            final boolean waitForExpiry) {
         super(gasCalculator, enhancement, false);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-        this.syntheticScheduleCreate = syntheticScheduleCreate;
-        this.sender = requireNonNull(sender);
+        this.payerID = requireNonNull(payerID);
         this.dispatchGasCalculator = requireNonNull(dispatchGasCalculator);
         this.authorizingKeys = authorizingKeys;
+        this.innerCallData = requireNonNull(innerCallData);
+        this.htsCallFactory = requireNonNull(htsCallFactory);
+        this.waitForExpiry = waitForExpiry;
     }
 
     @Override
+    @NonNull
     public PricedResult execute(@NonNull final MessageFrame frame) {
-
-        final var gasRequirement =
-                dispatchGasCalculator.gasRequirement(syntheticScheduleCreate, gasCalculator, enhancement, sender);
-
-        // Add inner transaction validation before dispatching to the ScheduleService
-        final var validStatus = validateTokenField(syntheticScheduleCreate);
-        if (validStatus != OK) {
-            return gasOnly(revertResult(validStatus, gasRequirement), validStatus, false);
-        }
-
+        // Create the native call implied by the call data passed to scheduleNative()
+        final var nativeAttempt = htsCallFactory.createCallAttemptFrom(innerCallData, DIRECT_OR_PROXY_REDIRECT, frame);
+        final var call = requireNonNull(nativeAttempt.asExecutableCall());
+        final var scheduleTransactionBody = call.asSchedulableDispatchIn(frame);
+        final var scheduleCreateTransactionBody = bodyForScheduleCreate(scheduleTransactionBody);
+        final var gasRequirement = dispatchGasCalculator.gasRequirement(
+                scheduleCreateTransactionBody, gasCalculator, enhancement, payerID);
         final var recordBuilder = systemContractOperations()
                 .dispatch(
-                        syntheticScheduleCreate,
+                        scheduleCreateTransactionBody,
                         verificationStrategy,
-                        sender,
+                        payerID,
                         ContractCallStreamBuilder.class,
                         authorizingKeys,
                         UsePresetTxnId.YES);
@@ -99,26 +102,13 @@ public class ScheduledCreateCall extends AbstractCall {
         }
     }
 
-    private ResponseCodeEnum validateTokenField(@NonNull final TransactionBody transactionBody) {
-        final var tokenCreateTransactionBody = getTokenCreateTransactionBody(transactionBody);
-        if (tokenCreateTransactionBody.symbol().isEmpty()) {
-            return MISSING_TOKEN_SYMBOL;
-        }
-        if (tokenCreateTransactionBody.name().isEmpty()) {
-            return MISSING_TOKEN_NAME;
-        }
-        final var treasury = nativeOperations().getAccount(tokenCreateTransactionBody.treasury());
-        if (treasury == null) {
-            return INVALID_ACCOUNT_ID;
-        }
-        return OK;
-    }
-
-    private static TokenCreateTransactionBody getTokenCreateTransactionBody(@NonNull TransactionBody transactionBody) {
-        return requireNonNull(transactionBody.scheduleCreate()).hasScheduledTransactionBody()
-                ? requireNonNull(
-                                requireNonNull(transactionBody.scheduleCreate()).scheduledTransactionBody())
-                        .tokenCreation()
-                : TokenCreateTransactionBody.DEFAULT;
+    private @NonNull TransactionBody bodyForScheduleCreate(SchedulableTransactionBody scheduleTransactionBody) {
+        return TransactionBody.newBuilder()
+                .transactionID(nativeOperations().getTransactionID())
+                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+                        .scheduledTransactionBody(scheduleTransactionBody)
+                        .payerAccountID(payerID)
+                        .waitForExpiry(waitForExpiry))
+                .build();
     }
 }
