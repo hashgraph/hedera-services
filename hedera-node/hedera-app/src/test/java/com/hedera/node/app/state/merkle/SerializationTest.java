@@ -108,7 +108,7 @@ class SerializationTest extends MerkleTestBase {
         this.config = new TestConfigBuilder()
                 .withSource(new SimpleConfigSource()
                         .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
-                        .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1 + ""))
+                        .withValue(VirtualMapConfig_.COPY_FLUSH_CANDIDATE_THRESHOLD, 1 + ""))
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(CryptoConfig.class)
