@@ -16,14 +16,9 @@
 
 package com.hedera.node.app.tss.schemas;
 
-import static com.hedera.hapi.node.state.tss.RosterToKey.ACTIVE_ROSTER;
-import static com.hedera.hapi.node.state.tss.TssKeyingStatus.WAITING_FOR_ENCRYPTION_KEYS;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
-import com.hedera.hapi.node.state.tss.TssStatus;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -33,8 +28,7 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
-public class V0580TssBaseSchema extends Schema {
-    public static final String TSS_STATUS_KEY = "TSS_STATUS";
+public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchema {
     public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
     /**
      * This will at most be equal to the number of nodes in the network.
@@ -47,30 +41,18 @@ public class V0580TssBaseSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(58).patch(0).build();
 
-    /**
-     * Create a new instance
-     */
     public V0580TssBaseSchema() {
         super(VERSION);
     }
 
     @Override
-    public void migrate(@NonNull final MigrationContext ctx) {
-        final var tssStatusState = ctx.newStates().getSingleton(TSS_STATUS_KEY);
-        if (tssStatusState.get() == null) {
-            tssStatusState.put(new TssStatus(WAITING_FOR_ENCRYPTION_KEYS, ACTIVE_ROSTER, Bytes.EMPTY));
-        }
+    public @NonNull Set<StateDefinition> statesToCreate() {
+        return Set.of(StateDefinition.onDisk(
+                TSS_ENCRYPTION_KEYS_KEY, EntityNumber.PROTOBUF, TssEncryptionKeys.PROTOBUF, MAX_TSS_ENCRYPTION_KEYS));
     }
 
-    @NonNull
     @Override
-    public Set<StateDefinition> statesToCreate() {
-        return Set.of(
-                StateDefinition.singleton(TSS_STATUS_KEY, TssStatus.PROTOBUF),
-                StateDefinition.onDisk(
-                        TSS_ENCRYPTION_KEYS_KEY,
-                        EntityNumber.PROTOBUF,
-                        TssEncryptionKeys.PROTOBUF,
-                        MAX_TSS_ENCRYPTION_KEYS));
+    public void restart(@NonNull final MigrationContext ctx) {
+        TssBaseTransplantSchema.super.restart(ctx);
     }
 }

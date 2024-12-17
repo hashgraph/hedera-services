@@ -107,7 +107,7 @@ public class StakePeriodChanges {
      * @param isGenesis whether the current transaction is the genesis transaction
      * @param lastHandleTime the last instant at which a transaction was handled
      */
-    public void process(
+    public boolean process(
             @NonNull final Dispatch dispatch,
             @NonNull final SavepointStackImpl stack,
             @NonNull final TokenContext tokenContext,
@@ -119,7 +119,8 @@ public class StakePeriodChanges {
         requireNonNull(tokenContext);
         requireNonNull(streamMode);
         requireNonNull(lastHandleTime);
-        if (isGenesis || isStakingPeriodBoundary(streamMode, tokenContext, lastHandleTime)) {
+        final var isStakePeriodBoundary = isStakingPeriodBoundary(streamMode, tokenContext, lastHandleTime);
+        if (isGenesis || isStakePeriodBoundary) {
             try {
                 exchangeRateManager.updateMidnightRates(stack);
                 stack.commitSystemStateChanges();
@@ -170,6 +171,7 @@ public class StakePeriodChanges {
                 startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
         }
+        return !isGenesis && isStakePeriodBoundary;
     }
 
     private boolean isStakingPeriodBoundary(

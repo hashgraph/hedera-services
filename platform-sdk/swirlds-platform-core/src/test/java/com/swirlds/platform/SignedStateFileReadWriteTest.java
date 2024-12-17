@@ -37,7 +37,6 @@ import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
@@ -60,11 +59,7 @@ import com.swirlds.state.State;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -150,53 +145,6 @@ class SignedStateFileReadWriteTest {
 
         assertTrue(exists(stateFile), "signed state file should be present");
         assertTrue(exists(signatureSetFile), "signature set file should be present");
-
-        final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
-        MerkleCryptoFactory.getInstance()
-                .digestTreeSync(
-                        deserializedSignedState.reservedSignedState().get().getState());
-
-        assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
-        assertEquals(signedState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
-        assertEquals(
-                signedState.getState().getHash(),
-                deserializedSignedState.reservedSignedState().get().getState().getHash(),
-                "hash should match");
-        assertNotSame(signedState, deserializedSignedState.reservedSignedState(), "state should be a different object");
-    }
-
-    @Test
-    @DisplayName("Write Then Read State File (protocol v1) Test")
-    void writeThenReadStateFileTest_v1() throws IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
-        final Path stateFile = testDirectory.resolve(SIGNED_STATE_FILE_NAME);
-        final Path signatureSetFile = testDirectory.resolve(SIGNATURE_SET_FILE_NAME);
-
-        assertFalse(exists(stateFile), "signed state file should not yet exist");
-        assertFalse(exists(signatureSetFile), "signature set file should not yet exist");
-
-        State state = (State) signedState.getState();
-        state.copy();
-        state.createSnapshot(testDirectory);
-
-        // now we need to emulate v1 by modifying the protocol version and appending signatures to the state file
-        final byte[] fileContent = Files.readAllBytes(stateFile);
-        final int fileVersionOffset = 1;
-        ByteBuffer buffer = ByteBuffer.wrap(fileContent);
-        buffer.position(fileVersionOffset);
-        // set the protocol version to v1
-        buffer.putInt(1);
-        try (OutputStream out = Files.newOutputStream(
-                        stateFile, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-                MerkleDataOutputStream merkleOut = new MerkleDataOutputStream(out)) {
-            // Write the modified content back to the file
-            out.write(fileContent);
-            // And append the signature set
-            merkleOut.writeSerializable(signedState.getSigSet(), true);
-        }
-
-        assertTrue(exists(stateFile), "signed state file should be present");
 
         final DeserializedSignedState deserializedSignedState =
                 readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);

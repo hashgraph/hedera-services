@@ -41,13 +41,10 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
-import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
-import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -65,7 +62,6 @@ import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -128,15 +124,6 @@ public class NodeStakeUpdatesTest {
     @Mock
     private WritableKVState<EntityNumber, Node> nodesState;
 
-    @Mock
-    private WritableKVState<ProtoBytes, Roster> rosterMap;
-
-    @Mock
-    private WritableKVState<TssMessageMapKey, TssMessageTransactionBody> tssMessageState;
-
-    @Mock
-    private WritableSingletonState<TssStatus> tssStatusState;
-
     private StakePeriodChanges subject;
 
     @BeforeEach
@@ -176,10 +163,12 @@ public class NodeStakeUpdatesTest {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(TssBaseService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(RosterService.NAME)).willReturn(writableStates);
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(Timestamp.newBuilder().seconds(1_234_567L))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
 
         subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 
@@ -218,10 +207,7 @@ public class NodeStakeUpdatesTest {
                         .build());
         given(context.consensusTime()).willReturn(currentConsensusTime);
         given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(TssBaseService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(RosterService.NAME)).willReturn(writableStates);
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         // Pre-condition check
         Assertions.assertThat(
@@ -243,11 +229,6 @@ public class NodeStakeUpdatesTest {
     @SuppressWarnings("unchecked")
     void processUpdateCalledForNextPeriodWithBlocksStreamMode() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(TssBaseService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(RosterService.NAME)).willReturn(writableStates);
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
         // Use any number of seconds that gets isNextPeriod(...) to return true
         final var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
         given(context.consensusTime()).willReturn(currentConsensusTime);
@@ -284,10 +265,7 @@ public class NodeStakeUpdatesTest {
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(TssBaseService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(RosterService.NAME)).willReturn(writableStates);
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         Assertions.assertThatNoException()
                 .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH));
@@ -356,11 +334,6 @@ public class NodeStakeUpdatesTest {
     @Test
     void stakingPeriodDoesntSetCandidateRosterForDisabledFlag() {
         // Simulate staking information
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(TssBaseService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(RosterService.NAME)).willReturn(writableStates);
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
         given(context.configuration()).willReturn(newConfig(990, false));
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
@@ -381,11 +354,6 @@ public class NodeStakeUpdatesTest {
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
                         .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(TssBaseService.NAME)).willReturn(writableStates);
-        given(stack.getWritableStates(RosterService.NAME)).willReturn(writableStates);
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
 
         // Simulate disabled `keyCandidateRoster` property
         given(context.configuration()).willReturn(newConfig(990, false));
@@ -398,9 +366,6 @@ public class NodeStakeUpdatesTest {
     @DisplayName("Service won't set the active roster as the new candidate roster")
     void doesntSetActiveRosterAsCandidateRoster() {
         // Simulate staking information
-        given(writableStates.<TssMessageMapKey, TssMessageTransactionBody>get(notNull()))
-                .willReturn(tssMessageState);
-        given(writableStates.<TssStatus>getSingleton(notNull())).willReturn(tssStatusState);
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
@@ -431,8 +396,6 @@ public class NodeStakeUpdatesTest {
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
                         .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
-        given(writableStates.<ProtoBytes, Roster>get(notNull())).willReturn(rosterMap);
-        given(writableStates.<RosterState>getSingleton(notNull())).willReturn(rosterState);
 
         // Enable keyCandidateRoster
         given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));

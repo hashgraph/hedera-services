@@ -37,7 +37,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -65,7 +64,7 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
 
     public RepeatableEmbeddedHedera(@NonNull final EmbeddedNode node) {
         super(node);
-        platform = new SynchronousFakePlatform(defaultNodeId, addressBook, executorService);
+        platform = new SynchronousFakePlatform(defaultNodeId, executorService);
     }
 
     @Override
@@ -162,10 +161,8 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         private FakeEvent lastCreatedEvent;
 
         public SynchronousFakePlatform(
-                @NonNull NodeId selfId,
-                @NonNull AddressBook addressBook,
-                @NonNull ScheduledExecutorService executorService) {
-            super(selfId, addressBook, executorService);
+                @NonNull final NodeId selfId, @NonNull final ScheduledExecutorService executorService) {
+            super(selfId, roster, executorService);
         }
 
         @Override
