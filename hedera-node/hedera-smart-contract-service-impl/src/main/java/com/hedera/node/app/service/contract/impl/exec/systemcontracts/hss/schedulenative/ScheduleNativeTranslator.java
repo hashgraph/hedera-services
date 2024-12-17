@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createSelectorsMap;
@@ -43,7 +43,7 @@ import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
-public class ScheduledCreateTranslator extends AbstractCallTranslator<HssCallAttempt> {
+public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAttempt> {
 
     public static final Function SCHEDULED_NATIVE_CALL =
             new Function("scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
@@ -54,7 +54,7 @@ public class ScheduledCreateTranslator extends AbstractCallTranslator<HssCallAtt
     private final HtsCallFactory htsCallFactory;
 
     @Inject
-    public ScheduledCreateTranslator(@NonNull final HtsCallFactory htsCallFactory) {
+    public ScheduleNativeTranslator(@NonNull final HtsCallFactory htsCallFactory) {
         requireNonNull(htsCallFactory);
         this.htsCallFactory = htsCallFactory;
     }
@@ -69,12 +69,12 @@ public class ScheduledCreateTranslator extends AbstractCallTranslator<HssCallAtt
         final var call = SCHEDULED_NATIVE_CALL.decodeCall(attempt.inputBytes());
         final var innerCallData = Bytes.wrap((byte[]) call.get(SCHEDULE_CALL_DATA));
         final var payerID = attempt.addressIdConverter().convert(call.get(SCHEDULE_PAYER));
-        return new ScheduledCreateCall(
+        return new ScheduleNativeCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.defaultVerificationStrategy(),
                 payerID,
-                ScheduledCreateTranslator::gasRequirement,
+                ScheduleNativeTranslator::gasRequirement,
                 attempt.keySetFor(),
                 innerCallData,
                 htsCallFactory,

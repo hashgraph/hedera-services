@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
@@ -43,7 +43,7 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class ScheduledCreateCall extends AbstractCall {
+public class ScheduleNativeCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
     private final AccountID payerID;
@@ -53,7 +53,7 @@ public class ScheduledCreateCall extends AbstractCall {
     private final boolean waitForExpiry;
     private final HtsCallFactory htsCallFactory;
 
-    public ScheduledCreateCall(
+    public ScheduleNativeCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final VerificationStrategy verificationStrategy,

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative.ScheduleNativeTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule.SignScheduleTranslator;
 import dagger.Module;
 import dagger.Provides;
@@ -56,7 +56,7 @@ public interface HssTranslatorsModule {
     @IntoSet
     @Named("HssTranslators")
     static CallTranslator<HssCallAttempt> provideScheduledCreateTranslator(
-            @NonNull final ScheduledCreateTranslator translator) {
+            @NonNull final ScheduleNativeTranslator translator) {
         return translator;
     }
 }

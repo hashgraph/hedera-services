@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.scheduledcreate;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.schedulenative;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator.SCHEDULED_NATIVE_CALL;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative.ScheduleNativeTranslator.SCHEDULED_NATIVE_CALL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule.SignScheduleTranslator.SIGN_SCHEDULE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS;
@@ -39,8 +39,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative.ScheduleNativeCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative.ScheduleNativeTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
@@ -54,7 +54,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduledCreateTranslatorTest extends CallTestBase {
+class ScheduleNativeTranslatorTest extends CallTestBase {
 
     @Mock
     private SystemContractGasCalculator gasCalculator;
@@ -86,12 +86,12 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
 
     private CreateTranslator createTranslator;
 
-    private ScheduledCreateTranslator subject;
+    private ScheduleNativeTranslator subject;
 
     @BeforeEach
     void setUp() {
         createTranslator = new CreateTranslator(decoder);
-        subject = new ScheduledCreateTranslator(htsCallFactory);
+        subject = new ScheduleNativeTranslator(htsCallFactory);
     }
 
     @Test
@@ -140,7 +140,7 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
 
         // when
         final var actualGas =
-                ScheduledCreateTranslator.gasRequirement(transactionBody, gasCalculator, mockEnhancement(), payerId);
+                ScheduleNativeTranslator.gasRequirement(transactionBody, gasCalculator, mockEnhancement(), payerId);
 
         // then
         assertEquals(expectedGas, actualGas);
@@ -161,6 +161,6 @@ class ScheduledCreateTranslatorTest extends CallTestBase {
 
         // then
         assertNotNull(call);
-        assertInstanceOf(ScheduledCreateCall.class, call);
+        assertInstanceOf(ScheduleNativeCall.class, call);
     }
 }

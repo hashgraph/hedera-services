@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.scheduledcreate;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.schedulenative;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
@@ -34,7 +34,7 @@ import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.scheduledcreate.ScheduledCreateCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative.ScheduleNativeCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
@@ -49,7 +49,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduledCreateCallTest extends CallTestBase {
+class ScheduleNativeCallTest extends CallTestBase {
 
     @Mock
     private SystemContractGasCalculator gasCalculator;
@@ -69,7 +69,7 @@ class ScheduledCreateCallTest extends CallTestBase {
     @Mock
     private HtsCallFactory htsCallFactory;
 
-    private ScheduledCreateCall subject;
+    private ScheduleNativeCall subject;
     private TransactionBody syntheticScheduleCreate;
 
     @Test
@@ -107,7 +107,7 @@ class ScheduledCreateCallTest extends CallTestBase {
     }
 
     private void prepareCall() {
-        subject = new ScheduledCreateCall(
+        subject = new ScheduleNativeCall(
                 gasCalculator,
                 mockEnhancement(),
                 verificationStrategy,
