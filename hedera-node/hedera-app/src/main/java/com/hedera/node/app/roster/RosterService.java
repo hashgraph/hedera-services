@@ -21,13 +21,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
-import com.hedera.node.app.roster.schemas.V057RosterSchema;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * A {@link com.hedera.hapi.node.state.roster.Roster} implementation of the {@link Service} interface.
@@ -49,9 +49,18 @@ public class RosterService implements Service {
      * adopted at an upgrade boundary.
      */
     private final Predicate<Roster> canAdopt;
+    /**
+     * Required until the upgrade that adopts the roster lifecycle; at that upgrade boundary,
+     * we must initialize the active roster from the platform state's legacy address books.
+     */
+    @Deprecated
+    private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
 
-    public RosterService(@NonNull final Predicate<Roster> canAdopt) {
+    public RosterService(
+            @NonNull final Predicate<Roster> canAdopt,
+            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory) {
         this.canAdopt = requireNonNull(canAdopt);
+        this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
     }
 
     @NonNull
@@ -68,7 +77,6 @@ public class RosterService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema());
-        registry.register(new V057RosterSchema(canAdopt, WritableRosterStore::new, ReadablePlatformStateStore::new));
+        registry.register(new V0540RosterSchema(canAdopt, WritableRosterStore::new, platformStateStoreFactory));
     }
 }

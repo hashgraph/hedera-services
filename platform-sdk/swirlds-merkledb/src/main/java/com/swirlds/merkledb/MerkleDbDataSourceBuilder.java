@@ -105,6 +105,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
         if (tableConfig == null) {
@@ -125,13 +126,15 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public VirtualDataSource copy(final VirtualDataSource snapshotMe, final boolean makeCopyActive) {
+    public MerkleDbDataSource copy(
+            final VirtualDataSource snapshotMe, final boolean makeCopyActive, boolean offlineUse) {
         if (!(snapshotMe instanceof MerkleDbDataSource source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
         try {
-            return source.getDatabase().copyDataSource(source, makeCopyActive);
+            return source.getDatabase().copyDataSource(source, makeCopyActive, offlineUse);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);
         }
@@ -141,7 +144,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      * {@inheritDoc}
      */
     @Override
-    public void snapshot(final Path destination, final VirtualDataSource snapshotMe) {
+    public void snapshot(@NonNull final Path destination, final VirtualDataSource snapshotMe) {
         if (!(snapshotMe instanceof MerkleDbDataSource source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
@@ -158,6 +161,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public VirtualDataSource restore(final String label, final Path source) {
         try {

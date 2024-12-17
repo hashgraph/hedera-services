@@ -66,8 +66,6 @@ The exact timing of versions that correspond to Ethereum Mainnet forks is out of
 
 Acceptance tests use the Paris re-definition of `DIFFICULTY` as the test for activation
 
-* Test that when dynamic is set to false that changing the version has no effect
-* Test when dynamic is set to true the evm version can change at each transaction
 * verify 0.30 still returns zeros for difficulty
 * verify 0.32 returns prng values
 * verify that prng behaviors are reflected in the opcode (use same tests as PRNG contract)

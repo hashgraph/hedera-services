@@ -63,8 +63,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlatformStateUpdatesTest implements TransactionFactory {
-    private static final RosterState ROSTER_STATE = RosterState.newBuilder()
+public class PlatformStateUpdatesTest implements TransactionFactory {
+    public static final RosterState ROSTER_STATE = RosterState.newBuilder()
             .roundRosterPairs(List.of(RoundRosterPair.DEFAULT))
             .build();
     private FakeState state;
@@ -82,7 +82,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     @BeforeEach
     void setUp() {
         freezeTimeBackingStore = new AtomicReference<>(null);
-        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.GENESIS_PLATFORM_STATE);
+        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));

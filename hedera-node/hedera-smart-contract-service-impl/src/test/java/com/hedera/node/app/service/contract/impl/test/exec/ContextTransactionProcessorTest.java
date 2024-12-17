@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -132,9 +133,7 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         givenSenderAccount();
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
@@ -171,9 +170,7 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         givenSenderAccount();
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
@@ -208,9 +205,7 @@ class ContextTransactionProcessorTest {
                 processor,
                 customGasCharging);
 
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
@@ -240,9 +235,7 @@ class ContextTransactionProcessorTest {
                 processor,
                 customGasCharging);
 
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
@@ -272,8 +265,9 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
+        given(context.payer()).willReturn(AccountID.DEFAULT);
         final var ethTx = wellKnownRelayedHapiCallWithGasLimit(1_000_000L);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
+        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT, context.payer()))
                 .willReturn(ethTx);
         given(processor.processTransaction(
                         ethTx, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
@@ -308,7 +302,10 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody)).willReturn(HEVM_Exception);
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
+                .willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
         given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
 
@@ -337,7 +334,10 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody)).willReturn(HEVM_Exception);
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
+                .willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
         given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
 
@@ -366,7 +366,9 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
         given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
@@ -399,7 +401,9 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
         given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
@@ -432,9 +436,10 @@ class ContextTransactionProcessorTest {
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
+        given(context.payer()).willReturn(SENDER_ID);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
         given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, SENDER_ID))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
         given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
 
@@ -466,5 +471,15 @@ class ContextTransactionProcessorTest {
     void givenSenderAccount() {
         given(rootProxyWorldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
         given(senderAccount.getNonce()).willReturn(1L);
+    }
+
+    void givenBodyWithTxnIdWillReturnHEVM() {
+        final var body = TransactionBody.newBuilder()
+                .transactionID(TransactionID.DEFAULT)
+                .build();
+        final var payer = AccountID.DEFAULT;
+        given(context.body()).willReturn(body);
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(body, payer)).willReturn(HEVM_CREATION);
     }
 }

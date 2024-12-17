@@ -22,9 +22,11 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
@@ -46,6 +48,8 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -70,7 +74,7 @@ import java.util.function.Function;
 public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot>
         implements SwirldState, MerkleRoot {
 
-    private static final long CLASS_ID = 0x8e300b0dfdafbb1bL;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     /**
      * The callbacks for Hedera lifecycle events.
      */
@@ -146,7 +150,12 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
@@ -162,7 +171,11 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(@NonNull final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         lifecycles.onPreHandle(event, this);
     }
 
@@ -218,7 +231,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
         final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
         return index == -1
-                ? V0540PlatformStateSchema.GENESIS_PLATFORM_STATE
+                ? V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE
                 : ((SingletonNode<PlatformState>) getChild(index)).getValue();
     }
 

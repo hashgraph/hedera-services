@@ -20,12 +20,13 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V057PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V058RosterLifecycleTransitionSchema;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -36,7 +37,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  * A service that provides the schema for the platform state, used by {@link MerkleStateRoot}
@@ -45,13 +46,26 @@ import java.util.function.Supplier;
 public enum PlatformStateService implements Service {
     PLATFORM_STATE_SERVICE;
 
-    private static final AtomicReference<Supplier<Roster>> ACTIVE_ROSTER = new AtomicReference<>();
-    private static final AtomicReference<Supplier<SoftwareVersion>> APP_VERSION = new AtomicReference<>();
+    /**
+     * Temporary access to a function that computes an application version from config.
+     */
+    private static final AtomicReference<Function<Configuration, SoftwareVersion>> APP_VERSION_FN =
+            new AtomicReference<>();
+    /**
+     * Temporary access to the disk address book used in upgrade or network transplant
+     * scenarios before the roster lifecycle is enabled.
+     */
+    @Deprecated
+    private static final AtomicReference<AddressBook> DISK_ADDRESS_BOOK = new AtomicReference<>();
+    /**
+     * The schemas to register with the {@link SchemaRegistry}.
+     */
     private static final Collection<Schema> SCHEMAS = List.of(
-            new V0540PlatformStateSchema(),
-            new V057PlatformStateSchema(
-                    () -> requireNonNull(ACTIVE_ROSTER.get()).get(),
-                    () -> requireNonNull(APP_VERSION.get()).get(),
+            new V0540PlatformStateSchema(DISK_ADDRESS_BOOK::get, config -> requireNonNull(APP_VERSION_FN.get())
+                    .apply(config)),
+            new V058RosterLifecycleTransitionSchema(
+                    DISK_ADDRESS_BOOK::get,
+                    config -> requireNonNull(APP_VERSION_FN.get()).apply(config),
                     WritablePlatformStateStore::new));
 
     public static final String NAME = "PlatformStateService";
@@ -69,26 +83,25 @@ public enum PlatformStateService implements Service {
     }
 
     /**
-     * Sets the active roster to the given roster.
-     * @param roster the roster to set as active
-     */
-    public void setActiveRosterFn(@NonNull final Supplier<Roster> roster) {
-        ACTIVE_ROSTER.set(requireNonNull(roster));
-    }
-
-    /**
-     * Clears the active roster.
-     */
-    public void clearActiveRosterFn() {
-        ACTIVE_ROSTER.set(null);
-    }
-
-    /**
      * Sets the application version to the given version.
      * @param appVersionFn the version to set as the application version
      */
-    public void setAppVersionFn(@NonNull final Supplier<SoftwareVersion> appVersionFn) {
-        APP_VERSION.set(requireNonNull(appVersionFn));
+    public void setAppVersionFn(@NonNull final Function<Configuration, SoftwareVersion> appVersionFn) {
+        APP_VERSION_FN.set(requireNonNull(appVersionFn));
+    }
+
+    /**
+     * Sets the disk address book to the given address book.
+     */
+    public void setDiskAddressBook(@NonNull final AddressBook addressBook) {
+        DISK_ADDRESS_BOOK.set(requireNonNull(addressBook));
+    }
+
+    /**
+     * Clears the disk address book.
+     */
+    public void clearDiskAddressBook() {
+        DISK_ADDRESS_BOOK.set(null);
     }
 
     /**
@@ -96,7 +109,7 @@ public enum PlatformStateService implements Service {
      * @param root the root to extract the creation version from
      * @return the creation version of the platform state, or null if the state is a genesis state
      */
-    public SemanticVersion creationVersionOf(@NonNull final MerkleStateRoot root) {
+    public SemanticVersion creationVersionOf(@NonNull final MerkleStateRoot<?> root) {
         requireNonNull(root);
         final var state = platformStateOf(root);
         return state == null ? null : state.creationSoftwareVersionOrThrow();
@@ -107,7 +120,7 @@ public enum PlatformStateService implements Service {
      * @param root the root to extract the round number from
      * @return the round number of the platform state, or zero if the state is a genesis state
      */
-    public long roundOf(@NonNull final MerkleStateRoot root) {
+    public long roundOf(@NonNull final MerkleStateRoot<?> root) {
         requireNonNull(root);
         final var platformState = platformStateOf(root);
         return platformState == null
@@ -118,7 +131,7 @@ public enum PlatformStateService implements Service {
     }
 
     @SuppressWarnings("unchecked")
-    public @Nullable PlatformState platformStateOf(@NonNull final MerkleStateRoot root) {
+    public @Nullable PlatformState platformStateOf(@NonNull final MerkleStateRoot<?> root) {
         final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
         if (index == -1) {
             return null;

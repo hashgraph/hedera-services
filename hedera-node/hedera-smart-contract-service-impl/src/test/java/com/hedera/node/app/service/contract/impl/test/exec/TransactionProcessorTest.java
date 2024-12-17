@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHARGING_RESULT;
@@ -368,6 +369,32 @@ class TransactionProcessorTest {
                         transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
                 HandleException.class);
         assertThat(handleException.getStatus()).isEqualTo(INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void callWhenInvalidContractIdThrowsException() {
+        final var transaction = new HederaEvmTransaction(
+                SENDER_ID,
+                null,
+                INVALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                0L,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE,
+                null,
+                null);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
+        given(worldUpdater.getHederaAccount(INVALID_CONTRACT_ADDRESS)).willThrow(IllegalArgumentException.class);
+
+        final var handleException = catchThrowableOfType(
+                () -> subject.processTransaction(
+                        transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
+                HandleException.class);
+        assertThat(handleException.getStatus()).isEqualTo(INVALID_TRANSACTION_BODY);
     }
 
     @Test

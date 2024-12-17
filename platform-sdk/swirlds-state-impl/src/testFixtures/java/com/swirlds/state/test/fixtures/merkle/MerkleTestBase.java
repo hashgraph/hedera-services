@@ -314,7 +314,6 @@ public class MerkleTestBase extends StateTestBase {
                 merkleDbConfig.hashesRamToDiskThreshold());
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
-        merkleDbTableConfig.preferDiskIndices(true);
         final var builder = new MerkleDbDataSourceBuilder(virtualDbPath, merkleDbTableConfig, CONFIGURATION);
         return new VirtualMap<>(label, keySerializer, valueSerializer, builder, CONFIGURATION);
     }

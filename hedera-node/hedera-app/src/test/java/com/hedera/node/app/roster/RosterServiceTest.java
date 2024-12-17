@@ -18,15 +18,16 @@ package com.hedera.node.app.roster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.roster.schemas.RosterTransplantSchema;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
-import com.hedera.node.app.roster.schemas.V057RosterSchema;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,11 +41,14 @@ class RosterServiceTest {
     @Mock
     private Predicate<Roster> canAdopt;
 
+    @Mock
+    private Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+
     private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterService(canAdopt);
+        rosterService = new RosterService(canAdopt, platformStateStoreFactory);
     }
 
     @Test
@@ -59,11 +63,11 @@ class RosterServiceTest {
 
         rosterService.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
-        verify(schemaRegistry, times(2)).register(captor.capture());
+        verify(schemaRegistry).register(captor.capture());
         final var schemas = captor.getAllValues();
-        assertThat(schemas).hasSize(2);
+        assertThat(schemas).hasSize(1);
         assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
-        assertThat(schemas.getLast()).isInstanceOf(V057RosterSchema.class);
+        assertThat(schemas.getFirst()).isInstanceOf(RosterTransplantSchema.class);
     }
 
     @Test

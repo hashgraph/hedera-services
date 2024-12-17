@@ -96,7 +96,6 @@ public class StatsDemoMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(StatsDemoState.class, () -> {
                 StatsDemoState statsDemoState = new StatsDemoState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(statsDemoState);
                 return statsDemoState;
             }));
             registerMerkleStateRootClassIds();
@@ -320,7 +319,7 @@ public class StatsDemoMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new StatsDemoState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 
