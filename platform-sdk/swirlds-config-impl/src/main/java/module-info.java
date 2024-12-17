@@ -10,8 +10,6 @@ module com.swirlds.config.impl {
     requires com.hedera.node.config;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.databind;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
 
