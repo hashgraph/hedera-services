@@ -24,6 +24,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Provides the context for a migration of state from one {@link Schema} version to another.
@@ -55,14 +56,22 @@ public interface MigrationContext {
     WritableStates newStates();
 
     /**
-     * The {@link Configuration} for this migration. Any portion of this configuration which was based on state (such
-     * as, in our case, file 121) will be current as of the previous state. This configuration is read-only. Having this
-     * configuration is useful for migrations that should behavior differently based on configuration.
+     * The app {@link Configuration} for this migration. Any portion of this configuration which was based on state
+     * (such as, in our case, file 121) will be current as of the previous state. This configuration is read-only.
+     * Having this configuration is useful for migrations that should behavior differently based on configuration.
      *
-     * @return The configuration to use.
+     * @return The application configuration to use.
      */
     @NonNull
-    Configuration configuration();
+    Configuration appConfig();
+
+    /**
+     * The platform {@link Configuration} for this migration.
+     *
+     * @return The platform configuration to use
+     */
+    @NonNull
+    Configuration platformConfig();
 
     /**
      * Information about the network itself. Generally, this is not useful information for migrations, but is used at
@@ -102,6 +111,14 @@ public interface MigrationContext {
     SemanticVersion previousVersion();
 
     /**
+     * Returns a mutable "scratchpad" that can be used to share values between different services
+     * during a migration.
+     *
+     * @return the shared values map
+     */
+    Map<String, Object> sharedValues();
+
+    /**
      * Returns whether this is a genesis migration.
      */
     default boolean isGenesis() {
@@ -109,10 +126,19 @@ public interface MigrationContext {
     }
 
     /**
-     * Returns a mutable "scratchpad" that can be used to share values between different services
-     * during a migration.
-     *
-     * @return the shared values map
+     * Returns whether the current version is an upgrade from the previous version, relative to the ordering
+     * implied by the given functions used to compare the version in the current app configuration and the
+     * previous state version.
+     * @param currentVersionFn the function to compute the current version from the app configuration
+     * @param previousVersionFn the function to compute the previous version from the saved state
+     * @return whether the current version is an upgrade from the previous version
+     * @param <T> the type of the version
      */
-    Map<String, Object> sharedValues();
+    default <T extends Comparable<? super T>> boolean isUpgrade(
+            @NonNull final Function<Configuration, T> currentVersionFn,
+            @NonNull final Function<SemanticVersion, T> previousVersionFn) {
+        final var current = currentVersionFn.apply(appConfig());
+        final var previous = previousVersion();
+        return currentVersionFn.apply(appConfig()).compareTo(previousVersionFn.apply(previousVersion())) > 0;
+    }
 }
