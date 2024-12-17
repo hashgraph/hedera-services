@@ -414,26 +414,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("Just some tests")
-        final Stream<DynamicTest> test() {
-            final var collector = "collector";
-            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
-            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
-            final var hbarFee = fixedConsensusHbarFee(1, collector);
-            final var hbarFee2 = fixedConsensusHbarFee(2, collector);
-            return hapiTest(
-                    cryptoCreate(collector).balance(ONE_HBAR),
-                    tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(hbarFee2),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
-                            .maxCustomFee(fee1)
-                            .message("TEST")
-                            .payingWith(SUBMITTER)
-                            .hasKnownStatus(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));
-        }
-
-        @HapiTest
         @DisplayName("Test multiple fees with same denomination")
         final Stream<DynamicTest> multipleFeesSameDenom() {
             final var collector = "collector";
@@ -476,9 +456,5 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(SUBMITTER));
         }
-
-        // questions:
-        // topic with 2 fees with same denomination!
-        // topic with multiple denomination fees
     }
 }
