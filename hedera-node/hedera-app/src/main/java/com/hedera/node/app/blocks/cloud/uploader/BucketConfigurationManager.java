@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.blocks.cloud.uploader;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
@@ -38,8 +40,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A singleton class that will handle the entire bucket configuration. This is needed since we will have
