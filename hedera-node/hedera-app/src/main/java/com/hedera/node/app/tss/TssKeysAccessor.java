@@ -17,7 +17,7 @@
 package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static com.hedera.node.app.tss.handlers.TssUtils.getValidMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -64,7 +64,7 @@ public class TssKeysAccessor {
         final var tssStore = storeFactory.getStore(ReadableTssStore.class);
         final var rosterStore = storeFactory.getStore(ReadableRosterStore.class);
         final var activeRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
-        final var activeParticipantDirectory = tssDirectoryAccessor.activeParticipantDirectory();
+        final var activeParticipantDirectory = tssDirectoryAccessor.activeParticipantDirectoryOrThrow();
         final var tssMessageBodies = tssStore.getMessagesForTarget(activeRosterHash);
         final var validTssMessages = getTssMessages(tssMessageBodies, activeParticipantDirectory, tssLibrary);
         final var activeRosterShares = getTssPrivateShares(activeParticipantDirectory, tssStore, activeRosterHash);
@@ -84,9 +84,9 @@ public class TssKeysAccessor {
             @NonNull final TssParticipantDirectory activeRosterParticipantDirectory,
             @NonNull final ReadableTssStore tssStore,
             @NonNull final Bytes activeRosterHash) {
-        final var validTssOps = validateTssMessages(
+        final var tssMessages = getValidMessages(
                 tssStore.getMessagesForTarget(activeRosterHash), activeRosterParticipantDirectory, tssLibrary);
-        final var validTssMessages = getTssMessages(validTssOps, activeRosterParticipantDirectory, tssLibrary);
+        final var validTssMessages = getTssMessages(tssMessages, activeRosterParticipantDirectory, tssLibrary);
         return tssLibrary.decryptPrivateShares(activeRosterParticipantDirectory, validTssMessages);
     }
 

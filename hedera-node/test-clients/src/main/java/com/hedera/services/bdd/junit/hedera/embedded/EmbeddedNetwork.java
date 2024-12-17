@@ -28,10 +28,14 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
+import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.TargetNetworkType;
@@ -44,7 +48,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,25 +106,30 @@ public class EmbeddedNetwork extends AbstractNetwork {
         this.configTxt = configTxtForLocal(name(), nodes(), 1, 1);
     }
 
-    @Override
-    public void start() {
-        startWithOverrides(emptyMap());
+    /**
+     * Starts the embedded Hedera network from a saved state customized by the given specs.
+     *
+     * @param state the state to customize
+     */
+    public void restart(@NonNull final FakeState state, @NonNull final Map<String, String> bootstrapOverrides) {
+        requireNonNull(state);
+        startVia(hedera -> hedera.restart(state), bootstrapOverrides, nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
     }
 
     @Override
-    public void startWithOverrides(@NonNull final Map<String, String> bootstrapOverrides) {
+    public void start() {
+        startWith(emptyMap(), nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
+    }
+
+    @Override
+    public void startWith(
+            @NonNull final Map<String, String> bootstrapOverrides,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         requireNonNull(bootstrapOverrides);
-        // Initialize the working directory
-        embeddedNode.initWorkingDir(configTxt);
-        if (!bootstrapOverrides.isEmpty()) {
-            updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
-        }
-        embeddedNode.start();
-        // Start the embedded Hedera "network"
-        embeddedHedera = switch (mode) {
-            case REPEATABLE -> new RepeatableEmbeddedHedera(embeddedNode);
-            case CONCURRENT -> new ConcurrentEmbeddedHedera(embeddedNode);};
-        embeddedHedera.start();
+        requireNonNull(tssEncryptionKeyFn);
+        requireNonNull(tssKeyMaterialFn);
+        startVia(EmbeddedHedera::start, bootstrapOverrides, tssEncryptionKeyFn, tssKeyMaterialFn);
     }
 
     @Override
@@ -189,5 +203,23 @@ public class EmbeddedNetwork extends AbstractNetwork {
     @Override
     protected HapiPropertySource networkOverrides() {
         return WorkingDirUtils.hapiTestStartupProperties();
+    }
+
+    private void startVia(
+            @NonNull final Consumer<EmbeddedHedera> start,
+            @NonNull final Map<String, String> bootstrapOverrides,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+        // Initialize the working directory
+        embeddedNode.initWorkingDir(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
+        if (!bootstrapOverrides.isEmpty()) {
+            updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
+        }
+        embeddedNode.start();
+        // Start the embedded Hedera "network"
+        embeddedHedera = switch (mode) {
+            case REPEATABLE -> new RepeatableEmbeddedHedera(embeddedNode);
+            case CONCURRENT -> new ConcurrentEmbeddedHedera(embeddedNode);};
+        start.accept(embeddedHedera);
     }
 }

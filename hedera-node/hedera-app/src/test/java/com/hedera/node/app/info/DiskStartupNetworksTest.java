@@ -20,15 +20,17 @@ import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.info.DiskStartupNetworks.ARCHIVE;
 import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
+import static com.hedera.node.app.info.DiskStartupNetworks.fromLegacyAddressBook;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.FAKE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.NO_OP_METRICS;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -43,10 +45,9 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -62,7 +63,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.schemas.V0570TssBaseSchema;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -74,8 +74,13 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -91,6 +96,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,11 +109,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DiskStartupNetworksTest {
     private static final int FAKE_NETWORK_SIZE = 4;
-    private static final long NODE_ID = 0L;
     private static final long ROUND_NO = 666L;
     private static final Bytes EXPECTED_LEDGER_ID = Bytes.fromBase64("Lw==");
     private static final Comparator<TssMessageTransactionBody> TSS_MESSAGE_COMPARATOR =
             Comparator.comparingLong(TssMessageTransactionBody::shareIndex);
+    private static final Bytes FAKE_ENCRYPTION_KEY = Bytes.fromBase64("ASM=");
 
     private static Network networkWithTssKeys;
     private static Network networkWithoutTssKeys;
@@ -152,7 +158,7 @@ class DiskStartupNetworksTest {
 
     @BeforeEach
     void setUp() {
-        subject = new DiskStartupNetworks(NODE_ID, configProvider, tssBaseService);
+        subject = new DiskStartupNetworks(configProvider, tssBaseService);
     }
 
     @Test
@@ -182,6 +188,33 @@ class DiskStartupNetworksTest {
         putJsonAt(OVERRIDE_NETWORK_JSON, WithTssKeys.YES);
         final var network = subject.migrationNetworkOrThrow();
         assertThat(network).isEqualTo(networkWithTssKeys);
+    }
+
+    @Test
+    void computesFromLegacyAddressBook() {
+        final int n = 3;
+        final var legacyBook = new AddressBook(IntStream.range(0, n)
+                .mapToObj(i -> new Address(
+                        NodeId.of(i),
+                        "" + i,
+                        "node" + (i + 1),
+                        1L,
+                        "localhost",
+                        i + 1,
+                        "127.0.0.1",
+                        i + 2,
+                        null,
+                        null,
+                        "0.0." + (i + 3)))
+                .toList());
+        final var network = fromLegacyAddressBook(legacyBook);
+        for (int i = 0; i < n; i++) {
+            final var rosterEntry = network.nodeMetadata().get(i).rosterEntryOrThrow();
+            assertThat(rosterEntry.nodeId()).isEqualTo(i);
+            assertThat(rosterEntry.gossipEndpoint().getFirst().ipAddressV4())
+                    .isEqualTo(Bytes.wrap(new byte[] {127, 0, 0, 1}));
+            assertThat(rosterEntry.gossipEndpoint().getLast().domainName()).isEqualTo("localhost");
+        }
     }
 
     @Test
@@ -304,7 +337,17 @@ class DiskStartupNetworksTest {
                 tssLibrary,
                 ForkJoinPool.commonPool(),
                 NO_OP_METRICS);
-        Set.of(tssBaseService, new EntityIdService(), new RosterService(roster -> true), new AddressBookServiceImpl())
+        PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
+        PLATFORM_STATE_SERVICE.setDiskAddressBook(new AddressBook());
+        Set.of(
+                        tssBaseService,
+                        PLATFORM_STATE_SERVICE,
+                        new EntityIdService(),
+                        new RosterService(
+                                roster -> true,
+                                () -> new ReadablePlatformStateStore(
+                                        state.getReadableStates(PlatformStateService.NAME))),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
@@ -374,18 +417,13 @@ class DiskStartupNetworksTest {
             tssVotes.put(key, vote);
         }
 
-        final var tssEncryptionKey =
-                writableStates.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY);
+        final var tssEncryptionKey = writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY);
         for (int i = 0; i < FAKE_NETWORK_SIZE; i++) {
             final var key = new EntityNumber(i);
-            final var value = TssEncryptionKeyTransactionBody.newBuilder()
-                    .publicTssEncryptionKey(Bytes.EMPTY)
-                    .build();
+            final var value = new TssEncryptionKeys(FAKE_ENCRYPTION_KEY, Bytes.EMPTY);
             tssEncryptionKey.put(key, value);
         }
 
-        final var tssStatus = writableStates.<TssStatus>getSingleton(V0570TssBaseSchema.TSS_STATUS_KEY);
-        tssStatus.put(TssStatus.DEFAULT);
         ((CommittableWritableStates) writableStates).commit();
     }
 
