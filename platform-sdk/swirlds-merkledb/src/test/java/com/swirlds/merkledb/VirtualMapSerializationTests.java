@@ -352,7 +352,7 @@ class VirtualMapSerializationTests {
     @Test
     void inMemoryModeSerde() throws IOException {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .withValue(VirtualMapConfig_.COPY_FLUSH_CANDIDATE_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
         ConfigurationHolder.getInstance().setConfiguration(configuration);
 

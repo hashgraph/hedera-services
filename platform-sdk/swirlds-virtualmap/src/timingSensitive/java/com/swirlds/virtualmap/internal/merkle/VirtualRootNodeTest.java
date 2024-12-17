@@ -416,7 +416,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualMapConfig config =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(VirtualMapConfig.class);
         VirtualRootNode root = createRoot();
-        assertEquals(config.copyFlushThreshold(), root.getFlushThreshold());
+        assertEquals(config.copyFlushCandidateThreshold(), root.getFlushCandidateThreshold());
         root.release();
     }
 
@@ -429,9 +429,9 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
         final int flushInterval = config.flushInterval();
         VirtualRootNode root = createRoot();
-        root.setFlushThreshold(threshold);
+        root.setFlushCandidateThreshold(threshold);
         for (int i = 0; i <= flushInterval; i++) {
-            assertEquals(threshold, root.getFlushThreshold());
+            assertEquals(threshold, root.getFlushCandidateThreshold());
             VirtualRootNode copy = root.copy();
             copy.postInit(root.getState());
             root.release();
@@ -447,7 +447,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(VirtualMapConfig.class);
         final int flushInterval = config.flushInterval();
         VirtualRootNode root = createRoot();
-        root.setFlushThreshold(0);
+        root.setFlushCandidateThreshold(0);
         assertFalse(root.shouldBeFlushed()); // the very first copy is never flushed
         for (int i = 0; i < flushInterval; i++) {
             VirtualRootNode copy = root.copy();
@@ -463,11 +463,11 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @DisplayName("Default zero flush threshold")
     void defaultZeroFlushThresholdTest() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, "0")
+                .withValue(VirtualMapConfig_.COPY_FLUSH_CANDIDATE_THRESHOLD, "0")
                 .getOrCreateConfig();
 
         VirtualRootNode root = createRoot(configuration);
-        assertEquals(0, root.getFlushThreshold());
+        assertEquals(0, root.getFlushCandidateThreshold());
         final int flushInterval =
                 configuration.getConfigData(VirtualMapConfig.class).flushInterval();
         for (int i = 0; i < flushInterval; i++) {
@@ -477,7 +477,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
             root = copy;
         }
         final VirtualRootNode copyShouldBeFlushed = root;
-        root.setFlushThreshold(12345678L);
+        root.setFlushCandidateThreshold(12345678L);
         for (int i = 0; i < flushInterval; i++) {
             VirtualRootNode copy = root.copy();
             copy.postInit(root.getState());
@@ -499,7 +499,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     void inMemoryAddRemoveNoFlushTest() throws InterruptedException {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .withValue(VirtualMapConfig_.COPY_FLUSH_CANDIDATE_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
 
         VirtualRootNode root =
@@ -568,7 +568,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     void inMemoryAddRemoveSomeFlushesTest() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .withValue(VirtualMapConfig_.COPY_FLUSH_CANDIDATE_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
 
         VirtualRootNode root =
@@ -684,7 +684,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     void inMemoryUpdateNoFlushTest() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .withValue(VirtualMapConfig_.COPY_FLUSH_CANDIDATE_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
 
         VirtualRootNode root =
@@ -795,7 +795,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         // prepare the root for h full leaf rehash
         root.setImmutable(true);
         root.getCache().seal();
-        root.flush();
+        root.tryFlush();
 
         return root;
     }

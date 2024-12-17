@@ -49,7 +49,7 @@ public interface VirtualRoot extends MerkleNode {
      *
      * @return if the copy has been flushed
      */
-    boolean flush();
+    boolean tryFlush();
 
     /**
      * Check if this copy has already been flushed.

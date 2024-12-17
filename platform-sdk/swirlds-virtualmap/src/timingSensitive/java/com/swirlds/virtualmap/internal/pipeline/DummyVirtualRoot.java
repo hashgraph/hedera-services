@@ -194,7 +194,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         if (shouldBeFlushed) {
             return true;
         }
-        final long flushThreshold = VIRTUAL_MAP_CONFIG.copyFlushThreshold();
+        final long flushThreshold = VIRTUAL_MAP_CONFIG.copyFlushCandidateThreshold();
         return (flushThreshold > 0) && (estimatedSize() >= flushThreshold);
     }
 
@@ -213,11 +213,11 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public boolean flush() {
+    public boolean tryFlush() {
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
-        if (!shouldBeFlushed && (estimatedSize < VIRTUAL_MAP_CONFIG.copyFlushThreshold())) {
+        if (!shouldBeFlushed && (estimatedSize < VIRTUAL_MAP_CONFIG.copyFlushCandidateThreshold())) {
             throw new IllegalStateException("copy should not be flushed");
         }
         if (!hashed) {
@@ -267,7 +267,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     }
 
     private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
-        final long copyFlushThreshold = VIRTUAL_MAP_CONFIG.copyFlushThreshold();
+        final long copyFlushThreshold = VIRTUAL_MAP_CONFIG.copyFlushCandidateThreshold();
         return (copy.shouldBeFlushed()) || ((copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold));
     }
 

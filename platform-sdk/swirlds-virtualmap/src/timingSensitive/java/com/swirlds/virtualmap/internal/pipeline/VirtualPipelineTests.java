@@ -606,7 +606,7 @@ class VirtualPipelineTests {
         }
 
         @Override
-        public boolean flush() {
+        public boolean tryFlush() {
             try {
                 if (!flushFinishedLatch.await(30, TimeUnit.SECONDS)) {
                     throw new RuntimeException("Wait exceeded");
@@ -615,7 +615,7 @@ class VirtualPipelineTests {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(ex);
             }
-            return super.flush();
+            return super.tryFlush();
         }
 
         @Override
@@ -648,7 +648,7 @@ class VirtualPipelineTests {
         for (int i = 0; i < copyCount; i++) {
             DummyVirtualRoot copy = copies.get(i);
             // Every 11th copy should be flushed
-            copy.setEstimatedSize(config.copyFlushThreshold() / 10 - 1);
+            copy.setEstimatedSize(config.copyFlushCandidateThreshold() / 10 - 1);
         }
         // Release all copies to make them mergeable / flushable. Note that when the first copy is
         // released, a thread race between this thread and the pipeline thread starts. It may
@@ -683,7 +683,7 @@ class VirtualPipelineTests {
         for (int i = 0; i < copyCount; i++) {
             DummyVirtualRoot copy = copies.get(i);
             // Set all copies small enough, so none of them should be flushed even after merge
-            copy.setEstimatedSize(config.copyFlushThreshold() / (copyCount + 1));
+            copy.setEstimatedSize(config.copyFlushCandidateThreshold() / (copyCount + 1));
         }
         DummyVirtualRoot last = copies.get(copies.size() - 1);
         DummyVirtualRoot afterCopy = last.copy();

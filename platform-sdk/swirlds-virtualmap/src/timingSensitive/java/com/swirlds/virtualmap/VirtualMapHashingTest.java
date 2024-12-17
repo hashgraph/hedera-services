@@ -435,7 +435,7 @@ class VirtualMapHashingTest {
     private static void doFullRehash(VirtualRootNode root) {
         root.setImmutable(true);
         root.getCache().seal();
-        root.flush();
+        root.tryFlush();
         root.fullLeafRehashIfNecessary();
     }
 

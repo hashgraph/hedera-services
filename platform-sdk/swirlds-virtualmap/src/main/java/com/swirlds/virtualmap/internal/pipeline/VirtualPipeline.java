@@ -488,7 +488,7 @@ public class VirtualPipeline {
         if (!copy.isHashed()) {
             hashCopy(copy);
         }
-        return copy.flush();
+        return copy.tryFlush();
     }
 
     /**
@@ -682,9 +682,8 @@ public class VirtualPipeline {
             final VirtualRoot copy = next.getValue();
 
             sb.append(index);
-            sb.append(", should be flushed = ").append(uppercaseBoolean(shouldBeFlushed(copy)));
-            sb.append(", can be merged = ").append(uppercaseBoolean(canBeMerged(next)));
             sb.append(", flushed = ").append(uppercaseBoolean(copy.isFlushed()));
+            sb.append(", flushed = ").append(uppercaseBoolean(copy.isMerged()));
             sb.append(", destroyed = ").append(uppercaseBoolean(copy.isDestroyed()));
             sb.append(", hashed = ").append(uppercaseBoolean(copy.isHashed()));
             sb.append(", detached = ").append(uppercaseBoolean(copy.isDetached()));

@@ -266,13 +266,13 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
 
     /**
      * Flush threshold. If greater than zero, then this virtual root will be flushed to disk, if
-     * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush,
-     * the threshold is not taken into consideration.
+     * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush
+     * using {@link #enableFlush()}, the threshold is not taken into consideration.
      *
-     * <p>By default, the threshold is set to {@link VirtualMapConfig#copyFlushThreshold()}. The
+     * <p>By default, the threshold is set to {@link VirtualMapConfig#copyFlushCandidateThreshold()}. The
      * threshold is inherited by all copies.
      */
-    private final AtomicLong flushThreshold = new AtomicLong();
+    private final AtomicLong flushCandidateThreshold = new AtomicLong();
 
     /**
      * This latch is used to implement {@link #waitUntilFlushed()}.
@@ -347,7 +347,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         // Hasher is required during reconnects
         this.hasher = new VirtualHasher();
         this.virtualMapConfig = virtualMapConfig;
-        this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
+        this.flushCandidateThreshold.set(virtualMapConfig.copyFlushCandidateThreshold());
         // All other fields are initialized in postInit()
     }
 
@@ -364,7 +364,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher();
         this.virtualMapConfig = requireNonNull(virtualMapConfig);
-        this.flushThreshold.set(virtualMapConfig.copyFlushThreshold());
+        this.flushCandidateThreshold.set(virtualMapConfig.copyFlushCandidateThreshold());
         this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
         // All other fields are initialized in postInit()
     }
@@ -391,7 +391,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         this.fullyReconnectedState = null;
         this.maxSizeReachedTriggeringWarning = source.maxSizeReachedTriggeringWarning;
         this.pipeline = source.pipeline;
-        this.flushThreshold.set(source.flushThreshold.get());
+        this.flushCandidateThreshold.set(source.flushCandidateThreshold.get());
         this.statistics = source.statistics;
         this.virtualMapConfig = source.virtualMapConfig;
 
@@ -1049,8 +1049,8 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      *
      * @param value The flush threshold, in bytes
      */
-    public void setFlushThreshold(long value) {
-        flushThreshold.set(value);
+    public void setFlushCandidateThreshold(long value) {
+        flushCandidateThreshold.set(value);
         updateShouldBeFlushed();
     }
 
@@ -1059,8 +1059,8 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      *
      * @return The flush threshold, in bytes
      */
-    long getFlushThreshold() {
-        return flushThreshold.get();
+    long getFlushCandidateThreshold() {
+        return flushCandidateThreshold.get();
     }
 
     /**
@@ -1068,13 +1068,17 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      */
     @Override
     public boolean shouldBeFlushed() {
+        return shouldBeFlushed(100);
+    }
+
+    private boolean shouldBeFlushed(final double percentThreshold) {
         // Check if this copy was explicitly marked to flush
         if (shouldBeFlushed.get()) {
             return true;
         }
         // Otherwise check its size and compare against flush threshold
-        final long threshold = flushThreshold.get();
-        return (threshold > 0) && (estimatedSize() >= threshold);
+        final long threshold = flushCandidateThreshold.get();
+        return (threshold > 0) && (estimatedSize() >= threshold * percentThreshold / 100);
     }
 
     /**
@@ -1090,7 +1094,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * {@link VirtualMapConfig#flushInterval()} setting.
      */
     private void updateShouldBeFlushed() {
-        if (flushThreshold.get() <= 0) {
+        if (flushCandidateThreshold.get() <= 0) {
             // If copy size flush threshold is not set, use flush interval
             this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % virtualMapConfig.flushInterval() == 0);
         }
@@ -1116,7 +1120,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public boolean flush() {
+    public boolean tryFlush() {
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be flushed");
         }
@@ -1129,8 +1133,8 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
 
         // Prepare the cache for flush. It may affect cache's estimated size
         cache.prepareForFlush();
-        if (shouldBeFlushed()) {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
+        if (shouldBeFlushed(virtualMapConfig.percentCopyFlushAfterGCThreshold())) {
+            logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
             final long start = System.currentTimeMillis();
             flush(cache, state, dataSource);
             cache.release();
@@ -1142,7 +1146,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
                     VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {} in {} ms", cache.getFastCopyVersion(), end - start);
             return true;
         } else {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
+            logger.info(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
             cache.garbageCollect();
             return false;
         }
