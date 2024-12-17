@@ -98,7 +98,7 @@ jobs:
 
 
       - name: Combine results in one jacoco report
-        run: python3 aggregate_jacoco_reports.py
+        run: python3 .github/scripts/aggregate_jacoco_reports.py
 
       - name: Publish to Codacy
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
