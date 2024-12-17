@@ -62,10 +62,14 @@ public final class RosterRetriever {
      * If the active roster is missing from RosterState,
      * then fall back to reading an AddressBook from the PlatformState
      * and converting it to a Roster.
+     * <p>
+     * This method may return null in case the RosterService states are not populated,
+     * and the PlatformService state doesn't have an AddressBook,
+     * which generally represents a new network genesis case.
      *
      * @return an active Roster for the round of the state, or a Roster that represents the current AddressBook in PlatformState
      */
-    @NonNull
+    @Nullable
     public static Roster retrieveActiveOrGenesisRoster(@NonNull final State state) {
         final var roster = retrieveActive(state, getRound(state));
         if (roster != null) {
@@ -74,7 +78,7 @@ public final class RosterRetriever {
         // We are currently in bootstrap for the genesis roster, which is set in the address book
         final var readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+        return buildRoster(readablePlatformStateStore.getAddressBook());
     }
 
     /**

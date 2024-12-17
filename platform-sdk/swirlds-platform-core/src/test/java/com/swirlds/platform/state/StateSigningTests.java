@@ -332,7 +332,6 @@ class StateSigningTests {
                 .filter(entry -> entry.nodeId() != nodeToRemove.nodeId())
                 .toList();
         final Roster updatedRoster = new Roster(entries);
-        signedState.getState().getWritablePlatformState().setAddressBook(RosterUtils.buildAddressBook(updatedRoster));
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).weight();
@@ -340,7 +339,7 @@ class StateSigningTests {
         tamperedBytes[0] = 0;
         when(signatures.get(1).getBytes()).thenReturn(Bytes.wrap(tamperedBytes));
 
-        signedState.pruneInvalidSignatures();
+        signedState.pruneInvalidSignatures(updatedRoster);
 
         assertEquals(signaturesAdded.size() - 2, sigSet.size());
         assertEquals(

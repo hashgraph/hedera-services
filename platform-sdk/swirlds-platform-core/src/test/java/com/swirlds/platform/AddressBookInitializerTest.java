@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
@@ -39,6 +40,7 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.AddressBookConfig_;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
@@ -50,6 +52,8 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -207,13 +211,27 @@ class AddressBookInitializerTest {
                 signedStateAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the state address book.");
-        assertEquals(
+        assertEqualsAsRosters(
                 null,
                 initializer.getPreviousAddressBook(),
                 "When there is no upgrade, the address book should not change");
         assertAddressBookFileContent(initializer, configAddressBook, signedStateAddressBook, inititializedAddressBook);
         // The addressBooks remain unchanged when there is no software upgrade.
         assertFalse(initializer.hasAddressBookChanged());
+    }
+
+    /**
+     * Compare AddressBooks after converting them to rosters to exclude fields unsupported by the Roster
+     * (memo, selfName, agreeCert, etc.)
+     *
+     * @param expected expected AddressBook
+     * @param actual actual AddressBook
+     * @param message error message
+     */
+    void assertEqualsAsRosters(final AddressBook expected, final AddressBook actual, final String message) {
+        final Roster expectedRoster = RosterRetriever.buildRoster(expected);
+        final Roster actualRoster = RosterRetriever.buildRoster(actual);
+        assertEquals(expectedRoster, actualRoster, message);
     }
 
     @Test
@@ -381,11 +399,11 @@ class AddressBookInitializerTest {
         when(signedState.getSwirldState()).thenReturn(swirldState);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
-        when(platformState.getAddressBook())
-                .thenReturn(currentRoster == null ? null : RosterUtils.buildAddressBook(currentRoster));
-        when(platformState.getPreviousAddressBook()).thenReturn(previousAddressBook);
+        RosterServiceStateMock.setup(
+                (State) swirldState, currentRoster, 1L, RosterRetriever.buildRoster(previousAddressBook));
         final MerkleRoot state = mock(MerkleRoot.class);
         when(state.getReadablePlatformState()).thenReturn(platformState);
+        when(state.getSwirldState()).thenReturn(swirldState);
         when(signedState.getState()).thenReturn(state);
         when(signedState.isGenesisState()).thenReturn(fromGenesis);
         when(signedState.getRoster()).thenReturn(currentRoster);
@@ -401,7 +419,7 @@ class AddressBookInitializerTest {
     private Supplier<SwirldState> getMockSwirldStateSupplier(int scenario) {
 
         final AtomicReference<AddressBook> configAddressBook = new AtomicReference<>();
-        final SwirldState swirldState = mock(SwirldState.class);
+        final SwirldState swirldState = mock(SwirldState.class, withSettings().extraInterfaces(State.class));
 
         final OngoingStubbing<AddressBook> stub = when(swirldState.updateWeight(
                 argThat(confAB -> {

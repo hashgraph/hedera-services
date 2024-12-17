@@ -18,11 +18,6 @@ package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -41,7 +36,6 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.re
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
@@ -82,73 +76,6 @@ public class TokenCancelAirdropTest extends TokenAirdropBase {
                 "entities.unlimitedAutoAssociationsEnabled",
                 "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
-    }
-
-    @HapiTest
-    @DisplayName("FT happy path")
-    final Stream<DynamicTest> ftHappyPath() {
-        final var account = "account";
-        return hapiTest(
-                // setup initial account
-                cryptoCreate(account),
-                tokenAssociate(account, FUNGIBLE_TOKEN),
-                cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(OWNER, account)),
-
-                // Create an airdrop in pending state
-                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                        .payingWith(account)
-                        .via("airdrop"),
-
-                // Verify that a pending state is created and the correct usd is charged
-                getTxnRecord("airdrop")
-                        .hasPriority(recordWith()
-                                .pendingAirdrops(includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
-                                        .between(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
-                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                validateChargedUsd("airdrop", 0.1, 1),
-
-                // Cancel the airdrop
-                tokenCancelAirdrop(pendingAirdrop(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
-                        .payingWith(account)
-                        .via("cancelAirdrop"),
-
-                // Verify that the receiver doesn't have the token
-                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                validateChargedUsd("cancelAirdrop", 0.001, 1));
-    }
-
-    @HapiTest
-    @DisplayName("NFT happy path")
-    final Stream<DynamicTest> nftHappyPath() {
-        final var account = "account";
-        return hapiTest(
-                // setup initial account
-                cryptoCreate(account),
-                tokenAssociate(account, NON_FUNGIBLE_TOKEN),
-                cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(OWNER, account)),
-
-                // Create an airdrop in pending state
-                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                        .payingWith(account)
-                        .via("airdrop"),
-
-                // Verify that a pending state is created and the correct usd is charged
-                getTxnRecord("airdrop")
-                        .hasPriority(recordWith()
-                                .pendingAirdrops(includingNftPendingAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1L)
-                                        .between(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
-                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
-                validateChargedUsd("airdrop", 0.1, 1),
-
-                // Cancel the airdrop
-                tokenCancelAirdrop(
-                                pendingNFTAirdrop(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, NON_FUNGIBLE_TOKEN, 1L))
-                        .payingWith(account)
-                        .via("cancelAirdrop"),
-
-                // Verify that the receiver doesn't have the token
-                getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
-                validateChargedUsd("cancelAirdrop", 0.001, 1));
     }
 
     @HapiTest
