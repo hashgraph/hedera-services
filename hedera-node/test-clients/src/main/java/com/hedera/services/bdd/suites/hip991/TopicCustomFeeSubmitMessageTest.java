@@ -531,4 +531,114 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
         }
     }
+
+    @Nested
+    @DisplayName("Positive scenarios with private topic")
+    class SubmitMessagesToPrivateTopicPositiveScenarios {
+
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+            lifecycle.doAdhoc(associateFeeTokensAndSubmitter());
+        }
+
+        @HapiTest
+        @DisplayName("Submitter key is in FEKL - hbar fee")
+        // TOPIC_FEE_151
+        final Stream<DynamicTest> submitterKeyIsInFEKLHbar() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHbarFee(ONE_HUNDRED_HBARS, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(0L),
+                    createTopic(TOPIC)
+                            .feeExemptKeys(SUBMITTER)
+                            .submitKeyName(SUBMITTER)
+                            .withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST"),
+                    getAccountBalance(collector).hasTinyBars(0));
+        }
+
+        @HapiTest
+        @DisplayName("Submitter key is in FEKL - hts fee")
+        // TOPIC_FEE_152
+        final Stream<DynamicTest> submitterKeyIsInFEKLHts() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(0L),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC)
+                            .feeExemptKeys(SUBMITTER)
+                            .submitKeyName(SUBMITTER)
+                            .withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
+        }
+
+        @HapiTest
+        @DisplayName("FEKL is empty - hbar fee")
+        // TOPIC_FEE_153
+        final Stream<DynamicTest> FEKLIsEmptyHbar() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHbarFee(ONE_HBAR, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(0L),
+                    createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST"),
+                    getAccountBalance(collector).hasTinyBars(ONE_HBAR));
+        }
+
+        @HapiTest
+        @DisplayName("Submit with treasury and FEKL is empty")
+        // TOPIC_FEE_154
+        final Stream<DynamicTest> SubmitWithTreasuryAndFEKLIsEmpty() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(0L),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .signedBy(SUBMITTER)
+                            .payingWith(TOKEN_TREASURY),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
+        }
+
+        @HapiTest
+        @DisplayName("Submit with collector and FEKL is empty")
+        // TOPIC_FEE_155
+        final Stream<DynamicTest> SubmitWithCollectorAndFEKLIsEmpty() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .signedBy(SUBMITTER)
+                            .payingWith(collector),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
+        }
+
+        @HapiTest
+        @DisplayName("Submit with another collector and allCollectorsExempt=true")
+        // TOPIC_FEE_155
+        final Stream<DynamicTest> anotherSubmitWithCollectorAndAllCollectorsExempt() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .signedBy(SUBMITTER)
+                            .payingWith(collector),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
+        }
+    }
 }
