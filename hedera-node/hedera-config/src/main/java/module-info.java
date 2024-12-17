@@ -12,6 +12,8 @@ module com.hedera.node.config {
     requires transitive com.swirlds.config.extensions;
     requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.common;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.databind;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.yaml.snakeyaml;
