@@ -37,6 +37,8 @@ javaModules {
         module("consensus-gossip-impl")  { artifact = "consensus-gossip-impl" }
         module("event-creator") { artifact = "event-creator" }
         module("event-creator-impl") { artifact = "event-creator-impl" }
+        module("event-intake") { artifact = "event-intake" }
+        module("event-intake-impl") { artifact = "event-intake-impl" }
     }
 
     // The Hedera services modules
