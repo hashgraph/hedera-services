@@ -225,7 +225,7 @@ public class HandleWorkflow {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
-            tssBaseService.generateParticipantDirectory(state);
+            tssBaseService.ensureParticipantDirectoryKnown(state);
         }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
