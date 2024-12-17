@@ -62,8 +62,8 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -263,7 +263,8 @@ public class EnhancedKeyStoreLoader {
         this.sigCertificates = HashMap.newHashMap(addressBook.getSize());
         this.agrPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.agrCertificates = HashMap.newHashMap(addressBook.getSize());
-        this.localNodes = new HashSet<>(Objects.requireNonNull(nodesToStart, MSG_NODES_TO_START_NON_NULL));
+        this.localNodes =
+                Collections.unmodifiableSet(Objects.requireNonNull(nodesToStart, MSG_NODES_TO_START_NON_NULL));
         this.tssPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.tssPublicKeys = HashMap.newHashMap(addressBook.getSize());
     }
