@@ -969,16 +969,17 @@ class VirtualMapTests extends VirtualTestBase {
         for (int i = 0; i < totalCount; i++) {
             VirtualMap map1 = map0.copy();
             map0.release();
+            // shouldBeFlushed() can only be called on a released instance
+            VirtualRootNode root0 = map0.getRight();
+            if (root0.shouldBeFlushed()) {
+                flushCount++;
+            }
             map0 = map1;
 
-            VirtualRootNode root = map0.getRight();
+            VirtualRootNode root1 = map1.getRight();
             // Make sure at least some maps need to be flushed, including the last one
             if ((i % 57 == 0) || (i == totalCount - 1)) {
-                root.enableFlush();
-            }
-
-            if (root.shouldBeFlushed()) {
-                flushCount++;
+                root1.enableFlush();
             }
         }
 
@@ -987,6 +988,10 @@ class VirtualMapTests extends VirtualTestBase {
         VirtualRootNode lastRoot = map0.getRight();
         VirtualMap map1 = map0.copy();
         map0.release();
+        // shouldBeFlushed() can only be called on a released instance
+        if (lastRoot.shouldBeFlushed()) {
+            flushCount++;
+        }
         lastRoot.waitUntilFlushed();
         map1.release();
 

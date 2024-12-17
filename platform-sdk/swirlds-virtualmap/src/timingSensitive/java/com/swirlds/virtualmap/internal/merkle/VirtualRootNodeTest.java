@@ -476,17 +476,24 @@ class VirtualRootNodeTest extends VirtualTestBase {
             root.release();
             root = copy;
         }
-        assertTrue(root.shouldBeFlushed());
+        final VirtualRootNode copyShouldBeFlushed = root;
         root.setFlushThreshold(12345678L);
-        assertTrue(root.shouldBeFlushed());
         for (int i = 0; i < flushInterval; i++) {
             VirtualRootNode copy = root.copy();
             copy.postInit(root.getState());
             root.release();
             root = copy;
         }
-        assertFalse(root.shouldBeFlushed()); // should still have a custom flush threshold
+        final VirtualRootNode copyShouldNotBeFlushed = root;
+        // shouldBeFlushed() can only be called on released copies, so create one more copy to
+        // release copyShouldNotBeFlushed
+        final VirtualRootNode finalCopy = root.copy();
         root.release();
+
+        assertTrue(copyShouldBeFlushed.shouldBeFlushed());
+        assertFalse(copyShouldNotBeFlushed.shouldBeFlushed()); // should still have a custom flush threshold
+
+        finalCopy.release();
     }
 
     @Test
