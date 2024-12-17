@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -195,7 +196,7 @@ public class SignedState implements SignedStateInfo {
 
         state.reserve();
 
-        this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
+        this.signatureVerifier = requireNonNull(signatureVerifier);
         this.state = state;
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
@@ -245,7 +246,7 @@ public class SignedState implements SignedStateInfo {
      * @param sigSet the signatures to be attached to this signed state
      */
     public void setSigSet(@NonNull final SigSet sigSet) {
-        this.sigSet = Objects.requireNonNull(sigSet);
+        this.sigSet = requireNonNull(sigSet);
         signingWeight = 0;
         if (!isGenesisState()) {
             // Only non-genesis states will have signing weight
@@ -269,8 +270,9 @@ public class SignedState implements SignedStateInfo {
         Ideally the roster would be captured in the constructor but due to the mutable underlying state, the roster
         can change from underneath us. Therefore, the roster must be regenerated on each access.
          */
-        return RosterRetriever.retrieveActiveOrGenesisRoster(
+        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(
                 (MerkleStateRoot) getState().getSwirldState());
+        return requireNonNull(roster, "Roster stored in signed state is null (this should never happen)");
     }
 
     /**
@@ -569,8 +571,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this state is signed by the threshold, false otherwise
      */
     private boolean signedBy(@NonNull final Threshold threshold) {
-        return Objects.requireNonNull(threshold)
-                .isSatisfiedBy(signingWeight, RosterUtils.computeTotalWeight(getRoster()));
+        return requireNonNull(threshold).isSatisfiedBy(signingWeight, RosterUtils.computeTotalWeight(getRoster()));
     }
 
     /**
@@ -597,8 +598,8 @@ public class SignedState implements SignedStateInfo {
      * state is either not complete or was previously complete prior to this signature
      */
     public boolean addSignature(@NonNull final NodeId nodeId, @NonNull final Signature signature) {
-        Objects.requireNonNull(nodeId, "nodeId");
-        Objects.requireNonNull(signature, "signature");
+        requireNonNull(nodeId, "nodeId");
+        requireNonNull(signature, "signature");
 
         if (isComplete()) {
             // No need to add more signatures
@@ -701,7 +702,7 @@ public class SignedState implements SignedStateInfo {
      *                      state. (Useful if validating signed states from untrusted sources.)
      */
     public void pruneInvalidSignatures(@NonNull final Roster trustedRoster) {
-        Objects.requireNonNull(trustedRoster);
+        requireNonNull(trustedRoster);
 
         final Map<Long, RosterEntry> entriesByNodeId = RosterUtils.toMap(trustedRoster);
         final List<NodeId> signaturesToRemove = new ArrayList<>();
