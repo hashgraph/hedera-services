@@ -461,7 +461,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(SUBMITTER));
         }
-
     }
 
     @Nested
