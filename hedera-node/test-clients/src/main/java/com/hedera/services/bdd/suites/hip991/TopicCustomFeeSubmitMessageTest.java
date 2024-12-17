@@ -25,6 +25,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -35,12 +38,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_VALID_MAX_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -400,9 +405,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             return hapiTest(
                     cryptoCreate(collector).balance(ONE_HBAR),
                     newKeyNamed(SUBMIT_KEY),
-                    createTopic(TOPIC)
-                            .submitKeyName(SUBMIT_KEY)
-                            .withConsensusCustomFee(fee),
+                    createTopic(TOPIC).submitKeyName(SUBMIT_KEY).withConsensusCustomFee(fee),
                     cryptoCreate("submitter").balance(ONE_HBAR).key(SUBMIT_KEY),
                     submitMessageTo(TOPIC)
                             .message("TEST")
@@ -415,14 +418,12 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         // TOPIC_FEE_159
         final Stream<DynamicTest> submitMessageToPrivateNotEnoughBalance() {
             final var collector = "collector";
-            final var fee = fixedConsensusHtsFee(5,BASE_TOKEN, collector);
+            final var fee = fixedConsensusHtsFee(5, BASE_TOKEN, collector);
             return hapiTest(
                     cryptoCreate(collector).balance(ONE_HBAR),
                     tokenAssociate(collector, BASE_TOKEN),
                     newKeyNamed(SUBMIT_KEY),
-                    createTopic(TOPIC)
-                            .submitKeyName(SUBMIT_KEY)
-                            .withConsensusCustomFee(fee),
+                    createTopic(TOPIC).submitKeyName(SUBMIT_KEY).withConsensusCustomFee(fee),
                     cryptoCreate("submitter").balance(ONE_HBAR).key(SUBMIT_KEY),
                     tokenAssociate("submitter", BASE_TOKEN),
                     submitMessageTo(TOPIC)
@@ -444,9 +445,9 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     newKeyNamed("key"),
                     cryptoCreate("submitter").balance(ONE_HUNDRED_HBARS).key("key"),
                     createTopic(TOPIC)
-                        .feeExemptKeys("key")
-                        .submitKeyName(SUBMIT_KEY)
-                        .withConsensusCustomFee(fee),
+                            .feeExemptKeys("key")
+                            .submitKeyName(SUBMIT_KEY)
+                            .withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC)
                             .maxCustomFee(fee)
                             .message("TEST")
@@ -527,10 +528,8 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             return hapiTest(
                     cryptoCreate(collector).balance(ONE_HBAR),
                     tokenAssociate(collector, BASE_TOKEN),
-                    createTopic("tokenTopic")
-                            .withConsensusCustomFee(tokenFee),
-                    createTopic("hbarTopic")
-                            .withConsensusCustomFee(hbarFee),
+                    createTopic("tokenTopic").withConsensusCustomFee(tokenFee),
+                    createTopic("hbarTopic").withConsensusCustomFee(hbarFee),
                     submitMessageTo("tokenTopic")
                             .maxCustomFee(tokenFeeLimit)
                             .message("TEST")
@@ -558,11 +557,8 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoCreate("poorSender").balance(0L),
                     tokenAssociate("poorSender", BASE_TOKEN),
                     cryptoTransfer(moving(5, BASE_TOKEN).between(TOKEN_TREASURY, "poorSender")),
-                    createTopic(TOPIC)
-                            .withConsensusCustomFee(hbarFee)
-                            .withConsensusCustomFee(tokenFee),
-                    createTopic("hbarTopic")
-                            .withConsensusCustomFee(hbarFee),
+                    createTopic(TOPIC).withConsensusCustomFee(hbarFee).withConsensusCustomFee(tokenFee),
+                    createTopic("hbarTopic").withConsensusCustomFee(hbarFee),
                     submitMessageTo(TOPIC)
                             .acceptAllCustomFees(true)
                             .message("TEST")
@@ -578,6 +574,49 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith("poorSender")
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+        }
+
+        @HapiTest
+        @DisplayName("Submit to topic with frozen FT for fee")
+        // TOPIC_FEE_172
+        final Stream<DynamicTest> submitToTopicFrozenToken() {
+            final var collector = "collector";
+            final var frozenToken = "frozenToken";
+            final var fee = fixedConsensusHtsFee(1, frozenToken, collector);
+            return hapiTest(
+                    newKeyNamed("frozenKey"),
+                    tokenCreate(frozenToken).freezeKey("frozenKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, frozenToken),
+                    tokenAssociate(SUBMITTER, frozenToken),
+                    createTopic(TOPIC).withConsensusCustomFee(fee),
+                    tokenFreeze(frozenToken, collector),
+                    submitMessageTo(TOPIC)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+        }
+
+        @HapiTest
+        @DisplayName("Submit to topic with paused FT for fee")
+        // TOPIC_FEE_173
+        final Stream<DynamicTest> submitToTopicPausedToken() {
+            final var collector = "collector";
+            final var pausedToken = "pausedToken";
+            final var fee = fixedConsensusHtsFee(1, pausedToken, collector);
+            return hapiTest(
+                    newKeyNamed("pausedKey"),
+                    tokenCreate(pausedToken).pauseKey("pausedKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, pausedToken),
+                    createTopic(TOPIC).withConsensusCustomFee(fee),
+                    tokenPause(pausedToken),
+                    submitMessageTo(TOPIC)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(TOKEN_IS_PAUSED));
         }
 
         @HapiTest
