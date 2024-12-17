@@ -35,8 +35,7 @@ class BucketCredentialsTest {
     @Test
     void testConstructor_NullAccessKey() {
         NullPointerException exception =
-                assertThrows(NullPointerException.class,
-                        () -> new BucketCredentials(null, "secretKey".toCharArray()));
+                assertThrows(NullPointerException.class, () -> new BucketCredentials(null, "secretKey".toCharArray()));
         assertEquals("access key cannot be null", exception.getMessage());
     }
 

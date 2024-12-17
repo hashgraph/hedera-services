@@ -50,14 +50,14 @@ class CompleteBucketConfigTest {
         BucketCredentials credentials1 = new BucketCredentials("accessKey1", "secretKey1".toCharArray());
         BucketCredentials credentials2 = new BucketCredentials("accessKey2", "secretKey2".toCharArray());
 
-        CompleteBucketConfig config1 = new CompleteBucketConfig("bucket1", BucketProvider.AWS,
-                "https://endpoint1", "us-east-1", "bucket-name1", true, credentials1);
+        CompleteBucketConfig config1 = new CompleteBucketConfig(
+                "bucket1", BucketProvider.AWS, "https://endpoint1", "us-east-1", "bucket-name1", true, credentials1);
 
-        CompleteBucketConfig config2 = new CompleteBucketConfig("bucket1", BucketProvider.AWS,
-                "https://endpoint1", "us-east-1", "bucket-name1", true, credentials1);
+        CompleteBucketConfig config2 = new CompleteBucketConfig(
+                "bucket1", BucketProvider.AWS, "https://endpoint1", "us-east-1", "bucket-name1", true, credentials1);
 
-        CompleteBucketConfig config3 = new CompleteBucketConfig("bucket2", BucketProvider.GCP,
-                "https://endpoint2", "us-central1", "bucket-name2", false, credentials2);
+        CompleteBucketConfig config3 = new CompleteBucketConfig(
+                "bucket2", BucketProvider.GCP, "https://endpoint2", "us-central1", "bucket-name2", false, credentials2);
 
         assertEquals(config1, config2); // Equal objects
         assertEquals(config1.hashCode(), config2.hashCode()); // Equal hash codes

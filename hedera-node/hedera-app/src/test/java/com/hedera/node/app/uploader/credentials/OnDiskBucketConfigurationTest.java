@@ -39,8 +39,7 @@ class OnDiskBucketConfigurationTest {
 
     @Test
     void testConstructorWithNullCredentialsThrowsException() {
-        NullPointerException exception = assertThrows(NullPointerException.class,
-                () -> new OnDiskBucketConfig(null));
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> new OnDiskBucketConfig(null));
         assertEquals("Credentials map cannot be null", exception.getMessage());
     }
 
