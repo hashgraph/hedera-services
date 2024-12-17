@@ -22,6 +22,7 @@ import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -44,6 +45,7 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -125,6 +127,7 @@ class TssBaseTransplantSchemaTest {
                 .willReturn(writableVotes);
         given(writableStates.<TssMessageMapKey, TssMessageTransactionBody>get(TSS_MESSAGE_MAP_KEY))
                 .willReturn(writableMessages);
+        given(writableEncryptionKeys.keys()).willReturn(mock(Iterator.class));
 
         subject.restart(ctx);
 
@@ -143,6 +146,8 @@ class TssBaseTransplantSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .willReturn(writableEncryptionKeys);
+        given(writableEncryptionKeys.keys())
+                .willReturn(List.of(entityNumber1, entityNumber2).iterator());
 
         subject.restart(ctx);
 
@@ -159,6 +164,7 @@ class TssBaseTransplantSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .willReturn(writableEncryptionKeys);
+        given(writableEncryptionKeys.keys()).willReturn(mock(Iterator.class));
 
         subject.restart(ctx);
 

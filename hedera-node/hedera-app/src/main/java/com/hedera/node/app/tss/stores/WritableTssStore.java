@@ -136,13 +136,11 @@ public class WritableTssStore extends ReadableTssStoreImpl {
      */
     public void removeIfNotPresent(@NonNull final Set<EntityNumber> rostersEntriesNodeIds) {
         requireNonNull(rostersEntriesNodeIds);
-        if (tssEncryptionKeyState.size() > 0) {
-            tssEncryptionKeyState.keys().forEachRemaining(entityNumber -> {
-                if (!rostersEntriesNodeIds.contains(entityNumber)) {
-                    remove(entityNumber);
-                }
-            });
-        }
+        tssEncryptionKeyState.keys().forEachRemaining(entityNumber -> {
+            if (!rostersEntriesNodeIds.contains(entityNumber)) {
+                remove(entityNumber);
+            }
+        });
     }
 
     /**
