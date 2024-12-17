@@ -35,14 +35,12 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Utility class for working with the HAPI. We might move this to the HAPI project.
  */
 public class HapiUtils {
     private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
-    public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
     public static final Key EMPTY_KEY_LIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;

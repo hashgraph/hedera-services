@@ -32,7 +32,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
@@ -189,7 +189,7 @@ public final class SignedStateFileReader {
      */
     public static void registerServiceStates(@NonNull final State state) {
         registerServiceState(state, new V0540PlatformStateSchema(), PlatformStateService.NAME);
-        registerServiceState(state, new V0540RosterSchema(), RosterStateId.NAME);
+        registerServiceState(state, new V0540RosterBaseSchema(), RosterStateId.NAME);
     }
 
     private static void registerServiceState(
