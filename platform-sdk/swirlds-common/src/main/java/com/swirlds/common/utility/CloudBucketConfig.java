@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.swirlds.common.utility;
 
 import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.config.types.BucketProvider;
 
 /**
  * Configuration for the cloud bucket uploader.
@@ -30,7 +28,7 @@ import com.hedera.node.config.types.BucketProvider;
  */
 public record CloudBucketConfig(
         String name,
-        BucketProvider provider,
+        String provider,
         String endpoint,
         String region, // required for AWS only
         String bucketName,
@@ -41,7 +39,7 @@ public record CloudBucketConfig(
         requireNonNull(endpoint, "endpoint cannot be null");
         requireNonNull(bucketName, "bucketName cannot be null");
 
-        if (provider.equals(BucketProvider.AWS)) {
+        if (provider.equals("aws")) {
             if (requireNonNull(region).isBlank()) {
                 throw new IllegalArgumentException("region cannot be null if the provider is AWS");
             }

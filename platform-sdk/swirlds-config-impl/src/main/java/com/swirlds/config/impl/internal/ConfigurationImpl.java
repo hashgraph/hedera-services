@@ -16,8 +16,8 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.hedera.node.config.data.CloudBucketConfig;
 import com.swirlds.base.ArgumentUtils;
+import com.swirlds.common.utility.CloudBucketConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

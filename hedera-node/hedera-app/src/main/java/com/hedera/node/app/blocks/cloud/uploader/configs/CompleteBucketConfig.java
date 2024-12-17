@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.blocks.cloud.uploader.configs;
 
-import com.hedera.node.config.types.BucketProvider;
-
 /**
  * The complete bucket configuration combining configuration file with on disk credentials.
  *
@@ -30,7 +28,7 @@ import com.hedera.node.config.types.BucketProvider;
  */
 public record CompleteBucketConfig(
         String name,
-        BucketProvider provider,
+        String provider,
         String endpoint,
         String region,
         String bucketName,

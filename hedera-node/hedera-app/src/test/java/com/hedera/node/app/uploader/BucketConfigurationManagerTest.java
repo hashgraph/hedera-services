@@ -29,8 +29,8 @@ import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.data.CloudBucketConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.utility.CloudBucketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
@@ -50,7 +50,7 @@ public class BucketConfigurationManagerTest {
         [
             {
                 "name": "default-aws-bucket",
-                "provider": "AWS",
+                "provider": "aws",
                 "endpoint": "https://s3.amazonaws.com",
                 "region": "us-east-1",
                 "bucketName": "hedera-mainnet-blocks",
@@ -58,7 +58,7 @@ public class BucketConfigurationManagerTest {
             },
             {
                 "name": "default-gcp-bucket",
-                "provider": "GCP",
+                "provider": "gcp",
                 "endpoint": "https://storage.googleapis.com",
                 "region": "",
                 "bucketName": "hedera-mainnet-blocks",
@@ -119,7 +119,7 @@ public class BucketConfigurationManagerTest {
         [
             {
                 "name": "default-aws-bucket",
-                "provider": "AWS",
+                "provider": "aws",
                 "endpoint": "https://s3.amazonaws.com",
                 "region": "",
                 "bucketName": "hedera-mainnet-blocks",

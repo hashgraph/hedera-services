@@ -20,6 +20,7 @@ import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
 import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.node.config.types.StreamMode;
+import com.swirlds.common.utility.CloudBucketConfig;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Max;
@@ -61,7 +62,7 @@ public record BlockStreamConfig(
         [
             {
                 "name": "default-aws-bucket",
-                "provider": "AWS",
+                "provider": "aws",
                 "endpoint": "https://s3.amazonaws.com",
                 "region": "us-east-1",
                 "bucketName": "hedera-mainnet-blocks",
@@ -69,7 +70,7 @@ public record BlockStreamConfig(
             },
             {
                 "name": "default-gcp-bucket",
-                "provider": "GCP",
+                "provider": "gcp",
                 "endpoint": "https://storage.googleapis.com",
                 "region": "",
                 "bucketName": "hedera-mainnet-blocks",

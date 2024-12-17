@@ -18,7 +18,7 @@ package com.swirlds.config.impl.internal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.node.config.data.CloudBucketConfig;
+import com.swirlds.common.utility.CloudBucketConfig;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
