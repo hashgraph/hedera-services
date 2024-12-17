@@ -25,7 +25,6 @@ mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-    requires("com.swirlds.common")
     runtimeOnly("com.swirlds.platform.core")
 }
 
