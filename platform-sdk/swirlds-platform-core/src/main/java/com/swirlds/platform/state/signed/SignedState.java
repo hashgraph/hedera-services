@@ -265,7 +265,7 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public Roster getRoster() {
+    public @NonNull Roster getRoster() {
         /*
         Ideally the roster would be captured in the constructor but due to the mutable underlying state, the roster
         can change from underneath us. Therefore, the roster must be regenerated on each access.

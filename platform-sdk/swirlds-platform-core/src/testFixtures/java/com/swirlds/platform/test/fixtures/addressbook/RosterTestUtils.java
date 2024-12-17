@@ -20,7 +20,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Random;
 
@@ -69,29 +68,6 @@ public class RosterTestUtils {
 
         builder.rosterEntries(rosterEntries);
         return builder.build();
-    }
-
-    /**
-     * Removes the node associated with the specified node ID from the roster. This does NOT create a new roster, but
-     * modifies the specified one.
-     *
-     * @param roster the roster to modify
-     * @param nodeId the ID of the node to remove
-     * @return true if the node was found and removed, else false
-     */
-    public static boolean removeNode(@NonNull final Roster roster, final long nodeId) {
-        Objects.requireNonNull(roster, "roster");
-
-        final Iterator<RosterEntry> it = roster.rosterEntries().iterator();
-        while (it.hasNext()) {
-            final RosterEntry node = it.next();
-            if (node.nodeId() == nodeId) {
-                it.remove();
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

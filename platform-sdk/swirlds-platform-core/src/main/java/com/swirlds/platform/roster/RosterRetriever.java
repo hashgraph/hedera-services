@@ -38,7 +38,6 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.CertificateEncodingException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -243,14 +242,12 @@ public final class RosterRetriever {
             return null;
         }
 
-        final List<RosterEntry> entries = addressBook.getNodeIdSet().stream()
-                .map(addressBook::getAddress)
-                .map(RosterRetriever::buildRosterEntry)
-                .sorted(Comparator.comparing(RosterEntry::nodeId))
-                .toList();
-
         return Roster.newBuilder()
-                .rosterEntries(new ArrayList<>(entries)) // create a new list that is mutable for testing
+                .rosterEntries(addressBook.getNodeIdSet().stream()
+                        .map(addressBook::getAddress)
+                        .map(RosterRetriever::buildRosterEntry)
+                        .sorted(Comparator.comparing(RosterEntry::nodeId))
+                        .toList())
                 .build();
     }
 

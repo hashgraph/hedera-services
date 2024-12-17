@@ -20,15 +20,12 @@ import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -138,7 +135,7 @@ public class RandomRosterBuilder {
             maximumWeight = Long.MAX_VALUE / size;
         }
 
-        final List<RosterEntry> entries = IntStream.range(0, size)
+        builder.rosterEntries(IntStream.range(0, size)
                 .mapToObj(index -> {
                     final NodeId nodeId = getNextNodeId();
                     final RandomRosterEntryBuilder addressBuilder = RandomRosterEntryBuilder.create(random)
@@ -148,9 +145,7 @@ public class RandomRosterBuilder {
                     generateKeys(nodeId, addressBuilder);
                     return addressBuilder.build();
                 })
-                .toList();
-
-        builder.rosterEntries(new ArrayList<>(entries)); // create a new list so that it is mutable
+                .toList());
 
         return builder.build();
     }

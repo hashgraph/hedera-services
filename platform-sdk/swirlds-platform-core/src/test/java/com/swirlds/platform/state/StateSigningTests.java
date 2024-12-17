@@ -43,7 +43,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
-import com.swirlds.platform.test.fixtures.addressbook.RosterTestUtils;
 import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.state.merkle.SigSet;
@@ -58,6 +57,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -328,8 +328,10 @@ class StateSigningTests {
 
         // Remove a node from the address book
         final RosterEntry nodeToRemove = nodes.getFirst();
-        final Roster updatedRoster = signedState.getRoster();
-        assertTrue(RosterTestUtils.removeNode(updatedRoster, nodeToRemove.nodeId()));
+        final List<RosterEntry> entries = signedState.getRoster().rosterEntries().stream()
+                .filter(entry -> entry.nodeId() != nodeToRemove.nodeId())
+                .toList();
+        final Roster updatedRoster = new Roster(entries);
         signedState.getState().getWritablePlatformState().setAddressBook(RosterUtils.buildAddressBook(updatedRoster));
 
         // Tamper with a node's signature
@@ -462,16 +464,25 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final Roster roster = RandomRosterBuilder.create(random)
+        final Roster tempRoster = RandomRosterBuilder.create(random)
                 .withWeightDistributionStrategy(
                         evenWeighting ? WeightDistributionStrategy.BALANCED : WeightDistributionStrategy.GAUSSIAN)
                 .withSize(nodeCount)
                 .build();
 
         // set node to zero weight
-        final RosterEntry zeroWeightEntry =
-                roster.rosterEntries().getFirst().copyBuilder().weight(0L).build();
-        RosterTestUtils.replaceNode(roster, zeroWeightEntry);
+        final List<RosterEntry> rosterEntries = IntStream.range(
+                        0, tempRoster.rosterEntries().size())
+                .mapToObj(idx -> {
+                    final RosterEntry entry = tempRoster.rosterEntries().get(idx);
+                    if (idx == 0) {
+                        // replace the first node such that it has a weight of 0
+                        return entry.copyBuilder().weight(0L).build();
+                    }
+                    return entry;
+                })
+                .toList();
+        final Roster roster = new Roster(rosterEntries);
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setAddressBook(RosterUtils.buildAddressBook(roster))
@@ -493,7 +504,7 @@ class StateSigningTests {
         }
 
         assertFalse(
-                sigSet.hasSignature(NodeId.of(zeroWeightEntry.nodeId())),
+                sigSet.hasSignature(NodeId.of(roster.rosterEntries().getFirst().nodeId())),
                 "Signature for node with zero weight should not be added");
         assertTrue(signedState.isComplete());
 
