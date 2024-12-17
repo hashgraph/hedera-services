@@ -90,10 +90,9 @@ class TssSubmissionsTest {
         given(appContext.gossip()).willReturn(gossip);
         subject = new TssSubmissions(appContext, ForkJoinPool.commonPool());
         given(context.consensusNow()).willReturn(CONSENSUS_NOW);
-        given(context.networkInfo()).willReturn(networkInfo);
-        given(networkInfo.selfNodeInfo()).willReturn(nodeInfo);
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
-        given(context.configuration()).willReturn(TEST_CONFIG);
+        given(appContext.configSupplier()).willReturn(() -> TEST_CONFIG);
+        given(appContext.selfNodeInfoSupplier()).willReturn(() -> nodeInfo);
     }
 
     @Test

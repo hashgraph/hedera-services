@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromRound;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -126,11 +127,15 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param round the round to handle
      */
-    public void handleConsensusRound(final ConsensusRound round) {
+    public List<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
         final MerkleRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round);
         transactionHandler.handleRound(round, state);
+
+        // TODO update this logic to return the transactions from the callback consumer passed in
+        // state.getSwirldState().handleConsensusRound, when it is implemented
+        return extractFromRound(round, StateSignatureTransaction.class);
     }
 
     /**

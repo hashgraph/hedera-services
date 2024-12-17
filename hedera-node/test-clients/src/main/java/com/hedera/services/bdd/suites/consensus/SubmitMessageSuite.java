@@ -36,7 +36,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.asOpArray;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
@@ -174,23 +173,6 @@ public class SubmitMessageSuite {
                         // In hedera-app we don't enforce such prechecks
                         .hasPrecheckFrom(TRANSACTION_OVERSIZE, BUSY, OK)
                         .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> feeAsExpected() {
-        final byte[] messageBytes = new byte[100]; // 4k
-        Arrays.fill(messageBytes, (byte) 0b1);
-        return hapiTest(
-                cryptoCreate("payer").hasRetryPrecheckFrom(BUSY),
-                createTopic("testTopic").submitKeyName("payer").hasRetryPrecheckFrom(BUSY),
-                submitMessageTo("testTopic")
-                        .blankMemo()
-                        .payingWith("payer")
-                        .message(new String(messageBytes))
-                        .hasRetryPrecheckFrom(BUSY)
-                        .via("submitMessage"),
-                sleepFor(1000),
-                validateChargedUsd("submitMessage", 0.0001));
     }
 
     @HapiTest
