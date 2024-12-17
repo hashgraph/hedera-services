@@ -26,11 +26,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartu
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
-import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -258,21 +256,5 @@ public class TopicUpdateSuite {
                 newKeyNamed("submitKey"),
                 createTopic("testTopic"),
                 updateTopic("testTopic").submitKey("submitKey").hasKnownStatus(UNAUTHORIZED));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> feeAsExpected() {
-        return hapiTest(
-                cryptoCreate("autoRenewAccount"),
-                cryptoCreate("payer"),
-                createTopic("testTopic")
-                        .autoRenewAccountId("autoRenewAccount")
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
-                        .adminKeyName("payer"),
-                updateTopic("testTopic")
-                        .payingWith("payer")
-                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                        .via("updateTopic"),
-                validateChargedUsdWithin("updateTopic", 0.00022, 3.0));
     }
 }

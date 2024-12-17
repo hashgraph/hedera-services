@@ -146,7 +146,7 @@ public class TokenAirdropBase {
      *
      * @return array of operations
      */
-    protected static SpecOperation[] setUpTokensAndAllReceivers() {
+    public static SpecOperation[] setUpTokensAndAllReceivers() {
         var nftSupplyKey = "nftSupplyKey";
         final var t = new ArrayList<SpecOperation>(List.of(
                 cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),

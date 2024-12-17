@@ -49,15 +49,15 @@ public final class ScheduleUtils {
     static final String ONLY_BODY_AND_MEMO = "onlyBodyAndMemo";
     static final String ONLY_BODY_AND_PAYER = "onlyBodyAndPayer";
     static final String ORIGINAL = "original";
-    static final String OTHER_PAYER = "otherPayer";
+    public static final String OTHER_PAYER = "otherPayer";
     static final String PAYER = "payer";
     static final String PAYING_ACCOUNT = "payingAccount";
     static final String PAYING_ACCOUNT_2 = "payingAccount2";
-    static final String PAYING_SENDER = "payingSender";
+    public static final String PAYING_SENDER = "payingSender";
     static final String RANDOM_KEY = "randomKey";
     static final String RANDOM_MSG =
             "Little did they care who danced between / And little she by whom her dance was seen";
-    static final String RECEIVER = "receiver";
+    public static final String RECEIVER = "receiver";
     static final String RECEIVER_A = "receiverA";
     static final String RECEIVER_B = "receiverB";
     static final String RECEIVER_C = "receiverC";
@@ -75,7 +75,7 @@ public final class ScheduleUtils {
     static final String SHARED_KEY = "sharedKey";
     static final String SIGN_TX = "signTx";
     static final String SIGN_TXN = "signTx";
-    static final String SIMPLE_UPDATE = "SimpleUpdate";
+    public static final String SIMPLE_UPDATE = "SimpleUpdate";
     static final String SIMPLE_XFER_SCHEDULE = "simpleXferSchedule";
     static final String SOMEBODY = "somebody";
     static final String SUCCESS_TXN = "successTxn";
