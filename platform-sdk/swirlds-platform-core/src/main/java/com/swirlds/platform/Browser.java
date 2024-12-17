@@ -53,6 +53,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.PathsConfig;
@@ -277,6 +278,8 @@ public class Browser {
                     FileSystemManager.create(configuration),
                     recycleBin,
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
+            // Each platform needs a different temporary state on disk.
+            MerkleDb.resetDefaultInstancePath();
             // Create the initial state for the platform
             final HashedReservedSignedState reservedState = getInitialState(
                     configuration,
