@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.cryptography.tss.api.TssPrivateShare;
 import com.hedera.cryptography.tss.api.TssPublicShare;
@@ -90,8 +91,7 @@ public class TssBaseServiceTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private NetworkInfo networkInfo;
 
-    @Mock
-    private com.hedera.cryptography.tss.api.TssMessage tssMessage;
+    private final TssMessage TSS_MESSAGE = "test"::getBytes;
 
     @Mock
     private Executor executor;
@@ -146,6 +146,7 @@ public class TssBaseServiceTest {
         // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
         mockWritableRosterStore();
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(TSS_MESSAGE);
 
         // Attempt to set the same candidate roster
         subject.setCandidateRoster(CURRENT_CANDIDATE_ROSTER, handleContext);
@@ -162,7 +163,7 @@ public class TssBaseServiceTest {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableRosterStore.class)).willReturn(rosterStore);
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
-        given(tssLibrary.generateTssMessage(any(), any())).willReturn(tssMessage);
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(TSS_MESSAGE);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
         subject.setCandidateRoster(ACTIVE_ROSTER, handleContext);
@@ -181,7 +182,7 @@ public class TssBaseServiceTest {
         // Simulate the _current_ candidate roster and active roster
         final var rosterStore = mockWritableRosterStore();
         given(tssLibrary.decryptPrivateShares(any(), any())).willReturn(List.of());
-        given(tssLibrary.generateTssMessage(any(), any())).willReturn(tssMessage);
+        given(tssLibrary.generateTssMessage(any(), any())).willReturn(TSS_MESSAGE);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         final var inputRoster = Roster.newBuilder()
                 .rosterEntries(List.of(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3))

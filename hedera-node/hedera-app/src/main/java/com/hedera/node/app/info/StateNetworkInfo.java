@@ -18,8 +18,6 @@ package com.hedera.node.app.info;
 
 import static com.hedera.node.app.info.NodeInfoImpl.fromRosterEntry;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
-import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -29,10 +27,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -56,32 +51,35 @@ public class StateNetworkInfo implements NetworkInfo {
     private static final Logger log = LogManager.getLogger(StateNetworkInfo.class);
     private final long selfId;
     private final Bytes ledgerId;
-    private Roster activeRoster;
-    private final ConfigProvider configProvider;
+    /**
+     * The active roster, used to limit exposed node info to the active set of nodes.
+     */
+    private final Roster activeRoster;
+
     private final Map<Long, NodeInfo> nodeInfos;
 
     /**
      * Constructs a new network information provider from the given state, roster, selfID, and configuration provider.
      *
-     * @param state          the state to retrieve the network information from
-     * @param roster         the roster to retrieve the network information from
-     * @param selfId         the ID of the node
+     * @param selfId the ID of the node
+     * @param state the state to retrieve the network information from
+     * @param roster the roster to retrieve the network information from
      * @param configProvider the configuration provider to retrieve the ledger ID from
      */
     public StateNetworkInfo(
+            final long selfId,
             @NonNull final State state,
             @NonNull final Roster roster,
-            final long selfId,
             @NonNull final ConfigProvider configProvider) {
-        this.selfId = selfId;
+        requireNonNull(state);
+        requireNonNull(configProvider);
         this.activeRoster = requireNonNull(roster);
-        // We keep this for now to check the keyCandidateRoster feature flag in updateFrom()
-        this.configProvider = requireNonNull(configProvider);
-        this.nodeInfos = buildNodeInfoMap(state);
-        // Load the ledger ID from configuration
-        final var config = configProvider.getConfiguration();
-        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-        ledgerId = ledgerConfig.id();
+        this.ledgerId = configProvider
+                .getConfiguration()
+                .getConfigData(LedgerConfig.class)
+                .id();
+        this.nodeInfos = nodeInfosFrom(state);
+        this.selfId = selfId;
     }
 
     @NonNull
@@ -115,19 +113,8 @@ public class StateNetworkInfo implements NetworkInfo {
 
     @Override
     public void updateFrom(@NonNull final State state) {
-        final var config = configProvider.getConfiguration();
-        if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-            activeRoster = retrieveActiveOrGenesisRoster(state);
-        } else {
-            // When the feature flag is disabled, the rosters in RosterService state are not up-to-date
-            // FUTURE: Once TSS Roster is implemented in the future, this will be removed and use roster state
-            // instead of the address book
-            final var readablePlatformStateStore =
-                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            activeRoster = buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
-        }
         nodeInfos.clear();
-        nodeInfos.putAll(buildNodeInfoMap(state));
+        nodeInfos.putAll(nodeInfosFrom(state));
     }
 
     /**
@@ -138,16 +125,15 @@ public class StateNetworkInfo implements NetworkInfo {
      * @param state the state to retrieve the node information from
      * @return a map of node information
      */
-    private Map<Long, NodeInfo> buildNodeInfoMap(final State state) {
-        final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
-        final var rosterEntries = activeRoster.rosterEntries();
-        final ReadableKVState<EntityNumber, Node> nodeState =
+    private Map<Long, NodeInfo> nodeInfosFrom(@NonNull final State state) {
+        final ReadableKVState<EntityNumber, Node> nodes =
                 state.getReadableStates(AddressBookService.NAME).get(NODES_KEY);
-        for (final var rosterEntry : rosterEntries) {
+        final Map<Long, NodeInfo> nodeInfos = new LinkedHashMap<>();
+        for (final var rosterEntry : activeRoster.rosterEntries()) {
             // At genesis the node store is derived from the roster, hence must have info for every
             // node id; and from then on, the roster is derived from the node store, and hence the
             // node store must have every node id in the roster.
-            final var node = nodeState.get(new EntityNumber(rosterEntry.nodeId()));
+            final var node = nodes.get(new EntityNumber(rosterEntry.nodeId()));
             if (node != null) {
                 // Notice it's possible the node could be deleted here, because a DAB transaction removed
                 // it from the future address book; that doesn't mean we should stop using it in the current
@@ -165,10 +151,5 @@ public class StateNetworkInfo implements NetworkInfo {
             }
         }
         return nodeInfos;
-    }
-
-    @Override
-    public Roster roster() {
-        return activeRoster;
     }
 }

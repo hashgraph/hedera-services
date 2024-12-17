@@ -50,16 +50,16 @@ public class FakeServiceMigrator implements ServiceMigrator {
             @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,
-            @NonNull final Configuration nodeConfiguration,
-            @NonNull final Configuration platformConfiguration,
+            @NonNull final Configuration appConfig,
+            @NonNull final Configuration platformConfig,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
             @NonNull final StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
-        requireNonNull(nodeConfiguration);
-        requireNonNull(platformConfiguration);
+        requireNonNull(appConfig);
+        requireNonNull(platformConfig);
         requireNonNull(genesisNetworkInfo);
         requireNonNull(metrics);
 
@@ -70,8 +70,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with FakeServicesRegistry instances");
         }
 
-        final AtomicLong prevEntityNum = new AtomicLong(
-                nodeConfiguration.getConfigData(HederaConfig.class).firstUserEntity() - 1);
+        final AtomicLong prevEntityNum =
+                new AtomicLong(appConfig.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var entityIdRegistration = registry.registrations().stream()
                 .filter(service ->
@@ -89,7 +89,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
                 fakeState,
                 deserializedPbjVersion,
                 genesisNetworkInfo,
-                nodeConfiguration,
+                appConfig,
+                platformConfig,
                 sharedValues,
                 prevEntityNum,
                 startupNetworks);
@@ -104,7 +105,8 @@ public class FakeServiceMigrator implements ServiceMigrator {
                             fakeState,
                             deserializedPbjVersion,
                             genesisNetworkInfo,
-                            platformConfiguration,
+                            appConfig,
+                            platformConfig,
                             sharedValues,
                             prevEntityNum,
                             startupNetworks);
