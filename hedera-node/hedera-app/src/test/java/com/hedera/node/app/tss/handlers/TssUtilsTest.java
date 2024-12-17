@@ -18,7 +18,7 @@ package com.hedera.node.app.tss.handlers;
 
 import static com.hedera.node.app.tss.handlers.TssMessageHandlerTest.getTssBody;
 import static com.hedera.node.app.tss.handlers.TssUtils.SIGNATURE_SCHEMA;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static com.hedera.node.app.tss.handlers.TssUtils.voteForValidMessages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,29 +59,32 @@ public class TssUtilsTest {
     }
 
     @Test
-    public void testValidateTssMessages() {
+    public void testVoteForValidMessages() {
         final var body = getTssBody();
         final var tssLibrary = mock(TssLibrary.class);
         final var tssParticipantDirectory = mock(TssParticipantDirectory.class);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(true);
 
-        final var validMessages =
-                validateTssMessages(List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary);
+        final var validMessages = voteForValidMessages(
+                        List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary)
+                .get()
+                .validTssMessages();
 
         assertEquals(1, validMessages.size());
     }
 
     @Test
-    public void testValidateTssMessagesFails() {
+    public void testVoteForValidMessagesFails() {
         final var body = getTssBody();
         final var tssLibrary = mock(TssLibrary.class);
         final var tssParticipantDirectory = mock(TssParticipantDirectory.class);
         given(tssLibrary.verifyTssMessage(any(), any())).willReturn(false);
+        given(tssParticipantDirectory.getShareIds()).willReturn(List.of(1, 2, 3, 4));
 
-        final var validMessages =
-                validateTssMessages(List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary);
+        final var validMessagesForVote =
+                voteForValidMessages(List.of(body.tssMessageOrThrow()), tssParticipantDirectory, tssLibrary);
 
-        assertEquals(0, validMessages.size());
+        assertTrue(validMessagesForVote.isEmpty());
     }
 
     @Test

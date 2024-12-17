@@ -31,6 +31,7 @@ import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -131,10 +132,7 @@ class TssMessageHandlerTest {
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         when(storeFactory.writableStore(WritableTssStore.class)).thenReturn(tssStore);
 
-        given(tssCryptographyManager.getVoteFuture(
-                        eq(getTssBody().tssMessageOrThrow().targetRosterHash()),
-                        any(TssParticipantDirectory.class),
-                        eq(handleContext)))
+        given(tssCryptographyManager.getVoteFuture(any(TssParticipantDirectory.class), any(), any()))
                 .willReturn(CompletableFuture.completedFuture(vote));
         given(signature.getBytes()).willReturn(Bytes.wrap("test"));
         given(directoryAccessor.activeParticipantDirectoryOrThrow()).willReturn(TSS_KEYS.activeParticipantDirectory());
@@ -147,12 +145,12 @@ class TssMessageHandlerTest {
     @Test
     public void testHandleException() {
         when(handleContext.body()).thenReturn(getTssBody());
-        when(tssCryptographyManager.getVoteFuture(any(), any(), any()))
+        when(tssCryptographyManager.getVoteFuture(any(TssParticipantDirectory.class), any(), any()))
                 .thenThrow(new RuntimeException("Simulated error"));
 
         // Execute the handler and ensure no vote is submitted
         assertThrows(RuntimeException.class, () -> subject.handle(handleContext));
-        verify(submissionManager, never()).submitTssVote(any(), any());
+        verify(submissionManager, never()).submitTssVote(any(TssVoteTransactionBody.class), any(HandleContext.class));
     }
 
     public static TransactionBody getTssBody() {
