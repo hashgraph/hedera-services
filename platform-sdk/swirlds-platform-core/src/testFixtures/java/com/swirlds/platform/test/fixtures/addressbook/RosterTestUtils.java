@@ -20,7 +20,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -68,28 +67,5 @@ public class RosterTestUtils {
 
         builder.rosterEntries(rosterEntries);
         return builder.build();
-    }
-
-    /**
-     * Replace a node in the specified roster with the provided entry.
-     *
-     * @param roster the roster to modify
-     * @param node the replacement node
-     * @return true if the roster contained a node with the same node ID as the specified replacement node and it was
-     * replaced, else false
-     */
-    public static boolean replaceNode(@NonNull final Roster roster, @NonNull final RosterEntry node) {
-        Objects.requireNonNull(roster, "roster");
-        Objects.requireNonNull(node, "node");
-
-        for (int i = 0; i < roster.rosterEntries().size(); ++i) {
-            final RosterEntry thisNode = roster.rosterEntries().get(i);
-            if (thisNode.nodeId() == node.nodeId()) {
-                roster.rosterEntries().set(i, node);
-                return true;
-            }
-        }
-
-        return false;
     }
 }
