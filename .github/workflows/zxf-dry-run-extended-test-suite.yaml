@@ -69,7 +69,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: develop
+          #ref: develop
+          ref: 16729-citr-phase-1-aggregate-unit-test-logs
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Find the latest build application workflow run ID # Which was started by a push to develop branch event
