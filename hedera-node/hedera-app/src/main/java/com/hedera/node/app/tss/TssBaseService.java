@@ -171,7 +171,7 @@ public interface TssBaseService extends Service {
     void ensureParticipantDirectoryKnown(@NonNull State state);
 
     /**
-     * Processes the TSS encryption key checks for the given state and consensus time from the user transaction.
+     * Processes the TSS encryption key checks for the given network state, handle context, and keys and certificates.
      *
      * @param state           the network state
      * @param handleContext   the handle context
