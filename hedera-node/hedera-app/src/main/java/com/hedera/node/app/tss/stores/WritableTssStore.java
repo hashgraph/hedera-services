@@ -22,9 +22,9 @@ import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
@@ -42,7 +42,7 @@ public class WritableTssStore extends ReadableTssStoreImpl {
 
     private final WritableKVState<TssVoteMapKey, TssVoteTransactionBody> tssVoteState;
 
-    private final WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
+    private final WritableKVState<EntityNumber, TssEncryptionKeys> tssEncryptionKeyState;
 
     public WritableTssStore(@NonNull final WritableStates states) {
         super(states);
@@ -63,10 +63,10 @@ public class WritableTssStore extends ReadableTssStoreImpl {
         tssVoteState.put(tssVoteMapKey, txBody);
     }
 
-    public void put(@NonNull final EntityNumber entityNumber, @NonNull final TssEncryptionKeyTransactionBody txBody) {
+    public void put(@NonNull final EntityNumber entityNumber, @NonNull final TssEncryptionKeys tssEncryptionKeys) {
         requireNonNull(entityNumber);
-        requireNonNull(txBody);
-        tssEncryptionKeyState.put(entityNumber, txBody);
+        requireNonNull(tssEncryptionKeys);
+        tssEncryptionKeyState.put(entityNumber, tssEncryptionKeys);
     }
 
     public void remove(@NonNull final TssMessageMapKey tssMessageMapKey) {
