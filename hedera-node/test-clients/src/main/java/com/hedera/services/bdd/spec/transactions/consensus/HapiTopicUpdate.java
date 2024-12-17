@@ -68,6 +68,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     private Optional<List<Key>> freeMessageKeyList = Optional.empty();
     private boolean emptyCustomFee = false;
     private boolean emptyFeeExemptKeyList = false;
+    private boolean emptyFeeScheduleKey = false;
 
     public HapiTopicUpdate(final String topic) {
         this.topic = topic;
@@ -140,6 +141,11 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
         return this;
     }
 
+    public HapiTopicUpdate withEmptyFeeScheduleKey() {
+        emptyFeeScheduleKey = true;
+        return this;
+    }
+
     @Override
     public HederaFunctionality type() {
         return ConsensusUpdateTopic;
@@ -190,7 +196,11 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                             newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
                             newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
                             newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
-                            feeScheduleKey.ifPresent(b::setFeeScheduleKey);
+                            if (emptyFeeScheduleKey) {
+                                b.setFeeScheduleKey(Key.newBuilder().build());
+                            } else {
+                                feeScheduleKey.ifPresent(b::setFeeScheduleKey);
+                            }
                             freeMessageKeyList.ifPresent(keys -> b.setFeeExemptKeyList(
                                     FeeExemptKeyList.newBuilder().addAllKeys(keys)));
                             if (emptyFeeExemptKeyList) {

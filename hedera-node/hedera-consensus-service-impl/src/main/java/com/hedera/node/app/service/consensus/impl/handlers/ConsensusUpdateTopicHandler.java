@@ -21,9 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_NOT_SET;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -45,6 +45,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
@@ -146,8 +147,15 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
 
         // If the fee schedule key is changed then the transaction must also be signed by the new fee schedule key
-        if (op.hasFeeScheduleKey()) {
-            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_FEE_SCHEDULE_KEY);
+        if (op.hasFeeScheduleKey()
+                && !KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
+            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+        }
+
+        // If we change the custom fees the topic needs to have a fee schedule key, and it needs to sign the transaction
+        if (op.hasCustomFees()) {
+            validateTruePreCheck(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_NOT_SET);
+            context.requireKey(topic.feeScheduleKey());
         }
     }
 
@@ -246,7 +254,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
         }
         if (op.hasFeeScheduleKey()) {
-            builder.feeScheduleKey(op.feeScheduleKey());
+            final var newFeeScheduleKey = op.feeScheduleKey();
+            if (newFeeScheduleKey == null || isKeyRemoval(newFeeScheduleKey)) {
+                builder.feeScheduleKey((Key) null);
+            } else {
+                builder.feeScheduleKey(newFeeScheduleKey);
+            }
         }
         if (op.hasFeeExemptKeyList()) {
             builder.feeExemptKeyList(op.feeExemptKeyList().keys());
@@ -338,7 +351,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic topic) {
         if (op.hasFeeScheduleKey()) {
             validateTrue(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
-            attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            if (!KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
+                attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            }
         }
     }
 
