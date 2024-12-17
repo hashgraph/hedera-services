@@ -26,8 +26,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.app.workflows.handle.steps.UserTxn;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -175,16 +173,12 @@ public interface TssBaseService extends Service {
     /**
      * Processes the TSS encryption key checks for the given state and consensus time from the user transaction.
      *
-     * @param userTxn       the user transaction
-     * @param handleContext the handle context
-     * @param keysAndCerts  the keys and certificates
-     * @param configProvider the config provider
+     * @param state           the network state
+     * @param handleContext   the handle context
+     * @param keysAndCerts    the keys and certificates
      */
     void processTssEncryptionKeyChecks(
-            @NonNull final UserTxn userTxn,
-            @NonNull final HandleContext handleContext,
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final ConfigProvider configProvider);
+            final State state, final HandleContext handleContext, final KeysAndCerts keysAndCerts);
 
     /**
      * Returns the ledger id from the given TSS participant directory and TSS messages.
@@ -203,19 +197,22 @@ public interface TssBaseService extends Service {
     TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory);
 
     /**
-     * Manages and does work based on the TSS status.
-     * It is called each second and computes the TSS status, based on the network state.
-     * If the self-node has any pending TSS submissions that can help progress the TSS Status, then it will
-     * submit them.
+     * Manages and does work based on the TSS status. It is called each second and computes the TSS status, based on the
+     * network state. If the self-node has any pending TSS submissions that can help progress the TSS Status, then it
+     * will submit them.
      *
-     * @param state   the network state
+     * @param state                 the network state
      * @param isStakePeriodBoundary whether the current consensus round is a stake period boundary
-     * @param consensusNow         the current consensus time
-     * @param storeMetricsService the store metrics service
+     * @param consensusNow          the current consensus time
+     * @param storeMetricsService   the store metrics service
+     * @param handleContext         the handle context
+     * @param keysAndCerts          the keys and certificates
      */
     void manageTssStatus(
             final State state,
             final boolean isStakePeriodBoundary,
             final Instant consensusNow,
-            final StoreMetricsService storeMetricsService);
+            final StoreMetricsService storeMetricsService,
+            final HandleContext handleContext,
+            final KeysAndCerts keysAndCerts);
 }

@@ -31,8 +31,6 @@ import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.app.workflows.handle.steps.UserTxn;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -261,13 +259,11 @@ public class FakeTssBaseService implements TssBaseService {
         delegate.ensureParticipantDirectoryKnown(state);
     }
 
-    @Override
     public void processTssEncryptionKeyChecks(
-            @NonNull UserTxn userTxn,
-            @NonNull HandleContext handleContext,
-            @NonNull KeysAndCerts keysAndCerts,
-            @NonNull ConfigProvider configProvider) {
-        delegate.processTssEncryptionKeyChecks(userTxn, handleContext, keysAndCerts, configProvider);
+            @NonNull final State state,
+            @NonNull final HandleContext handleContext,
+            @NonNull final KeysAndCerts keysAndCerts) {
+        delegate.processTssEncryptionKeyChecks(state, handleContext, keysAndCerts);
     }
 
     @Override
@@ -288,7 +284,10 @@ public class FakeTssBaseService implements TssBaseService {
             final State state,
             final boolean isStakePeriodBoundary,
             final Instant lastUsedConsensusNow,
-            final StoreMetricsService storeMetricsService) {
-        delegate.manageTssStatus(state, isStakePeriodBoundary, lastUsedConsensusNow, storeMetricsService);
+            final StoreMetricsService storeMetricsService,
+            final HandleContext handleContext,
+            final KeysAndCerts keysAndCerts) {
+        delegate.manageTssStatus(
+                state, isStakePeriodBoundary, lastUsedConsensusNow, storeMetricsService, handleContext, keysAndCerts);
     }
 }

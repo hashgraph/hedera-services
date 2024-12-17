@@ -671,7 +671,12 @@ public class HandleWorkflow {
             // Check the tss status and manage it if necessary
             final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
             tssBaseService.manageTssStatus(
-                    userTxn.stack(), isStakePeriodBoundary, userTxn.consensusNow(), storeMetricsService);
+                    userTxn.stack(),
+                    isStakePeriodBoundary,
+                    userTxn.consensusNow(),
+                    storeMetricsService,
+                    dispatch.handleContext(),
+                    platform.getKeysAndCerts());
         }
         blockStreamManager.setLastHandleTime(userTxn.consensusNow());
         if (streamMode != BLOCKS) {

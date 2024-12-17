@@ -23,7 +23,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
@@ -49,11 +48,10 @@ import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -145,33 +143,39 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
-            final var tssStore = newWritableTssStore(stack, config);
-            final var rosterStore = newWritableRosterStore(stack, config);
-            final var activeRoster = rosterStore.getActiveRoster();
-            final var candidateRoster = rosterStore.getCandidateRoster();
-            final List<RosterEntry> rosterEntries = new ArrayList<>();
-            Optional.ofNullable(activeRoster).ifPresent(ar -> rosterEntries.addAll(ar.rosterEntries()));
-            Optional.ofNullable(candidateRoster).ifPresent(cr -> rosterEntries.addAll(cr.rosterEntries()));
-            for (final var rosterEntry : rosterEntries) {
-                final var nodeId = rosterEntry.nodeId();
-                TssEncryptionKeys currentTssEncryptionKeys = tssStore.getTssEncryptionKeys(nodeId);
-                if (currentTssEncryptionKeys != null
-                        && !currentTssEncryptionKeys.nextEncryptionKey().equals(Bytes.EMPTY)) {
-                    TssEncryptionKeys newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
-                            .currentEncryptionKey(currentTssEncryptionKeys.nextEncryptionKey())
-                            .build();
-                    tssStore.put(EntityNumber.newBuilder().number(nodeId).build(), newTssEncryptionKeys);
-                }
-            }
-            if (!rosterEntries.isEmpty()) {
-                stack.commitSystemStateChanges();
-            }
+
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                rotateTssEncryptionKeys(stack, config);
                 tssBaseService.regenerateKeyMaterial(stack);
                 startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
         }
         return !isGenesis && isStakePeriodBoundary;
+    }
+
+    private void rotateTssEncryptionKeys(@NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var tssStore = newWritableTssStore(stack, config);
+        final var rosterStore = newWritableRosterStore(stack, config);
+        final var rosterEntries = Stream.of(rosterStore.getActiveRoster(), rosterStore.getCandidateRoster())
+                .filter(Objects::nonNull)
+                .flatMap(roster -> roster.rosterEntries().stream())
+                .collect(Collectors.toList());
+
+        for (final var rosterEntry : rosterEntries) {
+            final var nodeId = rosterEntry.nodeId();
+            final var currentTssEncryptionKeys = tssStore.getTssEncryptionKeys(nodeId);
+            if (currentTssEncryptionKeys != null
+                    && !currentTssEncryptionKeys.nextEncryptionKey().equals(Bytes.EMPTY)) {
+                final var newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(currentTssEncryptionKeys.nextEncryptionKey())
+                        .build();
+                tssStore.put(EntityNumber.newBuilder().number(nodeId).build(), newTssEncryptionKeys);
+            }
+        }
+
+        if (!rosterEntries.isEmpty()) {
+            stack.commitSystemStateChanges();
+        }
     }
 
     private boolean isStakingPeriodBoundary(

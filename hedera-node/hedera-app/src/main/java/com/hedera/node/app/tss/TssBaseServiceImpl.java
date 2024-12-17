@@ -62,8 +62,6 @@ import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.app.workflows.handle.steps.UserTxn;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -94,6 +92,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,7 +132,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     // This is also null when the network restarts or reconnects.
     private TssStatus tssStatus;
 
-    private Instant lastSuccessfulTssEncryptionKeySubmission;
+    private Instant lastTssEncryptionKeySubmission;
     private int tssEncryptionKeySubmissionAttempts = 0;
 
     public TssBaseServiceImpl(
@@ -432,7 +431,9 @@ public class TssBaseServiceImpl implements TssBaseService {
             final State state,
             final boolean isStakePeriodBoundary,
             final Instant consensusNow,
-            final StoreMetricsService storeMetricsService) {
+            final StoreMetricsService storeMetricsService,
+            final HandleContext handleContext,
+            final KeysAndCerts keysAndCerts) {
         if (!appContext.configSupplier().get().getConfigData(TssConfig.class).keyCandidateRoster()) {
             return;
         }
@@ -443,6 +444,10 @@ public class TssBaseServiceImpl implements TssBaseService {
         if (tssStatus == null) {
             tssStatus = computeInitialTssStatus(tssStore, rosterStore);
         }
+
+        // If this node is in the active or candidate roster and the public TSS Encryption Key is not in state
+        // then submit the public TSS Encryption Key to the network.
+        checkAndSubmitTssEncryptionKey(state, handleContext, keysAndCerts, rosterStore);
 
         // In order for the TSS state machine to run asynchronously in a separate thread, all the necessary
         // information is collected and passed to the manageTssStatus method.
@@ -472,6 +477,21 @@ public class TssBaseServiceImpl implements TssBaseService {
                 tssStore.getVote(voteKey));
         CompletableFuture.runAsync(
                 () -> updateTssStatus(isStakePeriodBoundary, consensusNow, info), tssLibraryExecutor);
+    }
+
+    private void checkAndSubmitTssEncryptionKey(
+            State state, HandleContext handleContext, KeysAndCerts keysAndCerts, ReadableRosterStore rosterStore) {
+        final var activeRoster = rosterStore.getActiveRoster();
+        final var candidateRoster = rosterStore.getCandidateRoster();
+        final var selfNodeInfo = appContext.selfNodeInfoSupplier().get();
+        final var selfNodeId = selfNodeInfo.nodeId();
+
+        if (Stream.of(activeRoster, candidateRoster)
+                .filter(Objects::nonNull)
+                .flatMap(roster -> roster.rosterEntries().stream())
+                .anyMatch(rosterEntry -> rosterEntry.nodeId() == selfNodeId)) {
+            processTssEncryptionKeyChecks(state, handleContext, keysAndCerts);
+        }
     }
 
     /**
@@ -790,28 +810,27 @@ public class TssBaseServiceImpl implements TssBaseService {
     }
 
     public void processTssEncryptionKeyChecks(
-            @NonNull final UserTxn userTxn,
+            @NonNull final State state,
             @NonNull final HandleContext handleContext,
-            @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final ConfigProvider configProvider) {
-        final var keyCandidateRoster =
-                configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster();
+            @NonNull final KeysAndCerts keysAndCerts) {
+        final var configuration = handleContext.configuration();
+        final var nodeId = handleContext.networkInfo().selfNodeInfo().nodeId();
+        final var consensusNow = handleContext.consensusNow();
         // Functionality to submit TSS Encryption public key to the network is behind keyCandidateRoster feature flag
-        if (!keyCandidateRoster) {
+        if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
             return;
         }
 
-        final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
+        final var readableStoreFactory = new ReadableStoreFactory(state);
         final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
-        final var tssEncryptionKeys = tssStore.getTssEncryptionKeys(
-                handleContext.networkInfo().selfNodeInfo().nodeId());
-        Duration timeSinceLastSubmission = lastSuccessfulTssEncryptionKeySubmission == null
+        final var tssEncryptionKeys = tssStore.getTssEncryptionKeys(nodeId);
+        Duration timeSinceLastSubmission = lastTssEncryptionKeySubmission == null
                 ? null
-                : Duration.between(lastSuccessfulTssEncryptionKeySubmission, userTxn.consensusNow());
+                : Duration.between(lastTssEncryptionKeySubmission, consensusNow);
         final var tssEncryptionKeyRetryDelay =
-                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
+                configuration.getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
         final var tssEncryptionKeySubmissionRetries =
-                handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
+                configuration.getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
         if ((tssEncryptionKeys == null
                         || tssEncryptionKeys.currentEncryptionKey().equals(Bytes.EMPTY)
                         || !Arrays.equals(
@@ -829,6 +848,8 @@ public class TssBaseServiceImpl implements TssBaseService {
                     .publicTssEncryptionKey(
                             Bytes.wrap(keysAndCerts.publicTssEncryptionKey().toBytes()))
                     .build();
+            tssEncryptionKeySubmissionAttempts++;
+            lastTssEncryptionKeySubmission = consensusNow;
             tssSubmissions.submitTssEncryptionKey(tssEncryptionKey, handleContext);
         }
     }
