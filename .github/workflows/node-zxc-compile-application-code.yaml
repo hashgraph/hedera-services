@@ -205,7 +205,7 @@ jobs:
 
       - name: Unit Testing
         id: gradle-test
-        if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-unit-tests || inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport --continue --scan
 
 
@@ -533,6 +533,20 @@ jobs:
             hedera-node/test-clients/build/hapi-test/*.log
           retention-days: 7
 
+      - name: Publish test coverage report artifact from build application
+        if: ${{ inputs.enable-unit-tests && !cancelled() }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: test_coverage_report(build_application)
+          path: gradle/aggregation/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+
+      - name: Publish test coverage report artifact from XTS
+        if: ${{ inputs.enable-timing-sensitive-tests && !cancelled() }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: test_coverage_report(XTS)
+          path: gradle/aggregation/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+        
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         uses: codecov/codecov-action@5c47607acb93fed5485fdbf7232e8a31425f672a # v5.0.2
