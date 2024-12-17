@@ -863,12 +863,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         final var found = foundInAccountAmountsList(accountID, amount, accountAmountsList);
         assertTrue(
                 found,
-                "Cannot find AccountID: "
-                        + accountID
-                        + " and amount: "
-                        + amount
-                        + " in the transferList of the "
-                        + "txnRecord");
+                "Cannot find AccountID: " + accountID + " and amount: " + amount + " in :: " + accountAmountsList);
     }
 
     private boolean foundInAccountAmountsList(

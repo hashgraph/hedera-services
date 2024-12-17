@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -48,45 +48,40 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class ScheduleDeleteTest {
+
     @HapiTest
     final Stream<DynamicTest> deleteWithNoAdminKeyFails() {
-        return defaultHapiSpec("DeleteWithNoAdminKeyFails")
-                .given(
-                        cryptoCreate(SENDER),
-                        cryptoCreate(RECEIVER),
-                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))))
-                .when()
-                .then(scheduleDelete(VALID_SCHEDULED_TXN).hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER),
+                scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))),
+                scheduleDelete(VALID_SCHEDULED_TXN).hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
     }
 
     @HapiTest
     final Stream<DynamicTest> unauthorizedDeletionFails() {
-        return defaultHapiSpec("UnauthorizedDeletionFails")
-                .given(
-                        newKeyNamed(ADMIN),
-                        newKeyNamed("non-admin-key"),
-                        cryptoCreate(SENDER),
-                        cryptoCreate(RECEIVER),
-                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                                .adminKey(ADMIN))
-                .when()
-                .then(scheduleDelete(VALID_SCHEDULED_TXN)
+        return hapiTest(
+                newKeyNamed(ADMIN),
+                newKeyNamed("non-admin-key"),
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER),
+                scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .adminKey(ADMIN),
+                scheduleDelete(VALID_SCHEDULED_TXN)
                         .signedBy(DEFAULT_PAYER, "non-admin-key")
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @HapiTest
     final Stream<DynamicTest> deletingAlreadyDeletedIsObvious() {
-        return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
-                .given(
-                        cryptoCreate(SENDER),
-                        cryptoCreate(RECEIVER),
-                        newKeyNamed(ADMIN),
-                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                                .adminKey(ADMIN),
-                        scheduleDelete(VALID_SCHEDULED_TXN).signedBy(ADMIN, DEFAULT_PAYER))
-                .when()
-                .then(scheduleDelete(VALID_SCHEDULED_TXN)
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(RECEIVER),
+                newKeyNamed(ADMIN),
+                scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .adminKey(ADMIN),
+                scheduleDelete(VALID_SCHEDULED_TXN).signedBy(ADMIN, DEFAULT_PAYER),
+                scheduleDelete(VALID_SCHEDULED_TXN)
                         .fee(ONE_HBAR)
                         .signedBy(ADMIN, DEFAULT_PAYER)
                         .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
@@ -94,49 +89,40 @@ public class ScheduleDeleteTest {
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed(ADMIN),
-                        cryptoCreate(SENDER),
-                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
-                                .adminKey(ADMIN))
-                .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleDelete(VALID_SCHEDULED_TXN)
+        return hapiTest(
+                newKeyNamed(ADMIN),
+                cryptoCreate(SENDER),
+                scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                        .adminKey(ADMIN),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleDelete(VALID_SCHEDULED_TXN)
                         .signedBy(DEFAULT_PAYER, ADMIN)));
     }
 
     @HapiTest
     final Stream<DynamicTest> getScheduleInfoIdVariantsTreatedAsExpected() {
-        return defaultHapiSpec("getScheduleInfoIdVariantsTreatedAsExpected")
-                .given(
-                        newKeyNamed(ADMIN),
-                        cryptoCreate(SENDER),
-                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
-                                .adminKey(ADMIN))
-                .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getScheduleInfo(VALID_SCHEDULED_TXN)));
+        return hapiTest(
+                newKeyNamed(ADMIN),
+                cryptoCreate(SENDER),
+                scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                        .adminKey(ADMIN),
+                sendModified(withSuccessivelyVariedQueryIds(), () -> getScheduleInfo(VALID_SCHEDULED_TXN)));
     }
 
     @HapiTest
     final Stream<DynamicTest> deletingNonExistingFails() {
-        return defaultHapiSpec("DeletingNonExistingFails")
-                .given()
-                .when()
-                .then(
-                        scheduleDelete("0.0.534").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID),
-                        scheduleDelete("0.0.0").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID));
+        return hapiTest(
+                scheduleDelete("0.0.534").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID),
+                scheduleDelete("0.0.0").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
     @HapiTest
     final Stream<DynamicTest> deletingExecutedIsPointless() {
-        return defaultHapiSpec("DeletingExecutedIsPointless")
-                .given(
-                        createTopic("ofGreatInterest"),
-                        newKeyNamed(ADMIN),
-                        scheduleCreate(VALID_SCHEDULED_TXN, submitMessageTo("ofGreatInterest"))
-                                .adminKey(ADMIN))
-                .when()
-                .then(scheduleDelete(VALID_SCHEDULED_TXN)
+        return hapiTest(
+                createTopic("ofGreatInterest"),
+                newKeyNamed(ADMIN),
+                scheduleCreate(VALID_SCHEDULED_TXN, submitMessageTo("ofGreatInterest"))
+                        .adminKey(ADMIN),
+                scheduleDelete(VALID_SCHEDULED_TXN)
                         .signedBy(ADMIN, DEFAULT_PAYER)
                         .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }

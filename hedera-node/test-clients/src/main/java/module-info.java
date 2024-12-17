@@ -62,6 +62,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.utils;
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
+    exports com.hedera.services.bdd.junit.restart;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
@@ -98,7 +99,6 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.base.test.fixtures;
-    requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.merkledb;
     requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.state.impl;

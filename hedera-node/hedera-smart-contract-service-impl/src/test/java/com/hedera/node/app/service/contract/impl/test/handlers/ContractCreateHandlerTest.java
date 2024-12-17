@@ -36,9 +36,11 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
@@ -48,12 +50,16 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import java.util.List;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 
 class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
@@ -86,11 +92,22 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private GasCalculator gasCalculator;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ContractServiceComponent contractServiceComponent;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
+    private final Metrics metrics = new NoOpMetrics();
+    private final ContractMetrics contractMetrics = new ContractMetrics(() -> metrics, () -> contractsConfig);
+
     private ContractCreateHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractCreateHandler(() -> factory, gasCalculator);
+        contractMetrics.createContractMetrics();
+        given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
+        subject = new ContractCreateHandler(() -> factory, gasCalculator, contractServiceComponent);
     }
 
     @Test

@@ -48,7 +48,9 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN_RELATIONS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOPICS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TRANSACTION_RECEIPTS_QUEUE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_ENCRYPTION_KEYS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_MESSAGES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_STATUS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_VOTES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_150;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_151;
@@ -195,6 +197,8 @@ public class BlockImplUtils {
                     case "TssBaseService" -> switch (stateKey) {
                         case "TSS_MESSAGES" -> STATE_ID_TSS_MESSAGES.protoOrdinal();
                         case "TSS_VOTES" -> STATE_ID_TSS_VOTES.protoOrdinal();
+                        case "TSS_ENCRYPTION_KEY" -> STATE_ID_TSS_ENCRYPTION_KEYS.protoOrdinal();
+                        case "TSS_STATUS" -> STATE_ID_TSS_STATUS.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     default -> UNKNOWN_STATE_ID;

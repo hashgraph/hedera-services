@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
 import static java.util.Objects.requireNonNull;
@@ -31,10 +30,13 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
+import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
@@ -44,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -59,8 +62,8 @@ public final class StartupStateUtils {
     private StartupStateUtils() {}
 
     /**
-     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
-     * if no valid state is found on disk.
+     * Used exclusively by {@link com.swirlds.platform.Browser} to get the initial state to be used by this node.
+     * May return a state loaded from disk, or may return a genesis state if no valid state is found on disk.
      *
      * @param configuration      the configuration for this node
      * @param softwareVersion     the software version of the app
@@ -74,6 +77,7 @@ public final class StartupStateUtils {
      *                                     delete malformed states
      */
     @NonNull
+    @Deprecated(forRemoval = true)
     public static HashedReservedSignedState getInitialState(
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
@@ -126,7 +130,7 @@ public final class StartupStateUtils {
      *                                     delete malformed states
      */
     @NonNull
-    static ReservedSignedState loadStateFile(
+    public static ReservedSignedState loadStateFile(
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
@@ -304,5 +308,57 @@ public final class StartupStateUtils {
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to recycle state", e);
         }
+    }
+
+    /**
+     * Build and initialize a genesis state.
+     *
+     * @param configuration         the configuration for this node
+     * @param addressBook           the current address book
+     * @param appVersion            the software version of the app
+     * @param stateRoot             the merkle root node of the state
+     * @return a reserved genesis signed state
+     */
+    private static ReservedSignedState buildGenesisState(
+            @NonNull final Configuration configuration,
+            @NonNull final AddressBook addressBook,
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final MerkleRoot stateRoot) {
+
+        if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            initGenesisPlatformState(configuration, stateRoot.getWritablePlatformState(), addressBook, appVersion);
+        }
+
+        final SignedState signedState = new SignedState(
+                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
+        return signedState.reserve("initial reservation on genesis state");
+    }
+
+    /**
+     * Initializes a genesis platform state.
+     * @param configuration the configuration for this node
+     * @param platformState the platform state to initialize
+     * @param addressBook the current address book
+     * @param appVersion the software version of the app
+     */
+    private static void initGenesisPlatformState(
+            final Configuration configuration,
+            final PlatformStateModifier platformState,
+            final AddressBook addressBook,
+            final SoftwareVersion appVersion) {
+        platformState.bulkUpdate(v -> {
+            v.setAddressBook(addressBook.copy());
+            v.setCreationSoftwareVersion(appVersion);
+            v.setRound(0);
+            v.setLegacyRunningEventHash(null);
+            v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
+
+            final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+
+            final long genesisFreezeTime = basicConfig.genesisFreezeTime();
+            if (genesisFreezeTime > 0) {
+                v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            }
+        });
     }
 }
