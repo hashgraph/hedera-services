@@ -19,6 +19,9 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
@@ -381,6 +384,11 @@ public class NodeStakeUpdatesTest {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
         given(stack.getWritableStates(notNull())).willReturn(writableStates);
+        given(writableStates.get(TSS_MESSAGE_MAP_KEY))
+                .willReturn(new MapWritableKVState<>(TSS_MESSAGE_MAP_KEY, Map.of()));
+        given(writableStates.get(TSS_VOTE_MAP_KEY)).willReturn(new MapWritableKVState<>(TSS_VOTE_MAP_KEY, Map.of()));
+        given(writableStates.get(TSS_ENCRYPTION_KEYS_KEY))
+                .willReturn(new MapWritableKVState<>(TSS_ENCRYPTION_KEYS_KEY, Map.of()));
         simulateCandidateAndActiveRosters();
 
         // Attempt to set the (equivalent) active roster as the new candidate roster
@@ -406,6 +414,11 @@ public class NodeStakeUpdatesTest {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
         given(stack.getWritableStates(notNull())).willReturn(writableStates);
+        given(writableStates.get(TSS_MESSAGE_MAP_KEY))
+                .willReturn(new MapWritableKVState<>(TSS_MESSAGE_MAP_KEY, Map.of()));
+        given(writableStates.get(TSS_VOTE_MAP_KEY)).willReturn(new MapWritableKVState<>(TSS_VOTE_MAP_KEY, Map.of()));
+        given(writableStates.get(TSS_ENCRYPTION_KEYS_KEY))
+                .willReturn(new MapWritableKVState<>(TSS_ENCRYPTION_KEYS_KEY, Map.of()));
         simulateCandidateAndActiveRosters();
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
