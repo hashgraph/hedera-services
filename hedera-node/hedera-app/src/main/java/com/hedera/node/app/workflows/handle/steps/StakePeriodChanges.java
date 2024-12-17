@@ -159,7 +159,7 @@ public class StakePeriodChanges {
         final var rosterEntries = Stream.of(rosterStore.getActiveRoster(), rosterStore.getCandidateRoster())
                 .filter(Objects::nonNull)
                 .flatMap(roster -> roster.rosterEntries().stream())
-                .collect(Collectors.toList());
+                .toList();
 
         for (final var rosterEntry : rosterEntries) {
             final var nodeId = rosterEntry.nodeId();
