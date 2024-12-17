@@ -350,7 +350,7 @@ public final class RosterUtils {
      */
     @Deprecated(forRemoval = true)
     @Nullable
-    public static AddressBook buildAddressBook(@NonNull final Roster roster) {
+    public static AddressBook buildAddressBook(@Nullable final Roster roster) {
         if (roster == null) {
             return null;
         }
