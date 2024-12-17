@@ -367,8 +367,7 @@ public final class MerkleDb {
         }
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
-        final MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled);
+        final MerkleDbDataSource dataSource = new MerkleDbDataSource(this, label, tableId, tableConfig);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -397,7 +396,7 @@ public final class MerkleDb {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
         importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
-        return getDataSource(tableId, label, false);
+        return getDataSource(tableId, label);
     }
 
     private void importDataSource(
@@ -448,11 +447,10 @@ public final class MerkleDb {
             throw new IllegalStateException("Unknown table: " + name);
         }
         final int tableId = metadata.getTableId();
-        return getDataSource(tableId, name, dbCompactionEnabled);
+        return getDataSource(tableId, name);
     }
 
-    private MerkleDbDataSource getDataSource(
-            final int tableId, final String tableName, final boolean dbCompactionEnabled) throws IOException {
+    private MerkleDbDataSource getDataSource(final int tableId, final String tableName) throws IOException {
         final MerkleDbTableConfig tableConfig = getTableConfig(tableId);
         final AtomicReference<IOException> rethrowIO = new AtomicReference<>(null);
         final MerkleDbDataSource dataSource = dataSources.updateAndGet(tableId, ds -> {
@@ -460,7 +458,7 @@ public final class MerkleDb {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(this, tableName, tableId, tableConfig, dbCompactionEnabled);
+                return new MerkleDbDataSource(this, tableName, tableId, tableConfig);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;

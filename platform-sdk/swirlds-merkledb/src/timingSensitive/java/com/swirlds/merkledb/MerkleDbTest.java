@@ -183,7 +183,7 @@ public class MerkleDbTest {
 
         // create datasource reusing existing metadata
         MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
+                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig);
         // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
         // Assertion error is expected
         assertThrows(AssertionError.class, dataSource::close);

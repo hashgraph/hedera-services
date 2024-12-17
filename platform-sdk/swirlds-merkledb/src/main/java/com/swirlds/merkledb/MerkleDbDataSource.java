@@ -178,11 +178,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     private MerkleDbStatisticsUpdater statisticsUpdater;
 
     public MerkleDbDataSource(
-            final MerkleDb database,
-            final String tableName,
-            final int tableId,
-            final MerkleDbTableConfig tableConfig,
-            final boolean compactionEnabled)
+            final MerkleDb database, final String tableName, final int tableId, final MerkleDbTableConfig tableConfig)
             throws IOException {
         this.database = database;
         this.tableName = tableName;
@@ -393,9 +389,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 pathToKeyValueFileCompactor,
                 merkleDbConfig);
 
-        if (compactionEnabled) {
-            enableBackgroundCompaction();
-        }
+        enableBackgroundCompaction();
     }
 
     /**
