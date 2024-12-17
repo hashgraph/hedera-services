@@ -80,6 +80,7 @@ import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -217,7 +218,7 @@ public class Browser {
                     BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
             final Configuration configuration = configBuilder.build();
 
-            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration);
+            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration, new HashSet<>(nodesToRun));
             guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
@@ -253,7 +254,8 @@ public class Browser {
                     nodeId);
             final var cryptography = CryptographyFactory.create();
             CryptographyHolder.set(cryptography);
-            final KeysAndCerts keysAndCerts = initNodeSecurity(appDefinition.getConfigAddressBook(), configuration)
+            final KeysAndCerts keysAndCerts = initNodeSecurity(
+                            appDefinition.getConfigAddressBook(), configuration, new HashSet<>(nodesToRun))
                     .get(nodeId);
 
             // the AddressBook is not changed after this point, so we calculate the hash now

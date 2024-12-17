@@ -30,6 +30,7 @@ import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.Console;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -48,6 +49,7 @@ import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 /**
  * This HelloSwirld creates a single transaction, consisting of the string "Hello Swirld", and then goes
@@ -102,7 +104,13 @@ public class HelloSwirldDemoMain implements SwirldMain {
         this.selfId = id;
         final int winNum = (int) selfId.id();
         this.console = createConsole(
-                platform, winNum, true, platform.getAddressBook().getNodeIdSet()); // create the window, make it visible
+                platform,
+                winNum,
+                true,
+                platform.getRoster().rosterEntries().stream()
+                        .map(RosterEntry::nodeId)
+                        .map(NodeId::of)
+                        .collect(Collectors.toSet())); // create the window, make it visible
     }
 
     @Override

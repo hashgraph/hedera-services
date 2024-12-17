@@ -32,6 +32,7 @@ import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.Console;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -57,6 +58,7 @@ import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -243,7 +245,13 @@ public class StatsDemoMain implements SwirldMain {
         if (!headless) { // create the window, make it visible
             final int winNum = (int) selfId.id();
             console = createConsole(
-                    platform, winNum, true, platform.getAddressBook().getNodeIdSet());
+                    platform,
+                    winNum,
+                    true,
+                    platform.getRoster().rosterEntries().stream()
+                            .map(RosterEntry::nodeId)
+                            .map(NodeId::of)
+                            .collect(Collectors.toSet()));
         }
     }
 

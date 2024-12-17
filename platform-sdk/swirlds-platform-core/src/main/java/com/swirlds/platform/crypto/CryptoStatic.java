@@ -353,7 +353,9 @@ public final class CryptoStatic {
     @NonNull
     @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
-            @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password,
+            @NonNull final AddressBook addressBook,
+            @NonNull final Path keysDirPath,
+            @NonNull final char[] password,
             @NonNull Set<NodeId> nodesToStart)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException,
                     KeyGeneratingException, NoSuchProviderException {

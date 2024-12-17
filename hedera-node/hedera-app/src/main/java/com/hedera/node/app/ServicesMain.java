@@ -94,6 +94,7 @@ import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
@@ -235,7 +236,7 @@ public class ServicesMain implements SwirldMain {
         final var selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
         final var platformConfig = buildPlatformConfig();
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
-        final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig);
+        final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, new HashSet<>(nodesToRun));
         final var keysAndCerts = networkKeysAndCerts.get(selfId);
         setupGlobalMetrics(platformConfig);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);

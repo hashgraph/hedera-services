@@ -31,6 +31,7 @@ import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.Console;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -49,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * This demonstrates a cryptocurrency and a stock market. There are 10 stocks, and each member repeatedly generates an
@@ -163,7 +165,14 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         this.platform = platform;
         this.selfId = id;
         final int winNum = (int) selfId.id();
-        this.console = createConsole(platform, winNum, true, platform.getAddressBook().getNodeIdSet()); // create the window, make it visible
+        this.console = createConsole(
+                platform,
+                winNum,
+                true,
+                platform.getRoster().rosterEntries().stream()
+                        .map(RosterEntry::nodeId)
+                        .map(NodeId::of)
+                        .collect(Collectors.toSet())); // create the window, make it visible
         this.console.addKeyListener(keyListener);
     }
 

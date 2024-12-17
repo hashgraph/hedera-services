@@ -23,16 +23,12 @@ import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gui.internal.SwirldMenu;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.util.Set;
-import javax.swing.JFrame;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

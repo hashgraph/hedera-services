@@ -94,7 +94,7 @@ import org.bouncycastle.util.io.pem.PemWriter;
  *
  * <p>
  * The {@link EnhancedKeyStoreLoader} class is a replacement for the now deprecated
- * {@link CryptoStatic#loadKeysAndCerts(AddressBook, Path, char[])} method. This new implementation adds support for
+ * {@link CryptoStatic#loadKeysAndCerts(AddressBook, Path, char[], Set<NodeId>)} method. This new implementation adds support for
  * loading industry standard PEM formatted PKCS #8 private keys and X.509 certificates. The legacy key stores are still
  * supported, but are no longer the preferred format.
  *
@@ -651,7 +651,7 @@ public class EnhancedKeyStoreLoader {
                                 .formatted(nodeId, nodeAlias, KeyCertPurpose.SIGNING));
             }
 
-            if (isLocal(address)) {
+            if (localNodes.contains(nodeId)) {
                 // The agreement certificate is loaded by the local nodes and provided to peers through mTLS handshaking
                 logger.trace(
                         STARTUP.getMarker(),
@@ -1347,7 +1347,7 @@ public class EnhancedKeyStoreLoader {
         final AtomicLong errorCount = new AtomicLong(0);
 
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
-            if (isLocal(address)) {
+            if (localNodes.contains(nodeId)) {
                 // extract private keys for local nodes
                 final Path sPrivateKeyLocation = keyStoreDirectory.resolve("s-private-" + nodeAlias + ".pem");
                 final Path ksLocation = legacyPrivateKeyStore(nodeAlias);
@@ -1442,7 +1442,7 @@ public class EnhancedKeyStoreLoader {
             throws KeyStoreException, KeyLoadingException {
         final AtomicLong errorCount = new AtomicLong(0);
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
-            if (isLocal(address) && pfxCertificates.containsKey(nodeId)) {
+            if (localNodes.contains(nodeId) && pfxCertificates.containsKey(nodeId)) {
                 // validate private keys for local nodes
                 final Path ksLocation = privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING);
                 final PrivateKey pemPrivateKey = readPrivateKey(nodeId, ksLocation);
@@ -1494,7 +1494,7 @@ public class EnhancedKeyStoreLoader {
         final AtomicLong cleanupErrorCount = new AtomicLong(0);
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
             // private key rollback
-            if (isLocal(address) && pfxPrivateKeys.containsKey(address.getNodeId())) {
+            if (localNodes.contains(nodeId) && pfxPrivateKeys.containsKey(address.getNodeId())) {
                 try {
                     Files.deleteIfExists(privateKeyStore(nodeAlias, KeyCertPurpose.SIGNING));
                 } catch (final IOException e) {
@@ -1551,7 +1551,7 @@ public class EnhancedKeyStoreLoader {
             }
         }
         iterateAddressBook(addressBook, (i, nodeId, address, nodeAlias) -> {
-            if (isLocal(address)) {
+            if (localNodes.contains(nodeId)) {
                 // move private key PFX files per local node
                 final File sPrivatePfx = legacyPrivateKeyStore(nodeAlias).toFile();
                 if (sPrivatePfx.exists()
