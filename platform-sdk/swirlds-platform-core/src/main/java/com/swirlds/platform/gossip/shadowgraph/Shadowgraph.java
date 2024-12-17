@@ -23,12 +23,12 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayDeque;
@@ -105,15 +105,24 @@ public class Shadowgraph implements Clearable {
     /**
      * The most recent event window we know about.
      */
-    private NonAncientEventWindow eventWindow;
+    private EventWindow eventWindow;
+
+    /**
+     * For each peer, track the number of events in the intake pipeline prior to the shadowgraph.
+     */
+    private final IntakeEventCounter intakeEventCounter;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the address book
+     * @param platformContext    the platform context
+     * @param numberOfNodes      numberOfNodes
+     * @param intakeEventCounter tracks events in the intake pipeline
      */
-    public Shadowgraph(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
+    public Shadowgraph(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final int numberOfNodes,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         ancientMode = platformContext
                 .getConfiguration()
@@ -121,9 +130,8 @@ public class Shadowgraph implements Clearable {
                 .getAncientMode();
 
         this.metrics = new ShadowgraphMetrics(platformContext);
-        this.numberOfNodes = addressBook.getSize();
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
-        oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
+        this.numberOfNodes = numberOfNodes;
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         tips = new HashSet<>();
         hashToShadowEvent = new HashMap<>();
         indicatorToShadowEvent = new HashMap<>();
@@ -135,7 +143,7 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow the starting event window
      */
-    public synchronized void startWithEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    private void startWithEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = eventWindow;
         oldestUnexpiredIndicator = eventWindow.getExpiredThreshold();
         logger.info(
@@ -148,7 +156,7 @@ public class Shadowgraph implements Clearable {
      * Reset the shadowgraph manager to its constructed state.
      */
     public synchronized void clear() {
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = null;
         oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         disconnectShadowEvents();
         tips.clear();
@@ -163,7 +171,6 @@ public class Shadowgraph implements Clearable {
     private void disconnectShadowEvents() {
         for (final ShadowEvent shadow : hashToShadowEvent.values()) {
             shadow.disconnect();
-            shadow.getEvent().clear();
         }
     }
 
@@ -208,7 +215,7 @@ public class Shadowgraph implements Clearable {
      * Get the latest event window known to the shadowgraph.
      */
     @NonNull
-    public synchronized NonAncientEventWindow getEventWindow() {
+    public synchronized EventWindow getEventWindow() {
         return eventWindow;
     }
 
@@ -247,7 +254,9 @@ public class Shadowgraph implements Clearable {
         final HashSet<ShadowEvent> ancestors = new HashSet<>();
         for (ShadowEvent event : events) {
             // add ancestors that have not already been found and that pass the predicate
-            findAncestors(ancestors, event, e -> !ancestors.contains(e) && !expired(e.getEvent()) && predicate.test(e));
+            final Predicate<ShadowEvent> isValidShadowEvent =
+                    e -> !ancestors.contains(e) && !expired(e.getEvent().getDescriptor()) && predicate.test(e);
+            findAncestors(ancestors, event, isValidShadowEvent);
         }
         return ancestors;
     }
@@ -276,7 +285,7 @@ public class Shadowgraph implements Clearable {
 
         // perform a depth first search of self and other parents
         while (!todoStack.isEmpty()) {
-            final ShadowEvent x = todoStack.pop();
+            final ShadowEvent testEvent = todoStack.pop();
             /*
             IF
 
@@ -290,12 +299,14 @@ public class Shadowgraph implements Clearable {
 
             add it to ancestors and push any non-null parents to the stack
              */
-            if (!expired(x.getEvent()) && predicate.test(x) && ancestors.add(x)) {
-                final ShadowEvent xsp = x.getSelfParent();
+            if (!expired(testEvent.getEvent().getDescriptor())
+                    && predicate.test(testEvent)
+                    && ancestors.add(testEvent)) {
+                final ShadowEvent xsp = testEvent.getSelfParent();
                 if (xsp != null) {
                     todoStack.push(xsp);
                 }
-                final ShadowEvent xop = x.getOtherParent();
+                final ShadowEvent xop = testEvent.getOtherParent();
                 if (xop != null) {
                     todoStack.push(xop);
                 }
@@ -313,9 +324,10 @@ public class Shadowgraph implements Clearable {
      * @deprecated planned for removal, do not add new uses
      */
     @Deprecated(forRemoval = true)
-    public synchronized Collection<EventImpl> findByAncientIndicator(
-            final long lowerBound, final long upperBound, final Predicate<EventImpl> predicate) {
-        final List<EventImpl> result = new ArrayList<>();
+    @NonNull
+    public synchronized Collection<PlatformEvent> findByAncientIndicator(
+            final long lowerBound, final long upperBound, @NonNull final Predicate<PlatformEvent> predicate) {
+        final List<PlatformEvent> result = new ArrayList<>();
         if (lowerBound >= upperBound) {
             return result;
         }
@@ -341,7 +353,12 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow describes the current window of non-expired events
      */
-    public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public synchronized void updateEventWindow(@NonNull final EventWindow eventWindow) {
+        if (this.eventWindow == null) {
+            startWithEventWindow(eventWindow);
+            return;
+        }
+
         final long expiredThreshold = eventWindow.getExpiredThreshold();
 
         if (expiredThreshold < eventWindow.getExpiredThreshold()) {
@@ -430,8 +447,27 @@ public class Shadowgraph implements Clearable {
         hashToShadowEvent.remove(shadow.getEventBaseHash());
         // Remove references to parent shadows so this event gets garbage collected
         shadow.disconnect();
-        shadow.getEvent().clear();
         tips.remove(shadow);
+    }
+
+    /**
+     * Get the shadow event that references a hashgraph otherParent instance.
+     *
+     * @param otherParentsDescriptors List of event descriptors.
+     * @return the shadow event that references an event, or null if {@code otherParentsDescriptors} is empty
+     * @throws IllegalArgumentException if {@code otherParentsDescriptors} contains more than one event descriptor
+     */
+    @Nullable
+    private synchronized ShadowEvent shadow(@NonNull final List<EventDescriptorWrapper> otherParentsDescriptors) {
+        if (otherParentsDescriptors.isEmpty()) {
+            return null;
+        }
+
+        if (otherParentsDescriptors.size() > 1) {
+            throw new IllegalArgumentException("Only one otherParent descriptor is supported");
+        }
+
+        return hashToShadowEvent.get(otherParentsDescriptors.getFirst().hash());
     }
 
     /**
@@ -440,12 +476,13 @@ public class Shadowgraph implements Clearable {
      * @param e The event.
      * @return the shadow event that references an event, or null is {@code e} is null
      */
-    public synchronized ShadowEvent shadow(final EventImpl e) {
+    @Nullable
+    public synchronized ShadowEvent shadow(@Nullable final EventDescriptorWrapper e) {
         if (e == null) {
             return null;
         }
 
-        return hashToShadowEvent.get(e.getBaseHash());
+        return hashToShadowEvent.get(e.hash());
     }
 
     /**
@@ -470,7 +507,7 @@ public class Shadowgraph implements Clearable {
      * @return the hashgraph event, if there is one in {@code this} shadowgraph, else `null`
      */
     @Nullable
-    public synchronized EventImpl hashgraphEvent(final Hash h) {
+    public synchronized PlatformEvent hashgraphEvent(@Nullable final Hash h) {
         final ShadowEvent shadow = shadow(h);
         if (shadow == null) {
             return null;
@@ -491,59 +528,68 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * If Event `e` is insertable, then insert it and update the tip set, else do nothing.
+     * If Event `event` is insertable, then insert it and update the tip set, else do nothing.
      *
-     * @param e The event reference to insert.
-     * @return true iff e was inserted
+     * @param event The event reference to insert.
+     * @return {@code true} if the event was added, {@code false} otherwise
      * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
      */
-    public synchronized boolean addEvent(final EventImpl e) throws ShadowgraphInsertionException {
-        final InsertableStatus status = insertable(e);
+    public synchronized boolean addEvent(@NonNull final PlatformEvent event) throws ShadowgraphInsertionException {
+        if (eventWindow == null) {
+            throw new IllegalStateException("Initial event window not set");
+        }
+        Objects.requireNonNull(event);
+        try {
+            final InsertableStatus status = insertable(event);
 
-        if (status == InsertableStatus.INSERTABLE) {
-            final int tipsBefore = tips.size();
-            final ShadowEvent s = insert(e);
-            tips.add(s);
-            tips.remove(s.getSelfParent());
+            if (status == InsertableStatus.INSERTABLE) {
+                final int tipsBefore = tips.size();
+                final ShadowEvent s = insert(event);
+                tips.add(s);
+                tips.remove(s.getSelfParent());
 
-            if (numberOfNodes > 0 && tips.size() > numberOfNodes && tips.size() > tipsBefore) {
-                // It is possible that we have more tips than nodes even if there is no fork.
-                // Explained in: sync-protocol.md
-                logger.info(
-                        SYNC_INFO.getMarker(),
-                        "tips size is {} after adding {}. Esp null:{} Ssp null:{}\n"
-                                + "eventWindow.getExpiredThreshold: {} oldestUnexpiredIndicator: {}\n"
-                                + "current tips:{}",
-                        tips::size,
-                        () -> EventStrings.toMediumString(e),
-                        () -> e.getSelfParent() == null,
-                        () -> s.getSelfParent() == null,
-                        () -> eventWindow.getExpiredThreshold(),
-                        () -> oldestUnexpiredIndicator,
-                        () -> tips.stream()
-                                .map(sh -> EventStrings.toShortString(sh.getEvent()))
-                                .collect(Collectors.joining(",")));
-            }
+                if (numberOfNodes > 0 && tips.size() > numberOfNodes && tips.size() > tipsBefore) {
+                    // It is possible that we have more tips than nodes even if there is no fork.
+                    // Explained in: sync-protocol.md
+                    logger.info(
+                            SYNC_INFO.getMarker(),
+                            "tips size is {} after adding {}. Esp null:{} Ssp null:{}\n"
+                                    + "eventWindow.getExpiredThreshold: {} oldestUnexpiredIndicator: {}\n"
+                                    + "current tips:{}",
+                            tips::size,
+                            () -> event,
+                            () -> event.getSelfParent() == null,
+                            () -> s.getSelfParent() == null,
+                            () -> eventWindow.getExpiredThreshold(),
+                            () -> oldestUnexpiredIndicator,
+                            () -> tips.stream()
+                                    .map(sh -> sh.getEvent().getDescriptor().toString())
+                                    .collect(Collectors.joining(",")));
+                }
 
-            return true;
-        } else {
-            // Every event received should be insertable, so throw an exception if that is not the case
-            if (status == InsertableStatus.EXPIRED_EVENT) {
-                throw new ShadowgraphInsertionException(
-                        String.format(
-                                "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
-                        status);
-            } else if (status == InsertableStatus.NULL_EVENT) {
-                throw new ShadowgraphInsertionException(
-                        String.format("`addEvent`: did not insert, status is %s", status), status);
+                return true;
             } else {
-                throw new ShadowgraphInsertionException(
-                        String.format(
-                                "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
-                        status);
+                if (status == InsertableStatus.EXPIRED_EVENT) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "`addEvent`: did not insert, status is {} for event {}, oldestUnexpiredIndicator = {}",
+                            status,
+                            event,
+                            oldestUnexpiredIndicator);
+                    return false;
+                } else if (status == InsertableStatus.NULL_EVENT) {
+                    throw new ShadowgraphInsertionException(
+                            String.format("`addEvent`: did not insert, status is %s", status), status);
+                } else {
+                    throw new ShadowgraphInsertionException(
+                            String.format(
+                                    "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
+                                    status, event, oldestUnexpiredIndicator),
+                            status);
+                }
             }
+        } finally {
+            intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
         }
     }
 
@@ -558,11 +604,12 @@ public class Shadowgraph implements Clearable {
     }
 
     /**
-     * @param h the hash of the event
+     * @param hash the hash of the event
      * @return the event that has the hash provided, or null if none exists
      */
-    public synchronized EventImpl getEvent(final Hash h) {
-        final ShadowEvent shadowEvent = hashToShadowEvent.get(h);
+    @Nullable
+    public synchronized PlatformEvent getEvent(@Nullable final Hash hash) {
+        final ShadowEvent shadowEvent = hashToShadowEvent.get(hash);
         return shadowEvent == null ? null : shadowEvent.getEvent();
     }
 
@@ -570,18 +617,19 @@ public class Shadowgraph implements Clearable {
      * Attach a shadow of a Hashgraph event to this graph. Only a shadow for which a parent hash matches a hash in
      * this@entry is inserted.
      *
-     * @param e The Hashgraph event shadow to be inserted
+     * @param event The Hashgraph event shadow to be inserted
      * @return the inserted shadow event
      */
-    private ShadowEvent insert(final EventImpl e) {
-        final ShadowEvent sp = shadow(e.getSelfParent());
-        final ShadowEvent op = shadow(e.getOtherParent());
+    @NonNull
+    private ShadowEvent insert(@NonNull final PlatformEvent event) {
+        final ShadowEvent sp = shadow(event.getSelfParent());
+        final ShadowEvent op = shadow(event.getOtherParents());
 
-        final ShadowEvent se = new ShadowEvent(e, sp, op);
+        final ShadowEvent se = new ShadowEvent(event, sp, op);
 
         hashToShadowEvent.put(se.getEventBaseHash(), se);
 
-        final long ancientIndicator = e.getBaseEvent().getAncientIndicator(ancientMode);
+        final long ancientIndicator = event.getAncientIndicator(ancientMode);
         if (!indicatorToShadowEvent.containsKey(ancientIndicator)) {
             indicatorToShadowEvent.put(ancientIndicator, new HashSet<>());
         }
@@ -596,8 +644,8 @@ public class Shadowgraph implements Clearable {
      * @param event The event.
      * @return true iff the given event is expired
      */
-    private boolean expired(final EventImpl event) {
-        return event.getBaseEvent().getAncientIndicator(ancientMode) < oldestUnexpiredIndicator;
+    private boolean expired(final EventDescriptorWrapper event) {
+        return event.getAncientIndicator(ancientMode) < oldestUnexpiredIndicator;
     }
 
     /*
@@ -642,31 +690,32 @@ public class Shadowgraph implements Clearable {
      * @return An insertable status, indicating whether the event can be inserted, and if not, the reason it can not be
      * inserted.
      */
-    private InsertableStatus insertable(final EventImpl e) {
-        if (e == null) {
-            return InsertableStatus.NULL_EVENT;
-        }
-
+    @NonNull
+    private InsertableStatus insertable(@NonNull final PlatformEvent e) {
         // No multiple insertions
-        if (shadow(e) != null) {
+        if (shadow(e.getDescriptor()) != null) {
             return InsertableStatus.DUPLICATE_SHADOW_EVENT;
         }
 
         // An expired event will not be referenced in the graph.
-        if (expired(e)) {
+        if (expired(e.getDescriptor())) {
             return InsertableStatus.EXPIRED_EVENT;
         }
 
-        final boolean hasOP = e.getOtherParent() != null;
+        final boolean hasOP = !e.getOtherParents().isEmpty();
         final boolean hasSP = e.getSelfParent() != null;
 
         // If e has an unexpired parent that is not already referenced by the shadowgraph, then we log an error. This
         // is only a sanity check, so there is no need to prevent insertion
         if (hasOP) {
-            final boolean knownOP = shadow(e.getOtherParent()) != null;
-            final boolean expiredOP = expired(e.getOtherParent());
+            if (e.getOtherParents().size() > 1) {
+                throw new IllegalStateException("Only one otherParent descriptor is supported");
+            }
+            final EventDescriptorWrapper otherParent = e.getOtherParents().getFirst();
+            final boolean knownOP = shadow(otherParent) != null;
+            final boolean expiredOP = expired(otherParent);
             if (!knownOP && !expiredOP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
+                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e);
             }
         }
 
@@ -674,24 +723,12 @@ public class Shadowgraph implements Clearable {
             final boolean knownSP = shadow(e.getSelfParent()) != null;
             final boolean expiredSP = expired(e.getSelfParent());
             if (!knownSP && !expiredSP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
+                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e);
             }
         }
 
         // If both parents are null, then insertion is allowed. This will create
         // a new tree in the forest view of the graph.
         return InsertableStatus.INSERTABLE;
-    }
-
-    /**
-     * @return all events stored in the shadowgraph
-     */
-    @SuppressWarnings("unchecked")
-    public EventImpl[] getAllEvents() {
-        final HashMap<Hash, ShadowEvent> clone;
-        synchronized (this) {
-            clone = (HashMap<Hash, ShadowEvent>) hashToShadowEvent.clone();
-        }
-        return clone.values().stream().map(ShadowEvent::getEvent).toArray(EventImpl[]::new);
     }
 }

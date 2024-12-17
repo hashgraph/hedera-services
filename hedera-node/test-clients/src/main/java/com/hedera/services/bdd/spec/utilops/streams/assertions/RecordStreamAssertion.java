@@ -16,19 +16,15 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 /**
  * Implements an assertion about one or more {@link RecordStreamItem}'s that should appear in the
- * record stream during---or shortly after---execution of a {@link
- * com.hedera.services.bdd.spec.HapiSpec}.
+ * record stream during---or shortly after---execution of a {@link HapiSpec}.
  *
- * <p>Typical implementations will be stateful, and will be constructed with their "parent" {@link
- * com.hedera.services.bdd.spec.HapiSpec}. (See {@link CryptoCreateAssertion} for a minimal
- * assertion that the record stream includes a {@link RecordStreamItem} for a particular account's
- * creation.) A more complex assertion might validate that an account was not only created, but also
- * expired and was renewed with the correct new expiry.
+ * <p>Typical implementations will be stateful, and will be constructed with their "parent" {@link HapiSpec}.
  */
 public interface RecordStreamAssertion {
     /**

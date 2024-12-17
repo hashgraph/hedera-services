@@ -105,7 +105,8 @@ public abstract sealed class AbstractMerkleNode extends AbstractReservable
             // allowed to proceed, a node in multiple trees would have the incorrect route in at least one of those
             // trees. Instead of moving the node, make a copy and move the copy.
             throw new MerkleRouteException("Routes can not be set unless the reservation count is 0 or 1. (type = "
-                    + this.getClass().getName() + ", reservation count = " + getReservationCount() + ")");
+                    + this.getClass().getName() + ", reservation count = " + getReservationCount() + ", route = "
+                    + getRoute() + ", new route = " + route + ")");
         }
         this.route = route;
     }

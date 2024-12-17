@@ -19,16 +19,13 @@ package com.swirlds.platform.cli;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import java.nio.file.Path;
 import java.util.List;
@@ -96,7 +93,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
             description = "The ID of the node that is being used to recover the state. "
                     + "This node's keys should be available locally.")
     private void setSelfId(final long selfId) {
-        this.selfId = new NodeId(selfId);
+        this.selfId = NodeId.of(selfId);
     }
 
     @CommandLine.Option(
@@ -125,10 +122,9 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws Exception {
-        final Configuration configuration =
-                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), configurationPaths);
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
+                ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         recoverState(
                 platformContext,

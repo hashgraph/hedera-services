@@ -22,14 +22,19 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public final class CommonUpgradeResources {
     public static final String DEFAULT_UPGRADE_FILE_ID = "0.0.150";
     public static final String DEFAULT_UPGRADE_FILE_PATH = "testfiles/poeticUpgrade.zip";
+    // This file is inside the pretend ZIP and PREPARE_UPGRADE should put it in the current artifacts directory
+    public static final String FAKE_UPGRADE_FILE_NAME = "MrBleaney.txt";
+    public static final Path FAKE_ASSETS_LOC = Paths.get("testfiles/fake-upgrade-assets");
     public static final int DEFAULT_APPENDS_PER_BURST = 512;
     public static final int DEFAULT_UPGRADE_DELAY = 2;
 
@@ -56,10 +61,32 @@ public final class CommonUpgradeResources {
     }
 
     public static byte[] upgradeFileHash() {
+        return upgradeFileHashAt(Paths.get(upgradeFilePath()), true);
+    }
+
+    public static byte[] upgradeFileHashAt(@NonNull final Path path) {
+        return upgradeFileHashAt(path, false);
+    }
+
+    /**
+     * Given a path, returns the SHA-384 hash of its contents. If the path is invalid or the file cannot be read,
+     * an empty byte array is returned when {@code suppressExceptions=true} and an exception is propagated otherwise.
+     *
+     * <p>We support suppressing exceptions because that is the behavior in JRS now and out of an abundance of
+     * caution we don't want to change it until those tests are replaced.
+     *
+     * @param path the path to the file
+     * @param suppressExceptions whether to suppress exceptions
+     * @return the SHA-384 hash of the file's contents or an empty byte array if the file cannot be read
+     */
+    private static byte[] upgradeFileHashAt(@NonNull final Path path, final boolean suppressExceptions) {
         try {
-            final var fileBytes = Files.readAllBytes(Paths.get(upgradeFilePath()));
+            final var fileBytes = Files.readAllBytes(path);
             return noThrowSha384HashOf(fileBytes);
-        } catch (final InvalidPathException | IOException ignore) {
+        } catch (final InvalidPathException | IOException e) {
+            if (!suppressExceptions) {
+                throw new RuntimeException(e);
+            }
         }
         return new byte[0];
     }

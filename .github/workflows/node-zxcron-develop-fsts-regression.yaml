@@ -16,8 +16,6 @@
 
 name: "ZXCron: [Node] Develop JRS Tests"
 on:
-  schedule:
-    - cron: '30 6 * * *'
   workflow_dispatch:
 
 defaults:
@@ -27,8 +25,13 @@ defaults:
 jobs:
   trigger-task:
     name: Trigger Daily Run
-    runs-on: [ self-hosted, Linux, small, scheduler, ephemeral ]
+    runs-on: network-node-linux-small-scheduler
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
       - name: Display Branch Information
         run: |
           printf "Ref: \t\t${{ github.ref }}"

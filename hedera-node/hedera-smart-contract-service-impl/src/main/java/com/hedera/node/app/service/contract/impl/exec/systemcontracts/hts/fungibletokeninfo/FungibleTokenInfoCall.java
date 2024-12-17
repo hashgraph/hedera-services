@@ -19,10 +19,13 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungi
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.fungibleTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO_V2;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -38,26 +41,29 @@ import org.apache.tuweni.bytes.Bytes;
 public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
     private final boolean isStaticCall;
+    private final Function function;
 
     public FungibleTokenInfoCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            Function function) {
         super(gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.isStaticCall = isStaticCall;
+        this.function = function;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
 
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token);
+        return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token), SUCCESS, true);
     }
 
     @Override
@@ -73,14 +79,21 @@ public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
 
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
-        // @Future remove to revert #9073 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, gasRequirement);
         }
-        return successResult(
-                FUNGIBLE_TOKEN_INFO
-                        .getOutputs()
-                        .encodeElements(status.protoOrdinal(), fungibleTokenInfoTupleFor(token, ledgerId)),
-                gasRequirement);
+
+        return function.getName().equals(FUNGIBLE_TOKEN_INFO.getName())
+                ? successResult(
+                        FUNGIBLE_TOKEN_INFO
+                                .getOutputs()
+                                .encodeElements(status.protoOrdinal(), fungibleTokenInfoTupleFor(token, ledgerId, 1)),
+                        gasRequirement)
+                : successResult(
+                        FUNGIBLE_TOKEN_INFO_V2
+                                .getOutputs()
+                                .encodeElements(status.protoOrdinal(), fungibleTokenInfoTupleFor(token, ledgerId, 2)),
+                        gasRequirement);
     }
 }

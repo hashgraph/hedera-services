@@ -17,8 +17,6 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.merkledb.MerkleDb;
-import java.nio.file.Path;
 import org.openjdk.jmh.annotations.Setup;
 
 public class CryptoBenchMerkleDb extends CryptoBench {
@@ -29,17 +27,10 @@ public class CryptoBenchMerkleDb extends CryptoBench {
         registry.registerConstructables("com.swirlds.merkledb");
     }
 
-    private int dbIndex = 0;
-
     @Override
     public void beforeTest(String name) {
         super.beforeTest(name);
-        // Use a different MerkleDb instance for every test run. With a single instance,
-        // even if its folder is deleted before each run, there could be background
-        // threads (virtual pipeline thread, data source compaction thread, etc.) from
-        // the previous run that re-create the folder, and it results in a total mess
-        final Path merkleDbPath = getTestDir().resolve("merkledb" + dbIndex++);
-        MerkleDb.setDefaultPath(merkleDbPath);
+        updateMerkleDbPath();
     }
 
     public static void main(String[] args) throws Exception {

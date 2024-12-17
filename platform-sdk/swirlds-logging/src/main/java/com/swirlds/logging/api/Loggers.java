@@ -63,4 +63,14 @@ public final class Loggers {
         }
         return getLogger(clazz.getName());
     }
+
+    /**
+     * Starts the logging system. This method should be called before any logging is done. It is not necessary to call
+     * this method, but it is recommended to do so.
+     *
+     * @return {@code true} if the logging system was successfully initialized, {@code false} otherwise
+     */
+    public static boolean init() {
+        return DefaultLoggingSystem.getInstance().isInitialized();
+    }
 }

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -38,20 +39,28 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractSystemUndeleteHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractSystemUndeleteHandler() {
-        // Exists for injection
-    }
+    public ContractSystemUndeleteHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        // this will never actually get called
+        // because pureChecks will always throw
+        throw new PreCheckException(NOT_SUPPORTED);
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         throw new PreCheckException(NOT_SUPPORTED);
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         // this will never actually get called
-        // because preHandle will always throw
+        // because pureChecks will always throw
         throw new HandleException(NOT_SUPPORTED);
     }
 

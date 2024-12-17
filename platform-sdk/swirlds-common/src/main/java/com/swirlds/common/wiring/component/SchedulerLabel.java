@@ -23,11 +23,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a method parameter used to implement a transformer/filter. Use this to override the name of the task
- * scheduler used to operate the transformer/filter.
+ * Annotates a name that should be used as an override for the task scheduler's name instead of a component's interface
+ * name. Can also be used to annotate a method parameter used to implement a transformer/filter (these get turned into
+ * direct schedulers, which need to be named).
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.TYPE, ElementType.METHOD})
 public @interface SchedulerLabel {
 
     /**

@@ -20,7 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.platform.gui.components.ScrollableJPanel;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -275,7 +274,7 @@ public class SwirldMenu extends JPanel {
                 case "About":
                     int choice = JOptionPane.showOptionDialog(
                             null, // parentCompoinent
-                            (platform == null ? "" : GuiModel.getInstance().getAbout(platform.getSelfId())),
+                            (platform == null ? "" : "placeholder"),
                             "About this app", // title
                             JOptionPane.DEFAULT_OPTION, // optionType
                             JOptionPane.PLAIN_MESSAGE /* INFORMATION_MESSAGE */, // messageType

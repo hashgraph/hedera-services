@@ -43,17 +43,16 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ERCGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import java.math.BigInteger;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class ERCGrantApprovalCallTest extends HtsCallTestBase {
+class ERCGrantApprovalCallTest extends CallTestBase {
     private ERCGrantApprovalCall subject;
 
     @Mock
@@ -63,7 +62,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
     private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
-    private ContractCallRecordBuilder recordBuilder;
+    private ContractCallStreamBuilder recordBuilder;
 
     @Mock
     private Nft nft;
@@ -89,13 +88,13 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.FUNGIBLE_COMMON);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
@@ -121,13 +120,13 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
@@ -156,7 +155,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
@@ -164,7 +163,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INVALID_ALLOWANCE_SPENDER_ID);
         final var result = subject.execute(frame).fullResult().result();
@@ -182,7 +181,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         // make sure nft is found
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
@@ -191,7 +190,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status())
                 .willReturn(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL)
@@ -213,7 +212,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         // make sure nft is found
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(null);
@@ -221,7 +220,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
@@ -240,13 +239,13 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 REVOKE_APPROVAL_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
                         eq(OWNER_ID),
-                        eq(ContractCallRecordBuilder.class)))
+                        eq(ContractCallStreamBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);

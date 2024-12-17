@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
@@ -43,7 +44,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
@@ -57,31 +62,20 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public final class TokenPauseSpecs extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
-    public static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
-
+public class TokenPauseSpecs {
     private static final String PAUSE_KEY = "pauseKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String FREEZE_KEY = "freezeKey";
@@ -97,45 +91,21 @@ public final class TokenPauseSpecs extends HapiSuite {
     private static final String THIRD_USER = "thirdUser";
     private static final String NON_FUNGIBLE_UNIQUE_PRIMARY = "non-fungible-unique-primary";
 
-    public static void main(String... args) {
-        new TokenPauseSpecs().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                cannotPauseWithInvalidPauseKey(),
-                cannotChangePauseStatusIfMissingPauseKey(),
-                pausedFungibleTokenCannotBeUsed(),
-                pausedNonFungibleUniqueCannotBeUsed(),
-                unpauseWorks(),
-                basePauseAndUnpauseHaveExpectedPrices(),
-                pausedTokenInCustomFeeCaseStudy(),
-                cannotAddPauseKeyViaTokenUpdate());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec cannotAddPauseKeyViaTokenUpdate() {
+    final Stream<DynamicTest> cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
                 .then(
                         tokenUpdate(PRIMARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_IS_IMMUTABLE),
-                        tokenUpdate(SECONDARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
+                        tokenUpdate(SECONDARY)
+                                .pauseKey(PAUSE_KEY)
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
     @HapiTest
-    final HapiSpec cannotPauseWithInvalidPauseKey() {
+    final Stream<DynamicTest> cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -143,52 +113,50 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pausedTokenInCustomFeeCaseStudy() {
-        return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(THIRD_USER),
-                        newKeyNamed(PAUSE_KEY),
-                        newKeyNamed(KYC_KEY))
-                .when(
-                        tokenCreate(PRIMARY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .treasury(TOKEN_TREASURY)
-                                .pauseKey(PAUSE_KEY)
-                                .kycKey(KYC_KEY),
-                        tokenAssociate(FIRST_USER, PRIMARY),
-                        grantTokenKyc(PRIMARY, FIRST_USER),
-                        tokenCreate(SECONDARY)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .kycKey(KYC_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHtsFee(1, PRIMARY, FIRST_USER)),
-                        tokenAssociate(SECOND_USER, PRIMARY, SECONDARY),
-                        grantTokenKyc(SECONDARY, SECOND_USER),
-                        grantTokenKyc(PRIMARY, SECOND_USER),
-                        tokenAssociate(THIRD_USER, SECONDARY),
-                        grantTokenKyc(SECONDARY, THIRD_USER),
-                        cryptoTransfer(moving(10, PRIMARY).between(TOKEN_TREASURY, SECOND_USER)),
-                        cryptoTransfer(moving(100, SECONDARY).between(TOKEN_TREASURY, SECOND_USER)),
-                        tokenPause(PRIMARY))
-                .then(cryptoTransfer(moving(10, SECONDARY).between(SECOND_USER, THIRD_USER))
+    final Stream<DynamicTest> pausedTokenInCustomFeeCaseStudy() {
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(THIRD_USER),
+                newKeyNamed(PAUSE_KEY),
+                newKeyNamed(KYC_KEY),
+                tokenCreate(PRIMARY)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .treasury(TOKEN_TREASURY)
+                        .pauseKey(PAUSE_KEY)
+                        .kycKey(KYC_KEY),
+                tokenAssociate(FIRST_USER, PRIMARY),
+                grantTokenKyc(PRIMARY, FIRST_USER),
+                tokenCreate(SECONDARY)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .kycKey(KYC_KEY)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fixedHtsFee(1, PRIMARY, FIRST_USER)),
+                tokenAssociate(SECOND_USER, PRIMARY, SECONDARY),
+                grantTokenKyc(SECONDARY, SECOND_USER),
+                grantTokenKyc(PRIMARY, SECOND_USER),
+                tokenAssociate(THIRD_USER, SECONDARY),
+                grantTokenKyc(SECONDARY, THIRD_USER),
+                cryptoTransfer(moving(10, PRIMARY).between(TOKEN_TREASURY, SECOND_USER)),
+                cryptoTransfer(moving(100, SECONDARY).between(TOKEN_TREASURY, SECOND_USER)),
+                tokenPause(PRIMARY),
+                cryptoTransfer(moving(10, SECONDARY).between(SECOND_USER, THIRD_USER))
                         .fee(ONE_HBAR)
                         .payingWith(SECOND_USER)
                         .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
     @HapiTest
-    final HapiSpec unpauseWorks() {
+    final Stream<DynamicTest> unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -223,7 +191,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
+    final Stream<DynamicTest> pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -293,7 +261,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         wipeTokenAccount(uniqueToken, firstUser, List.of(1L)).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUpdate(uniqueToken).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
+                        tokenUpdate(uniqueToken)
+                                .name("newName")
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDelete(uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
@@ -305,87 +276,84 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedFungibleTokenCannotBeUsed() {
+    final Stream<DynamicTest> pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
         final String thirdUser = THIRD_USER;
-        return defaultHapiSpec("pausedFungibleTokenCannotBeUsed", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(secondUser),
-                        cryptoCreate(thirdUser),
-                        newKeyNamed(PAUSE_KEY),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(FEE_SCHEDULE_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(WIPE_KEY))
-                .when(
-                        tokenCreate(token)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(ADMIN_KEY)
-                                .pauseKey(PAUSE_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .feeScheduleKey(FEE_SCHEDULE_KEY),
-                        tokenCreate(otherToken)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .kycKey(KYC_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(firstUser, token),
-                        grantTokenKyc(token, firstUser),
-                        tokenAssociate(thirdUser, otherToken),
-                        grantTokenKyc(otherToken, thirdUser),
-                        cryptoTransfer(moving(100, token).between(TOKEN_TREASURY, firstUser)),
-                        tokenPause(token))
-                .then(
-                        getTokenInfo(token).logged().hasPauseKey(token).hasPauseStatus(Paused),
-                        tokenCreate("failedTokenCreate")
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHtsFee(1, token, firstUser))
-                                .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
-                        tokenAssociate(secondUser, token).hasKnownStatus(TOKEN_IS_PAUSED),
-                        cryptoTransfer(moving(10, token).between(TOKEN_TREASURY, firstUser))
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenDissociate(firstUser, token).hasKnownStatus(TOKEN_IS_PAUSED),
-                        mintToken(token, 1).hasKnownStatus(TOKEN_IS_PAUSED),
-                        burnToken(token, 1).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenFreeze(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUnfreeze(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
-                        revokeTokenKyc(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
-                        grantTokenKyc(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenFeeScheduleUpdate(token)
-                                .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
-                        wipeTokenAccount(token, firstUser, 10).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUpdate(token).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenDelete(token).hasKnownStatus(TOKEN_IS_PAUSED),
-                        cryptoTransfer(
-                                        moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
-                                        moving(20, token).between(TOKEN_TREASURY, firstUser))
-                                .via("rolledBack")
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(otherToken).balance(500)));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(secondUser),
+                cryptoCreate(thirdUser),
+                newKeyNamed(PAUSE_KEY),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(FEE_SCHEDULE_KEY),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(WIPE_KEY),
+                tokenCreate(token)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(ADMIN_KEY)
+                        .pauseKey(PAUSE_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .feeScheduleKey(FEE_SCHEDULE_KEY),
+                tokenCreate(otherToken)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .kycKey(KYC_KEY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(firstUser, token),
+                grantTokenKyc(token, firstUser),
+                tokenAssociate(thirdUser, otherToken),
+                grantTokenKyc(otherToken, thirdUser),
+                cryptoTransfer(moving(100, token).between(TOKEN_TREASURY, firstUser)),
+                tokenPause(token),
+                getTokenInfo(token).logged().hasPauseKey(token).hasPauseStatus(Paused),
+                tokenCreate("failedTokenCreate")
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fixedHtsFee(1, token, firstUser))
+                        .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
+                tokenAssociate(secondUser, token).hasKnownStatus(TOKEN_IS_PAUSED),
+                cryptoTransfer(moving(10, token).between(TOKEN_TREASURY, firstUser))
+                        .hasKnownStatus(TOKEN_IS_PAUSED),
+                tokenDissociate(firstUser, token).hasKnownStatus(TOKEN_IS_PAUSED),
+                mintToken(token, 1).hasKnownStatus(TOKEN_IS_PAUSED),
+                burnToken(token, 1).hasKnownStatus(TOKEN_IS_PAUSED),
+                tokenFreeze(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
+                tokenUnfreeze(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
+                revokeTokenKyc(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
+                grantTokenKyc(token, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
+                tokenFeeScheduleUpdate(token)
+                        .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
+                        .hasKnownStatus(TOKEN_IS_PAUSED),
+                wipeTokenAccount(token, firstUser, 10).hasKnownStatus(TOKEN_IS_PAUSED),
+                tokenUpdate(token).name("newName").signedByPayerAnd(ADMIN_KEY).hasKnownStatus(TOKEN_IS_PAUSED),
+                tokenDelete(token).hasKnownStatus(TOKEN_IS_PAUSED),
+                cryptoTransfer(
+                                moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
+                                moving(20, token).between(TOKEN_TREASURY, firstUser))
+                        .via("rolledBack")
+                        .hasKnownStatus(TOKEN_IS_PAUSED),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
     @HapiTest
-    final HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
+    final Stream<DynamicTest> cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -412,33 +380,6 @@ public final class TokenPauseSpecs extends HapiSuite {
                         tokenUnpause(NON_FUNGIBLE_UNIQUE_PRIMARY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
-    }
-
-    @HapiTest
-    final HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
-        final var expectedBaseFee = 0.001;
-        final var token = "token";
-        final var tokenPauseTransaction = "tokenPauseTxn";
-        final var tokenUnpauseTransaction = "tokenUnpauseTxn";
-        final var civilian = "NonExemptPayer";
-
-        return defaultHapiSpec("BasePauseAndUnpauseHaveExpectedPrices")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        newKeyNamed(PAUSE_KEY),
-                        cryptoCreate(civilian).key(PAUSE_KEY))
-                .when(
-                        tokenCreate(token)
-                                .pauseKey(PAUSE_KEY)
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith(civilian),
-                        tokenPause(token).blankMemo().payingWith(civilian).via(tokenPauseTransaction),
-                        getTokenInfo(token).hasPauseStatus(Paused),
-                        tokenUnpause(token).blankMemo().payingWith(civilian).via(tokenUnpauseTransaction),
-                        getTokenInfo(token).hasPauseStatus(Unpaused))
-                .then(
-                        validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
-                        validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
     }
 
     public static class TokenIdOrderingAsserts extends BaseErroringAssertsProvider<List<TokenTransferList>> {

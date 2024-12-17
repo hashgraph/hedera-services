@@ -24,8 +24,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class InfoSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(InfoSuite.class);
@@ -43,13 +45,13 @@ public class InfoSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        List<HapiSpec> specToRun = new ArrayList<>();
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        List<Stream<DynamicTest>> specToRun = new ArrayList<>();
         accounts.forEach(s -> specToRun.add(getInfo(s)));
         return specToRun;
     }
 
-    private HapiSpec getInfo(String accountID) {
+    final Stream<DynamicTest> getInfo(String accountID) {
         return HapiSpec.customHapiSpec("getInfo")
                 .withProperties(specConfig)
                 .given()

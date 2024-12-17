@@ -21,6 +21,7 @@ import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEven
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getFirstEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.truncateFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -31,12 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -54,7 +54,8 @@ import org.junit.jupiter.api.Test;
 class EventStreamSingleFileIteratorTest {
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -63,21 +64,17 @@ class EventStreamSingleFileIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
-        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
-        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
+        assertEquals(expected, actual);
     }
 
     @Test
     @DisplayName("Simple Stream Test")
-    void simpleStreamTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void simpleStreamTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -89,14 +86,10 @@ class EventStreamSingleFileIteratorTest {
             int eventIndex = 0;
 
             while (iterator.hasNext()) {
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final CesEvent peekObject = iterator.peek();
+                final CesEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEventsAreEqual(e, events.get(eventIndex));
+                assertEventsAreEqual(event, events.get(eventIndex));
                 eventIndex++;
             }
 
@@ -113,14 +106,11 @@ class EventStreamSingleFileIteratorTest {
     @Disabled("this test is flaky")
     @Test
     @DisplayName("Allowed Truncated File Test")
-    void allowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void allowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -134,14 +124,10 @@ class EventStreamSingleFileIteratorTest {
             int eventIndex = 0;
 
             while (iterator.hasNext()) {
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final CesEvent peekObject = iterator.peek();
+                final CesEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEquals(event, events.get(eventIndex), "event should match input event");
                 eventIndex++;
             }
 
@@ -157,14 +143,11 @@ class EventStreamSingleFileIteratorTest {
 
     @Test
     @DisplayName("Disallowed Truncated File Test")
-    void disallowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void disallowedTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -181,14 +164,10 @@ class EventStreamSingleFileIteratorTest {
 
             while (iterator.hasNext()) {
                 count++;
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final CesEvent peekObject = iterator.peek();
+                final CesEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEventsAreEqual(e, events.get(eventIndex));
+                assertEventsAreEqual(event, events.get(eventIndex));
                 eventIndex++;
             }
 
@@ -209,15 +188,11 @@ class EventStreamSingleFileIteratorTest {
 
     @Test
     @DisplayName("Disallowed Truncated File Test")
-    void disallowedTruncatedOnBoundaryTest()
-            throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void disallowedTruncatedOnBoundaryTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -234,14 +209,10 @@ class EventStreamSingleFileIteratorTest {
 
             while (iterator.hasNext()) {
                 count++;
-                final DetailedConsensusEvent peekObject = iterator.peek();
-                final DetailedConsensusEvent event = iterator.next();
+                final CesEvent peekObject = iterator.peek();
+                final CesEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEventsAreEqual(e, events.get(eventIndex));
+                assertEventsAreEqual(event, events.get(eventIndex));
                 eventIndex++;
             }
 

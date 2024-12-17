@@ -33,18 +33,10 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStor
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithNfts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_FOR_TOKEN_WITHOUT_KEY;
-import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_MISSING_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -55,7 +47,6 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -66,7 +57,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -76,19 +66,15 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
-import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,6 +82,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenAccountWipeHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_4680 = BaseCryptoHandler.asAccount(4680);
     private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
@@ -104,7 +91,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private final TokenAccountWipeHandler subject = new TokenAccountWipeHandler(validator);
 
     private Configuration configuration;
-    private TokenAccountWipeRecordBuilder recordBuilder;
+
+    @Mock
+    private TokenAccountWipeStreamBuilder recordBuilder;
 
     @BeforeEach
     public void setUp() {
@@ -113,51 +102,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeWipe", 100)
                 .getOrCreateConfig();
-        recordBuilder = new TokenAccountWipeRecordBuilder() {
-            private long newTotalSupply;
-            private TokenType tokenType;
-
-            @NotNull
-            @Override
-            public TransactionBody transactionBody() {
-                return TransactionBody.DEFAULT;
-            }
-
-            @Override
-            public long transactionFee() {
-                return 0;
-            }
-
-            @Override
-            public long getNewTotalSupply() {
-                return newTotalSupply;
-            }
-
-            @Override
-            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
-                return this;
-            }
-
-            @NotNull
-            @Override
-            public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
-                newTotalSupply = supply;
-                return this;
-            }
-
-            @NotNull
-            @Override
-            public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
-                this.tokenType = tokenType;
-                return this;
-            }
-
-            @NotNull
-            @Override
-            public ResponseCodeEnum status() {
-                return OK;
-            }
-        };
     }
 
     @Nested
@@ -224,49 +168,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_NFT_ID));
-        }
-    }
-
-    @Nested
-    // Tests that check prehandle parity with old prehandle code
-    class PreHandle {
-        @SuppressWarnings("DataFlowIssue")
-        @Test
-        void nullArgsThrows() {
-            assertThatThrownBy(() -> subject.preHandle(null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void tokenWipeWithValidExtantTokenScenario() throws PreCheckException {
-            final var theTxn = txnFrom(VALID_WIPE_WITH_EXTANT_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_WIPE_KT.asPbjKey()));
-        }
-
-        @Test
-        void tokenWipeWithMissingTokenScenario() throws PreCheckException {
-            final var theTxn = txnFrom(WIPE_WITH_MISSING_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
-        }
-
-        @Test
-        void tokenWipeWithoutKeyScenario() throws PreCheckException {
-            final var theTxn = txnFrom(WIPE_FOR_TOKEN_WITHOUT_KEY);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertEquals(0, context.requiredNonPayerKeys().size());
         }
     }
 
@@ -953,18 +854,23 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
+            final var stack = mock(HandleContext.SavepointStack.class);
 
             given(context.body()).willReturn(txn);
 
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-            given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+            final var storeFactory = mock(StoreFactory.class);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
             given(context.configuration()).willReturn(configuration);
 
             given(context.expiryValidator()).willReturn(validator);
+
+            lenient().when(context.savepointStack()).thenReturn(stack);
             lenient()
-                    .when(context.recordBuilder(TokenAccountWipeRecordBuilder.class))
+                    .when(stack.getBaseBuilder(TokenAccountWipeStreamBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;

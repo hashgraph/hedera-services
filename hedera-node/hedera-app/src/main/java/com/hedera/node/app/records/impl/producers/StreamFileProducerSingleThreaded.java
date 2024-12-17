@@ -23,7 +23,6 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,18 +66,18 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
     /**
      * Construct RecordManager and start background thread
      *
-     * @param nodeInfo the current node information
-     * @param format The format to use for the record stream
+     * @param format        The format to use for the record stream
      * @param writerFactory constructs the writers for the record stream, one per record file
+     * @param hapiVersion
      */
     @Inject
     public StreamFileProducerSingleThreaded(
-            @NonNull final SelfNodeInfo nodeInfo,
             @NonNull final BlockRecordFormat format,
-            @NonNull final BlockRecordWriterFactory writerFactory) {
+            @NonNull final BlockRecordWriterFactory writerFactory,
+            final SemanticVersion hapiVersion) {
         this.writerFactory = requireNonNull(writerFactory);
         this.format = requireNonNull(format);
-        hapiVersion = nodeInfo.hapiVersion();
+        this.hapiVersion = hapiVersion;
     }
 
     // =========================================================================================================================================================================

@@ -16,90 +16,42 @@
 
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue305Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue305Spec.class);
-    private static final String KEY = "tbdKey";
-
-    public static void main(String... args) {
-        new Issue305Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        final var repeatedSpecs = new ArrayList<>(IntStream.range(0, 5)
-                .mapToObj(ignore -> createDeleteInSameRoundWorks())
-                .toList());
-        repeatedSpecs.add(congestionMultipliersRefreshOnPropertyUpdate());
-        return repeatedSpecs;
-    }
-
-    @HapiTest
-    final HapiSpec createDeleteInSameRoundWorks() {
-        AtomicReference<String> nextFileId = new AtomicReference<>();
-        return defaultHapiSpec("CreateDeleteInSameRoundWorks")
-                .given(
-                        newKeyNamed(KEY).type(KeyFactory.KeyType.LIST),
-                        fileCreate("marker").via("markerTxn"))
-                .when(withOpContext((spec, opLog) -> {
-                    var lookup = getTxnRecord("markerTxn");
-                    allRunFor(spec, lookup);
-                    var markerFid = lookup.getResponseRecord().getReceipt().getFileID();
-                    var nextFid = markerFid.toBuilder()
-                            .setFileNum(markerFid.getFileNum() + 1)
-                            .build();
-                    nextFileId.set(HapiPropertySource.asFileString(nextFid));
-                    opLog.info("Next file will be {}", nextFileId.get());
-                }))
-                .then(
-                        fileCreate("tbd").key(KEY).deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY),
-                        getFileInfo(nextFileId::get).hasDeleted(true));
-    }
-
-    @HapiTest
-    final HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
+public class Issue305Spec {
+    @LeakyHapiTest(
+            overrides = {"fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec"})
+    final Stream<DynamicTest> congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
         final var multipurposeContract = "Multipurpose";
@@ -107,33 +59,26 @@ public class Issue305Spec extends HapiSuite {
         final var multipliedPrice = new AtomicLong();
         final List<TransactionID> submittedTxnIds = new ArrayList<>();
 
-        return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
-                .preserving(
-                        "fees.percentCongestionMultipliers",
-                        "fees.minCongestionPeriod",
-                        "contracts.maxGasPerSec",
-                        "contracts.throttle.throttleByGas")
-                .given(
-                        cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(multipurposeContract),
-                        contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
-                        contractCall(multipurposeContract)
-                                .payingWith(civilian)
-                                .gas(200_000)
-                                .fee(10 * ONE_HBAR)
-                                .sending(ONE_HBAR)
-                                .via(preCongestionTxn),
-                        getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
-                        overridingAllOf(Map.of(
-                                "contracts.maxGasPerSec", "3_000_000",
-                                "fees.percentCongestionMultipliers", "1,5x",
-                                "fees.minCongestionPeriod", "1",
-                                "contracts.throttle.throttleByGas", "true")))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(multipurposeContract),
+                contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
+                contractCall(multipurposeContract)
+                        .payingWith(civilian)
+                        .gas(200_000)
+                        .fee(10 * ONE_HBAR)
+                        .sending(ONE_HBAR)
+                        .via(preCongestionTxn),
+                getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
+                overridingAllOf(Map.of(
+                        "contracts.maxGasPerSec", "3_000_000",
+                        "fees.percentCongestionMultipliers", "1,5x",
+                        "fees.minCongestionPeriod", "1")),
+                withOpContext((spec, opLog) -> {
                     // We submit 2.5 seconds of transactions with a 1 second congestion period, so
                     // we should see a 5x multiplier in effect at some point here
                     for (int i = 0; i < 100; i++) {
-                        TimeUnit.MILLISECONDS.sleep(25);
+                        spec.sleepConsensusTime(Duration.ofMillis(25));
                         allRunFor(
                                 spec,
                                 contractCall(multipurposeContract)
@@ -149,8 +94,8 @@ public class Issue305Spec extends HapiSuite {
                                         .noLogging()
                                         .deferStatusResolution());
                     }
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     final var congestionInEffect = new AtomicBoolean();
                     submittedTxnIds.reversed().forEach(id -> {
                         if (congestionInEffect.get()) {
@@ -183,10 +128,5 @@ public class Issue305Spec extends HapiSuite {
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

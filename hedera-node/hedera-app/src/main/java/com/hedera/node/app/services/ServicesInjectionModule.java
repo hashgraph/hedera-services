@@ -16,12 +16,8 @@
 
 package com.hedera.node.app.services;
 
-import com.hedera.node.app.service.consensus.impl.ConsensusServiceInjectionModule;
 import com.hedera.node.app.service.file.impl.FileServiceInjectionModule;
-import com.hedera.node.app.service.networkadmin.impl.NetworkAdminServiceInjectionModule;
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceInjectionModule;
 import com.hedera.node.app.service.token.impl.TokenServiceInjectionModule;
-import com.hedera.node.app.service.util.impl.UtilServiceInjectionModule;
 import dagger.Module;
 
 /**
@@ -29,11 +25,7 @@ import dagger.Module;
  */
 @Module(
         includes = {
-            ConsensusServiceInjectionModule.class,
             FileServiceInjectionModule.class,
-            NetworkAdminServiceInjectionModule.class,
-            ScheduleServiceInjectionModule.class,
             TokenServiceInjectionModule.class,
-            UtilServiceInjectionModule.class,
         })
 public interface ServicesInjectionModule {}

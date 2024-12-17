@@ -26,24 +26,25 @@ package com.swirlds.demo.crypto;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * This holds the current state of a swirld representing both a cryptocurrency and a stock market.
@@ -61,7 +64,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * entirely new cryptocurrency is created every time all the computers start the program over again, so
  * these cryptocurrencies won't have any actual value.
  */
-public class CryptocurrencyDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
 
     /**
      * The version history of this class.
@@ -133,7 +137,11 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
 
     ////////////////////////////////////////////////////
 
-    public CryptocurrencyDemoState() {}
+    public CryptocurrencyDemoState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(lifecycles, versionFactory);
+    }
 
     private CryptocurrencyDemoState(final CryptocurrencyDemoState sourceState) {
         super(sourceState);
@@ -195,14 +203,19 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     @Override
     public synchronized CryptocurrencyDemoState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new CryptocurrencyDemoState(this);
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState swirldDualState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
-        round.forEachEventTransaction(
-                (event, transaction) -> handleTransaction(event.getCreatorId(), true, transaction));
+        round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
     }
 
     /**
@@ -227,21 +240,22 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
      * </pre>
      */
-    private void handleTransaction(
-            @NonNull final NodeId id, final boolean isConsensus, @Nullable final Transaction transaction) {
+    private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
-        if (transaction == null || transaction.getContents().length == 0) {
+        Objects.requireNonNull(transaction, "transaction must not be null");
+        if (transaction.isSystem()) {
             return;
         }
-        if (transaction.getContents()[0] == TransType.slow.ordinal()
-                || transaction.getContents()[0] == TransType.fast.ordinal()) {
+        final Bytes contents = transaction.getApplicationTransaction();
+        if (contents.length() < 3) {
             return;
-        } else if (!isConsensus || transaction.getContents().length < 3) {
-            return; // ignore any bid/ask that doesn't have consensus yet
         }
-        final int askBid = transaction.getContents()[0];
-        final int tradeStock = transaction.getContents()[1];
-        int tradePrice = transaction.getContents()[2];
+        if (contents.getByte(0) == TransType.slow.ordinal() || contents.getByte(0) == TransType.fast.ordinal()) {
+            return;
+        }
+        final int askBid = contents.getByte(0);
+        final int tradeStock = contents.getByte(1);
+        int tradePrice = contents.getByte(2);
 
         if (tradePrice < 1 || tradePrice > 127) {
             return; // all asks and bids must be in the range 1 to 127
@@ -296,11 +310,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         shares.get(bidId[tradeStock]).get(tradeStock).addAndGet(1); // buyer gets 1 share
 
         // save a description of the trade to show on the console
-        final String selfName = platform.getAddressBook().getAddress(id).getSelfName();
-        final String sellerNickname =
-                platform.getAddressBook().getAddress(askId[tradeStock]).getNickname();
-        final String buyerNickname =
-                platform.getAddressBook().getAddress(bidId[tradeStock]).getNickname();
+        final String selfName = RosterUtils.formatNodeName(id.id());
+        final String sellerNickname = RosterUtils.formatNodeName(askId[tradeStock].id());
+        final String buyerNickname = RosterUtils.formatNodeName(bidId[tradeStock].id());
         final int change = tradePrice - price[tradeStock];
         final double changePerc = 100. * change / price[tradeStock];
         final String dir = (change > 0) ? "^" : (change < 0) ? "v" : " ";
@@ -357,9 +369,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             ask[i] = bid[i] = price[i] = 64; // start the trading around 64 cents
         }
 
-        final AddressBook addressBook = platform.getAddressBook();
-        for (final Address address : addressBook) {
-            final NodeId id = address.getNodeId();
+        for (final RosterEntry address : platform.getRoster().rosterEntries()) {
+            final NodeId id = NodeId.of(address.nodeId());
             // each member starts with $200 dollars (20,000 cents)
             wallet.put(id, new AtomicLong(20000L));
             final List<AtomicLong> sharesForID = new ArrayList<>();
@@ -376,78 +387,15 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      */
     @Override
     public void init(
-            final Platform platform,
-            final PlatformState swirldDualState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
-        this.platform = (SwirldsPlatform) platform;
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
+        super.init(platform, trigger, previousSoftwareVersion);
 
+        this.platform = (SwirldsPlatform) platform;
         if (trigger == InitTrigger.GENESIS) {
             genesisInit();
         }
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeStringArray(tickerSymbol);
-
-        out.writeInt(wallet.size());
-        for (Map.Entry<NodeId, AtomicLong> entry : wallet.entrySet()) {
-            out.writeSerializable(entry.getKey(), false);
-            out.writeLong(entry.getValue().get());
-        }
-
-        out.writeInt(shares.size());
-        for (Map.Entry<NodeId, List<AtomicLong>> entry : shares.entrySet()) {
-            out.writeSerializable(entry.getKey(), false);
-            out.writeInt(entry.getValue().size());
-            for (int i = 0; i < entry.getValue().size(); i++) {
-                out.writeLong(entry.getValue().get(i).get());
-            }
-        }
-
-        out.writeStringArray(trades);
-        out.writeInt(numTradesStored);
-        out.writeInt(lastTradeIndex);
-        out.writeLong(numTrades);
-        out.writeByteArray(ask);
-        out.writeByteArray(bid);
-        out.writeSerializableArray(askId, false, true);
-        out.writeSerializableArray(bidId, false, true);
-        out.writeByteArray(price);
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        tickerSymbol = in.readStringArray(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
-
-        int walletSize = in.readInt();
-        for (int i = 0; i < walletSize; i++) {
-            final NodeId id = in.readSerializable(false, NodeId::new);
-            final AtomicLong amount = new AtomicLong(in.readLong());
-            wallet.put(id, amount);
-        }
-
-        final int sharesSize = in.readInt();
-        for (int i = 0; i < sharesSize; i++) {
-            final NodeId id = in.readSerializable(false, NodeId::new);
-            final int numShares = in.readInt();
-            final List<AtomicLong> sharesForID = new ArrayList<>(numShares);
-            for (int j = 0; j < numShares; j++) {
-                sharesForID.add(new AtomicLong(in.readLong()));
-            }
-            shares.put(id, sharesForID);
-        }
-
-        trades = in.readStringArray(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
-        numTradesStored = in.readInt();
-        lastTradeIndex = in.readInt();
-        numTrades = in.readLong();
-        ask = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
-        bid = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
-        askId = in.readSerializableArray(NodeId[]::new, DEFAULT_MAX_ARRAY_SIZE, false, NodeId::new);
-        bidId = in.readSerializableArray(NodeId[]::new, DEFAULT_MAX_ARRAY_SIZE, false, NodeId::new);
-        price = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
     }
 
     @Override

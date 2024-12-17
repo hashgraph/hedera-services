@@ -51,8 +51,8 @@ public class HashCompareHandshake implements ProtocolRunnable {
      * Constructor
      *
      * @param hash            this node's hash
-     * @param throwOnMismatch if set to true, the protocol will throw an exception on a mismatch. if set to false, it will log an
-     *                        error and continue
+     * @param throwOnMismatch if set to true, the protocol will throw an exception on a mismatch.
+     *                        if set to false, it will log an error and continue
      */
     public HashCompareHandshake(@Nullable final Hash hash, final boolean throwOnMismatch) {
         this.hash = hash;

@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -106,11 +105,6 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::signSchedule;
-    }
-
-    @Override
     protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             return;
@@ -123,7 +117,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
-            final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
+            final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, true);
             FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> scheduleOpsUsage.scheduleSignUsage(
                     _txn, suFrom(svo), info.getExpirationTime().getSeconds());
             return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
@@ -148,8 +142,6 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("schedule", schedule).add("signers", signatories);
-        return helper;
+        return super.toStringHelper().add("schedule", schedule).add("signers", signatories);
     }
 }

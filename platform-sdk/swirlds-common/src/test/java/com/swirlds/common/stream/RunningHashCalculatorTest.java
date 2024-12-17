@@ -25,7 +25,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.test.fixtures.stream.ObjectForTestStream;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ class RunningHashCalculatorTest {
     @Test
     void runningHashTest() throws InterruptedException {
         final DigestType digestType = DigestType.SHA_384;
-        final Hash initialHash = new ImmutableHash(new byte[digestType.digestLength()]);
+        final Hash initialHash = new Hash(new byte[digestType.digestLength()]);
         final RunningHashCalculatorForStream<ObjectForTestStream> runningHashCalculator =
                 new RunningHashCalculatorForStream(cryptography);
         runningHashCalculator.setRunningHash(initialHash);

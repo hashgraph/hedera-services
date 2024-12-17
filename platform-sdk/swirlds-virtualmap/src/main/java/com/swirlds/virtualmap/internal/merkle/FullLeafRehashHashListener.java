@@ -21,6 +21,9 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 
 /**
@@ -62,10 +65,20 @@ public class FullLeafRehashHashListener<K extends VirtualKey, V extends VirtualV
      * 		The last leaf path. Must be a valid path.
      * @param dataSource
      * 		The data source. Cannot be null.
+     * @param flushInterval
+     *      The number of nodes to hash before they are flushed to disk.
+     * @param statistics
+     *      Virtual map stats. Cannot be null.
      */
     public FullLeafRehashHashListener(
-            final long firstLeafPath, final long lastLeafPath, final VirtualDataSource<K, V> dataSource) {
-        super(firstLeafPath, lastLeafPath, dataSource);
+            final long firstLeafPath,
+            final long lastLeafPath,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            @NonNull final VirtualDataSource dataSource,
+            final int flushInterval,
+            @NonNull final VirtualMapStatistics statistics) {
+        super(firstLeafPath, lastLeafPath, keySerializer, valueSerializer, dataSource, flushInterval, statistics);
     }
 
     /**

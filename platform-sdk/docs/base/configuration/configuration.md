@@ -1,4 +1,4 @@
-[⇧ Platform Wiki](../../platformWiki.md)
+[⇧ Platform Base](../base.md)
 
 # Swirlds Configuration
 

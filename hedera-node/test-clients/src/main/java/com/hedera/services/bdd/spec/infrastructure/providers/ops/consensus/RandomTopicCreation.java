@@ -22,10 +22,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.List;
@@ -38,13 +38,16 @@ public class RandomTopicCreation implements OpProvider {
     private int ceilingNum = DEFAULT_CEILING_NUM;
 
     private final AtomicInteger opNo = new AtomicInteger();
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
     private final RegistrySourcedNameProvider<TopicID> topics;
+    private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_TOPIC_ID, TOPIC_EXPIRED);
 
-    public RandomTopicCreation(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
+    public RandomTopicCreation(
+            EntityNameProvider keys, RegistrySourcedNameProvider<TopicID> topics, ResponseCodeEnum[] customOutcomes) {
         this.keys = keys;
         this.topics = topics;
+        this.customOutcomes = customOutcomes;
     }
 
     public RandomTopicCreation ceiling(int n) {
@@ -68,15 +71,14 @@ public class RandomTopicCreation implements OpProvider {
         var op = createTopic(newTopic)
                 .adminKeyName(key.get())
                 .submitKeyName(key.get())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasAnyPrecheck()
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
+    public List<SpecOperation> suggestedInitializers() {
         return List.of(newKeyNamed(my("simpleKey")));
     }
 

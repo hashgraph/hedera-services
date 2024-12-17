@@ -16,15 +16,15 @@
 
 package com.hedera.node.app;
 
-import com.hedera.node.app.state.merkle.MerkleTestBase;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 
 final class HederaTest extends MerkleTestBase {
     // Constructor: null registry throws
     // Constructor: bootstrap props throws
     // Constructor: Null version throws (pass the version in)
     // Constructor: #getSoftwareVersion returns the supplied version
-    // Constructor: Verify constructable registry is used for registering MerkleHederaState (and for services)
-    // Constructor: Verify constructable registry that throws is handled (for services and for MerkleHederaState)
+    // Constructor: Verify constructable registry is used for registering MerkleStateRoot (and for services)
+    // Constructor: Verify constructable registry that throws is handled (for services and for MerkleStateRoot)
 
     // TRY: Sending customized bootstrap props
     // TRY: Check logs?

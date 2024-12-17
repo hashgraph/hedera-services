@@ -34,13 +34,13 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
-class BalanceOfCallTest extends HtsCallTestBase {
+class BalanceOfCallTest extends CallTestBase {
     private final Address OWNER = asHeadlongAddress(EIP_1014_ADDRESS);
     private BalanceOfCall subject;
 

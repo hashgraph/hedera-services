@@ -60,4 +60,12 @@ public interface GrpcServerManager {
      * @return the port of the listening tls server, or -1 if no server listening on that port
      */
     int tlsPort();
+
+    /**
+     * Gets the port that the node operator gRPC server is listening on.
+     *
+     * @return the port of the listening server, or -1 if no server is listening on that port. Note that this value may
+     *         be different from the port designation in configuration.
+     */
+    int nodeOperatorPort();
 }

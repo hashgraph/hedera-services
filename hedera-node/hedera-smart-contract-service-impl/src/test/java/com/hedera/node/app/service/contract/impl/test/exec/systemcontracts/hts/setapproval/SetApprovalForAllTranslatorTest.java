@@ -16,14 +16,25 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.setapproval;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorForRedirect;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +47,21 @@ public class SetApprovalForAllTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
 
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
+
+    @Mock
+    private Enhancement enhancement;
+
+    @Mock
+    private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private VerificationStrategies verificationStrategies;
+
+    @Mock
+    private HederaNativeOperations nativeOperations;
+
     private final SetApprovalForAllDecoder decoder = new SetApprovalForAllDecoder();
 
     private SetApprovalForAllTranslator subject;
@@ -47,23 +73,29 @@ public class SetApprovalForAllTranslatorTest {
 
     @Test
     void matchesClassicalSelectorTest() {
-        given(attempt.selector()).willReturn(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.selector());
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        attempt = prepareHtsAttemptWithSelector(
+                SET_APPROVAL_FOR_ALL, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void matchesERCSelectorTest() {
-        given(attempt.selector()).willReturn(SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.selector());
-        given(attempt.isTokenRedirect()).willReturn(true);
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getToken(anyLong())).willReturn(FUNGIBLE_TOKEN);
+        attempt = prepareHtsAttemptWithSelectorForRedirect(
+                ERC721_SET_APPROVAL_FOR_ALL,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator);
+        assertTrue(subject.matches(attempt));
     }
 
     @Test
     void falseOnInvalidSelector() {
-        given(attempt.selector()).willReturn(ClassicTransfersTranslator.CRYPTO_TRANSFER.selector());
-        final var matches = subject.matches(attempt);
-        assertFalse(matches);
+        attempt = prepareHtsAttemptWithSelector(
+                BURN_TOKEN_V2, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+        assertFalse(subject.matches(attempt));
     }
 }

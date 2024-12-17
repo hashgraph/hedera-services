@@ -64,7 +64,14 @@ public abstract class BaseIdScreenedAssertion implements RecordStreamAssertion {
         return true;
     }
 
-    private boolean baseFieldsMatch(@NonNull final TransactionID a, @NonNull final TransactionID b) {
+    /**
+     * Determines if the transaction valid start and account id of the two {@code TransactionID}'s match.
+     *
+     * @param a the first {@code TransactionID}
+     * @param b the second {@code TransactionID}
+     * @return whether the base fields of the two {@code TransactionID}'s match
+     */
+    static boolean baseFieldsMatch(@NonNull final TransactionID a, @NonNull final TransactionID b) {
         return a.getTransactionValidStart().equals(b.getTransactionValidStart())
                 && a.getAccountID().equals(b.getAccountID());
     }

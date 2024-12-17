@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.authorization;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
@@ -52,7 +53,6 @@ public class AuthorizerImpl implements Authorizer {
         this.privilegedTransactionChecker = requireNonNull(privilegedTransactionChecker);
     }
 
-    /** {@inheritDoc} */
     @Override
     public boolean isAuthorized(@NonNull final AccountID id, @NonNull final HederaFunctionality function) {
         Objects.requireNonNull(id);
@@ -85,13 +85,11 @@ public class AuthorizerImpl implements Authorizer {
     private ResponseCodeEnum permissibilityOf(
             @NonNull final AccountID givenPayer, @NonNull final HederaFunctionality function) {
         if (isSuperUser(givenPayer)) {
-            return ResponseCodeEnum.OK;
+            return OK;
         }
-
         if (!givenPayer.hasAccountNum()) {
-            return ResponseCodeEnum.AUTHORIZATION_FAILED;
+            return AUTHORIZATION_FAILED;
         }
-
         final long num = givenPayer.accountNumOrThrow();
         final var permissionConfig = configProvider.getConfiguration().getConfigData(ApiPermissionConfig.class);
         final var permission = permissionConfig.getPermission(function);

@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -28,41 +28,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoCornerCasesSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
+public class CryptoCornerCasesSuite {
     private static final String NEW_PAYEE = "newPayee";
-
-    public static void main(String... args) {
-        new CryptoCornerCasesSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                invalidNodeAccount(),
-                invalidTransactionBody(),
-                invalidTransactionPayerAccountNotFound(),
-                invalidTransactionMemoTooLong(),
-                invalidTransactionDuration(),
-                invalidTransactionStartTime());
-    }
 
     private static Transaction removeTransactionBody(Transaction txn) {
         return txn.toBuilder()
@@ -71,16 +50,13 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionBody() {
-        return defaultHapiSpec("InvalidTransactionBody")
-                .given()
-                .when()
-                .then(cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
-                        // removeTransactionBody() works
-                        .withTxnTransform(CryptoCornerCasesSuite::removeTransactionBody)
-                        .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));
+    final Stream<DynamicTest> invalidTransactionBody() {
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
+                // removeTransactionBody() works
+                .withTxnTransform(CryptoCornerCasesSuite::removeTransactionBody)
+                .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnNodeAccount(Transaction txn) {
@@ -93,14 +69,11 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidNodeAccount() {
-        return defaultHapiSpec("InvalidNodeAccount")
-                .given()
-                .when()
-                .then(cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnNodeAccount)
-                        .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
+    final Stream<DynamicTest> invalidNodeAccount() {
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnNodeAccount)
+                .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnDuration(Transaction txn) {
@@ -108,14 +81,11 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionDuration() {
-        return defaultHapiSpec("InvalidTransactionDuration")
-                .given()
-                .when()
-                .then(cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnDuration)
-                        .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
+    final Stream<DynamicTest> invalidTransactionDuration() {
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnDuration)
+                .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnMemo(Transaction txn) {
@@ -124,14 +94,11 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionMemoTooLong() {
-        return defaultHapiSpec("InvalidTransactionMemoTooLong")
-                .given()
-                .when()
-                .then(cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnMemo)
-                        .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
+    final Stream<DynamicTest> invalidTransactionMemoTooLong() {
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnMemo)
+                .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnPayerAccount(Transaction txn) {
@@ -144,14 +111,11 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionPayerAccountNotFound() {
-        return defaultHapiSpec("InvalidTransactionDuration")
-                .given()
-                .when()
-                .then(cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnPayerAccount)
-                        .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
+    final Stream<DynamicTest> invalidTransactionPayerAccountNotFound() {
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnPayerAccount)
+                .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnStartTtime(Transaction txn) {
@@ -160,18 +124,10 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionStartTime() {
-        return defaultHapiSpec("InvalidTransactionStartTime")
-                .given()
-                .when()
-                .then(cryptoCreate(NEW_PAYEE)
-                        .balance(10000L)
-                        .withTxnTransform(CryptoCornerCasesSuite::replaceTxnStartTtime)
-                        .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    final Stream<DynamicTest> invalidTransactionStartTime() {
+        return hapiTest(cryptoCreate(NEW_PAYEE)
+                .balance(10000L)
+                .withTxnTransform(CryptoCornerCasesSuite::replaceTxnStartTtime)
+                .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
     }
 }

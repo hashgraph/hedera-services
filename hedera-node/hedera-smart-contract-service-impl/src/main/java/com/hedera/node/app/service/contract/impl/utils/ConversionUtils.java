@@ -19,14 +19,18 @@ package com.hedera.node.app.service.contract.impl.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.hasNonDegenerateAutoRenewAccountId;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -60,10 +64,15 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
  * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
  */
 public class ConversionUtils {
+    /** The standard length as long of an address in Ethereum.*/
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
+    /** The standard length of an address in Ethereum.*/
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
+    /** The count of zero bytes in a long-zero address format.*/
     public static final int NUM_LONG_ZEROS = 12;
+    /** Fee schedule units per tinycent.*/
     public static final long FEE_SCHEDULE_UNITS_PER_TINYCENT = 1000;
+
     private static final BigInteger MIN_LONG_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
     private static final BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
@@ -396,11 +405,21 @@ public class ConversionUtils {
     /**
      * Given an EVM address, returns whether it is long-zero.
      *
-     * @param address the EVM address
+     * @param address the EVM address (as a BESU {@link org.hyperledger.besu.datatypes.Address})
      * @return whether it is long-zero
      */
     public static boolean isLongZero(@NonNull final Address address) {
         return isLongZeroAddress(address.toArrayUnsafe());
+    }
+
+    /**
+     * Given an EVM address, returns whether it is long-zero.
+     *
+     * @param address the EVM address (as a headlong {@link com.esaulpaugh.headlong.abi.Address})
+     * @return whether it is long-zero
+     */
+    public static boolean isLongZero(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return isLongZeroAddress(explicitFromHeadlong(address));
     }
 
     /**
@@ -569,16 +588,22 @@ public class ConversionUtils {
      * @return its 20-byte EVM address
      */
     public static byte[] asEvmAddress(final long num) {
-        final byte[] evmAddress = new byte[20];
-        copyToLeftPaddedByteArray(num, evmAddress);
-        return evmAddress;
+        return copyToLeftPaddedByteArray(num, new byte[20]);
     }
 
-    private static void copyToLeftPaddedByteArray(long value, final byte[] dest) {
+    /**
+     * Given a value and a destination byte array, copies the value to the destination array, left-padded.
+     *
+     * @param value the value
+     * @param dest the destination byte array
+     * @return the destination byte array
+     */
+    public static byte[] copyToLeftPaddedByteArray(long value, final byte[] dest) {
         for (int i = 7, j = dest.length - 1; i >= 0; i--, j--) {
             dest[j] = (byte) (value & 0xffL);
             value >>= 8;
         }
+        return dest;
     }
 
     /**
@@ -677,7 +702,13 @@ public class ConversionUtils {
         }
     }
 
-    private static byte[] explicitAddressOf(@NonNull final Account account) {
+    /**
+     * Given an account, returns its explicit 20-byte address.
+     *
+     * @param account the account
+     * @return the explicit 20-byte address
+     */
+    public static byte[] explicitAddressOf(@NonNull final Account account) {
         requireNonNull(account);
         final var evmAddress = extractEvmAddress(account.alias());
         return evmAddress != null
@@ -709,6 +740,18 @@ public class ConversionUtils {
     }
 
     /**
+     * Given an exchange rate and a tinybar amount, returns the equivalent tinycent amount.
+     *
+     * @param exchangeRate the exchange rate
+     * @param tinyBars the tinybar amount
+     * @return the equivalent tinycent amount
+     */
+    public static long fromTinybarsToTinycents(final ExchangeRate exchangeRate, final long tinyBars) {
+        return fromAToB(BigInteger.valueOf(tinyBars), exchangeRate.centEquiv(), exchangeRate.hbarEquiv())
+                .longValueExact();
+    }
+
+    /**
      * Given an amount in one unit and its conversion rate to another unit, returns the equivalent amount
      * in the other unit.
      *
@@ -725,14 +768,15 @@ public class ConversionUtils {
      * Given a {@link ContractID} return the corresponding Besu {@link Address}
      * Importantly, this method does NOT check for the existence of the contract in the ledger
      *
-     * @param contractId
+     * @param contractId the contract id
      * @return the equivalent Besu address
      */
     public static @NonNull Address contractIDToBesuAddress(final ContractID contractId) {
         if (contractId.hasEvmAddress()) {
-            return pbjToBesuAddress(contractId.evmAddress());
+            return pbjToBesuAddress(contractId.evmAddressOrThrow());
         } else {
-            return asLongZeroAddress(contractId.contractNumOrThrow());
+            // OrElse(0) is needed, as an UNSET contract OneOf has null number
+            return asLongZeroAddress(contractId.contractNumOrElse(0L));
         }
     }
 
@@ -752,7 +796,7 @@ public class ConversionUtils {
         if (sponsor.memo() != null) {
             builder.memo(sponsor.memo());
         }
-        if (sponsor.autoRenewAccountId() != null) {
+        if (hasNonDegenerateAutoRenewAccountId(sponsor)) {
             builder.autoRenewAccountId(sponsor.autoRenewAccountId());
         }
         if (sponsor.stakedAccountId() != null) {
@@ -765,5 +809,52 @@ public class ConversionUtils {
         return builder.maxAutomaticTokenAssociations(sponsor.maxAutoAssociations())
                 .declineReward(sponsor.declineReward())
                 .build();
+    }
+
+    /**
+     * Given a {@link ContractCreateTransactionBody} and a new account number, returns a creation body
+     * that contains a self-managed admin key (contract key with the new account number).
+     *
+     * @param op the creation body
+     * @param accountNum the new account number for the about to be newly created contract
+     * @return the fully customized creation body
+     */
+    public static @NonNull ContractCreateTransactionBody selfManagedCustomizedCreation(
+            @NonNull final ContractCreateTransactionBody op, final long accountNum) {
+        requireNonNull(op);
+        final var builder = op.copyBuilder();
+        return builder.adminKey(Key.newBuilder()
+                        .contractID(
+                                ContractID.newBuilder().contractNum(accountNum).build())
+                        .build())
+                .build();
+    }
+
+    /**
+     * Returns a tuple of the {@code KeyValue} struct
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
+     * @param key the key to get the tuple for
+     * @return Tuple encoding of the KeyValue
+     */
+    @NonNull
+    public static Tuple keyTupleFor(@NonNull final Key key) {
+        return Tuple.of(
+                false,
+                headlongAddressOf(key.contractIDOrElse(ZERO_CONTRACT_ID)),
+                key.ed25519OrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY).toByteArray(),
+                key.ecdsaSecp256k1OrElse(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY)
+                        .toByteArray(),
+                headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
+    }
+
+    /**
+     * @param contents Ethereum content
+     * @return remove the leading 0x from an Ethereum content
+     */
+    public static byte[] removeIfAnyLeading0x(com.hedera.pbj.runtime.io.buffer.Bytes contents) {
+        final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
+        final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
+        final var len = contents.length() - offset;
+        return contents.getBytes(offset, len).toByteArray();
     }
 }

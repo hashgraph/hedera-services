@@ -19,25 +19,20 @@ package com.hedera.services.bdd.spec.utilops;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_MEMO_LENGTH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class LoadTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LoadTest.class);
@@ -46,27 +41,10 @@ public class LoadTest extends HapiSuite {
     public static OptionalInt testDurationMinutes = OptionalInt.empty();
     public static OptionalInt threadNumber = OptionalInt.empty();
     public static OptionalInt hcsSubmitMessage = OptionalInt.empty();
-    public static OptionalInt hcsSubmitMessageSizeVar = OptionalInt.empty();
     /** initial balance of account used as sender for performance test transactions */
     public static OptionalLong initialBalance = OptionalLong.of(DEFAULT_INITIAL_BALANCE);
 
-    public static OptionalInt totalTestAccounts = OptionalInt.empty();
-    public static OptionalInt totalTestTopics = OptionalInt.empty();
-    public static OptionalInt totalTestTokens = OptionalInt.empty();
-    public static OptionalInt durationCreateTokenAssociation = OptionalInt.empty();
-    public static OptionalInt durationTokenTransfer = OptionalInt.empty();
-    public static OptionalInt testTreasureStartAccount = OptionalInt.empty();
-    public static OptionalInt totalTokenAssociations = OptionalInt.empty();
-    public static OptionalInt totalScheduled = OptionalInt.empty();
-    public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
     public static OptionalInt memoLength = OptionalInt.of(DEFAULT_MEMO_LENGTH);
-    public static OptionalInt testTopicId = OptionalInt.empty();
-
-    public static OptionalInt balancesExportPeriodSecs = OptionalInt.empty();
-    public static Optional<Boolean> clientToExportBalances = Optional.empty();
-
-    protected final ResponseCodeEnum[] standardPermissiblePrechecks =
-            new ResponseCodeEnum[] {OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED};
 
     public static int parseArgs(String... args) {
         int usedArgs = 0;
@@ -113,67 +91,14 @@ public class LoadTest extends HapiSuite {
         return targetTPS.getAsDouble();
     }
 
-    public static int getMemoLength() {
-        return memoLength.getAsInt();
-    }
-
     public static int getTestDurationMinutes() {
         return testDurationMinutes.getAsInt();
-    }
-
-    public static int getTestTopicId() {
-        return testTopicId.getAsInt();
     }
 
     public static RunLoadTest defaultLoadTest(Supplier<HapiSpecOperation[]> opSource, PerfTestLoadSettings settings) {
         return runLoadTest(opSource)
                 .tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
-                .tolerance(settings::getTolerancePercentage)
-                .allowedSecsBelow(settings::getAllowedSecsBelow)
-                .setMemoLength(settings::getMemoLength)
                 .setNumberOfThreads(threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
-                .setTotalTestAccounts(
-                        totalTestAccounts.isPresent() ? totalTestAccounts::getAsInt : settings::getTotalAccounts)
-                .setTotalTestTopics(totalTestTopics.isPresent() ? totalTestTopics::getAsInt : settings::getTotalTopics)
-                .setTotalTestTokens(totalTestTokens.isPresent() ? totalTestTokens::getAsInt : settings::getTotalTokens)
-                .setDurationCreateTokenAssociation(
-                        durationCreateTokenAssociation.isPresent()
-                                ? durationCreateTokenAssociation::getAsInt
-                                : settings::getDurationCreateTokenAssociation)
-                .setDurationTokenTransfer(
-                        durationTokenTransfer.isPresent()
-                                ? durationTokenTransfer::getAsInt
-                                : settings::getDurationTokenTransfer)
-                .setTotalTestTokenAccounts(
-                        totalTestTokenAccounts.isPresent()
-                                ? totalTestTokenAccounts::getAsInt
-                                : settings::getTotalTestTokenAccounts)
-                .setTotalTestTopics(totalTestTopics.isPresent() ? totalTestTopics::getAsInt : settings::getTotalTopics)
-                .setTotalScheduled(totalScheduled.isPresent() ? totalScheduled::getAsInt : settings::getTotalScheduled)
-                .setTotalTokenAssociations(
-                        totalTokenAssociations.isPresent()
-                                ? totalTokenAssociations::getAsInt
-                                : settings::getTotalTokenAssociations)
-                .setTestTreasureStartAccount(
-                        testTreasureStartAccount.isPresent()
-                                ? testTreasureStartAccount::getAsInt
-                                : settings::getTestTreasureStartAccount)
-                .setTestTopicId(testTopicId.isPresent() ? testTopicId::getAsInt : settings::getTestTopicId)
-                .setHCSSubmitMessageSize(
-                        hcsSubmitMessage.isPresent() ? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
-                .setHCSSubmitMessageSizeVar(
-                        hcsSubmitMessageSizeVar.isPresent()
-                                ? hcsSubmitMessageSizeVar::getAsInt
-                                : settings::getHcsSubmitMessageSizeVar)
-                .setBalancesExportPeriodSecs(
-                        balancesExportPeriodSecs.isPresent()
-                                ? balancesExportPeriodSecs::getAsInt
-                                : settings::getBalancesExportPeriodSecs)
-                .setClientToExportBalances(
-                        clientToExportBalances.isPresent()
-                                ? clientToExportBalances::get
-                                : settings::getClientToExportBalances)
-                .setInitialBalance(settings::getInitialBalance)
                 .lasting(
                         (testDurationMinutes.isPresent() ? LoadTest::getTestDurationMinutes : settings::getMins),
                         () -> MINUTES);
@@ -185,7 +110,7 @@ public class LoadTest extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return null;
     }
 }

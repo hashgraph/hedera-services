@@ -30,12 +30,14 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_2;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.lang.System.exit;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -43,6 +45,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.constructable.NoArgsConstructor;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -75,20 +81,20 @@ import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
-import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -137,6 +143,30 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     private static final String FCM_CATEGORY = "FCM";
     private static final String VM_CATEGORY = "VM";
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering PlatformTestingToolState with ConstructableRegistry");
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(PlatformTestingToolState.class, () -> {
+                        PlatformTestingToolState ptt = new PlatformTestingToolState();
+                        return ptt;
+                    }));
+            logger.info(
+                    STARTUP.getMarker(),
+                    "PlatformTestingToolState is registered with ConstructableRegistry: {}",
+                    ConstructableRegistry.getInstance()
+                            .getRegistry(NoArgsConstructor.class)
+                            .getConstructor(PlatformTestingToolState.CLASS_ID)
+                            .get()
+                            .getClassId());
+            FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * save internal file logs and expected map to file while freezing;
      * for restart test we should set `saveExpectedMapAtFreeze` to be true, so that
@@ -540,7 +570,6 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        GuiModel.getInstance().setAbout(selfId, "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
@@ -548,7 +577,8 @@ public class PlatformTestingToolMain implements SwirldMain {
             state.initControlStructures(this::handleMessageQuorum);
 
             // FUTURE WORK implement mirrorNode
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    RosterUtils.formatNodeName(platform.getSelfId().id());
 
             // Parameters[0]: JSON file for test config
             String jsonFileName = null;
@@ -673,9 +703,6 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         initAppStat();
 
-        // register RestartCompleteListener
-        registerStateLoadedFromDiskCompleteListener(currentConfig);
-
         registerAccountBalanceExportListener();
 
         if (waitForSaveStateDuringFreeze) {
@@ -714,7 +741,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     private void initializeAppClient(final String[] pars, final ObjectMapper objectMapper) throws IOException {
-        if ((pars == null) || (pars.length < 2) || !selfId.equals(new NodeId(0L))) {
+        if ((pars == null) || (pars.length < 2) || !selfId.equals(NodeId.of(0L))) {
             return;
         }
 
@@ -725,12 +752,9 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         logger.info(LOGM_DEMO_INFO, "Parsing JSON for client: {}", jsonFileName);
         final SuperConfig clientConfig = objectMapper.readValue(new File(jsonFileName), SuperConfig.class);
+        final String selfName = RosterUtils.formatNodeName(selfId.id());
         for (int k = 0; k < CLIENT_AMOUNT; k++) {
-            appClient[k] = new AppClient(
-                    this.platform,
-                    this.selfId,
-                    clientConfig,
-                    platform.getAddressBook().getAddress(selfId).getNickname());
+            appClient[k] = new AppClient(this.platform, this.selfId, clientConfig, selfName);
             appClient[k].start();
         }
     }
@@ -743,19 +767,19 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         progressCfg.setExpectedFCMCreateAmount(
                 currentConfig.getFcmConfig().getTranAmountByType(PAYLOAD_TYPE.TYPE_FCM_CREATE)
-                        * platform.getAddressBook().getSize());
+                        * platform.getRoster().rosterEntries().size());
         progressCfg.setExpectedFCMTransferAmount(
                 currentConfig.getFcmConfig().getTranAmountByType(PAYLOAD_TYPE.TYPE_FCM_TRANSFER)
-                        * platform.getAddressBook().getSize());
+                        * platform.getRoster().rosterEntries().size());
         progressCfg.setExpectedFCMUpdateAmount(
                 currentConfig.getFcmConfig().getTranAmountByType(PAYLOAD_TYPE.TYPE_FCM_UPDATE)
-                        * platform.getAddressBook().getSize());
+                        * platform.getRoster().rosterEntries().size());
         progressCfg.setExpectedFCMDeleteAmount(
                 currentConfig.getFcmConfig().getTranAmountByType(PAYLOAD_TYPE.TYPE_FCM_DELETE)
-                        * platform.getAddressBook().getSize());
+                        * platform.getRoster().rosterEntries().size());
         progressCfg.setExpectedFCMAssortedAmount(
                 currentConfig.getFcmConfig().getTranAmountByType(PAYLOAD_TYPE.TYPE_FCM_ASSORTED)
-                        * platform.getAddressBook().getSize());
+                        * platform.getRoster().rosterEntries().size());
     }
 
     @Override
@@ -789,7 +813,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             // if single mode only node 0 can submit transactions
             // if not single mode anyone can submit transactions
-            if (!submitConfig.isSingleNodeSubmit() || selfId.equals(new NodeId(0L))) {
+            if (!submitConfig.isSingleNodeSubmit() || selfId.equals(NodeId.of(0L))) {
 
                 if (submitConfig.isSubmitInTurn()) {
                     // Delay the start of transactions by interval multiply by node id
@@ -840,8 +864,12 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new PlatformTestingToolState();
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new PlatformTestingToolState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+        return state;
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
@@ -908,7 +936,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                         UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                     final PlatformTestingToolState state = wrapper.get();
                     if (state != null) {
-                        int randomId = random.nextInt(platform.getAddressBook().getSize());
+                        int randomId = random.nextInt(
+                                platform.getRoster().rosterEntries().size());
                         TransactionCounter txCounter =
                                 state.getTransactionCounter().get(randomId);
                         int accountsCount = (int) txCounter.fcmFCQCreateAmount;
@@ -978,21 +1007,6 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * once restart is completed, rebuild ExpectedMap based on actual MerkleMaps
-     */
-    private void registerStateLoadedFromDiskCompleteListener(final SuperConfig currentConfig) {
-        // register RestartCompleteListener
-        platform.getNotificationEngine().register(StateLoadedFromDiskCompleteListener.class, (notification) -> {
-            logger.info(
-                    LOGM_DEMO_INFO,
-                    "Notification Received: StateLoadedFromDisk Finished. sequence: {}",
-                    notification.getSequence());
-            ExpectedMapUtils.buildExpectedMapAfterStateLoad(platform, currentConfig);
-            rebuildExpirationQueue(platform);
-        });
-    }
-
-    /**
      * Iterates on the {@link com.swirlds.virtualmap.VirtualMap} instances from the state
      * of the given {@code platform} to compute the next id to be used by account and smart contract entities.
      *
@@ -1046,7 +1060,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             final PlatformTestingToolState state = (PlatformTestingToolState) notification.getState();
 
-            final AccountBalanceExport export = new AccountBalanceExport(platform.getAddressBook(), 0L);
+            final AccountBalanceExport export = new AccountBalanceExport(0L);
             final String balanceFile = export.exportAccountsBalanceCSVFormat(
                     state, notification.getConsensusTimestamp(), notification.getFolder());
 
@@ -1202,7 +1216,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             Thread.sleep(sleepTime);
         } catch (InterruptedException e) {
             logger.info(LOGM_DEMO_QUORUM, "exit-validator thread was interrupted. Continuing process exit.");
-            //			Thread.currentThread().interrupt();
+            Thread.currentThread().interrupt();
         }
 
         if (currentConfig.isQuitJVMAfterTest()) {

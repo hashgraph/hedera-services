@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,7 +28,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
@@ -46,7 +48,7 @@ class SystemContractUtilsTest {
             com.hedera.pbj.runtime.io.buffer.Bytes.wrap("Contract Call Result");
     private static final ContractID contractID =
             ContractID.newBuilder().contractNum(111).build();
-    private static final String errorMessage = ResponseCodeEnum.FAIL_INVALID.name();
+    private static final String errorMessage = FAIL_INVALID.name();
 
     @Mock
     private MessageFrame frame;
@@ -100,25 +102,15 @@ class SystemContractUtilsTest {
 
     @Test
     void validateFailedContractResults() {
+        final var fullResult = FullResult.revertResult(FAIL_INVALID, gasUsed);
         final var expected = ContractFunctionResult.newBuilder()
+                .senderId(SENDER_ID)
                 .gasUsed(gasUsed)
                 .errorMessage(errorMessage)
+                .contractCallResult(tuweniToPbjBytes(fullResult.result().getOutput()))
                 .contractID(contractID)
                 .build();
-        final var actual = SystemContractUtils.contractFunctionResultFailedFor(gasUsed, errorMessage, contractID);
-        assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void validateFailedContractResultsForProto() {
-        final var expected = ContractFunctionResult.newBuilder()
-                .gasUsed(gasUsed)
-                .errorMessage(errorMessage)
-                .contractID(contractID)
-                .contractCallResult(contractCallResult)
-                .build();
-        final var actual = SystemContractUtils.contractFunctionResultFailedForProto(
-                gasUsed, errorMessage, contractID, contractCallResult);
+        final var actual = contractFunctionResultFailedFor(SENDER_ID, fullResult, errorMessage, contractID);
         assertThat(actual).isEqualTo(expected);
     }
 }

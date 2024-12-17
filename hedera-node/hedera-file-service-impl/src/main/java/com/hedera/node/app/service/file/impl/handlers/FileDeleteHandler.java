@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeysForDelete;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
@@ -30,10 +29,10 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileDeleteResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -48,20 +47,25 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_DELETE}.
  */
 @Singleton
 public class FileDeleteHandler implements TransactionHandler {
     private final FileFeeBuilder usageEstimator;
 
+    /**
+     * Constructs a {@link FileDeleteHandler} with the given {@link FileFeeBuilder}.
+     *
+     * @param usageEstimator the file fee builder to be used for fee calculation
+     */
     @Inject
     public FileDeleteHandler(final FileFeeBuilder usageEstimator) {
         this.usageEstimator = usageEstimator;
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
+     *
      * @param txn the transaction to check
      */
     @Override
@@ -78,8 +82,8 @@ public class FileDeleteHandler implements TransactionHandler {
      *
      * <p>Determines signatures needed for deleting a file
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
+     * @param context the {@link PreHandleContext} which collects all information that will be passed to
+     * {@code handle()}
      * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
@@ -106,7 +110,7 @@ public class FileDeleteHandler implements TransactionHandler {
         var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
 
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
@@ -130,9 +134,11 @@ public class FileDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new FileDeleteResourceUsage(
-                        usageEstimator)
-                .usageGiven(fromPbj(op), sigValueObj));
+        final var txnBody = feeContext.body();
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(
+                        svo -> usageEstimator.getFileDeleteTxFeeMatrices(CommonPbjConverters.fromPbj(txnBody), svo));
     }
 }

@@ -19,11 +19,10 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.owner
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -31,9 +30,13 @@ import javax.inject.Singleton;
  * Translates {@code ownerOf()} calls to the HTS system contract.
  */
 @Singleton
-public class OwnerOfTranslator extends AbstractHtsCallTranslator {
+public class OwnerOfTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for ownerOf(uint256) method. */
     public static final Function OWNER_OF = new Function("ownerOf(uint256)", ReturnTypes.ADDRESS);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public OwnerOfTranslator() {
         // Dagger2
@@ -44,7 +47,7 @@ public class OwnerOfTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), OWNER_OF.selector());
+        return attempt.isSelector(OWNER_OF);
     }
 
     /**

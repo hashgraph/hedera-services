@@ -51,15 +51,26 @@ class EitherOrVerificationStrategyTest {
 
     @Test
     void secondStrategyValidSuffices() {
-        given(firstStrategy.decideForPrimitive(Key.DEFAULT)).willReturn(VerificationStrategy.Decision.INVALID);
+        given(firstStrategy.decideForPrimitive(Key.DEFAULT))
+                .willReturn(VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
         given(secondStrategy.decideForPrimitive(Key.DEFAULT)).willReturn(VerificationStrategy.Decision.VALID);
         assertSame(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(Key.DEFAULT));
     }
 
     @Test
-    void oneStrategyMustBeValid() {
+    void invalidIfNeitherStrategyValid() {
         given(firstStrategy.decideForPrimitive(Key.DEFAULT)).willReturn(VerificationStrategy.Decision.INVALID);
         given(secondStrategy.decideForPrimitive(Key.DEFAULT)).willReturn(VerificationStrategy.Decision.INVALID);
         assertSame(VerificationStrategy.Decision.INVALID, subject.decideForPrimitive(Key.DEFAULT));
+    }
+
+    @Test
+    void delegatesIfPossibleAndNotAlreadyValid() {
+        given(firstStrategy.decideForPrimitive(Key.DEFAULT)).willReturn(VerificationStrategy.Decision.INVALID);
+        given(secondStrategy.decideForPrimitive(Key.DEFAULT))
+                .willReturn(VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
+        assertSame(
+                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
+                subject.decideForPrimitive(Key.DEFAULT));
     }
 }

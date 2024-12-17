@@ -165,7 +165,7 @@ public class FeeCalculator {
             final Map<SubType, FeeData> activityPrices = opFeeData.get(op);
             return getTotalFeeforRequest(activityPrices.get(subType), knownActivity, provider.rates());
         } catch (final Throwable t) {
-            log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
+            log.warn("Unable to calculate fee for op {} (subType={}), using max fee!", op, subType, t);
         }
         return maxFeeTinyBars(subType);
     }

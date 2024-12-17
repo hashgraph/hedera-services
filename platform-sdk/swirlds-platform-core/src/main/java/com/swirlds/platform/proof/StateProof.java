@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.proof;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -25,6 +26,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.proof.algorithms.NodeSignature;
 import com.swirlds.platform.proof.algorithms.StateProofSerialization;
 import com.swirlds.platform.proof.algorithms.StateProofTreeBuilder;
@@ -104,7 +106,12 @@ public class StateProof implements SelfSerializable {
             @NonNull final AddressBook addressBook,
             @NonNull final Threshold threshold) {
 
-        return isValid(cryptography, addressBook, threshold, Signature::verifySignature);
+        return isValid(
+                cryptography,
+                addressBook,
+                threshold,
+                (signature, bytes, publicKey) ->
+                        CryptoStatic.verifySignature(Bytes.wrap(bytes), signature.getBytes(), publicKey));
     }
 
     /**

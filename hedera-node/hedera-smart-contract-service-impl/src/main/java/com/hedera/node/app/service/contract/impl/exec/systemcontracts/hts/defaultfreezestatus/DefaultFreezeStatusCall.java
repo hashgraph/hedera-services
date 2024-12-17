@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defau
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS;
 import static java.util.Objects.requireNonNull;
 
@@ -31,9 +32,18 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implements the token redirect {@code getTokenDefaultFreezeStatus()} call of the HTS system contract.
+ */
 public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall {
     private final boolean isStaticCall;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     * @param enhancement the enhancement to use
+     * @param isStaticCall whether this is a static call
+     * @param token the token against the call is executed
+     */
     public DefaultFreezeStatusCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
@@ -47,9 +57,12 @@ public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall 
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsFrozenByDefault());
+        return gasOnly(
+                fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsFrozenByDefault()),
+                SUCCESS,
+                true);
     }
 
     @Override
@@ -60,7 +73,7 @@ public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall 
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean freezeStatus) {
-        // @Future remove to revert #9067 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, 0);
         }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.config.converter;
 
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.config.types.CongestionMultipliers;
 import com.swirlds.config.api.converter.ConfigConverter;
 
 /**

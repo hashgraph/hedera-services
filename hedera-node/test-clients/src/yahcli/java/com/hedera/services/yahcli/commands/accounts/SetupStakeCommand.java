@@ -32,7 +32,7 @@ import picocli.CommandLine;
         subcommands = {CommandLine.HelpCommand.class},
         description = "Activates staking on the target network (requires 0.0.2 payer)")
 public class SetupStakeCommand implements Callable<Integer> {
-    private static final long CANONICAL_REWARD_RATE = 273972602739726L;
+    private static final long CANONICAL_REWARD_RATE = 6849L;
     private static final long CANONICAL_800_START_BALANCE = 250 * HapiSuite.ONE_MILLION_HBARS;
     private static final long TOTAL_HBAR_SUPPLY = 50_000_000_000L * 100_000_000L;
 

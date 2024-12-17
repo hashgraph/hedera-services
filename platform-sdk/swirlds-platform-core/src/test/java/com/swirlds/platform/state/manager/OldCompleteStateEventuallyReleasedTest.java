@@ -17,25 +17,30 @@
 package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
+import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +53,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
     private final AddressBook addressBook =
-            new RandomAddressBookGenerator(random).setSize(4).build();
+            RandomAddressBookBuilder.create(random).withSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -69,6 +74,16 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
         return ss -> highestCompleteRound.accumulateAndGet(ss.getRound(), Math::max);
     }
 
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
+
     /**
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
@@ -76,7 +91,10 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
     @DisplayName("Old Complete State Eventually Released")
     void oldCompleteStateEventuallyReleased() throws InterruptedException {
 
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(buildStateConfig())
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -100,8 +118,14 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
         manager.addReservedState(stateFromDisk.reserve("test"));
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
-        final int count = roundsToKeepForSigning * 100;
+        // Note: the multiplier should be reasonably low because each reserved state includes a virtual map (the
+        // RosterMap),
+        // and that consumes a lot of RAM. If the multiplier is too high (e.g. 100 as it used to be), then tests
+        // will eventually run into an OOM. The multiplier of 5 seems high enough for the purpose of the test
+        // and doesn't produce OOMs.
+        final int count = roundsToKeepForSigning * 5;
         for (int round = 1; round < count; round++) {
+            MerkleDb.resetDefaultInstancePath();
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setAddressBook(addressBook)
                     .setRound(round)

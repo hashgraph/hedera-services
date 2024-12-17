@@ -29,8 +29,13 @@ package com.swirlds.demo.stats;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -39,11 +44,11 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -84,6 +89,20 @@ public class StatsDemoMain implements SwirldMain {
     private Random random = new java.util.Random();
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+
+    static {
+        try {
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(StatsDemoState.class, () -> {
+                StatsDemoState statsDemoState = new StatsDemoState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                return statsDemoState;
+            }));
+            registerMerkleStateRootClassIds();
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private final StoppableThread transactionGenerator;
 
@@ -180,7 +199,7 @@ public class StatsDemoMain implements SwirldMain {
     private synchronized void generateTransactions() {
         byte[] transaction = new byte[bytesPerTrans];
         long now = System.nanoTime();
-        double tps = transPerSecToCreate / platform.getAddressBook().getSize();
+        double tps = transPerSecToCreate / platform.getRoster().rosterEntries().size();
         int numCreated = 0;
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
@@ -222,15 +241,10 @@ public class StatsDemoMain implements SwirldMain {
             transPerEventMax = 1024;
         }
         if (!headless) { // create the window, make it visible
-            final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
+            final int winNum = (int) selfId.id();
             console = createConsole(
                     platform, winNum, true, platform.getAddressBook().getNodeIdSet());
         }
-        GuiModel.getInstance()
-                .setAbout(
-                        platform.getSelfId(),
-                        "Stats Demo v. 1.2\nThis writes statistics to a log file,"
-                                + " such as the number of transactions per second.");
     }
 
     @Override
@@ -300,9 +314,14 @@ public class StatsDemoMain implements SwirldMain {
         return "";
     }
 
+    @NonNull
     @Override
-    public SwirldState newState() {
-        return new StatsDemoState();
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new StatsDemoState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+        return state;
     }
 
     /**

@@ -37,6 +37,8 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -55,26 +57,26 @@ import org.mockito.stubbing.Answer;
 @ExtendWith(MockitoExtension.class)
 class SnapshotServiceTest {
 
-    private static final NodeId NODE_ID_1 = new NodeId(1L);
-    private static final NodeId NODE_ID_2 = new NodeId(2L);
+    private static final NodeId NODE_ID_1 = NodeId.of(1L);
+    private static final NodeId NODE_ID_2 = NodeId.of(2L);
 
     @Mock
-    private DefaultMetric globalMetric;
+    private SnapshotableMetric globalMetric;
 
     @Mock
-    private DefaultMetrics globalMetrics;
+    private DefaultPlatformMetrics globalMetrics;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetric platform1Metric;
+    private SnapshotableMetric platform1Metric;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetrics platform1Metrics;
+    private DefaultPlatformMetrics platform1Metrics;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetric platform2Metric;
+    private SnapshotableMetric platform2Metric;
 
     @Mock(strictness = LENIENT)
-    private DefaultMetrics platform2Metrics;
+    private DefaultPlatformMetrics platform2Metrics;
 
     @Mock
     private Consumer<SnapshotEvent> subscriber;

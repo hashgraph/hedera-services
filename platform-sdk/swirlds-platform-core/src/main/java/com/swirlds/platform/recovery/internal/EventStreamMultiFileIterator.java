@@ -18,7 +18,7 @@ package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -44,13 +44,13 @@ import java.util.Objects;
  * this iterator.
  * </p>
  */
-public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensusEvent> {
+public class EventStreamMultiFileIterator implements IOIterator<CesEvent> {
 
     private final Iterator<Path> fileIterator;
     private long fileCount;
     private long byteCount;
     private Hash startHash;
-    private final List<DetailedConsensusEvent> skippedEvents;
+    private final List<CesEvent> skippedEvents;
     private EventStreamSingleFileIterator eventIterator;
     private long damagedFileCount = 0;
 
@@ -141,7 +141,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
      * {@inheritDoc}
      */
     @Override
-    public DetailedConsensusEvent peek() throws IOException {
+    public CesEvent peek() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
@@ -152,7 +152,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
      * {@inheritDoc}
      */
     @Override
-    public DetailedConsensusEvent next() throws IOException {
+    public CesEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
@@ -170,7 +170,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
      * @return events that have been read from a file but are not returned by {@link #next()} because they are prior to
      * the event stream bound.
      */
-    public List<DetailedConsensusEvent> getSkippedEvents() {
+    public List<CesEvent> getSkippedEvents() {
         return skippedEvents;
     }
 

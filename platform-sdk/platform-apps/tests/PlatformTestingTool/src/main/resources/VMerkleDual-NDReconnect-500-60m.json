@@ -46,31 +46,31 @@
 	  "addsDuringMethodExecution": 300
 	},
 	"sequential": [
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_CREATE",
-		"amount": 100000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_DELETE",
-		"amount": 100000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
-		"amount": 100000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
-		"amount": 15000
-	  },
-	  {
-		"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
-		"amount": 15000
-	  }
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_CREATE",
+			"amount": 100000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_DELETE",
+			"amount": 100000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_UPDATE",
+			"amount": 100000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_CREATE_SMART_CONTRACT",
+			"amount": 15000
+		},
+		{
+			"type": "TYPE_VIRTUAL_MERKLE_SMART_CONTRACT_METHOD_EXECUTION",
+			"amount": 15000
+		}
 	]
   },
   "fcmConfig": {
 	"sequentialTest": false,
-	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmoutn, sequentialSize, this override typeDistribution defined in payloadConfig",
+	"_comment": "if sequentialTest is true, generate payload according to sequentialType, sequentialAmount, sequentialSize, this override typeDistribution defined in payloadConfig",
 	"sequentials": []
   }
 }

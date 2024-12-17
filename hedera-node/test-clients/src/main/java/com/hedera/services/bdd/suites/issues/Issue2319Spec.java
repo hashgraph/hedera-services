@@ -16,80 +16,72 @@
 
 package com.hedera.services.bdd.suites.issues;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_KEYS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2319Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2319Spec.class);
+public class Issue2319Spec {
     private static final String NON_TREASURY_KEY = "nonTreasuryKey";
     private static final String NON_TREASURY_ADMIN_KEY = "nonTreasuryAdminKey";
     private static final String DEFAULT_ADMIN_KEY = "defaultAdminKey";
 
-    public static void main(String... args) {
-        new Issue2319Spec().runSuiteSync();
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
+    final Stream<DynamicTest> propsPermissionsSigReqsWaivedForAddressBookAdmin() {
+        return hapiTest(
+                newKeyNamed(NON_TREASURY_KEY),
+                newKeyListNamed(NON_TREASURY_ADMIN_KEY, List.of(NON_TREASURY_KEY)),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+                fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).wacl(NON_TREASURY_ADMIN_KEY),
+                fileUpdate(API_PERMISSIONS).payingWith(ADDRESS_BOOK_CONTROL).wacl(NON_TREASURY_ADMIN_KEY),
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of())
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileUpdate(API_PERMISSIONS)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of())
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileAppend(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .content(new byte[0])
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileAppend(API_PERMISSIONS)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .content(new byte[0])
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileUpdate(APP_PROPERTIES).wacl(GENESIS),
+                fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            sysFileImmutabilityWaivedForMasterAndTreasury(),
-            propsPermissionsSigReqsWaivedForAddressBookAdmin(),
-            sysAccountSigReqsWaivedForMasterAndTreasury(),
-            sysFileSigReqsWaivedForMasterAndTreasury()
-        });
-    }
-
-    @HapiTest
-    final HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
-        return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
-                .given(
-                        newKeyNamed(NON_TREASURY_KEY),
-                        newKeyListNamed(NON_TREASURY_ADMIN_KEY, List.of(NON_TREASURY_KEY)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
-                .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .wacl(NON_TREASURY_ADMIN_KEY),
-                        fileUpdate(API_PERMISSIONS)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .wacl(NON_TREASURY_ADMIN_KEY))
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("claimHashSize", "49"))
-                                .signedBy(GENESIS),
-                        fileUpdate(API_PERMISSIONS)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("claimHashSize", "49"))
-                                .signedBy(GENESIS),
-                        fileUpdate(APP_PROPERTIES).wacl(GENESIS),
-                        fileUpdate(API_PERMISSIONS).wacl(GENESIS));
-    }
-
-    @HapiTest
-    final HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
+    final Stream<DynamicTest> sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
@@ -112,8 +104,8 @@ public class Issue2319Spec extends HapiSuite {
                                 .signedBy(GENESIS));
     }
 
-    @HapiTest
-    final HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
+    final Stream<DynamicTest> sysAccountSigReqsWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         newKeyNamed(NON_TREASURY_KEY),
@@ -146,8 +138,8 @@ public class Issue2319Spec extends HapiSuite {
                                 .signedBy(GENESIS));
     }
 
-    @HapiTest
-    final HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
+    final Stream<DynamicTest> sysFileSigReqsWaivedForMasterAndTreasury() {
         var validRates = new AtomicReference<ByteString>();
 
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")
@@ -182,10 +174,5 @@ public class Issue2319Spec extends HapiSuite {
                                 .contents(ignore -> validRates.get())
                                 .hasPrecheck(AUTHORIZATION_FAILED),
                         fileUpdate(EXCHANGE_RATES).payingWith(GENESIS).wacl(GENESIS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

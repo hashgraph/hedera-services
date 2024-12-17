@@ -25,35 +25,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withStrictCostAnswerValidation;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileRecordsSanityCheckSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileRecordsSanityCheckSuite.class);
-
-    public static void main(String... args) {
-        new FileRecordsSanityCheckSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            fileCreateRecordSanityChecks(),
-            fileDeleteRecordSanityChecks(),
-            fileAppendRecordSanityChecks(),
-            fileUpdateRecordSanityChecks()
-        });
-    }
-
+public class FileRecordsSanityCheckSuite {
     @HapiTest
-    final HapiSpec fileAppendRecordSanityChecks() {
+    final Stream<DynamicTest> fileAppendRecordSanityChecks() {
         return defaultHapiSpec("FileAppendRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -66,7 +54,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileCreateRecordSanityChecks() {
+    final Stream<DynamicTest> fileCreateRecordSanityChecks() {
         return defaultHapiSpec("FileCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
                 .when(fileCreate("test").via("txn"))
@@ -77,7 +65,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileDeleteRecordSanityChecks() {
+    final Stream<DynamicTest> fileDeleteRecordSanityChecks() {
         return defaultHapiSpec("FileDeleteRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -90,7 +78,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fileUpdateRecordSanityChecks() {
+    final Stream<DynamicTest> fileUpdateRecordSanityChecks() {
         return defaultHapiSpec("FileUpdateRecordSanityChecks")
                 .given(flattened(
                         fileCreate("test"),
@@ -100,14 +88,9 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
                         .via("txn")
                         .fee(95_000_000L))
                 .then(
-                        getFileInfo("test").payingWith(EXCHANGE_RATE_CONTROL).expectStrictCostAnswer(),
+                        withStrictCostAnswerValidation(() -> getFileInfo("test").payingWith(EXCHANGE_RATE_CONTROL)),
                         validateTransferListForBalances(
                                 "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
                         validateRecordTransactionFees("txn"));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

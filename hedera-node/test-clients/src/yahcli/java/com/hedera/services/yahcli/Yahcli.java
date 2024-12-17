@@ -21,14 +21,23 @@ import com.hedera.services.yahcli.commands.accounts.SetupStakeCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.keys.KeysCommand;
+import com.hedera.services.yahcli.commands.nodes.NodesCommand;
 import com.hedera.services.yahcli.commands.schedules.ScheduleCommand;
-import com.hedera.services.yahcli.commands.system.*;
-import com.hedera.services.yahcli.commands.validation.ValidationCommand;
+import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
+import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
+import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
+import com.hedera.services.yahcli.commands.system.VersionInfoCommand;
 import java.util.concurrent.Callable;
 import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
-import picocli.CommandLine.*;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.Spec;
 
 @Command(
         name = "yahcli",
@@ -38,7 +47,6 @@ import picocli.CommandLine.Model.CommandSpec;
             AccountsCommand.class,
             ScheduleCommand.class,
             SysFilesCommand.class,
-            ValidationCommand.class,
             FeesCommand.class,
             FreezeAbortCommand.class,
             FreezeOnlyCommand.class,
@@ -47,6 +55,7 @@ import picocli.CommandLine.Model.CommandSpec;
             TelemetryUpgradeCommand.class,
             VersionInfoCommand.class,
             SetupStakeCommand.class,
+            NodesCommand.class
         },
         description = "Performs DevOps-type actions against a Hedera Services network")
 public class Yahcli implements Callable<Integer> {

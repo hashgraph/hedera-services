@@ -37,4 +37,6 @@ public final class ConsensusConstants {
     public static final int EVENT_UNMARKED = 0;
     /** the consensus number of the first event ever to reach consensus */
     public static final long FIRST_CONSENSUS_NUMBER = 0;
+    /** the consensus order set when an event has not reached consensus */
+    public static final long NO_CONSENSUS_ORDER = -1;
 }

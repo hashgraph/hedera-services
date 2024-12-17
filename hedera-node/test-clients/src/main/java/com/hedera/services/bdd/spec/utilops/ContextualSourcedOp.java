@@ -19,13 +19,13 @@ package com.hedera.services.bdd.spec.utilops;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import java.util.function.Function;
 
 public class ContextualSourcedOp extends UtilOp {
-    private final Function<HapiSpec, HapiSpecOperation> source;
+    private final Function<HapiSpec, SpecOperation> source;
 
-    public ContextualSourcedOp(Function<HapiSpec, HapiSpecOperation> source) {
+    public ContextualSourcedOp(Function<HapiSpec, SpecOperation> source) {
         this.source = source;
     }
 

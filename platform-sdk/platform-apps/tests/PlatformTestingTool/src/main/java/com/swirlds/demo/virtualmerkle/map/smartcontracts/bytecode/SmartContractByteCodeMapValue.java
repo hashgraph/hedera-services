@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.demo.virtualmerkle.random.PTTRandom;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -147,12 +146,6 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         out.writeBytes(byteCode);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putInt(byteCode.length);
-        buffer.put(byteCode);
-    }
-
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         byteCode = in.readByteArray(MAX_BYTE_CODE_BYTES);
@@ -162,13 +155,6 @@ public final class SmartContractByteCodeMapValue implements VirtualValue {
         final int len = in.readInt();
         byteCode = new byte[len];
         in.readBytes(byteCode);
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer, final int version) {
-        final int len = buffer.getInt();
-        byteCode = new byte[len];
-        buffer.get(byteCode);
     }
 
     @Override

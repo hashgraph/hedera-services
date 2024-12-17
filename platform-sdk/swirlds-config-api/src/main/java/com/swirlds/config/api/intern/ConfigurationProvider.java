@@ -28,7 +28,9 @@ import java.util.ServiceLoader;
  */
 public final class ConfigurationProvider {
 
-    private static final ConfigurationProvider INSTANCE = new ConfigurationProvider();
+    private static final class InstanceHolder {
+        private static final ConfigurationProvider INSTANCE = new ConfigurationProvider();
+    }
 
     private final ConfigurationBuilderFactory factory;
 
@@ -63,6 +65,6 @@ public final class ConfigurationProvider {
      * @return the singleton instance of this class
      */
     public static ConfigurationProvider getInstance() {
-        return INSTANCE;
+        return InstanceHolder.INSTANCE;
     }
 }

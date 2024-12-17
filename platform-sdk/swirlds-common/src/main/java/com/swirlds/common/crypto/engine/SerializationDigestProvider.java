@@ -18,7 +18,6 @@ package com.swirlds.common.crypto.engine;
 
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -32,7 +31,7 @@ import java.security.NoSuchAlgorithmException;
  * serialized bytes of the object.
  */
 public class SerializationDigestProvider
-        extends CachingOperationProvider<SelfSerializable, Void, Hash, HashingOutputStream, DigestType> {
+        extends CachingOperationProvider<SelfSerializable, Void, byte[], HashingOutputStream, DigestType> {
     /**
      * {@inheritDoc}
      */
@@ -46,7 +45,7 @@ public class SerializationDigestProvider
      * {@inheritDoc}
      */
     @Override
-    protected Hash handleItem(
+    protected byte[] handleItem(
             final HashingOutputStream algorithm,
             final DigestType algorithmType,
             final SelfSerializable item,
@@ -56,7 +55,7 @@ public class SerializationDigestProvider
             out.writeSerializable(item, true);
             out.flush();
 
-            return new Hash(algorithm.getDigest(), algorithmType);
+            return algorithm.getDigest();
         } catch (IOException ex) {
             throw new CryptographyException(ex, LogMarker.EXCEPTION);
         }

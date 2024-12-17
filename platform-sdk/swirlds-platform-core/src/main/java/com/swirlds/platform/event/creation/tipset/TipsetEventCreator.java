@@ -18,9 +18,9 @@ package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -28,18 +28,19 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.hashing.PbjStreamHasher;
+import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -51,6 +52,7 @@ import java.util.Objects;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Responsible for creating new events using the tipset algorithm.
@@ -69,12 +71,12 @@ public class TipsetEventCreator implements EventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     /**
      * The address book for the current network.
      */
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     /**
      * The size of the current address book.
@@ -96,7 +98,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * The last event created by this node.
      */
-    private EventDescriptor lastSelfEvent;
+    private EventDescriptorWrapper lastSelfEvent;
 
     /**
      * The timestamp of the last event created by this node.
@@ -117,12 +119,17 @@ public class TipsetEventCreator implements EventCreator {
     private final RateLimitedLogger noParentFoundLogger;
 
     /**
+     * Event hasher for unsigned events.
+     */
+    private final UnsignedEventHasher eventHasher;
+
+    /**
      * Create a new tipset event creator.
      *
      * @param platformContext     the platform context
      * @param random              a source of randomness, does not need to be cryptographically secure
      * @param signer              used for signing things with this node's private key
-     * @param addressBook         the current address book
+     * @param roster              the current roster
      * @param selfId              this node's ID
      * @param softwareVersion     the current software version of the application
      * @param transactionSupplier provides transactions to be included in new events
@@ -131,7 +138,7 @@ public class TipsetEventCreator implements EventCreator {
             @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
             @NonNull final Signer signer,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
@@ -142,64 +149,62 @@ public class TipsetEventCreator implements EventCreator {
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         cryptography = platformContext.getCryptography();
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
-        tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
+        tipsetMetrics = new TipsetMetrics(platformContext, roster);
         ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
-        tipsetTracker = new TipsetTracker(time, addressBook, ancientMode);
+        tipsetTracker = new TipsetTracker(time, roster, ancientMode);
         childlessOtherEventTracker = new ChildlessEventTracker();
-        tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
-        networkSize = addressBook.getSize();
+        tipsetWeightCalculator =
+                new TipsetWeightCalculator(platformContext, roster, selfId, tipsetTracker, childlessOtherEventTracker);
+        networkSize = roster.rosterEntries().size();
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
+        this.eventHasher = new PbjStreamHasher();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final GossipEvent event) {
-        if (nonAncientEventWindow.isAncient(event)) {
+    public void registerEvent(@NonNull final PlatformEvent event) {
+        if (eventWindow.isAncient(event)) {
             return;
         }
 
-        final NodeId eventCreator = event.getHashedData().getCreatorId();
-        if (!addressBook.contains(eventCreator)) {
+        final NodeId eventCreator = event.getCreatorId();
+        if (RosterUtils.getIndex(roster, eventCreator.id()) == -1) {
             return;
         }
         final boolean selfEvent = eventCreator.equals(selfId);
 
         if (selfEvent) {
-            if (lastSelfEvent == null || lastSelfEvent.getGeneration() < event.getGeneration()) {
+            if (lastSelfEvent == null || lastSelfEvent.eventDescriptor().generation() < event.getGeneration()) {
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = event.getDescriptor();
-                lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
-                lastSelfEventTransactionCount = event.getHashedData().getTransactions() == null
-                        ? 0
-                        : event.getHashedData().getTransactions().length;
-                childlessOtherEventTracker.registerSelfEventParents(
-                        event.getHashedData().getOtherParents());
+                lastSelfEventCreationTime = event.getTimeCreated();
+                lastSelfEventTransactionCount = event.getTransactionCount();
+                childlessOtherEventTracker.registerSelfEventParents(event.getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
                 return;
             }
         }
 
-        final EventDescriptor descriptor = event.getDescriptor();
-        final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
+        final EventDescriptorWrapper descriptor = event.getDescriptor();
+        final List<EventDescriptorWrapper> parentDescriptors = event.getAllParents();
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
 
@@ -212,10 +217,10 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
-        tipsetTracker.setNonAncientEventWindow(nonAncientEventWindow);
-        childlessOtherEventTracker.pruneOldEvents(nonAncientEventWindow);
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
+        tipsetTracker.setEventWindow(eventWindow);
+        childlessOtherEventTracker.pruneOldEvents(eventWindow);
     }
 
     /**
@@ -223,7 +228,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Override
     @Nullable
-    public GossipEvent maybeCreateEvent() {
+    public UnsignedEvent maybeCreateEvent() {
         if (networkSize == 1) {
             // Special case: network of size 1.
             // We can always create a new event, no need to run the tipset algorithm.
@@ -250,7 +255,7 @@ public class TipsetEventCreator implements EventCreator {
      *
      * @return the new event
      */
-    private GossipEvent createEventForSizeOneNetwork() {
+    private UnsignedEvent createEventForSizeOneNetwork() {
         // There is a quirk in size 1 networks where we can only
         // reach consensus if the self parent is also the other parent.
         // Unexpected, but harmless. So just use the same event
@@ -264,15 +269,15 @@ public class TipsetEventCreator implements EventCreator {
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    private GossipEvent createEventByOptimizingAdvancementWeight() {
-        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
+    private UnsignedEvent createEventByOptimizingAdvancementWeight() {
+        final List<EventDescriptorWrapper> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         Collections.shuffle(possibleOtherParents, random);
 
-        EventDescriptor bestOtherParent = null;
+        EventDescriptorWrapper bestOtherParent = null;
         TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
-        for (final EventDescriptor otherParent : possibleOtherParents) {
+        for (final EventDescriptorWrapper otherParent : possibleOtherParents) {
 
-            final List<EventDescriptor> parents = new ArrayList<>(2);
+            final List<EventDescriptorWrapper> parents = new ArrayList<>(2);
             parents.add(otherParent);
             if (lastSelfEvent != null) {
                 parents.add(lastSelfEvent);
@@ -289,8 +294,8 @@ public class TipsetEventCreator implements EventCreator {
         if (bestOtherParent == null) {
             // If there are no available other parents, it is only legal to create a new event if we are
             // creating a genesis event. In order to create a genesis event, we must have never created
-            // an event before and the current non-ancient event window must have never been advanced.
-            if (!nonAncientEventWindow.isGenesis() || lastSelfEvent != null) {
+            // an event before and the current event window must have never been advanced.
+            if (!eventWindow.isGenesis() || lastSelfEvent != null) {
                 // event creation isn't legal
                 return null;
             }
@@ -299,7 +304,7 @@ public class TipsetEventCreator implements EventCreator {
             return buildAndProcessEvent(null);
         }
 
-        tipsetMetrics.getTipsetParentMetric(bestOtherParent.getCreator()).cycle();
+        tipsetMetrics.getTipsetParentMetric(bestOtherParent.creator()).cycle();
         return buildAndProcessEvent(bestOtherParent);
     }
 
@@ -309,19 +314,19 @@ public class TipsetEventCreator implements EventCreator {
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    private GossipEvent createEventToReduceSelfishness() {
-        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
-        final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
+    private UnsignedEvent createEventToReduceSelfishness() {
+        final List<EventDescriptorWrapper> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
+        final List<EventDescriptorWrapper> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
 
         // Choose a random ignored node, weighted by how much it is currently being ignored.
 
         // First, figure out who is an ignored node and sum up all selfishness scores.
         int selfishnessSum = 0;
         final List<Integer> selfishnessScores = new ArrayList<>(possibleOtherParents.size());
-        for (final EventDescriptor possibleIgnoredNode : possibleOtherParents) {
-            final int selfishness = tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.getCreator());
+        for (final EventDescriptorWrapper possibleIgnoredNode : possibleOtherParents) {
+            final int selfishness = tipsetWeightCalculator.getSelfishnessScoreForNode(possibleIgnoredNode.creator());
 
-            final List<EventDescriptor> theoreticalParents = new ArrayList<>(2);
+            final List<EventDescriptorWrapper> theoreticalParents = new ArrayList<>(2);
             theoreticalParents.add(possibleIgnoredNode);
             if (lastSelfEvent == null) {
                 throw new IllegalStateException("lastSelfEvent is null");
@@ -366,8 +371,8 @@ public class TipsetEventCreator implements EventCreator {
         for (int i = 0; i < ignoredNodes.size(); i++) {
             runningSum += selfishnessScores.get(i);
             if (choice < runningSum) {
-                final EventDescriptor ignoredNode = ignoredNodes.get(i);
-                tipsetMetrics.getPityParentMetric(ignoredNode.getCreator()).cycle();
+                final EventDescriptorWrapper ignoredNode = ignoredNodes.get(i);
+                tipsetMetrics.getPityParentMetric(ignoredNode.creator()).cycle();
                 return buildAndProcessEvent(ignoredNode);
             }
         }
@@ -382,8 +387,8 @@ public class TipsetEventCreator implements EventCreator {
      * @param otherParent the other parent, or null if there is no other parent
      * @return the new event
      */
-    private GossipEvent buildAndProcessEvent(@Nullable final EventDescriptor otherParent) {
-        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
+    private UnsignedEvent buildAndProcessEvent(@Nullable final EventDescriptorWrapper otherParent) {
+        final List<EventDescriptorWrapper> parentDescriptors = new ArrayList<>(2);
         if (lastSelfEvent != null) {
             parentDescriptors.add(lastSelfEvent);
         }
@@ -391,9 +396,9 @@ public class TipsetEventCreator implements EventCreator {
             parentDescriptors.add(otherParent);
         }
 
-        final GossipEvent event = assembleEventObject(otherParent);
+        final UnsignedEvent event = assembleEventObject(otherParent);
 
-        final EventDescriptor descriptor = event.getDescriptor();
+        final EventDescriptorWrapper descriptor = event.getDescriptor();
         tipsetTracker.addEvent(descriptor, parentDescriptors);
         final TipsetAdvancementWeight advancementWeight =
                 tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
@@ -406,8 +411,8 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         lastSelfEvent = descriptor;
-        lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
-        lastSelfEventTransactionCount = event.getHashedData().getTransactions().length;
+        lastSelfEventCreationTime = event.getTimeCreated();
+        lastSelfEventTransactionCount = event.getTransactions().size();
 
         return event;
     }
@@ -419,9 +424,7 @@ public class TipsetEventCreator implements EventCreator {
      * @return the event
      */
     @NonNull
-    private GossipEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
-        final NodeId otherParentId = getCreator(otherParent);
-
+    private UnsignedEvent assembleEventObject(@Nullable final EventDescriptorWrapper otherParent) {
         final Instant now = time.now();
         final Instant timeCreated;
         if (lastSelfEvent == null) {
@@ -431,22 +434,18 @@ public class TipsetEventCreator implements EventCreator {
                     now, lastSelfEventCreationTime, lastSelfEventTransactionCount);
         }
 
-        final BaseEventHashedData hashedData = new BaseEventHashedData(
+        final UnsignedEvent event = new UnsignedEvent(
                 softwareVersion,
                 selfId,
                 lastSelfEvent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
-                nonAncientEventWindow.getPendingConsensusRound(),
+                eventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
+                        ? eventWindow.getPendingConsensusRound()
+                        : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
-        cryptography.digestSync(hashedData);
+        eventHasher.hashUnsignedEvent(event);
 
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
-
-        final GossipEvent event = new GossipEvent(hashedData, unhashedData);
-        cryptography.digestSync(event);
-        event.buildDescriptor();
         return event;
     }
 
@@ -454,11 +453,11 @@ public class TipsetEventCreator implements EventCreator {
      * Get the creator of a descriptor, handle null appropriately.
      */
     @Nullable
-    private static NodeId getCreator(@Nullable final EventDescriptor descriptor) {
+    private static NodeId getCreator(@Nullable final EventDescriptorWrapper descriptor) {
         if (descriptor == null) {
             return CREATOR_ID_UNDEFINED;
         } else {
-            return descriptor.getCreator();
+            return descriptor.creator();
         }
     }
 
@@ -470,7 +469,7 @@ public class TipsetEventCreator implements EventCreator {
         tipsetTracker.clear();
         childlessOtherEventTracker.clear();
         tipsetWeightCalculator.clear();
-        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         lastSelfEvent = null;
         lastSelfEventCreationTime = null;
         lastSelfEventTransactionCount = 0;
@@ -479,19 +478,17 @@ public class TipsetEventCreator implements EventCreator {
     @NonNull
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("Minimum generation non-ancient: ")
-                .append(tipsetTracker.getNonAncientEventWindow())
-                .append("\n");
+        sb.append("Event window: ").append(tipsetTracker.getEventWindow()).append("\n");
         sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);
 
         sb.append("Childless events:");
-        final List<EventDescriptor> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
+        final List<EventDescriptorWrapper> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
         if (childlessEvents.isEmpty()) {
             sb.append(" none\n");
         } else {
             sb.append("\n");
-            for (final EventDescriptor event : childlessEvents) {
+            for (final EventDescriptorWrapper event : childlessEvents) {
                 final Tipset tipset = tipsetTracker.getTipset(event);
                 sb.append("  - ").append(event).append(" ").append(tipset).append("\n");
             }

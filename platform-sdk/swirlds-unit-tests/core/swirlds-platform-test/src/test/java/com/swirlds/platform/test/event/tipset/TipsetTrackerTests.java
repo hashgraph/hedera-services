@@ -23,18 +23,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.platform.event.EventDescriptor;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,13 +52,13 @@ import org.junit.jupiter.params.provider.EnumSource;
 class TipsetTrackerTests {
 
     private static void assertTipsetEquality(
-            @NonNull final AddressBook addressBook, @NonNull final Tipset expected, @NonNull final Tipset actual) {
+            @NonNull final Roster roster, @NonNull final Tipset expected, @NonNull final Tipset actual) {
         assertEquals(expected.size(), actual.size());
 
-        for (final Address address : addressBook) {
+        for (final RosterEntry address : roster.rosterEntries()) {
             assertEquals(
-                    expected.getTipGenerationForNode(address.getNodeId()),
-                    actual.getTipGenerationForNode(address.getNodeId()));
+                    expected.getTipGenerationForNode(NodeId.of(address.nodeId())),
+                    actual.getTipGenerationForNode(NodeId.of(address.nodeId())));
         }
     }
 
@@ -68,38 +69,40 @@ class TipsetTrackerTests {
         final Random random = getRandomPrintSeed(0);
 
         final int nodeCount = random.nextInt(10, 20);
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+        final Roster roster =
+                RandomRosterBuilder.create(random).withSize(nodeCount).build();
 
-        final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
-        final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
+        final Map<NodeId, EventDescriptorWrapper> latestEvents = new HashMap<>();
+        final Map<EventDescriptorWrapper, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook, ancientMode);
+        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), roster, ancientMode);
 
         long birthRound = ConsensusConstants.ROUND_FIRST;
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
-            final NodeId creator = addressBook.getNodeId(random.nextInt(nodeCount));
+            final NodeId creator = NodeId.of(
+                    roster.rosterEntries().get(random.nextInt(nodeCount)).nodeId());
             final long generation;
             if (latestEvents.containsKey(creator)) {
-                generation = latestEvents.get(creator).getGeneration() + 1;
+                generation = latestEvents.get(creator).eventDescriptor().generation() + 1;
             } else {
                 generation = 1;
             }
 
             birthRound += random.nextLong(0, 3) / 2;
 
-            final EventDescriptor selfParent = latestEvents.get(creator);
-            final EventDescriptor fingerprint =
-                    new EventDescriptor(randomHash(random), creator, generation, birthRound);
+            final EventDescriptorWrapper selfParent = latestEvents.get(creator);
+            final EventDescriptorWrapper fingerprint = new EventDescriptorWrapper(
+                    new EventDescriptor(randomHash(random).getBytes(), creator.id(), birthRound, generation));
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
             final Set<NodeId> desiredParents = new HashSet<>();
             final int maxParentCount = random.nextInt(nodeCount);
             for (int parentIndex = 0; parentIndex < maxParentCount; parentIndex++) {
-                final NodeId parent = addressBook.getNodeId(random.nextInt(nodeCount));
+                final NodeId parent = NodeId.of(
+                        roster.rosterEntries().get(random.nextInt(nodeCount)).nodeId());
 
                 // We are only trying to generate a random number of parents, the exact count is unimportant.
                 // So it doesn't matter if the actual number of parents is less than the number we requested.
@@ -110,12 +113,12 @@ class TipsetTrackerTests {
             }
 
             // Select the actual parents.
-            final List<EventDescriptor> parentFingerprints = new ArrayList<>(desiredParents.size());
+            final List<EventDescriptorWrapper> parentFingerprints = new ArrayList<>(desiredParents.size());
             if (selfParent != null) {
                 parentFingerprints.add(selfParent);
             }
             for (final NodeId parent : desiredParents) {
-                final EventDescriptor parentFingerprint = latestEvents.get(parent);
+                final EventDescriptorWrapper parentFingerprint = latestEvents.get(parent);
                 if (parentFingerprint != null) {
                     parentFingerprints.add(parentFingerprint);
                 }
@@ -126,24 +129,24 @@ class TipsetTrackerTests {
 
             // Now, reconstruct the tipset manually, and make sure it matches what we were expecting.
             final List<Tipset> parentTipsets = new ArrayList<>(parentFingerprints.size());
-            for (final EventDescriptor parentFingerprint : parentFingerprints) {
+            for (final EventDescriptorWrapper parentFingerprint : parentFingerprints) {
                 parentTipsets.add(expectedTipsets.get(parentFingerprint));
             }
 
             final Tipset expectedTipset;
             if (parentTipsets.isEmpty()) {
-                expectedTipset = new Tipset(addressBook).advance(creator, generation);
+                expectedTipset = new Tipset(roster).advance(creator, generation);
             } else {
                 expectedTipset = merge(parentTipsets).advance(creator, generation);
             }
 
             expectedTipsets.put(fingerprint, expectedTipset);
-            assertTipsetEquality(addressBook, expectedTipset, newTipset);
+            assertTipsetEquality(roster, expectedTipset, newTipset);
         }
 
         // At the very end, we shouldn't see any modified tipsets
-        for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
-            assertTipsetEquality(addressBook, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
+        for (final EventDescriptorWrapper fingerprint : expectedTipsets.keySet()) {
+            assertTipsetEquality(roster, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
         }
 
         // Slowly advance the ancient threshold, we should see tipsets disappear as we go.
@@ -152,15 +155,15 @@ class TipsetTrackerTests {
                 : EventConstants.FIRST_GENERATION;
         while (tracker.size() > 0) {
             ancientThreshold += random.nextInt(1, 5);
-            final NonAncientEventWindow nonAncientEventWindow =
-                    new NonAncientEventWindow(1, ancientThreshold, 1 /* ignored in this context */, ancientMode);
-            tracker.setNonAncientEventWindow(nonAncientEventWindow);
-            assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
-            for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
+            final EventWindow eventWindow =
+                    new EventWindow(1, ancientThreshold, 1 /* ignored in this context */, ancientMode);
+            tracker.setEventWindow(eventWindow);
+            assertEquals(eventWindow, tracker.getEventWindow());
+            for (final EventDescriptorWrapper fingerprint : expectedTipsets.keySet()) {
                 if (fingerprint.getAncientIndicator(ancientMode) < ancientThreshold) {
                     assertNull(tracker.getTipset(fingerprint));
                 } else {
-                    assertTipsetEquality(addressBook, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
+                    assertTipsetEquality(roster, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
                 }
             }
         }

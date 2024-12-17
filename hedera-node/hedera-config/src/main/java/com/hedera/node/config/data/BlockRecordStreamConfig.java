@@ -51,5 +51,4 @@ public record BlockRecordStreamConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean logEveryTransaction,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation, // NOT SURE
         @ConfigProperty(defaultValue = "256") @Min(1) @Max(4096) @NetworkProperty int numOfBlockHashesInState,
-        @ConfigProperty(defaultValue = "concurrent") @NetworkProperty
-                String streamFileProducer) {} // COULD BE NODE LOCAL PROPERTY OR NETWORK PROPERTY
+        @ConfigProperty(defaultValue = "concurrent") @NetworkProperty String streamFileProducer) {}

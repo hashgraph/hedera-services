@@ -1,2 +1,0 @@
-account:
-  key: {generateIfMissing: true, wordsLoc: treasury.words}

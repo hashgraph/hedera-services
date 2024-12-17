@@ -34,8 +34,8 @@ public abstract class FileStore {
     /**
      * Convert a {@link File} to a {@link FileMetadata}.
      *
-     * @param file The {@link File} to convert.
-     * @return The {@link FileMetadata} representation of the {@link File}.
+     * @param file The {@link File} to convert
+     * @return The {@link FileMetadata} representation of the {@link File}
      */
     protected static @NonNull FileMetadata fileMetaFrom(@NonNull final File file) {
         Objects.requireNonNull(file);

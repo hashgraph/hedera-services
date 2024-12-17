@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 
@@ -35,5 +36,6 @@ public interface SignatureVerifier {
      * 		the claimed public key used to generate that signature
      * @return true if the signature is valid
      */
-    boolean verifySignature(@NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey);
+    boolean verifySignature(
+            @NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey);
 }

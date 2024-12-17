@@ -32,6 +32,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -204,13 +205,14 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
         // On cache miss, check the data source. It *has* to be there.
         if (rec == null) {
             try {
-                rec = root.getDataSource().loadLeafRecord(path);
+                final VirtualLeafBytes leafBytes = root.getDataSource().loadLeafRecord(path);
                 // This should absolutely be impossible. We already checked to make sure the path falls
                 // within the firstLeafPath and lastLeafPath, and we already failed to find the leaf
                 // in the cache. It **MUST** be on disk, or we have a broken system.
-                if (rec == null) {
+                if (leafBytes == null) {
                     throw new IllegalStateException("Attempted to read from disk but couldn't find the leaf");
                 }
+                rec = leafBytes.toRecord(root.getKeySerializer(), root.getValueSerializer());
             } catch (final IOException ex) {
                 throw new RuntimeException("Failed to read a leaf record from the data source", ex);
             }

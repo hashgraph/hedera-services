@@ -42,7 +42,8 @@ import java.util.function.Supplier;
  * The logger is defined as a singleton.
  */
 public class EmergencyLoggerImpl implements EmergencyLogger {
-    private static class InstanceHolder {
+
+    private static final class InstanceHolder {
         /**
          * The singleton instance of the logger.
          */
@@ -94,7 +95,7 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
 
     private final Lock handleLock;
 
-    private final AtomicReference<FormattedLinePrinter> lineBasedFormat = new AtomicReference<>();
+    private final AtomicReference<FormattedLinePrinter> linePrinter = new AtomicReference<>();
 
     /**
      * Creates the singleton instance of the logger.
@@ -249,7 +250,9 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         if (printStream != null) {
             handleLock.lock();
             try {
-                getLineBasedFormat().print(printStream, logEvent);
+                final StringBuilder stringBuilder = new StringBuilder();
+                getLinePrinter().print(stringBuilder, logEvent);
+                printStream.print(stringBuilder);
             } finally {
                 handleLock.unlock();
             }
@@ -271,11 +274,15 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         }
     }
 
-    private FormattedLinePrinter getLineBasedFormat() {
-        if (lineBasedFormat.get() == null) {
-            lineBasedFormat.compareAndSet(null, new FormattedLinePrinter(false));
+    /**
+     * Gets with lazy initialization the field an instance of {@link FormattedLinePrinter}
+     * @return a {@link FormattedLinePrinter} instance
+     */
+    private @NonNull FormattedLinePrinter getLinePrinter() {
+        if (linePrinter.get() == null) {
+            linePrinter.compareAndSet(null, new FormattedLinePrinter(false));
         }
-        return lineBasedFormat.get();
+        return linePrinter.get();
     }
 
     /**

@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.service.file.impl;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.UPGRADE_DATA_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -56,16 +56,33 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
         writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));
     }
 
+    /**
+     * Adds a file to the store.
+     *
+     * @param file the file to add
+     */
     public void add(@NonNull final File file) {
         requireNonNull(file);
         writableUpgradeFileState.put(file.fileIdOrThrow(), file);
     }
 
+    /**
+     * Adds upgrade file to the store.
+     *
+     * @param fileID the file id
+     * @param content content file to add
+     */
     public void addUpgradeContent(@NonNull final FileID fileID, Bytes content) {
         final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
         upgradeState.add(new ProtoBytes(content));
     }
 
+    /**
+     * Appends bytes to the file.
+     *
+     * @param bytes the bytes to append
+     * @param fileID the file id
+     */
     public void append(@NonNull final Bytes bytes, @NonNull final FileID fileID) {
         requireNonNull(bytes);
         requireNonNull(fileID);
@@ -73,11 +90,17 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
         upgradeState.add(new ProtoBytes(bytes));
     }
 
-    @SuppressWarnings({"StatementWithEmptyBody"})
+    /**
+     * Resets the file contents.
+     *
+     * @param fileID the file id
+     */
+    @SuppressWarnings("StatementWithEmptyBody")
     public void resetFileContents(@NonNull final FileID fileID) {
         final WritableQueueState<ProtoBytes> upgradeState = getUpgradeState(fileID);
-        while (upgradeState.removeIf(TRUE_PREDICATE) != null)
-            ;
+        while (upgradeState.removeIf(TRUE_PREDICATE) != null) {
+            // no-op
+        }
     }
 
     private static class TruePredicate implements Predicate<ProtoBytes> {

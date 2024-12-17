@@ -21,11 +21,12 @@ import static com.swirlds.logging.legacy.LogMarker.NETWORK;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.legacy.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
-import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.Network;
@@ -33,6 +34,7 @@ import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -45,7 +47,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,9 +60,7 @@ public class OutboundConnectionCreator {
     private final SocketConfig socketConfig;
     private final ConnectionTracker connectionTracker;
     private final SocketFactory socketFactory;
-    private final AddressBook addressBook;
-    private final boolean doVersionCheck;
-    private final SoftwareVersion softwareVersion;
+    private final Roster roster;
     private final PlatformContext platformContext;
 
     public OutboundConnectionCreator(
@@ -69,16 +68,12 @@ public class OutboundConnectionCreator {
             @NonNull final NodeId selfId,
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final SocketFactory socketFactory,
-            @NonNull final AddressBook addressBook,
-            final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion) {
+            @NonNull final Roster roster) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.socketFactory = Objects.requireNonNull(socketFactory);
-        this.addressBook = Objects.requireNonNull(addressBook);
-        this.doVersionCheck = doVersionCheck;
-        this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        this.roster = Objects.requireNonNull(roster);
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
     }
 
@@ -90,10 +85,17 @@ public class OutboundConnectionCreator {
      * @return the new connection, or a connection that is not connected if it couldn't connect on the first try
      */
     public Connection createConnection(final NodeId otherId) {
-        final Address other = addressBook.getAddress(otherId);
-        final Address ownAddress = addressBook.getAddress(selfId);
-        final int port = other.getConnectPort(ownAddress);
-        final String hostname = getConnectHostname(ownAddress, other);
+        final RosterEntry other = RosterUtils.getRosterEntry(roster, otherId.id());
+        final RosterEntry ownRosterEntry = RosterUtils.getRosterEntry(roster, selfId.id());
+
+        // NOTE: we always connect to the first ServiceEndpoint, which for now represents a legacy "external" address
+        // (which may change in the future as new Rosters get installed).
+        // There's no longer a distinction between "internal" and "external" endpoints in Roster,
+        // and it would be complex and error-prone to build logic to guess which one is which.
+        // Ideally, this code should use a randomized and/or round-robin approach to choose an appropriate endpoint.
+        // For now, we default to the very first one at all times.
+        final int port = RosterUtils.fetchPort(other, 0);
+        final String hostname = RosterUtils.fetchHostname(other, 0);
 
         Socket clientSocket = null;
         SyncOutputStream dos = null;
@@ -107,26 +109,6 @@ public class OutboundConnectionCreator {
             dis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
 
-            if (doVersionCheck) {
-                dos.writeSerializable(softwareVersion, true);
-                dos.flush();
-
-                final SoftwareVersion otherVersion = dis.readSerializable(Set.of(softwareVersion.getClassId()));
-                if (otherVersion == null
-                        || otherVersion.getClass() != softwareVersion.getClass()
-                        || otherVersion.compareTo(softwareVersion) != 0) {
-                    throw new IOException("This node has software version " + softwareVersion
-                            + " but the other node has software version " + otherVersion + ". Closing connection.");
-                }
-            }
-
-            dos.writeUTF(addressBook.getAddress(selfId).getNickname());
-            dos.flush();
-
-            final int ack = dis.readInt(); // read the ACK for creating the connection
-            if (ack != ByteConstants.COMM_CONNECT) { // this is an ACK for creating the connection
-                throw new ConnectException("ack is not " + ByteConstants.COMM_CONNECT + ", it is " + ack);
-            }
             logger.debug(NETWORK.getMarker(), "`connect` : finished, {} connected to {}", selfId, otherId);
 
             return SocketConnection.create(
@@ -149,7 +131,7 @@ public class OutboundConnectionCreator {
         } catch (final IOException e) {
             NetworkUtils.close(clientSocket, dis, dos);
             // log the SSL connection exception which is caused by socket exceptions as warning.
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "{} failed to connect to {} {}",
@@ -162,43 +144,5 @@ public class OutboundConnectionCreator {
         }
 
         return NotConnectedConnection.getSingleton();
-    }
-
-    /**
-     * Find the best way to connect <code>from</code> address <code>to</code> address
-     *
-     * @param from the address that needs to connect
-     * @param to   the address to connect to
-     * @return the IP address to connect to
-     */
-    private String getConnectHostname(final Address from, final Address to) {
-        final boolean fromIsLocal = isLocal(from);
-        final boolean toIsLocal = isLocal(to);
-        if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
-            return LOCALHOST;
-        } else if (to.isLocalTo(from)) {
-            return to.getHostnameInternal();
-        } else {
-            return to.getHostnameExternal();
-        }
-    }
-
-    /**
-     * Check if the address is local to the machine.
-     *
-     * @param address the address to check
-     * @return true if the address is local to the machine, false otherwise
-     * @throws IllegalStateException if the locality of the address cannot be determined.
-     */
-    public static boolean isLocal(@NonNull final Address address) {
-        Objects.requireNonNull(address, "The address must not be null.");
-        try {
-            return Network.isOwn(InetAddress.getByName(address.getHostnameInternal()));
-        } catch (final UnknownHostException e) {
-            throw new IllegalStateException(
-                    "Not able to determine locality of address [%s] for node [%s]"
-                            .formatted(address.getHostnameInternal(), address.getNodeId()),
-                    e);
-        }
     }
 }

@@ -16,17 +16,24 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * Contains a reserved signed state, and the consensus round which caused the state to be created
  *
  * @param reservedSignedState the state
  * @param round               the round that caused the state to be created
+ * @param systemTransactions  the system transactions that were included in the round
  */
-public record StateAndRound(@NonNull ReservedSignedState reservedSignedState, @NonNull ConsensusRound round) {
+public record StateAndRound(
+        @NonNull ReservedSignedState reservedSignedState,
+        @NonNull ConsensusRound round,
+        @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions) {
     /**
      * Make an additional reservation on the reserved signed state
      *
@@ -35,6 +42,6 @@ public record StateAndRound(@NonNull ReservedSignedState reservedSignedState, @N
      */
     @NonNull
     public StateAndRound makeAdditionalReservation(@NonNull final String reservationReason) {
-        return new StateAndRound(reservedSignedState.getAndReserve(reservationReason), round);
+        return new StateAndRound(reservedSignedState.getAndReserve(reservationReason), round, systemTransactions);
     }
 }

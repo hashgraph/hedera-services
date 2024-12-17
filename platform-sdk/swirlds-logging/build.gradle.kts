@@ -15,17 +15,27 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.java-test-fixtures")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
+    id("com.hedera.gradle.feature.test-time-consuming")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
+}
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-deprecation,-exports,-removal,-varargs")
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
+    requires("org.apache.commons.lang3")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.logging.test.fixtures")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
@@ -34,11 +44,23 @@ testModuleInfo {
     requires("jakarta.inject")
 }
 
+timingSensitiveModuleInfo {
+    requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.logging.test.fixtures")
+    requires("jakarta.inject")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    runtimeOnly("com.swirlds.common.test.fixtures")
+}
+
 jmhModuleInfo {
     requires("com.swirlds.logging")
     requires("org.apache.logging.log4j")
     requires("com.swirlds.config.api")
     runtimeOnly("com.swirlds.config.impl")
+    requires("com.swirlds.config.extensions")
+    runtimeOnly("com.swirlds.logging.log4j.appender")
     requires("org.apache.logging.log4j.core")
     requires("com.github.spotbugs.annotations")
     requires("jmh.core")

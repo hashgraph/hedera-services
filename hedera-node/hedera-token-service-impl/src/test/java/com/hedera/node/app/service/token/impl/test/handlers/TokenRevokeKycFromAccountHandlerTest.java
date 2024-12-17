@@ -19,30 +19,14 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
-import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
-import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TXN_BODY;
-import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
@@ -67,6 +51,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -83,45 +68,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenRevokeKycFromAccountHandlerTest {
 
-    private static final AccountID PBJ_PAYER_ID = protoToPbj(asAccount("0.0.3"), AccountID.class);
+    private static final AccountID PBJ_PAYER_ID =
+            AccountID.newBuilder().accountNum(3).build();
     private static final TokenID TOKEN_10 = TokenID.newBuilder().tokenNum(10).build();
     private static final AccountID ACCOUNT_100 =
             AccountID.newBuilder().accountNum(100).build();
 
     private ReadableAccountStore accountStore;
-    private ReadableTokenStore tokenStore;
     private TokenRevokeKycFromAccountHandler subject;
 
     @BeforeEach
     void setUp() {
         accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
-        tokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         subject = new TokenRevokeKycFromAccountHandler();
     }
 
     @Nested
     class PreHandleTests {
-        @Test
-        void tokenRevokeKycWithExtant() throws PreCheckException {
-            final var txn = txnFrom(VALID_REVOKE_WITH_EXTANT_TOKEN);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            subject.preHandle(context);
-
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
-            basicContextAssertions(context, 1);
-        }
-
-        @Test
-        void tokenRevokeMissingTxnBody() throws PreCheckException {
-            final var txn = txnFrom(REVOKE_WITH_MISSING_TXN_BODY);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            assertThrows(NullPointerException.class, () -> subject.preHandle(context));
-        }
-
         @Test
         @DisplayName("When op token ID is null, tokenOrThrow throws an exception")
         void nullTokenIdThrowsException() throws PreCheckException {
@@ -151,28 +114,6 @@ class TokenRevokeKycFromAccountHandlerTest {
             final var context = new FakePreHandleContext(accountStore, txn);
             assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
         }
-
-        @Test
-        void tokenRevokeKycWithInvalidToken() throws PreCheckException {
-            final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertTrue(context.requiredNonPayerKeys().isEmpty());
-        }
-
-        @Test
-        void tokenRevokeKycWithoutKyc() throws PreCheckException {
-            final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), TOKEN_HAS_NO_KYC_KEY);
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertTrue(context.requiredNonPayerKeys().isEmpty());
-        }
     }
 
     @Nested
@@ -193,6 +134,9 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Mock
         private ExpiryValidator expiryValidator;
 
+        @Mock(strictness = LENIENT)
+        private StoreFactory storeFactory;
+
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
@@ -206,9 +150,10 @@ class TokenRevokeKycFromAccountHandlerTest {
 
         @BeforeEach
         void setUp() {
-            given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
-            given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-            given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(handleContext.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
             given(handleContext.expiryValidator()).willReturn(expiryValidator);
         }
 

@@ -19,20 +19,27 @@ package com.swirlds.platform.components;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Controls which signed states should be written to disk based on input from other components
+ * Controls which signed states should be written to disk based on input from other components.
+ * <p>
+ * This is intentionally split out of the component that actually saves the state. Saving the state can take a long
+ * time, and we don't want the queue of states waiting to be handled by that component to grow large while we are
+ * waiting to write a state. It is much better simply not to put states into that component's queue if we don't want to
+ * write them to disk.
  */
 public interface SavedStateController {
     /**
      * Determine if a signed state should be written to disk. If the state should be written, the state will be marked
      * and then written to disk outside the scope of this class.
      *
-     * @param reservedSignedState the signed state in question
+     * @param stateAndRound the state in question
      */
     @InputWireLabel("state to mark")
-    void markSavedState(@NonNull ReservedSignedState reservedSignedState);
+    @NonNull
+    StateAndRound markSavedState(@NonNull StateAndRound stateAndRound);
 
     /**
      * Notifies the controller that a signed state was received from another node during reconnect. The controller saves

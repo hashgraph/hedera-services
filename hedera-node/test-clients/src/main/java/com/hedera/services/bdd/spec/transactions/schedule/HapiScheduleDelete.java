@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -80,11 +79,6 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::deleteSchedule;
     }
 
     @Override

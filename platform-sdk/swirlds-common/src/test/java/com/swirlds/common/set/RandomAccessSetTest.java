@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.test.fixtures.set.Hotspot;
 import com.swirlds.common.test.fixtures.set.HotspotHashSet;
 import com.swirlds.common.test.fixtures.set.RandomAccessHashSet;
@@ -114,7 +113,6 @@ class RandomAccessSetTest {
      */
     @Test
     @Tag(TestComponentTags.TESTING)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Randomized Hotspot Set Test")
     void randomizedHotspotSetTest() {
 

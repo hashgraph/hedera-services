@@ -19,14 +19,17 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.wiring.DoneStreamingPcesTrigger;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -46,34 +49,43 @@ public class PcesReplayer {
 
     private final Time time;
 
-    private final StandardOutputWire<GossipEvent> eventOutputWire;
+    private final StandardOutputWire<PlatformEvent> eventOutputWire;
 
     private final Runnable flushIntake;
     private final Runnable flushTransactionHandling;
 
     private final Supplier<ReservedSignedState> latestImmutableState;
+    private final Supplier<Boolean> isSystemHealthy;
+
+    private final PcesConfig config;
 
     /**
      * Constructor
      *
-     * @param time                     a source of time
+     * @param context                  the platform context
      * @param eventOutputWire          the wire to put events on, to be replayed
      * @param flushIntake              a runnable that flushes the intake pipeline
      * @param flushTransactionHandling a runnable that flushes the transaction handling pipeline
      * @param latestImmutableState     a supplier of the latest immutable state
+     * @param isSystemHealthy          a supplier that returns true if the system is healthy and false if the system is
+     *                                 overwhelmed
      */
     public PcesReplayer(
-            final @NonNull Time time,
-            final @NonNull StandardOutputWire<GossipEvent> eventOutputWire,
+            final @NonNull PlatformContext context,
+            final @NonNull StandardOutputWire<PlatformEvent> eventOutputWire,
             final @NonNull Runnable flushIntake,
             final @NonNull Runnable flushTransactionHandling,
-            final @NonNull Supplier<ReservedSignedState> latestImmutableState) {
+            final @NonNull Supplier<ReservedSignedState> latestImmutableState,
+            final @NonNull Supplier<Boolean> isSystemHealthy) {
 
-        this.time = Objects.requireNonNull(time);
+        this.time = context.getTime();
         this.eventOutputWire = Objects.requireNonNull(eventOutputWire);
         this.flushIntake = Objects.requireNonNull(flushIntake);
         this.flushTransactionHandling = Objects.requireNonNull(flushTransactionHandling);
         this.latestImmutableState = Objects.requireNonNull(latestImmutableState);
+        this.isSystemHealthy = Objects.requireNonNull(isSystemHealthy);
+
+        this.config = context.getConfiguration().getConfigData(PcesConfig.class);
     }
 
     /**
@@ -140,7 +152,7 @@ public class PcesReplayer {
      * @return a trigger object indicating when the replay is complete
      */
     @NonNull
-    public DoneStreamingPcesTrigger replayPces(@NonNull final IOIterator<GossipEvent> eventIterator) {
+    public NoInput replayPces(@NonNull final IOIterator<PlatformEvent> eventIterator) {
         Objects.requireNonNull(eventIterator);
 
         final Instant start = time.now();
@@ -156,14 +168,24 @@ public class PcesReplayer {
             }
         }
 
+        final RateLimiter rateLimiter = new RateLimiter(time, config.maxEventReplayFrequency());
+
         int eventCount = 0;
         int transactionCount = 0;
         try {
             while (eventIterator.hasNext()) {
-                final GossipEvent event = eventIterator.next();
+                // If the system is not keeping up with the rate at which we are replaying PCES, we need to wait
+                // until it catches up before we can continue.
+                waitUntilHealthy();
+
+                if (config.limitReplayFrequency() && !rateLimiter.requestAndTrigger()) {
+                    continue;
+                }
+
+                final PlatformEvent event = eventIterator.next();
 
                 eventCount++;
-                transactionCount += event.getHashedData().getTransactions().length;
+                transactionCount += event.getTransactionCount();
 
                 eventOutputWire.forward(event);
             }
@@ -178,6 +200,21 @@ public class PcesReplayer {
 
         logReplayInfo(timestampBeforeReplay, roundBeforeReplay, eventCount, transactionCount, elapsedTime);
 
-        return new DoneStreamingPcesTrigger();
+        return NoInput.getInstance();
+    }
+
+    /**
+     * Blocks until the system is in a healthy state. An unhealthy state is caused by the backlog of work growing too
+     * large.
+     */
+    private void waitUntilHealthy() {
+        while (!isSystemHealthy.get()) {
+            // wait until the system is healthy
+            try {
+                MILLISECONDS.sleep(100);
+            } catch (final InterruptedException e) {
+                throw new RuntimeException("interrupted while replaying PCES", e);
+            }
+        }
     }
 }

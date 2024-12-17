@@ -17,43 +17,52 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractCreateResourceUsage;
-import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CREATE}.
  */
 @Singleton
-public class ContractCreateHandler implements TransactionHandler {
+public class ContractCreateHandler extends AbstractContractTransactionHandler {
     private static final AccountID REMOVE_AUTO_RENEW_ACCOUNT_SENTINEL =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(0).build();
-    private final Provider<TransactionComponent.Factory> provider;
 
+    /**
+     * Constructs a {@link ContractCreateHandler} with the given {@link Provider} and {@link GasCalculator}.
+     *
+     * @param provider the provider to be used
+     * @param gasCalculator the gas calculator to be used
+     */
     @Inject
-    public ContractCreateHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
-        this.provider = requireNonNull(provider);
+    public ContractCreateHandler(
+            @NonNull final Provider<TransactionComponent.Factory> provider,
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final ContractServiceComponent component) {
+        super(provider, gasCalculator, component);
     }
 
     @Override
@@ -65,9 +74,22 @@ public class ContractCreateHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
+        outcome.addCreateDetailsTo(context.savepointStack().getBaseBuilder(ContractCreateStreamBuilder.class));
 
         throwIfUnsuccessful(outcome.status());
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        try {
+            final var op = txn.contractCreateInstanceOrThrow();
+
+            final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.wrap(new byte[0]), true);
+            validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+        } catch (@NonNull final Exception e) {
+            bumpExceptionMetrics(CONTRACT_CREATE, e);
+            throw e;
+        }
     }
 
     @Override
@@ -95,13 +117,11 @@ public class ContractCreateHandler implements TransactionHandler {
         }
     }
 
-    @NonNull
     @Override
-    public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        requireNonNull(feeContext);
-        final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractCreateResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+    protected /*abstract*/ @NonNull FeeData getFeeMatrices(
+            @NonNull final SmartContractFeeBuilder usageEstimator,
+            @NonNull final com.hederahashgraph.api.proto.java.TransactionBody txBody,
+            @NonNull final SigValueObj sigValObj) {
+        return usageEstimator.getContractCreateTxFeeMatrices(txBody, sigValObj);
     }
 }

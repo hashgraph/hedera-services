@@ -22,6 +22,11 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
 import com.swirlds.virtualmap.internal.merkle.AbstractHashListener;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -63,14 +68,29 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
      * 		The last leaf path. Must be a valid path.
      * @param dataSource
      * 		The data source. Cannot be null.
+     * @param reconnectFlushInterval
+     *      The number of nodes to hash before they are flushed to disk.
+     * @param statistics
+     *      Virtual map stats. Cannot be null.
      */
     public ReconnectHashListener(
             final long firstLeafPath,
             final long lastLeafPath,
-            final VirtualDataSource<K, V> dataSource,
-            final ReconnectNodeRemover<K, V> nodeRemover) {
-        super(firstLeafPath, lastLeafPath, dataSource);
-        this.nodeRemover = nodeRemover;
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            @NonNull final VirtualDataSource dataSource,
+            final int reconnectFlushInterval,
+            @NonNull final VirtualMapStatistics statistics,
+            @NonNull final ReconnectNodeRemover<K, V> nodeRemover) {
+        super(
+                firstLeafPath,
+                lastLeafPath,
+                keySerializer,
+                valueSerializer,
+                dataSource,
+                reconnectFlushInterval,
+                statistics);
+        this.nodeRemover = Objects.requireNonNull(nodeRemover);
     }
 
     /**

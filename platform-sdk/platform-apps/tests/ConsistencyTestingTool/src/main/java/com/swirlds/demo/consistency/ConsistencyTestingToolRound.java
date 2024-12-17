@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Represents a round in the ConsistencyTestingTool
@@ -35,6 +37,8 @@ import java.util.Objects;
  */
 public record ConsistencyTestingToolRound(long roundNumber, long currentState, @NonNull List<Long> transactionsContents)
         implements Comparable<ConsistencyTestingToolRound> {
+
+    private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolRound.class);
 
     private static final String ROUND_NUMBER_STRING = "Round Number: ";
     private static final String CURRENT_STATE_STRING = "Current State: ";
@@ -55,7 +59,13 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
 
         final List<Long> transactionContents = new ArrayList<>();
 
-        round.forEachTransaction(transaction -> transactionContents.add(byteArrayToLong(transaction.getContents(), 0)));
+        round.forEachTransaction(transaction -> {
+            if (transaction.isSystem()) {
+                return;
+            }
+            transactionContents.add(
+                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0));
+        });
 
         return new ConsistencyTestingToolRound(round.getRoundNum(), currentState, transactionContents);
     }

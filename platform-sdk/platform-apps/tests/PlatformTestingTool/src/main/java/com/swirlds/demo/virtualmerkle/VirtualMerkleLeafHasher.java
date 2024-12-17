@@ -18,17 +18,20 @@ package com.swirlds.demo.virtualmerkle;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
-import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapValue;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
@@ -36,9 +39,11 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -55,6 +60,13 @@ import java.util.stream.Stream;
  * Validator to read a data source and all its data and check the complete data set is valid.
  */
 public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValue> {
+
+    private static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(MerkleDbConfig.class)
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(TemporaryFileConfig.class)
+            .withConfigDataType(StateCommonConfig.class)
+            .build();
 
     /** The data source we are validating */
     private final VirtualMap<K, V> virtualMap;
@@ -109,7 +121,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             if (prevHash != null) {
                 // add Previous Hash
-                out.write(prevHash.getValue());
+                prevHash.getBytes().writeTo(out);
             }
             // add leaf key
             leaf.getKey().serialize(out);
@@ -162,7 +174,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
         // different file system than the file(s) used to deserialize the maps. In such case, builders will fail
         // to create hard file links when constructing new data sources. To fix it, let's override the default
         // temp location to the same file system as the files to load
-        TemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
 
         for (final Path roundFolder : roundsFolders) {
             // reset the default instance path to force creation of a new MerkleDB instance
@@ -173,7 +185,8 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             Hash byteCodeHash;
 
             try {
-                final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap = new VirtualMap<>();
+                final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> accountsMap =
+                        new VirtualMap<>(CONFIGURATION);
                 accountsMap.loadFromFile(roundFolder.resolve(accountsName));
                 final VirtualMerkleLeafHasher<AccountVirtualMapKey, AccountVirtualMapValue> accountsHasher =
                         new VirtualMerkleLeafHasher<>(accountsMap);
@@ -183,7 +196,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             }
 
             try {
-                final VirtualMap<SmartContractMapKey, SmartContractMapValue> scMap = new VirtualMap<>();
+                final VirtualMap<SmartContractMapKey, SmartContractMapValue> scMap = new VirtualMap<>(CONFIGURATION);
                 scMap.loadFromFile(roundFolder.resolve(scName));
                 final VirtualMerkleLeafHasher<SmartContractMapKey, SmartContractMapValue> scHasher =
                         new VirtualMerkleLeafHasher<>(scMap);
@@ -194,7 +207,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             try {
                 final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> byteCodeMap =
-                        new VirtualMap<>();
+                        new VirtualMap<>(CONFIGURATION);
                 byteCodeMap.loadFromFile(roundFolder.resolve(scByteCodeName));
                 final VirtualMerkleLeafHasher<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
                         byteCodeHasher = new VirtualMerkleLeafHasher<>(byteCodeMap);
@@ -211,19 +224,19 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
                 // add content to json
                 if (accountsHash != null) {
-                    rootNode.put("accounts", hex(accountsHash.getValue()));
+                    rootNode.put("accounts", accountsHash.toHex());
                 } else {
                     rootNode.put("accounts", "empty");
                 }
 
                 if (scHash != null) {
-                    rootNode.put("sc", hex(scHash.getValue()));
+                    rootNode.put("sc", scHash.toHex());
                 } else {
                     rootNode.put("sc", "empty");
                 }
 
                 if (byteCodeHash != null) {
-                    rootNode.put("byteCode", hex(byteCodeHash.getValue()));
+                    rootNode.put("byteCode", byteCodeHash.toHex());
                 } else {
                     rootNode.put("byteCode", "empty");
                 }

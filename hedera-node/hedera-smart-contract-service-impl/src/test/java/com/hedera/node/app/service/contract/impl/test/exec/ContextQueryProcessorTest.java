@@ -17,17 +17,17 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.processorsForAllCurrentEvmVersions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.service.contract.impl.exec.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -73,7 +73,7 @@ class ContextQueryProcessorTest {
 
     @Test
     void callsComponentInfraAsExpectedForValidQuery() {
-        final var processors = Map.of(VERSION_046, processor);
+        final var processors = processorsForAllCurrentEvmVersions(processor);
 
         final var subject = new ContextQueryProcessor(
                 context,

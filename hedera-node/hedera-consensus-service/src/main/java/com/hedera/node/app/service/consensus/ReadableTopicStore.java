@@ -20,7 +20,6 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -38,14 +37,11 @@ public interface ReadableTopicStore {
      * @return topic's metadata
      */
     @Nullable
-    public Topic getTopic(@NonNull final TopicID id);
-
-    @NonNull
-    Optional<Topic> getTopicLeaf(@NonNull TopicID id);
+    Topic getTopic(@NonNull TopicID id);
 
     /**
      * Returns the number of topics in the state.
-     * @return the number of topics in the state.
+     * @return the number of topics in the state
      */
-    public long sizeOfState();
+    long sizeOfState();
 }

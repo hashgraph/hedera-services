@@ -26,16 +26,18 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
@@ -44,7 +46,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private final Random r = new Random(38582L);
 
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
-    private static final int STAKED_CREATIONS = 50;
+    private static final int STAKED_CREATIONS = 0;
 
     public static void main(String... args) {
         parseArgs(args);
@@ -54,11 +56,11 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runCryptoTransfers());
     }
 
-    protected HapiSpec runCryptoTransfers() {
+    final Stream<DynamicTest> runCryptoTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
         Supplier<HapiSpecOperation[]> transferBurst = () -> {
@@ -79,7 +81,6 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                         .noLogging()
                         .payingWith(sender)
                         .signedBy(GENESIS)
-                        .suppressStats(true)
                         .fee(100_000_000L)
                         .hasKnownStatusFrom(
                                 SUCCESS,
@@ -115,7 +116,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .key(GENESIS)
                                 .logging(),
                         withOpContext((spec, opLog) -> {
-                            List<HapiSpecOperation> ops = new ArrayList<>();
+                            List<SpecOperation> ops = new ArrayList<>();
                             var stakedNodeId = settings.getNodeToStake();
                             for (int i = 0; i < STAKED_CREATIONS; i++) {
                                 var stakedAccount = "stakedAccount" + i;

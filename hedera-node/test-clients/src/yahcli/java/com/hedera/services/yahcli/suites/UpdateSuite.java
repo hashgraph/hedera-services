@@ -25,8 +25,10 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class UpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateSuite.class);
@@ -51,11 +53,11 @@ public class UpdateSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(doUpdate());
     }
 
-    private HapiSpec doUpdate() {
+    final Stream<DynamicTest> doUpdate() {
         Key newList = Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addAllKeys(keys))
                 .build();

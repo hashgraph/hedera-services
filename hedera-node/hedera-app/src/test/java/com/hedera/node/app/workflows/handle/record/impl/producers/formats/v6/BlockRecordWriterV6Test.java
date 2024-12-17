@@ -22,6 +22,7 @@ import static com.hedera.node.app.records.RecordTestData.SIGNER;
 import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_OBJ;
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
 import static com.hedera.node.app.records.RecordTestData.VERSION;
+import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -86,7 +87,6 @@ final class BlockRecordWriterV6Test extends AppTestBase {
 
         appBuilder = appBuilder()
                 .withHapiVersion(VERSION)
-                .withSoftwareVersion(VERSION)
                 .withConfigValue("hedera.recordStream.enabled", true)
                 .withConfigValue("hedera.recordStream.logDir", tempDir.toString())
                 .withConfigValue("hedera.recordStream.sidecarDir", "sidecar")
@@ -101,10 +101,11 @@ final class BlockRecordWriterV6Test extends AppTestBase {
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", compress)
                 .build();
         config = app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
-        hapiVersion = app.softwareVersion().getHapiVersion();
+        hapiVersion = app.hapiVersion();
         writer = new BlockRecordWriterV6(config, selfNodeInfo, SIGNER, fileSystem);
         final var ext = compress ? ".rcd.gz" : ".rcd";
-        final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
+        final var recordDir =
+                fileSystem.getPath(config.logDir(), "record" + asAccountString(selfNodeInfo.accountId()) + "/");
         recordPath = recordDir.resolve("2018-08-24T16_25_42.000000890Z" + ext);
         sigPath = recordDir.resolve("2018-08-24T16_25_42.000000890Z.rcd_sig");
     }
@@ -167,7 +168,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
         void recordDirectoryCouldNotBeCreated() throws IOException {
             // Given a "logDir" in the config that points not to a directory, but to a pre-existing FILE (!!!)
             final var config = buildAndGetConfig();
-            final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
+            final var recordDir =
+                    fileSystem.getPath(config.logDir(), "record" + asAccountString(selfNodeInfo.accountId()) + "/");
             Files.createDirectories(recordDir.getParent());
             Files.createFile(recordDir);
 
@@ -217,8 +219,9 @@ final class BlockRecordWriterV6Test extends AppTestBase {
             // Given a configuration and a pre-existing record directory
             app = appBuilder.build();
             config = app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
-            hapiVersion = app.softwareVersion().getHapiVersion();
-            final var recordDir = fileSystem.getPath(config.logDir(), "record" + selfNodeInfo.memo() + "/");
+            hapiVersion = app.hapiVersion();
+            final var recordDir =
+                    fileSystem.getPath(config.logDir(), "record" + asAccountString(selfNodeInfo.accountId()) + "/");
             Files.createDirectories(recordDir);
 
             // When we create a new writer and initialize it
@@ -339,7 +342,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
             writer.close(endRunningHash);
 
             // read written file and validate hashes
-            final var readRecordStreamFile = BlockRecordReaderV6.read(recordPath);
+            final var readRecordStreamFile =
+                    com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordReaderV6.read(recordPath);
             assertThat(readRecordStreamFile).isNotNull();
             assertThat(readRecordStreamFile.hapiProtoVersion()).isEqualTo(VERSION);
             assertThat(readRecordStreamFile.blockNumber()).isEqualTo(BLOCK_NUM);
@@ -353,7 +357,8 @@ final class BlockRecordWriterV6Test extends AppTestBase {
                 assertThat(recordStreamItem.record()).isEqualTo(singleTransactionRecord.transactionRecord());
             }
             assertThat(readRecordStreamFile.endObjectRunningHash()).isEqualTo(endRunningHash);
-            BlockRecordReaderV6.validateHashes(readRecordStreamFile);
+            com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordReaderV6.validateHashes(
+                    readRecordStreamFile);
 
             // Check that the signature file was created.
             assertThat(Files.exists(sigPath)).isTrue();
@@ -512,8 +517,10 @@ final class BlockRecordWriterV6Test extends AppTestBase {
 
             final var logCaptor = new LogCaptor(LogManager.getLogger(BlockRecordWriterV6.class));
             assertThatThrownBy(() -> writer.close(ENDING_RUNNING_HASH_OBJ)).isInstanceOf(UncheckedIOException.class);
-            assertThat(logCaptor.warnLogs()).hasSize(1);
-            assertThat(logCaptor.warnLogs()).allMatch(msg -> msg.contains("Error closing record file"));
+            assertThat(logCaptor.warnLogs()).hasSize(2);
+            assertThat(logCaptor.warnLogs())
+                    .matches(logs -> logs.getFirst().contains("Error closing sidecar file")
+                            && logs.getLast().contains("Error closing record file"));
         }
     }
 }

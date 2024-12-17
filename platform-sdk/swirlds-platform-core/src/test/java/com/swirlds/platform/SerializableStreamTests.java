@@ -31,11 +31,9 @@ import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SelfSerializableExample;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.platform.system.transaction.Transaction;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -647,38 +645,6 @@ public class SerializableStreamTests {
 
     @Test
     @Tag(TestComponentTags.IO)
-    @DisplayName("serializedLengthEmptyArray")
-    void serializedLengthEmptyArray() throws IOException {
-        Transaction[] transactions = new Transaction[0];
-        final int length = SerializableDataOutputStream.getSerializedLength(transactions, true, false);
-
-        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                dos.writeSerializableArray(transactions, true, false);
-                checkExpectedSize(dos.size(), length);
-            }
-        }
-    }
-
-    @Test
-    @Tag(TestComponentTags.IO)
-    @DisplayName("serializedLengthArrayWithNullElement")
-    void serializedLengthArrayWithNullElement() throws IOException {
-        Transaction[] transactions = TransactionUtils.randomSwirldTransactions(1234321, 2);
-        transactions[1] = null;
-
-        final int length = SerializableDataOutputStream.getSerializedLength(transactions, true, false);
-
-        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                dos.writeSerializableArray(transactions, true, false);
-                checkExpectedSize(dos.size(), length);
-            }
-        }
-    }
-
-    @Test
-    @Tag(TestComponentTags.IO)
     @DisplayName("serializedLengthNullArray")
     void serializedLengthNullArray() throws IOException {
         final int length = SerializableDataOutputStream.getSerializedLength(null, true, false);
@@ -686,76 +652,6 @@ public class SerializableStreamTests {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
                 dos.writeSerializableArray(null, true, false);
-                checkExpectedSize(dos.size(), length);
-            }
-        }
-    }
-
-    @Tag(TestComponentTags.IO)
-    @DisplayName("serializedSingleInstance")
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 10, 64, 100})
-    void serializedSingleInstance(int tranAmount) throws IOException {
-        final Transaction[] randomTransactions = TransactionUtils.randomSwirldTransactions(1234321, tranAmount);
-
-        for (Transaction tran : randomTransactions) {
-            try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-                try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                    // write a single instance to stream, the version info is always written
-                    final int length = SerializableDataOutputStream.getInstanceSerializedLength(tran, true, true);
-                    dos.writeSerializable(tran, true);
-                    checkExpectedSize(dos.size(), length);
-                }
-            }
-        }
-
-        for (Transaction tran : randomTransactions) {
-            try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-                try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                    // write a single instance to stream, the version info is always written
-                    final int length = SerializableDataOutputStream.getInstanceSerializedLength(tran, true, false);
-                    dos.writeSerializable(tran, false);
-                    checkExpectedSize(dos.size(), length);
-                }
-            }
-        }
-    }
-
-    @Tag(TestComponentTags.IO)
-    @DisplayName("serializedLengthArraySameClass")
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 10, 64, 100})
-    void serializedLengthArraySameClass(int tranAmount) throws IOException {
-        Transaction[] transactions = TransactionUtils.randomSwirldTransactions(1234321, tranAmount);
-
-        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                final int length = SerializableDataOutputStream.getSerializedLength(transactions, true, true);
-                dos.writeSerializableArray(transactions, true, true);
-                checkExpectedSize(dos.size(), length);
-            }
-        }
-
-        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                final int length = SerializableDataOutputStream.getSerializedLength(transactions, false, true);
-                dos.writeSerializableArray(transactions, false, true);
-                checkExpectedSize(dos.size(), length);
-            }
-        }
-    }
-
-    @Tag(TestComponentTags.IO)
-    @DisplayName("serializedLengthArrayDiffClass")
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 10, 64, 100})
-    void serializedLengthArrayDiffClass(int tranAmount) throws IOException {
-        Transaction[] randomTransactions = TransactionUtils.randomMixedTransactions(new Random(), tranAmount);
-
-        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (final SerializableDataOutputStream dos = new SerializableDataOutputStream(bos)) {
-                final int length = SerializableDataOutputStream.getSerializedLength(randomTransactions, true, false);
-                dos.writeSerializableArray(randomTransactions, true, false);
                 checkExpectedSize(dos.size(), length);
             }
         }

@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.service.file.impl;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -59,6 +59,12 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
         return file == null ? null : FileStore.fileMetaFrom(file);
     }
 
+    /**
+     * Returns the file leaf for the given file id.
+     *
+     * @param id the file id
+     * @return the file for the given file id
+     */
     public @Nullable File getFileLeaf(@NonNull FileID id) {
         return fileState.get(id);
     }
@@ -66,7 +72,7 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
     /**
      * Returns the number of files in the state.
      *
-     * @return the number of files in the state.
+     * @return the number of files in the state
      */
     public long sizeOfState() {
         return fileState.size();

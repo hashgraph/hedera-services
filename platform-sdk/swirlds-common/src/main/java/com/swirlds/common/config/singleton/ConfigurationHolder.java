@@ -16,12 +16,10 @@
 
 package com.swirlds.common.config.singleton;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -52,9 +50,8 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     public void reset() {
-        this.configuration = ConfigUtils.scanAndRegisterAllConfigTypes(
-                        ConfigurationBuilder.create(), Set.of("com.swirlds"))
-                .build();
+        this.configuration =
+                ConfigurationBuilder.create().autoDiscoverExtensions().build();
     }
 
     /**

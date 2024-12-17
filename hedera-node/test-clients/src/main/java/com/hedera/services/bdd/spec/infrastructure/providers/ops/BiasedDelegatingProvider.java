@@ -20,6 +20,7 @@ import static java.util.Collections.binarySearch;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -48,7 +49,7 @@ public class BiasedDelegatingProvider implements OpProvider {
 
     private final List<Integer> cumulativeBias = new ArrayList<>(List.of(0));
     private final List<OpProvider> delegates = new ArrayList<>();
-    private final List<HapiSpecOperation> globalInitializers = new ArrayList<>();
+    private final List<SpecOperation> globalInitializers = new ArrayList<>();
     private final List<Supplier<HapiSpecOperation[]>> summaries = new ArrayList<>();
 
     private boolean shouldAlwaysDefer = true;
@@ -63,7 +64,7 @@ public class BiasedDelegatingProvider implements OpProvider {
         return this;
     }
 
-    public BiasedDelegatingProvider withInitialization(HapiSpecOperation... ops) {
+    public BiasedDelegatingProvider withInitialization(SpecOperation... ops) {
         globalInitializers.addAll(List.of(ops));
         return this;
     }
@@ -84,7 +85,7 @@ public class BiasedDelegatingProvider implements OpProvider {
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
+    public List<SpecOperation> suggestedInitializers() {
         return Stream.concat(
                         globalInitializers.stream(),
                         delegates.stream().flatMap(d -> d.suggestedInitializers().stream()))

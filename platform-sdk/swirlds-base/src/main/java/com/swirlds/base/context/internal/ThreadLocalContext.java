@@ -32,7 +32,9 @@ import java.util.Objects;
  */
 public final class ThreadLocalContext implements Context {
 
-    private static final ThreadLocalContext INSTANCE = new ThreadLocalContext();
+    private static final class InstanceHolder {
+        private static final ThreadLocalContext INSTANCE = new ThreadLocalContext();
+    }
 
     private final ThreadLocal<Map<String, String>> contextThreadLocal;
 
@@ -83,7 +85,7 @@ public final class ThreadLocalContext implements Context {
      */
     @NonNull
     public static ThreadLocalContext getInstance() {
-        return INSTANCE;
+        return InstanceHolder.INSTANCE;
     }
 
     /**
@@ -94,7 +96,7 @@ public final class ThreadLocalContext implements Context {
      */
     @NonNull
     public static Map<String, String> getContextMap() {
-        final Map<String, String> current = INSTANCE.contextThreadLocal.get();
+        final Map<String, String> current = InstanceHolder.INSTANCE.contextThreadLocal.get();
         if (current != null) {
             return Collections.unmodifiableMap(current);
         }

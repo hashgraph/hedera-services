@@ -19,7 +19,6 @@ package com.swirlds.platform.system.status.logic;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
@@ -50,17 +49,6 @@ public class CatastrophicFailureStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public PlatformStatusLogic processEmergencyReconnectStartedAction(
-            @NonNull final EmergencyReconnectStartedAction action) {
-
         return this;
     }
 

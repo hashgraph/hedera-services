@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -51,6 +51,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
@@ -60,7 +61,9 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
+import com.hedera.node.app.service.contract.impl.state.ScheduleEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
@@ -91,12 +94,14 @@ class DispatchingEvmFrameStateTest {
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
     private static final long BENEFICIARY_NUM = 0xdefdefL;
     private static final long TOKEN_NUM = 0xffffffffffffL;
+    private static final long SCHEDULE_NUM = 0xdedededededeL;
     private static final Bytes SOME_OTHER_ALIAS = Bytes.wrap("<PRETEND>");
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Address LONG_ZERO_ADDRESS = Address.fromHexString("0000000000000000000000009abcdefabcdefbbb");
     private static final Address BENEFICIARY_ADDRESS =
             Address.fromHexString("0000000000000000000000000000000000defdef");
     private static final Address TOKEN_ADDRESS = Address.fromHexString("0000000000000000000000000000ffffffffffff");
+    private static final Address SCHEDULE_ADDRESS = Address.fromHexString("0000000000000000000000000000dededededede");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
     private static final Bytecode SOME_PRETEND_BYTECODE =
             Bytecode.newBuilder().code(SOME_PRETEND_CODE).build();
@@ -313,6 +318,74 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void interpolatesAccountCodeByAddress() {
+        final var actualCode = subject.getAccountRedirectCode(LONG_ZERO_ADDRESS);
+
+        assertEquals(
+                LONG_ZERO_ADDRESS.toUnprefixedHexString(),
+                actualCode
+                        .toUnprefixedHexString()
+                        // EVM 20-byte address is 40 hex chars
+                        .substring(REDIRECT_CODE_FIXED_PREFIX_LEN, REDIRECT_CODE_FIXED_PREFIX_LEN + 40));
+    }
+
+    @Test
+    void hashesInterpolatesAccountCode() {
+        final var code = subject.getAccountRedirectCode(LONG_ZERO_ADDRESS);
+        final var expectedHash = Hash.hash(code);
+
+        assertEquals(expectedHash, subject.getAccountRedirectCodeHash(LONG_ZERO_ADDRESS));
+    }
+
+    @Test
+    void interpolatesAccountCodeWhenAddressNull() {
+        final var actualCode = subject.getAccountRedirectCode(null);
+
+        assertEquals(org.apache.tuweni.bytes.Bytes.EMPTY, actualCode);
+    }
+
+    @Test
+    void hashesInterpolatesAccountCodeWhenNull() {
+        final var expectedHash = Hash.hash(org.apache.tuweni.bytes.Bytes.EMPTY);
+
+        assertEquals(expectedHash, subject.getAccountRedirectCodeHash(null));
+    }
+
+    @Test
+    void interpolatesScheduleCodeByAddress() {
+        final var actualCode = subject.getScheduleRedirectCode(LONG_ZERO_ADDRESS);
+
+        assertEquals(
+                LONG_ZERO_ADDRESS.toUnprefixedHexString(),
+                actualCode
+                        .toUnprefixedHexString()
+                        // EVM 20-byte address is 40 hex chars
+                        .substring(REDIRECT_CODE_FIXED_PREFIX_LEN, REDIRECT_CODE_FIXED_PREFIX_LEN + 40));
+    }
+
+    @Test
+    void hashesInterpolatesScheduleCode() {
+        final var code = subject.getScheduleRedirectCode(LONG_ZERO_ADDRESS);
+        final var expectedHash = Hash.hash(code);
+
+        assertEquals(expectedHash, subject.getScheduleRedirectCodeHash(LONG_ZERO_ADDRESS));
+    }
+
+    @Test
+    void interpolatesScheduleCodeWhenAddressNull() {
+        final var actualCode = subject.getScheduleRedirectCode(null);
+
+        assertEquals(org.apache.tuweni.bytes.Bytes.EMPTY, actualCode);
+    }
+
+    @Test
+    void hashesInterpolatesScheduleCodeWhenNull() {
+        final var expectedHash = Hash.hash(org.apache.tuweni.bytes.Bytes.EMPTY);
+
+        assertEquals(expectedHash, subject.getScheduleRedirectCodeHash(null));
+    }
+
+    @Test
     void getsEmptyCodeForMissing() {
         final var actualCode = subject.getCode(A_CONTRACT_ID);
 
@@ -358,13 +431,13 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void returnsLongZeroAddressWithoutAnAlias() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID));
         assertEquals(LONG_ZERO_ADDRESS, subject.getAddress(ACCOUNT_NUM));
     }
 
     @Test
     void returnsExpectedRentFactors() {
-        givenWellKnownContract(A_CONTRACT_ID, accountWith(A_ACCOUNT_ID));
+        givenWellKnownContract(A_CONTRACT_ID, contractWith(A_ACCOUNT_ID));
 
         final var expected = new RentFactors(NUM_KV_SLOTS, EXPIRY);
         assertEquals(expected, subject.getRentFactorsFor(A_CONTRACT_ID));
@@ -372,7 +445,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void returnsNullWithDeletedAccount() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).deleted(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).deleted(true));
         assertNull(subject.getAddress(ACCOUNT_NUM));
     }
 
@@ -395,32 +468,32 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void returnsNonceIfPresent() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).ethereumNonce(1234));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).ethereumNonce(1234));
         assertEquals(1234, subject.getNonce(A_ACCOUNT_ID));
     }
 
     @Test
     void returnsNumTreasuryTitlesIfPresent() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).numberTreasuryTitles(1234));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).numberTreasuryTitles(1234));
         assertEquals(1234, subject.getNumTreasuryTitles(A_ACCOUNT_ID));
     }
 
     @Test
     void returnsNumNonZeroBalancesIfPresent() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).numberPositiveBalances(1234));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).numberPositiveBalances(1234));
         assertEquals(1234, subject.getNumPositiveTokenBalances(A_ACCOUNT_ID));
     }
 
     @Test
     void returnsWhetherAnAccountIsContract() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
         assertTrue(subject.isContract(A_ACCOUNT_ID));
     }
 
     @Test
     void returnsBalanceIfPresent() {
         final var value = Wei.of(1234);
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).tinybarBalance(1234));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).tinybarBalance(1234));
         assertEquals(value, subject.getBalance(A_ACCOUNT_ID));
     }
 
@@ -431,19 +504,19 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void returnsNullForDeleted() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).deleted(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).deleted(true));
         assertNull(subject.getAccount(LONG_ZERO_ADDRESS));
     }
 
     @Test
     void returnsNullForExpired() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
         assertNull(subject.getAccount(LONG_ZERO_ADDRESS));
     }
 
     @Test
     void missingAccountsCannotBeBeneficiaries() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
 
         final var reasonToHaltDeletion =
                 subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, LONG_ZERO_ADDRESS, frame);
@@ -461,7 +534,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void cannotTransferToMissingAccount() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
@@ -469,7 +542,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void cannotTransferToTokenAccount() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
         givenWellKnownToken();
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, TOKEN_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
@@ -477,8 +550,17 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void cannotTransferToScheduleAccount() {
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownSchedule();
+        final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, SCHEDULE_ADDRESS, 123L, true);
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(ILLEGAL_STATE_CHANGE, reasonToHaltDeletion.get());
+    }
+
+    @Test
     void cannotLazyCreateOverExpiredAccount() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).expiredAndPendingRemoval(true));
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
 
@@ -511,12 +593,12 @@ class DispatchingEvmFrameStateTest {
     void throwsOnLazyCreateOfLongZeroAddress() {
         final var reasonLazyCreationFailed = subject.tryLazyCreation(LONG_ZERO_ADDRESS);
         assertTrue(reasonLazyCreationFailed.isPresent());
-        assertEquals(INVALID_CONTRACT_ID, reasonLazyCreationFailed.get());
+        assertEquals(INVALID_ALIAS_KEY, reasonLazyCreationFailed.get());
     }
 
     @Test
     void throwsOnLazyCreateOfNonExpiredAccount() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID));
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
 
@@ -526,8 +608,8 @@ class DispatchingEvmFrameStateTest {
     @Test
     void transferDelegationUsesExpectedVerifierForNonDelegate() {
         final var captor = ArgumentCaptor.forClass(VerificationStrategy.class);
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
-        givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownAccount(B_ACCOUNT_ID, contractWith(B_ACCOUNT_ID));
         given(nativeOperations.transferWithReceiverSigCheck(
                         eq(123L), eq(A_ACCOUNT_ID), eq(B_ACCOUNT_ID), captor.capture()))
                 .willReturn(OK);
@@ -541,8 +623,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void transferDelegationReportsInvalidSignature() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
-        givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownAccount(B_ACCOUNT_ID, contractWith(B_ACCOUNT_ID));
         given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(A_ACCOUNT_ID), eq(B_ACCOUNT_ID), any()))
                 .willReturn(INVALID_SIGNATURE);
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
@@ -552,8 +634,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void transferDelegationThrowsOnApparentlyImpossibleFailureMode() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).smartContract(true));
-        givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).smartContract(true));
+        givenWellKnownAccount(B_ACCOUNT_ID, contractWith(B_ACCOUNT_ID));
         given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(A_ACCOUNT_ID), eq(B_ACCOUNT_ID), any()))
                 .willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
         assertThrows(
@@ -563,8 +645,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void deletedAccountCannotBeTokenTreasury() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).numberTreasuryTitles(1));
-        givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).numberTreasuryTitles(1));
+        givenWellKnownAccount(B_ACCOUNT_ID, contractWith(B_ACCOUNT_ID));
 
         final var reasonToHaltDeletion =
                 subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
@@ -575,8 +657,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void deletedAccountCannotHaveTokenBalances() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).numberPositiveBalances(1));
-        givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).numberPositiveBalances(1));
+        givenWellKnownAccount(B_ACCOUNT_ID, contractWith(B_ACCOUNT_ID));
 
         final var reasonToHaltDeletion =
                 subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
@@ -587,8 +669,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void deletionsAreTracked() {
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID));
-        givenWellKnownAccount(B_ACCOUNT_ID, accountWith(B_ACCOUNT_ID));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID));
+        givenWellKnownAccount(B_ACCOUNT_ID, contractWith(B_ACCOUNT_ID));
 
         final var reasonToHaltDeletion =
                 subject.tryTrackingSelfDestructBeneficiary(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, frame);
@@ -616,18 +698,27 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void senderAccountMustBeC() {
-        givenWellKnownToken();
+    void scheduleAccountsCannotBeBeneficiaries() {
+        givenWellKnownSchedule();
 
-        final var reasonToHaltDeletion = subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, TOKEN_ADDRESS, frame);
+        final var reasonToHaltDeletion =
+                subject.tryTrackingSelfDestructBeneficiary(EVM_ADDRESS, SCHEDULE_ADDRESS, frame);
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
+    void returnsProxyContractForNormal() {
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID));
+
+        assertInstanceOf(ProxyEvmContract.class, subject.getAccount(LONG_ZERO_ADDRESS));
+    }
+
+    @Test
     void returnsProxyAccountForNormal() {
         givenWellKnownAccount(accountWith(A_ACCOUNT_ID));
+
         assertInstanceOf(ProxyEvmAccount.class, subject.getAccount(LONG_ZERO_ADDRESS));
     }
 
@@ -652,7 +743,7 @@ class DispatchingEvmFrameStateTest {
     void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID)
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID)
                 .key(Key.newBuilder().keyList(KeyList.DEFAULT).build()));
         assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
@@ -661,14 +752,14 @@ class DispatchingEvmFrameStateTest {
     void usesResolvedNumberFromDispatch() {
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID));
-        assertInstanceOf(ProxyEvmAccount.class, subject.getAccount(EVM_ADDRESS));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID));
+        assertInstanceOf(ProxyEvmContract.class, subject.getAccount(EVM_ADDRESS));
     }
 
     @Test
     void returnsNullForAliasedReferencedByLongZero() {
         final var alias = Bytes.wrap(EVM_ADDRESS.toArrayUnsafe());
-        givenWellKnownAccount(accountWith(A_ACCOUNT_ID).alias(alias));
+        givenWellKnownAccount(contractWith(A_ACCOUNT_ID).alias(alias));
         assertNull(subject.getAccount(LONG_ZERO_ADDRESS));
     }
 
@@ -677,6 +768,13 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownToken();
         final var account = subject.getAccount(TOKEN_ADDRESS);
         assertInstanceOf(TokenEvmAccount.class, account);
+    }
+
+    @Test
+    void choosesScheduleAccountIfApplicable() {
+        givenWellKnownSchedule();
+        final var account = subject.getAccount(SCHEDULE_ADDRESS);
+        assertInstanceOf(ScheduleEvmAccount.class, account);
     }
 
     @Test
@@ -719,14 +817,28 @@ class DispatchingEvmFrameStateTest {
                 .willReturn(Token.newBuilder().build());
     }
 
+    private void givenWellKnownSchedule() {
+        given(nativeOperations.getSchedule(SCHEDULE_NUM))
+                .willReturn(Schedule.newBuilder().build());
+    }
+
     private Account.Builder accountWith(final AccountID accountID, final Bytes alias) {
-        return accountWith(accountID).alias(alias);
+        return contractWith(accountID).alias(alias);
+    }
+
+    private Account.Builder contractWith(final AccountID accountID) {
+        return Account.newBuilder()
+                .accountId(accountID)
+                .expirationSecond(EXPIRY)
+                .contractKvPairsNumber(NUM_KV_SLOTS)
+                .smartContract(true);
     }
 
     private Account.Builder accountWith(final AccountID accountID) {
         return Account.newBuilder()
                 .accountId(accountID)
                 .expirationSecond(EXPIRY)
-                .contractKvPairsNumber(NUM_KV_SLOTS);
+                .contractKvPairsNumber(NUM_KV_SLOTS)
+                .smartContract(false);
     }
 }

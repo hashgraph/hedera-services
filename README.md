@@ -5,36 +5,31 @@
 [![codecov](https://codecov.io/gh/hashgraph/hedera-services/graph/badge.svg?token=ZPMV8C93DV)](https://codecov.io/gh/hashgraph/hedera-services)
 [![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-services?sort=semver&label=version)](README.md)
 [![Made With](https://img.shields.io/badge/made_with-java-blue)](https://github.com/hashgraph/hedera-services/)
-[![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](hedera-node/docs/gradle-quickstart.md)
+[![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/gradle-quickstart.md)
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 # Hedera Services
 
-Implementation of the Platform and the [services offered](https://github.com/hashgraph/hedera-protobufs) by
-nodes in the [Hedera public network](https://hedera.com).
+Implementation of the Platform and the
+[services offered](https://github.com/hashgraph/hedera-protobufs) by nodes in the
+[Hedera public network](https://hedera.com).
 
 ## Overview of child modules
-* _platform-sdk/_ - the basic Platform.
-* _hedera-node/_ - implementation of Hedera services on the Platform.
 
-## JVM
-An [Eclipse Adoptium](https://adoptium.net/) build of the Java 21 JDK is required. If an Adoptium JDK is not installed,
-the Gradle build will download an appropriate Adoptium JDK. The JDK version used to execute Gradle must be Java 21+ in
-order for the `checkAllModuleInfo` task to succeed.
+- _platform-sdk/_ - the basic Platform – [documentation](platform-sdk/docs/platformWiki.md)
+- _hedera-node/_ - implementation of Hedera services on the Platform –
+  [documentation](hedera-node/docs/)
+
+## Getting Started
+
+Refer to the [Hedera Architecture and Design](hedera-node/docs/design/design.md) for an architectural overview of the
+Hedera Services project.
+
+Refer to the [Quickstart Guide](docs/README.md) for how to work with this project.
 
 ## Solidity
+
 Hedera Contracts support `pragma solidity <=0.8.9`.
-
-## Docker Compose quickstart
-
-The [Docker quickstart](hedera-node/docs/docker-quickstart.md) covers how to
-start a local network of Hedera Services nodes using Docker Compose.
-
-## Developer IntelliJ quickstart
-
-The [IntelliJ quickstart](hedera-node/docs/intellij-quickstart.md) covers how to
-start a local network of Services nodes from IntelliJ for testing and
-development.
 
 ## Support
 
@@ -43,12 +38,15 @@ If you have a question on how to use the product, please see our
 
 ## Contributing
 
-Contributions are welcome. Please see the [contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md) to see how you can get involved.
+Contributions are welcome. Please see the
+[contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md) to see how you
+can get involved.
 
 ## Code of Conduct
 
-This project is governed by the [Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md). By participating, you are
-expected to uphold this code of conduct.
+This project is governed by the
+[Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code of conduct.
 
 ## License
 

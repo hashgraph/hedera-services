@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.List;
@@ -59,7 +59,7 @@ class CustomContractCreationProcessorTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private ProxyEvmAccount contract;
+    private ProxyEvmContract contract;
 
     @Mock
     private MessageFrame frame;

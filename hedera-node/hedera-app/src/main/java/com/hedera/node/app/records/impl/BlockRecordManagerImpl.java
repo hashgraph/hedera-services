@@ -18,16 +18,17 @@ package com.hedera.node.app.records.impl;
 
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -35,6 +36,11 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -72,6 +78,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * time.
      */
     private final BlockRecordStreamProducer streamFileProducer;
+
     /**
      * A {@link BlockInfo} of the most recently completed block. This is actually available in state, but there
      * is no reason for us to read it from state every time we need it, we can just recompute and cache this every
@@ -81,7 +88,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * True when we have completed event recovery. This is not yet implemented properly.
      */
-    private boolean eventRecoveryCompleted = false;
+    private boolean eventRecoveryCompleted;
 
     /**
      * Construct BlockRecordManager
@@ -93,11 +100,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     @Inject
     public BlockRecordManagerImpl(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final HederaState state,
+            @NonNull final State state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
-
         requireNonNull(state);
-        requireNonNull(configProvider);
         this.streamFileProducer = requireNonNull(streamFileProducer);
 
         // FUTURE: check if we were started in event recover mode and if event recovery needs to be completed before we
@@ -113,14 +118,14 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // NOTE: State migration happens BEFORE dagger initialization, and this object is managed by dagger. So we are
         // guaranteed that the state exists PRIOR to this call.
         final var states = state.getReadableStates(BlockRecordService.NAME);
-        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         this.lastBlockInfo = blockInfoState.get();
         assert this.lastBlockInfo != null : "Cannot be null, because this state is created at genesis";
 
         // Initialize the stream file producer. NOTE, if the producer cannot be initialized, and a random exception is
         // thrown here, then startup of the node will fail. This is the intended behavior. We MUST be able to produce
         // record streams, or there really is no point to running the node!
-        final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
+        final var runningHashState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
         final var lastRunningHashes = runningHashState.get();
         assert lastRunningHashes != null : "Cannot be null, because this state is created at genesis";
         this.streamFileProducer.initRunningHash(lastRunningHashes);
@@ -150,7 +155,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     /**
      * {@inheritDoc}
      */
-    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final State state) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
             // and the current consensus time to now
@@ -160,7 +165,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                     .consTimeOfLastHandledTxn(now)
                     .firstConsTimeOfCurrentBlock(now)
                     .build();
-            persistLastBlockInfo(state);
+            putLastBlockInfo(state);
             streamFileProducer.switchBlocks(-1, 0, consensusTime);
             return true;
         }
@@ -170,7 +175,20 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // given consensus time, and if they are different, we'll close out the current block and start a new one.
         final var currentBlockPeriod = getBlockPeriod(lastBlockInfo.firstConsTimeOfCurrentBlock());
         final var newBlockPeriod = getBlockPeriod(consensusTime);
-        if (newBlockPeriod > currentBlockPeriod) {
+
+        final var platformState = state.getReadableStates(PlatformStateService.NAME)
+                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .get();
+        requireNonNull(platformState);
+        // Also check to see if this is the first transaction we're handling after a freeze restart. If so, we also
+        // start a new block.
+        final var isFirstTransactionAfterFreezeRestart = platformState.freezeTime() != null
+                && platformState.freezeTimeOrThrow().equals(platformState.lastFrozenTime());
+        if (isFirstTransactionAfterFreezeRestart) {
+            new WritablePlatformStateStore(state.getWritableStates(PlatformStateService.NAME)).setFreezeTime(null);
+        }
+        // Now we test if we need to start a new block. If so, create the new block
+        if (newBlockPeriod > currentBlockPeriod || isFirstTransactionAfterFreezeRestart) {
             // Compute the state for the newly completed block. The `lastBlockHashBytes` is the running hash after
             // the last transaction
             final var lastBlockHashBytes = streamFileProducer.getRunningHash();
@@ -179,7 +197,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                     infoOfJustFinished(lastBlockInfo, justFinishedBlockNumber, lastBlockHashBytes, consensusTime);
 
             // Update BlockInfo state
-            persistLastBlockInfo(state);
+            putLastBlockInfo(state);
 
             // log end of block if needed
             if (logger.isDebugEnabled()) {
@@ -190,7 +208,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                                   Starting: #{} @ {}""",
                         justFinishedBlockNumber,
                         lastBlockInfo.firstConsTimeOfCurrentBlock(),
-                        new Hash(lastBlockHashBytes.toByteArray(), DigestType.SHA_384),
+                        new Hash(lastBlockHashBytes, DigestType.SHA_384),
                         justFinishedBlockNumber + 1,
                         consensusTime);
             }
@@ -219,9 +237,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 lastBlockInfo.lastBlockNumber(), lastBlockInfo.lastBlockNumber() + 1, consensusTime);
     }
 
-    private void persistLastBlockInfo(@NonNull final HederaState state) {
+    private void putLastBlockInfo(@NonNull final State state) {
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         blockInfoState.put(lastBlockInfo);
     }
 
@@ -229,7 +247,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     public void endUserTransaction(
-            @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final HederaState state) {
+            @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final State state) {
         // check if we need to run event recovery before we can write any new records to stream
         if (!this.eventRecoveryCompleted) {
             // FUTURE create event recovery class and call it here. Should this be in startUserTransaction()?
@@ -243,62 +261,58 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     @Override
-    public void endRound(@NonNull final HederaState state) {
+    public void endRound(@NonNull final State state) {
         // We get the latest running hash from the StreamFileProducer blocking if needed for it to be computed.
         final var currentRunningHash = streamFileProducer.getRunningHash();
         // Update running hashes in state with the latest running hash and the previous 3 running hashes.
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var runningHashesState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
+        final var runningHashesState = states.<RunningHashes>getSingleton(RUNNING_HASHES_STATE_KEY);
         final var existingRunningHashes = runningHashesState.get();
         assert existingRunningHashes != null : "This cannot be null because genesis migration sets it";
-        runningHashesState.put(new RunningHashes(
+        final var runningHashes = new RunningHashes(
                 currentRunningHash,
                 existingRunningHashes.nMinus1RunningHash(),
                 existingRunningHashes.nMinus2RunningHash(),
-                existingRunningHashes.nMinus3RunningHash()));
+                existingRunningHashes.nMinus3RunningHash());
+        runningHashesState.put(runningHashes);
         // Commit the changes to the merkle tree.
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
     }
 
-    // ========================================================================================================
-    // Running Hash Getter Methods
+    public long lastBlockNo() {
+        return lastBlockInfo.lastBlockNumber();
+    }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
+    public Instant firstConsTimeOfLastBlock() {
+        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    }
+
     public Bytes getRunningHash() {
         return streamFileProducer.getRunningHash();
     }
 
+    @Nullable
+    public Bytes lastBlockHash() {
+        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
+    }
+
+    // ========================================================================================================
+    // Running Hash Getter Methods
     /**
      * {@inheritDoc}
      */
     @Nullable
     @Override
-    public Bytes getNMinus3RunningHash() {
+    public Bytes prngSeed() {
         return streamFileProducer.getNMinus3RunningHash();
     }
 
     // ========================================================================================================
     // BlockRecordInfo Implementation
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public long lastBlockNo() {
-        return lastBlockInfo.lastBlockNumber();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public Instant firstConsTimeOfLastBlock() {
-        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    public long blockNo() {
+        return lastBlockInfo.lastBlockNumber() + 1;
     }
 
     /**
@@ -314,17 +328,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     }
 
     @Override
-    public @NonNull Timestamp currentBlockTimestamp() {
+    public @NonNull Timestamp blockTimestamp() {
         return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public Bytes lastBlockHash() {
-        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
     }
 
     /**
@@ -340,22 +345,17 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     @Override
-    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final State state) {
         final var builder = this.lastBlockInfo
                 .copyBuilder()
                 .consTimeOfLastHandledTxn(Timestamp.newBuilder()
                         .seconds(consensusTime.getEpochSecond())
                         .nanos(consensusTime.getNano()));
-        if (!this.lastBlockInfo.migrationRecordsStreamed()) {
-            // Any records created during migration should have been published already. Now we shut off the flag to
-            // disallow further publishing
-            builder.migrationRecordsStreamed(true);
-        }
         final var newBlockInfo = builder.build();
 
         // Update the latest block info in state
         final var states = state.getWritableStates(BlockRecordService.NAME);
-        final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = states.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         blockInfoState.put(newBlockInfo);
         // Commit the changes. We don't ever want to roll back when advancing the consensus clock
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
@@ -414,7 +414,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private BlockInfo infoOfJustFinished(
             @NonNull final BlockInfo lastBlockInfo,
-            @NonNull final long justFinishedBlockNumber,
+            final long justFinishedBlockNumber,
             @NonNull final Bytes hashOfJustFinishedBlock,
             @NonNull final Instant currentBlockFirstTransactionTime) {
         // compute new block hashes bytes

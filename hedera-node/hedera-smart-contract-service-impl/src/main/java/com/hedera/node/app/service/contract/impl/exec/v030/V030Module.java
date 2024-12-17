@@ -41,6 +41,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomLogOperat
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSLoadOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSStoreOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation.UseEIP6780Semantics;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomStaticCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
@@ -301,7 +302,7 @@ public interface V030Module {
     @ServicesV030
     static Operation provideSelfDestructOperation(
             @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
-        return new CustomSelfDestructOperation(gasCalculator, addressChecks);
+        return new CustomSelfDestructOperation(gasCalculator, addressChecks, UseEIP6780Semantics.NO);
     }
 
     @Provides

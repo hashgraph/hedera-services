@@ -27,6 +27,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,9 +46,11 @@ final class DeduplicationCacheTest {
     @Mock
     private ConfigProvider props;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     @BeforeEach
     void setUp(@Mock final VersionedConfiguration versionedConfig, @Mock final HederaConfig hederaConfig) {
-        cache = new DeduplicationCacheImpl(props);
+        cache = new DeduplicationCacheImpl(props, instantSource);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(MAX_TXN_DURATION);
@@ -57,7 +60,8 @@ final class DeduplicationCacheTest {
     @DisplayName("Constructor args cannot be null")
     void constructorArgsCannotBeNull() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new DeduplicationCacheImpl(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DeduplicationCacheImpl(null, instantSource))
+                .isInstanceOf(NullPointerException.class);
     }
 
     // Add a transaction ID that has expired

@@ -1,3 +1,4 @@
+import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.config.impl.internal.ConfigurationBuilderFactoryImpl;
 
@@ -8,8 +9,10 @@ module com.swirlds.config.impl {
     requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
-    requires static com.github.spotbugs.annotations;
-    requires static com.google.auto.service;
+    requires static transitive com.github.spotbugs.annotations;
+    requires static transitive com.google.auto.service;
+
+    uses ConfigurationExtension;
 
     provides ConfigurationBuilderFactory with
             ConfigurationBuilderFactoryImpl;

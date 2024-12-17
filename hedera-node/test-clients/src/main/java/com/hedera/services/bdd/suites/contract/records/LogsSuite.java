@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.records;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -26,56 +26,32 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class LogsSuite extends HapiSuite {
+public class LogsSuite {
 
     private static final long GAS_TO_OFFER = 25_000L;
 
-    private static final Logger log = LogManager.getLogger(LogsSuite.class);
     private static final String CONTRACT = "Logs";
 
-    public static void main(String... args) {
-        new LogsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(log0Works(), log1Works(), log2Works(), log3Works(), log4Works());
-    }
-
     @HapiTest
-    final HapiSpec log0Works() {
-        return defaultHapiSpec("log0Works", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
+    final Stream<DynamicTest> log0Works() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
                         .via("log0")
-                        .gas(GAS_TO_OFFER))
-                .then(getTxnRecord("log0")
+                        .gas(GAS_TO_OFFER),
+                getTxnRecord("log0")
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith().noTopics().longValue(15)))
@@ -83,13 +59,14 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log1Works() {
-        return defaultHapiSpec("log1Works", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
+    final Stream<DynamicTest> log1Works() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
                         .via("log1")
-                        .gas(GAS_TO_OFFER))
-                .then(getTxnRecord("log1")
+                        .gas(GAS_TO_OFFER),
+                getTxnRecord("log1")
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith()
@@ -100,13 +77,14 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log2Works() {
-        return defaultHapiSpec("log2Works", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
+    final Stream<DynamicTest> log2Works() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
                         .gas(GAS_TO_OFFER)
-                        .via("log2"))
-                .then(getTxnRecord("log2")
+                        .via("log2"),
+                getTxnRecord("log2")
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith()
@@ -119,13 +97,14 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log3Works() {
-        return defaultHapiSpec("log3Works", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
+    final Stream<DynamicTest> log3Works() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "log3", BigInteger.ONE, BigInteger.TWO, BigInteger.valueOf(3))
                         .gas(GAS_TO_OFFER)
-                        .via("log3"))
-                .then(getTxnRecord("log3")
+                        .via("log3"),
+                getTxnRecord("log3")
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith()
@@ -139,10 +118,11 @@ public class LogsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec log4Works() {
-        return defaultHapiSpec("log4Works", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(
+    final Stream<DynamicTest> log4Works() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(
                                 CONTRACT,
                                 "log4",
                                 BigInteger.ONE,
@@ -150,8 +130,8 @@ public class LogsSuite extends HapiSuite {
                                 BigInteger.valueOf(3),
                                 BigInteger.valueOf(4))
                         .gas(GAS_TO_OFFER)
-                        .via("log4"))
-                .then(getTxnRecord("log4")
+                        .via("log4"),
+                getTxnRecord("log4")
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith()

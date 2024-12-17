@@ -22,12 +22,13 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
-import com.swirlds.common.test.fixtures.TransactionUtils;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
+import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -76,7 +77,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
 
     /** The default transaction generator used to create transaction for generated events. */
     protected static final TransactionGenerator DEFAULT_TRANSACTION_GENERATOR =
-            r -> TransactionUtils.randomSwirldTransactions(
+            r -> TransactionUtils.randomApplicationTransactions(
                     r, DEFAULT_AVG_TX_SIZE, DEFAULT_TX_SIZE_STD_DEV, DEFAULT_TX_COUNT_AVG, DEFAULT_TX_COUNT_STD_DEV);
 
     /**
@@ -149,7 +150,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      * Maintain the maximum size of a list of events by removing the last element (if needed). Utility method that is
      * useful for child classes.
      */
-    protected void pruneEventList(final LinkedList<IndexedEvent> events) {
+    protected void pruneEventList(final LinkedList<EventImpl> events) {
         if (events.size() > getRecentEventRetentionSize()) {
             events.removeLast();
         }
@@ -211,9 +212,15 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      * {@inheritDoc}
      */
     @Override
-    public IndexedEvent generateEvent(
-            final Random random, final long eventIndex, final EventSource<?> otherParent, final Instant timestamp) {
-        final IndexedEvent event;
+    public EventImpl generateEvent(
+            @NonNull final Random random,
+            final long eventIndex,
+            @Nullable final EventSource<?> otherParent,
+            @NonNull final Instant timestamp,
+            final long birthRound) {
+        Objects.requireNonNull(random);
+        Objects.requireNonNull(timestamp);
+        final EventImpl event;
 
         // The higher the index, the older the event. Use the oldest parent between the provided and requested value.
         final int otherParentIndex = Math.max(
@@ -222,19 +229,13 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                 // event index (event age) that the other node wants to provide as an other parent to this node
                 otherParent.getProvidedOtherParentAge(random, eventIndex));
 
-        final IndexedEvent otherParentEvent = otherParent.getRecentEvent(random, otherParentIndex);
-
-        // Temporary hack: use the generation as the birth round. This should be sufficient for many use cases
-        // that don't use the birth round for anything other than deciding if the event is ancient. This won't
-        // work for consensus, and we will have to upgrade our simulation framework prior to converting
-        // consensus to use the birth round.
-        final IndexedEvent latestSelfEvent = getLatestEvent(random);
+        final EventImpl otherParentEvent =
+                otherParent == null ? null : otherParent.getRecentEvent(random, otherParentIndex);
+        final EventImpl latestSelfEvent = getLatestEvent(random);
         final long generation = Math.max(
                         otherParentEvent == null ? (FIRST_GENERATION - 1) : otherParentEvent.getGeneration(),
                         latestSelfEvent == null ? (FIRST_GENERATION - 1) : latestSelfEvent.getGeneration())
                 + 1;
-        // First generation is 0, but first birth round is 1.
-        final long birthRound = generation + 1;
 
         event = RandomEventUtils.randomEventWithTimestamp(
                 random,

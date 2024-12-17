@@ -30,7 +30,9 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
 import java.io.IOException;
 import java.util.List;
@@ -167,7 +169,13 @@ class VirtualInternalNodeTest extends VirtualTestBase {
                 new VirtualLeafRecord<>(10, F_KEY, FIG),
                 new VirtualLeafRecord<>(11, G_KEY, GRAPE),
                 new VirtualLeafRecord<>(12, B_KEY, BANANA));
-        root.getDataSource().saveRecords(6, 12, leaves.stream().map(this::hash), leaves.stream(), Stream.empty());
+        root.getDataSource()
+                .saveRecords(
+                        6,
+                        12,
+                        leaves.stream().map(this::hash),
+                        leaves.stream().map(r -> r.toBytes(TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE)),
+                        Stream.empty());
 
         VirtualHashRecord virtualHashRecord = new VirtualHashRecord(2, null);
         VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);

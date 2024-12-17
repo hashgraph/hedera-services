@@ -4,14 +4,16 @@
 
 network=${1}
 maxnodes=${2:-7}
-timegap=${3:-2}
-limit=${4:-100}
+timegap=${3:-3}
+limit=${4:-300}
 cmd=${5:-/usr/local/bin/logcli}
+pad=${6:-0}
 
 echo "network  = [$network]"
 echo "maxnodes = [$maxnodes]"
 echo "timegap  = [$timegap]"
 echo "limit    = [$limit]"
+echo "pad      = [$pad]"
 
 #. env.loki
 
@@ -20,12 +22,12 @@ echo "limit    = [$limit]"
 while true
 do
 
-    back=$(( timegap * 2 ))
+    back=$(( ( timegap + pad ) * 2 ))
     beg=$(date --date="${back} minutes ago" '+%Y-%m-%dT%H:%M:%SZ' --utc)
     end=$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)
 
-    query_result=$(${cmd} query --timezone=UTC --limit=${limit} --from="${beg}" --to="${end}" '{environment="performance6",log_name="swirlds", node_id=~".*"} |~ `.*newStatus.*:.*ACTIVE.*`')
-    nodes=$(${cmd} query --timezone=UTC --limit=${limit} --from="${beg}" --to="${end}" '{environment="performance6",log_name="swirlds", node_id=~".*"} |~ `.*newStatus.*:.*ACTIVE.*`' | wc -l)
+    query_result=$(${cmd} query --timezone=UTC --limit=${limit} --from="${beg}" --to="${end}" '{environment="engnet1",log_name="swirlds", node_id=~".*"} |~ `.*newStatus.*:.*ACTIVE.*`')
+    nodes=$(${cmd} query --timezone=UTC --limit=${limit} --from="${beg}" --to="${end}" '{environment="engnet1",log_name="swirlds", node_id=~".*"} |~ `.*newStatus.*:.*ACTIVE.*`' | wc -l)
 
     echo "beg   = [$beg]"
     echo "end   = [$end]"
@@ -42,4 +44,4 @@ do
 
 done
 
-echo `date` "network [$network] started!!!"
+echo `date` "Network [$network] started!!!"

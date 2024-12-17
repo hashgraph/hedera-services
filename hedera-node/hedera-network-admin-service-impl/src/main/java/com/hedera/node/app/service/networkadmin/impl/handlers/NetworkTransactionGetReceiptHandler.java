@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -66,7 +65,12 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         final var op = context.query().transactionGetReceiptOrThrow();
 
         // The transaction ID must be specified
-        if (!op.hasTransactionID() || !op.transactionID().hasAccountID()) {
+        if (!op.hasTransactionID()) {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
+        // And must contain both a valid start time and an account ID
+        final var transactionId = op.transactionIDOrThrow();
+        if (!transactionId.hasTransactionValidStart() || !transactionId.hasAccountID()) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
         }
     }
@@ -84,23 +88,34 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         responseBuilder.header(header);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var history = recordCache.getHistory(transactionId);
-            if (history == null) {
-                // Unlike with records, we only return RECEIPT_NOT_FOUND if we have never heard of this transaction.
+            final var topLevelTxnId = transactionId.nonce() > 0
+                    ? transactionId.copyBuilder().nonce(0).build()
+                    : transactionId;
+            final var receipts = recordCache.getReceipts(topLevelTxnId);
+            if (receipts == null) {
+                // We only return RECEIPT_NOT_FOUND if we have never heard of this transaction.
                 responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(RECEIPT_NOT_FOUND)
                         .build());
             } else {
-                responseBuilder.receipt(history.userTransactionReceipt());
-                if (op.includeDuplicates()) {
-                    responseBuilder.duplicateTransactionReceipts(history.duplicateRecords().stream()
-                            .map(TransactionRecord::receiptOrThrow)
-                            .toList());
-                }
-                if (op.includeChildReceipts()) {
-                    responseBuilder.childTransactionReceipts(history.childRecords().stream()
-                            .map(TransactionRecord::receiptOrThrow)
-                            .toList());
+                // Only top-level transactions can have children and duplicates
+                if (transactionId == topLevelTxnId) {
+                    responseBuilder.receipt(receipts.priorityReceipt(topLevelTxnId));
+                    if (op.includeDuplicates()) {
+                        responseBuilder.duplicateTransactionReceipts(receipts.duplicateReceipts(topLevelTxnId));
+                    }
+                    if (op.includeChildReceipts()) {
+                        responseBuilder.childTransactionReceipts(receipts.childReceipts(topLevelTxnId));
+                    }
+                } else {
+                    final var maybeReceipt = receipts.childReceipt(transactionId);
+                    if (maybeReceipt != null) {
+                        responseBuilder.receipt(maybeReceipt);
+                    } else {
+                        responseBuilder.header(header.copyBuilder()
+                                .nodeTransactionPrecheckCode(RECEIPT_NOT_FOUND)
+                                .build());
+                    }
                 }
             }
         }

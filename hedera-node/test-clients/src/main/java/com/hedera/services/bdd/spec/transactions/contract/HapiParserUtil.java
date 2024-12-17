@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.tuweni.bytes.Bytes;
 

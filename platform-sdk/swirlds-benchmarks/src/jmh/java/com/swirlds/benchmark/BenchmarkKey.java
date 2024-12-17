@@ -21,12 +21,12 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class BenchmarkKey implements VirtualLongKey {
+public class BenchmarkKey implements VirtualKey {
 
     static final long CLASS_ID = 0x1af5b26682153acfL;
     static final int VERSION = 1;
@@ -99,11 +99,6 @@ public class BenchmarkKey implements VirtualLongKey {
     @Override
     public int hashCode() {
         return Arrays.hashCode(keyBytes);
-    }
-
-    @Override
-    public long getKeyAsLong() {
-        return Utils.fromBytes(keyBytes);
     }
 
     @Override

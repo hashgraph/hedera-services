@@ -44,7 +44,7 @@ public class ConsensusSorter implements Comparator<EventImpl> {
         int c;
 
         // sort by consensus timestamp
-        c = (e1.getConsensusTimestamp().compareTo(e2.getConsensusTimestamp()));
+        c = (e1.getPreliminaryConsensusTimestamp().compareTo(e2.getPreliminaryConsensusTimestamp()));
         if (c != 0) {
             return c;
         }
@@ -71,6 +71,7 @@ public class ConsensusSorter implements Comparator<EventImpl> {
         }
 
         // subsort ties by whitened signature
-        return Utilities.arrayCompare(e1.getSignature(), e2.getSignature(), whitening);
+        return Utilities.arrayCompare(
+                e1.getBaseEvent().getSignature(), e2.getBaseEvent().getSignature(), whitening);
     }
 }

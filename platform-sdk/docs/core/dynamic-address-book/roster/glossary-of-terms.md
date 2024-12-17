@@ -27,7 +27,7 @@ An event is ancient if its `birthRound` is less than or equal to the `latestCons
 `minRoundNonAncient` is the minimum round that is considered non-ancient. This is equal to
 `pendingConsensusRound` - `roundsNonAncient`.
 
-### Non-Ancient Event Window
+### Event Window
 
 Specifies the window of events that are being considered in consensus. The window specifies the following:
 

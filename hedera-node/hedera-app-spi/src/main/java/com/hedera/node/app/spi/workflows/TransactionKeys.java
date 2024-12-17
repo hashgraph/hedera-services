@@ -25,7 +25,6 @@ import java.util.Set;
  * Contains all keys and hollow accounts (required and optional) of a transaction.
  */
 public interface TransactionKeys {
-
     /**
      * Getter for the payer key
      *

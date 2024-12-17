@@ -18,7 +18,7 @@ package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Iterator;
@@ -28,13 +28,13 @@ import java.util.Objects;
 /**
  * Iterates over events from a sequence of preconsensus event files.
  */
-public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
+public class PcesMultiFileIterator implements IOIterator<PlatformEvent> {
 
     private final Iterator<PcesFile> fileIterator;
     private final AncientMode fileType;
     private PcesFileIterator currentIterator;
     private final long lowerBound;
-    private GossipEvent next;
+    private PlatformEvent next;
     private int truncatedFileCount = 0;
 
     /**
@@ -90,7 +90,7 @@ public class PcesMultiFileIterator implements IOIterator<GossipEvent> {
      */
     @Override
     @NonNull
-    public GossipEvent next() throws IOException {
+    public PlatformEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("iterator is empty, can not get next element");
         }

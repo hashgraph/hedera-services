@@ -23,14 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,12 @@ public class ComponentWiringTests {
 
         void handleBaz(@NonNull String baz);
 
+        @InputWireLabel("trigger")
+        @NonNull
+        Long triggerQux();
+
+        void triggerCorge();
+
         @InputWireLabel("data to be transformed")
         @SchedulerLabel("transformer")
         @NonNull
@@ -56,18 +61,26 @@ public class ComponentWiringTests {
             handleBar(true);
             return "" + baseOutput;
         }
+
+        @InputWireLabel("data to be filtered")
+        @SchedulerLabel("filter")
+        default Boolean filter(@NonNull final Long baseOutput) {
+            return baseOutput % 2 == 0;
+        }
     }
 
     private static class FooBarBazImpl implements FooBarBaz {
         private long runningValue = 0;
 
         @Override
+        @NonNull
         public Long handleFoo(@NonNull final Integer foo) {
             runningValue += foo;
             return runningValue;
         }
 
         @Override
+        @NonNull
         public Long handleBar(@NonNull final Boolean bar) {
             runningValue *= bar ? 1 : -1;
             return runningValue;
@@ -78,17 +91,40 @@ public class ComponentWiringTests {
             runningValue *= baz.hashCode();
         }
 
+        @Override
+        @NonNull
+        public Long triggerQux() {
+            runningValue -= 1;
+            return runningValue;
+        }
+
+        @Override
+        public void triggerCorge() {
+            runningValue *= 1.5;
+        }
+
         public long getRunningValue() {
             return runningValue;
         }
     }
 
+    @SchedulerLabel("actuallyCallThisSomethingDifferent")
     private interface ComponentWithListOutput {
         @NonNull
         List<String> handleInputA(@NonNull String s);
 
         @NonNull
         List<String> handleInputB(@NonNull Long l);
+
+        @NonNull
+        default Boolean filter(@NonNull final String baseOutput) {
+            return baseOutput.hashCode() % 2 == 0;
+        }
+
+        @NonNull
+        default String transformer(@NonNull final String baseOutput) {
+            return "(" + baseOutput + ")";
+        }
     }
 
     private static class ComponentWithListOutputImpl implements ComponentWithListOutput {
@@ -117,21 +153,18 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> 0L));
-
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> {}));
-
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x) -> 1L));
+        assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x) -> {}));
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getTransformedOutput((x, y) -> 0L));
     }
 
@@ -142,16 +175,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
@@ -170,6 +200,11 @@ public class ComponentWiringTests {
 
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
         assertEquals("handleBaz", bazInput.getName());
+        final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
+        assertEquals("trigger", triggerQux.getName());
+        final InputWire<Void> triggerCorge = fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge);
+        assertEquals("triggerCorge", triggerCorge.getName());
+
         final OutputWire<Long> output = fooBarBazWiring.getOutputWire();
 
         if (bindLocation == 2) {
@@ -183,6 +218,8 @@ public class ComponentWiringTests {
         assertSame(fooInput, fooBarBazWiring.getInputWire(FooBarBaz::handleFoo));
         assertSame(barInput, fooBarBazWiring.getInputWire(FooBarBaz::handleBar));
         assertSame(bazInput, fooBarBazWiring.getInputWire(FooBarBaz::handleBaz));
+        assertSame(triggerQux, fooBarBazWiring.getInputWire(FooBarBaz::triggerQux));
+        assertSame(triggerCorge, fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge));
 
         // Getting the output wire multiple times should yield the same instance
         assertSame(output, fooBarBazWiring.getOutputWire());
@@ -193,21 +230,29 @@ public class ComponentWiringTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            if (i % 3 == 0) {
+            if (i % 5 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
-            } else if (i % 3 == 1) {
+            } else if (i % 5 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals(expectedRunningValue, outputValue.get());
-            } else {
+            } else if (i % 5 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else if (i % 5 == 3) {
+                expectedRunningValue -= 1;
+                triggerQux.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else {
+                expectedRunningValue *= 1.5;
+                triggerCorge.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
@@ -220,18 +265,15 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Long> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
         final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new ComponentWiring<>(wiringModel, FooBarBaz.class, scheduler);
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             fooBarBazWiring.bind(fooBarBazImpl);
@@ -240,6 +282,8 @@ public class ComponentWiringTests {
         final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
         final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
         final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+        final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
+        final InputWire<Void> triggerCorge = fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge);
 
         final OutputWire<String> output = fooBarBazWiring.getTransformedOutput(FooBarBaz::transformer);
 
@@ -255,21 +299,102 @@ public class ComponentWiringTests {
 
         long expectedRunningValue = 0;
         for (int i = 0; i < 1000; i++) {
-            if (i % 3 == 0) {
+            if (i % 5 == 0) {
                 expectedRunningValue += i;
                 fooInput.put(i);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
-            } else if (i % 3 == 1) {
+            } else if (i % 5 == 1) {
                 final boolean choice = i % 7 == 0;
                 expectedRunningValue *= choice ? 1 : -1;
                 barInput.put(choice);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
                 assertEquals("" + expectedRunningValue, outputValue.get());
-            } else {
+            } else if (i % 5 == 2) {
                 final String value = "value" + i;
                 expectedRunningValue *= value.hashCode();
                 bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else if (i % 5 == 3) {
+                expectedRunningValue -= 1;
+                triggerQux.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                assertEquals("" + expectedRunningValue, outputValue.get());
+            } else {
+                expectedRunningValue *= 1.5;
+                triggerCorge.put(null);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void filterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
+
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
+
+        final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
+
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
+
+        if (bindLocation == 0) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final InputWire<Integer> fooInput = fooBarBazWiring.getInputWire(FooBarBaz::handleFoo);
+        final InputWire<Boolean> barInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBar);
+        final InputWire<String> bazInput = fooBarBazWiring.getInputWire(FooBarBaz::handleBaz);
+        final InputWire<Void> triggerQux = fooBarBazWiring.getInputWire(FooBarBaz::triggerQux);
+        final InputWire<Void> triggerCorge = fooBarBazWiring.getInputWire(FooBarBaz::triggerCorge);
+
+        final OutputWire<Long> output = fooBarBazWiring.getFilteredOutput(FooBarBaz::filter);
+
+        // Getting the same filter multiple times should yield the same instance
+        assertSame(output, fooBarBazWiring.getFilteredOutput(FooBarBaz::filter));
+
+        if (bindLocation == 1) {
+            fooBarBazWiring.bind(fooBarBazImpl);
+        }
+
+        final AtomicReference<Long> outputValue = new AtomicReference<>();
+        output.solderTo("outputHandler", "output", outputValue::set);
+
+        long expectedRunningValue = 0;
+        for (int i = 0; i < 1000; i++) {
+            outputValue.set(null);
+            if (i % 5 == 0) {
+                expectedRunningValue += i;
+                fooInput.put(i);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else if (i % 5 == 1) {
+                final boolean choice = i % 7 == 0;
+                expectedRunningValue *= choice ? 1 : -1;
+                barInput.put(choice);
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else if (i % 5 == 2) {
+                final String value = "value" + i;
+                expectedRunningValue *= value.hashCode();
+                bazInput.put(value);
+                assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
+            } else if (i % 5 == 3) {
+                expectedRunningValue -= 1;
+                triggerQux.put(null);
+                final Long expectedValue = expectedRunningValue % 2 == 0 ? expectedRunningValue : null;
+                assertEquals(expectedValue, outputValue.get());
+            } else {
+                expectedRunningValue *= 1.5;
+                triggerCorge.put(null);
                 assertEquals(expectedRunningValue, fooBarBazImpl.getRunningValue());
             }
         }
@@ -282,16 +407,13 @@ public class ComponentWiringTests {
                 TestPlatformContextBuilder.create().build();
 
         final WiringModel wiringModel =
-                WiringModel.create(platformContext, platformContext.getTime(), ForkJoinPool.commonPool());
+                WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<List<String>> scheduler = wiringModel
-                .schedulerBuilder("test")
-                .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
         final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
-                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, scheduler);
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 
         if (bindLocation == 0) {
             componentWiring.bind(new ComponentWithListOutputImpl());
@@ -314,6 +436,101 @@ public class ComponentWiringTests {
 
         componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
         expectedOutputData.addAll(List.of("1", "2", "3"));
+
+        assertEquals(expectedOutputData, outputData);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void filteredSplitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
+
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> filteredOutput =
+                componentWiring.getSplitAndFilteredOutput(ComponentWithListOutput::filter);
+        assertSame(filteredOutput, componentWiring.getSplitAndFilteredOutput(ComponentWithListOutput::filter));
+
+        final List<String> outputData = new ArrayList<>();
+        filteredOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        for (final String s : "hello world".split("")) {
+            if (s.hashCode() % 2 == 0) {
+                expectedOutputData.add(s);
+            }
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        for (final String s : "123".split("")) {
+            if (s.hashCode() % 2 == 0) {
+                expectedOutputData.add(s);
+            }
+        }
+
+        assertEquals(expectedOutputData, outputData);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void transformedSplitterTest(final int bindLocation) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
+
+        final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
+
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
+
+        if (bindLocation == 0) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        final OutputWire<String> transformedOutput =
+                componentWiring.getSplitAndTransformedOutput(ComponentWithListOutput::transformer);
+        assertSame(
+                transformedOutput, componentWiring.getSplitAndTransformedOutput(ComponentWithListOutput::transformer));
+
+        final List<String> outputData = new ArrayList<>();
+        transformedOutput.solderTo("addToOutputData", "split data", outputData::add);
+
+        final List<String> expectedOutputData = new ArrayList<>();
+
+        if (bindLocation == 1) {
+            componentWiring.bind(new ComponentWithListOutputImpl());
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputA).put("hello world");
+        for (final String s : "hello world".split("")) {
+            expectedOutputData.add("(" + s + ")");
+        }
+
+        componentWiring.getInputWire(ComponentWithListOutput::handleInputB).put(123L);
+        for (final String s : "123".split("")) {
+            expectedOutputData.add("(" + s + ")");
+        }
 
         assertEquals(expectedOutputData, outputData);
     }

@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.state.signed;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -30,27 +31,23 @@ import java.time.Instant;
  * 		the minimum round to be considered a valid state
  * @param consensusTimestamp
  * 		The consensus timestamp from an earlier state
- * @param addressBookHash
- * 		The address book hash value for the current address book (mostly used for diagnostics).
+ * @param rosterHash
+ * 		The roster hash value for the current roster (mostly used for diagnostics).
  * @param consensusEventsRunningHash
  * 		The running hash of the consensus event hashes throughout history
- * @param epochHash
- * 		The epoch hash from an earlier state.
  */
 public record SignedStateValidationData(
         long round,
         @NonNull Instant consensusTimestamp,
-        @Nullable Hash addressBookHash,
-        @NonNull Hash consensusEventsRunningHash,
-        @Nullable Hash epochHash) {
+        @Nullable Hash rosterHash,
+        @NonNull Hash consensusEventsRunningHash) {
 
-    public SignedStateValidationData(@NonNull final PlatformState that, @Nullable final AddressBook addressBook) {
+    public SignedStateValidationData(@NonNull final PlatformStateAccessor that, @Nullable final Roster roster) {
         this(
                 that.getRound(),
                 that.getConsensusTimestamp(),
-                addressBook == null ? null : addressBook.getHash(),
-                that.getRunningEventHash(),
-                that.getEpochHash());
+                roster == null ? null : RosterUtils.hash(roster),
+                that.getLegacyRunningEventHash());
     }
 
     /**
@@ -67,10 +64,8 @@ public record SignedStateValidationData(
                 .append(consensusTimestamp)
                 .append(", consensus Events running hash = ")
                 .append(consensusEventsRunningHash)
-                .append(", address book hash = ")
-                .append(addressBookHash != null ? addressBookHash : "not provided")
-                .append(", epoch hash = ")
-                .append(epochHash)
+                .append(", roster hash = ")
+                .append(rosterHash != null ? rosterHash : "not provided")
                 .toString();
     }
 }

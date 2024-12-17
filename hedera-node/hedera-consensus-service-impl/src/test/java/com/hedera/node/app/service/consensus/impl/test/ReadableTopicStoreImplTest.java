@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.consensus.impl.test;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,10 +28,11 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +51,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.topicId().topicNum());
+        assertEquals(topicEntityNum, topic.topicId().topicNum());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
@@ -59,7 +59,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         assertEquals(autoRenewId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
-        assertArrayEquals(runningHash, asBytes(topic.runningHash()));
+        assertArrayEquals(runningHash, CommonPbjConverters.asBytes(topic.runningHash()));
     }
 
     @Test
@@ -75,7 +75,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.topicId().topicNum());
+        assertEquals(topicEntityNum, topic.topicId().topicNum());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
@@ -83,7 +83,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         assertEquals(accountId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
-        assertArrayEquals(runningHash, asBytes(topic.runningHash()));
+        assertArrayEquals(runningHash, CommonPbjConverters.asBytes(topic.runningHash()));
     }
 
     @Test

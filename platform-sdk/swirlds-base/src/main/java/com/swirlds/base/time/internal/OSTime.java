@@ -25,7 +25,9 @@ import java.time.Instant;
  */
 public final class OSTime implements Time {
 
-    private static final Time instance = new OSTime();
+    private static final class InstanceHolder {
+        private static final Time INSTANCE = new OSTime();
+    }
 
     private OSTime() {}
 
@@ -34,7 +36,7 @@ public final class OSTime implements Time {
      */
     @NonNull
     public static Time getInstance() {
-        return instance;
+        return InstanceHolder.INSTANCE;
     }
 
     /**

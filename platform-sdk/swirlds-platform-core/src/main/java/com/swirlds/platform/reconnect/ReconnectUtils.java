@@ -21,7 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -60,7 +60,7 @@ public final class ReconnectUtils {
     /**
      * Hash the working state to prepare for reconnect
      */
-    static void hashStateForReconnect(final State workingState) {
+    static void hashStateForReconnect(final MerkleRoot workingState) {
         try {
             MerkleCryptoFactory.getInstance().digestTreeAsync(workingState).get();
         } catch (final ExecutionException e) {

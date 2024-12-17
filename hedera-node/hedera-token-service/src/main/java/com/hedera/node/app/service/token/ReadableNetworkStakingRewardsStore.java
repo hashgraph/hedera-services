@@ -30,8 +30,8 @@ public interface ReadableNetworkStakingRewardsStore {
      */
     boolean isStakingRewardsActivated();
     /**
-     * Total of (balance + stakedToMe) for all accounts staked to all nodes in the network with declineReward=false, at the
-     * beginning of the new staking period.
+     * Total of (balance + stakedToMe) for all accounts staked to all nodes in the network with declineReward=false,
+     * at the beginning of the new staking period.
      * @return total stake reward start
      */
     long totalStakeRewardStart();
@@ -43,13 +43,14 @@ public interface ReadableNetworkStakingRewardsStore {
     long totalStakedStart();
     /**
      * The total staking rewards in tinybars that COULD be collected by all accounts staking to all nodes after the end
-     * of this staking period; assuming that no account "renounces" its rewards by, for example, setting declineReward=true.
+     * of this staking period; assuming that no account "renounces" its rewards by, for example, setting
+     * declineReward=true.
      * @return total reward
      */
     long pendingRewards();
 
     /**
-     * Returns the {link NetworkStakingRewards} in state
+     * Returns the {link NetworkStakingRewards} in state.
      * @return the {link NetworkStakingRewards} in state
      */
     NetworkStakingRewards get();

@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -40,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
@@ -48,13 +46,13 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
@@ -109,13 +107,12 @@ public class SubmitMessageLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(runSubmitMessages());
     }
 
-    private static HapiSpec runSubmitMessages() {
+    final Stream<DynamicTest> runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
-        final AtomicInteger submittedSoFar = new AtomicInteger(0);
         Supplier<HapiSpecOperation[]> submitBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};
 
@@ -132,18 +129,11 @@ public class SubmitMessageLoadTest extends LoadTest {
                                         .passphrase(KeyFactory.PEM_PASSPHRASE),
                         // if just created a new key then export spec for later reuse
                         pemFile == null
-                                ? withOpContext(
-                                        (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
+                                ? withOpContext((spec, ignore) ->
+                                        spec.keys().exportEd25519Key("topicSubmitKey.pem", SUBMIT_KEY))
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of(
-                                        "hapi.throttling.buckets.fastOpBucket.capacity",
-                                        "4000",
-                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                        "1.0")),
                         cryptoCreate(SENDER)
                                 .balance(ignore -> settings.getInitialBalance())
                                 .withRecharging()
@@ -200,7 +190,6 @@ public class SubmitMessageLoadTest extends LoadTest {
                 .payingWith(senderId)
                 .signedBy(senderKey, submitKey)
                 .fee(100_000_000)
-                .suppressStats(true)
                 .hasRetryPrecheckFrom(
                         BUSY,
                         DUPLICATE_TRANSACTION,

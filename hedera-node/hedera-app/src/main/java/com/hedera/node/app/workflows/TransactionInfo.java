@@ -50,18 +50,20 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public record TransactionInfo(
         @NonNull Transaction transaction,
         @NonNull TransactionBody txBody,
-        @Nullable TransactionID transactionID,
-        @Nullable AccountID payerID,
+        @NonNull TransactionID transactionID,
+        @NonNull AccountID payerID,
         @NonNull SignatureMap signatureMap,
         @NonNull Bytes signedBytes,
-        @NonNull HederaFunctionality functionality) {
+        @NonNull HederaFunctionality functionality,
+        @Nullable Bytes serializedTransaction) {
 
     public TransactionInfo(
             @NonNull Transaction transaction,
             @NonNull TransactionBody txBody,
             @NonNull SignatureMap signatureMap,
             @NonNull Bytes signedBytes,
-            @NonNull HederaFunctionality functionality) {
+            @NonNull HederaFunctionality functionality,
+            @Nullable Bytes serializedTransaction) {
         this(
                 transaction,
                 txBody,
@@ -69,24 +71,7 @@ public record TransactionInfo(
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
                 signatureMap,
                 signedBytes,
-                functionality);
-    }
-
-    public static TransactionInfo from(
-            @NonNull Transaction transaction,
-            @NonNull TransactionBody txBody,
-            @NonNull SignatureMap signatureMap,
-            @NonNull Bytes signedBytes,
-            @NonNull HederaFunctionality functionality) {
-        TransactionID transactionId = null;
-        AccountID payerId = null;
-        if (txBody.transactionID() != null) {
-            transactionId = txBody.transactionID();
-            if (transactionId.accountID() != null) {
-                payerId = txBody.transactionID().accountID();
-            }
-        }
-        return new TransactionInfo(
-                transaction, txBody, transactionId, payerId, signatureMap, signedBytes, functionality);
+                functionality,
+                serializedTransaction);
     }
 }

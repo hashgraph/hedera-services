@@ -17,12 +17,17 @@
 package com.swirlds.demo.iss;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,9 +46,27 @@ import org.apache.logging.log4j.Logger;
  * a halt, even if an ISS isn't detected.
  */
 public class ISSTestingToolMain implements SwirldMain {
+
     private static final Logger logger = LogManager.getLogger(ISSTestingToolMain.class);
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+
+    static {
+        try {
+            logger.info(STARTUP.getMarker(), "Registering ISSTestingToolState with ConstructableRegistry");
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(ISSTestingToolState.class, () -> {
+                ISSTestingToolState issTestingToolState = new ISSTestingToolState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                return issTestingToolState;
+            }));
+            registerMerkleStateRootClassIds();
+            logger.info(STARTUP.getMarker(), "ISSTestingToolState is registered with ConstructableRegistry");
+        } catch (ConstructableRegistryException e) {
+            logger.error(STARTUP.getMarker(), "Failed to register ISSTestingToolState", e);
+            throw new RuntimeException(e);
+        }
+    }
 
     private Platform platform;
 
@@ -87,8 +110,12 @@ public class ISSTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new ISSTestingToolState();
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new ISSTestingToolState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+        return state;
     }
 
     /**

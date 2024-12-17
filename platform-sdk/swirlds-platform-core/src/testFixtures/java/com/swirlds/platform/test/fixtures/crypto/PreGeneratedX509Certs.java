@@ -27,20 +27,34 @@ import com.swirlds.common.test.fixtures.io.ResourceNotFoundException;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Principal;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.X509Certificate;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -92,7 +106,7 @@ public class PreGeneratedX509Certs {
 
         // create address book without any certs.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numCerts).build();
+                RandomAddressBookBuilder.create(random).withSize(numCerts).build();
 
         // generate certs for the address book.
         generateKeysAndCerts(addressBook);
@@ -147,7 +161,7 @@ public class PreGeneratedX509Certs {
             }
         }
         long index = nodeId % sigCerts.size();
-        return sigCerts.get(new NodeId(index));
+        return sigCerts.get(NodeId.of(index));
     }
 
     /**
@@ -164,7 +178,7 @@ public class PreGeneratedX509Certs {
             }
         }
         long index = nodeId % agreeCerts.size();
-        return agreeCerts.get(new NodeId(index));
+        return agreeCerts.get(NodeId.of(index));
     }
 
     /**
@@ -196,7 +210,7 @@ public class PreGeneratedX509Certs {
             for (int i = 0; i < numSigCerts; i++) {
                 SerializableX509Certificate sigCert =
                         sigCertDis.readSerializable(false, SerializableX509Certificate::new);
-                sigCerts.put(new NodeId(i), sigCert);
+                sigCerts.put(NodeId.of(i), sigCert);
             }
 
             // load agreement certs
@@ -204,10 +218,141 @@ public class PreGeneratedX509Certs {
             for (int i = 0; i < numAgreeCerts; i++) {
                 SerializableX509Certificate agreeCert =
                         agreeCertDis.readSerializable(false, SerializableX509Certificate::new);
-                agreeCerts.put(new NodeId(i), agreeCert);
+                agreeCerts.put(NodeId.of(i), agreeCert);
             }
         } catch (final IOException e) {
             throw new IllegalStateException("critical failure in loading certificates", e);
         }
+    }
+
+    public static X509Certificate createBadCertificate() {
+        return new X509Certificate() {
+            @Override
+            public void checkValidity() throws CertificateExpiredException, CertificateNotYetValidException {}
+
+            @Override
+            public void checkValidity(final Date date)
+                    throws CertificateExpiredException, CertificateNotYetValidException {}
+
+            @Override
+            public int getVersion() {
+                return 0;
+            }
+
+            @Override
+            public BigInteger getSerialNumber() {
+                return null;
+            }
+
+            @Override
+            public Principal getIssuerDN() {
+                return null;
+            }
+
+            @Override
+            public Principal getSubjectDN() {
+                return null;
+            }
+
+            @Override
+            public Date getNotBefore() {
+                return null;
+            }
+
+            @Override
+            public Date getNotAfter() {
+                return null;
+            }
+
+            @Override
+            public byte[] getTBSCertificate() throws CertificateEncodingException {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] getSignature() {
+                return new byte[0];
+            }
+
+            @Override
+            public String getSigAlgName() {
+                return "";
+            }
+
+            @Override
+            public String getSigAlgOID() {
+                return "";
+            }
+
+            @Override
+            public byte[] getSigAlgParams() {
+                return new byte[0];
+            }
+
+            @Override
+            public boolean[] getIssuerUniqueID() {
+                return new boolean[0];
+            }
+
+            @Override
+            public boolean[] getSubjectUniqueID() {
+                return new boolean[0];
+            }
+
+            @Override
+            public boolean[] getKeyUsage() {
+                return new boolean[0];
+            }
+
+            @Override
+            public int getBasicConstraints() {
+                return 0;
+            }
+
+            @Override
+            public byte[] getEncoded() throws CertificateEncodingException {
+                return new byte[0];
+            }
+
+            @Override
+            public void verify(final PublicKey key)
+                    throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
+                            SignatureException {}
+
+            @Override
+            public void verify(final PublicKey key, final String sigProvider)
+                    throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
+                            SignatureException {}
+
+            @Override
+            public String toString() {
+                return "";
+            }
+
+            @Override
+            public PublicKey getPublicKey() {
+                return null;
+            }
+
+            @Override
+            public boolean hasUnsupportedCriticalExtension() {
+                return false;
+            }
+
+            @Override
+            public Set<String> getCriticalExtensionOIDs() {
+                return Set.of();
+            }
+
+            @Override
+            public Set<String> getNonCriticalExtensionOIDs() {
+                return Set.of();
+            }
+
+            @Override
+            public byte[] getExtensionValue(final String oid) {
+                return new byte[0];
+            }
+        };
     }
 }

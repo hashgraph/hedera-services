@@ -43,8 +43,8 @@ import java.util.Set;
 public interface SignatureExpander {
     /**
      * Given a list of {@link SignaturePair}s, find all that have a full key prefix, uncompressing any ECDSA_SECP256K1
-     * keys, and populate the given set of {@code expanded} pairs. Such expanded keys do NOT have the evm alias, if any,
-     * precomputed.
+     * keys, and populate the given set of {@code expanded} pairs. Note these expanded pairs also have the EVM alias
+     * if the expanded pair is for an ECDSA(secp256k1) key.
      *
      * @param sigPairs The {@link SignaturePair}s to search for full key prefixes. This list must be pre-filtered such
      *                 that there are no duplicate entries and one prefix is not the prefix of another.

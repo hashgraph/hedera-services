@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,7 +38,7 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
     /**
      * Get the next event.
      */
-    IndexedEvent generateEvent();
+    EventImpl generateEvent();
 
     /**
      * Get the number of sources (i.e. nodes) contained by this generator.
@@ -106,8 +106,8 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * @param numberOfEvents
      * 		The number of events to get.
      */
-    default List<IndexedEvent> generateEvents(final int numberOfEvents) {
-        final List<IndexedEvent> events = new ArrayList<>(numberOfEvents);
+    default List<EventImpl> generateEvents(final int numberOfEvents) {
+        final List<EventImpl> events = new ArrayList<>(numberOfEvents);
         for (int i = 0; i < numberOfEvents; i++) {
             events.add(generateEvent());
         }
@@ -128,6 +128,15 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * @return the maximum event generation for the supplied creator
      */
     long getMaxGeneration(@Nullable final NodeId creatorId);
+
+    /**
+     * Returns the maximum birth round of this event generator.
+     *
+     * @param creatorId
+     * 		the event creator
+     * @return the maximum event birth round for the supplied creator
+     */
+    long getMaxBirthRound(@Nullable final NodeId creatorId);
 
     /**
      * Returns the maximum generation of all events created by this generator

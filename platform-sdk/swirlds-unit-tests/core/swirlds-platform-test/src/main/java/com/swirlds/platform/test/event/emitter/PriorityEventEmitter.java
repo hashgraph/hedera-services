@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.event.emitter;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import java.util.List;
 
@@ -57,7 +57,7 @@ public class PriorityEventEmitter extends BufferingEventEmitter<PriorityEventEmi
     }
 
     @Override
-    public IndexedEvent emitEvent() {
+    public EventImpl emitEvent() {
         // Emit the next event from the highest priority node, if possible. If not possible, try the next priority node.
         // Repeat in priority order until an event can be emitted.
         for (final int nodeIndex : nodePriorities) {

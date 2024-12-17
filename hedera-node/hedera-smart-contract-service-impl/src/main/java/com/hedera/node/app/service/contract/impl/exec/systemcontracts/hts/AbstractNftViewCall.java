@@ -16,20 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.ordinalRevertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.hapi.utils.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -51,8 +50,7 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
     @Override
     public @NonNull PricedResult execute() {
         if (token != null && token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            // (FUTURE) consider removing this pattern, but for now match
-            // mono-service by halting on invalid token type
+            // For backwards compatibility, we need to halt here per issue #8746.
             return gasOnly(
                     haltResult(
                             HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
@@ -67,15 +65,23 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
         if (nft == null) {
-            return revertResult(INVALID_NFT_ID, gasCalculator.viewGasRequirement());
+            final var status = missingNftStatus();
+            return gasOnly(ordinalRevertResult(status, gasCalculator.viewGasRequirement()), status, true);
         } else {
             return resultOfViewingNft(token, nft);
         }
     }
+
+    /**
+     * The status to return when the NFT is missing.
+     *
+     * @return the status to return when the NFT is missing
+     */
+    protected abstract ResponseCodeEnum missingNftStatus();
 
     /**
      * Returns the result of viewing the given NFT of the given token
@@ -85,5 +91,5 @@ public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCal
      * @return the result of viewing the given NFT of the given token
      */
     @NonNull
-    protected abstract FullResult resultOfViewingNft(@NonNull Token token, @NonNull Nft nft);
+    protected abstract PricedResult resultOfViewingNft(@NonNull Token token, @NonNull Nft nft);
 }

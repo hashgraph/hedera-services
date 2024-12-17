@@ -16,15 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
@@ -44,7 +42,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public record FullResult(
         @NonNull PrecompiledContract.PrecompileContractResult result,
         long gasRequirement,
-        @Nullable ContractCallRecordBuilder recordBuilder) {
+        @Nullable ContractCallStreamBuilder recordBuilder) {
     public FullResult {
         requireNonNull(result);
     }
@@ -57,16 +55,12 @@ public record FullResult(
         return result.isRefundGas();
     }
 
-    public void recordInsufficientGas() {
-        if (recordBuilder != null) {
-            recordBuilder.status(INSUFFICIENT_GAS);
-            // match mono - update function result with the INSUFFICIENT_GAS status
-            recordBuilder.contractCallResult(recordBuilder
-                    .contractFunctionResult()
-                    .copyBuilder()
-                    .contractCallResult(tuweniToPbjBytes(Bytes.wrap(UInt256.valueOf(INSUFFICIENT_GAS.protoOrdinal()))))
-                    .build());
-        }
+    public static FullResult ordinalRevertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
+        requireNonNull(reason);
+        return new FullResult(
+                PrecompiledContract.PrecompileContractResult.revert(Bytes.wrap(UInt256.valueOf(reason.protoOrdinal()))),
+                gasRequirement,
+                null);
     }
 
     public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
@@ -85,7 +79,7 @@ public record FullResult(
     }
 
     public static FullResult revertResult(
-            @NonNull final ContractCallRecordBuilder recordBuilder, final long gasRequirement) {
+            @NonNull final ContractCallStreamBuilder recordBuilder, final long gasRequirement) {
         requireNonNull(recordBuilder);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.revert(
@@ -96,7 +90,7 @@ public record FullResult(
     }
 
     public static FullResult haltResult(
-            @NonNull final ContractCallRecordBuilder recordBuilder, final long gasRequirement) {
+            @NonNull final ContractCallStreamBuilder recordBuilder, final long gasRequirement) {
         requireNonNull(recordBuilder);
         final var reason = recordBuilder.status() == NOT_SUPPORTED
                 ? CustomExceptionalHaltReason.NOT_SUPPORTED
@@ -118,7 +112,7 @@ public record FullResult(
     public static FullResult successResult(
             @NonNull final ByteBuffer encoded,
             final long gasRequirement,
-            @NonNull final ContractCallRecordBuilder recordBuilder) {
+            @NonNull final ContractCallStreamBuilder recordBuilder) {
         requireNonNull(encoded);
         return new FullResult(
                 PrecompiledContract.PrecompileContractResult.success(Bytes.wrap(encoded.array())),

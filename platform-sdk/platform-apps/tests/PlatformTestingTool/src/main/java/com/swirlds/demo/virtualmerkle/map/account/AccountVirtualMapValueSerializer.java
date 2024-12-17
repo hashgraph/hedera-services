@@ -18,10 +18,8 @@ package com.swirlds.demo.virtualmerkle.map.account;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class AccountVirtualMapValueSerializer implements ValueSerializer<AccountVirtualMapValue> {
 
@@ -57,22 +55,9 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
     }
 
     @Override
-    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) throws IOException {
-        value.serialize(buffer);
-    }
-
-    @Override
     public AccountVirtualMapValue deserialize(@NonNull final ReadableSequentialData in) {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final AccountVirtualMapValue value = new AccountVirtualMapValue();
-        value.deserialize(buffer, (int) dataVersion);
         return value;
     }
 }

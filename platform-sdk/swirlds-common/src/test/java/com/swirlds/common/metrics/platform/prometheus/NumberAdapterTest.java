@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
-import com.swirlds.common.metrics.platform.DefaultIntegerGauge;
-import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.impl.DefaultIntegerGauge;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -141,7 +141,7 @@ class NumberAdapterTest {
         final NumberAdapter adapter = new NumberAdapter(registry, metric, PLATFORM);
 
         // when
-        adapter.update(Snapshot.of(metric), new NodeId(1L));
+        adapter.update(Snapshot.of(metric), NodeId.of(1L));
 
         // then
         assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, NODE_VALUE))
@@ -154,7 +154,7 @@ class NumberAdapterTest {
         final CollectorRegistry registry = new CollectorRegistry();
         final DefaultIntegerGauge metric = new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME));
         final NumberAdapter adapter = new NumberAdapter(registry, metric, PLATFORM);
-        final NodeId nodeId = new NodeId(1L);
+        final NodeId nodeId = NodeId.of(1L);
 
         // then
         assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);

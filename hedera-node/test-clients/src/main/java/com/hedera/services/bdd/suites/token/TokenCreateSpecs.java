@@ -18,7 +18,11 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.*;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.OP_BODY;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.SIGNED_TRANSACTION;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION;
+import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION_BODY;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -47,38 +51,70 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fra
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TOKEN_NAMES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.salted;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static java.lang.Integer.parseInt;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.time.Instant;
 import java.util.List;
 import java.util.OptionalLong;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -88,17 +124,14 @@ import org.junit.jupiter.api.Tag;
  *     <li>Default values.</li>
  * </ul>
  */
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenCreateSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
+public class TokenCreateSpecs {
     private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
     private static final String PRIMARY = "primary";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String ADMIN_KEY = "adminKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String AUTO_RENEW = "autoRenew";
-    private static final String NAME = "012345678912";
     private static final String CREATE_TXN = "createTxn";
     private static final String PAYER = "payer";
 
@@ -109,49 +142,60 @@ public class TokenCreateSpecs extends HapiSuite {
     private static final String FIRST_USER = "Client1";
     private static final String SENTINEL_VALUE = "0.0.0";
 
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-
-    public static void main(String... args) {
-        new TokenCreateSpecs().runSuiteSync();
+    @HapiTest
+    final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
+        return defaultHapiSpec("getInfoIdVariantsTreatedAsExpected")
+                .given(tokenCreate("something"))
+                .when()
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getTokenInfo("something")));
     }
 
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate("autoRenewAccount"),
+                        cryptoCreate("feeCollector"),
+                        tokenCreate("feeToken"),
+                        tokenAssociate("feeCollector", "feeToken"))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCreate("fungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .autoRenewAccount("autoRenewAccount")
+                                .withCustom(fixedHbarFee(1L, "feeCollector"))
+                                .withCustom(fixedHtsFee(1L, "feeToken", "feeCollector"))
+                                .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), "feeCollector"))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, "feeCollector", "autoRenewAccount")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey")
+                                .autoRenewAccount("autoRenewAccount")
+                                .withCustom(royaltyFeeWithFallback(
+                                        1L, 10L, fixedHbarFeeInheritingRoyaltyCollector(123L), "feeCollector"))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, "autoRenewAccount")));
     }
 
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                creationValidatesNonFungiblePrechecks(),
-                creationValidatesMaxSupply(),
-                creationValidatesMemo(),
-                creationValidatesName(),
-                creationValidatesSymbol(),
-                treasuryHasCorrectBalance(),
-                creationRequiresAppropriateSigs(),
-                creationRequiresAppropriateSigsHappyPath(),
-                initialSupplyMustBeSane(),
-                creationYieldsExpectedToken(),
-                creationSetsExpectedName(),
-                creationValidatesTreasuryAccount(),
-                autoRenewValidationWorks(),
-                creationWithoutKYCSetsCorrectStatus(),
-                creationValidatesExpiry(),
-                creationValidatesFreezeDefaultWithNoFreezeKey(),
-                creationSetsCorrectExpiry(),
-                creationHappyPath(),
-                worksAsExpectedWithDefaultTokenId(),
-                cannotCreateWithExcessiveLifetime(),
-                prechecksWork(),
-                /* HIP-18 */
-                onlyValidCustomFeeScheduleCanBeCreated(),
-                feeCollectorSigningReqsWorkForTokenCreate(),
-                createsFungibleInfiniteByDefault(),
-                baseCreationsHaveExpectedPrices(),
-                /* HIP-23 */
-                validateNewTokenAssociations());
+    @HapiTest
+    final Stream<DynamicTest> canHandleInvalidTokenCreateTransactions() {
+        final String alice = "ALICE";
+        return defaultHapiSpec("canHandleInvalidTokenCreateTransactions")
+                .given(cryptoCreate(alice))
+                .when()
+                .then(
+                        tokenCreate(null).hasKnownStatus(MISSING_TOKEN_NAME),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        tokenCreate(A_TOKEN)
+                                .treasury(alice)
+                                .signedBy(DEFAULT_PAYER, alice)
+                                .hasKnownStatus(SUCCESS));
     }
 
     /**
@@ -166,7 +210,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
     @HapiTest
-    final HapiSpec validateNewTokenAssociations() {
+    final Stream<DynamicTest> validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
         final String fractionalCollector = "fractionalCollector";
@@ -177,80 +221,72 @@ public class TokenCreateSpecs extends HapiSuite {
         final String creationTxn = "creationTxn";
         final String failedCreationTxn = "failedCreationTxn";
 
-        return defaultHapiSpec("ValidateNewTokenAssociations", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(tbd),
-                        cryptoDelete(tbd),
-                        cryptoCreate(hbarCollector),
-                        cryptoCreate(fractionalCollector),
-                        cryptoCreate(selfDenominatedFixedCollector),
-                        cryptoCreate(otherSelfDenominatedFixedCollector),
-                        cryptoCreate(treasury).maxAutomaticTokenAssociations(10).balance(ONE_HUNDRED_HBARS))
-                .when(
-                        getAccountInfo(treasury).savingSnapshot(treasury),
-                        getAccountInfo(hbarCollector).savingSnapshot(hbarCollector),
-                        getAccountInfo(fractionalCollector).savingSnapshot(fractionalCollector),
-                        getAccountInfo(selfDenominatedFixedCollector).savingSnapshot(selfDenominatedFixedCollector),
-                        getAccountInfo(otherSelfDenominatedFixedCollector)
-                                .savingSnapshot(otherSelfDenominatedFixedCollector),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
-                                .withCustom(fixedHbarFee(20L, hbarCollector))
-                                .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), fractionalCollector))
-                                .withCustom(fixedHtsFee(2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
-                                .withCustom(fixedHtsFee(3L, SENTINEL_VALUE, otherSelfDenominatedFixedCollector))
-                                .signedBy(
-                                        DEFAULT_PAYER,
-                                        treasury,
-                                        fractionalCollector,
-                                        selfDenominatedFixedCollector,
-                                        otherSelfDenominatedFixedCollector)
-                                .via(creationTxn),
-                        tokenCreate(notToBeToken)
-                                .treasury(tbd)
-                                .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
-                                .via(failedCreationTxn))
-                .then(
-                        /* Validate records */
-                        getTxnRecord(creationTxn)
-                                .hasPriority(recordWith()
-                                        .autoAssociated(accountTokenPairs(List.of(
-                                                Pair.of(fractionalCollector, A_TOKEN),
-                                                Pair.of(selfDenominatedFixedCollector, A_TOKEN),
-                                                Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN),
-                                                Pair.of(treasury, A_TOKEN))))),
-                        getTxnRecord(failedCreationTxn)
-                                .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
-                        /* Validate state */
-                        getAccountInfo(hbarCollector).has(accountWith().noChangesFromSnapshot(hbarCollector)),
-                        getAccountInfo(treasury)
-                                .hasMaxAutomaticAssociations(10)
-                                /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
-                                .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(treasury, List.of(relationshipWith(A_TOKEN)))),
-                        getAccountInfo(fractionalCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                fractionalCollector, List.of(relationshipWith(A_TOKEN)))),
-                        getAccountInfo(selfDenominatedFixedCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                selfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))),
-                        getAccountInfo(otherSelfDenominatedFixedCollector)
-                                .has(accountWith()
-                                        .newAssociationsFromSnapshot(
-                                                otherSelfDenominatedFixedCollector,
-                                                List.of(relationshipWith(A_TOKEN)))));
+        return hapiTest(
+                cryptoCreate(tbd),
+                cryptoDelete(tbd),
+                cryptoCreate(hbarCollector),
+                cryptoCreate(fractionalCollector),
+                cryptoCreate(selfDenominatedFixedCollector),
+                cryptoCreate(otherSelfDenominatedFixedCollector),
+                cryptoCreate(treasury).maxAutomaticTokenAssociations(10).balance(ONE_HUNDRED_HBARS),
+                getAccountInfo(treasury).savingSnapshot(treasury),
+                getAccountInfo(hbarCollector).savingSnapshot(hbarCollector),
+                getAccountInfo(fractionalCollector).savingSnapshot(fractionalCollector),
+                getAccountInfo(selfDenominatedFixedCollector).savingSnapshot(selfDenominatedFixedCollector),
+                getAccountInfo(otherSelfDenominatedFixedCollector).savingSnapshot(otherSelfDenominatedFixedCollector),
+                tokenCreate(A_TOKEN)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(treasury)
+                        .withCustom(fixedHbarFee(20L, hbarCollector))
+                        .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), fractionalCollector))
+                        .withCustom(fixedHtsFee(2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
+                        .withCustom(fixedHtsFee(3L, SENTINEL_VALUE, otherSelfDenominatedFixedCollector))
+                        .signedBy(
+                                DEFAULT_PAYER,
+                                treasury,
+                                fractionalCollector,
+                                selfDenominatedFixedCollector,
+                                otherSelfDenominatedFixedCollector)
+                        .via(creationTxn),
+                tokenCreate(notToBeToken)
+                        .treasury(tbd)
+                        .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+                        .via(failedCreationTxn),
+                /* Validate records */
+                getTxnRecord(creationTxn)
+                        .hasPriority(recordWith()
+                                .autoAssociated(accountTokenPairs(List.of(
+                                        Pair.of(fractionalCollector, A_TOKEN),
+                                        Pair.of(selfDenominatedFixedCollector, A_TOKEN),
+                                        Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN),
+                                        Pair.of(treasury, A_TOKEN))))),
+                getTxnRecord(failedCreationTxn).hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
+                /* Validate state */
+                getAccountInfo(hbarCollector).has(accountWith().noChangesFromSnapshot(hbarCollector)),
+                getAccountInfo(treasury)
+                        .hasMaxAutomaticAssociations(10)
+                        /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
+                        .hasAlreadyUsedAutomaticAssociations(0)
+                        .has(accountWith().newAssociationsFromSnapshot(treasury, List.of(relationshipWith(A_TOKEN)))),
+                getAccountInfo(fractionalCollector)
+                        .has(accountWith()
+                                .newAssociationsFromSnapshot(fractionalCollector, List.of(relationshipWith(A_TOKEN)))),
+                getAccountInfo(selfDenominatedFixedCollector)
+                        .has(accountWith()
+                                .newAssociationsFromSnapshot(
+                                        selfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))),
+                getAccountInfo(otherSelfDenominatedFixedCollector)
+                        .has(accountWith()
+                                .newAssociationsFromSnapshot(
+                                        otherSelfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))));
     }
 
     /**
      * Validates the default values for a {@code TokenCreate}'s token type (fungible) and supply type (infinite).
      */
     @HapiTest
-    final HapiSpec createsFungibleInfiniteByDefault() {
+    final Stream<DynamicTest> createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()
                 .when(tokenCreate("DefaultFungible"))
@@ -260,7 +296,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec worksAsExpectedWithDefaultTokenId() {
+    final Stream<DynamicTest> worksAsExpectedWithDefaultTokenId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
                 .given()
                 .when()
@@ -268,20 +304,19 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec cannotCreateWithExcessiveLifetime() {
-        final var smallBuffer = 12_345L;
-        final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
-        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-        return defaultHapiSpec("CannotCreateWithExcessiveLifetime", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given()
-                .when()
-                .then(
-                        tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        tokenCreate("neverToBe").expiry(okExpiry));
+    final Stream<DynamicTest> cannotCreateWithExcessiveLifetime() {
+        return hapiTest(doSeveralWithStartupConfigNow("entities.maxLifetime", (value, now) -> {
+            final var defaultMaxLifetime = Long.parseLong(value);
+            final var okExpiry = defaultMaxLifetime + now.getEpochSecond() - 12345L;
+            final var excessiveExpiry = defaultMaxLifetime + now.getEpochSecond() + 12345L;
+            return specOps(
+                    tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                    tokenCreate("neverToBe").expiry(okExpiry));
+        }));
     }
 
     @HapiTest
-    public HapiSpec autoRenewValidationWorks() {
+    final Stream<DynamicTest> autoRenewValidationWorks() {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
                 .given(
@@ -309,7 +344,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationYieldsExpectedToken() {
+    final Stream<DynamicTest> creationYieldsExpectedToken() {
         return defaultHapiSpec("CreationYieldsExpectedToken")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("freeze"))
                 .when(tokenCreate(PRIMARY)
@@ -322,218 +357,211 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationSetsExpectedName() {
+    final Stream<DynamicTest> creationSetsExpectedName() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec("CreationSetsExpectedName", NONDETERMINISTIC_TOKEN_NAMES)
-                .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
-                .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY),
+                getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
     }
 
     @HapiTest
-    public HapiSpec creationWithoutKYCSetsCorrectStatus() {
+    final Stream<DynamicTest> creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
-        return defaultHapiSpec(
-                        "CreationWithoutKYCSetsCorrectStatus",
-                        NONDETERMINISTIC_TOKEN_NAMES,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_TOKEN_NAMES)
-                .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
-                .then(getAccountInfo(TOKEN_TREASURY)
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY),
+                getAccountInfo(TOKEN_TREASURY)
                         .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
     }
 
     @HapiTest
-    public HapiSpec baseCreationsHaveExpectedPrices() {
-        final var civilian = "NonExemptPayer";
-
-        final var expectedCommonNoCustomFeesPriceUsd = 1.00;
-        final var expectedUniqueNoCustomFeesPriceUsd = 1.00;
-        final var expectedCommonWithCustomFeesPriceUsd = 2.00;
-        final var expectedUniqueWithCustomFeesPriceUsd = 2.00;
-
-        final var commonNoFees = "commonNoFees";
-        final var commonWithFees = "commonWithFees";
-        final var uniqueNoFees = "uniqueNoFees";
-        final var uniqueWithFees = "uniqueWithFees";
-
-        final var customFeeKey = "customFeeKey";
-
-        return defaultHapiSpec("BaseCreationsHaveExpectedPrices", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(
-                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(customFeeKey))
-                .when(
-                        tokenCreate(commonNoFees)
-                                .blankMemo()
-                                .name(NAME)
-                                .symbol("ABCD")
-                                .payingWith(civilian)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(ADMIN_KEY)
-                                .via(txnFor(commonNoFees)),
-                        tokenCreate(commonWithFees)
-                                .blankMemo()
-                                .name(NAME)
-                                .symbol("ABCD")
-                                .payingWith(civilian)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(ADMIN_KEY)
-                                .withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
-                                .feeScheduleKey(customFeeKey)
-                                .via(txnFor(commonWithFees)),
-                        tokenCreate(uniqueNoFees)
-                                .payingWith(civilian)
-                                .blankMemo()
-                                .name(NAME)
-                                .symbol("ABCD")
-                                .initialSupply(0L)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(ADMIN_KEY)
-                                .supplyKey(SUPPLY_KEY)
-                                .via(txnFor(uniqueNoFees)),
-                        tokenCreate(uniqueWithFees)
-                                .payingWith(civilian)
-                                .blankMemo()
-                                .name(NAME)
-                                .symbol("ABCD")
-                                .initialSupply(0L)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(ADMIN_KEY)
-                                .withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
-                                .supplyKey(SUPPLY_KEY)
-                                .feeScheduleKey(customFeeKey)
-                                .via(txnFor(uniqueWithFees)))
-                .then(
-                        validateChargedUsdWithin(txnFor(commonNoFees), expectedCommonNoCustomFeesPriceUsd, 0.01),
-                        validateChargedUsdWithin(txnFor(commonWithFees), expectedCommonWithCustomFeesPriceUsd, 0.01),
-                        validateChargedUsdWithin(txnFor(uniqueNoFees), expectedUniqueNoCustomFeesPriceUsd, 0.01),
-                        validateChargedUsdWithin(txnFor(uniqueWithFees), expectedUniqueWithCustomFeesPriceUsd, 0.01));
-    }
-
-    private String txnFor(String tokenSubType) {
-        return tokenSubType + "Txn";
-    }
-
-    @HapiTest
-    public HapiSpec creationHappyPath() {
+    final Stream<DynamicTest> creationHappyPath() {
         String memo = "JUMP";
         String saltedName = salted(PRIMARY);
         final var secondCreation = "secondCreation";
         final var pauseKey = "pauseKey";
-        return defaultHapiSpec("CreationHappyPath", NONDETERMINISTIC_TOKEN_NAMES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
-                        newKeyNamed(ADMIN_KEY),
-                        newKeyNamed("freezeKey"),
-                        newKeyNamed("kycKey"),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed("wipeKey"),
-                        newKeyNamed("feeScheduleKey"),
-                        newKeyNamed(pauseKey))
-                .when(
-                        tokenCreate(PRIMARY)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .entityMemo(memo)
-                                .name(saltedName)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .maxSupply(1000)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .adminKey(ADMIN_KEY)
-                                .freezeKey("freezeKey")
-                                .kycKey("kycKey")
-                                .supplyKey(SUPPLY_KEY)
-                                .wipeKey("wipeKey")
-                                .feeScheduleKey("feeScheduleKey")
-                                .pauseKey(pauseKey)
-                                .via(CREATE_TXN),
-                        tokenCreate(NON_FUNGIBLE_UNIQUE_FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .pauseKey(pauseKey)
-                                .initialSupply(0)
-                                .maxSupply(100)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey(GENESIS)
-                                .via(secondCreation),
-                        getTxnRecord(secondCreation)
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .autoAssociated(accountTokenPairsInAnyOrder(
-                                                List.of(Pair.of(TOKEN_TREASURY, NON_FUNGIBLE_UNIQUE_FINITE))))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            var createTxn = getTxnRecord(CREATE_TXN);
-                            allRunFor(spec, createTxn);
-                            var timestamp = createTxn
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getSeconds();
-                            spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
-                        }),
-                        getTokenInfo(PRIMARY)
-                                .logged()
-                                .hasRegisteredId(PRIMARY)
-                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSupplyType(TokenSupplyType.FINITE)
-                                .hasEntityMemo(memo)
-                                .hasName(saltedName)
-                                .hasTreasury(TOKEN_TREASURY)
-                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .hasValidExpiry()
-                                .hasDecimals(1)
-                                .hasAdminKey(PRIMARY)
-                                .hasFreezeKey(PRIMARY)
-                                .hasKycKey(PRIMARY)
-                                .hasSupplyKey(PRIMARY)
-                                .hasWipeKey(PRIMARY)
-                                .hasFeeScheduleKey(PRIMARY)
-                                .hasPauseKey(PRIMARY)
-                                .hasPauseStatus(TokenPauseStatus.Unpaused)
-                                .hasMaxSupply(1000)
-                                .hasTotalSupply(500)
-                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT),
-                        getTokenInfo(NON_FUNGIBLE_UNIQUE_FINITE)
-                                .logged()
-                                .hasRegisteredId(NON_FUNGIBLE_UNIQUE_FINITE)
-                                .hasTokenType(NON_FUNGIBLE_UNIQUE)
-                                .hasSupplyType(TokenSupplyType.FINITE)
-                                .hasPauseKey(PRIMARY)
-                                .hasPauseStatus(TokenPauseStatus.Unpaused)
-                                .hasTotalSupply(0)
-                                .hasMaxSupply(100),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(PRIMARY)
-                                        .balance(500)
-                                        .kyc(TokenKycStatus.Granted)
-                                        .freeze(TokenFreezeStatus.Unfrozen))
-                                .hasToken(relationshipWith(NON_FUNGIBLE_UNIQUE_FINITE)
-                                        .balance(0)
-                                        .kyc(TokenKycStatus.KycNotApplicable)
-                                        .freeze(TokenFreezeStatus.FreezeNotApplicable)));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed("freezeKey"),
+                newKeyNamed("kycKey"),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed("wipeKey"),
+                newKeyNamed("feeScheduleKey"),
+                newKeyNamed(pauseKey),
+                tokenCreate(PRIMARY)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(memo)
+                        .name(saltedName)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey("freezeKey")
+                        .kycKey("kycKey")
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey("wipeKey")
+                        .feeScheduleKey("feeScheduleKey")
+                        .pauseKey(pauseKey)
+                        .via(CREATE_TXN),
+                tokenCreate(NON_FUNGIBLE_UNIQUE_FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .pauseKey(pauseKey)
+                        .initialSupply(0)
+                        .maxSupply(100)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(GENESIS)
+                        .via(secondCreation),
+                getTxnRecord(secondCreation)
+                        .logged()
+                        .hasPriority(recordWith()
+                                .autoAssociated(accountTokenPairsInAnyOrder(
+                                        List.of(Pair.of(TOKEN_TREASURY, NON_FUNGIBLE_UNIQUE_FINITE))))),
+                withOpContext((spec, opLog) -> {
+                    var createTxn = getTxnRecord(CREATE_TXN);
+                    allRunFor(spec, createTxn);
+                    var timestamp = createTxn
+                            .getResponseRecord()
+                            .getConsensusTimestamp()
+                            .getSeconds();
+                    spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
+                }),
+                getTokenInfo(PRIMARY)
+                        .logged()
+                        .hasRegisteredId(PRIMARY)
+                        .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                        .hasSupplyType(TokenSupplyType.FINITE)
+                        .hasEntityMemo(memo)
+                        .hasName(saltedName)
+                        .hasTreasury(TOKEN_TREASURY)
+                        .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .hasValidExpiry()
+                        .hasDecimals(1)
+                        .hasAdminKey(PRIMARY)
+                        .hasFreezeKey(PRIMARY)
+                        .hasKycKey(PRIMARY)
+                        .hasSupplyKey(PRIMARY)
+                        .hasWipeKey(PRIMARY)
+                        .hasFeeScheduleKey(PRIMARY)
+                        .hasPauseKey(PRIMARY)
+                        .hasPauseStatus(TokenPauseStatus.Unpaused)
+                        .hasMaxSupply(1000)
+                        .hasTotalSupply(500)
+                        .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT),
+                getTokenInfo(NON_FUNGIBLE_UNIQUE_FINITE)
+                        .logged()
+                        .hasRegisteredId(NON_FUNGIBLE_UNIQUE_FINITE)
+                        .hasTokenType(NON_FUNGIBLE_UNIQUE)
+                        .hasSupplyType(TokenSupplyType.FINITE)
+                        .hasPauseKey(PRIMARY)
+                        .hasPauseStatus(TokenPauseStatus.Unpaused)
+                        .hasTotalSupply(0)
+                        .hasMaxSupply(100),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(PRIMARY)
+                                .balance(500)
+                                .kyc(TokenKycStatus.Granted)
+                                .freeze(TokenFreezeStatus.Unfrozen))
+                        .hasToken(relationshipWith(NON_FUNGIBLE_UNIQUE_FINITE)
+                                .balance(0)
+                                .kyc(TokenKycStatus.KycNotApplicable)
+                                .freeze(TokenFreezeStatus.FreezeNotApplicable)));
     }
 
     @HapiTest
-    public HapiSpec creationSetsCorrectExpiry() {
+    final Stream<DynamicTest> missingTreasurySignatureFails() {
+        String memo = "JUMP";
+        String saltedName = salted(PRIMARY);
+        final var pauseKey = "pauseKey";
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                newKeyNamed("freezeKey"),
+                newKeyNamed("kycKey"),
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed("wipeKey"),
+                newKeyNamed("feeScheduleKey"),
+                newKeyNamed(pauseKey),
+                tokenCreate(PRIMARY)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(memo)
+                        .name(saltedName)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey("freezeKey")
+                        .kycKey("kycKey")
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey("wipeKey")
+                        .feeScheduleKey("feeScheduleKey")
+                        .pauseKey(pauseKey)
+                        .signedBy(DEFAULT_PAYER, ADMIN_KEY, AUTO_RENEW_ACCOUNT)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(PRIMARY)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .entityMemo(memo)
+                        .name(saltedName)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .maxSupply(1000)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .adminKey(ADMIN_KEY)
+                        .freezeKey("freezeKey")
+                        .kycKey("kycKey")
+                        .supplyKey(SUPPLY_KEY)
+                        .wipeKey("wipeKey")
+                        .feeScheduleKey("feeScheduleKey")
+                        .pauseKey(pauseKey)
+                        .signedBy(DEFAULT_PAYER, ADMIN_KEY, AUTO_RENEW_ACCOUNT, TOKEN_TREASURY)
+                        .via(CREATE_TXN),
+                withOpContext((spec, opLog) -> {
+                    var createTxn = getTxnRecord(CREATE_TXN);
+                    allRunFor(spec, createTxn);
+                    var timestamp = createTxn
+                            .getResponseRecord()
+                            .getConsensusTimestamp()
+                            .getSeconds();
+                    spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
+                }),
+                getTokenInfo(PRIMARY)
+                        .logged()
+                        .hasRegisteredId(PRIMARY)
+                        .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                        .hasSupplyType(TokenSupplyType.FINITE)
+                        .hasEntityMemo(memo)
+                        .hasName(saltedName)
+                        .hasTreasury(TOKEN_TREASURY)
+                        .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .hasValidExpiry()
+                        .hasDecimals(1)
+                        .hasAdminKey(PRIMARY)
+                        .hasFreezeKey(PRIMARY)
+                        .hasKycKey(PRIMARY)
+                        .hasSupplyKey(PRIMARY)
+                        .hasWipeKey(PRIMARY)
+                        .hasFeeScheduleKey(PRIMARY)
+                        .hasPauseKey(PRIMARY)
+                        .hasPauseStatus(TokenPauseStatus.Unpaused)
+                        .hasMaxSupply(1000)
+                        .hasTotalSupply(500)
+                        .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> creationSetsCorrectExpiry() {
         return defaultHapiSpec("CreationSetsCorrectExpiry")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -557,7 +585,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesExpiry() {
+    final Stream<DynamicTest> creationValidatesExpiry() {
         return defaultHapiSpec("CreationValidatesExpiry")
                 .given()
                 .when()
@@ -565,7 +593,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
+    final Stream<DynamicTest> creationValidatesFreezeDefaultWithNoFreezeKey() {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
                 .when()
@@ -573,7 +601,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesMemo() {
+    final Stream<DynamicTest> creationValidatesMemo() {
         return defaultHapiSpec("CreationValidatesMemo")
                 .given()
                 .when()
@@ -581,7 +609,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesNonFungiblePrechecks() {
+    final Stream<DynamicTest> creationValidatesNonFungiblePrechecks() {
         return defaultHapiSpec("CreationValidatesNonFungiblePrechecks")
                 .given()
                 .when()
@@ -604,7 +632,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationValidatesMaxSupply() {
+    final Stream<DynamicTest> creationValidatesMaxSupply() {
         return defaultHapiSpec("CreationValidatesMaxSupply")
                 .given()
                 .when()
@@ -627,7 +655,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec onlyValidCustomFeeScheduleCanBeCreated() {
+    final Stream<DynamicTest> onlyValidCustomFeeScheduleCanBeCreated() {
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
                 .given(
                         newKeyNamed(customFeesKey),
@@ -801,103 +829,92 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
-        return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        newKeyNamed(customFeesKey),
-                        cryptoCreate(htsCollector).receiverSigRequired(true),
-                        cryptoCreate(hbarCollector),
-                        cryptoCreate(tokenCollector),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(feeDenom).treasury(htsCollector))
-                .when(
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        0,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        -denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-                                .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(fractionalFee(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        tokenCollector))
-                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector))
-                .then(
-                        getTokenInfo(token)
-                                .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
-                                .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-                                .hasCustom(fractionalFeeInSchedule(
-                                        numerator,
-                                        denominator,
-                                        minimumToCollect,
-                                        OptionalLong.of(maximumToCollect),
-                                        false,
-                                        tokenCollector)),
-                        getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
-                        getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
-                        getAccountInfo(htsCollector).hasNoTokenRelationship(token));
+    final Stream<DynamicTest> feeCollectorSigningReqsWorkForTokenCreate() {
+        return hapiTest(
+                newKeyNamed(customFeesKey),
+                cryptoCreate(htsCollector).receiverSigRequired(true),
+                cryptoCreate(hbarCollector),
+                cryptoCreate(tokenCollector),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(feeDenom).treasury(htsCollector),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fractionalFee(
+                                numerator, 0, minimumToCollect, OptionalLong.of(maximumToCollect), tokenCollector))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fractionalFee(
+                                numerator,
+                                -denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+                        .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+                        .withCustom(fractionalFee(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                tokenCollector))
+                        .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector),
+                getTokenInfo(token)
+                        .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+                        .hasCustom(fractionalFeeInSchedule(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                false,
+                                tokenCollector)),
+                getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
+                getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
+                getAccountInfo(htsCollector).hasNoTokenRelationship(token));
     }
 
     @HapiTest
-    public HapiSpec creationValidatesName() {
-        AtomicInteger maxUtf8Bytes = new AtomicInteger();
-
-        return defaultHapiSpec("CreationValidatesName", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
-                .when()
-                .then(
-                        tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
-                        tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        sourcing(() -> tokenCreate("tooLong")
-                                .name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
-                                .hasPrecheck(TOKEN_NAME_TOO_LONG)),
-                        sourcing(() -> tokenCreate("tooLongAgain")
-                                .name(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
-                                .hasPrecheck(TOKEN_NAME_TOO_LONG)));
+    final Stream<DynamicTest> creationValidatesName() {
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
+                tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                doSeveralWithStartupConfig("tokens.maxTokenNameUtf8Bytes", value -> {
+                    final var maxLen = parseInt(value);
+                    return specOps(
+                            tokenCreate("tooLong")
+                                    .name(TxnUtils.nAscii(maxLen + 1))
+                                    .hasPrecheck(TOKEN_NAME_TOO_LONG),
+                            tokenCreate("tooLongAgain")
+                                    .name(nCurrencySymbols(maxLen / 3 + 1))
+                                    .hasPrecheck(TOKEN_NAME_TOO_LONG));
+                }));
     }
 
     @HapiTest
-    public HapiSpec creationValidatesSymbol() {
-        AtomicInteger maxUtf8Bytes = new AtomicInteger();
-
-        return defaultHapiSpec("CreationValidatesSymbol")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        recordSystemProperty("tokens.maxSymbolUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
-                .when()
-                .then(
-                        tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
-                        tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        sourcing(() -> tokenCreate("tooLong")
-                                .symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
-                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),
-                        sourcing(() -> tokenCreate("tooLongAgain")
-                                .symbol(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
-                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)));
+    final Stream<DynamicTest> creationValidatesSymbol() {
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
+                tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                doSeveralWithStartupConfig("tokens.maxSymbolUtf8Bytes", value -> {
+                    final var maxLen = parseInt(value);
+                    return specOps(
+                            tokenCreate("tooLong")
+                                    .symbol(TxnUtils.nAscii(maxLen + 1))
+                                    .hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
+                            tokenCreate("tooLongAgain")
+                                    .symbol(nCurrencySymbols(maxLen / 3 + 1))
+                                    .hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
+                }));
     }
 
     private String nCurrencySymbols(int n) {
@@ -905,7 +922,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationRequiresAppropriateSigs() {
+    final Stream<DynamicTest> creationRequiresAppropriateSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
                 .given(
                         cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
@@ -929,20 +946,20 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec creationRequiresAppropriateSigsHappyPath() {
-        return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
-                .when()
-                .then(tokenCreate("shouldWork")
+    final Stream<DynamicTest> creationRequiresAppropriateSigsHappyPath() {
+        return hapiTest(
+                cryptoCreate(PAYER),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                newKeyNamed(ADMIN_KEY),
+                tokenCreate("shouldWork")
                         .treasury(TOKEN_TREASURY)
                         .payingWith(PAYER)
                         .adminKey(ADMIN_KEY)
-                        .signedBy(TOKEN_TREASURY, PAYER, ADMIN_KEY)
-                        .hasKnownStatus(SUCCESS));
+                        .signedBy(TOKEN_TREASURY, PAYER, ADMIN_KEY));
     }
 
     @HapiTest
-    public HapiSpec creationValidatesTreasuryAccount() {
+    final Stream<DynamicTest> creationValidatesTreasuryAccount() {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(cryptoDelete(TOKEN_TREASURY))
@@ -952,7 +969,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec initialSupplyMustBeSane() {
+    final Stream<DynamicTest> initialSupplyMustBeSane() {
         return defaultHapiSpec("InitialSupplyMustBeSane")
                 .given()
                 .when()
@@ -966,72 +983,71 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec treasuryHasCorrectBalance() {
+    final Stream<DynamicTest> treasuryHasCorrectBalance() {
         String token = salted("myToken");
 
         int decimals = 1;
         long initialSupply = 100_000;
 
-        return defaultHapiSpec("TreasuryHasCorrectBalance", NONDETERMINISTIC_TOKEN_NAMES)
-                .given(cryptoCreate(TOKEN_TREASURY).balance(1L))
-                .when(tokenCreate(token)
-                        .treasury(TOKEN_TREASURY)
-                        .decimals(decimals)
-                        .initialSupply(initialSupply))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
-    }
-    // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
-    // with a just tokenNum, in mono-service the tokenTransferLists will be empty
-    @HapiTest
-    final HapiSpec prechecksWork() {
-        return defaultHapiSpec("PrechecksWork", HIGHLY_NON_DETERMINISTIC_FEES, FULLY_NONDETERMINISTIC)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY)
-                                .withUnknownFieldIn(TRANSACTION)
-                                .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .withUnknownFieldIn(TRANSACTION_BODY)
-                                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.NEW)
-                                .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .withUnknownFieldIn(SIGNED_TRANSACTION)
-                                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.NEW)
-                                .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .withUnknownFieldIn(OP_BODY)
-                                .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(FIRST_USER).balance(0L))
-                .when(
-                        tokenCreate(A_TOKEN).initialSupply(100).treasury(TOKEN_TREASURY),
-                        tokenCreate(B_TOKEN).initialSupply(100).treasury(TOKEN_TREASURY))
-                .then(
-                        cryptoTransfer(
-                                        moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
-                                        moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
-                                .dontFullyAggregateTokenTransfers()
-                                .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-                        cryptoTransfer(
-                                        movingHbar(1).between(TOKEN_TREASURY, FIRST_USER),
-                                        movingHbar(1).between(TOKEN_TREASURY, FIRST_USER))
-                                .dontFullyAggregateTokenTransfers()
-                                .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-                        cryptoTransfer(
-                                        moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
-                                        moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
-                                .dontFullyAggregateTokenTransfers()
-                                .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-                        tokenAssociate(FIRST_USER, A_TOKEN),
-                        cryptoTransfer(moving(0, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
-                                .hasPrecheck(OK),
-                        cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
-                                .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-                        cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(1L),
+                tokenCreate(token).treasury(TOKEN_TREASURY).decimals(decimals).initialSupply(initialSupply),
+                getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> prechecksWork() {
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY)
+                        .withUnknownFieldIn(TRANSACTION)
+                        .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
+                cryptoCreate(TOKEN_TREASURY)
+                        .withUnknownFieldIn(TRANSACTION_BODY)
+                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.NEW)
+                        .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
+                cryptoCreate(TOKEN_TREASURY)
+                        .withUnknownFieldIn(SIGNED_TRANSACTION)
+                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.NEW)
+                        .hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
+                cryptoCreate(TOKEN_TREASURY).withUnknownFieldIn(OP_BODY).hasPrecheck(TRANSACTION_HAS_UNKNOWN_FIELDS),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(FIRST_USER).balance(0L),
+                tokenCreate(A_TOKEN).initialSupply(100).treasury(TOKEN_TREASURY),
+                tokenCreate(B_TOKEN).initialSupply(100).treasury(TOKEN_TREASURY),
+                cryptoTransfer(
+                                moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
+                                moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
+                        .dontFullyAggregateTokenTransfers()
+                        .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+                cryptoTransfer(
+                                movingHbar(1).between(TOKEN_TREASURY, FIRST_USER),
+                                movingHbar(1).between(TOKEN_TREASURY, FIRST_USER))
+                        .dontFullyAggregateTokenTransfers()
+                        .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+                cryptoTransfer(
+                                moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
+                                moving(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
+                        .dontFullyAggregateTokenTransfers()
+                        .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+                tokenAssociate(FIRST_USER, A_TOKEN),
+                cryptoTransfer(moving(0, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER))
+                        .hasPrecheck(OK),
+                cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY)).hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
+                cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deletedAccountCannotBeFeeCollector() {
+        final var account = "account";
+        return hapiTest(
+                cryptoCreate(account),
+                cryptoDelete(account),
+                tokenCreate("anyToken")
+                        .treasury(DEFAULT_PAYER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .withCustom(fixedHbarFee(1, account))
+                        .hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR));
     }
 
     private final long hbarAmount = 1_234L;

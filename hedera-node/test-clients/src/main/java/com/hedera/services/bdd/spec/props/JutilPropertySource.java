@@ -16,12 +16,18 @@
 
 package com.hedera.services.bdd.spec.props;
 
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,12 +48,18 @@ public class JutilPropertySource implements HapiPropertySource {
 
     private final Properties props;
 
-    public JutilPropertySource(String path) {
-        if (!path.endsWith(".properties")) {
-            path += ".properties";
+    public JutilPropertySource(String resource) {
+        if (!resource.endsWith(".properties")) {
+            resource += ".properties";
         }
         props = new Properties();
-        loadInto(props, path);
+        loadInto(props, resource);
+    }
+
+    public JutilPropertySource(@NonNull final Path path) {
+        Objects.requireNonNull(path);
+        props = new Properties();
+        rethrowIO(() -> props.load(Files.newInputStream(path)));
     }
 
     @Override

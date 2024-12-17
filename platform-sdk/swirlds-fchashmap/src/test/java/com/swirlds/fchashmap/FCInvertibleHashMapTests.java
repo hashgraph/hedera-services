@@ -16,7 +16,6 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,7 +33,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("InverseFCHashMap Tests")
@@ -156,7 +154,6 @@ class FCInvertibleHashMapTests {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
     @DisplayName("Randomized Test")
     void randomizedTest() {
 
@@ -293,7 +290,6 @@ class FCInvertibleHashMapTests {
      * This test is unable to pass with garbage collection disabled.
      */
     @Test
-    @Tag(TIME_CONSUMING)
     @DisplayName("Garbage Collection Test")
     void garbageCollectionTest() {
         final Random random = getRandomPrintSeed();

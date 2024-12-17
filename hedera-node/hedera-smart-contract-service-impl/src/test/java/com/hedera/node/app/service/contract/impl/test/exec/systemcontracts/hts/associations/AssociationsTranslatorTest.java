@@ -23,13 +23,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AssociationsTranslatorTest extends HtsCallTestBase {
+class AssociationsTranslatorTest extends CallTestBase {
     @Test
     void dispatchesAssociateType() {
         given(gasCalculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.ASSOCIATE, AccountID.DEFAULT))

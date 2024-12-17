@@ -16,23 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.ImmutableHash;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
 /**
- * Provides block information as context for a {@link HederaEvmTxProcessor}.
+ * Provides block information as context for a {@link TransactionProcessor}.
  */
 public interface HederaEvmBlocks {
-    Hash UNAVAILABLE_BLOCK_HASH = besuHashFrom(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
+    Hash UNAVAILABLE_BLOCK_HASH = org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(new byte[32]));
 
     /**
-     * Returns the hash of the given block number, or {@link BlockMetaSource#UNAVAILABLE_BLOCK_HASH}
+     * Returns the hash of the given block number, or {@link HederaEvmBlocks#UNAVAILABLE_BLOCK_HASH}
      * if unavailable.
      *
      * @param blockNo the block number of interest
@@ -47,11 +43,4 @@ public interface HederaEvmBlocks {
      * @return the scoped block values
      */
     BlockValues blockValuesOf(long gasLimit);
-
-    private static Hash besuHashFrom(@NonNull final com.swirlds.common.crypto.Hash hash) {
-        final byte[] hashBytesToConvert = hash.getValue();
-        final byte[] prefixBytes = new byte[32];
-        System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);
-        return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
-    }
 }

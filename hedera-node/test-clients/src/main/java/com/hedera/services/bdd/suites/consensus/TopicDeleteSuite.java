@@ -16,117 +16,92 @@
 
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class TopicDeleteSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TopicDeleteSuite.class);
-
-    public static void main(String... args) {
-        new TopicDeleteSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                cannotDeleteAccountAsTopic(),
-                topicIdIsValidated(),
-                noAdminKeyCannotDelete(),
-                deleteWithAdminKey(),
-                deleteFailedWithWrongKey(),
-                feeAsExpected());
+public class TopicDeleteSuite {
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                createTopic("topic").adminKeyName("adminKey"),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> deleteTopic("topic")));
     }
 
     @HapiTest
-    final HapiSpec cannotDeleteAccountAsTopic() {
-        return defaultHapiSpec("CannotDeleteAccountAsTopic")
-                .given(cryptoCreate("nonTopicId"))
-                .when()
-                .then(deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+    final Stream<DynamicTest> pureCheckFails() {
+        return hapiTest(
+                cryptoCreate("nonTopicId"),
+                deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+                        .hasPrecheck(INVALID_TOPIC_ID),
+                deleteTopic((String) null).hasPrecheck(INVALID_TOPIC_ID));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> cannotDeleteAccountAsTopic() {
+        return hapiTest(
+                cryptoCreate("nonTopicId"),
+                deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
                         .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
     @HapiTest
-    final HapiSpec topicIdIsValidated() {
-        // Fully non-deterministic for fuzzy matching because the test uses an absolute entity number (i.e.
-        // 100.232.4534)
-        // but fuzzy matching compares relative entity numbers
-        return defaultHapiSpec("topicIdIsValidated", FULLY_NONDETERMINISTIC)
-                .given()
-                .when()
-                .then(
-                        deleteTopic((String) null).hasKnownStatus(INVALID_TOPIC_ID),
-                        deleteTopic("100.232.4534") // non-existent id
-                                .hasKnownStatus(INVALID_TOPIC_ID));
+    final Stream<DynamicTest> topicIdIsValidated() {
+        return hapiTest(
+                deleteTopic((String) null).hasKnownStatus(INVALID_TOPIC_ID),
+                deleteTopic("100.232.4534") // non-existent id
+                        .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
     @HapiTest
-    final HapiSpec noAdminKeyCannotDelete() {
-        return defaultHapiSpec("noAdminKeyCannotDelete")
-                .given(createTopic("testTopic"))
-                .when(deleteTopic("testTopic").hasKnownStatus(UNAUTHORIZED))
-                .then();
+    final Stream<DynamicTest> noAdminKeyCannotDelete() {
+        return hapiTest(createTopic("testTopic"), deleteTopic("testTopic").hasKnownStatus(UNAUTHORIZED));
     }
 
     @HapiTest
-    final HapiSpec deleteWithAdminKey() {
-        return defaultHapiSpec("deleteWithAdminKey")
-                .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
-                .when(deleteTopic("testTopic").hasPrecheck(ResponseCodeEnum.OK))
-                .then(getTopicInfo("testTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID));
+    final Stream<DynamicTest> deleteWithAdminKey() {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                createTopic("testTopic").adminKeyName("adminKey"),
+                deleteTopic("testTopic").hasPrecheck(ResponseCodeEnum.OK),
+                getTopicInfo("testTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID));
     }
 
     @HapiTest
-    final HapiSpec deleteFailedWithWrongKey() {
+    final Stream<DynamicTest> deleteFailedWithWrongKey() {
         long PAYER_BALANCE = 1_999_999_999L;
-        return defaultHapiSpec("deleteFailedWithWrongKey")
-                .given(
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("wrongKey"),
-                        cryptoCreate("payer").balance(PAYER_BALANCE),
-                        createTopic("testTopic").adminKeyName("adminKey"))
-                .when(deleteTopic("testTopic")
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                newKeyNamed("wrongKey"),
+                cryptoCreate("payer").balance(PAYER_BALANCE),
+                createTopic("testTopic").adminKeyName("adminKey"),
+                deleteTopic("testTopic")
                         .payingWith("payer")
                         .signedBy("payer", "wrongKey")
-                        .hasKnownStatus(ResponseCodeEnum.INVALID_SIGNATURE))
-                .then();
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_SIGNATURE));
     }
 
     @HapiTest
-    final HapiSpec feeAsExpected() {
-        return defaultHapiSpec("feeAsExpected")
-                .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))
-                .when(deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"))
-                .then(validateChargedUsd("topicDelete", 0.005));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    final Stream<DynamicTest> feeAsExpected() {
+        return hapiTest(
+                cryptoCreate("payer"),
+                createTopic("testTopic").adminKeyName("payer"),
+                deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"),
+                validateChargedUsd("topicDelete", 0.005));
     }
 }

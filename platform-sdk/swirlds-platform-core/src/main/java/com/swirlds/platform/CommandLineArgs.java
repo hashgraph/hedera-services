@@ -49,7 +49,7 @@ public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart) {
                 currentOption = arg;
             } else if (currentOption != null) {
                 try {
-                    localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
+                    localNodesToStart.add(NodeId.of(Integer.parseInt(arg)));
                 } catch (final NumberFormatException ex) {
                     // Intentionally suppress the NumberFormatException
                 }

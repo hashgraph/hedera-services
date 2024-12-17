@@ -117,7 +117,8 @@ public class OrchestratorBuilder {
         for (final EventSource<?> eventSource : eventSources) {
             eventSourceConfigurator.accept(eventSource);
         }
-        final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(graphSeed, eventSources);
+        final StandardGraphGenerator graphGenerator =
+                new StandardGraphGenerator(platformContext, graphSeed, eventSources);
 
         // Make the graph generators create a fresh set of events.
         // Use the same seed so that they create identical graphs.

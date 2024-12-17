@@ -45,6 +45,9 @@ import java.util.zip.GZIPOutputStream;
 final class SidecarWriterV6 implements AutoCloseable {
     /** The maximum size of a sidecar file in bytes */
     private final int maxSideCarSizeInBytes;
+    /** The HashingOutputStream does not propagate close() to its delegate,
+     * so we need to manually call close() on the stream it wraps. */
+    private final OutputStream hashingDelegateStream;
     /** HashingOutputStream for hashing the file contents */
     private final HashingOutputStream hashingOutputStream;
     /** WritableStreamingData we are data writing to, that goes into the file */
@@ -54,7 +57,7 @@ final class SidecarWriterV6 implements AutoCloseable {
     /** The hash of the file contents, computed in close */
     private Bytes hash = null;
     /** The number of uncompressed bytes written to this file */
-    private int bytesWritten = 0;
+    private long bytesWritten;
 
     private final int id;
 
@@ -80,13 +83,17 @@ final class SidecarWriterV6 implements AutoCloseable {
             throw new RuntimeException(e);
         }
         // create streams
-        OutputStream fout = Files.newOutputStream(file);
-        hashingOutputStream = new HashingOutputStream(wholeFileDigest, fout);
-        BufferedOutputStream bout = new BufferedOutputStream(fout);
+        final var fout = Files.newOutputStream(file);
         if (compressFile) {
-            GZIPOutputStream gout = new GZIPOutputStream(bout);
-            outputStream = new WritableStreamingData(gout);
+            GZIPOutputStream gout = new GZIPOutputStream(fout);
+            hashingDelegateStream = gout;
+            hashingOutputStream = new HashingOutputStream(wholeFileDigest, gout);
+            BufferedOutputStream bout = new BufferedOutputStream(hashingOutputStream);
+            outputStream = new WritableStreamingData(bout);
         } else {
+            hashingDelegateStream = fout;
+            hashingOutputStream = new HashingOutputStream(wholeFileDigest, fout);
+            BufferedOutputStream bout = new BufferedOutputStream(hashingOutputStream);
             outputStream = new WritableStreamingData(bout);
         }
     }
@@ -152,6 +159,7 @@ final class SidecarWriterV6 implements AutoCloseable {
     @Override
     public void close() throws IOException {
         outputStream.close();
+        hashingDelegateStream.close();
         hash = Bytes.wrap(hashingOutputStream.getDigest());
     }
 }

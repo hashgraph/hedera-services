@@ -19,30 +19,24 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomCall implements OpProvider {
-    private final EntityNameProvider<ActionableContractCall> calls;
+    private final EntityNameProvider calls;
 
     private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(CONTRACT_DELETED);
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_CONTRACT_ID, CONTRACT_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomCall(EntityNameProvider<ActionableContractCall> calls) {
+    public RandomCall(EntityNameProvider calls, ResponseCodeEnum[] customOutcomes) {
         this.calls = calls;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -54,7 +48,7 @@ public class RandomCall implements OpProvider {
 
         HapiContractCall op = contractCallFrom(call.get())
                 .hasPrecheckFrom(permissiblePrechecks)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
 
         return Optional.of(op);
     }

@@ -43,7 +43,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
@@ -53,11 +52,10 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.List;
 import java.util.Optional;
@@ -97,7 +95,7 @@ class ProxyWorldUpdaterTest {
     private MutableAccount mutableAccount;
 
     @Mock
-    private ProxyEvmAccount proxyEvmAccount;
+    private ProxyEvmContract proxyEvmContract;
 
     @Mock
     private MessageFrame frame;
@@ -149,8 +147,8 @@ class ProxyWorldUpdaterTest {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = AccountID.newBuilder().accountNum(num).build();
         given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
-        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
-        assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmContract);
+        assertSame(proxyEvmContract, subject.getHederaAccount(numericId));
     }
 
     @Test
@@ -159,8 +157,8 @@ class ProxyWorldUpdaterTest {
         final var numericId = ContractID.newBuilder().contractNum(num).build();
         given(hederaOperations.shardAndRealmValidated(numericId)).willReturn(numericId);
         given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
-        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
-        assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmContract);
+        assertSame(proxyEvmContract, subject.getHederaAccount(numericId));
     }
 
     @Test
@@ -186,8 +184,8 @@ class ProxyWorldUpdaterTest {
                 .alias(tuweniToPbjBytes(
                         asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
-        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
-        assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmContract);
+        assertSame(proxyEvmContract, subject.getHederaAccount(aliasId));
     }
 
     @Test
@@ -197,8 +195,8 @@ class ProxyWorldUpdaterTest {
                         asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
         given(hederaOperations.shardAndRealmValidated(aliasId)).willReturn(aliasId);
-        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
-        assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmContract);
+        assertSame(proxyEvmContract, subject.getHederaAccount(aliasId));
     }
 
     @Test
@@ -217,9 +215,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesHollowFinalization() {
-        given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
-        given(evmFrameState.getAccount(PERMITTED_ADDRESS_CALLER)).willReturn(proxyEvmAccount);
-        given(proxyEvmAccount.hederaContractId())
+        given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.hederaContractId())
                 .willReturn(ContractID.newBuilder().contractNum(999L).build());
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
         subject.finalizeHollowAccount(EIP_1014_ADDRESS, PERMITTED_ADDRESS_CALLER);
@@ -254,6 +251,7 @@ class ProxyWorldUpdaterTest {
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(4321L);
 
         subject.setupInternalCreate(ADDRESS_6);
 
@@ -279,6 +277,7 @@ class ProxyWorldUpdaterTest {
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER).willReturn(NEXT_NUMBER + 1);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         subject.setupInternalCreate(ADDRESS_6);
 
@@ -312,6 +311,7 @@ class ProxyWorldUpdaterTest {
         given(evmFrameState.getIdNumber(ADDRESS_6))
                 .willReturn(ADDRESS_6.toBigInteger().longValueExact());
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         subject.setupInternalAliasedCreate(ADDRESS_6, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -325,6 +325,7 @@ class ProxyWorldUpdaterTest {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         subject.setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -347,6 +348,7 @@ class ProxyWorldUpdaterTest {
     void doesNotUseAliasIfBodyCreatedWithoutAlias() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+        given(hederaOperations.accountCreationLimit()).willReturn(1234L);
 
         assertEquals(NEXT_LONG_ZERO_ADDRESS, subject.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT));
         subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);
@@ -375,8 +377,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void getsAvailableContractIdByAddress() {
-        given(evmFrameState.getAccount(SOME_EVM_ADDRESS)).willReturn(proxyEvmAccount);
-        given(proxyEvmAccount.hederaContractId()).willReturn(CALLED_CONTRACT_ID);
+        given(evmFrameState.getAccount(SOME_EVM_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.hederaContractId()).willReturn(CALLED_CONTRACT_ID);
         final var actual = subject.getHederaContractId(SOME_EVM_ADDRESS);
         assertEquals(CALLED_CONTRACT_ID, actual);
     }
@@ -503,19 +505,6 @@ class ProxyWorldUpdaterTest {
     void delegatesEntropy() {
         given(hederaOperations.entropy()).willReturn(OUTPUT_DATA);
         assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
-    }
-
-    @Test
-    void externalizeSystemContractResultTest() {
-        var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
-                0,
-                org.apache.tuweni.bytes.Bytes.EMPTY,
-                100L,
-                org.apache.tuweni.bytes.Bytes.EMPTY,
-                AccountID.newBuilder().build());
-
-        subject.externalizeSystemContractResults(contractFunctionResult, ResponseCodeEnum.SUCCESS);
-        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResponseCodeEnum.SUCCESS);
     }
 
     @Test

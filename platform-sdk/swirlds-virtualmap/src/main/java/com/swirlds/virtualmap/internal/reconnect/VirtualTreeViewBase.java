@@ -145,9 +145,6 @@ public abstract class VirtualTreeViewBase<K extends VirtualKey, V extends Virtua
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public Long getChild(final Long originalParent, final int childIndex) {
         checkValidInternal(originalParent, originalState);
         assert childIndex >= 0 && childIndex < 2 : "childIndex was not 1 or 2";

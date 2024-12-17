@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -173,11 +172,6 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
             }
             return Collections.emptyList();
         };
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::submitMessage;
     }
 
     @Override

@@ -18,14 +18,20 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,6 +48,14 @@ class CryptoAddLiveHashHandlerTest {
     private final CryptoAddLiveHashHandler subject = new CryptoAddLiveHashHandler();
 
     @Test
+    void pureChecksDoesNothing() {
+        // Verify no exception is thrown
+        Assertions.assertThatNoException()
+                .isThrownBy(
+                        () -> subject.pureChecks(TransactionBody.newBuilder().build()));
+    }
+
+    @Test
     void preHandleThrowsUnsupported() {
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
                 .isInstanceOf(PreCheckException.class)
@@ -53,5 +67,12 @@ class CryptoAddLiveHashHandlerTest {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(NOT_SUPPORTED));
+    }
+
+    @Test
+    void calculateFeesFree() {
+        final var feeCtx = mock(FeeContext.class);
+        final var result = subject.calculateFees(feeCtx);
+        assertThat(result).isEqualTo(Fees.FREE);
     }
 }

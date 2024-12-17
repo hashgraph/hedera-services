@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
@@ -35,15 +35,18 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 
 /**
- * Encapsulates the logic for reading blocked accounts from file
+ * Encapsulates the logic for reading blocked accounts from file.
  */
 public class BlocklistParser {
     private static final Logger log = LogManager.getLogger(BlocklistParser.class);
 
     /**
-     * Makes sure that all blocked accounts contained in the blocklist resource are present in state, and creates their definitions (if necessary).
+     * Makes sure that all blocked accounts contained in the blocklist resource are present in state,
+     * and creates their definitions (if necessary).
      *
      * <p><b>Note: this method assumes that blocklists are enabled</b> – it does not check that config property
+     * @param blocklistResourceName the blocklist resource
+     * @return a list of blocked account info records
      */
     public List<BlockedInfo> parse(@NonNull final String blocklistResourceName) {
         final List<String> fileLines = readFileLines(blocklistResourceName);
@@ -91,9 +94,9 @@ public class BlocklistParser {
      * Parses a line from the blocklist resource and returns blocked account info record.
      *
      * The line should have the following format:
-     * <private key>,<memo>
-     *     where <private key> is a hex-encoded private key
-     *     and <memo> is a memo for the blocked account
+     * &lt;private key&gt;,&lt;memo&gt;
+     *     where &lt;private key&gt; is a hex-encoded private key
+     *     and &lt;memo&gt; is a memo for the blocked account
      *     and both values are comma-separated.
      *
      * The resulting blocked account info record contains the EVM address derived from the private key, and the memo.
@@ -141,6 +144,7 @@ public class BlocklistParser {
     }
 
     /**
+     * Encapsulates the information about a blocked account.
      * @param evmAddress the EVM address of the blocked account
      * @param memo      the memo of the blocked account
      */

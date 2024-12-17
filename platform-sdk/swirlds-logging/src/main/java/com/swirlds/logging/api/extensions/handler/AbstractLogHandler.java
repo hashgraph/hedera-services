@@ -25,6 +25,7 @@ import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * An abstract log handler. This class provides some basic functionality that is used by all log handlers.
@@ -49,7 +50,7 @@ public abstract class AbstractLogHandler implements LogHandler {
     /**
      * The logging level configuration. This is used to define specific logging levels for logger names.
      */
-    private final HandlerLoggingLevelConfig loggingLevelConfig;
+    private final AtomicReference<HandlerLoggingLevelConfig> loggingLevelConfig;
 
     /**
      * Creates a new log handler.
@@ -60,7 +61,7 @@ public abstract class AbstractLogHandler implements LogHandler {
     public AbstractLogHandler(@NonNull final String configKey, @NonNull final Configuration configuration) {
         this.configKey = Objects.requireNonNull(configKey, "configKey must not be null");
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.loggingLevelConfig = new HandlerLoggingLevelConfig(configuration, configKey);
+        this.loggingLevelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, configKey));
     }
 
     @Override
@@ -71,7 +72,16 @@ public abstract class AbstractLogHandler implements LogHandler {
 
     @Override
     public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
-        return loggingLevelConfig.isEnabled(name, level, marker);
+        if (marker == null) { // Favor the method that has chances to be inlined
+            return loggingLevelConfig.get().isEnabled(name, level);
+        } else {
+            return loggingLevelConfig.get().isEnabled(name, level, marker);
+        }
+    }
+
+    @Override
+    public void update(@NonNull final Configuration configuration) {
+        loggingLevelConfig.set(HandlerLoggingLevelConfig.create(configuration, configKey));
     }
 
     /**

@@ -15,15 +15,28 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.feature.benchmark")
+}
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-lossy-conversions")
 }
 
 testModuleInfo {
+    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")
     requires("org.junit.jupiter.params")
     requires("org.mockito.junit.jupiter")
+    requires("com.swirlds.metrics.api")
+    requires("org.hiero.event.creator")
+    requires("org.hiero.event.creator.impl")
+    requires("com.swirlds.state.impl")
+    requires("org.mockito")
+    requires("org.hiero.consensus.gossip")
     requiresStatic("com.github.spotbugs.annotations")
 }

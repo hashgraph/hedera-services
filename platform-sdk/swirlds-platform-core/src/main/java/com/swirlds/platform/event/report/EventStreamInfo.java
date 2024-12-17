@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.report;
 
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import java.time.Instant;
 
 /**
@@ -55,6 +55,6 @@ public record EventStreamInfo(
         long applicationTransactionCount,
         long fileCount,
         long byteCount,
-        DetailedConsensusEvent firstEvent,
-        DetailedConsensusEvent lastEvent,
+        CesEvent firstEvent,
+        CesEvent lastEvent,
         long damagedFileCount) {}

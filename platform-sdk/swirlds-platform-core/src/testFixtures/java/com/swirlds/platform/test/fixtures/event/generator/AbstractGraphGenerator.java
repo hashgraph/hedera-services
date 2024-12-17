@@ -17,9 +17,11 @@
 package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,10 +51,14 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /** A map that holds the maximum event generation for each creator */
     private final Map<NodeId, Long> maxGenerationPerCreator;
 
+    /** The highest birth round of created events for each creator */
+    private final Map<NodeId, Long> maxBirthRoundPerCreator;
+
     protected AbstractGraphGenerator(final long initialSeed) {
         this.initialSeed = initialSeed;
         random = new Random(initialSeed);
         maxGenerationPerCreator = new HashMap<>();
+        maxBirthRoundPerCreator = new HashMap<>();
     }
 
     /**
@@ -62,7 +68,7 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * Child classes must call super.reset() if they override this method.
      */
     @Override
@@ -70,22 +76,22 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
         numEventsGenerated = 0;
         random = new Random(initialSeed);
         maxGenerationPerCreator.clear();
+        maxBirthRoundPerCreator.clear();
         resetInternalData();
     }
 
     /**
      * Build the event that will be returned by getNextEvent.
      *
-     * @param eventIndex
-     * 		the index of the event to build
+     * @param eventIndex the index of the event to build
      */
-    protected abstract IndexedEvent buildNextEvent(long eventIndex);
+    protected abstract EventImpl buildNextEvent(long eventIndex);
 
     /**
      * {@inheritDoc}
      */
-    public final IndexedEvent generateEvent() {
-        final IndexedEvent next = generateEventWithoutIndex();
+    public final EventImpl generateEvent() {
+        final EventImpl next = generateEventWithoutIndex();
 
         next.getBaseEvent().setStreamSequenceNumber(numEventsGenerated);
         return next;
@@ -94,11 +100,12 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /**
      * The same as {@link #generateEvent()}, but does not set the stream sequence number.
      */
-    public final IndexedEvent generateEventWithoutIndex() {
-        final IndexedEvent next = buildNextEvent(numEventsGenerated);
+    public final EventImpl generateEventWithoutIndex() {
+        final EventImpl next = buildNextEvent(numEventsGenerated);
         next.getBaseEvent().signalPrehandleCompletion();
         numEventsGenerated++;
         updateMaxGeneration(next);
+        updateMaxBirthRound(next);
         return next;
     }
 
@@ -127,8 +134,12 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     /**
      * Updates the max generation based on the latest event
      */
-    private void updateMaxGeneration(final IndexedEvent event) {
+    private void updateMaxGeneration(final EventImpl event) {
         maxGenerationPerCreator.merge(event.getCreatorId(), event.getGeneration(), Math::max);
+    }
+
+    private void updateMaxBirthRound(@NonNull final EventImpl event) {
+        maxBirthRoundPerCreator.merge(event.getCreatorId(), event.getBirthRound(), Math::max);
     }
 
     /**
@@ -137,6 +148,14 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     @Override
     public long getMaxGeneration(@Nullable final NodeId creatorId) {
         return maxGenerationPerCreator.getOrDefault(creatorId, EventConstants.GENERATION_UNDEFINED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getMaxBirthRound(@Nullable final NodeId creatorId) {
+        return maxBirthRoundPerCreator.getOrDefault(creatorId, ConsensusConstants.ROUND_NEGATIVE_INFINITY);
     }
 
     /**

@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
-description = "Hedera Scheduled Service API"
+description = "Hedera Schedule Service API"
+
+testModuleInfo {
+    requires("com.swirlds.state.api")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+}

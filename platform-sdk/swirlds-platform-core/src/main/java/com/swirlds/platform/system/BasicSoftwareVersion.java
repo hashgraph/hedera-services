@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
@@ -25,13 +27,14 @@ import java.io.IOException;
  */
 public class BasicSoftwareVersion implements SoftwareVersion {
 
-    private static final long CLASS_ID = 0x777ea397b73c9830L;
+    public static final long CLASS_ID = 0x777ea397b73c9830L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    private long softwareVersion;
+    private int softwareVersion;
+    private SemanticVersion semanticVersion;
 
     /**
      * Zero arg constructor used for deserialization.
@@ -44,8 +47,10 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      * @param softwareVersion
      * 		the version number
      */
-    public BasicSoftwareVersion(final long softwareVersion) {
+    public BasicSoftwareVersion(final int softwareVersion) {
         this.softwareVersion = softwareVersion;
+        this.semanticVersion =
+                SemanticVersion.newBuilder().major(softwareVersion).build();
     }
 
     /**
@@ -54,7 +59,7 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      *
      * @return the software version number
      */
-    public long getSoftwareVersion() {
+    public int getSoftwareVersion() {
         return softwareVersion;
     }
 
@@ -79,7 +84,13 @@ public class BasicSoftwareVersion implements SoftwareVersion {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        softwareVersion = in.readLong();
+        // previously, softwareVersion was a long
+        // since the introduction of SemanticVersion, softwareVersion was changed to an int
+        // in order to avoid migration, it is still serialized as a long, but this is purely internal
+        softwareVersion = Math.toIntExact(in.readLong());
+        this.semanticVersion = SemanticVersion.newBuilder()
+                .major(Math.toIntExact(softwareVersion))
+                .build();
     }
 
     /**
@@ -118,5 +129,11 @@ public class BasicSoftwareVersion implements SoftwareVersion {
     @Override
     public String toString() {
         return Long.toString(softwareVersion);
+    }
+
+    @NonNull
+    @Override
+    public SemanticVersion getPbjSemanticVersion() {
+        return semanticVersion;
     }
 }

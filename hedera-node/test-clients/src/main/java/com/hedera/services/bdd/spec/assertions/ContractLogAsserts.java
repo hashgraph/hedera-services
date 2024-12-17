@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.assertions;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static java.util.Arrays.copyOfRange;
 
 import com.google.common.primitives.Longs;
@@ -55,7 +55,7 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     public ContractLogAsserts ecdsaAliasStartingAt(String aliasKey, int start) {
         registerProvider((spec, o) -> {
             byte[] data = dataFrom(o);
-            ByteString alias = spec.registry().aliasIdFor(aliasKey).getAlias();
+            ByteString alias = spec.registry().keyAliasIdFor(aliasKey).getAlias();
             byte[] expected = recoverAddressFromPubKey(alias.substring(2).toByteArray());
             byte[] actual = Arrays.copyOfRange(data, start, start + 20);
             Assertions.assertArrayEquals(expected, actual, "Bad alias in log data, starting at byte " + start);

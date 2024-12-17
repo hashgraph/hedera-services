@@ -48,9 +48,7 @@ public interface TransactionHandler {
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
-    // NOTE: FUTURE: This method should not be default, but should be implemented by all
-    // transaction handlers. This is a temporary measure to avoid merge conflicts.
-    default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
+    void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException;
 
     /**
      * This method can be used to perform any warm up, e.g. loading data into memory that is needed

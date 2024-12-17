@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.event.emitter;
 
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,7 +27,7 @@ import java.util.List;
 public class CollectingEventEmitter extends AbstractEventEmitter<CollectingEventEmitter> {
 
     /** All emitted events */
-    private final LinkedList<IndexedEvent> collectedEvents;
+    private final LinkedList<EventImpl> collectedEvents;
 
     private final EventEmitter<?> emitter;
 
@@ -51,8 +51,8 @@ public class CollectingEventEmitter extends AbstractEventEmitter<CollectingEvent
      * @return an event
      */
     @Override
-    public IndexedEvent emitEvent() {
-        final IndexedEvent event = emitter.emitEvent();
+    public EventImpl emitEvent() {
+        final EventImpl event = emitter.emitEvent();
         collectedEvents.add(event);
         numEventsEmitted++;
         return event;
@@ -61,7 +61,7 @@ public class CollectingEventEmitter extends AbstractEventEmitter<CollectingEvent
     /**
      * Returns all collected events.
      */
-    public List<IndexedEvent> getCollectedEvents() {
+    public List<EventImpl> getCollectedEvents() {
         return new LinkedList<>(collectedEvents);
     }
 

@@ -21,7 +21,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -33,8 +32,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStoreException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,10 +77,19 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-1")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-2")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-valid")).exists().isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-no-agreement-key"))
+                .exists()
+                .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-no-tss-key"))
+                .exists()
+                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-2"))
+                .exists()
+                .isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-corrupt-tss-key"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("legacy-valid").resolve("public.pfx"))
@@ -101,7 +110,15 @@ class EnhancedKeyStoreLoaderTest {
      */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Positive Test")
-    @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid"})
+    @ValueSource(
+            strings = {
+                "legacy-valid",
+                "hybrid-valid",
+                "enhanced-valid",
+                "enhanced-valid-no-agreement-key",
+                "enhanced-valid-no-tss-key",
+                "enhanced-valid-corrupt-tss-key"
+            })
     void keyStoreLoaderPositiveTest(final String directoryName)
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
@@ -114,7 +131,9 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::generate).doesNotThrowAnyException();
         assertThatCode(loader::verify).doesNotThrowAnyException();
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
 
@@ -134,10 +153,12 @@ class EnhancedKeyStoreLoaderTest {
                 assertThat(keysAndCerts.sigCert()).isNotNull();
                 assertThat(keysAndCerts.agrKeyPair()).isNotNull();
                 assertThat(keysAndCerts.sigKeyPair()).isNotNull();
+                assertThat(keysAndCerts.privateTssEncryptionKey()).isNotNull();
+                assertThat(keysAndCerts.publicTssEncryptionKey()).isNotNull();
             }
 
-            assertThat(addr.getAgreePublicKey()).isNotNull();
             assertThat(addr.getSigPublicKey()).isNotNull();
+            assertThat(addr.getAgreePublicKey()).isNull();
         }
     }
 
@@ -160,6 +181,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
@@ -185,9 +207,11 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
         assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::generate).isInstanceOf(KeyGeneratingException.class);
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
-        assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
+        assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
     }
 
@@ -200,8 +224,7 @@ class EnhancedKeyStoreLoaderTest {
      * @throws IOException if an I/O error occurs while loading the configuration file.
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
-        ConfigurationBuilder builder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
+        final ConfigurationBuilder builder = ConfigurationBuilder.create();
         BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
@@ -216,5 +239,54 @@ class EnhancedKeyStoreLoaderTest {
      */
     private AddressBook addressBook() {
         return loadConfigFile(testDataDirectory.resolve("config.txt")).getAddressBook();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+    //////////////////////// MIGRATION SPECIFIC UNIT TESTS //////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * The Negative Type 2 tests are designed to test the case where the key store loader is able to scan the key
+     * directory, but one or more private keys are either corrupt or missing.
+     *
+     * @param directoryName the directory name containing the test data being used to cover a given test case.
+     * @throws IOException if an I/O error occurs during test setup.
+     */
+    @ParameterizedTest
+    @DisplayName("Migration Negative Cases Test")
+    @ValueSource(strings = {"migration-invalid-missing-private-key", "migration-invalid-missing-public-key"})
+    void migraitonNegativeCaseTest(final String directoryName) throws IOException {
+        final Path keyDirectory = testDataDirectory.resolve(directoryName);
+        final AddressBook addressBook = addressBook();
+        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+
+        assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
+
+        // read all files into memory for later comparison.
+        Map<String, byte[]> fileContents = new HashMap<>();
+        try (Stream<Path> paths = Files.list(keyDirectory)) {
+            paths.forEach(path -> {
+                try {
+                    fileContents.put(path.getFileName().toString(), Files.readAllBytes(path));
+                } catch (IOException e) {
+                    assert (false);
+                }
+            });
+        }
+
+        assertThat(loader).isNotNull();
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
+
+        // check that the migration rolled back the changes and that the files are identical.
+        try (Stream<Path> paths = Files.list(keyDirectory)) {
+            paths.forEach(path -> {
+                try {
+                    assertThat(Files.readAllBytes(path))
+                            .isEqualTo(fileContents.get(path.getFileName().toString()));
+                } catch (IOException e) {
+                    assert (false);
+                }
+            });
+        }
     }
 }

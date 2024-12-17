@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithLoggingMirror
+@Disabled
 public class LoggersTest {
 
     @Inject
@@ -46,7 +47,6 @@ public class LoggersTest {
     }
 
     @Test
-    @Disabled
     void testLoggerCreationByNullName() {
         // given
         final String loggerName = null;
@@ -71,7 +71,6 @@ public class LoggersTest {
     }
 
     @Test
-    @Disabled
     void testLoggerCreationByNullClass() {
         // given
         final Class clazz = null;

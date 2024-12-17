@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -46,8 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Client that creates a state with at least one of every type of blob; and a bit of diversity
@@ -88,17 +89,17 @@ public final class DiverseStateCreation extends HapiSuite {
     public static final String KEY_REPRS_KEY = "keyReprs";
     public static final String HEXED_BYTECODE_KEY = "hexedBytecode";
 
-    public static final String SMALL_CONTENTS_LOC = "src/main/resource/testfiles/small.txt";
-    public static final String MEDIUM_CONTENTS_LOC = "src/main/resource/testfiles/medium.txt";
-    public static final String LARGE_CONTENTS_LOC = "src/main/resource/testfiles/large.txt";
-    public static final String STATE_META_JSON_LOC = "src/main/resource/testfiles/diverseBlobsInfo.json";
+    public static final String SMALL_CONTENTS_LOC = "src/main/resources/testfiles/small.txt";
+    public static final String MEDIUM_CONTENTS_LOC = "src/main/resources/testfiles/medium.txt";
+    public static final String LARGE_CONTENTS_LOC = "src/main/resources/testfiles/large.txt";
+    public static final String STATE_META_JSON_LOC = "src/main/resources/testfiles/diverseBlobsInfo.json";
 
     public static void main(String... args) throws IOException {
         new DiverseStateCreation().runSuiteSync();
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             MEDIUM_CONTENTS =
@@ -111,7 +112,7 @@ public final class DiverseStateCreation extends HapiSuite {
         return List.of(createDiverseState());
     }
 
-    final HapiSpec createDiverseState() {
+    final Stream<DynamicTest> createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
         final KeyShape LARGE_SHAPE = listOf(

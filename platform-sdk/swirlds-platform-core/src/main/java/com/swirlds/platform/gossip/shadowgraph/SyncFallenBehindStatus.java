@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public enum SyncFallenBehindStatus {
@@ -32,8 +32,7 @@ public enum SyncFallenBehindStatus {
      * @return the status
      */
     @NonNull
-    public static SyncFallenBehindStatus getStatus(
-            @NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
+    public static SyncFallenBehindStatus getStatus(@NonNull final EventWindow self, @NonNull final EventWindow other) {
         if (other.getAncientThreshold() < self.getExpiredThreshold()) {
             return OTHER_FALLEN_BEHIND;
         }

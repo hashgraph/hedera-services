@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static java.util.Collections.emptyList;
-
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TransferList;
@@ -54,21 +52,21 @@ public interface TransferAuditTest {
      * @return whether the audit flag is raised
      */
     static boolean isAuditFlagRaised(@NonNull CryptoTransferTransactionBody op, @NonNull TransferAuditTest auditTest) {
-        final var hbarAdjusts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
+        final var hbarAdjusts = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         for (final var adjust : hbarAdjusts) {
             if (auditTest.flagsAdjustment(adjust)) {
                 return true;
             }
         }
-        final var tokenTransferLists = op.tokenTransfersOrElse(emptyList());
+        final var tokenTransferLists = op.tokenTransfers();
         for (final var tokenTransferList : tokenTransferLists) {
-            final var tokenAdjusts = tokenTransferList.transfersOrElse(emptyList());
+            final var tokenAdjusts = tokenTransferList.transfers();
             for (final var adjust : tokenAdjusts) {
                 if (auditTest.flagsAdjustment(adjust)) {
                     return true;
                 }
             }
-            final var nftTransfers = tokenTransferList.nftTransfersOrElse(emptyList());
+            final var nftTransfers = tokenTransferList.nftTransfers();
             for (final var nftTransfer : nftTransfers) {
                 if (auditTest.flagsNftTransfer(nftTransfer)) {
                     return true;

@@ -1,4 +1,6 @@
-# Context
+[⇧ Platform Base](../base.md)
+
+## Context
 
 The Context API (`com.swirlds.base.context.Context`) provides a way to store metadata in key-values stores. The Context
 API is not defined to be used as a middleware between module and pass data around. It is designed to provide metadata to

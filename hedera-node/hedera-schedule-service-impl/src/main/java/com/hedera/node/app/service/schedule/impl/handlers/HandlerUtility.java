@@ -16,26 +16,20 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import com.hedera.hapi.node.base.AccountID;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.ScheduleID.Builder;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
-import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 /**
  * A package-private utility class for Schedule Handlers.
@@ -43,73 +37,87 @@ import java.util.Set;
 public final class HandlerUtility {
     private HandlerUtility() {}
 
+    /**
+     * Return child as ordinary transaction body.
+     *
+     * @param scheduleInState the schedule in state to convert to transaction body
+     * @return the transaction body
+     */
     @NonNull
     public static TransactionBody childAsOrdinary(@NonNull final Schedule scheduleInState) {
-        final TransactionID scheduledTransactionId = transactionIdForScheduled(scheduleInState);
-        final SchedulableTransactionBody scheduledTransaction = scheduleInState.scheduledTransaction();
-        final TransactionBody.Builder ordinary = TransactionBody.newBuilder();
-        if (scheduledTransaction != null) {
-            ordinary.transactionFee(scheduledTransaction.transactionFee())
-                    .memo(scheduledTransaction.memo())
+        final var scheduledTransactionId = transactionIdForScheduled(scheduleInState);
+        final var ordinary = TransactionBody.newBuilder();
+        final var scheduledBody = scheduleInState.scheduledTransaction();
+        if (scheduledBody != null) {
+            ordinary.transactionFee(scheduledBody.transactionFee())
+                    .memo(scheduledBody.memo())
                     .transactionID(scheduledTransactionId);
-            switch (scheduledTransaction.data().kind()) {
+            switch (scheduledBody.data().kind()) {
                 case CONSENSUS_CREATE_TOPIC -> ordinary.consensusCreateTopic(
-                        scheduledTransaction.consensusCreateTopicOrThrow());
+                        scheduledBody.consensusCreateTopicOrThrow());
                 case CONSENSUS_UPDATE_TOPIC -> ordinary.consensusUpdateTopic(
-                        scheduledTransaction.consensusUpdateTopicOrThrow());
+                        scheduledBody.consensusUpdateTopicOrThrow());
                 case CONSENSUS_DELETE_TOPIC -> ordinary.consensusDeleteTopic(
-                        scheduledTransaction.consensusDeleteTopicOrThrow());
+                        scheduledBody.consensusDeleteTopicOrThrow());
                 case CONSENSUS_SUBMIT_MESSAGE -> ordinary.consensusSubmitMessage(
-                        scheduledTransaction.consensusSubmitMessageOrThrow());
-                case CRYPTO_CREATE_ACCOUNT -> ordinary.cryptoCreateAccount(
-                        scheduledTransaction.cryptoCreateAccountOrThrow());
-                case CRYPTO_UPDATE_ACCOUNT -> ordinary.cryptoUpdateAccount(
-                        scheduledTransaction.cryptoUpdateAccountOrThrow());
-                case CRYPTO_TRANSFER -> ordinary.cryptoTransfer(scheduledTransaction.cryptoTransferOrThrow());
-                case CRYPTO_DELETE -> ordinary.cryptoDelete(scheduledTransaction.cryptoDeleteOrThrow());
-                case FILE_CREATE -> ordinary.fileCreate(scheduledTransaction.fileCreateOrThrow());
-                case FILE_APPEND -> ordinary.fileAppend(scheduledTransaction.fileAppendOrThrow());
-                case FILE_UPDATE -> ordinary.fileUpdate(scheduledTransaction.fileUpdateOrThrow());
-                case FILE_DELETE -> ordinary.fileDelete(scheduledTransaction.fileDeleteOrThrow());
+                        scheduledBody.consensusSubmitMessageOrThrow());
+                case CRYPTO_CREATE_ACCOUNT -> ordinary.cryptoCreateAccount(scheduledBody.cryptoCreateAccountOrThrow());
+                case CRYPTO_UPDATE_ACCOUNT -> ordinary.cryptoUpdateAccount(scheduledBody.cryptoUpdateAccountOrThrow());
+                case CRYPTO_TRANSFER -> ordinary.cryptoTransfer(scheduledBody.cryptoTransferOrThrow());
+                case CRYPTO_DELETE -> ordinary.cryptoDelete(scheduledBody.cryptoDeleteOrThrow());
+                case FILE_CREATE -> ordinary.fileCreate(scheduledBody.fileCreateOrThrow());
+                case FILE_APPEND -> ordinary.fileAppend(scheduledBody.fileAppendOrThrow());
+                case FILE_UPDATE -> ordinary.fileUpdate(scheduledBody.fileUpdateOrThrow());
+                case FILE_DELETE -> ordinary.fileDelete(scheduledBody.fileDeleteOrThrow());
                 case CONTRACT_CREATE_INSTANCE -> ordinary.contractCreateInstance(
-                        scheduledTransaction.contractCreateInstanceOrThrow());
+                        scheduledBody.contractCreateInstanceOrThrow());
                 case CONTRACT_UPDATE_INSTANCE -> ordinary.contractUpdateInstance(
-                        scheduledTransaction.contractUpdateInstanceOrThrow());
-                case CONTRACT_CALL -> ordinary.contractCall(scheduledTransaction.contractCallOrThrow());
+                        scheduledBody.contractUpdateInstanceOrThrow());
+                case CONTRACT_CALL -> ordinary.contractCall(scheduledBody.contractCallOrThrow());
                 case CONTRACT_DELETE_INSTANCE -> ordinary.contractDeleteInstance(
-                        scheduledTransaction.contractDeleteInstanceOrThrow());
-                case SYSTEM_DELETE -> ordinary.systemDelete(scheduledTransaction.systemDeleteOrThrow());
-                case SYSTEM_UNDELETE -> ordinary.systemUndelete(scheduledTransaction.systemUndeleteOrThrow());
-                case FREEZE -> ordinary.freeze(scheduledTransaction.freezeOrThrow());
-                case TOKEN_CREATION -> ordinary.tokenCreation(scheduledTransaction.tokenCreationOrThrow());
-                case TOKEN_FREEZE -> ordinary.tokenFreeze(scheduledTransaction.tokenFreezeOrThrow());
-                case TOKEN_UNFREEZE -> ordinary.tokenUnfreeze(scheduledTransaction.tokenUnfreezeOrThrow());
-                case TOKEN_GRANT_KYC -> ordinary.tokenGrantKyc(scheduledTransaction.tokenGrantKycOrThrow());
-                case TOKEN_REVOKE_KYC -> ordinary.tokenRevokeKyc(scheduledTransaction.tokenRevokeKycOrThrow());
-                case TOKEN_DELETION -> ordinary.tokenDeletion(scheduledTransaction.tokenDeletionOrThrow());
-                case TOKEN_UPDATE -> ordinary.tokenUpdate(scheduledTransaction.tokenUpdateOrThrow());
-                case TOKEN_MINT -> ordinary.tokenMint(scheduledTransaction.tokenMintOrThrow());
-                case TOKEN_BURN -> ordinary.tokenBurn(scheduledTransaction.tokenBurnOrThrow());
-                case TOKEN_WIPE -> ordinary.tokenWipe(scheduledTransaction.tokenWipeOrThrow());
-                case TOKEN_ASSOCIATE -> ordinary.tokenAssociate(scheduledTransaction.tokenAssociateOrThrow());
-                case TOKEN_DISSOCIATE -> ordinary.tokenDissociate(scheduledTransaction.tokenDissociateOrThrow());
-                case SCHEDULE_DELETE -> ordinary.scheduleDelete(scheduledTransaction.scheduleDeleteOrThrow());
-                case TOKEN_PAUSE -> ordinary.tokenPause(scheduledTransaction.tokenPauseOrThrow());
-                case TOKEN_UNPAUSE -> ordinary.tokenUnpause(scheduledTransaction.tokenUnpauseOrThrow());
+                        scheduledBody.contractDeleteInstanceOrThrow());
+                case SYSTEM_DELETE -> ordinary.systemDelete(scheduledBody.systemDeleteOrThrow());
+                case SYSTEM_UNDELETE -> ordinary.systemUndelete(scheduledBody.systemUndeleteOrThrow());
+                case FREEZE -> ordinary.freeze(scheduledBody.freezeOrThrow());
+                case TOKEN_CREATION -> ordinary.tokenCreation(scheduledBody.tokenCreationOrThrow());
+                case TOKEN_FREEZE -> ordinary.tokenFreeze(scheduledBody.tokenFreezeOrThrow());
+                case TOKEN_UNFREEZE -> ordinary.tokenUnfreeze(scheduledBody.tokenUnfreezeOrThrow());
+                case TOKEN_GRANT_KYC -> ordinary.tokenGrantKyc(scheduledBody.tokenGrantKycOrThrow());
+                case TOKEN_REVOKE_KYC -> ordinary.tokenRevokeKyc(scheduledBody.tokenRevokeKycOrThrow());
+                case TOKEN_DELETION -> ordinary.tokenDeletion(scheduledBody.tokenDeletionOrThrow());
+                case TOKEN_UPDATE -> ordinary.tokenUpdate(scheduledBody.tokenUpdateOrThrow());
+                case TOKEN_MINT -> ordinary.tokenMint(scheduledBody.tokenMintOrThrow());
+                case TOKEN_BURN -> ordinary.tokenBurn(scheduledBody.tokenBurnOrThrow());
+                case TOKEN_WIPE -> ordinary.tokenWipe(scheduledBody.tokenWipeOrThrow());
+                case TOKEN_ASSOCIATE -> ordinary.tokenAssociate(scheduledBody.tokenAssociateOrThrow());
+                case TOKEN_DISSOCIATE -> ordinary.tokenDissociate(scheduledBody.tokenDissociateOrThrow());
+                case SCHEDULE_DELETE -> ordinary.scheduleDelete(scheduledBody.scheduleDeleteOrThrow());
+                case TOKEN_PAUSE -> ordinary.tokenPause(scheduledBody.tokenPauseOrThrow());
+                case TOKEN_UNPAUSE -> ordinary.tokenUnpause(scheduledBody.tokenUnpauseOrThrow());
                 case CRYPTO_APPROVE_ALLOWANCE -> ordinary.cryptoApproveAllowance(
-                        scheduledTransaction.cryptoApproveAllowanceOrThrow());
+                        scheduledBody.cryptoApproveAllowanceOrThrow());
                 case CRYPTO_DELETE_ALLOWANCE -> ordinary.cryptoDeleteAllowance(
-                        scheduledTransaction.cryptoDeleteAllowanceOrThrow());
+                        scheduledBody.cryptoDeleteAllowanceOrThrow());
                 case TOKEN_FEE_SCHEDULE_UPDATE -> ordinary.tokenFeeScheduleUpdate(
-                        scheduledTransaction.tokenFeeScheduleUpdateOrThrow());
-                case UTIL_PRNG -> ordinary.utilPrng(scheduledTransaction.utilPrngOrThrow());
+                        scheduledBody.tokenFeeScheduleUpdateOrThrow());
+                case UTIL_PRNG -> ordinary.utilPrng(scheduledBody.utilPrngOrThrow());
+                case TOKEN_REJECT -> ordinary.tokenReject(scheduledBody.tokenRejectOrThrow());
+                case NODE_CREATE -> ordinary.nodeCreate(scheduledBody.nodeCreateOrThrow());
+                case NODE_UPDATE -> ordinary.nodeUpdate(scheduledBody.nodeUpdateOrThrow());
+                case NODE_DELETE -> ordinary.nodeDelete(scheduledBody.nodeDeleteOrThrow());
                 case UNSET -> throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
             }
         }
         return ordinary.build();
     }
 
-    static HederaFunctionality functionalityForType(final DataOneOfType transactionType) {
+    /**
+     * Given a Transaction of one type, return the corresponding HederaFunctionality.
+     * @param transactionType the transaction type
+     * @return the hedera functionality
+     */
+    public static HederaFunctionality functionalityForType(@NonNull final DataOneOfType transactionType) {
+        requireNonNull(transactionType);
         return switch (transactionType) {
             case CONSENSUS_CREATE_TOPIC -> HederaFunctionality.CONSENSUS_CREATE_TOPIC;
             case CONSENSUS_UPDATE_TOPIC -> HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
@@ -149,39 +157,16 @@ public final class HandlerUtility {
             case CRYPTO_DELETE_ALLOWANCE -> HederaFunctionality.CRYPTO_DELETE_ALLOWANCE;
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
+            case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
+            case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
+            case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
+            case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
+            case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
+            case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
             case UNSET -> HederaFunctionality.NONE;
         };
-    }
-
-    /**
-     * Given a Schedule, return a copy of that schedule with the executed flag and resolution time set.
-     * @param schedule a {@link Schedule} to mark executed.
-     * @param consensusTime the current consensus time, used to set {@link Schedule#resolutionTime()}.
-     * @return a new Schedule which matches the input, except that the execute flag is set and the resolution time
-     *     is set to the consensusTime provided.
-     */
-    @NonNull
-    static Schedule markExecuted(@NonNull final Schedule schedule, @NonNull final Instant consensusTime) {
-        final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-        return schedule.copyBuilder()
-                .executed(true)
-                .resolutionTime(consensusTimestamp)
-                .build();
-    }
-
-    @NonNull
-    static Schedule replaceSignatories(@NonNull final Schedule schedule, @NonNull final Set<Key> newSignatories) {
-        return schedule.copyBuilder().signatories(List.copyOf(newSignatories)).build();
-    }
-
-    @NonNull
-    static Schedule replaceSignatoriesAndMarkExecuted(
-            @NonNull final Schedule schedule,
-            @NonNull final Set<Key> newSignatories,
-            @NonNull final Instant consensusTime) {
-        final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-        final Schedule.Builder builder = schedule.copyBuilder().executed(true).resolutionTime(consensusTimestamp);
-        return builder.signatories(List.copyOf(newSignatories)).build();
     }
 
     /**
@@ -189,130 +174,82 @@ public final class HandlerUtility {
      * This method is used to create a schedule object for processing during a ScheduleCreate, but without the
      * schedule ID, as we still need to complete validation and other processing.  Once all processing is complete,
      * a new ID is allocated and signatories are added immediately prior to storing the new object in state.
-     * @param currentTransaction The transaction body of the current Schedule Create transaction.  We assume that
+     * @param body The transaction body of the current Schedule Create transaction.  We assume that
      *     the transaction is a ScheduleCreate, but require the less specific object so that we have access to
      *     the transaction ID via {@link TransactionBody#transactionID()} from the TransactionBody stored in
      *     the {@link Schedule#originalCreateTransaction()} attribute of the Schedule.
-     * @param currentConsensusTime The current consensus time for the network.
-     * @param maxLifeSeconds The maximum number of seconds a schedule is permitted to exist on the ledger
+     * @param consensusNow The current consensus time for the network.
+     * @param maxLifetime The maximum number of seconds a schedule is permitted to exist on the ledger
      *     before it expires.
-     * @return a newly created Schedule with a null schedule ID.
+     * @return a newly created Schedule with a null schedule ID
      * @throws HandleException if the
      */
     @NonNull
     static Schedule createProvisionalSchedule(
-            @NonNull final TransactionBody currentTransaction,
-            @NonNull final Instant currentConsensusTime,
-            final long maxLifeSeconds)
-            throws HandleException {
-        // The next three items will never be null, but Sonar is persnickety, so we force NPE if any are null.
-        final TransactionID parentTransactionId = currentTransaction.transactionIDOrThrow();
-        final ScheduleCreateTransactionBody createTransaction = currentTransaction.scheduleCreateOrThrow();
-        final AccountID schedulerAccount = parentTransactionId.accountIDOrThrow();
-        final Timestamp providedExpirationTime = createTransaction.expirationTime();
-        final long calculatedExpirationTime =
-                calculateExpiration(providedExpirationTime, currentConsensusTime, maxLifeSeconds);
-        final ScheduleID nullId = null;
-
-        Schedule.Builder builder = Schedule.newBuilder();
-        builder.scheduleId(nullId).deleted(false).executed(false);
-        builder.waitForExpiry(createTransaction.waitForExpiry());
-        builder.adminKey(createTransaction.adminKey()).schedulerAccountId(parentTransactionId.accountID());
-        builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
-        builder.schedulerAccountId(schedulerAccount);
-        builder.scheduleValidStart(parentTransactionId.transactionValidStart());
-        builder.calculatedExpirationSecond(calculatedExpirationTime);
-        builder.originalCreateTransaction(currentTransaction);
-        builder.memo(createTransaction.memo());
-        builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
-        return builder.build();
+            @NonNull final TransactionBody body,
+            @NonNull final Instant consensusNow,
+            final long maxLifetime,
+            final boolean longTermEnabled) {
+        final var txnId = body.transactionIDOrThrow();
+        final var op = body.scheduleCreateOrThrow();
+        final var payerId = txnId.accountIDOrThrow();
+        final long expiry = calculateExpiration(op.expirationTime(), consensusNow, maxLifetime, longTermEnabled);
+        final var builder = Schedule.newBuilder();
+        if (longTermEnabled) {
+            builder.waitForExpiry(op.waitForExpiry());
+        }
+        return builder.scheduleId((ScheduleID) null)
+                .deleted(false)
+                .executed(false)
+                .adminKey(op.adminKey())
+                .schedulerAccountId(payerId)
+                .payerAccountId(op.payerAccountIDOrElse(payerId))
+                .schedulerAccountId(payerId)
+                .scheduleValidStart(txnId.transactionValidStart())
+                .calculatedExpirationSecond(expiry)
+                .providedExpirationSecond(
+                        op.expirationTimeOrElse(Timestamp.DEFAULT).seconds())
+                .originalCreateTransaction(body)
+                .memo(op.memo())
+                .scheduledTransaction(op.scheduledTransactionBody())
+                .build();
     }
 
+    /**
+     * Builds the transaction id for a scheduled transaction from its schedule.
+     * @param schedule the schedule
+     * @return its transaction id
+     */
     @NonNull
-    static Schedule completeProvisionalSchedule(
-            @NonNull final Schedule provisionalSchedule,
-            final long newEntityNumber,
-            @NonNull final Set<Key> finalSignatories)
-            throws HandleException {
-        final TransactionBody originalTransaction = provisionalSchedule.originalCreateTransactionOrThrow();
-        final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
-        final ScheduleID finalId = getNextScheduleID(parentTransactionId, newEntityNumber);
-
-        Schedule.Builder build = provisionalSchedule.copyBuilder();
-        build.scheduleId(finalId).deleted(false).executed(false);
-        build.schedulerAccountId(parentTransactionId.accountID());
-        build.signatories(List.copyOf(finalSignatories));
-        return build.build();
+    static TransactionID transactionIdForScheduled(@NonNull final Schedule schedule) {
+        return scheduledTxnIdFrom(schedule.originalCreateTransactionOrThrow().transactionIDOrThrow());
     }
 
-    @NonNull
-    static ScheduleID getNextScheduleID(
-            @NonNull final TransactionID parentTransactionId, final long newScheduleNumber) {
-        final AccountID schedulingAccount = parentTransactionId.accountIDOrThrow();
-        final long shardNumber = schedulingAccount.shardNum();
-        final long realmNumber = schedulingAccount.realmNum();
-        final Builder builder = ScheduleID.newBuilder().shardNum(shardNumber).realmNum(realmNumber);
-        return builder.scheduleNum(newScheduleNumber).build();
-    }
-
-    @NonNull
-    static TransactionID transactionIdForScheduled(@NonNull Schedule valueInState) {
-        // original create transaction and its transaction ID will never be null, but Sonar...
-        final TransactionBody originalTransaction = valueInState.originalCreateTransactionOrThrow();
-        final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
-        final TransactionID.Builder builder = parentTransactionId.copyBuilder();
-        // This is tricky.
-        // The scheduled child transaction that is executed must have a transaction ID that exactly matches
-        // the original CREATE transaction, not the parent transaction that triggers execution.  So the child
-        // record is a child of "trigger" with an ID matching "create".  This is what mono service does, but it
-        // is not ideal.  Future work should change this (if at all possible) to have ID and parent match
-        // better, not rely on exact ID match, and only use the scheduleRef and scheduledId values in the transaction
-        // records (scheduleRef on the child pointing to the schedule ID, and scheduled ID on the parent pointing
-        // to the child transaction) for connecting things.
-        builder.scheduled(true);
-        return builder.build();
+    /**
+     * Given the scheduling transaction ID, return the scheduled transaction ID.
+     * @param schedulingTxnId the scheduling transaction ID
+     * @return the scheduled transaction ID
+     */
+    public static TransactionID scheduledTxnIdFrom(@NonNull final TransactionID schedulingTxnId) {
+        requireNonNull(schedulingTxnId);
+        return schedulingTxnId.scheduled()
+                ? schedulingTxnId
+                        .copyBuilder()
+                        .nonce(schedulingTxnId.nonce() + 1)
+                        .build()
+                : schedulingTxnId.copyBuilder().scheduled(true).build();
     }
 
     private static long calculateExpiration(
             @Nullable final Timestamp givenExpiration,
-            @NonNull final Instant currentConsensusTime,
-            final long maxLifeSeconds) {
-        if (givenExpiration != null) {
+            @NonNull final Instant consensusNow,
+            final long maxLifetime,
+            final boolean longTermEnabled) {
+        if (givenExpiration != null && longTermEnabled) {
             return givenExpiration.seconds();
         } else {
-            final Instant currentPlusMaxLife = currentConsensusTime.plusSeconds(maxLifeSeconds);
+            final var currentPlusMaxLife = consensusNow.plusSeconds(maxLifetime);
             return currentPlusMaxLife.getEpochSecond();
         }
-    }
-
-    static void filterSignatoriesToRequired(Set<Key> signatories, Set<Key> required) {
-        final Set<Key> incomingSignatories = Set.copyOf(signatories);
-        signatories.clear();
-        filterSignatoriesToRequired(signatories, required, incomingSignatories);
-    }
-
-    private static void filterSignatoriesToRequired(
-            final Set<Key> signatories, final Collection<Key> required, final Set<Key> incomingSignatories) {
-        for (final Key next : required)
-            switch (next.key().kind()) {
-                case ED25519, ECDSA_SECP256K1, CONTRACT_ID, DELEGATABLE_CONTRACT_ID:
-                    // Handle "primitive" keys, which are what the signatories set stores.
-                    if (incomingSignatories.contains(next)) {
-                        signatories.add(next);
-                    }
-                    break;
-                case KEY_LIST:
-                    // Dive down into the elements of the key list
-                    filterSignatoriesToRequired(signatories, next.keyList().keys(), incomingSignatories);
-                    break;
-                case THRESHOLD_KEY:
-                    // Dive down into the elements of the threshold key candidates list
-                    filterSignatoriesToRequired(
-                            signatories, next.thresholdKey().keys().keys(), incomingSignatories);
-                    break;
-                case ECDSA_384, RSA_3072, UNSET:
-                    // These types are unsupported
-                    break;
-            }
     }
 }

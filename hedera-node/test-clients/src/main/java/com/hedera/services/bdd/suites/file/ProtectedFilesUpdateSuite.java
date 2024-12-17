@@ -17,11 +17,23 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_DETAILS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,31 +41,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ProtectedFilesUpdateSuite extends HapiSuite {
+@OrderedInIsolation
+public class ProtectedFilesUpdateSuite {
     private static final String IGNORE = "ignore";
     private static final String TARGET_MEMO = "0.0.5";
     private static final String REPLACE_MEMO = "0.0.6";
@@ -64,53 +72,130 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     // The number of chars that separate a property and its value
     private static final int PROPERTY_VALUE_SPACE_LENGTH = 2;
 
-    public static void main(String... args) {
-        new ProtectedFilesUpdateSuite().runSuiteSync();
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateApplicationProperties() {
+        return specialAccountCanUpdateSpecialPropertyFile(GENESIS, APP_PROPERTIES, "throttlingTps", "10");
     }
 
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveTests(), negativeTests());
+    @HapiTest
+    final Stream<DynamicTest> account50CanUpdateApplicationProperties() {
+        return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
     }
 
-    private List<HapiSpec> positiveTests() {
-        return List.of(
-                account2CanUpdateApplicationProperties(),
-                account50CanUpdateApplicationProperties(),
-                account2CanUpdateApiPermissions(),
-                account50CanUpdateApiPermissions(),
-                account2CanUpdateAddressBook(),
-                account50CanUpdateAddressBook(),
-                account55CanUpdateAddressBook(),
-                account2CanUpdateNodeDetails(),
-                account50CanUpdateNodeDetails(),
-                account55CanUpdateNodeDetails(),
-                account2CanUpdateFeeSchedule(),
-                account50CanUpdateFeeSchedule(),
-                account56CanUpdateFeeSchedule(),
-                account2CanUpdateExchangeRates(),
-                account50CanUpdateExchangeRates(),
-                account57CanUpdateExchangeRates());
+    @HapiTest
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateApplicationProperties() {
+        return unauthorizedAccountCannotUpdateSpecialFile(APP_PROPERTIES, NEW_CONTENTS);
     }
 
-    private List<HapiSpec> negativeTests() {
-        return Arrays.asList(
-                unauthorizedAccountCannotUpdateApplicationProperties(),
-                unauthorizedAccountCannotUpdateApiPermissions(),
-                unauthorizedAccountCannotUpdateAddressBook(),
-                unauthorizedAccountCannotUpdateNodeDetails(),
-                unauthorizedAccountCannotUpdateFeeSchedule(),
-                unauthorizedAccountCannotUpdateExchangeRates());
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateApiPermissions() {
+        return specialAccountCanUpdateSpecialPropertyFile(GENESIS, API_PERMISSIONS, "createTopic", "1-*");
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec specialAccountCanUpdateSpecialPropertyFile(
+    @HapiTest
+    final Stream<DynamicTest> account50CanUpdateApiPermissions() {
+        return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateApiPermissions() {
+        return unauthorizedAccountCannotUpdateSpecialFile(API_PERMISSIONS, NEW_CONTENTS);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateAddressBook() {
+        return specialAccountCanUpdateSpecialFile(
+                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, TARGET_MEMO, REPLACE_MEMO));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateAddressBookAccount() {
+        return specialAccountCanUpdateSpecialFile(
+                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook2(contents, TARGET_MEMO, REPLACE_MEMO));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account50CanUpdateAddressBook() {
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account55CanUpdateAddressBook() {
+        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO, false);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateAddressBook() {
+        return unauthorizedAccountCannotUpdateSpecialFile(ADDRESS_BOOK, NEW_CONTENTS);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateNodeDetails() {
+        return specialAccountCanUpdateSpecialFile(
+                GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, TARGET_MEMO, REPLACE_MEMO));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account50CanUpdateNodeDetails() {
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account55CanUpdateNodeDetails() {
+        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO, false);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateNodeDetails() {
+        return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, NEW_CONTENTS);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateFeeSchedule() {
+        return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, IGNORE, IGNORE);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account50CanUpdateFeeSchedule() {
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, IGNORE, IGNORE);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account56CanUpdateFeeSchedule() {
+        return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, IGNORE, IGNORE);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateFeeSchedule() {
+        return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, NEW_CONTENTS);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateExchangeRates() {
+        return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, IGNORE, IGNORE);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account50CanUpdateExchangeRates() {
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, IGNORE, IGNORE);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account57CanUpdateExchangeRates() {
+        return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, IGNORE, IGNORE);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateExchangeRates() {
+        return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, NEW_CONTENTS);
+    }
+
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount, final String specialFile, final String property, final String expected) {
         return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec specialAccountCanUpdateSpecialPropertyFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialPropertyFile(
             final String specialAccount,
             final String specialFile,
             final String property,
@@ -143,14 +228,12 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         });
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec specialAccountCanUpdateSpecialFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
             final String specialAccount, final String specialFile, final String target, final String replacement) {
         return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec specialAccountCanUpdateSpecialFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
             final String target,
@@ -165,8 +248,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                         : (new String(contents).replace(target, replacement)).getBytes());
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec specialAccountCanUpdateSpecialFile(
+    final Stream<DynamicTest> specialAccountCanUpdateSpecialFile(
             final String specialAccount,
             final String specialFile,
             final boolean isFree,
@@ -207,8 +289,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return ArrayUtils.addAll(accountBalanceUnchanged, opsArray);
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
+    final Stream<DynamicTest> unauthorizedAccountCannotUpdateSpecialFile(
+            final String specialFile, final String newContents) {
         return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
                 .given(cryptoCreate("unauthorizedAccount"))
                 .when()
@@ -216,123 +298,6 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                         .contents(newContents)
                         .payingWith("unauthorizedAccount")
                         .hasPrecheck(AUTHORIZATION_FAILED));
-    }
-
-    @HapiTest
-    final HapiSpec account2CanUpdateApplicationProperties() {
-        return specialAccountCanUpdateSpecialPropertyFile(GENESIS, APP_PROPERTIES, "throttlingTps", "10");
-    }
-
-    @HapiTest
-    final HapiSpec account50CanUpdateApplicationProperties() {
-        return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
-    }
-
-    @HapiTest
-    final HapiSpec unauthorizedAccountCannotUpdateApplicationProperties() {
-        return unauthorizedAccountCannotUpdateSpecialFile(APP_PROPERTIES, NEW_CONTENTS);
-    }
-
-    @HapiTest
-    final HapiSpec account2CanUpdateApiPermissions() {
-        return specialAccountCanUpdateSpecialPropertyFile(GENESIS, API_PERMISSIONS, "createTopic", "1-*");
-    }
-
-    @HapiTest
-    final HapiSpec account50CanUpdateApiPermissions() {
-        return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
-    }
-
-    @HapiTest
-    final HapiSpec unauthorizedAccountCannotUpdateApiPermissions() {
-        return unauthorizedAccountCannotUpdateSpecialFile(API_PERMISSIONS, NEW_CONTENTS);
-    }
-
-    @HapiTest
-    final HapiSpec account2CanUpdateAddressBook() {
-        return specialAccountCanUpdateSpecialFile(
-                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, TARGET_MEMO, REPLACE_MEMO));
-    }
-
-    @HapiTest
-    final HapiSpec account50CanUpdateAddressBook() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO);
-    }
-
-    @HapiTest
-    final HapiSpec account55CanUpdateAddressBook() {
-        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO, false);
-    }
-
-    @HapiTest
-    final HapiSpec unauthorizedAccountCannotUpdateAddressBook() {
-        return unauthorizedAccountCannotUpdateSpecialFile(ADDRESS_BOOK, NEW_CONTENTS);
-    }
-
-    @HapiTest
-    final HapiSpec account2CanUpdateNodeDetails() {
-        return specialAccountCanUpdateSpecialFile(
-                GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, TARGET_MEMO, REPLACE_MEMO));
-    }
-
-    @HapiTest
-    final HapiSpec account50CanUpdateNodeDetails() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO);
-    }
-
-    @HapiTest
-    final HapiSpec account55CanUpdateNodeDetails() {
-        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO, false);
-    }
-
-    @HapiTest
-    final HapiSpec unauthorizedAccountCannotUpdateNodeDetails() {
-        return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, NEW_CONTENTS);
-    }
-
-    @HapiTest
-    final HapiSpec account2CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, IGNORE, IGNORE);
-    }
-
-    @HapiTest
-    final HapiSpec account50CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, IGNORE, IGNORE);
-    }
-
-    @HapiTest
-    final HapiSpec account56CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, IGNORE, IGNORE);
-    }
-
-    @HapiTest
-    final HapiSpec unauthorizedAccountCannotUpdateFeeSchedule() {
-        return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, NEW_CONTENTS);
-    }
-
-    @HapiTest
-    final HapiSpec account2CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, IGNORE, IGNORE);
-    }
-
-    @HapiTest
-    final HapiSpec account50CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, IGNORE, IGNORE);
-    }
-
-    @HapiTest
-    final HapiSpec account57CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, IGNORE, IGNORE);
-    }
-
-    @HapiTest
-    final HapiSpec unauthorizedAccountCannotUpdateExchangeRates() {
-        return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, NEW_CONTENTS);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 
     private byte[] extendedBioAddressBook(byte[] contents, String targetMemo, String replaceMemo) {
@@ -346,10 +311,39 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 node.setNodeId(nodeId++);
                 r.nextBytes(randCertHash);
                 node.setNodeCertHash(ByteString.copyFrom(randCertHash));
-                node.setNodeAccountId(
-                        HapiPropertySource.asAccount(new String(node.getMemo().toByteArray())));
+                node.setNodeAccountId(node.getNodeAccountId());
                 if (new String(node.getMemo().toByteArray()).equals(targetMemo)) {
                     node.setMemo(ByteString.copyFrom(replaceMemo.getBytes()));
+                }
+            }
+            var newBook = builder.build();
+            var bookJson = mapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(AddressBookPojo.addressBookFrom(newBook));
+            log.info("New address book w/ extended bio: {}", bookJson);
+            return builder.build().toByteArray();
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Basic address book could not be parsed", e);
+            throw new AssertionError("Unparseable address book!");
+        } catch (JsonProcessingException e) {
+            log.error("Extended address book could not be serialized", e);
+            throw new AssertionError("Unserializable address book!");
+        }
+    }
+
+    private byte[] extendedBioAddressBook2(byte[] contents, String targetAccount, String replaceAccount) {
+        var r = new SplittableRandom();
+        try {
+            var book = NodeAddressBook.parseFrom(contents);
+            var builder = book.toBuilder();
+            byte[] randCertHash = new byte[32];
+            long nodeId = 0;
+            for (NodeAddress.Builder node : builder.getNodeAddressBuilderList()) {
+                node.setNodeId(nodeId++);
+                r.nextBytes(randCertHash);
+                node.setNodeCertHash(ByteString.copyFrom(randCertHash));
+                node.setNodeAccountId(node.getNodeAccountId());
+                if (node.getNodeAccountId().equals(asAccount(targetAccount))) {
+                    node.setNodeAccountId(asAccount(replaceAccount));
                 }
             }
             var newBook = builder.build();

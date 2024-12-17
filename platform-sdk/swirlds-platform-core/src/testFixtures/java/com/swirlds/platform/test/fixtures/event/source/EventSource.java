@@ -20,9 +20,10 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Random;
 
@@ -106,18 +107,19 @@ public interface EventSource<T extends EventSource<T>> {
     /**
      * Generates a new event. Is responsible for populating IndexedEvent metadata fields.
      *
-     * @param random
-     * 		a source of randomness
-     * @param eventIndex
-     * 		the unique index of the event that will be generated
-     * @param otherParent
-     * 		he node that is contributing the "other parent" event
-     * @param timestamp
-     * 		the creation timesetamp that the event should have
+     * @param random      a source of randomness
+     * @param eventIndex  the unique index of the event that will be generated
+     * @param otherParent the node that is contributing the "other parent" event
+     * @param timestamp   the creation timesetamp that the event should have
+     * @param birthRound  the pending consensus round when the event was created
      * @return The random event that was generated.
      */
-    IndexedEvent generateEvent(
-            final Random random, final long eventIndex, final EventSource<?> otherParent, final Instant timestamp);
+    EventImpl generateEvent(
+            @NonNull final Random random,
+            final long eventIndex,
+            @Nullable final EventSource<?> otherParent,
+            @NonNull final Instant timestamp,
+            final long birthRound);
 
     /**
      * Get an event recently created by this node.
@@ -127,7 +129,7 @@ public interface EventSource<T extends EventSource<T>> {
      * @return the event, if it exists. Null if there are no events, and the oldest possible if the event at the
      * 		requested index is no longer stored.
      */
-    IndexedEvent getRecentEvent(Random random, int index);
+    EventImpl getRecentEvent(Random random, int index);
 
     /**
      * Return the latest event that was generated.
@@ -136,7 +138,7 @@ public interface EventSource<T extends EventSource<T>> {
      * @param random
      * 		a source of randomness
      */
-    default IndexedEvent getLatestEvent(final Random random) {
+    default EventImpl getLatestEvent(final Random random) {
         return getRecentEvent(random, 0);
     }
 
@@ -148,7 +150,7 @@ public interface EventSource<T extends EventSource<T>> {
      * @param event
      * 		an event that was just created by this source
      */
-    void setLatestEvent(Random random, IndexedEvent event);
+    void setLatestEvent(Random random, EventImpl event);
 
     /**
      * Get the event index (i.e. the age of the event) that this node would like to use for its other parent.

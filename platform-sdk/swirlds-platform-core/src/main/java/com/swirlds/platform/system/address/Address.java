@@ -24,6 +24,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -67,7 +68,6 @@ public class Address implements SelfSerializable {
         public static final int X509_CERT_SUPPORT = 6;
     }
 
-    private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
 
     /** The serialization version of this class, defaulting to most recent version.  Deserialization will override. */
@@ -101,6 +101,7 @@ public class Address implements SelfSerializable {
     /** signing x509 certificate of the member, contains the public key used for signing */
     private SerializableX509Certificate sigCert = null;
     /** agreement x509 certificate of the member, used for establishing TLS connections. */
+    // now deprecated for removal in version 0.51.0 or later
     private SerializableX509Certificate agreeCert = null;
     /**
      * a String that can be part of any address to supply additional information about that node
@@ -112,34 +113,6 @@ public class Address implements SelfSerializable {
      */
     public Address() {
         this(NodeId.FIRST_NODE_ID, "", "", 1, null, -1, null, -1, null, null, "");
-    }
-
-    public Address(
-            @NonNull final NodeId id,
-            @NonNull final String nickname,
-            @NonNull final String selfName,
-            final long weight,
-            @Nullable final String hostnameInternal,
-            final int portInternal,
-            @Nullable final String hostnameExternal,
-            final int portExternal,
-            @NonNull final String memo) {
-        this(
-                id,
-                nickname,
-                selfName,
-                weight, // weight
-                hostnameInternal,
-                portInternal,
-                hostnameExternal,
-                portExternal,
-                null,
-                null,
-                memo);
-    }
-
-    private byte[] clone(byte[] x) {
-        return x == null ? x : x.clone();
     }
 
     /**
@@ -335,6 +308,7 @@ public class Address implements SelfSerializable {
      *
      * @return The member's PublicKey used for TLS key agreement.
      */
+    @Deprecated(since = "0.51.0", forRemoval = true)
     @Nullable
     public PublicKey getAgreePublicKey() {
         if (agreeCert != null) {
@@ -358,6 +332,7 @@ public class Address implements SelfSerializable {
      *
      * @return The member's x509 certificate used for TLS key agreement, if it exists.
      */
+    @Deprecated(since = "0.51.0", forRemoval = true)
     @Nullable
     public X509Certificate getAgreeCert() {
         return agreeCert == null ? null : agreeCert.getCertificate();
@@ -483,16 +458,16 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different {@link X509Certificate} for signature.
+     * Create a new Address object based this one with different {@link X509Certificate} for signature.  If the
+     * certificate is not encodable, the field is set to null.
      *
      * @param sigCert New signing certificate for the created Address.
      * @return The new Address.
      */
     @NonNull
-    public Address copySetSigCert(@NonNull final X509Certificate sigCert) {
-        Objects.requireNonNull(sigCert, "sigCert must not be null");
-        Address a = copy();
-        a.sigCert = checkCertificateEncoding(new SerializableX509Certificate(sigCert));
+    public Address copySetSigCert(@Nullable final X509Certificate sigCert) {
+        final Address a = copy();
+        a.sigCert = sigCert == null ? null : checkCertificateEncoding(new SerializableX509Certificate(sigCert));
         return a;
     }
 
@@ -502,11 +477,11 @@ public class Address implements SelfSerializable {
      * @param agreeCert new agreement certificate for the created Address.
      * @return The new Address.
      */
+    @Deprecated(since = "0.51.0", forRemoval = true)
     @NonNull
-    public Address copySetAgreeCert(@NonNull final X509Certificate agreeCert) {
-        Objects.requireNonNull(agreeCert, "agreeCert must not be null");
+    public Address copySetAgreeCert(@Nullable final X509Certificate agreeCert) {
         Address a = copy();
-        a.agreeCert = checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
+        a.agreeCert = agreeCert == null ? null : checkCertificateEncoding(new SerializableX509Certificate(agreeCert));
         return a;
     }
 
@@ -579,9 +554,9 @@ public class Address implements SelfSerializable {
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
         weight = inStream.readLong();
 
-        hostnameInternal = inStream.readNormalisedString(MAX_IP_LENGTH);
+        hostnameInternal = inStream.readNormalisedString(STRING_MAX_BYTES);
         portInternal = inStream.readInt();
-        hostnameExternal = inStream.readNormalisedString(MAX_IP_LENGTH);
+        hostnameExternal = inStream.readNormalisedString(STRING_MAX_BYTES);
         portExternal = inStream.readInt();
 
         if (version < ClassVersion.X509_CERT_SUPPORT) {
@@ -690,7 +665,7 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Throws an illegal argument exception if the certificate exists and is not encodable.
+     * Checks if the certificate is encodable and returns it if it is, otherwise returns null.
      *
      * @param certificate the certificate to check.
      * @return the certificate if it is encodable.
@@ -701,12 +676,7 @@ public class Address implements SelfSerializable {
         if (certificate == null) {
             return null;
         }
-        try {
-            certificate.getCertificate().getEncoded();
-            return certificate;
-        } catch (CertificateEncodingException e) {
-            throw new IllegalArgumentException("Certificate is not encodable");
-        }
+        return CryptoStatic.checkCertificate(certificate.getCertificate()) ? certificate : null;
     }
 
     /**

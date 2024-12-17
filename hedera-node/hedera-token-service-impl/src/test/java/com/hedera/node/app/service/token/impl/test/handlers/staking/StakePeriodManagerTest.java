@@ -16,26 +16,26 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.mono.utils.Units;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +53,8 @@ class StakePeriodManagerTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private WritableStates states;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     private StakePeriodManager subject;
     private ReadableNetworkStakingRewardsStore stakingRewardsStore;
 
@@ -62,7 +64,18 @@ class StakePeriodManagerTest {
     @BeforeEach
     public void setUp() {
         given(configProvider.getConfiguration()).willReturn(versionConfig);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
+    }
+
+    @Test
+    void canSetStakePeriod() {
+        final var firstDay = Instant.ofEpochSecond(0);
+        final var secondDay = Instant.ofEpochSecond(86_401);
+        assertEquals(0, subject.currentStakePeriod());
+        subject.setCurrentStakePeriodFor(firstDay);
+        assertEquals(0, subject.currentStakePeriod());
+        subject.setCurrentStakePeriodFor(secondDay);
+        assertEquals(1, subject.currentStakePeriod());
     }
 
     @Test
@@ -81,11 +94,11 @@ class StakePeriodManagerTest {
     void stakePeriodStartForDevEnvIsPeriodTimesSeconds() {
         givenStakingRewardsActivated();
         givenStakePeriodMins(2);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
 
         final var somePeriod = 1_234_567L;
 
-        assertEquals(somePeriod * 2 * Units.MINUTES_TO_SECONDS, subject.epochSecondAtStartOfPeriod(somePeriod));
+        assertEquals(somePeriod * 2 * 60L, subject.epochSecondAtStartOfPeriod(somePeriod));
     }
 
     @Test
@@ -93,16 +106,16 @@ class StakePeriodManagerTest {
         givenStakingRewardsNotActivated();
 
         final var consensusNow = Instant.ofEpochSecond(12345L);
-        final var period = subject.currentStakePeriod(consensusNow);
+        final var period = subject.currentStakePeriod();
         final var expectedPeriod = LocalDate.ofInstant(consensusNow, ZONE_UTC).toEpochDay();
         assertEquals(expectedPeriod, period);
         // When staking rewards are not activated the estimated non-rewardable is Long.MIN_VALUE
-        var firstNonRewardable = subject.firstNonRewardableStakePeriod(stakingRewardsStore, consensusNow);
+        var firstNonRewardable = subject.firstNonRewardableStakePeriod(stakingRewardsStore);
         assertEquals(Long.MIN_VALUE, firstNonRewardable);
 
         // when staking rewards are activated the estimated non-rewardable is the current period minus one
         givenStakingRewardsActivated();
-        firstNonRewardable = subject.firstNonRewardableStakePeriod(stakingRewardsStore, consensusNow);
+        firstNonRewardable = subject.firstNonRewardableStakePeriod(stakingRewardsStore);
         assertEquals(expectedPeriod - 1, firstNonRewardable);
     }
 
@@ -110,7 +123,7 @@ class StakePeriodManagerTest {
     void estimatesBasedOnWallClockTimeForDevProperty() {
         givenStakingRewardsNotActivated();
         givenStakePeriodMins(1);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
         // When staking rewards are not activated the estimated period is Long.MIN_VALUE
         final var approx = Instant.now().getEpochSecond() / 60;
         assertTrue(Math.abs(approx - subject.estimatedCurrentStakePeriod()) <= 1);
@@ -136,42 +149,28 @@ class StakePeriodManagerTest {
         givenStakingRewardsActivated();
 
         final var consensusNow = Instant.ofEpochSecond(123456789L);
-        final var todayNumber = subject.currentStakePeriod(consensusNow) - 1;
+        subject.setCurrentStakePeriodFor(consensusNow);
+        final var todayNumber = subject.currentStakePeriod() - 1;
 
         // stakePeriodStart should be positive and within last 366 days
         var stakePeriodStart = todayNumber - 366;
-        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore, consensusNow));
+        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore));
 
         // stakePeriodStart should be positive
         stakePeriodStart = -1;
-        assertFalse(subject.isRewardable(stakePeriodStart, stakingRewardsStore, consensusNow));
+        assertFalse(subject.isRewardable(stakePeriodStart, stakingRewardsStore));
 
         // stakePeriodStart should be positive and within last 366 days
         stakePeriodStart = todayNumber - 365;
-        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore, consensusNow));
+        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore));
 
         // stakePeriodStart should be positive and within last 366 days
         stakePeriodStart = todayNumber - 1;
-        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore, consensusNow));
+        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore));
 
         // stakePeriodStart should be positive and within last 366 days
         stakePeriodStart = todayNumber - 2;
-        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore, consensusNow));
-    }
-
-    @Test
-    void calculatesStakePeriodOnlyOncePerSecond() {
-        final var consensusTime = Instant.ofEpochSecond(12345678L);
-        var expectedStakePeriod = LocalDate.ofInstant(consensusTime, ZONE_UTC).toEpochDay();
-
-        assertEquals(expectedStakePeriod, subject.currentStakePeriod(consensusTime));
-        assertEquals(consensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
-
-        final var newConsensusTime = Instant.ofEpochSecond(12345679L);
-        expectedStakePeriod = LocalDate.ofInstant(newConsensusTime, ZONE_UTC).toEpochDay();
-
-        assertEquals(expectedStakePeriod, subject.currentStakePeriod(newConsensusTime));
-        assertEquals(newConsensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
+        assertTrue(subject.isRewardable(stakePeriodStart, stakingRewardsStore));
     }
 
     @Test
@@ -179,42 +178,46 @@ class StakePeriodManagerTest {
         givenStakingRewardsActivated();
 
         final var consensusNow = Instant.ofEpochSecond(12345678910L);
-        final long stakePeriodStart = subject.currentStakePeriod(consensusNow);
+        subject.setCurrentStakePeriodFor(consensusNow);
+        final long stakePeriodStart = subject.currentStakePeriod();
 
-        assertTrue(subject.isRewardable(stakePeriodStart - 365, stakingRewardsStore, consensusNow));
-        assertFalse(subject.isRewardable(-1, stakingRewardsStore, consensusNow));
-        assertFalse(subject.isRewardable(stakePeriodStart, stakingRewardsStore, consensusNow));
+        assertTrue(subject.isRewardable(stakePeriodStart - 365, stakingRewardsStore));
+        assertFalse(subject.isRewardable(-1, stakingRewardsStore));
+        assertFalse(subject.isRewardable(stakePeriodStart, stakingRewardsStore));
     }
 
     @Test
     void givesEffectivePeriodCorrectly() {
         final var delta = 500;
         final var consensusNow = Instant.ofEpochSecond(12345678910L);
+        subject.setCurrentStakePeriodFor(consensusNow);
 
-        final var stakePeriod = subject.currentStakePeriod(consensusNow);
+        final var stakePeriod = subject.currentStakePeriod();
         final var period = subject.effectivePeriod(stakePeriod - delta);
 
         final var expectedEffectivePeriod = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC)
                 .toEpochDay();
-        assertEquals(expectedEffectivePeriod - 365, period);
+        assertEquals(expectedEffectivePeriod - 366, period);
         assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
     }
 
     @Test
     void calculatesCurrentStakingPeriodForCustomStakingPeriodProperty() {
         givenStakePeriodMins(2880);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
 
         final var consensusNow = Instant.ofEpochSecond(12345L);
         final var expectedPeriod = LocalDate.ofInstant(consensusNow, ZONE_UTC).toEpochDay() / 2;
-        final var period = subject.currentStakePeriod(consensusNow);
+        subject.setCurrentStakePeriodFor(consensusNow);
+        final var period = subject.currentStakePeriod();
         assertEquals(expectedPeriod, period);
 
         // Use a different staking period
         givenStakePeriodMins(10);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
         final var diffConsensusNow = consensusNow.plusSeconds(12345L);
-        assertEquals(41L, subject.currentStakePeriod(diffConsensusNow));
+        subject.setCurrentStakePeriodFor(diffConsensusNow);
+        assertEquals(41L, subject.currentStakePeriod());
     }
 
     private void givenStakingRewardsActivated() {

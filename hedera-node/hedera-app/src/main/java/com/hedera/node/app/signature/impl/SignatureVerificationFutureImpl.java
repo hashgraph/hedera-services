@@ -85,7 +85,6 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
         return key;
     }
 
-    /** {@inheritDoc} */
     @NonNull
     public TransactionSignature txSig() {
         return txSig;

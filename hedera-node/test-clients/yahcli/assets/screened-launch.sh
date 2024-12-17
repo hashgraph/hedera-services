@@ -1,6 +1,5 @@
 #! /bin/sh
-java -jar /opt/bin/yahcli.jar "$@" 2>syserr.log \
-  | grep -v sun.reflect.Reflection.getCallerClass
+java -jar /opt/bin/yahcli.jar "$@" 2>syserr.log
 RC=$?
-  cat syserr.log
+cat syserr.log
 exit $RC

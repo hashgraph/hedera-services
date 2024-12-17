@@ -24,4 +24,6 @@ public interface CongestibleThrottle {
     long mtps();
 
     String name();
+
+    double instantaneousPercentUsed();
 }

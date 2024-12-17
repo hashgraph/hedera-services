@@ -17,12 +17,10 @@
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,20 +47,13 @@ public class UsableTxnId extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiSpec spec) {
-        TransactionBody.Builder usable = TransactionBody.newBuilder();
-        spec.txns().defaultBodySpec().accept(usable);
-        if (payerId.isPresent()) {
-            String s = payerId.get();
-            AccountID id = TxnUtils.isIdLiteral(s)
-                    ? HapiPropertySource.asAccount(s)
-                    : spec.registry().getAccountID(s);
-            usable.setTransactionID(usable.getTransactionIDBuilder().setAccountID(id));
-        }
+    protected boolean submitOp(@NonNull final HapiSpec spec) {
+        final var txnId = spec.txns().nextTxnId().toBuilder();
+        payerId.ifPresent(name -> txnId.setAccountID(TxnUtils.asId(name, spec)));
         if (useScheduledInappropriately) {
-            usable.setTransactionID(usable.getTransactionIDBuilder().setScheduled(true));
+            txnId.setScheduled(true);
         }
-        spec.registry().saveTxnId(name, usable.build().getTransactionID());
+        spec.registry().saveTxnId(name, txnId.build());
         return false;
     }
 

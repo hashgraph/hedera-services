@@ -20,9 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
@@ -58,6 +56,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
             @NonNull HederaOperations operations,
             @NonNull HederaNativeOperations nativeOperations,
             @NonNull SystemContractOperations systemOperations) {
+        /**
+         * @param operations the enhanced operations
+         * @param nativeOperations the enhanced native operations
+         * @param systemOperations the enhanced system operations
+         */
         public Enhancement {
             requireNonNull(operations);
             requireNonNull(nativeOperations);
@@ -274,24 +277,12 @@ public interface HederaWorldUpdater extends WorldUpdater {
     List<StorageAccesses> pendingStorageUpdates();
 
     /**
-     * Externalizes the results of a system contract call into a record
-     * @param result    The result of the system contract call
-     */
-    void externalizeSystemContractResults(
-            @NonNull final ContractFunctionResult result, @NonNull ResponseCodeEnum responseStatus);
-
-    /**
      * Returns the {@link ExchangeRate} for the current consensus timestamp
      * Delegates to {@link SystemContractOperations#currentExchangeRate()} ()}
      * @return the current exchange rate
      */
     @NonNull
     ExchangeRate currentExchangeRate();
-
-    /**
-     * Revert the last child record.
-     */
-    void revertChildRecords();
 
     /**
      * Sets the world updater to not check for the existence of the contractId

@@ -16,25 +16,23 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadata.NO_NODE_ID;
+import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.signed.DeserializedSignedState;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
+import com.swirlds.platform.state.snapshot.DeserializedSignedState;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -68,24 +66,25 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws IOException, ExecutionException, InterruptedException {
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath);
+                SignedStateFileReader.readStateFile(configuration, statePath);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
-            final PlatformState platformState =
-                    reservedSignedState.get().getState().getPlatformState();
-            System.out.printf("Replacing platform data %n");
-            platformState.setRound(PlatformState.GENESIS_ROUND);
-            platformState.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
-            System.out.printf("Nullifying Address Books %n");
-            platformState.setAddressBook(null);
-            platformState.setPreviousAddressBook(null);
+            final PlatformStateModifier platformState =
+                    reservedSignedState.get().getState().getWritablePlatformState();
+            platformState.bulkUpdate(v -> {
+                System.out.printf("Replacing platform data %n");
+                v.setRound(PlatformStateAccessor.GENESIS_ROUND);
+                v.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+                System.out.printf("Nullifying Address Books %n");
+                v.setAddressBook(null);
+                v.setPreviousAddressBook(null);
+            });
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())

@@ -19,17 +19,26 @@ package com.hedera.services.bdd.suites.regression.factories;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.KEY_FOR_INCONGRUENT_ALIAS;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
-import static com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing.ATOMIC_CRYPTO_TRANSFER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.AUTO_ACCOUNT;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 
 import com.google.protobuf.ByteString;
@@ -40,9 +49,17 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.*;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.EthereumTransferToRandomEVMAddress;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomKey;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.*;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomERC20TransferLazyCreate;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomERC721TransferLazyCreate;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomFungibleTransferLazyCreate;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomHbarTransferLazyCreate;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile.RandomNonFungibleTransferLazyCreate;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -158,14 +175,6 @@ public class IdFuzzingProviderFactory {
 
     private static HapiSpecOperation[] initOpCommon() {
         return new HapiSpecOperation[] {
-            /**
-             * In order for hbar transfer to work properly through precmompile
-             * contracts.precompile.atomicCryptoTransfer.enabled need to be set to TRUE
-             */
-            overriding(ATOMIC_CRYPTO_TRANSFER, "true"),
-            /** override Ethereum network config */
-            overridingThree(
-                    CHAIN_ID_PROP, "298", LAZY_CREATE_PROPERTY_NAME, "true", CONTRACTS_EVM_VERSION_PROP, V_0_34),
             // common init
             newKeyNamed(KEY_FOR_INCONGRUENT_ALIAS).shape(SECP_256K1_SHAPE),
             newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),

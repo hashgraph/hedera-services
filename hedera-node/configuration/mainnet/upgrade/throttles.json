@@ -39,7 +39,10 @@
             "TokenGetNftInfos",
             "CryptoApproveAllowance",
             "CryptoDeleteAllowance",
-            "UtilPrng"
+            "UtilPrng",
+            "NodeCreate",
+            "NodeUpdate",
+            "NodeDelete"
           ]
         },
         {
@@ -92,7 +95,12 @@
             "TokenGrantKycToAccount",
             "TokenRevokeKycFromAccount",
             "TokenPause",
-            "TokenUnpause"
+            "TokenUnpause",
+            "TokenUpdateNfts",
+            "TokenReject",
+            "TokenAirdrop",
+            "TokenClaimAirdrop",
+            "TokenCancelAirdrop"
           ]
         }
       ]
@@ -141,7 +149,8 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 2000,
           "operations": [
-            "CryptoCreate"
+            "CryptoCreate",
+            "NodeCreate"
           ]
         },
         {
@@ -157,7 +166,8 @@
           "operations": [
             "TokenCreate",
             "TokenAssociateToAccount",
-            "ScheduleCreate"
+            "ScheduleCreate",
+            "TokenAirdrop"
           ]
         }
       ]
@@ -171,8 +181,21 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 1000000000,
           "operations": [
-            "CryptoGetAccountBalance",
             "TransactionGetReceipt"
+          ]
+        }
+      ]
+    },
+    {
+      "burstPeriod": 0,
+      "burstPeriodMs": 1000,
+      "name": "BalanceQueryLimits",
+      "throttleGroups": [
+        {
+          "opsPerSec": 0,
+          "milliOpsPerSec": 40000000,
+          "operations": [
+            "CryptoGetAccountBalance"
           ]
         }
       ]

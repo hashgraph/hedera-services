@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -44,7 +45,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
@@ -56,6 +56,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -93,10 +94,10 @@ class IngestWorkflowImplTest extends AppTestBase {
 
     // The following fields are all mocked dependencies of the workflow.
     @Mock(strictness = LENIENT)
-    HederaState state;
+    State state;
 
     @Mock(strictness = LENIENT)
-    Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    Supplier<AutoCloseableWrapper<State>> stateAccessor;
 
     @Mock(strictness = LENIENT)
     TransactionChecker transactionChecker;
@@ -140,7 +141,8 @@ class IngestWorkflowImplTest extends AppTestBase {
                 transactionBody,
                 SignatureMap.newBuilder().build(),
                 randomBytes(100), // Not used in this test, so random bytes is OK
-                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+                HederaFunctionality.CONSENSUS_CREATE_TOPIC,
+                null);
         when(ingestChecker.runAllChecks(state, transaction, configuration)).thenReturn(transactionInfo);
 
         // Create the workflow we are going to test with
@@ -250,14 +252,18 @@ class IngestWorkflowImplTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() throws PreCheckException, ParseException {
             // Given a WorkflowOnset that will throw a RuntimeException
             when(transactionChecker.parse(any())).thenThrow(new RuntimeException("parseAndCheck exception"));
 
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("parseAndCheck exception");
+            // When the transaction is submitted
+            workflow.submitTransaction(requestBuffer, responseBuffer);
+
+            // Then the response will indicate the platform rejected the transaction
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(FAIL_INVALID);
+            // And the cost will be zero
+            assertThat(response.cost()).isZero();
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
         }
@@ -296,15 +302,19 @@ class IngestWorkflowImplTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from IngestChecker, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() throws PreCheckException, ParseException {
             // Given a ThrottleAccumulator that will throw a RuntimeException
             when(ingestChecker.runAllChecks(state, transaction, configuration))
                     .thenThrow(new RuntimeException("runAllChecks exception"));
 
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("runAllChecks exception");
+            // When the transaction is submitted
+            workflow.submitTransaction(requestBuffer, responseBuffer);
+
+            // Then the response will indicate the platform rejected the transaction
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(FAIL_INVALID);
+            // And the cost will be zero
+            assertThat(response.cost()).isZero();
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
         }
@@ -334,16 +344,20 @@ class IngestWorkflowImplTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from submitting to the platform, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() throws PreCheckException, ParseException {
             // Given a SubmissionManager that will throw a RuntimeException from submit
             doThrow(new RuntimeException("submit exception"))
                     .when(submissionManager)
                     .submit(any(), any());
 
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("submit exception");
+            // When the transaction is submitted
+            workflow.submitTransaction(requestBuffer, responseBuffer);
+
+            // Then the response will indicate the platform rejected the transaction
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(FAIL_INVALID);
+            // And the cost will be zero
+            assertThat(response.cost()).isZero();
         }
     }
 

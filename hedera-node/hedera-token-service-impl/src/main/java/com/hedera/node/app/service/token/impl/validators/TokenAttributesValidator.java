@@ -20,24 +20,25 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +51,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAttributesValidator {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenAttributesValidator() {
         // Dagger
@@ -59,6 +62,7 @@ public class TokenAttributesValidator {
     /**
      * Validates the token symbol, if it exists and is not empty or not too long.
      * @param symbol the token symbol to validate
+     * @param tokensConfig the tokens configuration
      */
     public void validateTokenSymbol(@Nullable final String symbol, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(symbol, tokensConfig.maxSymbolUtf8Bytes(), MISSING_TOKEN_SYMBOL, TOKEN_SYMBOL_TOO_LONG);
@@ -67,9 +71,21 @@ public class TokenAttributesValidator {
     /**
      * Validates the token name, if it is exists and is not empty or not too long.
      * @param name the token name to validate
+     * @param tokensConfig the tokens configuration
      */
     public void validateTokenName(@Nullable final String name, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(name, tokensConfig.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
+    }
+
+    /**
+     * Validates the token metadata, if it exists and is not too long.
+     * @param metadata the token metadata to validate
+     * @param tokensConfig the tokens configuration
+     */
+    public void validateTokenMetadata(@NonNull final Bytes metadata, @NonNull final TokensConfig tokensConfig) {
+        if (metadata.length() > 0) {
+            validateTrue(metadata.length() <= tokensConfig.tokensMaxMetadataBytes(), METADATA_TOO_LONG);
+        }
     }
 
     /**
@@ -111,6 +127,8 @@ public class TokenAttributesValidator {
      * @param feeScheduleKey the token fee schedule key to validate
      * @param hasPauseKey whether the token has a pause key
      * @param pauseKey the token pause key to validate
+     * @param hasMetadataKey whether the token has a metadata key
+     * @param metadataKey the token metadata key to validate
      */
     public void validateTokenKeys(
             final boolean hasAdminKey,
@@ -126,37 +144,32 @@ public class TokenAttributesValidator {
             final boolean hasFeeScheduleKey,
             @Nullable final Key feeScheduleKey,
             final boolean hasPauseKey,
-            @Nullable final Key pauseKey) {
+            @Nullable final Key pauseKey,
+            final boolean hasMetadataKey,
+            @Nullable final Key metadataKey) {
         if (hasAdminKey && !isKeyRemoval(adminKey)) {
             validateTrue(isValid(adminKey), INVALID_ADMIN_KEY);
         }
-        if (hasKycKey) {
+        if (hasKycKey && !isKeyRemoval(kycKey)) {
             validateTrue(isValid(kycKey), INVALID_KYC_KEY);
         }
-        if (hasWipeKey) {
+        if (hasWipeKey && !isKeyRemoval(wipeKey)) {
             validateTrue(isValid(wipeKey), INVALID_WIPE_KEY);
         }
-        if (hasSupplyKey) {
+        if (hasSupplyKey && !isKeyRemoval(supplyKey)) {
             validateTrue(isValid(supplyKey), INVALID_SUPPLY_KEY);
         }
-        if (hasFreezeKey) {
+        if (hasFreezeKey && !isKeyRemoval(freezeKey)) {
             validateTrue(isValid(freezeKey), INVALID_FREEZE_KEY);
         }
-        if (hasFeeScheduleKey) {
+        if (hasFeeScheduleKey && !isKeyRemoval(feeScheduleKey)) {
             validateTrue(isValid(feeScheduleKey), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
-        if (hasPauseKey) {
+        if (hasPauseKey && !isKeyRemoval(pauseKey)) {
             validateTrue(isValid(pauseKey), INVALID_PAUSE_KEY);
         }
-    }
-
-    /**
-     * Checks if the given key is a key removal, if it is set as {@link KeyUtils#IMMUTABILITY_SENTINEL_KEY}.
-     * @param source the key to check
-     * @return true if the key is a key removal, false otherwise
-     */
-    public static boolean isKeyRemoval(@NonNull final Key source) {
-        requireNonNull(source);
-        return IMMUTABILITY_SENTINEL_KEY.equals(source);
+        if (hasMetadataKey && !isKeyRemoval(metadataKey)) {
+            validateTrue(isValid(metadataKey), INVALID_METADATA_KEY);
+        }
     }
 }

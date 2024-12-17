@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
-import com.swirlds.common.metrics.platform.DefaultCounter;
-import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.impl.DefaultCounter;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -138,7 +138,7 @@ class CounterAdapterTest {
         final CounterAdapter adapter = new CounterAdapter(registry, metric, PLATFORM);
 
         // when
-        adapter.update(Snapshot.of(metric), new NodeId(1L));
+        adapter.update(Snapshot.of(metric), NodeId.of(1L));
 
         // then
         assertThat(registry.getSampleValue(MAPPING_NAME + "_total", NODE_LABEL, NODE_VALUE))
@@ -151,7 +151,7 @@ class CounterAdapterTest {
         final CollectorRegistry registry = new CollectorRegistry();
         final DefaultCounter metric = new DefaultCounter(new Counter.Config(CATEGORY, NAME));
         final CounterAdapter adapter = new CounterAdapter(registry, metric, PLATFORM);
-        final NodeId nodeId = new NodeId(1L);
+        final NodeId nodeId = NodeId.of(1L);
 
         // then
         assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(NullPointerException.class);

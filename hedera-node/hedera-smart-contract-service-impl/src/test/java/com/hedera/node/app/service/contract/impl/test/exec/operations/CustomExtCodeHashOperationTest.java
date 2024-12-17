@@ -17,11 +17,9 @@
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -30,8 +28,6 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeHashOperation;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -85,7 +81,9 @@ class CustomExtCodeHashOperationTest {
     @Test
     void rejectsMissingNonSystemAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            givenWellKnownFrameWith();
+            given(frame.getRemainingGas()).willReturn(123L);
+            given(frame.getStackItem(0)).willReturn(Address.fromHexString("0x123"));
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             frameUtils
                     .when(() -> FrameUtils.contractRequired(any(), any(), any()))
@@ -98,9 +96,7 @@ class CustomExtCodeHashOperationTest {
     @Test
     void deletesToParentIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            givenWellKnownFrameWith();
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
@@ -109,9 +105,10 @@ class CustomExtCodeHashOperationTest {
 
     @Test
     void hasSpecialBehaviorForNonUserAccount() {
+        given(frame.getStackItem(0)).willReturn(Address.fromHexString("0x123"));
         given(addressChecks.isNonUserAccount(Address.fromHexString("0x123"))).willReturn(true);
-        given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        givenWellKnownFrameWith(Address.fromHexString("0x123"));
+        givenWellKnownFrameWith();
+        given(frame.getRemainingGas()).willReturn(123L);
         final var expected = new Operation.OperationResult(123L, null);
         assertSameResult(expected, subject.execute(frame, evm));
         verify(frame).popStackItem();
@@ -121,16 +118,14 @@ class CustomExtCodeHashOperationTest {
     @Test
     void delegatesForPresentAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+            givenWellKnownFrameWith();
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
         }
     }
 
-    private void givenWellKnownFrameWith(final Address to) {
-        given(frame.getStackItem(0)).willReturn(to);
+    private void givenWellKnownFrameWith() {
         given(gasCalculator.extCodeHashOperationGasCost()).willReturn(123L);
     }
 }

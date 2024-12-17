@@ -19,9 +19,11 @@ package com.hedera.node.app.config;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.config.ConfigProvider;
+import com.swirlds.base.utility.FileSystemUtils;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -73,6 +75,10 @@ public abstract class ConfigProviderBase implements ConfigProvider {
             if (path.toFile().exists()) {
                 if (!path.toFile().isDirectory()) {
                     try {
+                        if (!FileSystemUtils.waitForPathPresence(path)) {
+                            throw new FileNotFoundException("File not found: " + path);
+                        }
+
                         builder.withSource(new PropertyFileConfigSource(path, p));
                     } catch (IOException e) {
                         throw new IllegalStateException("Can not create config source for property file", e);
@@ -81,13 +87,16 @@ public abstract class ConfigProviderBase implements ConfigProvider {
                     throw new IllegalArgumentException("File " + path + " is a directory and not a property file");
                 }
             } else {
-                logger.warn("Properties file {} does not exist and won't be used as configuration source", path);
+                logger.info("Properties file {} does not exist and won't be used as configuration source", path);
             }
         };
 
         try {
-            final Path propertiesPath =
-                    Optional.ofNullable(System.getenv(envName)).map(Path::of).orElseGet(() -> Path.of(defaultPath));
+            final Path propertiesPath = Optional.ofNullable(System.getenv(envName))
+                    .or(() -> Optional.ofNullable(
+                            System.getProperty(envName.toLowerCase().replace("_", "."))))
+                    .map(Path::of)
+                    .orElseGet(() -> Path.of(defaultPath));
             addSource.accept(propertiesPath, priority);
         } catch (final Exception e) {
             throw new IllegalStateException("Can not create config source for application properties", e);

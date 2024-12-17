@@ -20,7 +20,7 @@ import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOU
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.utility.BinarySearch;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,7 +72,7 @@ public class EventStreamPathIterator implements Iterator<Path> {
             return;
         }
 
-        final DetailedConsensusEvent firstEvent = getFirstEventInEventStreamFile(eventStreamFiles.get(0));
+        final CesEvent firstEvent = getFirstEventInEventStreamFile(eventStreamFiles.get(0));
         if (bound == UNBOUNDED || bound.compareTo(firstEvent) == 0) {
             // We are attempting to get events from the beginning of the event stream.
             iterator = eventStreamFiles.iterator();
@@ -127,8 +127,8 @@ public class EventStreamPathIterator implements Iterator<Path> {
      * @return the DetailedConsensusEvent of the first event in the file
      */
     @NonNull
-    private static DetailedConsensusEvent getFirstEventInEventStreamFile(@NonNull final Path path) throws IOException {
-        try (final IOIterator<DetailedConsensusEvent> iterator = new EventStreamSingleFileIterator(path, true)) {
+    private static CesEvent getFirstEventInEventStreamFile(@NonNull final Path path) throws IOException {
+        try (final IOIterator<CesEvent> iterator = new EventStreamSingleFileIterator(path, true)) {
             if (!iterator.hasNext()) {
                 throw new IllegalStateException("Event stream file contains no events");
             }

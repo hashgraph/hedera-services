@@ -24,9 +24,9 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
@@ -64,11 +64,11 @@ class CycleMetricsTest {
     void accumulatedCycleMetricsTest() {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
         final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
@@ -121,11 +121,11 @@ class CycleMetricsTest {
     void longIntervals() {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
         final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
@@ -163,11 +163,11 @@ class CycleMetricsTest {
     void skipIntervals() {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
         final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
@@ -207,11 +207,11 @@ class CycleMetricsTest {
     void badArgument() {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
         final CycleTracker tracker = new CycleTracker(time, new AccumulatedCycleMetrics(metrics, definition));
         tracker.startCycle();

@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.nftTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO_V2;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -41,6 +45,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
     private final boolean isStaticCall;
     private final long serialNumber;
+    private final Function function;
 
     public NftTokenInfoCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
@@ -48,24 +53,26 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
             final boolean isStaticCall,
             @Nullable final Token token,
             final long serialNumber,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            Function function) {
         super(gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.serialNumber = serialNumber;
         this.isStaticCall = isStaticCall;
+        this.function = function;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         final var nft = enhancement
                 .nativeOperations()
                 .getNft(token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(), serialNumber);
-        final var status = nft != null ? SUCCESS : ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-        return fullResultsFor(status, gasCalculator.viewGasRequirement(), token, nft);
+        final var status = nft != null ? SUCCESS : INVALID_TOKEN_NFT_SERIAL_NUMBER;
+        return gasOnly(fullResultsFor(status, gasCalculator.viewGasRequirement(), token, nft), status, true);
     }
 
     @Override
@@ -82,7 +89,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(status);
         requireNonNull(token);
 
-        // @Future remove to revert #9074 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && (status != SUCCESS || nft == null)) {
             return revertResult(status, gasCalculator.viewGasRequirement());
         }
@@ -90,9 +97,23 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
-        final var nftTokenInfo = nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, nativeOperations());
-        return successResult(
-                NON_FUNGIBLE_TOKEN_INFO.getOutputs().encodeElements(status.protoOrdinal(), nftTokenInfo),
-                gasRequirement);
+
+        return function.getName().equals(NON_FUNGIBLE_TOKEN_INFO.getName())
+                ? successResult(
+                        NON_FUNGIBLE_TOKEN_INFO
+                                .getOutputs()
+                                .encodeElements(
+                                        status.protoOrdinal(),
+                                        nftTokenInfoTupleFor(
+                                                token, nonNullNft, serialNumber, ledgerId, nativeOperations(), 1)),
+                        gasRequirement)
+                : successResult(
+                        NON_FUNGIBLE_TOKEN_INFO_V2
+                                .getOutputs()
+                                .encodeElements(
+                                        status.protoOrdinal(),
+                                        nftTokenInfoTupleFor(
+                                                token, nonNullNft, serialNumber, ledgerId, nativeOperations(), 2)),
+                        gasRequirement);
     }
 }

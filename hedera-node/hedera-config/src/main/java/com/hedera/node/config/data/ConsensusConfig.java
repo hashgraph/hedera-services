@@ -25,6 +25,6 @@ public record ConsensusConfig(
         @ConfigProperty(value = "message.maxBytesAllowed", defaultValue = "1024") @NetworkProperty
                 int messageMaxBytesAllowed,
         @ConfigProperty(value = "handle.maxPrecedingRecords", defaultValue = "3") @NetworkProperty
-                long handleMaxPrecedingRecords,
+                int handleMaxPrecedingRecords,
         @ConfigProperty(value = "handle.maxFollowingRecords", defaultValue = "50") @NetworkProperty
-                long handleMaxFollowingRecords) {}
+                int handleMaxFollowingRecords) {}

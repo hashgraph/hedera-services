@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -82,11 +81,6 @@ public final class SmartContractMapKey implements VirtualKey {
         return contractId == buffer.readLong() && keyValuePairIndex == buffer.readLong();
     }
 
-    @Deprecated
-    boolean equals(final ByteBuffer buffer) {
-        return contractId == buffer.getLong() && keyValuePairIndex == buffer.getLong();
-    }
-
     static int getSizeInBytes() {
         return 2 * Long.BYTES;
     }
@@ -105,12 +99,6 @@ public final class SmartContractMapKey implements VirtualKey {
         out.writeLong(keyValuePairIndex);
     }
 
-    @Deprecated
-    void serialize(final ByteBuffer buffer) {
-        buffer.putLong(contractId);
-        buffer.putLong(keyValuePairIndex);
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -123,12 +111,6 @@ public final class SmartContractMapKey implements VirtualKey {
     void deserialize(final ReadableSequentialData in) {
         contractId = in.readLong();
         keyValuePairIndex = in.readLong();
-    }
-
-    @Deprecated
-    void deserialize(final ByteBuffer buffer) {
-        contractId = buffer.getLong();
-        keyValuePairIndex = buffer.getLong();
     }
 
     /**

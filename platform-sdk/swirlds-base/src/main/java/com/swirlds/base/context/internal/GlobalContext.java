@@ -32,7 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class GlobalContext implements Context {
 
-    private static final GlobalContext INSTANCE = new GlobalContext();
+    private static final class InstanceHolder {
+        private static final GlobalContext INSTANCE = new GlobalContext();
+    }
 
     private final Map<String, String> contextMap;
 
@@ -72,7 +74,7 @@ public final class GlobalContext implements Context {
      */
     @NonNull
     public static GlobalContext getInstance() {
-        return INSTANCE;
+        return InstanceHolder.INSTANCE;
     }
 
     /**
@@ -82,6 +84,6 @@ public final class GlobalContext implements Context {
      */
     @NonNull
     public static Map<String, String> getContextMap() {
-        return Collections.unmodifiableMap(INSTANCE.contextMap);
+        return Collections.unmodifiableMap(InstanceHolder.INSTANCE.contextMap);
     }
 }

@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 
 /**
  * Validates a signed state received via reconnect.
@@ -24,21 +25,18 @@ import com.swirlds.platform.system.address.AddressBook;
 public interface SignedStateValidator {
 
     /**
-     * Determines if a signed state is valid with the address book. Validation usually includes
-     * verifying that the signed state is signed with a sufficient number of valid signatures to meet a certain weighting
-     * threshold, but other requirements could be included as well.
+     * Determines if a signed state is valid with the roster. Validation usually includes verifying that the signed
+     * state is signed with a sufficient number of valid signatures to meet a certain weighting threshold, but other
+     * requirements could be included as well.
      *
      * @param signedState       the signed state to validate
-     * @param addressBook       the address book used for this signed state
+     * @param roster            the roster used for this signed state
      * @param previousStateData A {@link SignedStateValidationData} containing data from the
-     *        {@link com.swirlds.platform.state.PlatformState} in the state before the signed state to be validated.
+     *        {@link ReadablePlatformStateStore} in the state before the signed state to be validated.
      *        This may be used to ensure signed state is usable and valid, and also contains useful information for
      *        diagnostics produced when the signed state is not considered valid.
      * @throws SignedStateInvalidException if the signed state is not valid
      */
-    void validate(
-            final SignedState signedState,
-            final AddressBook addressBook,
-            final SignedStateValidationData previousStateData)
+    void validate(final SignedState signedState, final Roster roster, final SignedStateValidationData previousStateData)
             throws SignedStateInvalidException;
 }

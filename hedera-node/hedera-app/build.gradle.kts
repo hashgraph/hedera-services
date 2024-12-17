@@ -15,31 +15,42 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.feature.benchmark")
+    id("com.hedera.gradle.feature.test-fixtures")
 }
 
 description = "Hedera Application - Implementation"
 
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
+    annotationProcessor("com.google.auto.service.processor")
 
     // This is needed to pick up and include the native libraries for the netty epoll transport
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
+    runtimeOnly("io.helidon.grpc.core")
+    runtimeOnly("io.helidon.webclient")
+    runtimeOnly("io.helidon.webclient.grpc")
+    runtimeOnly("com.hedera.cryptography.altbn128")
 }
 
 testModuleInfo {
     requires("com.fasterxml.jackson.databind")
+    requires("com.google.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
-    requires("com.google.jimfs")
     requires("com.swirlds.config.extensions.test.fixtures")
-    requires("io.github.classgraph")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.swirlds.state.api.test.fixtures")
+    requires("com.swirlds.state.impl.test.fixtures")
+    requires("com.swirlds.base.test.fixtures")
+    requires("headlong")
     requires("org.assertj.core")
-    requires("org.hamcrest")
+    requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
@@ -49,85 +60,21 @@ testModuleInfo {
     requiresStatic("com.github.spotbugs.annotations")
 }
 
-itestModuleInfo {
-    requires("com.hedera.node.app")
-    requires("com.hedera.node.app.spi")
-    requires("com.hedera.node.app.spi.test.fixtures")
-    requires("com.hedera.node.config")
-    requires("com.hedera.node.config.test.fixtures")
-    requires("com.hedera.node.hapi")
-    requires("com.github.spotbugs.annotations")
-    requires("com.hedera.pbj.runtime")
-    requires("com.swirlds.common")
-    requires("com.swirlds.config.api")
-    requires("com.swirlds.metrics.api")
-    requires("grpc.netty")
-    requires("grpc.stub")
-    requires("io.grpc")
-    requires("org.apache.logging.log4j")
-    requires("org.assertj.core")
-    requires("org.bouncycastle.provider")
-    requires("org.junit.jupiter.api")
-    requires("org.junit.jupiter.params")
-    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
-    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
-}
-
-xtestModuleInfo {
-    annotationProcessor("dagger.compiler")
-    requires("com.hedera.node.app")
-    requires("com.hedera.node.app.test.fixtures")
-    requires("com.hedera.node.app.hapi.fees")
-    requires("com.hedera.node.app.hapi.utils")
-    requires("com.hedera.node.app.service.consensus.impl")
-    requires("com.hedera.node.app.service.contract.impl")
-    requires("com.hedera.node.app.service.file")
-    requires("com.hedera.node.app.service.file.impl")
-    requires("com.hedera.node.app.service.mono")
-    requires("com.hedera.node.app.service.network.admin.impl")
-    requires("com.hedera.node.app.service.schedule.impl")
-    requires("com.hedera.node.app.service.token")
-    requires("com.hedera.node.app.service.token.impl")
-    requires("com.hedera.node.app.service.util.impl")
-    requires("com.hedera.node.app.spi")
-    requires("com.hedera.node.app.spi.test.fixtures")
-    requires("com.hedera.node.config")
-    requires("com.hedera.node.config.test.fixtures")
-    requires("com.hedera.node.hapi")
-    requires("com.github.spotbugs.annotations")
-    requires("com.hedera.pbj.runtime")
-    requires("com.swirlds.common")
-    requires("com.swirlds.config.api")
-    requires("com.swirlds.config.extensions.test.fixtures")
-    requires("com.swirlds.metrics.api")
-    requires("com.swirlds.platform.core")
-    requires("dagger")
-    requires("headlong")
-    requires("javax.inject")
-    requires("org.assertj.core")
-    requires("org.hyperledger.besu.datatypes")
-    requires("org.hyperledger.besu.evm")
-    requires("org.junit.jupiter.api")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-    requires("tuweni.bytes")
-    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
-    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
-}
-
 jmhModuleInfo {
     requires("com.hedera.node.app")
-    requires("com.hedera.node.app.service.mono")
+    requires("com.hedera.node.app.hapi.utils")
+    requires("com.hedera.node.app.spi")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
+    requires("com.hedera.node.config")
     requires("com.hedera.node.hapi")
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.metrics.api")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.state.api")
     requires("jmh.core")
-}
-
-tasks.withType<Test> {
-    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }
 
 // Add all the libs dependencies into the jar manifest!
@@ -191,18 +138,10 @@ tasks.assemble {
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
-    dependsOn(tasks.assemble)
-    workingDir = nodeWorkingDir.get().asFile
-    jvmArgs = listOf("-cp", "data/lib/*")
-    mainClass.set("com.swirlds.platform.Browser")
-}
-
-tasks.register<JavaExec>("modrun") {
-    group = "build"
     description = "Run a Hedera consensus node instance."
     dependsOn(tasks.assemble)
     workingDir = nodeWorkingDir.get().asFile
-    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*", "-Dhedera.workflows.enabled=true")
+    jvmArgs = listOf("-cp", "data/lib/*:data/apps/*")
     mainClass.set("com.hedera.node.app.ServicesMain")
 }
 
@@ -224,7 +163,10 @@ val cleanRun =
 
 tasks.clean { dependsOn(cleanRun) }
 
-tasks.register("showHapiVersion") { doLast { println(libs.versions.hapi.proto.get()) } }
+tasks.register("showHapiVersion") {
+    inputs.property("version", project.version)
+    doLast { println(inputs.properties["version"]) }
+}
 
 var updateDockerEnvTask =
     tasks.register<Exec>("updateDockerEnv") {

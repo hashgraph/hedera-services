@@ -20,12 +20,12 @@ import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.event.creation.EventCreationConfig;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Calculates tipset advancement weights for events created by a node.
@@ -101,7 +102,7 @@ public class TipsetWeightCalculator {
      */
     private Tipset latestSelfEventTipset;
 
-    private final AddressBook addressBook;
+    private final Roster roster;
 
     private final RateLimitedLogger ancientParentLogger;
     private final RateLimitedLogger allParentsAreAncientLogger;
@@ -110,14 +111,14 @@ public class TipsetWeightCalculator {
      * Create a new tipset weight calculator.
      *
      * @param platformContext       the platform context
-     * @param addressBook           the current address book
+     * @param roster                the current roster
      * @param selfId                the ID of the node tracked by this object
      * @param tipsetTracker         builds tipsets for individual events
      * @param childlessEventTracker tracks non-ancient events without children
      */
     public TipsetWeightCalculator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             @NonNull final NodeId selfId,
             @NonNull final TipsetTracker tipsetTracker,
             @NonNull final ChildlessEventTracker childlessEventTracker) {
@@ -125,17 +126,17 @@ public class TipsetWeightCalculator {
         this.selfId = Objects.requireNonNull(selfId);
         this.tipsetTracker = Objects.requireNonNull(tipsetTracker);
         this.childlessEventTracker = Objects.requireNonNull(childlessEventTracker);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
 
-        totalWeight = addressBook.getTotalWeight();
-        selfWeight = addressBook.getAddress(selfId).getWeight();
+        totalWeight = RosterUtils.computeTotalWeight(roster);
+        selfWeight = RosterUtils.getRosterEntry(roster, selfId.id()).weight();
         maximumPossibleAdvancementWeight = totalWeight - selfWeight;
         maxSnapshotHistorySize = platformContext
                 .getConfiguration()
                 .getConfigData(EventCreationConfig.class)
                 .tipsetSnapshotHistorySize();
 
-        snapshot = new Tipset(addressBook);
+        snapshot = new Tipset(roster);
         latestSelfEventTipset = snapshot;
         snapshotHistory.add(snapshot);
 
@@ -174,9 +175,9 @@ public class TipsetWeightCalculator {
      * @return the change in this event's tipset advancement weight compared to the tipset advancement weight of the
      * previous event passed to this method
      */
-    public TipsetAdvancementWeight addEventAndGetAdvancementWeight(@NonNull final EventDescriptor event) {
+    public TipsetAdvancementWeight addEventAndGetAdvancementWeight(@NonNull final EventDescriptorWrapper event) {
         Objects.requireNonNull(event);
-        if (!event.getCreator().equals(selfId)) {
+        if (!event.creator().equals(selfId)) {
             throw new IllegalArgumentException("event creator must be the same as self ID");
         }
 
@@ -215,27 +216,28 @@ public class TipsetWeightCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement weight we would get by creating an event with the given parents
      */
-    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(@NonNull final List<EventDescriptor> parents) {
+    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(
+            @NonNull final List<EventDescriptorWrapper> parents) {
         if (parents.isEmpty()) {
             return ZERO_ADVANCEMENT_WEIGHT;
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
-        for (final EventDescriptor parent : parents) {
+        for (final EventDescriptorWrapper parent : parents) {
             final Tipset parentTipset = tipsetTracker.getTipset(parent);
 
             if (parentTipset == null) {
                 // For some reason we are trying to use an ancient parent. In theory possible that a self
                 // parent may be ancient. But we shouldn't even be considering non-self parents that are ancient.
-                if (!parent.getCreator().equals(selfId)) {
+                if (!parent.creator().equals(selfId)) {
                     ancientParentLogger.error(
                             EXCEPTION.getMarker(),
                             "When looking at possible parents, we should never "
                                     + "consider ancient parents that are not self parents. "
                                     + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
-                            parent.getCreator(),
-                            parent.getGeneration(),
-                            tipsetTracker.getNonAncientEventWindow());
+                            parent.creator(),
+                            parent.eventDescriptor().generation(),
+                            tipsetTracker.getEventWindow());
                 }
                 continue;
             }
@@ -265,8 +267,8 @@ public class TipsetWeightCalculator {
      */
     public int getMaxSelfishnessScore() {
         int selfishness = 0;
-        for (final EventDescriptor eventDescriptor : childlessEventTracker.getChildlessEvents()) {
-            selfishness = Math.max(selfishness, getSelfishnessScoreForNode(eventDescriptor.getCreator()));
+        for (final EventDescriptorWrapper eventDescriptorWrapper : childlessEventTracker.getChildlessEvents()) {
+            selfishness = Math.max(selfishness, getSelfishnessScoreForNode(eventDescriptorWrapper.creator()));
         }
         return selfishness;
     }
@@ -329,7 +331,7 @@ public class TipsetWeightCalculator {
      * Clear the tipset weight calculator to its initial state.
      */
     public void clear() {
-        snapshot = new Tipset(addressBook);
+        snapshot = new Tipset(roster);
         latestSelfEventTipset = snapshot;
         snapshotHistory.clear();
         snapshotHistory.add(snapshot);

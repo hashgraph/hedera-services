@@ -16,11 +16,14 @@
 
 package com.swirlds.logging.test.fixtures.internal;
 
+import com.swirlds.logging.api.Level;
+import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.event.LogEvent;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.DefaultLoggingSystem;
 import com.swirlds.logging.test.fixtures.LoggingMirror;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,7 +47,7 @@ public class LoggingMirrorImpl implements LoggingMirror, LogHandler {
      * {@inheritDoc}
      */
     @Override
-    public void accept(@NonNull final LogEvent event) {
+    public void handle(@NonNull final LogEvent event) {
         events.add(event);
     }
 
@@ -80,5 +83,18 @@ public class LoggingMirrorImpl implements LoggingMirror, LogHandler {
     @Override
     public String getName() {
         return "LoggingMirror";
+    }
+
+    /**
+     * Checks if the consumer is enabled for the given name and level.
+     *
+     * @param name   the name
+     * @param level  the level
+     * @param marker
+     * @return true if the consumer is enabled, false otherwise
+     */
+    @Override
+    public boolean isEnabled(@NonNull final String name, @NonNull final Level level, @Nullable final Marker marker) {
+        return true;
     }
 }

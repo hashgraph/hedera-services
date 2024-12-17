@@ -113,7 +113,7 @@ public interface RecordAccessor<K extends VirtualKey, V extends VirtualValue> {
      * @return
      * 		The data source. Will not be null.
      */
-    VirtualDataSource<K, V> getDataSource(); // I'd actually like to remove this some day...
+    VirtualDataSource getDataSource(); // I'd actually like to remove this some day...
 
     /**
      * Gets the state.

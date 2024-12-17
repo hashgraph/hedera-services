@@ -28,19 +28,23 @@ package com.swirlds.demo.crypto;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.model.GuiModel;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -52,6 +56,21 @@ import java.util.Random;
  * cents (inclusive).
  */
 public class CryptocurrencyDemoMain implements SwirldMain {
+
+    static {
+        try {
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(CryptocurrencyDemoState.class, () -> {
+                CryptocurrencyDemoState cryptocurrencyDemoState = new CryptocurrencyDemoState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                return cryptocurrencyDemoState;
+            }));
+            registerMerkleStateRootClassIds();
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /** time to delay between screen updates, in milliseconds (250 for 4 times a second) */
     private final long screenUpdateDelay = 250;
     /** the app is run by this */
@@ -143,10 +162,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
         this.selfId = id;
-        final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
-        this.console = createConsole(
-                platform, winNum, true, platform.getAddressBook().getNodeIdSet()); // create the window, make it visible
-        GuiModel.getInstance().setAbout(platform.getSelfId(), "Cryptocurrency and stock market demo v. 1.0\n");
+        final int winNum = (int) selfId.id();
+        this.console = createConsole(platform, winNum, true, platform.getAddressBook().getNodeIdSet()); // create the window, make it visible
         this.console.addKeyListener(keyListener);
     }
 
@@ -184,8 +201,12 @@ public class CryptocurrencyDemoMain implements SwirldMain {
 
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new CryptocurrencyDemoState();
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new CryptocurrencyDemoState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+        return state;
     }
 
     /**

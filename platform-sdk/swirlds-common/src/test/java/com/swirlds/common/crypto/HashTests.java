@@ -16,7 +16,6 @@
 
 package com.swirlds.common.crypto;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -51,7 +51,6 @@ public class HashTests {
         Arrays.fill(nonZeroHashValue, Byte.MAX_VALUE);
 
         final Hash hash = new Hash(DigestType.SHA_384);
-        final ImmutableHash immutableHash = new ImmutableHash(hash);
 
         assertDoesNotThrow((ThrowingSupplier<Hash>) Hash::new);
         assertDoesNotThrow(() -> new Hash(nonZeroHashValue));
@@ -59,17 +58,14 @@ public class HashTests {
         assertDoesNotThrow(() -> new Hash(DigestType.SHA_512));
 
         assertThrows(NullPointerException.class, () -> new Hash((DigestType) null));
-        assertThrows(IllegalArgumentException.class, () -> new Hash((byte[]) null));
+        assertThrows(NullPointerException.class, () -> new Hash((byte[]) null));
+        assertThrows(NullPointerException.class, () -> new Hash((Bytes) null));
         assertThrows(IllegalArgumentException.class, () -> new Hash((Hash) null));
-        assertThrows(EmptyHashValueException.class, () -> new Hash(new byte[48]));
 
-        assertThrows(IllegalArgumentException.class, () -> new Hash(nonZeroHashValue, null));
+        assertThrows(NullPointerException.class, () -> new Hash(nonZeroHashValue, null));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[0], DigestType.SHA_384));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[47], DigestType.SHA_384));
         assertThrows(IllegalArgumentException.class, () -> new Hash(new byte[71], DigestType.SHA_512));
-        assertThrows(
-                EmptyHashValueException.class,
-                () -> new Hash(new byte[DigestType.SHA_384.digestLength()], DigestType.SHA_384));
     }
 
     @Test
@@ -77,7 +73,7 @@ public class HashTests {
         final InputOutputStream ioStream = new InputOutputStream();
         final HashBuilder builder = new HashBuilder(DigestType.SHA_384);
 
-        final Hash original = builder.update(0x0f87da12).mutable();
+        final Hash original = builder.update(0x0f87da12).build();
 
         ioStream.getOutput().writeSerializable(original, true);
         ioStream.startReading();
@@ -90,10 +86,10 @@ public class HashTests {
     public void accessorCorrectness() {
         final HashBuilder builder = new HashBuilder(DigestType.SHA_384);
 
-        final Hash original = builder.update(0x1d88a790).immutable();
+        final Hash original = builder.update(0x1d88a790).build();
         final Hash copy = original.copy();
-        final Hash recalculated = builder.update(0x1d88a790).mutable();
-        final Hash different = builder.update(0x1d112233).mutable();
+        final Hash recalculated = builder.update(0x1d88a790).build();
+        final Hash different = builder.update(0x1d112233).build();
 
         assertNotNull(original.toString());
         assertEquals(96, original.toString().length());
@@ -110,11 +106,9 @@ public class HashTests {
         assertNotEquals(0, original.compareTo(new Hash(DigestType.SHA_512)));
 
         ////////
-        assertArrayEquals(original.getValue(), copy.getValue());
-        assertArrayEquals(original.getValue(), recalculated.getValue());
-        assertArrayEquals(copy.getValue(), recalculated.getValue());
-        assertFalse(Arrays.equals(original.getValue(), different.getValue()));
-        assertFalse(Arrays.equals(copy.getValue(), different.getValue()));
+        assertEquals(original.getBytes(), copy.getBytes());
+        assertEquals(original.getBytes(), recalculated.getBytes());
+        assertEquals(copy.getBytes(), recalculated.getBytes());
 
         assertEquals(original, copy);
         assertEquals(original, recalculated);
@@ -148,7 +142,7 @@ public class HashTests {
     public void serializeAndDeserializeImmutableHashTest() throws IOException {
         final HashBuilder builder = new HashBuilder(DigestType.SHA_384);
 
-        final Hash original = builder.update(0x1d88a790).immutable();
+        final Hash original = builder.update(0x1d88a790).build();
         SerializationUtils.checkSerializeDeserializeEqual(original);
     }
 

@@ -241,11 +241,6 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::updateAccount;
-    }
-
-    @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec);

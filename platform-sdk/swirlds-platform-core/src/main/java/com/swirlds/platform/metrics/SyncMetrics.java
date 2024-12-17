@@ -26,7 +26,7 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
@@ -44,10 +44,6 @@ import java.time.temporal.ChronoUnit;
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
-    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "syncPermitsAvailable")
-            .withDescription("number of sync permits available");
-    private final RunningAverageMetric permitsAvailable;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes_per_sec_sync")
@@ -117,12 +113,6 @@ public class SyncMetrics {
             .withDescription("Number of times per second we do not sync because gossip is halted");
     private final CountPerSecond doNotSyncHalted;
 
-    private static final CountPerSecond.Config DO_NOT_SYNC_INTAKE_QUEUE_CONFIG = new CountPerSecond.Config(
-                    PLATFORM_CATEGORY, "doNotSyncIntakeQueue")
-            .withUnit("hz")
-            .withDescription("Number of times per second we do not sync because the intake queue is too full");
-    private final CountPerSecond doNotSyncIntakeQueue;
-
     private static final CountPerSecond.Config DO_NOT_SYNC_FALLEN_BEHIND_CONFIG = new CountPerSecond.Config(
                     PLATFORM_CATEGORY, "doNotSyncFallenBehind")
             .withUnit("hz")
@@ -179,7 +169,6 @@ public class SyncMetrics {
         doNoSyncPlatformStatus = new CountPerSecond(metrics, DO_NOT_SYNC_PLATFORM_STATUS);
         doNotSyncCooldown = new CountPerSecond(metrics, DO_NOT_SYNC_COOLDOWN_CONFIG);
         doNotSyncHalted = new CountPerSecond(metrics, DO_NOT_SYNC_HALTED_CONFIG);
-        doNotSyncIntakeQueue = new CountPerSecond(metrics, DO_NOT_SYNC_INTAKE_QUEUE_CONFIG);
         doNotSyncFallenBehind = new CountPerSecond(metrics, DO_NOT_SYNC_FALLEN_BEHIND_CONFIG);
         doNotSyncNoPermits = new CountPerSecond(metrics, DO_NOT_SYNC_NO_PERMITS_CONFIG);
         doNotSyncIntakeCounter = new CountPerSecond(metrics, DO_NOT_SYNC_INTAKE_COUNTER_CONFIG);
@@ -260,8 +249,6 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-
-        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
@@ -270,7 +257,7 @@ public class SyncMetrics {
      * @param self  event window of our graph at the start of the sync
      * @param other event window of their graph at the start of the sync
      */
-    public void eventWindow(@NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
+    public void eventWindow(@NonNull final EventWindow self, @NonNull final EventWindow other) {
         syncIndicatorDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
     }
 
@@ -361,15 +348,6 @@ public class SyncMetrics {
     }
 
     /**
-     * Updates the number of permits available for syncs
-     *
-     * @param permits the number of permits available
-     */
-    public void updateSyncPermitsAvailable(final int permits) {
-        permitsAvailable.update(permits);
-    }
-
-    /**
      * Indicate that a request to sync has been received
      */
     public void incomingSyncRequestReceived() {
@@ -425,13 +403,6 @@ public class SyncMetrics {
      */
     public void doNotSyncHalted() {
         doNotSyncHalted.count();
-    }
-
-    /**
-     * Signal that we chose not to sync because the intake queue is too full.
-     */
-    public void doNotSyncIntakeQueue() {
-        doNotSyncIntakeQueue.count();
     }
 
     /**

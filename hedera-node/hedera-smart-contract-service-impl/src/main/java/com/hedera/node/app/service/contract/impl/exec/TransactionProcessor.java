@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_NONCE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.AbortException.validateTrueOrAbort;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.contractIDToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
@@ -31,11 +30,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
@@ -43,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -94,6 +92,15 @@ public class TransactionProcessor {
     }
 
     /**
+     * Returns the feature flags used by this processor.
+     *
+     * @return the feature flags
+     */
+    public FeatureFlags featureFlags() {
+        return featureFlags;
+    }
+
+    /**
      * Process the given transaction, returning the result of running it to completion
      * and committing to the given updater.
      *
@@ -104,7 +111,6 @@ public class TransactionProcessor {
      * @param tracer the tracer to use
      * @param config the node configuration
      * @return the result of running the transaction to completion
-     * @throws AbortException if processing failed before initiating the EVM transaction
      */
     public HederaEvmTransactionResult processTransaction(
             @NonNull final HederaEvmTransaction transaction,
@@ -113,15 +119,8 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
-        try {
-            return processTransactionWithParties(
-                    transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
-        } catch (HandleException e) {
-            final var sender = updater.getHederaAccount(transaction.senderId());
-            final var senderId = sender != null ? sender.hederaId() : transaction.senderId();
-            throw new AbortException(e.getStatus(), senderId);
-        }
+        final var parties = computeInvolvedPartiesOrAbort(transaction, updater, config);
+        return processTransactionWithParties(transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
     }
 
     private HederaEvmTransactionResult processTransactionWithParties(
@@ -162,17 +161,16 @@ public class TransactionProcessor {
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
     }
 
-    private InvolvedParties safeComputeInvolvedParties(
+    private InvolvedParties computeInvolvedPartiesOrAbort(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
-            @NonNull final Configuration config,
-            @NonNull final HederaEvmContext context) {
+            @NonNull final Configuration config) {
         try {
             return computeInvolvedParties(transaction, updater, config);
-        } catch (AbortException e) {
-            throw e;
         } catch (HandleException e) {
-            throw new AbortException(e.getStatus(), transaction.senderId(), null, true);
+            throw e;
+        } catch (Exception e) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 
@@ -235,12 +233,11 @@ public class TransactionProcessor {
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
         final var sender = updater.getHederaAccount(transaction.senderId());
-        validateTrueOrAbort(sender != null, INVALID_ACCOUNT_ID, transaction.senderId());
-        final var senderId = sender.hederaId();
+        validateTrue(sender != null, INVALID_ACCOUNT_ID);
         HederaEvmAccount relayer = null;
         if (transaction.isEthereumTransaction()) {
             relayer = updater.getHederaAccount(requireNonNull(transaction.relayerId()));
-            validateTrueOrAbort(relayer != null, INVALID_ACCOUNT_ID, senderId);
+            validateTrue(relayer != null, INVALID_ACCOUNT_ID);
         }
         final InvolvedParties parties;
         if (transaction.isCreate()) {
@@ -262,16 +259,25 @@ public class TransactionProcessor {
             }
         }
         if (transaction.isEthereumTransaction()) {
-            validateTrueOrAbort(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE, senderId);
+            validateTrue(transaction.nonce() == parties.sender().getNonce(), WRONG_NONCE);
         }
         return parties;
     }
 
+    /**
+     * Returns whether the given account facade is required to exist.  This only applies to account and contract facade
+     * as tokens and schedule txn facades are not required to exist.
+     *
+     * @param to descendant of {@link HederaEvmAccount} that is the target of this call
+     * @param config the current node configuration
+     * @return whether the contract is not required to exist.
+     */
     private boolean contractNotRequired(@Nullable final HederaEvmAccount to, @NonNull final Configuration config) {
-        final var maybeGrandfatheredNumber =
-                (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
-
-        return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
+        final var maybeGrandfatheredNumber = (to == null || to.isTokenFacade() || to.isScheduleTxnFacade())
+                ? null
+                : to.hederaId().accountNumOrThrow();
+        return featureFlags.isAllowCallsToNonContractAccountsEnabled(
+                config.getConfigData(ContractsConfig.class), maybeGrandfatheredNumber);
     }
 
     private InvolvedParties partiesWhenContractRequired(
@@ -317,8 +323,6 @@ public class TransactionProcessor {
                         new InvolvedParties(sender, relayer, contractIDToBesuAddress(transaction.contractIdOrThrow()));
             }
         } else {
-            // In order to be EVM equivalent, we need to gracefully handle calls to potentially non-existent contracts
-            // and thus create a receiver address even if it may not exist in the ledger
             updater.setContractNotRequired();
             parties = new InvolvedParties(
                     sender,

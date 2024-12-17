@@ -21,16 +21,18 @@ import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACK
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.throttle.ThrottleAccumulator.Verbose;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.GasThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FeesConfig;
-import com.swirlds.platform.system.Platform;
+import com.swirlds.metrics.api.Metrics;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.IntSupplier;
 import javax.inject.Singleton;
@@ -47,15 +49,27 @@ public interface ThrottleServiceModule {
     @Provides
     @Singleton
     @BackendThrottle
-    static ThrottleAccumulator provideBackendThrottleAccumulator(ConfigProvider configProvider) {
-        return new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
+    static ThrottleAccumulator provideBackendThrottleAccumulator(
+            @NonNull final ConfigProvider configProvider, @NonNull final Metrics metrics) {
+        final var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
+        return new ThrottleAccumulator(
+                SUPPLY_ONE, configProvider::getConfiguration, BACKEND_THROTTLE, throttleMetrics, Verbose.YES);
     }
 
     @Provides
     @Singleton
     @IngestThrottle
-    static ThrottleAccumulator provideIngestThrottleAccumulator(Platform platform, ConfigProvider configProvider) {
-        return new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
+    static ThrottleAccumulator provideIngestThrottleAccumulator(
+            @NonNull final IntSupplier frontendThrottleSplit,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final Metrics metrics) {
+        final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
+        return new ThrottleAccumulator(
+                frontendThrottleSplit,
+                configProvider::getConfiguration,
+                FRONTEND_THROTTLE,
+                throttleMetrics,
+                Verbose.YES);
     }
 
     @Provides

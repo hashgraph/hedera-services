@@ -32,6 +32,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * ABSENT_TO_ABSENT also means that the account was never staked before and not staked now.
  */
 public enum StakeIdChangeType {
+    /**
+     * If the account was not staked to a node and now is staked to a node.
+     */
     /* ---  Cases ending with staking to a node */
     FROM_ABSENT_TO_NODE {
         @Override
@@ -39,6 +42,9 @@ public enum StakeIdChangeType {
             return true;
         }
     },
+    /**
+     * If the account was staked to an account and now is staked to a node.
+     */
     FROM_ACCOUNT_TO_NODE {
         @Override
         boolean withdrawsFromAccount() {
@@ -50,6 +56,9 @@ public enum StakeIdChangeType {
             return true;
         }
     },
+    /**
+     * If the account was staked to a node and now is staked to a different node or same node.
+     */
     FROM_NODE_TO_NODE {
         @Override
         boolean withdrawsFromNode() {
@@ -62,12 +71,18 @@ public enum StakeIdChangeType {
         }
     },
     /* --- Cases ending with staking to an account */
+    /**
+     * If the account was not staked and now is staked to an account.
+     */
     FROM_ABSENT_TO_ACCOUNT {
         @Override
         boolean awardsToAccount() {
             return true;
         }
     },
+    /**
+     * If the account was staked to a node and now is staked to an account.
+     */
     FROM_NODE_TO_ACCOUNT {
         @Override
         boolean withdrawsFromNode() {
@@ -79,6 +94,9 @@ public enum StakeIdChangeType {
             return true;
         }
     },
+    /**
+     * If the account was staked to an account and now is staked to another account.
+     */
     FROM_ACCOUNT_TO_ACCOUNT {
         @Override
         boolean withdrawsFromAccount() {
@@ -91,20 +109,35 @@ public enum StakeIdChangeType {
         }
     },
     /* --- Cases ending with absent staking */
+    /**
+     * If the account was not staked and now is not staked.
+     */
     FROM_ABSENT_TO_ABSENT {},
+    /**
+     * If the account was staked to an account and now is not staked.
+     */
     FROM_ACCOUNT_TO_ABSENT {
         @Override
         boolean withdrawsFromAccount() {
             return true;
         }
     },
+    /**
+     * If the account was staked to a node and now is not staked.
+     */
     FROM_NODE_TO_ABSENT {
         @Override
         boolean withdrawsFromNode() {
             return true;
         }
     };
-
+    /**
+     * Returns the type of staking change for the given account.
+     *
+     * @param currentAccount the current account
+     * @param modifiedAccount the modified account
+     * @return the type of staking change for the given account
+     */
     public static StakeIdChangeType forCase(
             @Nullable final Account currentAccount, @NonNull final Account modifiedAccount) {
         final var curStakedIdCase = currentAccount == null ? UNSET : getCurrentStakedIdCase(currentAccount);

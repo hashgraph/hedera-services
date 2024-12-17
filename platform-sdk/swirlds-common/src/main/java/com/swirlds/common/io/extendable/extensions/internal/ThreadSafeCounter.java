@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ThreadSafeCounter implements Counter {
 
+    public ThreadSafeCounter() {}
+
     /**
      * the count of bytes passed through the stream
      */

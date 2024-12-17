@@ -27,20 +27,26 @@ package com.swirlds.demo.hello;
  */
 
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.status.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -49,6 +55,21 @@ import java.nio.charset.StandardCharsets;
  * prints it, too.
  */
 public class HelloSwirldDemoMain implements SwirldMain {
+
+    static {
+        try {
+            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(HelloSwirldDemoState.class, () -> {
+                HelloSwirldDemoState helloSwirldDemoState = new HelloSwirldDemoState(
+                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                return helloSwirldDemoState;
+            }));
+            registerMerkleStateRootClassIds();
+        } catch (ConstructableRegistryException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /** the platform running this app */
     public SwirldsPlatform platform;
     /** ID number for this member */
@@ -79,10 +100,9 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
         this.platform = (SwirldsPlatform) platform;
         this.selfId = id;
-        final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
+        final int winNum = (int) selfId.id();
         this.console = createConsole(
                 platform, winNum, true, platform.getAddressBook().getNodeIdSet()); // create the window, make it visible
-        GuiModel.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
     }
 
     @Override
@@ -108,15 +128,21 @@ public class HelloSwirldDemoMain implements SwirldMain {
         }
     }
 
+    @NonNull
     @Override
-    public SwirldState newState() {
-        return new HelloSwirldDemoState();
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
+        final PlatformMerkleStateRoot state = new HelloSwirldDemoState(
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+        return state;
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
         final PlatformStatus newStatus = notification.getNewStatus();
         if (PlatformStatus.ACTIVE.equals(newStatus)) {
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    RosterUtils.formatNodeName(platform.getSelfId().id());
 
             console.out.println("Hello Swirld from " + myName);
 

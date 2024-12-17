@@ -18,8 +18,8 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

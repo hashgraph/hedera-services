@@ -29,8 +29,8 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     public static final int HEXED_EVM_ADDRESS_LEN = 40;
     public static final String FALLBACK_ABI = "<empty>";
     protected boolean tryAsHexedAddressIfLenMatches = true;
-    protected Object[] params;
-    protected String abi;
+    protected Optional<Object[]> params = Optional.empty();
+    protected Optional<String> abi = Optional.empty();
     protected String contract;
     protected Optional<Long> gas = Optional.empty();
     protected Optional<Supplier<String>> explicitHexedParams = Optional.empty();
@@ -44,7 +44,7 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
                     .map(CommonUtils::unhex)
                     .orElseThrow();
         } else {
-            callData = encodeParametersForCall(params, abi);
+            callData = encodeParametersForCall(params.orElse(null), abi.orElse(null));
         }
 
         return callData;

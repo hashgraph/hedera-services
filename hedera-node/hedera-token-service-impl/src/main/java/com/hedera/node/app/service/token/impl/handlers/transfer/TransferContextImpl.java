@@ -16,16 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -33,6 +37,8 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,16 +59,51 @@ public class TransferContextImpl implements TransferContext {
     private final TokensConfig tokensConfig;
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private CryptoTransferTransactionBody syntheticBody = null;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * @param context The context to use.
+     */
     public TransferContextImpl(final HandleContext context) {
         this(context, true);
     }
 
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * @param context The context to use.
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
+     *                                                                      on auto creation custom fee payments.
+     */
     public TransferContextImpl(
             final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
-        this.accountStore = context.writableStore(WritableAccountStore.class);
+        this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
+        this.autoAccountCreator = new AutoAccountCreator(context);
+        this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
+        this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
+        this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
+                enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    }
+
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * Allow initializing transfer context from another handler, by providing synthetic tnx body.
+     *
+     * @param context The context to use.
+     * @param syntheticBody The body of a crypto transfer transaction
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
+     *                                                                      on auto creation custom fee payments.
+     */
+    public TransferContextImpl(
+            final HandleContext context,
+            final CryptoTransferTransactionBody syntheticBody,
+            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
+        this.context = context;
+        this.syntheticBody = syntheticBody;
+        this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
         this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
@@ -73,7 +114,7 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public AccountID getFromAlias(final AccountID aliasedId) {
-        final var account = accountStore.get(aliasedId);
+        final var account = accountStore.getAliasedAccountById(aliasedId);
 
         if (account != null) {
             final var id = account.accountId();
@@ -86,7 +127,7 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void createFromAlias(final Bytes alias, final int reqMaxAutoAssociations) {
         // if it is a serialized proto key, auto-create account
-        if (isOfEvmAddressSize(alias)) {
+        if (AliasUtils.isOfEvmAddressSize(alias)) {
             // if it is an evm address create a hollow account
             validateTrue(lazyCreationConfig.enabled(), NOT_SUPPORTED);
             numLazyCreations++;
@@ -102,19 +143,7 @@ public class TransferContextImpl implements TransferContext {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
         }
         // Keep the created account in the resolutions map
-        AccountID createdAccount;
-        try {
-            createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
-        } catch (HandleException e) {
-            if (getHandleContext().isSelfSubmitted()) {
-                final int autoCreationsNumber = numOfAutoCreations() + numOfLazyCreations();
-                getHandleContext().reclaimPreviouslyReservedThrottle(autoCreationsNumber, CRYPTO_CREATE);
-            }
-            // we only want to reclaim the previously reserved throttle for `CRYPTO_CREATE` transaction
-            // if there is a failed auto-creation triggered from CryptoTransfer
-            // this is why we re-throw the HandleException, so that it will be still tackled the same in HandleWorkflow
-            throw e;
-        }
+        final var createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
         resolutions.put(alias, createdAccount);
     }
 
@@ -142,15 +171,15 @@ public class TransferContextImpl implements TransferContext {
         return numLazyCreations;
     }
 
-    public static boolean isOfEvmAddressSize(final Bytes alias) {
-        return alias.length() == EVM_ADDRESS_SIZE;
-    }
-
     /* ------------------- Needed for building records ------------------- */
     public void addToAutomaticAssociations(TokenAssociation newAssociation) {
         automaticAssociations.add(newAssociation);
     }
 
+    /**
+     * Get the automatic associations.
+     * @return The automatic associations
+     */
     public List<TokenAssociation> getAutomaticAssociations() {
         return automaticAssociations;
     }
@@ -166,5 +195,35 @@ public class TransferContextImpl implements TransferContext {
 
     public boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments() {
         return enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    }
+
+    @Override
+    public void validateHbarAllowances() {
+        final var topLevelPayer = context.payer();
+        // use the synthetic body if we have one
+        var body = syntheticBody != null ? syntheticBody : context.body().cryptoTransferOrThrow();
+        for (final var aa : body.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
+            if (aa.isApproval() && aa.amount() < 0L) {
+                maybeValidateHbarAllowance(
+                        accountStore.getAliasedAccountById(aa.accountIDOrElse(AccountID.DEFAULT)),
+                        topLevelPayer,
+                        aa.amount());
+            }
+        }
+    }
+
+    private void maybeValidateHbarAllowance(
+            @Nullable final Account account, @NonNull final AccountID topLevelPayer, final long amount) {
+        if (account != null) {
+            final var cryptoAllowances = account.cryptoAllowances();
+            for (final var allowance : cryptoAllowances) {
+                if (topLevelPayer.equals(allowance.spenderId())) {
+                    final var newAllowanceAmount = allowance.amount() + amount;
+                    validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
+                    return;
+                }
+            }
+            throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+        }
     }
 }

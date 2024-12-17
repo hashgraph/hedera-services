@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_IS_TOKEN;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -32,6 +32,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -42,65 +44,38 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class TokenAndTypeCheckSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
+public class TokenAndTypeCheckSuite {
     private static final String TOKEN_AND_TYPE_CHECK_CONTRACT = "TokenAndTypeCheck";
     private static final String ACCOUNT = "anybody";
     private static final int GAS_TO_OFFER = 1_000_000;
     private static final String GET_TOKEN_TYPE = "getType";
     private static final String IS_TOKEN = "isAToken";
 
-    public static void main(String... args) {
-        new TokenAndTypeCheckSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases());
-    }
-
     @HapiTest
-    final HapiSpec checkTokenAndTypeStandardCases() {
+    final Stream<DynamicTest> checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("checkTokenAndTypeStandardCases")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
-                        contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCallLocal(
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
@@ -121,29 +96,27 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                         .resultViaFunctionName(
                                                 GET_TOKEN_TYPE,
                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))))
-                .then();
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))));
     }
 
     // Should just return false on isToken() check for missing token type
     @HapiTest
-    final HapiSpec checkTokenAndTypeNegativeCases() {
+    final Stream<DynamicTest> checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 
-        return defaultHapiSpec("checkTokenAndTypeNegativeCases")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(1_000)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
-                        contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
@@ -160,28 +133,27 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                 .via("FakeAddressTokenTypeCheckTx")
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
-                                .logged())))
-                .then(
-                        childRecordsCheck(
-                                "FakeAddressTokenCheckTx",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(HAPI_IS_TOKEN)
-                                                        .withStatus(SUCCESS)
-                                                        .withIsToken(false)))),
-                        childRecordsCheck(
-                                "FakeAddressTokenTypeCheckTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)
-                                //                                        .contractCallResult(resultWith()
-                                //
-                                // .contractCallResult(htsPrecompileResult()
-                                //                                                        .forFunction(HAPI_IS_TOKEN)
-                                //                                                        .withStatus(INVALID_TOKEN_ID)
-                                //                                                        .withIsToken(false)))
-                                ));
+                                .logged())),
+                childRecordsCheck(
+                        "FakeAddressTokenCheckTx",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(HAPI_IS_TOKEN)
+                                                .withStatus(SUCCESS)
+                                                .withIsToken(false)))),
+                childRecordsCheck(
+                        "FakeAddressTokenTypeCheckTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_TOKEN_ID)
+                        //                                        .contractCallResult(resultWith()
+                        //
+                        // .contractCallResult(htsPrecompileResult()
+                        //                                                        .forFunction(HAPI_IS_TOKEN)
+                        //                                                        .withStatus(INVALID_TOKEN_ID)
+                        //                                                        .withIsToken(false)))
+                        ));
     }
 }

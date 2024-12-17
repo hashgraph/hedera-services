@@ -21,10 +21,10 @@ import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLAT
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -53,8 +53,9 @@ class EventStreamReportingToolTest {
     Path tmpDir;
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     @AfterAll
@@ -67,14 +68,11 @@ class EventStreamReportingToolTest {
      * written, it generates a report and checks the values.
      */
     @Test
-    void createReportTest() throws IOException, ConstructableRegistryException {
+    void createReportTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
-
-        // setup
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
@@ -88,7 +86,7 @@ class EventStreamReportingToolTest {
                 .filter(r -> r.getRoundNum() >= roundToReportFrom)
                 .mapToInt(ConsensusRound::getNumEvents)
                 .sum();
-        final List<EventImpl> lastRound =
+        final List<PlatformEvent> lastRound =
                 Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
         final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
 
@@ -104,7 +102,7 @@ class EventStreamReportingToolTest {
         Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());
         Assertions.assertEquals(lastEventTime, report.summary().end());
         Assertions.assertEquals(
-                lastEventTime, report.summary().lastEvent().getConsensusData().getConsensusTimestamp());
+                lastEventTime, report.summary().lastEvent().getPlatformEvent().getConsensusTimestamp());
     }
 
     /**
@@ -112,14 +110,11 @@ class EventStreamReportingToolTest {
      * written, it generates a report and checks the values.
      */
     @Test
-    void createTimeBoundReportTest() throws IOException, ConstructableRegistryException {
+    void createTimeBoundReportTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
-
-        // setup
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
@@ -141,7 +136,7 @@ class EventStreamReportingToolTest {
                 })
                 .mapToInt(ConsensusRound::getNumEvents)
                 .sum();
-        final List<EventImpl> lastRound =
+        final List<PlatformEvent> lastRound =
                 Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
         final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
 
@@ -157,6 +152,6 @@ class EventStreamReportingToolTest {
         Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());
         Assertions.assertEquals(lastEventTime, report.summary().end());
         Assertions.assertEquals(
-                lastEventTime, report.summary().lastEvent().getConsensusData().getConsensusTimestamp());
+                lastEventTime, report.summary().lastEvent().getPlatformEvent().getConsensusTimestamp());
     }
 }

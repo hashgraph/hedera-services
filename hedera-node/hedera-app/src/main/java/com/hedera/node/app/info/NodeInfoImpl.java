@@ -16,33 +16,41 @@
 
 package com.hedera.node.app.info;
 
-import static com.hedera.node.app.spi.HapiUtils.parseAccount;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.address.Address;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 public record NodeInfoImpl(
         long nodeId,
         @NonNull AccountID accountId,
-        long stake,
-        @NonNull String externalHostName,
-        int externalPort,
-        @NonNull String hexEncodedPublicKey,
-        @NonNull String memo)
+        long weight,
+        List<ServiceEndpoint> gossipEndpoints,
+        @Nullable Bytes sigCertBytes)
         implements NodeInfo {
     @NonNull
-    static NodeInfo fromAddress(@NonNull final Address address) {
+    public static NodeInfo fromRosterEntry(@NonNull final RosterEntry rosterEntry, @NonNull final Node node) {
         return new NodeInfoImpl(
-                address.getNodeId().id(),
-                parseAccount(address.getMemo()),
-                address.getWeight(),
-                requireNonNull(address.getHostnameExternal()),
-                address.getPortExternal(),
-                CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
-                address.getMemo());
+                rosterEntry.nodeId(),
+                node.accountIdOrThrow(),
+                rosterEntry.weight(),
+                rosterEntry.gossipEndpoint(),
+                rosterEntry.gossipCaCertificate());
+    }
+
+    @NonNull
+    public static NodeInfo fromRosterEntry(
+            @NonNull final RosterEntry rosterEntry, @NonNull final AccountID nodeAccountID) {
+        return new NodeInfoImpl(
+                rosterEntry.nodeId(),
+                nodeAccountID,
+                rosterEntry.weight(),
+                rosterEntry.gossipEndpoint(),
+                rosterEntry.gossipCaCertificate());
     }
 }

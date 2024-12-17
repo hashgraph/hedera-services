@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.event.emitter;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import java.util.Random;
 
@@ -59,7 +59,7 @@ public class ShuffledEventEmitter extends BufferingEventEmitter<ShuffledEventEmi
      * {@inheritDoc}
      */
     @Override
-    public IndexedEvent emitEvent() {
+    public EventImpl emitEvent() {
         // Randomly pick a creator node with even distribution. The logic determining if the event should be emitted
         // will match the creator weights of the graph generator unless one of those weights is zero.
 

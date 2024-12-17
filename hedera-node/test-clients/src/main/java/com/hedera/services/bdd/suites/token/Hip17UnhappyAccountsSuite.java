@@ -38,20 +38,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class Hip17UnhappyAccountsSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(Hip17UnhappyAccountsSuite.class);
+public class Hip17UnhappyAccountsSuite {
     private static final String MEMO_1 = "memo1";
     private static final String MEMO_2 = "memo2";
 
@@ -64,26 +58,8 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     private static final String TREASURY = "treasury";
     private static final String UNIQUE_TOKEN_A = "TokenA";
 
-    public static void main(String... args) {
-        new Hip17UnhappyAccountsSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            /* Dissociated Account */
-            uniqueTokenOperationsFailForDissociatedAccount(),
-            /* Frozen Account */
-            uniqueTokenOperationsFailForFrozenAccount(),
-            /* Account Without KYC */
-            uniqueTokenOperationsFailForKycRevokedAccount(),
-            /* Deleted Account */
-            uniqueTokenOperationsFailForDeletedAccount(),
-        });
-    }
-
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
+    final Stream<DynamicTest> uniqueTokenOperationsFailForDeletedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -117,7 +93,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
+    final Stream<DynamicTest> uniqueTokenOperationsFailForKycRevokedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -154,7 +130,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
+    final Stream<DynamicTest> uniqueTokenOperationsFailForFrozenAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -191,7 +167,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
+    final Stream<DynamicTest> uniqueTokenOperationsFailForDissociatedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -219,10 +195,5 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1))
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -36,7 +36,6 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -58,17 +57,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -84,56 +79,11 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s%2$s";
+    public static final String RESOURCE_PATH = "src/main/resources/contract/contracts/%1$s/%1$s%2$s";
 
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
     private static final String JSON_EXTENSION = ".json";
-
-    public static void main(String... args) throws IOException {
-        final var contractsLoc = "hedera-node/test-clients/src/main/java/com/hedera/services/bdd/suites/contract";
-        final var baseContractFqn = "com.hedera.services.bdd.suites.contract";
-        final var disabledCount = new AtomicLong();
-        Files.walk(Paths.get(contractsLoc))
-                .filter(p -> p.toString().endsWith(".java"))
-                .filter(p -> !p.toString().contains("V1Security"))
-                .filter(p -> !p.toString().contains("classiccalls"))
-                .filter(p -> !p.toString().contains("Utils"))
-                .map(p -> {
-                    final var packageName = p.getName(p.getNameCount() - 2);
-                    final var fileName = p.getName(p.getNameCount() - 1);
-                    final var className = fileName.toString().replace(".java", "");
-                    return baseContractFqn + "." + packageName + "." + className;
-                })
-                .forEach(name -> {
-                    try {
-                        final var type = HapiSpec.class.getClassLoader().loadClass(name);
-                        final var disabledSpecs = Arrays.stream(type.getDeclaredMethods())
-                                .filter(m -> {
-                                    final var returnType = m.getReturnType();
-                                    return returnType == HapiSpec.class;
-                                })
-                                .filter(m -> {
-                                    final var annotations = m.getDeclaredAnnotations();
-                                    return Arrays.stream(annotations)
-                                            .noneMatch(a -> a.annotationType() == HapiTest.class);
-                                })
-                                .map(Method::getName)
-                                .toArray(String[]::new);
-                        //                        final var suite = (HapiSuite) type.getConstructor().newInstance();
-                        if (disabledSpecs.length > 0) {
-                            disabledCount.addAndGet(disabledSpecs.length);
-                            System.out.println("--- Disabled for " + type.getSimpleName() + " ---");
-                            Arrays.asList(disabledSpecs).stream()
-                                    .map(s -> "    " + s)
-                                    .forEach(System.out::println);
-                        }
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-        System.out.println("Total disabled: " + disabledCount.get());
-    }
 
     public static ByteString eventSignatureOf(String event) {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());
@@ -179,6 +129,24 @@ public class Utils {
 
         arraycopy(solidityAddress, 0, topicAddress, 12, 20);
         return topicAddress;
+    }
+
+    /**
+     * Returns the bytecode of the contract by the name of the contract from the classpath resource.
+     *
+     * @param contractName the name of the contract
+     * @return the bytecode of the contract
+     * @throws IllegalArgumentException if the contract is not found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    public static ByteString getInitcodeOf(@NonNull final String contractName) {
+        final var path = getResourcePath(contractName, ".bin");
+        try {
+            final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
+            return ByteString.copyFrom(bytes);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public static ByteString extractByteCode(String path) {
@@ -353,6 +321,10 @@ public class Utils {
         return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
     }
 
+    /**
+     * This method captures the meta information of a CREATE2 operation. It extracts the mirror and the create2 addresses.
+     * Additionally, it verifies the number of children
+     */
     public static HapiSpecOperation captureChildCreate2MetaFor(
             final int givenNumExpectedChildren,
             final int givenChildOfInterest,
@@ -367,6 +339,15 @@ public class Utils {
             final var numRecords = response.getChildTransactionRecordsCount();
             int numExpectedChildren = givenNumExpectedChildren;
             int childOfInterest = givenChildOfInterest;
+
+            // if we use ethereum transaction for contract creation, we have one additional child record
+            var creation2ContractId =
+                    lookup.getResponseRecord().getContractCreateResult().getContractID();
+            if (spec.registry().hasEVMAddress(String.valueOf(creation2ContractId.getContractNum()))) {
+                numExpectedChildren++;
+                childOfInterest++;
+            }
+
             if (numRecords == numExpectedChildren + 1
                     && TxnUtils.isEndOfStakingPeriodRecord(response.getChildTransactionRecords(0))) {
                 // This transaction may have had a preceding record for the end-of-day

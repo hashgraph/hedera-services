@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.event.emitter;
 
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +34,7 @@ public interface EventEmitter<T extends EventEmitter<T>> {
      *
      * @return an event
      */
-    IndexedEvent emitEvent();
+    EventImpl emitEvent();
 
     /**
      * Get the next sequence of events.
@@ -42,8 +42,8 @@ public interface EventEmitter<T extends EventEmitter<T>> {
      * @param numberOfEvents
      * 		The number of events to get.
      */
-    default List<IndexedEvent> emitEvents(final int numberOfEvents) {
-        final List<IndexedEvent> events = new ArrayList<>(numberOfEvents);
+    default List<EventImpl> emitEvents(final int numberOfEvents) {
+        final List<EventImpl> events = new ArrayList<>(numberOfEvents);
         for (int i = 0; i < numberOfEvents; i++) {
             events.add(emitEvent());
         }

@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,17 +40,24 @@ import javax.inject.Singleton;
 @Singleton
 public class CanonicalDispatchPrices {
     private final Map<DispatchType, Long> pricesMap = new EnumMap<>(DispatchType.class);
+    /**
+     * Value to convert prices from USD to tinycents in Hedera
+     */
     public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 
+    /**
+     * @param assetsLoader used to load the fee schedule from recources
+     */
     @Inject
     public CanonicalDispatchPrices(@NonNull final AssetsLoader assetsLoader) {
         requireNonNull(assetsLoader);
         try {
             final var canonicalPrices = assetsLoader.loadCanonicalPrices().entrySet().stream()
                     .collect(toMap(
-                            entry -> PbjConverter.toPbj(entry.getKey()), entry -> entry.getValue().entrySet().stream()
+                            entry -> CommonPbjConverters.toPbj(entry.getKey()),
+                            entry -> entry.getValue().entrySet().stream()
                                     .collect(toMap(
-                                            subEntry -> PbjConverter.toPbj(subEntry.getKey()),
+                                            subEntry -> CommonPbjConverters.toPbj(subEntry.getKey()),
                                             subEntry -> subEntry.getValue()
                                                     .multiply(USD_TO_TINYCENTS)
                                                     .longValue()))));

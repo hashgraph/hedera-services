@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
@@ -34,8 +35,12 @@ import org.apache.commons.lang3.tuple.Pair;
 public class RandomTokenDissociation implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
-    public RandomTokenDissociation(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    private final ResponseCodeEnum[] customOutcomes;
+
+    public RandomTokenDissociation(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
@@ -43,6 +48,7 @@ public class RandomTokenDissociation implements OpProvider {
             ACCOUNT_IS_TREASURY,
             ACCOUNT_FROZEN_FOR_TOKEN,
             TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+            ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN,
             TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
     @Override
@@ -55,8 +61,10 @@ public class RandomTokenDissociation implements OpProvider {
         var implicitRel = relToDissociate.get();
         var rel = explicit(implicitRel);
         var op = tokenDissociate(rel.getLeft(), rel.getRight())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .payingWith(rel.getLeft())
+                .signedBy(rel.getLeft())
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 

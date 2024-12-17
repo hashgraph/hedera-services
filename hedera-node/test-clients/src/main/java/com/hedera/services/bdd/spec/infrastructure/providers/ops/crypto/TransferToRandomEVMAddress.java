@@ -26,13 +26,12 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class TransferToRandomEVMAddress implements OpProvider {
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
 
-    public TransferToRandomEVMAddress(EntityNameProvider<Key> keys) {
+    public TransferToRandomEVMAddress(EntityNameProvider keys) {
         this.keys = keys;
     }
 

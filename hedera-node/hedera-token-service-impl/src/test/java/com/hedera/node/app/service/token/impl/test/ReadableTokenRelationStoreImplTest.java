@@ -26,9 +26,9 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ class ReadableTokenRelationStoreImplTest {
 
     @BeforeEach
     void setUp() {
-        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+        given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
         subject = new ReadableTokenRelationStoreImpl(states);
@@ -104,7 +104,7 @@ class ReadableTokenRelationStoreImplTest {
 
     @Test
     void warmWarmsUnderlyingState(@Mock ReadableKVState<EntityIDPair, TokenRelation> tokenRelations) {
-        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+        given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelations);
         final var tokenRelationStore = new ReadableTokenRelationStoreImpl(states);
         tokenRelationStore.warm(ACCOUNT_20_ID, TOKEN_10_ID);

@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -30,7 +29,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -50,7 +49,7 @@ class SpecialRewardReceiversTest {
     private MessageFrame initialFrame;
 
     @Mock
-    private ContractOperationRecordBuilder recordBuilder;
+    private ContractOperationStreamBuilder recordBuilder;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 

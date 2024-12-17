@@ -50,7 +50,6 @@ public class PcesFileReader {
      * Scan the file system for event files and add them to the collection of tracked files.
      *
      * @param platformContext   the platform context
-     * @param recycleBin        the recycle bin
      * @param databaseDirectory the directory to scan for files
      * @param startingRound     the round to start reading from
      * @param permitGaps        if gaps are permitted in sequence number
@@ -60,7 +59,6 @@ public class PcesFileReader {
      */
     public static PcesFileTracker readFilesFromDisk(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final Path databaseDirectory,
             final long startingRound,
             final boolean permitGaps,
@@ -90,7 +88,7 @@ public class PcesFileReader {
             compactSpanOfLastFile(files);
         }
 
-        resolveDiscontinuities(databaseDirectory, recycleBin, files, startingRound);
+        resolveDiscontinuities(databaseDirectory, files, platformContext.getRecycleBin(), startingRound);
 
         return files;
     }
@@ -158,15 +156,15 @@ public class PcesFileReader {
      * come after the discontinuity.
      *
      * @param databaseDirectory the directory where PCES files are stored
-     * @param recycleBin        the recycle bin
      * @param files             the files that have been read from disk
+     * @param recycleBin the recycleBin
      * @param startingRound     the round the system is starting from
      * @throws IOException if there is an error deleting files
      */
     private static void resolveDiscontinuities(
             @NonNull final Path databaseDirectory,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final PcesFileTracker files,
+            @NonNull final RecycleBin recycleBin,
             final long startingRound)
             throws IOException {
 

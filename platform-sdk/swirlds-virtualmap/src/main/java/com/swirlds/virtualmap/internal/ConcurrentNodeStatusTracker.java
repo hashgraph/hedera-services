@@ -179,7 +179,7 @@ public final class ConcurrentNodeStatusTracker {
      *
      * @param value
      * 		path of node to check
-     * @return status of aa node
+     * @return status of a node
      */
     public Status getStatus(long value) {
         if (value < 0 || value >= capacity) {
@@ -198,6 +198,30 @@ public final class ConcurrentNodeStatusTracker {
         } while (status == Status.UNKNOWN);
 
         return status;
+    }
+
+    /**
+     * Get the status of a node as reported by the learner, or return UNKNOWN.
+     * <p>
+     * Unlike the getStatus(long value) method above, this method returns the actual
+     * status of the requested node without traversing the tree to its parents.
+     * If the learner hasn't reported a status for this particular node, this method
+     * returns UNKNOWN.
+     *
+     * @param value path of node to check
+     * @return status of the node, or UNKNOWN if its status has never been reported yet
+     */
+    public Status getReportedStatus(long value) {
+        if (value < 0 || value >= capacity) {
+            throw new IllegalArgumentException(
+                    String.format("Value can only be between [0, %d), %d is illegal", capacity, value));
+        }
+
+        final int index = getIndexInBitSetFor(value);
+        final long bitSetIndex = getBitSetIndexFor(value);
+        return statusBitSets
+                .computeIfAbsent(bitSetIndex, k -> new BitSetGroup())
+                .getStatus(index);
     }
 
     /**
@@ -252,7 +276,7 @@ public final class ConcurrentNodeStatusTracker {
     /**
      * We use two {@link BitSet} to handle the 3 possible
      * states of a value:
-     * <lu>
+     * <ul>
      * <li><strong>UNKNOWN</strong>: if {@code knowns} is set to false.
      * </li>
      * <li><strong>KNOWN</strong>: if {@code knowns} is set to true and
@@ -261,7 +285,7 @@ public final class ConcurrentNodeStatusTracker {
      * <li><strong>NOT_KNOWN</strong>: if {@code knowns} is set to true
      * and {@code status} is not set.
      * </li>
-     * </lu>
+     * </ul>
      */
     private static final class BitSetGroup {
         private final BitSet status;

@@ -18,7 +18,6 @@ package com.hedera.node.app.signature.impl;
 
 import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ECDSA_SECP256K1;
 import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ED25519;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -26,7 +25,7 @@ import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -133,15 +132,13 @@ public final class SignatureExpanderImpl implements SignatureExpander {
                 }
             }
                 // If the key is a key list, then we need to recursively expand each key in the list.
-            case KEY_LIST -> key.keyListOrElse(KeyList.DEFAULT)
-                    .keysOrElse(emptyList())
-                    .forEach(k -> expand(k, originals, expanded));
+            case KEY_LIST -> key.keyListOrElse(KeyList.DEFAULT).keys().forEach(k -> expand(k, originals, expanded));
                 // If the key is a threshold key, then we need to recursively expand each key in the threshold key's
                 // list. At this point in the process we don't care whether we have enough keys for the threshold or
                 // not, we just expand whatever we find.
             case THRESHOLD_KEY -> key.thresholdKeyOrElse(ThresholdKey.DEFAULT)
                     .keysOrElse(KeyList.DEFAULT)
-                    .keysOrElse(emptyList())
+                    .keys()
                     .forEach(k -> expand(k, originals, expanded));
             case ECDSA_384, RSA_3072, CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> {
                 // We don't support these, so we won't expand them

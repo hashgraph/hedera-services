@@ -26,10 +26,8 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,11 +61,6 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
                 .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
                         UncheckedSubmitBody.class, b -> b.setTransactionBytes(ByteString.copyFrom(subOpBytes)));
         return b -> b.setUncheckedSubmit(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls)::uncheckedSubmit;
     }
 
     @Override

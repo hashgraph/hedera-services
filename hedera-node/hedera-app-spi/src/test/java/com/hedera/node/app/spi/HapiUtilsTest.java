@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi;
 
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
@@ -25,8 +25,9 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.node.app.spi.fixtures.TestBase;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;

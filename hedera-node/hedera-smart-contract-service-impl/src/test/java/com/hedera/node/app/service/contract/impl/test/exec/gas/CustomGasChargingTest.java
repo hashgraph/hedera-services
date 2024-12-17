@@ -44,7 +44,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import org.hyperledger.besu.datatypes.Wei;
@@ -81,7 +81,7 @@ class CustomGasChargingTest {
     private CustomGasCharging subject;
 
     @Mock
-    private ContractOperationRecordBuilder recordBuilder;
+    private ContractOperationStreamBuilder recordBuilder;
 
     @BeforeEach
     void setUp() {

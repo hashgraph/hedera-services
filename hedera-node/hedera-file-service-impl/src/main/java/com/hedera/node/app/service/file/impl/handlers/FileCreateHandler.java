@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
@@ -32,11 +31,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileCreateResourceUsage;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -58,13 +57,19 @@ import javax.inject.Singleton;
 public class FileCreateHandler implements TransactionHandler {
     private final FileOpsUsage fileOpsUsage;
 
+    /**
+     * Constructs a {@link FileCreateHandler} with the given {@link FileOpsUsage}.
+     *
+     * @param fileOpsUsage the file operation usage calculator
+     */
     @Inject
     public FileCreateHandler(final FileOpsUsage fileOpsUsage) {
         this.fileOpsUsage = fileOpsUsage;
     }
 
     /**
-     * Performs checks independent of state or context
+     * Performs checks independent of state or context.
+     *
      * @param txn the transaction to check
      */
     @Override
@@ -108,7 +113,7 @@ public class FileCreateHandler implements TransactionHandler {
         }
 
         /* Validate if the current file can be created */
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
@@ -134,7 +139,7 @@ public class FileCreateHandler implements TransactionHandler {
             final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
-                    .fileNum(handleContext.newEntityNum())
+                    .fileNum(handleContext.entityNumGenerator().newEntityNum())
                     .shardNum(
                             fileCreateTransactionBody.hasShardID()
                                     ? fileCreateTransactionBody.shardIDOrThrow().shardNum()
@@ -145,17 +150,19 @@ public class FileCreateHandler implements TransactionHandler {
                                     : hederaConfig.realm())
                     .build();
             builder.fileId(fileId);
-            validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
+            validateContent(CommonPbjConverters.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
             fileStore.put(file);
 
-            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileId);
+            handleContext
+                    .savepointStack()
+                    .getBaseBuilder(CreateFileStreamBuilder.class)
+                    .fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
-                // Since for some reason CreateTransactionBody does not have an expiration time,
-                // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
+                // (FUTURE) Remove this translation done for mono-service fidelity
                 throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;
@@ -164,10 +171,13 @@ public class FileCreateHandler implements TransactionHandler {
 
     @NonNull
     @Override
-    public Fees calculateFees(@NonNull FeeContext feeContext) {
-        final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new FileCreateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj);
-        });
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var txnBody = feeContext.body();
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(svo -> fileOpsUsage.fileCreateUsage(
+                        CommonPbjConverters.fromPbj(txnBody),
+                        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount())));
     }
 }

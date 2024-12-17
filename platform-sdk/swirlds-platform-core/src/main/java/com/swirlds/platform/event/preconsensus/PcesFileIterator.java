@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.EventSerializationUtils;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -33,15 +35,16 @@ import java.util.Objects;
 /**
  * Iterates over the events in a single preconsensus event file.
  */
-public class PcesFileIterator implements IOIterator<GossipEvent> {
+public class PcesFileIterator implements IOIterator<PlatformEvent> {
 
     private final long lowerBound;
     private final AncientMode fileType;
     private final SerializableDataInputStream stream;
     private boolean hasPartialEvent = false;
     private final CountingStreamExtension counter;
-    private GossipEvent next;
+    private PlatformEvent next;
     private boolean streamClosed = false;
+    private PcesFileVersion fileVersion;
 
     /**
      * Create a new iterator that walks over events in a preconsensus event file.
@@ -64,9 +67,10 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
                 counter));
 
         try {
-            final int fileVersion = stream.readInt();
-            if (fileVersion != PcesMutableFile.FILE_VERSION) {
-                throw new IOException("unsupported file version: " + fileVersion);
+            final int fileVersionNumber = stream.readInt();
+            fileVersion = PcesFileVersion.fromVersionNumber(fileVersionNumber);
+            if (fileVersion == null) {
+                throw new IOException("unsupported file version: " + fileVersionNumber);
             }
         } catch (final EOFException e) {
             // Empty file. Possible if the node crashed right after it created this file.
@@ -84,7 +88,18 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
             final long initialCount = counter.getCount();
 
             try {
-                final GossipEvent candidate = stream.readSerializable(false, GossipEvent::new);
+                final PlatformEvent candidate =
+                        switch (fileVersion) {
+                            case ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(stream, true);
+                            case PROTOBUF_EVENTS -> {
+                                final GossipEvent gossipEvent = stream.readPbjRecord(GossipEvent.PROTOBUF);
+                                try {
+                                    yield new PlatformEvent(gossipEvent);
+                                } catch (final NullPointerException e) {
+                                    throw new IOException("GossipEvent read from the file is malformed", e);
+                                }
+                            }
+                        };
                 if (candidate.getAncientIndicator(fileType) >= lowerBound) {
                     next = candidate;
                 }
@@ -122,7 +137,7 @@ public class PcesFileIterator implements IOIterator<GossipEvent> {
      */
     @Override
     @NonNull
-    public GossipEvent next() throws IOException {
+    public PlatformEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("no files remain in this iterator");
         }

@@ -28,8 +28,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.service.mono.context.properties.Profile;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
@@ -134,7 +132,7 @@ final class SubmissionManagerTest extends AppTestBase {
             submissionManager.submit(txBody, bytes);
 
             // Then the platform actually receives the bytes
-            verify(platform).createTransaction(PbjConverter.asBytes(bytes));
+            verify(platform).createTransaction(bytes.toByteArray());
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
             // And the deduplication cache is updated
@@ -201,7 +199,8 @@ final class SubmissionManagerTest extends AppTestBase {
         void setup() {
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
-                            .withValue("hedera.profiles.active", Profile.TEST.toString())
+                            .withValue("hedera.profiles.active", "TEST")
+                            .withValue("ledger.id", "0x03")
                             .getOrCreateConfig(),
                     1);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
@@ -244,7 +243,86 @@ final class SubmissionManagerTest extends AppTestBase {
             // Given we are in PROD mode
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
-                            .withValue("hedera.profiles.active", Profile.PROD.toString())
+                            .withValue("hedera.profiles.active", "PROD")
+                            .withValue("ledger.id", "0x03")
+                            .getOrCreateConfig(),
+                    1);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+
+            // When we submit an unchecked transaction, and separate bytes, then the
+            // submission FAILS because we are in PROD mode
+            assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+
+            // Then the platform NEVER sees the unchecked bytes
+            verify(platform, never()).createTransaction(uncheckedBytes);
+            // We never attempted to submit this tx to the platform, so we don't increase the metric
+            verify(platformTxnRejections, never()).cycle();
+            // And the deduplication cache is not updated
+            verify(deduplicationCache, never()).add(any());
+        }
+
+        @Test
+        @DisplayName("An unchecked transaction on MainNet WILL FAIL")
+        void testUncheckedSubmitOnMainNetFails() {
+            // Given we are in PROD mode
+            config = () -> new VersionedConfigImpl(
+                    HederaTestConfigBuilder.create()
+                            .withValue("hedera.profiles.active", "TEST")
+                            .withValue("ledger.id", "0x00")
+                            .getOrCreateConfig(),
+                    1);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+
+            // When we submit an unchecked transaction, and separate bytes, then the
+            // submission FAILS because we are in PROD mode
+            assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+
+            // Then the platform NEVER sees the unchecked bytes
+            verify(platform, never()).createTransaction(uncheckedBytes);
+            // We never attempted to submit this tx to the platform, so we don't increase the metric
+            verify(platformTxnRejections, never()).cycle();
+            // And the deduplication cache is not updated
+            verify(deduplicationCache, never()).add(any());
+        }
+
+        @Test
+        @DisplayName("An unchecked transaction on TestNet WILL FAIL")
+        void testUncheckedSubmitOnTestNetFails() {
+            // Given we are in PROD mode
+            config = () -> new VersionedConfigImpl(
+                    HederaTestConfigBuilder.create()
+                            .withValue("hedera.profiles.active", "TEST")
+                            .withValue("ledger.id", "0x01")
+                            .getOrCreateConfig(),
+                    1);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
+
+            // When we submit an unchecked transaction, and separate bytes, then the
+            // submission FAILS because we are in PROD mode
+            assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+
+            // Then the platform NEVER sees the unchecked bytes
+            verify(platform, never()).createTransaction(uncheckedBytes);
+            // We never attempted to submit this tx to the platform, so we don't increase the metric
+            verify(platformTxnRejections, never()).cycle();
+            // And the deduplication cache is not updated
+            verify(deduplicationCache, never()).add(any());
+        }
+
+        @Test
+        @DisplayName("An unchecked transaction on PreviewNet WILL FAIL")
+        void testUncheckedSubmitOnPreviewNetFails() {
+            // Given we are in PROD mode
+            config = () -> new VersionedConfigImpl(
+                    HederaTestConfigBuilder.create()
+                            .withValue("hedera.profiles.active", "TEST")
+                            .withValue("ledger.id", "0x02")
                             .getOrCreateConfig(),
                     1);
             submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
@@ -271,7 +349,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // Given we are in TEST mode and have a transaction with bogus bytes
             config = () -> new VersionedConfigImpl(
                     HederaTestConfigBuilder.create()
-                            .withValue("hedera.profiles.active", Profile.TEST.toString())
+                            .withValue("hedera.profiles.active", "TEST")
                             .getOrCreateConfig(),
                     1);
             submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);

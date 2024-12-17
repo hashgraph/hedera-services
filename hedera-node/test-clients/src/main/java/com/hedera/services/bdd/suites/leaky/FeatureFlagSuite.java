@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -34,13 +34,16 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.enableAllFeatureFlagsAndDisableContractThrottles;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
@@ -54,54 +57,37 @@ import static com.hedera.services.bdd.suites.util.UtilPrngSuite.BOB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.FeatureFlags;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FeatureFlagSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FeatureFlagSuite.class);
-
-    public static void main(String... args) {
-        new FeatureFlagSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                disableAllFeatureFlagsAndConfirmNotSupported(),
-                enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
-    }
-
-    @HapiTest
-    final HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
-        return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
-                .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
-                .when()
-                .then(inParallel(
-                        confirmAutoCreationNotSupported(),
-                        confirmUtilPrngNotSupported(),
-                        confirmKeyAliasAutoCreationNotSupported(),
-                        confirmHollowAccountCreationNotSupported()));
-    }
-
-    @HapiTest
-    final HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
-        return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
-                .given()
-                .when()
-                .then(
-                        ifNotHapiTest(enableAllFeatureFlagsAndDisableContractThrottles()),
-                        ifHapiTest(enableAllFeatureFlagsAndDisableContractThrottles("scheduling.longTermEnabled")));
+public class FeatureFlagSuite {
+    @LeakyHapiTest(
+            overrides = {
+                "autoCreation.enabled",
+                "utilPrng.isEnabled",
+                "tokens.autoCreations.isEnabled",
+                "lazyCreation.enabled"
+            })
+    final Stream<DynamicTest> disableAllFeatureFlagsAndConfirmNotSupported() {
+        return hapiTest(
+                overridingAllOf(Map.of(
+                        "autoCreation.enabled", "false",
+                        "utilPrng.isEnabled", "false",
+                        "tokens.autoCreations.isEnabled", "false",
+                        "lazyCreation.enabled", "false")),
+                inParallel(
+                                confirmAutoCreationNotSupported(),
+                                confirmUtilPrngNotSupported(),
+                                confirmKeyAliasAutoCreationNotSupported(),
+                                confirmHollowAccountCreationNotSupported())
+                        .failOnErrors());
     }
 
     private HapiSpecOperation confirmAutoCreationNotSupported() {
@@ -187,10 +173,5 @@ public class FeatureFlagSuite extends HapiSuite {
                         .via(TRANSFER_TXN)
                         .hasKnownStatus(NOT_SUPPORTED),
                 getTxnRecord(TRANSFER_TXN).andAllChildRecords().hasNonStakingChildRecordCount(0));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -23,7 +23,6 @@ import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
-import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -46,7 +45,8 @@ import java.util.List;
  * RecordFileWriter for V6 record file format.
  */
 public final class BlockRecordFormatV6 implements BlockRecordFormat {
-
+    private static final long RECORD_STREAM_OBJECT_CLASS_ID = 0xe370929ba5429d8bL;
+    public static final int RECORD_STREAM_OBJECT_CLASS_VERSION = 1;
     /** The version of this format */
     public static final int VERSION_6 = 6;
     /** The header bytes to hash before each item in stream */
@@ -73,8 +73,8 @@ public final class BlockRecordFormatV6 implements BlockRecordFormat {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
             SerializableDataOutputStream sout = new SerializableDataOutputStream(bout);
             bout.reset();
-            sout.writeLong(RecordStreamObject.CLASS_ID);
-            sout.writeInt(RecordStreamObject.CLASS_VERSION);
+            sout.writeLong(RECORD_STREAM_OBJECT_CLASS_ID);
+            sout.writeInt(RECORD_STREAM_OBJECT_CLASS_VERSION);
             RECORD_STREAM_OBJECT_HEADER = bout.toByteArray();
             assert Arrays.equals(RECORD_STREAM_OBJECT_HEADER, HexFormat.of().parseHex("e370929ba5429d8b00000001"))
                     : "RecordStreamObject header is not the expected e370929ba5429d8b00000001";

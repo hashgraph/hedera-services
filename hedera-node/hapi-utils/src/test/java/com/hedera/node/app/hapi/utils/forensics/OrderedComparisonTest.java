@@ -33,7 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -58,7 +61,9 @@ class OrderedComparisonTest {
         final var issStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node5";
         final var consensusStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node0";
 
-        final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc, null, null, null);
+        final var issStream = parseV6RecordStreamEntriesIn(issStreamLoc);
+        final var consensusStream = parseV6RecordStreamEntriesIn(consensusStreamLoc);
+        final var diffs = findDifferencesBetweenV6(issStream, consensusStream, null, null);
         assertEquals(1, diffs.size());
         final var soleDiff = diffs.get(0);
         final var issEntry = soleDiff.firstEntry();

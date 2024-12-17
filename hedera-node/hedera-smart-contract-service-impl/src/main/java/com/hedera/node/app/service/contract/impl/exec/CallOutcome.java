@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -26,8 +25,8 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -36,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param result the result of the call
  * @param status the resolved status of the call
+ * @param recipientId if known, the Hedera id of the contract that was called
  * @param tinybarGasPrice the tinybar-denominated gas price used for the call
  * @param actions any contract actions that should be externalized in a sidecar
  * @param stateChanges any contract state changes that should be externalized in a sidecar
@@ -49,22 +49,19 @@ public record CallOutcome(
         @Nullable ContractStateChanges stateChanges) {
 
     /**
-     * Enumerates whether to externalize the result of aborted calls; needed for
-     * mono-service fidelity, since only a top-level {@code EthereumTransaction}
-     * would externalize the result of an aborted call there.
+     * @return whether some state changes appeared from the execution of the contract
      */
-    public enum ExternalizeAbortResult {
-        YES,
-        NO
-    }
-
     public boolean hasStateChanges() {
-        return stateChanges != null
-                && !stateChanges.contractStateChangesOrElse(emptyList()).isEmpty();
+        return stateChanges != null && !stateChanges.contractStateChanges().isEmpty();
     }
 
+    /**
+     * @param result the contract function result
+     * @param hevmResult the result after EVM transaction execution
+     * @return the EVM transaction outcome
+     */
     public static CallOutcome fromResultsWithMaybeSidecars(
-            @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
+            @NonNull final ContractFunctionResult result, @NonNull final HederaEvmTransactionResult hevmResult) {
         return new CallOutcome(
                 result,
                 hevmResult.finalStatus(),
@@ -74,12 +71,25 @@ public record CallOutcome(
                 hevmResult.stateChanges());
     }
 
+    /**
+     * @param result the contract function result
+     * @param hevmResult the result after EVM transaction execution
+     * @return the EVM transaction outcome
+     */
     public static CallOutcome fromResultsWithoutSidecars(
             @NonNull ContractFunctionResult result, @NonNull HederaEvmTransactionResult hevmResult) {
         return new CallOutcome(
                 result, hevmResult.finalStatus(), hevmResult.recipientId(), hevmResult.gasPrice(), null, null);
     }
 
+    /**
+     * @param result the result of the call
+     * @param status the resolved status of the call
+     * @param recipientId if known, the Hedera id of the contract that was called
+     * @param tinybarGasPrice the tinybar-denominated gas price used for the call
+     * @param actions any contract actions that should be externalized in a sidecar
+     * @param stateChanges any contract state changes that should be externalized in a sidecar
+     */
     public CallOutcome {
         requireNonNull(result);
         requireNonNull(status);
@@ -98,19 +108,13 @@ public record CallOutcome(
      * Adds the call details to the given record builder.
      *
      * @param recordBuilder the record builder
-     * @param externalizeAbortResult whether to externalize the result of aborted calls
      */
-    public void addCallDetailsTo(
-            @NonNull final ContractCallRecordBuilder recordBuilder,
-            @NonNull final ExternalizeAbortResult externalizeAbortResult) {
+    public void addCallDetailsTo(@NonNull final ContractCallStreamBuilder recordBuilder) {
         requireNonNull(recordBuilder);
-        requireNonNull(externalizeAbortResult);
         if (!callWasAborted()) {
             recordBuilder.contractID(recipientId);
         }
-        if (shouldExternalizeResult(externalizeAbortResult)) {
-            recordBuilder.contractCallResult(result);
-        }
+        recordBuilder.contractCallResult(result);
         recordBuilder.withCommonFieldsSetFrom(this);
     }
 
@@ -119,15 +123,10 @@ public record CallOutcome(
      *
      * @param recordBuilder the record builder
      */
-    public void addCreateDetailsTo(
-            @NonNull final ContractCreateRecordBuilder recordBuilder,
-            @NonNull final ExternalizeAbortResult externalizeAbortResult) {
+    public void addCreateDetailsTo(@NonNull final ContractCreateStreamBuilder recordBuilder) {
         requireNonNull(recordBuilder);
-        requireNonNull(externalizeAbortResult);
         recordBuilder.contractID(recipientIdIfCreated());
-        if (shouldExternalizeResult(externalizeAbortResult)) {
-            recordBuilder.contractCreateResult(result);
-        }
+        recordBuilder.contractCreateResult(result);
         recordBuilder.withCommonFieldsSetFrom(this);
     }
 
@@ -152,10 +151,6 @@ public record CallOutcome(
 
     private boolean representsTopLevelCreation() {
         return isSuccess() && requireNonNull(result).hasEvmAddress();
-    }
-
-    private boolean shouldExternalizeResult(@NonNull final ExternalizeAbortResult externalizeAbortResult) {
-        return !callWasAborted() || externalizeAbortResult == ExternalizeAbortResult.YES;
     }
 
     private boolean callWasAborted() {

@@ -33,8 +33,8 @@ public final class NetworkAdminServiceUtil {
 
     /**
      * Function that converts Account ID to Hexed EVM address.
-     * @param accountId
-     * @return Returns string hexed EVM address for the given account ID.
+     * @param accountId Account ID to be converted
+     * @return Returns string hexed EVM address for the given account ID
      */
     @NonNull
     public static String asHexedEvmAddress(@NonNull final AccountID accountId) {

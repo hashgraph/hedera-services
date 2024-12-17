@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule.STABLE_RECEIVER;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -42,7 +42,7 @@ public class RandomScheduleSign implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(SOME_SIGNATURES_WERE_INVALID, INVALID_SCHEDULE_ID);
+            standardOutcomesAnd(SOME_SIGNATURES_WERE_INVALID, INVALID_SCHEDULE_ID, SCHEDULE_ALREADY_EXECUTED);
 
     public RandomScheduleSign(
             RegistrySourcedNameProvider<ScheduleID> schedules, RegistrySourcedNameProvider<AccountID> accounts) {
@@ -69,7 +69,7 @@ public class RandomScheduleSign implements OpProvider {
 
         var op = scheduleSign(schedulesQualifying.get())
                 .logged()
-                .alsoSigningWith(STABLE_RECEIVER)
+                .alsoSigningWith(account.get())
                 .hasAnyPrecheck()
                 .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);

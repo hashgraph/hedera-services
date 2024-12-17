@@ -34,6 +34,11 @@ public record ContractChangeSummary(List<ContractID> newContractIds, List<Contra
     private static final Comparator<ContractNonceInfo> NONCE_INFO_CONTRACT_ID_COMPARATOR =
             Comparator.comparing(ContractNonceInfo::contractIdOrThrow, CONTRACT_ID_NUM_COMPARATOR);
 
+    /**
+     * Constructs a new instance of the contract changes summary.
+     * @param newContractIds the list of new contract IDs, ordered by contract number
+     * @param updatedContractNonces the list of updated contract nonces, ordered by contract number
+     */
     public ContractChangeSummary {
         Objects.requireNonNull(newContractIds).sort(CONTRACT_ID_NUM_COMPARATOR);
         Objects.requireNonNull(updatedContractNonces).sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);

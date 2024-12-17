@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
@@ -35,6 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * A base class which aims to combine common logic for Create and Create2 tests
+ */
 @ExtendWith(MockitoExtension.class)
 public class CreateOperationTestBase {
     protected static final long VALUE = 123_456L;
@@ -64,7 +67,7 @@ public class CreateOperationTestBase {
     protected ProxyWorldUpdater worldUpdater;
 
     @Mock
-    protected ProxyEvmAccount receiver;
+    protected ProxyEvmContract receiver;
 
     @Mock
     protected Deque<MessageFrame> stack;

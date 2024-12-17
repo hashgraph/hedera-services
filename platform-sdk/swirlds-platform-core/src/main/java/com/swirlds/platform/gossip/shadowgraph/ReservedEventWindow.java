@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -25,7 +25,7 @@ import java.util.Objects;
  * unlink any events that are non-expired with respect to the reserved window.
  */
 public class ReservedEventWindow implements AutoCloseable {
-    private final NonAncientEventWindow eventWindow;
+    private final EventWindow eventWindow;
     private final ShadowgraphReservation shadowgraphReservation;
 
     /**
@@ -35,8 +35,7 @@ public class ReservedEventWindow implements AutoCloseable {
      * @param shadowgraphReservation the shadowgraph reservation
      */
     public ReservedEventWindow(
-            @NonNull final NonAncientEventWindow eventWindow,
-            @NonNull final ShadowgraphReservation shadowgraphReservation) {
+            @NonNull final EventWindow eventWindow, @NonNull final ShadowgraphReservation shadowgraphReservation) {
         this.eventWindow = Objects.requireNonNull(eventWindow);
         this.shadowgraphReservation = Objects.requireNonNull(shadowgraphReservation);
     }
@@ -56,7 +55,7 @@ public class ReservedEventWindow implements AutoCloseable {
      * @return the reserved event window
      */
     @NonNull
-    public NonAncientEventWindow getEventWindow() {
+    public EventWindow getEventWindow() {
         return eventWindow;
     }
 

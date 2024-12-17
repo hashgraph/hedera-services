@@ -30,25 +30,29 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +64,8 @@ import org.apache.logging.log4j.Logger;
  * is 100 random bytes. So StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
-public class StatsSigningTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
+@ConstructableIgnored
+public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
 
     private static final long CLASS_ID = 0x79900efa3127b6eL;
     /**
@@ -79,11 +84,11 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     /** the number of microseconds to wait before returning from the handle method */
     private static final int HANDLE_MICROS = 100;
 
-    public StatsSigningTestingToolState() {
-        this(() -> null);
-    }
-
-    public StatsSigningTestingToolState(@NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
+    public StatsSigningTestingToolState(
+            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory,
+            @NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
+        super(lifecycles, versionFactory);
         this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
     }
 
@@ -100,6 +105,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     @Override
     public synchronized StatsSigningTestingToolState copy() {
         throwIfImmutable();
+        setImmutable(true);
         return new StatsSigningTestingToolState(this);
     }
 
@@ -107,12 +113,23 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
-                sttTransactionPool.expandSignatures(transaction);
-                CryptographyHolder.get().verifyAsync(transaction.getSignatures());
+                if (transaction.isSystem()) {
+                    return;
+                }
+                final TransactionSignature transactionSignature =
+                        sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
+                if (transactionSignature != null) {
+                    transaction.setMetadata(transactionSignature);
+                    CryptographyHolder.get().verifySync(List.of(transactionSignature));
+                }
             });
         }
     }
@@ -121,42 +138,43 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformState platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull
+                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                            stateSignatureTransactions) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
-        for (final TransactionSignature s : trans.getSignatures()) {
+        if (trans.isSystem()) {
+            return;
+        }
+        final TransactionSignature s = trans.getMetadata();
 
-            if (!validateSignature(s, trans)) {
-                continue;
-            }
-
-            if (s.getSignatureStatus() != VerificationStatus.VALID) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
-                                + " publicKey = {}, signature = {}, data = {} ]",
-                        TransactionCodec.txId(trans.getContents()),
-                        s.getSignatureStatus(),
-                        s.getSignatureType(),
-                        hex(Arrays.copyOfRange(
-                                s.getContentsDirect(),
-                                s.getPublicKeyOffset(),
-                                s.getPublicKeyOffset() + s.getPublicKeyLength())),
-                        hex(Arrays.copyOfRange(
-                                s.getContentsDirect(),
-                                s.getSignatureOffset(),
-                                s.getSignatureOffset() + s.getSignatureLength())),
-                        hex(Arrays.copyOfRange(
-                                s.getContentsDirect(),
-                                s.getMessageOffset(),
-                                s.getMessageOffset() + s.getMessageLength())));
-            }
+        if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
+                            + " publicKey = {}, signature = {}, data = {} ]",
+                    TransactionCodec.txId(trans.getApplicationTransaction()),
+                    s.getSignatureStatus(),
+                    s.getSignatureType(),
+                    hex(Arrays.copyOfRange(
+                            s.getContentsDirect(),
+                            s.getPublicKeyOffset(),
+                            s.getPublicKeyOffset() + s.getPublicKeyLength())),
+                    hex(Arrays.copyOfRange(
+                            s.getContentsDirect(),
+                            s.getSignatureOffset(),
+                            s.getSignatureOffset() + s.getSignatureLength())),
+                    hex(Arrays.copyOfRange(
+                            s.getContentsDirect(), s.getMessageOffset(), s.getMessageOffset() + s.getMessageLength())));
         }
 
-        runningSum += TransactionCodec.txId(trans.getContents());
+        runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
     }
@@ -189,31 +207,6 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                     e);
         }
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
-            out.writeLong(runningSum);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        if (version < ClassVersion.KEEP_STATE) {
-            // In this version we serialized an address book
-            in.readSerializable();
-        }
-
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
-            runningSum = in.readLong();
-        }
     }
 
     /**

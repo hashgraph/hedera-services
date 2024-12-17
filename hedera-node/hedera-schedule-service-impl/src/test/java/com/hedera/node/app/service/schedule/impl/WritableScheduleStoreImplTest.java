@@ -17,10 +17,13 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,6 +42,12 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     }
 
     @Test
+    void verifyGetForModifyNullIsNull() {
+        final var actual = writableSchedules.getForModify(null);
+        assertThat(actual).isNull();
+    }
+
+    @Test
     void verifyDeleteMarksDeletedInState() {
         final ScheduleID idToDelete = scheduleInState.scheduleId();
         Schedule actual = writableById.get(idToDelete);
@@ -54,8 +63,22 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     }
 
     @Test
+    void verifyDeleteNonExistentScheduleThrows() {
+        assertThatThrownBy(() -> writableSchedules.delete(ScheduleID.DEFAULT, testConsensusTime))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(
+                        "Schedule to be deleted, ScheduleID[shardNum=0, realmNum=0, scheduleNum=0], not found in state.");
+    }
+
+    @Test
+    void verifyDeleteNullScheduleThrows() {
+        assertThatThrownBy(() -> writableSchedules.delete(null, testConsensusTime))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void verifyPutModifiesState() {
-        final ScheduleID idToDelete = scheduleInState.scheduleId();
+        final ScheduleID idToDelete = scheduleInState.scheduleIdOrThrow();
         Schedule actual = writableById.getForModify(idToDelete);
         assertThat(actual).isNotNull();
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
@@ -70,22 +93,40 @@ class WritableScheduleStoreImplTest extends ScheduleTestBase {
     }
 
     @Test
-    void purgesExpiredSchedules() {
+    void verifyPutDoesDeduplication() {
         final ScheduleID idToDelete = scheduleInState.scheduleId();
-        final Schedule actual = writableById.get(idToDelete);
-        final var expirationTime = actual.calculatedExpirationSecond();
+        Schedule actual = writableById.getForModify(idToDelete);
         assertThat(actual).isNotNull();
         assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(scheduleInState.signatories());
-        writableSchedules.purgeExpiredSchedulesBetween(expirationTime - 1, expirationTime + 1);
+        final Set<Key> modifiedSignatories = Set.of(schedulerKey, payerKey);
+        final Schedule modified = replaceSignatoriesAndMarkExecuted(actual, modifiedSignatories, testConsensusTime);
+        final var hash = new ProtoBytes(ScheduleStoreUtility.calculateBytesHash(actual));
 
-        final var purged = writableSchedules.get(idToDelete);
-        assertThat(purged).isNull();
+        final var equality = writableByEquality.get(hash);
+        assertThat(equality).isNotNull();
 
-        final var byEquality = writableSchedules.getByEquality(actual);
-        assertThat(byEquality).isNull();
+        final var scheduledCounts =
+                writableScheduledCounts.get(new TimestampSeconds(actual.calculatedExpirationSecond()));
+        assertThat(scheduledCounts).isNotNull();
+        assertThat(scheduledCounts.numberScheduled()).isEqualTo(1);
 
-        final var byExpiry = writableSchedules.getByExpirationSecond(expirationTime);
-        assertThat(byExpiry).isNull();
+        writableSchedules.put(modified);
+        writableSchedules.put(modified);
+        writableSchedules.put(modified);
+
+        actual = scheduleStore.get(idToDelete);
+        assertThat(actual).isNotNull();
+        assertThat(actual.executed()).isTrue();
+        assertThat(actual.resolutionTime()).isNotNull().isEqualTo(asTimestamp(testConsensusTime));
+        assertThat(actual.signatories()).containsExactlyInAnyOrderElementsOf(modifiedSignatories);
+
+        // size doesn't increase when same element is put multiple times
+        final var equalitAfter = writableByEquality.get(hash);
+        assertThat(equalitAfter).isNotNull();
+
+        final var countAfter = writableScheduledCounts.get(new TimestampSeconds(actual.calculatedExpirationSecond()));
+        assertThat(countAfter).isNotNull();
+        assertThat(countAfter.numberScheduled()).isEqualTo(1);
     }
 
     @NonNull

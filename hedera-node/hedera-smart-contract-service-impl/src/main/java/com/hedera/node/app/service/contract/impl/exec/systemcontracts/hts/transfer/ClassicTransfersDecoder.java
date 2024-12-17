@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -48,8 +47,14 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Provides help in decoding an {@link HtsCallAttempt} representing a transfer into a synthetic {@link TransactionBody}.
+ */
 @Singleton
 public class ClassicTransfersDecoder {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public ClassicTransfersDecoder() {
         // Dagger2
@@ -78,6 +83,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#CRYPTO_TRANSFER} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCryptoTransfer(
@@ -91,6 +97,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#CRYPTO_TRANSFER_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCryptoTransferV2(
@@ -114,6 +121,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_TOKENS} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferTokens(
@@ -126,6 +134,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_TOKEN} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public @Nullable TransactionBody decodeTransferToken(
@@ -148,6 +157,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_NFTS} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferNfts(
@@ -175,6 +185,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_NFT} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeTransferNft(
@@ -192,6 +203,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_FROM} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeHrcTransferFrom(
@@ -210,6 +222,7 @@ public class ClassicTransfersDecoder {
      * Decodes a call to {@link ClassicTransfersTranslator#TRANSFER_NFT_FROM} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
+     * @param addressIdConverter the address ID converter for this call
      * @return the synthetic transaction body
      */
     public TransactionBody decodeHrcTransferNftFrom(
@@ -223,6 +236,10 @@ public class ClassicTransfersDecoder {
                 IsApproval.TRUE)));
     }
 
+    /**
+     * @param attempt the HTS call attempt
+     * @return return the response code of the failure, if present
+     */
     public ResponseCodeEnum checkForFailureStatus(@NonNull final HtsCallAttempt attempt) {
         if (Arrays.equals(attempt.selector(), ClassicTransfersTranslator.TRANSFER_TOKEN.selector())) {
             final var call = ClassicTransfersTranslator.TRANSFER_TOKEN.decodeCall(attempt.inputBytes());
@@ -268,9 +285,8 @@ public class ClassicTransfersDecoder {
     private TokenTransferList mergeTokenTransferLists(
             @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
         return from.copyBuilder()
-                .transfers(mergeTransfers(from.transfersOrElse(emptyList()), to.transfersOrElse(emptyList())))
-                .nftTransfers(
-                        mergeNftTransfers(from.nftTransfersOrElse(emptyList()), to.nftTransfersOrElse(emptyList())))
+                .transfers(mergeTransfers(from.transfers(), to.transfers()))
+                .nftTransfers(mergeNftTransfers(from.nftTransfers(), to.nftTransfers()))
                 .build();
     }
 

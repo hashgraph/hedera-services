@@ -34,7 +34,7 @@ public interface ReadableStakingInfoStore {
      * @return {@link StakingNodeInfo} object if successfully fetched or {@code null} if the node doesn't exist
      */
     @Nullable
-    StakingNodeInfo get(final long nodeId);
+    StakingNodeInfo get(long nodeId);
 
     /**
      * Fetches all node IDs from state. If no nodes exist, returns an empty collection.

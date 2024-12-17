@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.fixtures.event.source;
 
 import com.swirlds.common.test.fixtures.TransactionGenerator;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -26,7 +26,7 @@ import java.util.Random;
  */
 public class StandardEventSource extends AbstractEventSource<StandardEventSource> {
 
-    private LinkedList<IndexedEvent> latestEvents;
+    private LinkedList<EventImpl> latestEvents;
 
     public StandardEventSource(final boolean useFakeHashes) {
         this(useFakeHashes, DEFAULT_TRANSACTION_GENERATOR, DEFAULT_WEIGHT);
@@ -80,7 +80,7 @@ public class StandardEventSource extends AbstractEventSource<StandardEventSource
      * {@inheritDoc}
      */
     @Override
-    public IndexedEvent getRecentEvent(final Random random, final int index) {
+    public EventImpl getRecentEvent(final Random random, final int index) {
         if (latestEvents.size() == 0) {
             return null;
         }
@@ -96,7 +96,7 @@ public class StandardEventSource extends AbstractEventSource<StandardEventSource
      * {@inheritDoc}
      */
     @Override
-    public void setLatestEvent(final Random random, final IndexedEvent event) {
+    public void setLatestEvent(final Random random, final EventImpl event) {
         latestEvents.addFirst(event);
         pruneEventList(latestEvents);
     }

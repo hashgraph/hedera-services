@@ -19,9 +19,10 @@ package com.hedera.services.yahcli.config;
 import static com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils.keyFileAt;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
+import com.hedera.node.app.config.ConfigProviderBase;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
@@ -30,7 +31,22 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
-import com.hedera.services.yahcli.suites.*;
+import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
+import com.hedera.services.yahcli.suites.CreateNodeSuite;
+import com.hedera.services.yahcli.suites.CreateSuite;
+import com.hedera.services.yahcli.suites.DeleteNodeSuite;
+import com.hedera.services.yahcli.suites.FreezeHelperSuite;
+import com.hedera.services.yahcli.suites.RekeySuite;
+import com.hedera.services.yahcli.suites.ScheduleSuite;
+import com.hedera.services.yahcli.suites.SendSuite;
+import com.hedera.services.yahcli.suites.SpecialFileHashSuite;
+import com.hedera.services.yahcli.suites.StakeSetupSuite;
+import com.hedera.services.yahcli.suites.StakeSuite;
+import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
+import com.hedera.services.yahcli.suites.SysFileUploadSuite;
+import com.hedera.services.yahcli.suites.UpdateNodeSuite;
+import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -91,12 +107,11 @@ public class ConfigUtils {
             RekeySuite.class,
             SysFileUploadSuite.class,
             SysFileDownloadSuite.class,
-            SchedulesValidationSuite.class,
             FreezeHelperSuite.class,
             UpgradeHelperSuite.class,
             CostOfEveryThingSuite.class,
             MapPropertySource.class,
-            HapiApiClients.class,
+            HapiClients.class,
             FeesAndRatesProvider.class,
             HapiQueryOp.class,
             HapiTxnOp.class,
@@ -109,5 +124,9 @@ public class ConfigUtils {
             SpecialFileHashSuite.class,
             StakeSuite.class,
             StakeSetupSuite.class,
-            CustomSpecAssert.class);
+            CustomSpecAssert.class,
+            ConfigProviderBase.class,
+            CreateNodeSuite.class,
+            UpdateNodeSuite.class,
+            DeleteNodeSuite.class);
 }

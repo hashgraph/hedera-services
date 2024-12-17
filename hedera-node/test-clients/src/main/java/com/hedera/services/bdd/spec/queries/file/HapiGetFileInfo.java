@@ -27,8 +27,9 @@ import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.LongPredicate;
@@ -124,9 +125,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileInfoQuery(spec, payment, false);
-        response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             LOG.info("Info for file '{}': {}", file, response.getFileGetInfo());
         }
@@ -135,14 +134,6 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
                     .saveFileInfo(
                             saveFileInfoToReg.get(), response.getFileGetInfo().getFileInfo());
         }
-    }
-
-    @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getFileInfoQuery(spec, payment, true);
-        Response response =
-                spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
-        return costFrom(response);
     }
 
     @Override
@@ -164,6 +155,17 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
                 p -> Assertions.assertTrue(p.test(actual), String.format("Expiry of %d was not as expected!", actual)));
         expectedMemo.ifPresent(e -> Assertions.assertEquals(e, info.getMemo()));
         expectedLedgerId.ifPresent(id -> Assertions.assertEquals(id, info.getLedgerId()));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getFileInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getFileInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

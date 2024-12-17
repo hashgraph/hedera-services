@@ -46,9 +46,6 @@ public class NonStandardLog {
         this.nonStandardText += Objects.requireNonNull(logText);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     public String generateHtmlString() {
         final StringBuilder stringBuilder = new StringBuilder();

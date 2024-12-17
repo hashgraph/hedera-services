@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.file;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,6 +33,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class FileServiceDefinition implements RpcServiceDefinition {
+    /**
+     * The singleton instance of the file service definition.
+     */
     public static final FileServiceDefinition INSTANCE = new FileServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
@@ -43,7 +49,9 @@ public final class FileServiceDefinition implements RpcServiceDefinition {
             new RpcMethodDefinition<>("systemUndelete", Transaction.class, TransactionResponse.class));
 
     private FileServiceDefinition() {
-        // Forbid instantiation
+        // Just something to keep the Gradle build believing we have a non-transitive
+        // "requires" and hence preserving our module-info.class in the compiled JAR
+        requireNonNull(CommonUtils.class);
     }
 
     @Override

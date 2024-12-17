@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.wires.input;
 
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -32,6 +33,7 @@ public abstract class InputWire<IN> {
     private Consumer<Object> handler;
     private final String name;
     private final String taskSchedulerName;
+    private final TaskSchedulerType taskSchedulerType;
 
     /**
      * Constructor.
@@ -40,10 +42,10 @@ public abstract class InputWire<IN> {
      * @param name          the name of the input wire
      */
     protected InputWire(@NonNull final TaskScheduler<?> taskScheduler, @NonNull final String name) {
-
         this.taskSchedulerInput = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
         this.taskSchedulerName = taskScheduler.getName();
+        this.taskSchedulerType = taskScheduler.getType();
     }
 
     /**
@@ -64,6 +66,16 @@ public abstract class InputWire<IN> {
     @NonNull
     public String getTaskSchedulerName() {
         return taskSchedulerName;
+    }
+
+    /**
+     * Get the type of the task scheduler that this input channel is bound to.
+     *
+     * @return the type of the task scheduler that this input channel is bound to
+     */
+    @NonNull
+    public TaskSchedulerType getTaskSchedulerType() {
+        return taskSchedulerType;
     }
 
     /**

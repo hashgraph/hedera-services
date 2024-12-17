@@ -43,6 +43,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
@@ -338,6 +339,7 @@ public record HederaEvmTransactionResult(
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .errorMessage(errorMessage)
+                .contractID(recipientId)
                 .signerNonce(signerNonce);
     }
 
@@ -352,7 +354,7 @@ public record HederaEvmTransactionResult(
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
-                .errorMessage(null)
+                .errorMessage("")
                 .signerNonce(signerNonce);
     }
 
@@ -363,7 +365,7 @@ public record HederaEvmTransactionResult(
                 .contractCallResult(output)
                 .contractID(recipientId)
                 .logInfo(pbjLogsFrom(logs))
-                .errorMessage(null)
+                .errorMessage("")
                 .signerNonce(signerNonce)
                 .build();
     }

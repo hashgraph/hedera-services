@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.*;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -26,108 +26,84 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class GlobalPropertiesSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(GlobalPropertiesSuite.class);
+public class GlobalPropertiesSuite {
     private static final String CONTRACT = "GlobalProperties";
     private static final String GET_CHAIN_ID = "getChainID";
     private static final String GET_BASE_FEE = "getBaseFee";
     private static final String GET_GAS_LIMIT = "getGasLimit";
 
-    public static void main(String... args) {
-        new GlobalPropertiesSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(chainIdWorks(), baseFeeWorks(), coinbaseWorks(), gasLimitWorks());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec chainIdWorks() {
+    final Stream<DynamicTest> chainIdWorks() {
         final var defaultChainId = BigInteger.valueOf(295L);
         final var devChainId = BigInteger.valueOf(298L);
         final Set<Object> acceptableChainIds = Set.of(devChainId, defaultChainId);
-        return defaultHapiSpec("chainIdWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, GET_CHAIN_ID).via("chainId"))
-                .then(
-                        getTxnRecord("chainId")
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, GET_CHAIN_ID, CONTRACT),
-                                                        isOneOfLiteral(acceptableChainIds)))),
-                        contractCallLocal(CONTRACT, GET_CHAIN_ID)
-                                .nodePayment(1_234_567)
-                                .has(ContractFnResultAsserts.resultWith()
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, GET_CHAIN_ID).via("chainId"),
+                getTxnRecord("chainId")
+                        .logged()
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, GET_CHAIN_ID, CONTRACT),
-                                                isOneOfLiteral(acceptableChainIds))));
+                                                isOneOfLiteral(acceptableChainIds)))),
+                contractCallLocal(CONTRACT, GET_CHAIN_ID)
+                        .nodePayment(1_234_567)
+                        .has(ContractFnResultAsserts.resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, GET_CHAIN_ID, CONTRACT),
+                                        isOneOfLiteral(acceptableChainIds))));
     }
 
     @HapiTest
-    final HapiSpec baseFeeWorks() {
+    final Stream<DynamicTest> baseFeeWorks() {
         final var expectedBaseFee = BigInteger.valueOf(0);
-        return defaultHapiSpec("baseFeeWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, GET_BASE_FEE).via("baseFee"))
-                .then(
-                        getTxnRecord("baseFee")
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, GET_BASE_FEE, CONTRACT),
-                                                        isLiteralResult(new Object[] {BigInteger.valueOf(0)})))),
-                        contractCallLocal(CONTRACT, GET_BASE_FEE)
-                                .nodePayment(1_234_567)
-                                .has(ContractFnResultAsserts.resultWith()
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, GET_BASE_FEE).via("baseFee"),
+                getTxnRecord("baseFee")
+                        .logged()
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, GET_BASE_FEE, CONTRACT),
-                                                ContractFnResultAsserts.isLiteralResult(
-                                                        new Object[] {expectedBaseFee}))));
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(0)})))),
+                contractCallLocal(CONTRACT, GET_BASE_FEE)
+                        .nodePayment(1_234_567)
+                        .has(ContractFnResultAsserts.resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, GET_BASE_FEE, CONTRACT),
+                                        ContractFnResultAsserts.isLiteralResult(new Object[] {expectedBaseFee}))));
     }
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec coinbaseWorks() {
-        return defaultHapiSpec("coinbaseWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "getCoinbase").via("coinbase"))
-                .then(withOpContext((spec, opLog) -> {
+    final Stream<DynamicTest> coinbaseWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "getCoinbase").via("coinbase"),
+                withOpContext((spec, opLog) -> {
                     final var expectedCoinbase =
                             parsedToByteString(DEFAULT_PROPS.fundingAccount().getAccountNum());
 
@@ -146,26 +122,32 @@ public class GlobalPropertiesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec gasLimitWorks() {
-        final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
-        return defaultHapiSpec("gasLimitWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, GET_GAS_LIMIT).via("gasLimit").gas(gasLimit))
-                .then(
-                        getTxnRecord("gasLimit")
-                                .logged()
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(FUNCTION, GET_GAS_LIMIT, CONTRACT),
-                                                        isLiteralResult(new Object[] {BigInteger.valueOf(gasLimit)})))),
-                        contractCallLocal(CONTRACT, GET_GAS_LIMIT)
-                                .gas(gasLimit)
-                                .nodePayment(1_234_567)
-                                .has(ContractFnResultAsserts.resultWith()
-                                        .resultThruAbi(
-                                                getABIFor(FUNCTION, GET_GAS_LIMIT, CONTRACT),
-                                                ContractFnResultAsserts.isLiteralResult(
-                                                        new Object[] {BigInteger.valueOf(gasLimit)}))));
+    final Stream<DynamicTest> gasLimitWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                doSeveralWithStartupConfig("contracts.maxGasPerSec", value -> {
+                    final var gasLimit = Long.parseLong(value);
+                    return specOps(
+                            contractCall(CONTRACT, GET_GAS_LIMIT)
+                                    .via("gasLimit")
+                                    .gas(gasLimit),
+                            getTxnRecord("gasLimit")
+                                    .logged()
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .resultThruAbi(
+                                                            getABIFor(FUNCTION, GET_GAS_LIMIT, CONTRACT),
+                                                            isLiteralResult(
+                                                                    new Object[] {BigInteger.valueOf(gasLimit)})))),
+                            contractCallLocal(CONTRACT, GET_GAS_LIMIT)
+                                    .gas(gasLimit)
+                                    .nodePayment(1_234_567)
+                                    .has(ContractFnResultAsserts.resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(FUNCTION, GET_GAS_LIMIT, CONTRACT),
+                                                    ContractFnResultAsserts.isLiteralResult(
+                                                            new Object[] {BigInteger.valueOf(gasLimit)}))));
+                }));
     }
 }

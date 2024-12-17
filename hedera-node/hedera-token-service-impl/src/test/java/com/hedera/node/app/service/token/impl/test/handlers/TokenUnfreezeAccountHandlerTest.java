@@ -23,25 +23,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
-import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FIRST_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_NO_SPECIAL_KEYS;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FREEZE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SECOND_TOKEN_SENDER_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_INVALID_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_MISSING_FREEZE_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -63,6 +52,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -146,11 +136,15 @@ class TokenUnfreezeAccountHandlerTest {
         @Mock
         private ExpiryValidator expiryValidator;
 
+        @Mock(strictness = Strictness.LENIENT)
+        private StoreFactory storeFactory;
+
         @BeforeEach
         void setup() {
-            given(context.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
-            given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
+            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(context.expiryValidator()).willReturn(expiryValidator);
         }
 
@@ -351,49 +345,6 @@ class TokenUnfreezeAccountHandlerTest {
                             TransactionID.newBuilder().accountID(ACCOUNT_13257).build())
                     .tokenUnfreeze(unfreezeTxnBodyBuilder)
                     .build();
-        }
-    }
-
-    @Nested
-    class TokenUnfreezeAccountHandlerParityTest {
-        private ReadableAccountStore accountStore;
-        private ReadableTokenStore tokenStore;
-
-        @BeforeEach
-        void setUp() {
-            accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
-            tokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
-        }
-
-        @Test
-        void tokenUnfreezeWithExtantFreezable() throws PreCheckException {
-            final var txn = txnFrom(VALID_UNFREEZE_WITH_EXTANT_TOKEN);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            subject.preHandle(context);
-
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_FREEZE_KT.asPbjKey()));
-            basicContextAssertions(context, 1);
-        }
-
-        @Test
-        void tokenUnfreezeMissingToken() throws PreCheckException {
-            final var txn = txnFrom(UNFREEZE_WITH_MISSING_FREEZE_TOKEN);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), TOKEN_HAS_NO_FREEZE_KEY);
-        }
-
-        @Test
-        void tokenUnfreezeWithInvalidToken() throws PreCheckException {
-            final var txn = txnFrom(UNFREEZE_WITH_INVALID_TOKEN);
-
-            final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
         }
     }
 }

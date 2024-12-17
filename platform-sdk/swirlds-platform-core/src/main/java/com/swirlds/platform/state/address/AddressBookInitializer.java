@@ -130,7 +130,8 @@ public class AddressBookInitializer {
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
 
-        this.stateAddressBook = initialState.getState().getPlatformState().getAddressBook();
+        this.stateAddressBook =
+                initialState.getState().getReadablePlatformState().getAddressBook();
         if (stateAddressBook == null && !initialState.isGenesisState()) {
             throw new IllegalStateException("Only genesis states can have null address books.");
         }
@@ -255,11 +256,11 @@ public class AddressBookInitializer {
                         configAddressBook.getAddress(address.getNodeId()).getSigCert();
                 final X509Certificate agreeCert =
                         configAddressBook.getAddress(address.getNodeId()).getAgreeCert();
-                if (sigCert != null && agreeCert != null) {
+                if (sigCert != null) {
                     stateAddressBook.add(address.copySetSigCert(sigCert).copySetAgreeCert(agreeCert));
                 } else {
                     logger.warn(
-                            "Signing and Agreement certificates were not found in the config address book for node {}",
+                            "Signing certificate was not found in the config address book for node {}",
                             address.getNodeId());
                 }
             }

@@ -8,4 +8,4 @@ batching them together and sending records is handled by the `RecordStreamManage
 The `RecordBuilderImpl` implements all known `RecordBuilder` subtypes. The implementation you see there is a stub,
 but you can easily imagine the implementation.
 
-**NEXT: [States](states.md)**
+**NEXT: [SavePointStack](savepoint-stack.md)**

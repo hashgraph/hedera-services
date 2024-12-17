@@ -16,22 +16,23 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Default implementation of {@link ReadableNetworkStakingRewardsStore}
+ * Default implementation of {@link ReadableNetworkStakingRewardsStore}.
  */
 public class ReadableNetworkStakingRewardsStoreImpl implements ReadableNetworkStakingRewardsStore {
 
     /** The underlying data storage class that holds staking reward data for all nodes. */
     private final ReadableSingletonState<NetworkStakingRewards> stakingRewardsState;
+
     /**
      * Create a new {@link ReadableNetworkStakingRewardsStoreImpl} instance.
      *

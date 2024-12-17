@@ -16,12 +16,26 @@
 
 package com.swirlds.platform.crypto;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.PathsConfig;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
-import java.time.Duration;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.UnrecoverableKeyException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -35,51 +49,69 @@ public class CryptoArgsProvider {
     private static final char[] PASSWORD = "password".toCharArray();
 
     /**
-     * @return 2 sets of arguments, 1 generated and 1 loaded from files
+     * @return 2 sets of arguments, 1 generated, 1 loaded from files.
      */
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
-        final AddressBook loadedAB = createAddressBook();
-        final Map<NodeId, KeysAndCerts> loadedC = CryptoStatic.loadKeysAndCerts(
-                loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD, loadedAB.getNodeIdSet());
-        System.out.println(
-                "Key loading took " + Duration.between(start, Instant.now()).toMillis());
-
+        final RosterAndCerts rosterAndCerts = loadAddressBookWithKeys(NUMBER_OF_ADDRESSES);
         start = Instant.now();
-        final AddressBook genAB = createAddressBook();
+        final AddressBook genAB = createAddressBook(NUMBER_OF_ADDRESSES);
         final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
-        System.out.println(
-                "Key generating took " + Duration.between(start, Instant.now()).toMillis());
-        return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));
+        start = Instant.now();
+        return Stream.of(
+                Arguments.of(rosterAndCerts.roster(), rosterAndCerts.nodeIdKeysAndCertsMap()),
+                Arguments.of(RosterRetriever.buildRoster(genAB), genC));
     }
 
-    private static AddressBook createAddressBook() {
-        final AddressBook addresses = new RandomAddressBookGenerator()
-                .setSize(NUMBER_OF_ADDRESSES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+    public static AddressBook createAddressBook(final int size) {
+        final Roster roster = RandomRosterBuilder.create(Randotron.create())
+                .withSize(size)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
+
+        // We still use the keys injection mechanism from the EnhancedKeyStoreLoader and CryptoStatic,
+        // so we use an AddressBook here.
+        AddressBook addresses = RosterUtils.buildAddressBook(roster);
 
         for (int i = 0; i < addresses.getSize(); i++) {
             final NodeId nodeId = addresses.getNodeId(i);
-            addresses.add(
-                    addresses.getAddress(nodeId).copySetSelfName(memberName(i)).copySetHostnameInternal("127.0.0.1"));
+            addresses.add(addresses
+                    .getAddress(nodeId)
+                    .copySetSelfName(RosterUtils.formatNodeName(nodeId.id()))
+                    .copySetHostnameInternal("127.0.0.1"));
         }
 
         return addresses;
     }
 
-    private static String memberName(int num) {
-        final int base = 26;
-        final int padding = 4;
-        final StringBuilder res = new StringBuilder();
-        int rem;
-        while (num > 0) {
-            rem = num % base;
-            final char c = (char) ('a' + rem);
-            res.append(c);
-            num /= base;
-        }
-        res.append("a".repeat(Math.max(0, padding - res.length())));
-        return res.reverse().toString();
+    private static Configuration configure(final Path keyDirectory) {
+        final ConfigurationBuilder builder = ConfigurationBuilder.create();
+
+        builder.withConfigDataTypes(PathsConfig.class, CryptoConfig.class);
+
+        builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
+        builder.withValue("crypto.password", new String(PASSWORD));
+
+        return builder.build();
+    }
+
+    /**
+     * returns a record with the addressBook and keys loaded from file.
+     *
+     * @param size the size of the required address book
+     */
+    @NonNull
+    public static RosterAndCerts loadAddressBookWithKeys(final int size)
+            throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
+                    NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
+        final AddressBook createdAB = createAddressBook(size);
+        final Map<NodeId, KeysAndCerts> loadedC = EnhancedKeyStoreLoader.using(
+                        createdAB, configure(ResourceLoader.getFile("preGeneratedPEMKeysAndCerts/")))
+                .scan()
+                .generate()
+                .verify()
+                .injectInAddressBook()
+                .keysAndCerts();
+        return new RosterAndCerts(RosterRetriever.buildRoster(createdAB), loadedC);
     }
 }

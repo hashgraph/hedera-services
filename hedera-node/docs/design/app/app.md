@@ -13,4 +13,4 @@ The follow packages contain implementation details:
 - [`state`](states.md): Classes that implement the SPI interfaces for states, and all things related to merkle trees
 - [`throttle`](throttles.md): The implementation of the `ThrottleAccumulator` and the throttle engine
 - [`workflows`](workflows.md): Classes for the various workflows such as `TransactionWorkflow`, `QueryWorkflow`, `IngestWorkflow`, etc.
-- [`special_files`](special_files.md): Reference of special files such as the address book, properties, and exchange rates
+- [`special_files`](system_files.md): Reference of special files such as the address book, properties, and exchange rates

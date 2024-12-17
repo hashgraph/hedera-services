@@ -31,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +65,8 @@ class StakeRewardCalculatorImplTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private Account account;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     private List<Long> rewardHistory;
 
     private StakeRewardCalculatorImpl subject;
@@ -76,14 +79,16 @@ class StakeRewardCalculatorImplTest {
 
     @Test
     void zeroRewardsForMissingNodeStakeInfo() {
-        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), null, 321, 123);
+        final var reward = StakeRewardCalculatorImpl.computeRewardFromDetails(
+                Account.newBuilder().build(), null, 321, 123);
         assertEquals(0, reward);
     }
 
     @Test
     void zeroRewardsForDeletedNodeStakeInfo() {
         final var stakingInfo = StakingNodeInfo.newBuilder().deleted(true).build();
-        final var reward = subject.computeRewardFromDetails(Account.newBuilder().build(), stakingInfo, 321, 123);
+        final var reward = StakeRewardCalculatorImpl.computeRewardFromDetails(
+                Account.newBuilder().build(), stakingInfo, 321, 123);
         assertEquals(0, reward);
     }
 
@@ -100,7 +105,7 @@ class StakeRewardCalculatorImplTest {
         rewardHistory.set(2, 1L);
         setUpMocks();
         given(stakingInfoStore.getOriginalValue(0L)).willReturn(stakingNodeInfo);
-        given(stakePeriodManager.currentStakePeriod(consensusTime)).willReturn(TODAY_NUMBER);
+        given(stakePeriodManager.currentStakePeriod()).willReturn(TODAY_NUMBER);
         given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
         // Staked node ID of -1 will return a node ID address of 0
         given(account.stakedNodeId()).willReturn(-1L);
@@ -164,10 +169,10 @@ class StakeRewardCalculatorImplTest {
     }
 
     private void setUpMocks() {
-        given(stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardsStore, consensusTime))
+        given(stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardsStore))
                 .willReturn(TODAY_NUMBER);
         willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
-        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong(), any(), any());
+        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong(), any());
     }
 
     private static List<Long> newRewardHistory() {

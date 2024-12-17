@@ -29,6 +29,7 @@ import static com.hedera.node.app.records.impl.producers.formats.v6.SignatureWri
 import static com.hedera.pbj.runtime.ProtoWriterTools.writeLong;
 import static com.hedera.pbj.runtime.ProtoWriterTools.writeMessage;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
+import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -38,7 +39,6 @@ import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.SidecarMetadata;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,6 +46,7 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -181,7 +182,7 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
 
         // Compute directories for record and sidecar files
         final Path recordDir = fileSystem.getPath(config.logDir());
-        nodeScopedRecordDir = recordDir.resolve("record" + nodeInfo.memo());
+        nodeScopedRecordDir = recordDir.resolve("record" + asAccountString(nodeInfo.accountId()));
         nodeScopedSidecarDir = nodeScopedRecordDir.resolve(config.sidecarDir());
 
         // Create parent directories if needed for the record file itself
@@ -273,14 +274,13 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
             if (gzipOutputStream != null) gzipOutputStream.flush();
             fileOutputStream.flush();
 
+            closeSidecarFileWriter();
             writeFooter(endRunningHash);
 
             outputStream.close();
             bufferedOutputStream.close();
             if (gzipOutputStream != null) gzipOutputStream.close();
             fileOutputStream.close();
-
-            closeSidecarFileWriter();
 
             // write signature file, this tells the uploader that this record file set is complete
             writeSignatureFile(

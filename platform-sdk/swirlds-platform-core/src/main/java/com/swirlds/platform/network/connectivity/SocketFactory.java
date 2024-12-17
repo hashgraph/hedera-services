@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.network.connectivity;
 
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -61,8 +63,8 @@ public interface SocketFactory {
             serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
         final InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(ALL_INTERFACES), port);
-        serverSocket.bind(endpoint); // try to grab a port on this computer
         serverSocket.setReuseAddress(true);
+        serverSocket.bind(endpoint); // try to grab a port on this computer
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
         // because it causes a major bug in certain situations
 
@@ -126,4 +128,11 @@ public interface SocketFactory {
      */
     @NonNull
     Socket createClientSocket(@NonNull final String hostname, final int port) throws IOException;
+
+    /**
+     * Reloads the trust store with peer certificates
+     *
+     * @param peers the updated list of peers
+     */
+    void reload(@NonNull final List<PeerInfo> peers);
 }

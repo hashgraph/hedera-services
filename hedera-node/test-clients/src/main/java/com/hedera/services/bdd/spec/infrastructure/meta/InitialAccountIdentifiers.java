@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFu
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;

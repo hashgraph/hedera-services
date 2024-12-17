@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -229,7 +228,6 @@ class NftLedgerTests {
     @ParameterizedTest
     @ValueSource(doubles = {1.0, 0.99, 0.75, 0.5, 0.25, 0.01, 0.0})
     @Tag(TestComponentTags.TESTING)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Randomized Test")
     void randomizedTest(final double tokenTrackingFraction) {
 

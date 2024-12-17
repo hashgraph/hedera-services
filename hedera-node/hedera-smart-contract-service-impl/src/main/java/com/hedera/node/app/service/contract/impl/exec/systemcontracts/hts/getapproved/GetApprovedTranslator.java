@@ -20,20 +20,27 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Translates {@code getApproved()} calls to the HTS system contract.
+ */
 @Singleton
-public class GetApprovedTranslator extends AbstractHtsCallTranslator {
+public class GetApprovedTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for getApproved(address,uint256) method. */
     public static final Function HAPI_GET_APPROVED = new Function("getApproved(address,uint256)", "(int32,address)");
+    /** Selector for getApproved(uint256) method. */
     public static final Function ERC_GET_APPROVED = new Function("getApproved(uint256)", ReturnTypes.ADDRESS);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public GetApprovedTranslator() {
         // Dagger2
@@ -44,8 +51,7 @@ public class GetApprovedTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return (attempt.isTokenRedirect() && matchesErcSelector(attempt.selector()))
-                || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
+        return attempt.isTokenRedirect() ? attempt.isSelector(ERC_GET_APPROVED) : attempt.isSelector(HAPI_GET_APPROVED);
     }
 
     /**
@@ -53,7 +59,7 @@ public class GetApprovedTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public GetApprovedCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        if (matchesErcSelector(attempt.selector())) {
+        if (attempt.isSelector(ERC_GET_APPROVED)) {
             final var args = ERC_GET_APPROVED.decodeCall(attempt.input().toArrayUnsafe());
             return new GetApprovedCall(
                     attempt.systemContractGasCalculator(),
@@ -73,13 +79,5 @@ public class GetApprovedTranslator extends AbstractHtsCallTranslator {
                     false,
                     attempt.isStaticCall());
         }
-    }
-
-    private static boolean matchesErcSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, ERC_GET_APPROVED.selector());
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, HAPI_GET_APPROVED.selector());
     }
 }

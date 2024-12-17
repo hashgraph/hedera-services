@@ -16,50 +16,85 @@
 
 package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
+import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Implementation of the {@link ContractService}.
  */
-public enum ContractServiceImpl implements ContractService {
-    CONTRACT_SERVICE;
+public class ContractServiceImpl implements ContractService {
+    /**
+     * Minimum gas required for contract operations.
+     */
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
+
     private final ContractServiceComponent component;
 
-    private InitialModServiceContractSchema initialContractSchema;
-
-    ContractServiceImpl() {
-        this.component = DaggerContractServiceComponent.create();
+    /**
+     * @param appContext the current application context
+     */
+    public ContractServiceImpl(@NonNull final AppContext appContext) {
+        this(appContext, null, null);
     }
 
-    public void setStorageFromState(
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        initialContractSchema.setStorageFromState(storageFromState);
-    }
-
-    public void setBytecodeFromState(
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        initialContractSchema.setBytecodeFromState(bytecodeFromState);
+    /**
+     * @param appContext the current application context
+     * @param verificationStrategies the current verification strategy used
+     * @param addOnTracers all operation tracer callbacks
+     */
+    public ContractServiceImpl(
+            @NonNull final AppContext appContext,
+            @Nullable final VerificationStrategies verificationStrategies,
+            @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
+        requireNonNull(appContext);
+        final var metricsSupplier = requireNonNull(appContext.metricsSupplier());
+        final Supplier<ContractsConfig> contractsConfigSupplier =
+                () -> appContext.configSupplier().get().getConfigData(ContractsConfig.class);
+        final var contractMetrics = new ContractMetrics(metricsSupplier, contractsConfigSupplier);
+        this.component = DaggerContractServiceComponent.factory()
+                .create(
+                        appContext.instantSource(),
+                        // (FUTURE) Inject the signature verifier instance into the IsAuthorizedSystemContract
+                        // C.f. https://github.com/hashgraph/hedera-services/issues/14248
+                        appContext.signatureVerifier(),
+                        Optional.ofNullable(verificationStrategies).orElseGet(DefaultVerificationStrategies::new),
+                        addOnTracers,
+                        contractMetrics);
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialContractSchema = new InitialModServiceContractSchema(version);
-        registry.register(initialContractSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490ContractSchema());
+        registry.register(new V0500ContractSchema());
     }
 
+    /**
+     * Create the metrics for the smart contracts service. This needs to be delayed until _after_
+     * the metrics are available - which happens after `Hedera.initializeStatesApi`.
+     */
+    public void registerMetrics() {
+        component.contractMetrics().createContractMetrics();
+    }
+
+    /**
+     * @return all contract transaction handlers
+     */
     public ContractHandlers handlers() {
         return component.handlers();
     }

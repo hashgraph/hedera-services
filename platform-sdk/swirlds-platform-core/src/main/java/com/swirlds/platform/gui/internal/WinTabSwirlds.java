@@ -96,7 +96,7 @@ class WinTabSwirlds extends PrePaintableJPanel {
                     if (WinBrowser.memberDisplayed == null) {
                         setMemberDisplayed(member);
                     }
-                    addEntity(this, member, c, 2, member.getPlatform() == null ? "" : " (running)    ", true);
+                    addEntity(this, member, c, 2, "", true);
                     c.gridy++;
                 }
             }

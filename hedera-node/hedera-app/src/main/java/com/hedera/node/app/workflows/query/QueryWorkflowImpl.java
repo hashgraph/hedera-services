@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.query;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
@@ -36,21 +37,22 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
@@ -61,21 +63,20 @@ import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
-import java.time.Instant;
+import java.time.InstantSource;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
-@Singleton
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private static final Logger logger = LogManager.getLogger(QueryWorkflowImpl.class);
@@ -85,14 +86,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
-    private static final Response DEFAULT_UNSUPPORTED_RESPONSE = Response.newBuilder()
-            .transactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-                    .header(ResponseHeader.newBuilder()
-                            .nodeTransactionPrecheckCode(NOT_SUPPORTED)
-                            .build()))
-            .build();
-
-    private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor;
     private final SubmissionManager submissionManager;
     private final QueryChecker queryChecker;
     private final IngestChecker ingestChecker;
@@ -105,6 +99,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final InstantSource instantSource;
+    private final OpWorkflowMetrics workflowMetrics;
+
+    /**
+     * Indicates if the QueryWorkflow should charge for handling queries.
+     */
+    private final boolean shouldCharge;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -122,11 +123,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @param feeManager the {@link FeeManager} to calculate the fees
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
+     * @param instantSource the {@link InstantSource} to get the current time
+     * @param workflowMetrics the {@link OpWorkflowMetrics} to update the metrics
+     * @param shouldCharge If the workflow should charge for handling queries.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryWorkflowImpl(
-            @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final Function<ResponseType, AutoCloseableWrapper<State>> stateAccessor,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,
@@ -137,7 +141,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final InstantSource instantSource,
+            @NonNull final OpWorkflowMetrics workflowMetrics,
+            final boolean shouldCharge) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
@@ -151,20 +158,24 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
+        this.instantSource = requireNonNull(instantSource);
+        this.workflowMetrics = requireNonNull(workflowMetrics);
+        this.shouldCharge = shouldCharge;
     }
 
     @Override
     public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
+        final long queryStart = System.nanoTime();
+
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
         // We use wall-clock time when calculating fees
-        final var consensusTime = Instant.now();
+        final var consensusTime = instantSource.instant();
 
         // 1. Parse and check header
         final Query query = parseQuery(requestBuffer);
         logger.debug("Received query: {}", query);
-
         final var function = functionOf(query);
 
         Response response;
@@ -192,8 +203,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 Transaction allegedPayment;
                 TransactionBody txBody;
                 AccountID payerID = null;
-                if (paymentRequired) {
-                    allegedPayment = queryHeader.paymentOrThrow();
+                if (shouldCharge && paymentRequired) {
+                    allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                     final var configuration = configProvider.getConfiguration();
 
                     // 3.i Ingest checks
@@ -259,7 +270,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 handler.validate(context);
 
                 // 5. Check query throttles
-                if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)) {
+                if (shouldCharge && synchronizedThrottleAccumulator.shouldThrottle(function, query, state, payerID)) {
+                    workflowMetrics.incrementThrottled(function);
                     throw new PreCheckException(BUSY);
                 }
 
@@ -275,15 +287,19 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     response = handler.findResponse(context, header);
                 }
             } catch (InsufficientBalanceException e) {
-                final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
-                response = handler.createEmptyResponse(header);
+                response = createErrorResponse(handler, responseType, e.responseCode(), e.getEstimatedFee());
             } catch (PreCheckException e) {
-                final var header = createResponseHeader(responseType, e.responseCode(), 0L);
-                response = handler.createEmptyResponse(header);
+                response = createErrorResponse(handler, responseType, e.responseCode(), 0L);
+            } catch (HandleException e) {
+                // Conceptually, this should never happen, because we should use PreCheckException only for queries
+                // But we catch it here to play it safe
+                response = createErrorResponse(handler, responseType, e.getStatus(), 0L);
+            } catch (Exception e) {
+                logger.error("Unexpected exception while handling a query", e);
+                response = createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
             }
         } else {
-            response = DEFAULT_UNSUPPORTED_RESPONSE;
-            logger.warn("Received a query for an unknown functionality");
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
         try {
@@ -293,6 +309,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             logger.warn("Unexpected IO exception while writing protobuf", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
+
+        workflowMetrics.updateDuration(function, (int) (System.nanoTime() - queryStart));
     }
 
     private Query parseQuery(Bytes requestBuffer) {
@@ -309,6 +327,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
+    }
+
+    private static Response createErrorResponse(
+            @NonNull final QueryHandler handler,
+            @NonNull final ResponseType responseType,
+            @NonNull final ResponseCodeEnum responseCode,
+            final long fee) {
+        final var header = createResponseHeader(responseType, responseCode, fee);
+        return handler.createEmptyResponse(header);
     }
 
     private static ResponseHeader createResponseHeader(

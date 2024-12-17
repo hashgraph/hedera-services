@@ -19,8 +19,8 @@ package com.swirlds.virtualmap.internal.hash;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
+import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -34,6 +34,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,19 +64,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     private static final Logger logger = LogManager.getLogger(VirtualHasher.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final VirtualMapConfig CONFIG = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
-
-    /**
-     * The number of threads to use when hashing. Can either be supplied by a system property, or
-     * will compute a default based on "percentHashThreads".
-     */
-    private static final int HASHING_THREAD_COUNT = CONFIG.getNumHashThreads();
-
-    /**
      * This thread-local gets a HashBuilder that can be used for hashing on a per-thread basis.
      */
     private static final ThreadLocal<HashBuilder> HASH_BUILDER_THREAD_LOCAL =
@@ -98,7 +86,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * field, but it doesn't work very well as platform configs aren't loaded at the time when
      * this class is initialized. It would result in a cryptography instance with default (and
      * possibly wrong) configs be used by the hasher. Instead, this field is initialized in
-     * the {@link #hash(LongFunction, Iterator, long, long)} method and used by all hashing
+     * the {@link #hash(LongFunction, Iterator, long, long, VirtualMapConfig)} method and used by all hashing
      * tasks.
      */
     private Cryptography cryptography;
@@ -110,7 +98,29 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      */
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
-    private static final ForkJoinPool HASHING_POOL = new ForkJoinPool(HASHING_THREAD_COUNT);
+    private static volatile ForkJoinPool hashingPool = null;
+
+    /**
+     * This method is invoked from a non-static method, passing the provided configuration.
+     * Consequently, the hashing pool will be initialized using the configuration provided
+     * with the first call of the hash method. Subsequent calls will reuse the same pool.
+     */
+    private static ForkJoinPool getHashingPool(final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
+
+        ForkJoinPool pool = hashingPool;
+        if (pool == null) {
+            synchronized (VirtualHasher.class) {
+                pool = hashingPool;
+                if (pool == null) {
+                    final int hashingThreadCount = virtualMapConfig.getNumHashThreads();
+                    pool = new ForkJoinPool(hashingThreadCount);
+                    hashingPool = pool;
+                }
+            }
+        }
+        return pool;
+    }
 
     /**
      * Indicate to the virtual hasher that it has been shut down. This method does not interrupt threads, but
@@ -136,14 +146,17 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * @param lastLeafPath
      * 		The lastLeafPath of the tree that is being hashed. If &lt; 1, then a null hash result is returned.
      * 		No leaf in {@code sortedDirtyLeaves} may have a path greater than {@code lastLeafPath}.
+     * @param virtualMapConfig platform configuration for VirtualMap
      * @return The hash of the root of the tree
      */
     public Hash hash(
             final LongFunction<Hash> hashReader,
             Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
-            final long lastLeafPath) {
-        return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null);
+            final long lastLeafPath,
+            final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
+        return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null, virtualMapConfig);
     }
 
     class HashHoldingTask extends AbstractTask {
@@ -274,21 +287,26 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
     }
 
+    /**
+     * If a dirty leaves stream is empty, returns {@code null}. If leaf path is empty, that
+     * is when {@code firstLeafPath} and/or {@code lastLeafPath} are zero or less, and
+     * dirty leaves stream is not empty, throws an {@link IllegalArgumentException}.
+     *
+     * @param hashReader A function to read hashes for clean paths
+     * @param sortedDirtyLeaves A stream of leaf records, sorted by path
+     * @param firstLeafPath First leaf path
+     * @param lastLeafPath Last leaf path
+     * @param listener Hash listener. May be null
+     * @param virtualMapConfig VirtualMap config
+     */
     public Hash hash(
             final LongFunction<Hash> hashReader,
             final Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
             final long lastLeafPath,
-            VirtualHashListener<K, V> listener) {
-
-        // If the first or last leaf path are invalid, then there is nothing to hash.
-        if (firstLeafPath < 1 || lastLeafPath < 1) {
-            return null;
-        }
-
-        if (!sortedDirtyLeaves.hasNext()) {
-            return null;
-        }
+            VirtualHashListener<K, V> listener,
+            final @NonNull VirtualMapConfig virtualMapConfig) {
+        requireNonNull(virtualMapConfig);
 
         // We don't want to include null checks everywhere, so let the listener be NoopListener if null
         if (listener == null) {
@@ -296,6 +314,19 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     new VirtualHashListener<>() {
                         /* noop */
                     };
+        }
+
+        // Let the listener know we have started hashing.
+        listener.onHashingStarted();
+
+        if (!sortedDirtyLeaves.hasNext()) {
+            // Nothing to hash.
+            listener.onHashingCompleted();
+            return null;
+        } else {
+            if ((firstLeafPath < 1) || (lastLeafPath < 1)) {
+                throw new IllegalArgumentException("Dirty leaves stream is not empty, but leaf path range is empty");
+            }
         }
 
         this.hashReader = hashReader;
@@ -319,33 +350,27 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // or a null value, which indicates that the input hash needs not to be recalculated,
         // but loaded from disk. A special case of a task is leaf tasks, they are all of
         // height 1, both input dependencies are null, but they are given a leaf instead. For
-        // these tasks, the hash is calculaded based on leaf content rather than based on input
+        // these tasks, the hash is calculated based on leaf content rather than based on input
         // hashes.
 
         // All tasks also have an output dependency, also a task. When a hash for the task's chunk
-        // is calculated, it is set as a input dependency of that task. Output dependency value
+        // is calculated, it is set as an input dependency of that task. Output dependency value
         // may not be null.
 
         // Default chunk height, from config
-        final int chunkHeight = CONFIG.virtualHasherChunkHeight();
+        final int chunkHeight = virtualMapConfig.virtualHasherChunkHeight();
         int firstLeafRank = Path.getRank(firstLeafPath);
         int lastLeafRank = Path.getRank(lastLeafPath);
 
-        // Let the listener know we have started hashing.
-        listener.onHashingStarted();
-
         // This map contains all tasks created, but not scheduled for execution yet
         final HashMap<Long, ChunkHashTask> map = new HashMap<>();
-        // The result task. It is never executed, but used as an output dependency for
+        // The result task is never executed but used as an output dependency for
         // the root task below. When the root task is done executing, that is it produced
         // a root hash, this hash is set as an input dependency for this result task, where
         // it's read and returned in the end of this method
-        /**
-         * A task holding the resulting hash. Used to synchronize all parallel computations.
-         */
-        final HashHoldingTask resultTask = new HashHoldingTask(HASHING_POOL, 1, 1);
+        final HashHoldingTask resultTask = new HashHoldingTask(getHashingPool(virtualMapConfig), 1, 1);
         final int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
-        final ChunkHashTask rootTask = new ChunkHashTask(HASHING_POOL, ROOT_PATH, rootTaskHeight);
+        final ChunkHashTask rootTask = new ChunkHashTask(getHashingPool(virtualMapConfig), ROOT_PATH, rootTaskHeight);
         rootTask.setOut(resultTask);
         map.put(ROOT_PATH, rootTask);
 
@@ -383,7 +408,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             long curPath = leaf.getPath();
             ChunkHashTask curTask = map.remove(curPath);
             if (curTask == null) {
-                curTask = new ChunkHashTask(HASHING_POOL, curPath, 0);
+                curTask = new ChunkHashTask(getHashingPool(virtualMapConfig), curPath, 0);
             }
             curTask.setLeaf(leaf);
 
@@ -402,28 +427,26 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 // clean. No dirty leaves in the remaining stream may affect these tasks
                 if (stack[curRank] != INVALID_PATH) {
                     long curStackPath = stack[curRank];
+                    stack[curRank] = INVALID_PATH;
                     final long firstPathInRank = Path.getPathForRankAndIndex(curRank, 0);
                     final long curStackChunkNoInRank = (curStackPath - firstPathInRank) / chunkWidth;
-                    final long lastPathInCurStackChunk = firstPathInRank + (curStackChunkNoInRank + 1) * chunkWidth - 1;
+                    final long firstPathInNextChunk = firstPathInRank + (curStackChunkNoInRank + 1) * chunkWidth;
                     // Process all tasks starting from "stack" path to the end of the chunk
-                    while (curStackPath < Math.min(curPath, lastPathInCurStackChunk)) {
+                    for (; curStackPath < firstPathInNextChunk; ++curStackPath) {
+                        // It may happen that curPath is actually in the same chunk as stack[curRank].
+                        // In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which
+                        // all existing tasks between curPath and the end of the chunk hang in the tasks map and
+                        // are processed only after the last leaf (in the loop to set null data for all tasks
+                        // remaining in the map), despite these tasks being known to be clear.
+                        if (curStackPath == curPath) {
+                            if (curPath + 1 < firstPathInNextChunk) {
+                                stack[curRank] = curPath + 1;
+                            }
+                            break;
+                        }
                         final ChunkHashTask t = map.remove(curStackPath);
                         assert t != null;
                         t.complete();
-                        curStackPath++;
-                    }
-
-                    //  It may happen that curPath is actually in the same chunk as stack[curRank].
-                    //  In this case, stack[curRank] should be set to curPath + 1 to prevent a situation in which all
-                    //  existing tasks between curPath and the end of the chunk will hang in the tasks map and will be
-                    //  processed only after the last leaf (in the loop to set null data for all tasks remaining in the
-                    // map),
-                    //   despite these tasks being known to be clear.
-
-                    if (curPath > curStackPath && curPath < lastPathInCurStackChunk) {
-                        stack[curRank] = curPath + 1;
-                    } else {
-                        stack[curRank] = INVALID_PATH;
                     }
                 }
 
@@ -436,7 +459,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 final long parentPath = Path.getGrandParentPath(curPath, parentRankHeights[curRank]);
                 ChunkHashTask parentTask = map.remove(parentPath);
                 if (parentTask == null) {
-                    parentTask = new ChunkHashTask(HASHING_POOL, parentPath, parentRankHeights[curRank]);
+                    parentTask =
+                            new ChunkHashTask(getHashingPool(virtualMapConfig), parentPath, parentRankHeights[curRank]);
                 }
                 curTask.setOut(parentTask);
 
@@ -457,6 +481,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                         continue;
                     }
                     if (siblingPath > lastLeafPath) {
+                        // Special case for a tree with one leaf at path 1
                         assert siblingPath == 2;
                         parentTask.setHash((int) (siblingPath - firstSiblingPath), NULL_HASH);
                     } else if ((siblingPath < curPath) && !firstLeaf) {
@@ -471,7 +496,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                             siblingHeight = curTask.height;
                         }
                         ChunkHashTask siblingTask = map.computeIfAbsent(
-                                siblingPath, path -> new ChunkHashTask(HASHING_POOL, path, siblingHeight));
+                                siblingPath,
+                                path -> new ChunkHashTask(getHashingPool(virtualMapConfig), path, siblingHeight));
                         // Set sibling task output to the same parent
                         siblingTask.setOut(parentTask);
                     }

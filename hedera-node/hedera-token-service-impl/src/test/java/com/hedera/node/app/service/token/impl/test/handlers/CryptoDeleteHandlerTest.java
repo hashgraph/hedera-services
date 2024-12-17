@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -32,11 +34,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -52,9 +56,14 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -62,9 +71,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableStates;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -76,6 +88,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
     private ExpiryValidator expiryValidator;
 
     @Mock
@@ -85,7 +100,13 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private WritableStates writableStates;
 
     @Mock
-    private CryptoDeleteRecordBuilder recordBuilder;
+    private CryptoDeleteStreamBuilder recordBuilder;
+
+    @Mock
+    private HandleContext.SavepointStack stack;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     private Configuration configuration;
 
@@ -101,7 +122,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 
         lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        lenient().when(handleContext.storeFactory()).thenReturn(storeFactory);
+        lenient().when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        lenient().when(handleContext.savepointStack()).thenReturn(stack);
     }
 
     @Test
@@ -278,7 +301,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
-        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(CryptoDeleteStreamBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
@@ -369,6 +392,19 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
+    @Test
+    @DisplayName("check that fees are 1 for delete account trx")
+    void testCalculateFeesReturnsCorrectFeeForDeleteAccount() {
+        final var feeCtx = mock(FeeContext.class);
+        final var feeCalcFact = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
+        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
+        given(feeCalc.legacyCalculate(any())).willReturn(new Fees(1, 0, 0));
+
+        Assertions.assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
+    }
+
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
         final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
@@ -399,14 +435,14 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
     private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        final var impl = new TokenServiceApiImpl(configuration, stakingValidator, writableStates, op -> false);
-        given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(impl);
+        final var impl = new TokenServiceApiImpl(configuration, storeMetricsService, writableStates, op -> false);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

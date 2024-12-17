@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +45,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     private String account;
     private String aliasKeySource = null;
     private boolean shouldPurge = false;
+    private boolean omitId = false;
     private Optional<String> transferAccount = Optional.empty();
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
@@ -77,6 +77,11 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
         return this;
     }
 
+    public HapiCryptoDelete sansTargetId() {
+        omitId = true;
+        return this;
+    }
+
     public HapiCryptoDelete purging() {
         shouldPurge = true;
         return this;
@@ -105,7 +110,9 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
                         CryptoDeleteTransactionBody.class, b -> {
                             transferAccount.ifPresent(
                                     a -> b.setTransferAccountID(spec.registry().getAccountID(a)));
-                            b.setDeleteAccountID(target);
+                            if (!omitId) {
+                                b.setDeleteAccountID(target);
+                            }
                         });
         return b -> b.setCryptoDelete(opBody);
     }
@@ -140,11 +147,6 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
         deleteSigners.add(spec ->
                 spec.registry().getKey(transferAccount.orElse(spec.setup().defaultTransferName())));
         return deleteSigners;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoDelete;
     }
 
     @Override

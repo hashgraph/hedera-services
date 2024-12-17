@@ -19,10 +19,11 @@ package com.swirlds.platform.gui.internal;
 import static com.swirlds.platform.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.address.Address;
 import javax.swing.JTextArea;
 
 /**
@@ -51,14 +52,16 @@ class WinTabAddresses extends PrePaintableJPanel {
         redoWindow = false;
         String s = "";
         synchronized (getPlatforms()) {
-            for (Platform p : getPlatforms()) {
-                final Address address = p.getSelfAddress();
-                s += "\n" + address.getNodeId().id() + "   " + address.getNickname()
-                        + "   " + address.getSelfName()
-                        + "   " + address.getHostnameInternal()
-                        + "   " + address.getPortInternal()
-                        + "   " + address.getHostnameExternal()
-                        + "   " + address.getPortExternal();
+            for (final Platform p : getPlatforms()) {
+                final RosterEntry entry =
+                        RosterUtils.getRosterEntry(p.getRoster(), p.getSelfId().id());
+                final String name = RosterUtils.formatNodeName(entry.nodeId());
+                s += "\n" + entry.nodeId() + "   " + name
+                        + "   " + name
+                        + "   " + RosterUtils.fetchHostname(entry, 1) // internal hostname
+                        + "   " + RosterUtils.fetchPort(entry, 1) // internal port
+                        + "   " + RosterUtils.fetchHostname(entry, 0) // external hostname
+                        + "   " + RosterUtils.fetchPort(entry, 0); // external port
             }
         }
         s += wrap(

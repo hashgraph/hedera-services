@@ -16,8 +16,9 @@
 
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -65,11 +66,17 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
             if (action.hasRecipientAccount()) {
                 assertValid(action.getRecipientAccount(), "action#recipientAccount", sidecar);
             } else if (action.hasRecipientContract()) {
-                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidId);
+                assertValid(action.getRecipientContract(), "action#recipientContract", sidecar, this::isValidRecipient);
             }
 
-            final var isMissingResult = !action.hasOutput() && !action.hasError() && !action.hasRevertReason();
-            assertFalse(isMissingResult, "action is missing result (output, error, or revertReason)");
+            if (action.getCallType() != ContractActionType.CREATE || action.hasOutput()) {
+                final var recipientIsSet =
+                        (action.hasRecipientAccount() || action.hasRecipientContract() || action.hasTargetedAddress());
+                assertTrue(recipientIsSet, "action is missing recipient (account, contract, or targetedAddress)");
+            }
+
+            final var resultIsSet = (action.hasOutput() || action.hasError() || action.hasRevertReason());
+            assertTrue(resultIsSet, "action is missing result (output, error, or revertReason) - " + action);
         }
     }
 
@@ -117,10 +124,14 @@ public class ValidContractIdsAssertion implements RecordStreamAssertion {
     }
 
     private boolean isValidId(long shard, long realm, long num) {
-        return shard == 0L && realm == 0L && num >= 1;
+        return shard == 0L && realm == 0L && num >= 1 && num < Integer.MAX_VALUE;
+    }
+
+    private boolean isValidRecipient(long shard, long realm, long num) {
+        return shard == 0L && realm == 0L && num >= 0 && num < Integer.MAX_VALUE;
     }
 
     private boolean isValidOrFailedBytecodeCreationId(long shard, long realm, long num) {
-        return shard == 0L && realm == 0L && num >= 0;
+        return shard == 0L && realm == 0L && num >= 0 && num < Integer.MAX_VALUE;
     }
 }

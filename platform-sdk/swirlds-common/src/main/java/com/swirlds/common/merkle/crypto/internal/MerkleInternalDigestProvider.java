@@ -65,7 +65,7 @@ public class MerkleInternalDigestProvider
         for (int index = 0; index < childHashes.size(); index++) {
             final Hash childHash = childHashes.get(index);
 
-            if (childHash == null) {
+            if (childHash == null || childHash.getBytes() == null) {
                 final MerkleNode childNode = node.getChild(index);
                 final String msg = String.format(
                         "Child has an unexpected null hash "

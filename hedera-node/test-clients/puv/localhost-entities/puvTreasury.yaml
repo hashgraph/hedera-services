@@ -1,4 +1,0 @@
-account:
-  key: {generateIfMissing: true, passphrase: swirlds, pemLoc: puvTreasury.pem}
-id: {num: 1017, realm: 0, shard: 0}
-name: puvTreasury

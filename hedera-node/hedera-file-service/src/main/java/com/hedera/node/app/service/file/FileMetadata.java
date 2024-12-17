@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * File metadata
+ * File metadata.
  *
  * @param fileId                   file's ID
  * @param expirationTimestamp      file's expiration time

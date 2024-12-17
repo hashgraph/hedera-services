@@ -17,6 +17,8 @@
 package com.swirlds.platform.system;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +52,21 @@ class BasicSoftwareVersionTest {
                 comparedToSelf, VERSION_TWO.compareTo(VERSION_TWO), "Should always get back 0 when comparing to self.");
         assertTrue(VERSION_ONE.compareTo(VERSION_TWO) < 0, "VERSION_ONE should be older than VERSION_TWO.");
         assertTrue(VERSION_TWO.compareTo(VERSION_ONE) > 0, "VERSION_TWO should be newer than VERSION_ONE.");
+    }
+
+    @Test
+    @DisplayName("Verify the functionality of the PBJ record returned")
+    void testPbjVersion() {
+        assertNotNull(VERSION_ONE.getPbjSemanticVersion(), "PBJ record should not be null.");
+        assertNotNull(VERSION_TWO.getPbjSemanticVersion(), "PBJ record should not be null.");
+        assertEquals(
+                VERSION_ONE.getPbjSemanticVersion(),
+                VERSION_ONE.getPbjSemanticVersion(),
+                "PBJ record should be the same.");
+        assertNotEquals(
+                VERSION_ONE.getPbjSemanticVersion(),
+                VERSION_TWO.getPbjSemanticVersion(),
+                "PBJ record should not be the same.");
     }
 
     @Test

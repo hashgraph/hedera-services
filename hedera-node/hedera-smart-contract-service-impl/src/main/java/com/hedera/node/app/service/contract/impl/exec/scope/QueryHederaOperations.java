@@ -17,22 +17,22 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -43,11 +43,16 @@ import org.hyperledger.besu.datatypes.Address;
 public class QueryHederaOperations implements HederaOperations {
     private final QueryContext context;
     private final HederaConfig hederaConfig;
+    private final TinybarValues tinybarValues;
 
     @Inject
-    public QueryHederaOperations(@NonNull final QueryContext context, @NonNull final HederaConfig hederaConfig) {
-        this.context = Objects.requireNonNull(context);
-        this.hederaConfig = Objects.requireNonNull(hederaConfig);
+    public QueryHederaOperations(
+            @NonNull final QueryContext context,
+            @NonNull final HederaConfig hederaConfig,
+            @NonNull final TinybarValues tinybarValues) {
+        this.context = requireNonNull(context);
+        this.hederaConfig = requireNonNull(hederaConfig);
+        this.tinybarValues = requireNonNull(tinybarValues);
     }
 
     /**
@@ -73,11 +78,6 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public void revert() {
-        // No-op
-    }
-
-    @Override
-    public void revertRecordsFrom(RecordListCheckPoint checkpoint) {
         // No-op
     }
 
@@ -114,12 +114,17 @@ public class QueryHederaOperations implements HederaOperations {
         throw new UnsupportedOperationException("Queries should not be considering creations");
     }
 
+    @Override
+    public long accountCreationLimit() {
+        throw new UnsupportedOperationException("Queries should not be considering creations");
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public @NonNull Bytes entropy() {
-        final var entropy = context.blockRecordInfo().getNMinus3RunningHash();
+        final var entropy = context.blockRecordInfo().prngSeed();
         return (entropy == null || entropy.equals(Bytes.EMPTY)) ? ZERO_ENTROPY : entropy;
     }
 
@@ -147,8 +152,7 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        // TODO - implement correctly
-        return 1L;
+        return tinybarValues.asTinybars(tinycents);
     }
 
     /**
@@ -262,14 +266,7 @@ public class QueryHederaOperations implements HederaOperations {
         return configValidated(contractId, hederaConfig);
     }
 
-    @Override
-    public RecordListCheckPoint createRecordListCheckPoint() {
-        // no op
-        return null;
-    }
-
-    public void externalizeHollowAccountMerge(
-            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create accounts");
     }
 }

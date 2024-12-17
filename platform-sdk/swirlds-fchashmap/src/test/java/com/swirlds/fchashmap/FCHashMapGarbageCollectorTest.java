@@ -17,7 +17,6 @@
 package com.swirlds.fchashmap;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("FCHashMap Garbage Collector Test")
@@ -79,7 +77,6 @@ class FCHashMapGarbageCollectorTest {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
     @DisplayName("Leak Detection Test")
     void leakDetectionTest() {
 

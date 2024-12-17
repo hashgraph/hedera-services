@@ -16,14 +16,19 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
@@ -44,17 +49,15 @@ public interface SwirldState extends MerkleNode {
      * </p>
      *
      * @param platform                the Platform that instantiated this state
-     * @param platformState           the platform state
      * @param trigger                 describes the reason why the state was created/recreated
      * @param previousSoftwareVersion the previous version of the software, {@link SoftwareVersion#NO_VERSION} if this
      *                                is genesis or if migrating from code from before the concept of an application
      *                                software version
      */
     default void init(
-            final Platform platform,
-            final PlatformState platformState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final InitTrigger trigger,
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         // Override if needed
     }
 
@@ -69,16 +72,33 @@ public interface SwirldState extends MerkleNode {
      * <strong>This method is always invoked on an immutable state.</strong>
      *
      * @param event the event to perform pre-handling on
+     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     *                                   will be used for callbacks
      */
-    default void preHandle(final Event event) {}
+    default void preHandle(
+            final Event event,
+            final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {}
 
     /**
      * This method should apply the transactions in the provided round to the state. Only called on mutable states.
      *
      * @param round         the round to apply
      * @param platformState the platform state
+     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     *                                   will be used for callbacks
      */
-    void handleConsensusRound(final Round round, final PlatformState platformState);
+    void handleConsensusRound(
+            final Round round,
+            final PlatformStateModifier platformState,
+            final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions);
+
+    /**
+     * Called by the platform after it has made all its changes to this state for the given round.
+     * @param round the round whose platform state changes are completed
+     */
+    default void sealConsensusRound(@NonNull final Round round) {
+        // No-op, only implemented by applications that externalize state changes
+    }
 
     /**
      * Implementations of the SwirldState should always override this method in production.  The AddressBook returned

@@ -19,9 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure;
 import java.util.Optional;
 import java.util.Set;
 
-public interface EntityNameProvider<T> {
-    Class<T> forType();
-
+public interface EntityNameProvider {
     Optional<String> getQualifying();
 
     Optional<String> getQualifyingExcept(Set<String> ineligible);

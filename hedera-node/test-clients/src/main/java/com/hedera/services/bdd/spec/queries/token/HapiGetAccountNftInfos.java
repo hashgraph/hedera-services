@@ -25,10 +25,11 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -92,9 +93,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getAccountNftInfosQuery(spec, payment, false);
-        response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getAccountNftInfos(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             StringBuilder information = new StringBuilder("Nft information for '" + account + "': \n");
             List<TokenNftInfo> nfts = response.getTokenGetAccountNftInfos().getNftsList();
@@ -103,12 +102,15 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountNftInfosQuery(spec, payment, true);
-        Response response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getAccountNftInfos(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getAccountNftInfosQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getAccountNftInfosQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

@@ -27,33 +27,29 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class FileDeleteSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(FileDeleteSuite.class);
-
-    public static void main(String... args) {
-        new FileDeleteSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(getDeletedFileInfo(), canDeleteWithAnyOneOfTopLevelKeyList());
+public class FileDeleteSuite {
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(fileCreate("file").contents("ABC"))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> fileDelete("file")));
     }
 
     @HapiTest
-    final HapiSpec canDeleteWithAnyOneOfTopLevelKeyList() {
+    final Stream<DynamicTest> canDeleteWithAnyOneOfTopLevelKeyList() {
         KeyShape shape = listOf(SIMPLE, threshOf(1, 2), listOf(2));
         SigControl deleteSigs = shape.signedWith(sigs(ON, sigs(OFF, OFF), sigs(ON, OFF)));
 
@@ -64,15 +60,26 @@ public class FileDeleteSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getDeletedFileInfo() {
+    final Stream<DynamicTest> getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
                 .given(fileCreate("deletedFile").logged())
                 .when(fileDelete("deletedFile").logged())
                 .then(getFileInfo("deletedFile").hasAnswerOnlyPrecheck(OK).hasDeleted(true));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> handleRejectsMissingFile() {
+        return defaultHapiSpec("handleRejectsMissingFile")
+                .given()
+                .when()
+                .then(fileDelete("1.2.3").signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> handleRejectsDeletedFile() {
+        return defaultHapiSpec("handleRejectsDeletedFile")
+                .given(fileCreate("tbd"))
+                .when(fileDelete("tbd"))
+                .then(fileDelete("tbd").hasKnownStatus(ResponseCodeEnum.FILE_DELETED));
     }
 }

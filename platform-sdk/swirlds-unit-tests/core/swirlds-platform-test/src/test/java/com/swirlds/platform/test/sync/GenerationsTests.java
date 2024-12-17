@@ -21,16 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
-import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 class GenerationsTests {
 
@@ -67,6 +68,8 @@ class GenerationsTests {
 
     @Test
     void testDefaultMethods() {
+        final Randotron randotron = Randotron.create();
+
         final long generationDiff = 100;
         final GraphGenerations genesisGenerations = new Generations(
                 GraphGenerations.FIRST_GENERATION,
@@ -74,28 +77,44 @@ class GenerationsTests {
                 GraphGenerations.FIRST_GENERATION);
         assertFalse(genesisGenerations.areAnyEventsAncient(), "at genesis, no events should be ancient");
 
-        final long randomGeneration = Math.abs(new Random().nextLong());
-        final PlatformEvent e = Mockito.mock(PlatformEvent.class);
-        Mockito.when(e.getGeneration()).thenReturn(randomGeneration);
+        final long randomParentGeneration = Math.abs(new Random().nextLong());
 
-        assertFalse(genesisGenerations.isAncient(e), "at genesis, no events should be ancient");
+        final PlatformEvent event = new TestingEventBuilder(randotron)
+                .setSelfParent(new TestingEventBuilder(randotron).build())
+                .setOtherParent(new TestingEventBuilder(randotron).build())
+                .overrideSelfParentGeneration(randomParentGeneration)
+                .build();
 
-        final GraphGenerations randomNonAncient =
-                new Generations(randomGeneration - generationDiff, randomGeneration, randomGeneration + generationDiff);
+        assertFalse(genesisGenerations.isAncient(event), "at genesis, no events should be ancient");
 
-        final PlatformEvent newer = Mockito.mock(PlatformEvent.class);
-        Mockito.when(newer.getGeneration()).thenReturn(randomGeneration + 1);
-        final PlatformEvent older = Mockito.mock(PlatformEvent.class);
-        Mockito.when(older.getGeneration()).thenReturn(randomGeneration - 1);
+        final GraphGenerations randomNonAncient = new Generations(
+                randomParentGeneration - generationDiff,
+                // setting minGenNonAncient to randomParentGeneration + 1 means that the event will be barely
+                // non-ancient
+                randomParentGeneration + 1,
+                randomParentGeneration + generationDiff);
+
+        // non ancient
+        final PlatformEvent newer = new TestingEventBuilder(randotron)
+                .setSelfParent(new TestingEventBuilder(randotron).build())
+                .setOtherParent(new TestingEventBuilder(randotron).build())
+                .overrideSelfParentGeneration(randomParentGeneration + 1)
+                .build();
+        // barely ancient
+        final PlatformEvent older = new TestingEventBuilder(randotron)
+                .setSelfParent(new TestingEventBuilder(randotron).build())
+                .setOtherParent(new TestingEventBuilder(randotron).build())
+                .overrideSelfParentGeneration(randomParentGeneration - 1)
+                .build();
 
         assertFalse(
-                randomNonAncient.isAncient(e),
-                "if an events generation is equal to minNonAncientGen, it should be non-ancient");
+                randomNonAncient.isAncient(event),
+                "if an event's generation is equal to minNonAncientGen, it should be non-ancient");
         assertFalse(
                 randomNonAncient.isAncient(newer),
-                "if an events generation is higher to minNonAncientGen, it should be non-ancient");
+                "if an event's generation is higher to minNonAncientGen, it should be non-ancient");
         assertTrue(
                 randomNonAncient.isAncient(older),
-                "if an events generation is lower to minNonAncientGen, it should be ancient");
+                "if an event's generation is lower to minNonAncientGen, it should be ancient");
     }
 }

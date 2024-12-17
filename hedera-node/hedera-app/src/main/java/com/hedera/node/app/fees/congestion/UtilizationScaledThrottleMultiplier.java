@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.fees.congestion;
 
-import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.NFT;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.TOKEN;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.TOKEN_ASSOCIATION;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.TOPIC;
+import static com.hedera.node.config.types.EntityType.ACCOUNT;
+import static com.hedera.node.config.types.EntityType.AIRDROP;
+import static com.hedera.node.config.types.EntityType.CONTRACT;
+import static com.hedera.node.config.types.EntityType.FILE;
+import static com.hedera.node.config.types.EntityType.NFT;
+import static com.hedera.node.config.types.EntityType.TOKEN;
+import static com.hedera.node.config.types.EntityType.TOKEN_ASSOCIATION;
+import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -31,9 +32,9 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.*;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
@@ -114,6 +115,9 @@ public class UtilizationScaledThrottleMultiplier {
                     .scaling((int) throttleMultiplier);
             case CONSENSUS_CREATE_TOPIC -> entityScaleFactors
                     .scaleForNew(TOPIC, roundedTopicPercentUtil(storeFactory))
+                    .scaling((int) throttleMultiplier);
+            case TOKEN_AIRDROP -> entityScaleFactors
+                    .scaleForNew(AIRDROP, roundedAirdropPercentUtil(storeFactory))
                     .scaling((int) throttleMultiplier);
             default -> throttleMultiplier;
         };
@@ -196,6 +200,17 @@ public class UtilizationScaledThrottleMultiplier {
         final var numOfTopics = topicStore.sizeOfState();
 
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);
+    }
+
+    private int roundedAirdropPercentUtil(@NonNull final ReadableStoreFactory storeFactory) {
+        final var configuration = configProvider.getConfiguration();
+        final var maxNumAirdrops =
+                configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
+
+        final var airdropStore = storeFactory.getStore(ReadableAirdropStore.class);
+        final var numPendingAirdrops = airdropStore.sizeOfState();
+
+        return maxNumAirdrops == 0 ? 100 : (int) ((100 * numPendingAirdrops) / maxNumAirdrops);
     }
 
     /**

@@ -24,6 +24,11 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
@@ -40,8 +45,11 @@ import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +66,9 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,6 +97,8 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * A collection of various static crypto methods
  */
 public final class CryptoStatic {
+    public static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     private static final Logger logger = LogManager.getLogger(CryptoStatic.class);
     private static final int SERIAL_NUMBER_BITS = 64;
     private static final int MASTER_KEY_MULTIPLIER = 157;
@@ -103,10 +115,10 @@ public final class CryptoStatic {
     private CryptoStatic() {}
 
     /**
-     * return a key-value pair as is found in a distinguished name in a n x509 certificate. For example
-     * "CN=Alice" or ",CN=Alice" (if it isn't the first). This returned value (without the comma) is called
-     * a "relative distinguished name" in RFC4514. If the value is null or "", then it returns "".
-     * Otherwise, it sets separator[0] to "," and returns the RDN.
+     * return a key-value pair as is found in a distinguished name in a n x509 certificate. For example "CN=Alice" or
+     * ",CN=Alice" (if it isn't the first). This returned value (without the comma) is called a "relative distinguished
+     * name" in RFC4514. If the value is null or "", then it returns "". Otherwise, it sets separator[0] to "," and
+     * returns the RDN.
      *
      * @param commaSeparator should initially be "" then "," for all calls thereafter
      * @param attributeType  the code, such as CN or STREET
@@ -137,21 +149,19 @@ public final class CryptoStatic {
     }
 
     /**
-     * Return the distinguished name for an entity for use in an x509 certificate, such as "CN=Alice+Bob,
-     * L=Los Angeles, ST=CA, C=US". Any component that is either null or the empty string will be left out.
-     * If there are multiple answers for a field, separate them with plus signs, such as "Alice+Bob" for
-     * both Alice and Bob. For the organization, the list of names should go from the top level to the
-     * bottom (most general to least). For the domain, it should go from general to specific, such as
-     * {"com", "acme","www"}.
+     * Return the distinguished name for an entity for use in an x509 certificate, such as "CN=Alice+Bob, L=Los Angeles,
+     * ST=CA, C=US". Any component that is either null or the empty string will be left out. If there are multiple
+     * answers for a field, separate them with plus signs, such as "Alice+Bob" for both Alice and Bob. For the
+     * organization, the list of names should go from the top level to the bottom (most general to least). For the
+     * domain, it should go from general to specific, such as {"com", "acme","www"}.
      * <p>
-     * This method will take care of escaping values, so it is ok to pass in a common name such as "#John
-     * Smith, Jr. ", which is automatically converted to "\#John Smith\, Jr\.\ ", which follows the rules in
-     * the RFC, such as escaping the space at the end but not the one in the middle.
+     * This method will take care of escaping values, so it is ok to pass in a common name such as "#John Smith, Jr. ",
+     * which is automatically converted to "\#John Smith\, Jr\.\ ", which follows the rules in the RFC, such as escaping
+     * the space at the end but not the one in the middle.
      * <p>
-     * The only exception is the plus sign. If the string "Alice+Bob" is passed in for the common name, that
-     * is interpreted as two names, "Alice" and "Bob". If there is a single person named "Alice+Bob", then
-     * it must be escaped by passing in the string "Alice\+Bob", which would be typed as a Java literal as
-     * "Alice\\+Bob".
+     * The only exception is the plus sign. If the string "Alice+Bob" is passed in for the common name, that is
+     * interpreted as two names, "Alice" and "Bob". If there is a single person named "Alice+Bob", then it must be
+     * escaped by passing in the string "Alice\+Bob", which would be typed as a Java literal as "Alice\\+Bob".
      * <p>
      * This follows RFC 4514, which gives these distinguished name string representations:
      *
@@ -185,21 +195,20 @@ public final class CryptoStatic {
 
     /**
      * Create a signed X.509 Certificate. The distinguishedName parameter can be generated by calling
-     * distinguishedName(). In the distinguished name, the UID should be the memberId used in the
-     * AddressBook here. The certificate only contains the public key from the given key pair, though it
-     * uses the private key during the self signature.
+     * distinguishedName(). In the distinguished name, the UID should be the memberId used in the AddressBook here. The
+     * certificate only contains the public key from the given key pair, though it uses the private key during the self
+     * signature.
      * <p>
-     * The certificate records that pair.publicKey is owned by distinguishedName. This certificate is signed
-     * by a Certificate Authority (CA), whose name is CaDistinguishedName and whose key pair is CaPair.
+     * The certificate records that pair.publicKey is owned by distinguishedName. This certificate is signed by a
+     * Certificate Authority (CA), whose name is CaDistinguishedName and whose key pair is CaPair.
      * <p>
-     * In Swirlds, each member creates a separate certificate for each of their 3 key pairs (signing,
-     * agreement). The signing certificate is self-signed, and is treated as if it were a CA.
-     * The other two certificates are each signed by the signing key pair. So for either of them, the
-     * complete certificate chain consists of two certificates.
+     * In Swirlds, each member creates a separate certificate for each of their 3 key pairs (signing, agreement). The
+     * signing certificate is self-signed, and is treated as if it were a CA. The other two certificates are each signed
+     * by the signing key pair. So for either of them, the complete certificate chain consists of two certificates.
      * <p>
-     * For the validity dates, if null is passed in, then it starts in 2000 and goes to 2100. Another
-     * alternative is to pass in (new Date()) for the start, and new Date(from.getTime() + 365 * 86400000l)
-     * for the end to make it valid from now for the next 365 days.
+     * For the validity dates, if null is passed in, then it starts in 2000 and goes to 2100. Another alternative is to
+     * pass in (new Date()) for the start, and new Date(from.getTime() + 365 * 86400000l) for the end to make it valid
+     * from now for the next 365 days.
      *
      * @param distinguishedName   the X.509 Distinguished Name, such as is returned by distName()
      * @param pair                the KeyPair whose public key is to be listed as belonging to distinguishedName
@@ -236,8 +245,24 @@ public final class CryptoStatic {
     }
 
     /**
-     * Create a new trust store that is initially empty, but will later have all the members' key agreement
-     * public key certificates added to it.
+     * Decode a X509Certificate from a byte array that was previously obtained via X509Certificate.getEncoded().
+     *
+     * @param encoded a byte array with an encoded representation of a certificate
+     * @return the certificate reconstructed from its encoded form
+     */
+    @NonNull
+    public static X509Certificate decodeCertificate(@NonNull final byte[] encoded) {
+        try (final InputStream in = new ByteArrayInputStream(encoded)) {
+            final CertificateFactory factory = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) factory.generateCertificate(in);
+        } catch (CertificateException | IOException e) {
+            throw new CryptographyException(e);
+        }
+    }
+
+    /**
+     * Create a new trust store that is initially empty, but will later have all the members' key agreement public key
+     * certificates added to it.
      *
      * @return the empty KeyStore to be used as a trust store for TLS for syncs.
      * @throws KeyStoreException if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
@@ -255,23 +280,23 @@ public final class CryptoStatic {
     }
 
     /**
-     * See {@link SignatureVerifier#verifySignature(byte[], byte[], PublicKey)}
+     * See {@link SignatureVerifier#verifySignature(Bytes, Bytes, PublicKey)}
      */
     public static boolean verifySignature(
-            @NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
+            @NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey) {
         Objects.requireNonNull(data);
         Objects.requireNonNull(signature);
         Objects.requireNonNull(publicKey);
         try {
             final Signature sig = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
             sig.initVerify(publicKey);
-            sig.update(data);
-            return sig.verify(signature);
-        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            data.updateSignature(sig);
+            return signature.verifySignature(sig);
+        } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             // should never happen
-            throw new CryptographyException(e);
-        } catch (InvalidKeyException | SignatureException e) {
-            logger.error(LogMarker.EXCEPTION.getMarker(), "", e);
+            throw new CryptographyException("Exception occurred while validating a signature:", e, LogMarker.EXCEPTION);
+        } catch (final InvalidKeyException | SignatureException e) {
+            logger.error(LogMarker.EXCEPTION.getMarker(), "Exception occurred while validating a signature:", e);
             return false;
         }
     }
@@ -285,14 +310,16 @@ public final class CryptoStatic {
      * @throws KeyStoreException   if {@link #createEmptyTrustStore()} throws
      * @throws KeyLoadingException if the file is empty or another issue occurs while reading it
      */
-    static KeyStore loadKeys(final Path file, final char[] password) throws KeyStoreException, KeyLoadingException {
+    @NonNull
+    public static KeyStore loadKeys(@NonNull final Path file, @NonNull final char[] password)
+            throws KeyStoreException, KeyLoadingException {
         final KeyStore store = createEmptyTrustStore();
         try (final FileInputStream fis = new FileInputStream(file.toFile())) {
             store.load(fis, password);
             if (store.size() == 0) {
                 throw new KeyLoadingException("there are no valid keys or certificates in " + file);
             }
-        } catch (IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException e) {
+        } catch (final IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException e) {
             throw new KeyLoadingException("there was a problem reading: " + file, e);
         }
 
@@ -308,15 +335,15 @@ public final class CryptoStatic {
     }
 
     /**
-     * Try to load the public.pfx and private-*.pfx key stores from disk. If successful, it will return an
-     * array containing the public.pfx followed by each private-*.pfx in the order that the names are given
-     * in the input. If public.pfx is missing, or even one of the private-*.pfx files is missing, or one of
-     * those files fails to load properly, then it returns null. It does NOT return a partial list with the
-     * ones that worked.
+     * Try to load the public.pfx and private-*.pfx key stores from disk. If successful, it will return an array
+     * containing the public.pfx followed by each private-*.pfx in the order that the names are given in the input. If
+     * public.pfx is missing, or even one of the private-*.pfx files is missing, or one of those files fails to load
+     * properly, then it returns null. It does NOT return a partial list with the ones that worked.
      *
      * @param addressBook the address book of the network
      * @param keysDirPath the key directory, such as /user/test/sdk/data/key/
-     * @param password    the password used to protect the PKCS12 key stores containing the node RSA public/private key pairs
+     * @param password    the password used to protect the PKCS12 key stores containing the node RSA public/private key
+     *                    pairs
      * @param nodesToStart the nodes that are going to be started
      * @return map of key stores
      * @throws KeyStoreException   if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
@@ -326,11 +353,10 @@ public final class CryptoStatic {
     @NonNull
     @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
-            @NonNull final AddressBook addressBook,
-            @NonNull final Path keysDirPath,
-            @NonNull final char[] password,
+            @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password,
             @NonNull Set<NodeId> nodesToStart)
-            throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
+            throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException,
+                    KeyGeneratingException, NoSuchProviderException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
         Objects.requireNonNull(keysDirPath, "keysDirPath must not be null");
         Objects.requireNonNull(password, "password must not be null");
@@ -362,7 +388,8 @@ public final class CryptoStatic {
             final String name = nameToAlias(addressBook.getAddress(nodeId).getSelfName());
             final KeyStore privateKS = loadKeys(keysDirPath.resolve(getPrivateKeysFileName(name)), password);
 
-            keysAndCerts.put(nodeId, KeysAndCerts.loadExisting(name, password, privateKS, publicStores));
+            keysAndCerts.put(
+                    nodeId, KeysAndCerts.loadExistingAndCreateAgrKeyIfMissing(name, password, privateKS, publicStores));
         }
         copyPublicKeys(publicStores, addressBook);
 
@@ -370,18 +397,19 @@ public final class CryptoStatic {
     }
 
     /**
-     * This method is designed to generate all a user's keys from their master key, to help with
-     * key recovery if their computer is erased.
+     * This method is designed to generate all a user's keys from their master key, to help with key recovery if their
+     * computer is erased.
      * <p>
-     * We follow the "CNSA Suite" (Commercial National Security Algorithm), which is the current US
-     * government standard for protecting information up to and including Top Secret:
+     * We follow the "CNSA Suite" (Commercial National Security Algorithm), which is the current US government standard
+     * for protecting information up to and including Top Secret:
      * <p>
-     * <a href="https://www.iad.gov/iad/library/ia-guidance/ia-solutions-for-classified/algorithm-guidance/commercial-national-security-algorithm-suite-factsheet.cfm">...</a>
+     * <a
+     * href="https://www.iad.gov/iad/library/ia-guidance/ia-solutions-for-classified/algorithm-guidance/commercial-national-security-algorithm-suite-factsheet.cfm">...</a>
      * <p>
-     * The CNSA standard specifies AES-256, SHA-384, RSA, ECDH and ECDSA. So that is what is used here.
-     * Their intent appears to be that AES and SHA will each have 128 bits of post-quantum security, against
-     * Grover's and the BHT algorithm, respectively. Of course, ECDH and ECDSA aren't post-quantum, but
-     * AES-256 and SHA-384 are (as far as we know).
+     * The CNSA standard specifies AES-256, SHA-384, RSA, ECDH and ECDSA. So that is what is used here. Their intent
+     * appears to be that AES and SHA will each have 128 bits of post-quantum security, against Grover's and the BHT
+     * algorithm, respectively. Of course, ECDH and ECDSA aren't post-quantum, but AES-256 and SHA-384 are (as far as we
+     * know).
      *
      * @param addressBook the address book of the network
      * @throws ExecutionException   if {@link KeysAndCerts#generate(String, byte[], byte[], byte[], PublicStores)}
@@ -458,9 +486,8 @@ public final class CryptoStatic {
             final Address add = addressBook.getAddress(nodeId);
             final String name = nameToAlias(add.getSelfName());
             final X509Certificate sigCert = publicStores.getCertificate(SIGNING, name);
-            final X509Certificate agrCert = publicStores.getCertificate(KeyCertPurpose.AGREEMENT, name);
-            addressBook.add(
-                    addressBook.getAddress(nodeId).copySetSigCert(sigCert).copySetAgreeCert(agrCert));
+            // the agreement key is never used from the address book anymore and is left null.
+            addressBook.add(addressBook.getAddress(nodeId).copySetSigCert(sigCert));
         }
     }
 
@@ -484,8 +511,8 @@ public final class CryptoStatic {
     }
 
     /**
-     * Return the nondeterministic secure random number generator stored in this Crypto instance. If it
-     * doesn't already exist, create it.
+     * Return the nondeterministic secure random number generator stored in this Crypto instance. If it doesn't already
+     * exist, create it.
      *
      * @return the stored SecureRandom object
      */
@@ -538,7 +565,9 @@ public final class CryptoStatic {
                 if (cryptoConfig.enableNewKeyStoreModel()) {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
                     keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration, nodesToStart)
+                            .migrate()
                             .scan()
+                            .generate()
                             .verify()
                             .injectInAddressBook()
                             .keysAndCerts();
@@ -565,7 +594,9 @@ public final class CryptoStatic {
                 | KeyLoadingException
                 | UnrecoverableKeyException
                 | NoSuchAlgorithmException
-                | IOException e) {
+                | IOException
+                | KeyGeneratingException
+                | NoSuchProviderException e) {
             logger.error(EXCEPTION.getMarker(), "Exception while loading/generating keys", e);
             if (Utilities.isRootCauseSuppliedType(e, NoSuchAlgorithmException.class)
                     || Utilities.isRootCauseSuppliedType(e, NoSuchProviderException.class)) {
@@ -608,5 +639,44 @@ public final class CryptoStatic {
             store.setCertificateEntry(SIGNING.storeName(name), sigCert);
         }
         return store;
+    }
+
+    /**
+     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
+     * @param secureRandom the secure random number generator to use
+     * @return a new {@link BlsKeyPair}
+     * @throws NoSuchAlgorithmException the algorithm is not supported
+     */
+    public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
+            throws NoSuchAlgorithmException {
+        if (secureRandom == null) {
+            logger.debug("Generating a new BLS key pair using a default secure random number generator");
+            return BlsKeyPair.generate(SIGNATURE_SCHEMA);
+        }
+        logger.debug("Generating a new BLS key pair using a custom secure random number generator");
+        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
+    }
+
+    /**
+     * Check if a certificate is valid.  A certificate is valid if it is not null, has a public key, and can be encoded.
+     *
+     * @param certificate the certificate to check
+     * @return true if the certificate is valid, false otherwise
+     */
+    public static boolean checkCertificate(@Nullable final Certificate certificate) {
+        if (certificate == null) {
+            return false;
+        }
+        if (certificate.getPublicKey() == null) {
+            return false;
+        }
+        try {
+            if (certificate.getEncoded().length == 0) {
+                return false;
+            }
+        } catch (final CertificateEncodingException e) {
+            return false;
+        }
+        return true;
     }
 }

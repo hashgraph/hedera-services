@@ -16,6 +16,8 @@
 
 package com.swirlds.logging.api.internal;
 
+import com.swirlds.base.internal.BaseExecutorFactory;
+import com.swirlds.base.utility.FileSystemUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -26,12 +28,16 @@ import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
+import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
 import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,7 +57,7 @@ public class DefaultLoggingSystem {
     /**
      * The singleton instance holder for a more flexible singelton instantiation.
      */
-    private static class InstanceHolder {
+    private static final class InstanceHolder {
 
         /**
          * The real singleton instance.
@@ -62,7 +68,7 @@ public class DefaultLoggingSystem {
     /**
      * Flag that defines if the logging system has been initialized.
      */
-    private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
      * The logging system that is internally used.
@@ -92,11 +98,23 @@ public class DefaultLoggingSystem {
                                     event.marker(),
                                     event.context()))
                     .forEach(internalLoggingSystem::accept);
-            INITIALIZED.set(true);
+            initialized.set(true);
+
+            final InternalLoggingConfig loggingConfig = configuration.getConfigData(InternalLoggingConfig.class);
+            final long millis = Optional.ofNullable(loggingConfig.reloadConfigPeriod())
+                    .orElse(Duration.ofSeconds(10))
+                    .toMillis();
+            BaseExecutorFactory.getInstance()
+                    .scheduleAtFixedRate(this::updateConfiguration, 0, millis, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Unable to initialize logging system", e);
             throw e;
         }
+    }
+
+    private void updateConfiguration() {
+        final Configuration configuration = createConfiguration();
+        this.internalLoggingSystem.update(configuration);
     }
 
     @NonNull
@@ -105,9 +123,14 @@ public class DefaultLoggingSystem {
         final Path configFilePath =
                 Optional.ofNullable(logConfigPath).map(Path::of).orElseGet(() -> Path.of("log.properties"));
         try {
+            if (!FileSystemUtils.waitForPathPresence(configFilePath)) {
+                throw new FileNotFoundException("File not found: " + configFilePath);
+            }
+
             final ConfigSource configSource = new PropertyFileConfigSource(configFilePath);
             return ConfigurationBuilder.create()
                     .withSource(configSource)
+                    .withConfigDataType(InternalLoggingConfig.class)
                     .withConverter(new MarkerStateConverter())
                     .withConverter(new ConfigLevelConverter())
                     .build();
@@ -116,7 +139,9 @@ public class DefaultLoggingSystem {
                     Level.WARN,
                     "Unable to load logging configuration from path: '%s'. Using default configuration."
                             .formatted(configFilePath));
-            return ConfigurationBuilder.create().build();
+            return ConfigurationBuilder.create()
+                    .withConfigDataType(InternalLoggingConfig.class)
+                    .build();
         }
     }
 
@@ -164,7 +189,7 @@ public class DefaultLoggingSystem {
      *
      * @return True if the logging system has been initialized.
      */
-    public static boolean isInitialized() {
-        return INITIALIZED.get();
+    public boolean isInitialized() {
+        return initialized.get();
     }
 }

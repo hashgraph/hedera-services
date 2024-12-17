@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -33,65 +34,41 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenTotalSupplyAfterMintBurnWipeSuite.class);
-
+public class TokenTotalSupplyAfterMintBurnWipeSuite {
     private static String TOKEN_TREASURY = "treasury";
 
-    public static void main(String... args) {
-        new TokenTotalSupplyAfterMintBurnWipeSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
-    }
-
     @HapiTest
-    public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
+    final Stream<DynamicTest> checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
-        return defaultHapiSpec(
-                        "checkTokenTotalSupplyAfterMintAndBurn", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("tokenReceiver").balance(0L),
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("supplyKey"))
-                .when(tokenCreate(tokenName)
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("tokenReceiver").balance(0L),
+                newKeyNamed("adminKey"),
+                newKeyNamed("supplyKey"),
+                tokenCreate(tokenName)
                         .treasury(TOKEN_TREASURY)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .initialSupply(1000)
                         .decimals(1)
                         .supplyKey("supplyKey")
-                        .via("createTxn"))
-                .then(
-                        getTxnRecord("createTxn").logged(),
-                        mintToken(tokenName, 1000).via("mintToken"),
-                        getTxnRecord("mintToken").logged(),
-                        getTokenInfo(tokenName).hasTreasury(TOKEN_TREASURY).hasTotalSupply(2000),
-                        burnToken(tokenName, 200).via("burnToken"),
-                        getTxnRecord("burnToken").logged(),
-                        getTokenInfo(tokenName)
-                                .logged()
-                                .hasTreasury(TOKEN_TREASURY)
-                                .hasTotalSupply(1800));
+                        .via("createTxn"),
+                getTxnRecord("createTxn").logged(),
+                mintToken(tokenName, 1000).via("mintToken"),
+                getTxnRecord("mintToken").logged(),
+                getTokenInfo(tokenName).hasTreasury(TOKEN_TREASURY).hasTotalSupply(2000),
+                burnToken(tokenName, 200).via("burnToken"),
+                getTxnRecord("burnToken").logged(),
+                getTokenInfo(tokenName).logged().hasTreasury(TOKEN_TREASURY).hasTotalSupply(1800));
     }
 
     @HapiTest
-    public HapiSpec totalSupplyAfterWipe() {
+    final Stream<DynamicTest> totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 
         return defaultHapiSpec("totalSupplyAfterWipe")
@@ -126,10 +103,5 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                                 .hasName(tokenToWipe)
                                 .logged(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

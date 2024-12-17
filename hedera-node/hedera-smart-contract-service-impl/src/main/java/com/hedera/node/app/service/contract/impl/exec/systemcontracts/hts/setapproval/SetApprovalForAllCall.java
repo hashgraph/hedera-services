@@ -32,18 +32,17 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
-// @Future remove to revert #9214 after modularization is completed
-public class SetApprovalForAllCall extends AbstractHtsCall {
+public class SetApprovalForAllCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
     private final TransactionBody transactionBody;
@@ -84,7 +83,7 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
     @Override
     public PricedResult execute() {
         final var recordBuilder = systemContractOperations()
-                .dispatch(transactionBody, verificationStrategy, sender, ContractCallRecordBuilder.class);
+                .dispatch(transactionBody, verificationStrategy, sender, ContractCallStreamBuilder.class);
 
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(transactionBody, gasCalculator, enhancement, sender);

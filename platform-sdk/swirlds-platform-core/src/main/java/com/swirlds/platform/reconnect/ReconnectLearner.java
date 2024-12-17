@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -26,16 +27,17 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
@@ -54,8 +56,8 @@ public class ReconnectLearner {
     private static final Logger logger = LogManager.getLogger(ReconnectLearner.class);
 
     private final Connection connection;
-    private final AddressBook addressBook;
-    private final State currentState;
+    private final Roster roster;
+    private final MerkleRoot currentState;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
@@ -73,8 +75,8 @@ public class ReconnectLearner {
      * 		responsible for managing thread lifecycles
      * @param connection
      * 		the connection to use for the reconnect
-     * @param addressBook
-     * 		the current address book
+     * @param roster
+     * 		the current roster
      * @param currentState
      * 		the most recent state from the learner
      * @param reconnectSocketTimeout
@@ -86,8 +88,8 @@ public class ReconnectLearner {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
-            @NonNull final AddressBook addressBook,
-            @NonNull final State currentState,
+            @NonNull final Roster roster,
+            @NonNull final MerkleRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
@@ -97,13 +99,13 @@ public class ReconnectLearner {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
         this.currentState = Objects.requireNonNull(currentState);
         this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
-        this.stateValidationData = new SignedStateValidationData(currentState.getPlatformState(), addressBook);
+        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), roster);
     }
 
     /**
@@ -151,15 +153,22 @@ public class ReconnectLearner {
     @NonNull
     public ReservedSignedState execute(@NonNull final SignedStateValidator validator) throws ReconnectException {
         increaseSocketTimeout();
+        ReservedSignedState reservedSignedState = null;
         try {
             receiveSignatures();
-            final ReservedSignedState reservedSignedState = reconnect();
-            validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
+            reservedSignedState = reconnect();
+            validator.validate(reservedSignedState.get(), roster, stateValidationData);
             ReconnectUtils.endReconnectHandshake(connection);
+            SignedStateFileReader.unregisterServiceStates(reservedSignedState.get());
             return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
+            if (reservedSignedState != null) {
+                // if the state was received, we need to release it or it will be leaked
+                reservedSignedState.close();
+            }
             throw new ReconnectException(e);
         } catch (final InterruptedException e) {
+            // an interrupt can only occur in the reconnect() method, so we don't need to close the reservedSignedState
             Thread.currentThread().interrupt();
             throw new ReconnectException("interrupted while attempting to reconnect", e);
         } finally {
@@ -185,13 +194,26 @@ public class ReconnectLearner {
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        final LearningSynchronizer synchronizer =
-                new LearningSynchronizer(threadManager, in, out, currentState, connection::disconnect, reconnectConfig);
+        final LearningSynchronizer synchronizer = new LearningSynchronizer(
+                threadManager,
+                in,
+                out,
+                currentState,
+                connection::disconnect,
+                reconnectConfig,
+                platformContext.getMetrics());
         synchronizer.synchronize();
 
-        final State state = (State) synchronizer.getRoot();
-        final SignedState newSignedState =
-                new SignedState(platformContext, state, "ReconnectLearner.reconnect()", false);
+        final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
+        final SignedState newSignedState = new SignedState(
+                platformContext.getConfiguration(),
+                CryptoStatic::verifySignature,
+                state,
+                "ReconnectLearner.reconnect()",
+                false,
+                false,
+                false);
+        SignedStateFileReader.registerServiceStates(newSignedState);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();

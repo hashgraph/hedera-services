@@ -20,30 +20,18 @@ public class NoListenersAvailableException extends DispatchException {
 
     private static final String DEFAULT_MESSAGE = "Unable to dispatch when no listeners have been registered";
 
-    /**
-     * {@inheritDoc}
-     */
     public NoListenersAvailableException() {
         super(DEFAULT_MESSAGE);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public NoListenersAvailableException(final String message) {
         super(message);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public NoListenersAvailableException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public NoListenersAvailableException(final Throwable cause) {
         super(cause);
     }

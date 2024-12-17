@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.precompile;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -36,16 +36,15 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class RandomFungibleTransferLazyCreate implements OpProvider {
     private final HapiSpecRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
 
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
 
-    public RandomFungibleTransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomFungibleTransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider keys) {
         this.registry = registry;
         this.keys = keys;
     }

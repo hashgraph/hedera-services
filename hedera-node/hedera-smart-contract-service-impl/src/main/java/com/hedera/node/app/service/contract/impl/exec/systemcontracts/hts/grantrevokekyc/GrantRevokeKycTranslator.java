@@ -23,24 +23,34 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.*;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * Translates grantKyc and revokeKyc calls to the HTS system contract. There are no special cases for
- * these calls, so the returned {@link HtsCall} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
+ * these calls, so the returned {@link Call} is simply an instance of {@link DispatchForResponseCodeHtsCall}.
  */
 @Singleton
-public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
+public class GrantRevokeKycTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /**
+     * Selector for grantTokenKyc(address,address) method.
+     */
     public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT_64);
+    /**
+     * Selector for revokeTokenKyc(address,address) method.
+     */
     public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT_64);
 
     private final GrantRevokeKycDecoder decoder;
 
+    /**
+     * @param decoder the decoder to be used for grand / revoke kyc
+     */
     @Inject
     public GrantRevokeKycTranslator(@NonNull GrantRevokeKycDecoder decoder) {
         this.decoder = decoder;
@@ -51,23 +61,30 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return matchesClassicSelector(attempt.selector());
+        return attempt.isSelector(GRANT_KYC, REVOKE_KYC);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 bodyForClassic(attempt),
-                Arrays.equals(attempt.selector(), GRANT_KYC.selector())
+                attempt.isSelector(GRANT_KYC)
                         ? GrantRevokeKycTranslator::grantGasRequirement
                         : GrantRevokeKycTranslator::revokeGasRequirement,
                 NOOP_CUSTOMIZER);
     }
 
+    /**
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for grant kyc calls to HTS system contract
+     */
     public static long grantGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -76,6 +93,13 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
         return systemContractGasCalculator.gasRequirement(body, DispatchType.GRANT_KYC, payerId);
     }
 
+    /**
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator for the system contract
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for revoke kyc calls to HTS system contract
+     */
     public static long revokeGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -85,14 +109,10 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), GRANT_KYC.selector())) {
+        if (attempt.isSelector(GRANT_KYC)) {
             return decoder.decodeGrantKyc(attempt);
         } else {
             return decoder.decodeRevokeKyc(attempt);
         }
-    }
-
-    private static boolean matchesClassicSelector(@NonNull final byte[] selector) {
-        return Arrays.equals(selector, GRANT_KYC.selector()) || Arrays.equals(selector, REVOKE_KYC.selector());
     }
 }

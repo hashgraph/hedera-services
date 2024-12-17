@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -33,39 +33,28 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class CreateOperationSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
+public class CreateOperationSuite {
     private static final String CONTRACT = "FactoryContract";
     private static final String CALL_RECORD_TRANSACTION_NAME = "callRecord";
     private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
@@ -73,46 +62,19 @@ public class CreateOperationSuite extends HapiSuite {
     private static final String CONTRACT_INFO = "contractInfo";
     private static final String PARENT_INFO = "parentInfo";
 
-    public static void main(final String... args) {
-        new CreateOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                simpleFactoryWorks(),
-                stackedFactoryWorks(),
-                resetOnFactoryFailureWorks(),
-                resetOnFactoryFailureAfterDeploymentWorks(),
-                resetOnStackedFactoryFailureWorks(),
-                inheritanceOfNestedCreatedContracts(),
-                factoryQuickSelfDestructContract(),
-                contractCreateWithNewOpInConstructorAbandoningParent(),
-                childContractStorageWorks());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec factoryQuickSelfDestructContract() {
+    final Stream<DynamicTest> factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
         final var sender = "sender";
-        return defaultHapiSpec(
-                        "FactoryQuickSelfDestructContract",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_LOG_DATA)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
-                .when(contractCall(contract, "createAndDeleteChild")
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
                         .via(CALL_RECORD_TRANSACTION_NAME)
-                        .payingWith(sender))
-                .then(getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
+                        .payingWith(sender),
+                getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(
@@ -125,29 +87,28 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec inheritanceOfNestedCreatedContracts() {
+    final Stream<DynamicTest> inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
-        return defaultHapiSpec("InheritanceOfNestedCreatedContracts", FULLY_NONDETERMINISTIC)
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract).logged().via("createRecord"),
-                        getContractInfo(contract).logged().saveToRegistry(PARENT_INFO))
-                .when(contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME))
-                .then(
-                        getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
-                        getTxnRecord(CALL_RECORD_TRANSACTION_NAME).saveCreatedContractListToRegistry("callChild"),
-                        contractListWithPropertiesInheritedFrom("callChildCallResult", 2, PARENT_INFO),
-                        contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
+        return hapiTest(
+                uploadInitCode(contract),
+                // refuse eth conversion because ethereum transaction is missing admin key and memo is same as
+                // parent
+                contractCreate(contract).logged().via("createRecord").refusingEthConversion(),
+                getContractInfo(contract).logged().saveToRegistry(PARENT_INFO),
+                contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME),
+                getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
+                getTxnRecord(CALL_RECORD_TRANSACTION_NAME).saveCreatedContractListToRegistry("callChild"),
+                contractListWithPropertiesInheritedFrom("callChildCallResult", 2, PARENT_INFO),
+                contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
     }
 
     @HapiTest
-    HapiSpec simpleFactoryWorks() {
-        return defaultHapiSpec("simpleFactoryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                        .gas(780_000)
-                        .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+    final Stream<DynamicTest> simpleFactoryWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var successTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, successTxn, parentContract);
@@ -162,13 +123,14 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec stackedFactoryWorks() {
-        return defaultHapiSpec("StackedFactoryWorks", FULLY_NONDETERMINISTIC)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "stackedDeploymentSuccess")
+    final Stream<DynamicTest> stackedFactoryWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "stackedDeploymentSuccess")
                         .gas(1_000_000)
-                        .via("stackedDeploymentSuccessTxn"))
-                .then(withOpContext((spec, opLog) -> {
+                        .via("stackedDeploymentSuccessTxn"),
+                withOpContext((spec, opLog) -> {
                     final var successTxn = getTxnRecord("stackedDeploymentSuccessTxn");
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, successTxn, parentContract);
@@ -183,18 +145,16 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec resetOnFactoryFailureWorks() {
-        return defaultHapiSpec("ResetOnFactoryFailureWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(
-                        contractCall(CONTRACT, "stackedDeploymentFailure")
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                .gas(780_000)
-                                .via("deploymentFailureTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                                .gas(780_000)
-                                .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+    final Stream<DynamicTest> resetOnFactoryFailureWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "stackedDeploymentFailure")
+                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .gas(780_000)
+                        .via("deploymentFailureTxn"),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("deploymentFailureTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -215,18 +175,16 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec resetOnFactoryFailureAfterDeploymentWorks() {
-        return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(
-                        contractCall(CONTRACT, "failureAfterDeploy")
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                .gas(780_000)
-                                .via("failureAfterDeploymentTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                                .gas(780_000)
-                                .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+    final Stream<DynamicTest> resetOnFactoryFailureAfterDeploymentWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "failureAfterDeploy")
+                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .gas(780_000)
+                        .via("failureAfterDeploymentTxn"),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("failureAfterDeploymentTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -247,18 +205,16 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec resetOnStackedFactoryFailureWorks() {
-        return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(
-                        contractCall(CONTRACT, "stackedDeploymentFailure")
-                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
-                                .gas(780_000)
-                                .via("stackedDeploymentFailureTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
-                                .gas(780_000)
-                                .via(DEPLOYMENT_SUCCESS_TXN))
-                .then(withOpContext((spec, opLog) -> {
+    final Stream<DynamicTest> resetOnStackedFactoryFailureWorks() {
+        return hapiTest(
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(CONTRACT, "stackedDeploymentFailure")
+                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .gas(780_000)
+                        .via("stackedDeploymentFailureTxn"),
+                contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN),
+                withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("stackedDeploymentFailureTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -279,35 +235,32 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
+    final Stream<DynamicTest> contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
-        return defaultHapiSpec(
-                        "contractCreateWithNewOpInConstructorAbandoningParent",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        HIGHLY_NON_DETERMINISTIC_FEES,
-                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
-                .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))
-                .when()
-                .then(
-                        getContractInfo(contract)
-                                .saveToRegistry("AbandoningParentParentInfo")
-                                .logged(),
-                        getTxnRecord("AbandoningParentTxn")
-                                .saveCreatedContractListToRegistry(contract)
-                                .logged(),
-                        UtilVerbs.contractListWithPropertiesInheritedFrom(
-                                "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
+        return hapiTest(
+                // refuse eth conversion because ethereum transaction is missing admin key (the new contract has own key
+                // - isSelfAdmin(parent))
+                uploadInitCode(contract),
+                contractCreate(contract).via("AbandoningParentTxn").refusingEthConversion(),
+                getContractInfo(contract)
+                        .saveToRegistry("AbandoningParentParentInfo")
+                        .logged(),
+                getTxnRecord("AbandoningParentTxn")
+                        .saveCreatedContractListToRegistry(contract)
+                        .logged(),
+                UtilVerbs.contractListWithPropertiesInheritedFrom(
+                        "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
     }
 
     @HapiTest
-    HapiSpec childContractStorageWorks() {
+    final Stream<DynamicTest> childContractStorageWorks() {
         final var contract = "CreateTrivial";
         final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 
-        return defaultHapiSpec("childContractStorageWorks")
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract).via("firstContractTxn"))
-                .then(assertionsHold((spec, ctxLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract).via("firstContractTxn"),
+                assertionsHold((spec, ctxLog) -> {
                     final var subop1 =
                             contractCall(contract, "create").gas(785_000).via("createContractTxn");
 
@@ -369,10 +322,5 @@ public class CreateOperationSuite extends HapiSuite {
                     Assertions.assertTrue(createdContractInfo.hasAccountID());
                     Assertions.assertTrue(createdContractInfo.hasExpirationTime());
                 }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

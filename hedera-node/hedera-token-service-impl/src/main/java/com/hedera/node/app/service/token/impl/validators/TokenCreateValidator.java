@@ -34,7 +34,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -55,19 +54,23 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Provides validations for TokenCreateTransactionBody
+ * Provides validations for TokenCreateTransactionBody.
  */
 @Singleton
 public class TokenCreateValidator {
     private final TokenAttributesValidator tokenAttributesValidator;
 
+    /**
+     * Default constructor for injection.
+     * @param tokenAttributesValidator token attributes validator
+     */
     @Inject
     public TokenCreateValidator(@NonNull final TokenAttributesValidator tokenAttributesValidator) {
         this.tokenAttributesValidator = tokenAttributesValidator;
     }
 
     /**
-     * Validations needed in pre-handle for {@link TokenCreateTransactionBody} are done here
+     * Validations needed in pre-handle for {@link TokenCreateTransactionBody} are done here.
      * @param op token create transaction body
      * @throws PreCheckException if any of the validations fail
      */
@@ -94,7 +97,7 @@ public class TokenCreateValidator {
     }
 
     /**
-     * All validations in handle needed for {@link TokenCreateTransactionBody} are done here
+     * All validations in handle needed for {@link TokenCreateTransactionBody} are done here.
      * @param context context
      * @param accountStore account store
      * @param op token create transaction body
@@ -127,14 +130,17 @@ public class TokenCreateValidator {
                 op.hasSupplyKey(), op.supplyKey(),
                 op.hasFreezeKey(), op.freezeKey(),
                 op.hasFeeScheduleKey(), op.feeScheduleKey(),
-                op.hasPauseKey(), op.pauseKey());
+                op.hasPauseKey(), op.pauseKey(),
+                op.hasMetadataKey(), op.metadataKey());
+
+        tokenAttributesValidator.validateTokenMetadata(op.metadata(), config);
+
         // validate custom fees length
-        validateTrue(
-                op.customFeesOrElse(emptyList()).size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+        validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
     }
 
     /**
-     * Validates initial supply and decimals based on token type
+     * Validates initial supply and decimals based on token type.
      * @param type token type
      * @param initialSupply initial supply
      * @param decimals decimals
@@ -153,7 +159,7 @@ public class TokenCreateValidator {
     }
 
     /**
-     * Validates supply type and max supply
+     * Validates supply type and max supply.
      * @param supplyType supply type
      * @param maxSupply max supply
      * @throws PreCheckException if validation fails

@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
@@ -28,7 +28,7 @@ import java.util.Set;
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network
  * Service</a>.
  */
-public interface NetworkService extends Service {
+public interface NetworkService extends RpcService {
     String NAME = "NetworkService";
 
     @NonNull
@@ -44,12 +44,12 @@ public interface NetworkService extends Service {
     }
 
     /**
-     * Returns the concrete implementation instance of the service
+     * Returns the concrete implementation instance of the service.
      *
      * @return the implementation instance
      */
     @NonNull
     static NetworkService getInstance() {
-        return ServiceFactory.loadService(NetworkService.class, ServiceLoader.load(NetworkService.class));
+        return RpcServiceFactory.loadService(NetworkService.class, ServiceLoader.load(NetworkService.class));
     }
 }

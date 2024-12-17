@@ -17,31 +17,19 @@
 package com.swirlds.common.crypto;
 
 import static com.swirlds.common.crypto.SignatureType.RSA;
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PublicKey;
-import java.security.SignatureException;
-import java.util.Arrays;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates a cryptographic signature along with its SignatureType.
  */
-public class Signature implements SelfSerializable {
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
-    private static final Logger logger = LogManager.getLogger(Signature.class);
-
+public class Signature {
     /** a unique class type identifier */
     private static final long CLASS_ID = 0x13dc4b399b245c69L;
 
@@ -49,94 +37,34 @@ public class Signature implements SelfSerializable {
     private static final int CLASS_VERSION = 1;
 
     /** The type of cryptographic algorithm used to create the signature */
-    private SignatureType signatureType;
+    private final SignatureType signatureType;
 
     /** signature byte array */
-    private byte[] signatureBytes;
+    private final Bytes signatureBytes;
 
-    /**
-     * For RuntimeConstructable
-     */
-    public Signature() {}
+    public Signature(@NonNull final SignatureType signatureType, @NonNull final byte[] signatureBytes) {
+        this(signatureType, Bytes.wrap(signatureBytes));
+    }
 
-    public Signature(final SignatureType signatureType, final byte[] signatureBytes) {
-        this.signatureType = signatureType;
-        this.signatureBytes = signatureBytes;
+    public Signature(@NonNull final SignatureType signatureType, @NonNull final Bytes signatureBytes) {
+        this.signatureType = Objects.requireNonNull(signatureType, "signatureType should not be null");
+        this.signatureBytes = Objects.requireNonNull(signatureBytes, "signatureBytes should not be null");
     }
 
     /**
-     * {@inheritDoc}
+     * @return the bytes of this signature in an immutable instance
      */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.signatureType = SignatureType.from(in.readInt(), RSA);
-        this.signatureBytes = in.readByteArray(this.signatureType.signatureLength(), true);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(signatureType.ordinal());
-        out.writeByteArray(signatureBytes, true);
-    }
-
-    /**
-     * Get the bytes of this signature.
-     */
-    public byte[] getSignatureBytes() {
+    @NonNull
+    public Bytes getBytes() {
         return signatureBytes;
     }
 
     /**
-     * check whether this signature is signed by given publicKey on given data
-     *
-     * @param data
-     * 		the data that was signed
-     * @param publicKey
-     * 		publicKey
-     * @return true if the signature is valid
+     * Get the type of this signature.
      */
-    public boolean verifySignature(final byte[] data, final PublicKey publicKey) {
-        if (publicKey == null) {
-            logger.info(EXCEPTION.getMarker(), "PublicKey is missing");
-            return false;
-        }
-
-        final String signingAlgorithm = signatureType.signingAlgorithm();
-        final String sigProvider = signatureType.provider();
-        try {
-            final java.security.Signature sig = java.security.Signature.getInstance(signingAlgorithm, sigProvider);
-            sig.initVerify(publicKey);
-            sig.update(data);
-            return sig.verify(signatureBytes);
-        } catch (final NoSuchAlgorithmException
-                | NoSuchProviderException
-                | InvalidKeyException
-                | SignatureException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    () -> "Failed to verify Signature: %s, PublicKey: %s".formatted(this, hex(publicKey.getEncoded())),
-                    e);
-        }
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return CLASS_VERSION;
+    @NonNull
+    public SignatureType getType() {
+        return signatureType;
     }
 
     /**
@@ -152,7 +80,7 @@ public class Signature implements SelfSerializable {
             return false;
         }
 
-        return Arrays.equals(signatureBytes, signature.signatureBytes) && signatureType == signature.signatureType;
+        return Objects.equals(signatureBytes, signature.signatureBytes) && signatureType == signature.signatureType;
     }
 
     /**
@@ -160,7 +88,45 @@ public class Signature implements SelfSerializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(signatureType, Arrays.hashCode(signatureBytes));
+        return Objects.hash(signatureType, signatureBytes);
+    }
+
+    /**
+     * Deserialize a signature from a stream.
+     *
+     * @param in the stream to read from
+     * @param readClassId whether to read the class ID from the stream
+     *
+     * @return the signature read from the stream
+     */
+    public static Signature deserialize(final SerializableDataInputStream in, final boolean readClassId)
+            throws IOException {
+        if (readClassId) {
+            final long classId = in.readLong();
+            if (classId != CLASS_ID) {
+                throw new IOException("unexpected class ID: " + classId);
+            }
+        }
+        in.readInt(); // ignore version
+        final SignatureType signatureType = SignatureType.from(in.readInt(), RSA);
+        final byte[] signatureBytes = in.readByteArray(signatureType.signatureLength(), true);
+
+        return new Signature(signatureType, signatureBytes);
+    }
+
+    /**
+     * Serialize this signature to a stream.
+     *
+     * @param out the stream to write to
+     * @param withClassId whether to write the class ID to the stream
+     */
+    public void serialize(final SerializableDataOutputStream out, final boolean withClassId) throws IOException {
+        if (withClassId) {
+            out.writeLong(CLASS_ID);
+        }
+        out.writeInt(CLASS_VERSION);
+        out.writeInt(signatureType.ordinal());
+        out.writeByteArray(signatureBytes.toByteArray(), true);
     }
 
     /**
@@ -170,7 +136,7 @@ public class Signature implements SelfSerializable {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("signatureType", signatureType)
-                .append("sigBytes", hex(signatureBytes))
+                .append("sigBytes", signatureBytes)
                 .toString();
     }
 }

@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -35,6 +36,10 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyCustomReconnectRoot;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleExternalLeaf;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
@@ -43,7 +48,14 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf2;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,6 +65,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -61,6 +74,20 @@ import java.util.function.Function;
  * Utility methods for testing merkle trees.
  */
 public final class MerkleTestUtils {
+
+    private static Metrics createMetrics() {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricKeyRegistry registry = new MetricKeyRegistry();
+        return new DefaultPlatformMetrics(
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new PlatformMetricsFactoryImpl(metricsConfig),
+                metricsConfig);
+    }
+
+    private static final Metrics metrics = createMetrics();
 
     private MerkleTestUtils() {}
 
@@ -886,6 +913,36 @@ public final class MerkleTestUtils {
     }
 
     /**
+     * For every virtual map in the trees and for every virtual key in the given key set, make
+     * sure either the map in both trees contains the key, or the map in both trees doesn't
+     * contain the key.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static boolean checkVirtualMapKeys(
+            final MerkleNode rootA, final MerkleNode rootB, final Set<VirtualKey> virtualKeys) {
+        final Iterator<MerkleNode> iteratorA = new MerkleIterator<>(rootA);
+        final Iterator<MerkleNode> iteratorB = new MerkleIterator<>(rootB);
+        while (iteratorA.hasNext()) {
+            if (!iteratorB.hasNext()) {
+                return false;
+            }
+            final MerkleNode a = iteratorA.next();
+            final MerkleNode b = iteratorB.next();
+            if (a instanceof VirtualMap vmA) {
+                if (!(b instanceof VirtualMap vmB)) {
+                    return false;
+                }
+                for (final VirtualKey key : virtualKeys) {
+                    if (vmA.containsKey(key) != vmB.containsKey(key)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Check if a tree has had initialize() called on each internal node.
      */
     public static boolean isFullyInitialized(final DummyMerkleNode root) {
@@ -990,42 +1047,101 @@ public final class MerkleTestUtils {
             final TeachingSynchronizer teacher;
 
             if (latencyMilliseconds == 0) {
-                learner = new LearningSynchronizer(
-                        getStaticThreadManager(),
-                        streams.getLearnerInput(),
-                        streams.getLearnerOutput(),
-                        startingTree,
-                        streams::disconnect,
-                        reconnectConfig);
+                learner =
+                        new LearningSynchronizer(
+                                getStaticThreadManager(),
+                                streams.getLearnerInput(),
+                                streams.getLearnerOutput(),
+                                startingTree,
+                                streams::disconnect,
+                                reconnectConfig,
+                                metrics) {
+
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> reconnectExceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-learning-synchronizer",
+                                        breakConnection,
+                                        reconnectExceptionListener,
+                                        true);
+                            }
+                        };
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
-                teacher = new TeachingSynchronizer(
-                        platformContext.getConfiguration(),
-                        Time.getCurrent(),
-                        getStaticThreadManager(),
-                        streams.getTeacherInput(),
-                        streams.getTeacherOutput(),
-                        desiredTree,
-                        streams::disconnect,
-                        reconnectConfig);
+                teacher =
+                        new TeachingSynchronizer(
+                                platformContext.getConfiguration(),
+                                Time.getCurrent(),
+                                getStaticThreadManager(),
+                                streams.getTeacherInput(),
+                                streams.getTeacherOutput(),
+                                desiredTree,
+                                streams::disconnect,
+                                reconnectConfig) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> exceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-teaching-synchronizer",
+                                        breakConnection,
+                                        exceptionListener,
+                                        true);
+                            }
+                        };
             } else {
-                learner = new LaggingLearningSynchronizer(
-                        streams.getLearnerInput(),
-                        streams.getLearnerOutput(),
-                        startingTree,
-                        latencyMilliseconds,
-                        streams::disconnect,
-                        reconnectConfig);
+                learner =
+                        new LaggingLearningSynchronizer(
+                                streams.getLearnerInput(),
+                                streams.getLearnerOutput(),
+                                startingTree,
+                                latencyMilliseconds,
+                                streams::disconnect,
+                                reconnectConfig,
+                                metrics) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> reconnectExceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-learning-synchronizer",
+                                        breakConnection,
+                                        reconnectExceptionListener,
+                                        true);
+                            }
+                        };
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
-                teacher = new LaggingTeachingSynchronizer(
-                        platformContext,
-                        streams.getTeacherInput(),
-                        streams.getTeacherOutput(),
-                        desiredTree,
-                        latencyMilliseconds,
-                        streams::disconnect,
-                        reconnectConfig);
+                teacher =
+                        new LaggingTeachingSynchronizer(
+                                platformContext,
+                                streams.getTeacherInput(),
+                                streams.getTeacherOutput(),
+                                desiredTree,
+                                latencyMilliseconds,
+                                streams::disconnect,
+                                reconnectConfig) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> reconnectExceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-teaching-synchronizer",
+                                        breakConnection,
+                                        reconnectExceptionListener,
+                                        true);
+                            }
+                        };
             }
 
             final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
@@ -1033,8 +1149,8 @@ public final class MerkleTestUtils {
                 firstReconnectException.compareAndSet(null, t);
                 return false;
             };
-            final StandardWorkGroup workGroup =
-                    new StandardWorkGroup(getStaticThreadManager(), "synchronization-test", null, exceptionListener);
+            final StandardWorkGroup workGroup = new StandardWorkGroup(
+                    getStaticThreadManager(), "synchronization-test", null, exceptionListener, true);
             workGroup.execute("teaching-synchronizer-main", () -> teachingSynchronizerThread(teacher));
             workGroup.execute("learning-synchronizer-main", () -> learningSynchronizerThread(learner));
 
@@ -1065,6 +1181,18 @@ public final class MerkleTestUtils {
         return node != null && (node.getClassId() == 0xaf2482557cfdb6bfL || node.getClassId() == 0x499677a326fb04caL);
     }
 
+    private static Set<VirtualKey> getVirtualKeys(final MerkleNode node) {
+        final Set<VirtualKey> keys = new HashSet<>();
+        final Iterator<MerkleNode> it = new MerkleIterator<>(node);
+        while (it.hasNext()) {
+            final MerkleNode n = it.next();
+            if (n instanceof VirtualLeafNode<?, ?> leaf) {
+                keys.add(leaf.getKey());
+            }
+        }
+        return keys;
+    }
+
     /**
      * Make sure the reconnect was valid.
      *
@@ -1078,7 +1206,14 @@ public final class MerkleTestUtils {
     private static void assertReconnectValidity(
             final MerkleNode startingTree, final MerkleNode desiredTree, final MerkleNode generatedTree) {
 
+        // Checks that the trees are equal as merkle structures
         assertTrue(areTreesEqual(generatedTree, desiredTree), "reconnect should produce identical tree");
+
+        final Set<VirtualKey> allKeys = new HashSet<>();
+        allKeys.addAll(getVirtualKeys(startingTree));
+        allKeys.addAll(getVirtualKeys(desiredTree));
+        // A deeper check at VirtualMap level
+        assertTrue(checkVirtualMapKeys(generatedTree, desiredTree, allKeys));
 
         if (desiredTree != null) {
             assertNotSame(startingTree, desiredTree, "trees should be distinct objects");

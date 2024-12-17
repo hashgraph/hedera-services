@@ -18,10 +18,14 @@ open module com.swirlds.common.test.fixtures {
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
+    requires transitive com.swirlds.virtualmap;
+    requires transitive com.hedera.pbj.runtime;
+    requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.logging;
     requires lazysodium.java;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
-    requires static com.github.spotbugs.annotations;
+    requires org.mockito;
+    requires static transitive com.github.spotbugs.annotations;
 }

@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -41,102 +41,77 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ExtCodeSizeOperationSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ExtCodeSizeOperationSuite.class);
-
-    public static void main(String[] args) {
-        new ExtCodeSizeOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence(), testExtCodeSizeWithSystemAccounts());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class ExtCodeSizeOperationSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var sizeOf = "sizeOf";
 
         final var account = "account";
-        return defaultHapiSpec("VerifiesExistence", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
-                .when()
-                .then(
-                        contractCall(contract, sizeOf, asHeadlongAddress(invalidAddress))
-                                .hasKnownStatus(SUCCESS),
-                        contractCallLocal(contract, sizeOf, asHeadlongAddress(invalidAddress))
-                                .hasAnswerOnlyPrecheck(OK),
-                        withOpContext((spec, opLog) -> {
-                            final var accountID = spec.registry().getAccountID(account);
-                            final var contractID = spec.registry().getContractId(contract);
-                            final var accountSolidityAddress = asHexedSolidityAddress(accountID);
-                            final var contractAddress = asHexedSolidityAddress(contractID);
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                cryptoCreate(account),
+                contractCall(contract, sizeOf, asHeadlongAddress(invalidAddress))
+                        .hasKnownStatus(SUCCESS),
+                contractCallLocal(contract, sizeOf, asHeadlongAddress(invalidAddress))
+                        .hasAnswerOnlyPrecheck(OK),
+                withOpContext((spec, opLog) -> {
+                    final var accountID = spec.registry().getAccountID(account);
+                    final var contractID = spec.registry().getContractId(contract);
+                    final var accountSolidityAddress = asHexedSolidityAddress(accountID);
+                    final var contractAddress = asHexedSolidityAddress(contractID);
 
-                            final var call = contractCall(contract, sizeOf, asHeadlongAddress(accountSolidityAddress))
-                                    .via("callRecord");
+                    final var call = contractCall(contract, sizeOf, asHeadlongAddress(accountSolidityAddress))
+                            .via("callRecord");
 
-                            final var callRecord = getTxnRecord("callRecord")
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .resultThruAbi(
-                                                            getABIFor(FUNCTION, sizeOf, contract),
-                                                            isLiteralResult(new Object[] {BigInteger.valueOf(0)}))));
-
-                            final var accountCodeSizeCallLocal = contractCallLocal(
-                                            contract, sizeOf, asHeadlongAddress(accountSolidityAddress))
-                                    .has(ContractFnResultAsserts.resultWith()
+                    final var callRecord = getTxnRecord("callRecord")
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
                                             .resultThruAbi(
                                                     getABIFor(FUNCTION, sizeOf, contract),
-                                                    ContractFnResultAsserts.isLiteralResult(
-                                                            new Object[] {BigInteger.valueOf(0)})));
+                                                    isLiteralResult(new Object[] {BigInteger.valueOf(0)}))));
 
-                            final var getBytecode =
-                                    getContractBytecode(contract).saveResultTo("contractBytecode");
+                    final var accountCodeSizeCallLocal = contractCallLocal(
+                                    contract, sizeOf, asHeadlongAddress(accountSolidityAddress))
+                            .has(ContractFnResultAsserts.resultWith()
+                                    .resultThruAbi(
+                                            getABIFor(FUNCTION, sizeOf, contract),
+                                            ContractFnResultAsserts.isLiteralResult(
+                                                    new Object[] {BigInteger.valueOf(0)})));
 
-                            final var contractCodeSize = contractCallLocal(
-                                            contract, sizeOf, asHeadlongAddress(contractAddress))
-                                    .saveResultTo("contractCodeSize");
+                    final var getBytecode = getContractBytecode(contract).saveResultTo("contractBytecode");
 
-                            allRunFor(spec, call, callRecord, accountCodeSizeCallLocal, getBytecode, contractCodeSize);
+                    final var contractCodeSize = contractCallLocal(contract, sizeOf, asHeadlongAddress(contractAddress))
+                            .saveResultTo("contractCodeSize");
 
-                            final var contractCodeSizeResult = spec.registry().getBytes("contractCodeSize");
-                            final var contractBytecode = spec.registry().getBytes("contractBytecode");
+                    allRunFor(spec, call, callRecord, accountCodeSizeCallLocal, getBytecode, contractCodeSize);
 
-                            Assertions.assertEquals(
-                                    BigInteger.valueOf(contractBytecode.length),
-                                    new BigInteger(contractCodeSizeResult));
-                        }));
+                    final var contractCodeSizeResult = spec.registry().getBytes("contractCodeSize");
+                    final var contractBytecode = spec.registry().getBytes("contractBytecode");
+
+                    Assertions.assertEquals(
+                            BigInteger.valueOf(contractBytecode.length), new BigInteger(contractCodeSizeResult));
+                }));
     }
 
     @HapiTest
-    HapiSpec testExtCodeSizeWithSystemAccounts() {
+    final Stream<DynamicTest> testExtCodeSizeWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var sizeOf = "sizeOf";
         final var account = "account";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+        final var opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
 
         for (int i = 0; i < systemAccounts.size(); i++) {
             // add contract call for all accounts in the list
@@ -152,14 +127,6 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
                                     ContractFnResultAsserts.isLiteralResult(new Object[] {BigInteger.valueOf(0L)})));
         }
 
-        return defaultHapiSpec("testExtCodeSizeWithSystemAccounts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
-                .when()
-                .then(opsArray);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
+        return hapiTest(flattened(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account), opsArray));
     }
 }

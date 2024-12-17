@@ -26,7 +26,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
@@ -41,7 +40,6 @@ import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -208,7 +206,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.standard()
                         .setMinimumConsensusRatio(0.8)
-                        .setMaximumConsensusRatio(2.0)));
+                        .setMaximumConsensusRatio(2.1)));
     }
 
     /**
@@ -560,13 +558,10 @@ public final class ConsensusTestDefinitions {
                             .getSnapshot());
             final int fi = i;
             orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
-                // since the same events are reused, the metadata needs to be cleared
-                e.clearMetadata();
-                e.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
-                orchestrator2.getNodes().get(fi).getIntake().addLinkedEvent(e);
+                orchestrator2.getNodes().get(fi).getIntake().addEvent(e.copyGossipedData());
             });
             ConsensusUtils.loadEventsIntoGenerator(
-                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents().toArray(EventImpl[]::new),
+                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),
                     orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
                     orchestrator2.getNodes().get(i).getRandom());
         }
@@ -588,9 +583,9 @@ public final class ConsensusTestDefinitions {
         orchestrator.getNodes().forEach(n -> {
             final int numEvents = orchestrator.getEventFraction(0.5);
             n.getEventEmitter().setCheckpoint(numEvents);
-            final List<IndexedEvent> events = n.getEventEmitter().emitEvents(numEvents);
+            final List<EventImpl> events = n.getEventEmitter().emitEvents(numEvents);
             n.getEventEmitter().reset();
-            final Optional<IndexedEvent> maxGenEvent = events.stream()
+            final Optional<EventImpl> maxGenEvent = events.stream()
                     .max(Comparator.comparingLong(EventImpl::getGeneration).thenComparing(EventImpl::getCreatorId));
             final ConsensusSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
                     round,

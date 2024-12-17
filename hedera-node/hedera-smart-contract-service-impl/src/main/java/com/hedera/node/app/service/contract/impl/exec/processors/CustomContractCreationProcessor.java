@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.AbstractProxyEvmAccount;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -57,6 +57,13 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     private static final Optional<ExceptionalHaltReason> CHILD_RECORDS_LIMIT_HALT_REASON =
             Optional.of(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS);
 
+    /**
+     * @param evm the EVM to use
+     * @param gasCalculator the gas calculator to use
+     * @param requireCodeDepositToSucceed whether to require the deposit to succeed
+     * @param contractValidationRules the rules against which the contract will be validated
+     * @param initialContractNonce the initial contract nonce to use for the creation
+     */
     public CustomContractCreationProcessor(
             @NonNull final EVM evm,
             @NonNull final GasCalculator gasCalculator,
@@ -99,6 +106,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
                 halt(frame, tracer, maybeReasonToHalt);
             } else {
                 contract.setNonce(INITIAL_CONTRACT_NONCE);
+                frame.addCreate(addressToCreate);
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
         }
@@ -133,13 +141,6 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         }
     }
 
-    @Override
-    protected void revert(final MessageFrame frame) {
-        super.revert(frame);
-        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
-    }
-
     private void halt(
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer,
@@ -155,9 +156,9 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     }
 
     private boolean isHollow(@NonNull final MutableAccount account) {
-        if (account instanceof ProxyEvmAccount proxyEvmAccount) {
-            return proxyEvmAccount.isHollow();
+        if (account instanceof AbstractProxyEvmAccount abstractProxyEvmAccount) {
+            return abstractProxyEvmAccount.isHollow();
         }
-        throw new IllegalArgumentException("Creation target not a ProxyEvmAccount - " + account);
+        throw new IllegalArgumentException("Creation target not a AbstractProxyEvmAccount - " + account);
     }
 }

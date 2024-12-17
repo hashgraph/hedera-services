@@ -13,6 +13,12 @@
         },
         {
           "operations": [
+            "TokenAssociateToAccount"
+          ],
+          "opsPerSec": 100
+        },
+        {
+          "operations": [
             "ContractCall",
             "EthereumTransaction"
           ],
@@ -63,7 +69,6 @@
       "throttleGroups": [
         {
           "operations": [
-            "CryptoGetAccountBalance",
             "TransactionGetReceipt"
           ],
           "opsPerSec": 10
@@ -73,6 +78,18 @@
             "GetVersionInfo"
           ],
           "opsPerSec": 1
+        }
+      ]
+    },
+    {
+      "name": "E",
+      "burstPeriod": 1,
+      "throttleGroups": [
+        {
+          "operations": [
+            "CryptoGetAccountBalance"
+          ],
+          "opsPerSec": 6
         }
       ]
     }

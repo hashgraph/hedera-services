@@ -21,28 +21,30 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
+import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.crypto.PreGeneratedX509Certs;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,13 +53,25 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("State Signing Tests")
 class StateSigningTests {
+
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
@@ -67,12 +81,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -172,12 +186,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -269,12 +283,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -286,7 +300,6 @@ class StateSigningTests {
         long expectedWeight = 0;
 
         final SigSet sigSet = signedState.getSigSet();
-        final Hash hash = signedState.getState().getHash();
 
         // Randomize address order
         final List<Address> nodes = new ArrayList<>(addressBook.getSize());
@@ -297,7 +310,12 @@ class StateSigningTests {
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
         for (final Address address : nodes) {
-            signatures.add(buildFakeSignature(address.getSigPublicKey(), hash));
+            final Signature signature = buildFakeSignature(
+                    address.getSigPublicKey(), signedState.getState().getHash());
+            final Signature mockSignature = mock(Signature.class);
+            when(mockSignature.getBytes()).thenReturn(signature.getBytes());
+            when(mockSignature.getType()).thenReturn(signature.getType());
+            signatures.add(mockSignature);
         }
 
         for (int index = 0; index < nodeCount; index++) {
@@ -316,11 +334,14 @@ class StateSigningTests {
         // Remove a node from the address book
         final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
         final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
-        signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
+        final AddressBook updatedAddressBook = signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
+        signedState.getState().getWritablePlatformState().setAddressBook(updatedAddressBook);
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();
-        when(signatures.get(1).verifySignature(any(), any())).thenReturn(false);
+        final byte[] tamperedBytes = signatures.get(1).getBytes().toByteArray();
+        tamperedBytes[0] = 0;
+        when(signatures.get(1).getBytes()).thenReturn(Bytes.wrap(tamperedBytes));
 
         signedState.pruneInvalidSignatures();
 
@@ -350,12 +371,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -401,12 +422,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -437,10 +458,10 @@ class StateSigningTests {
 
         final AddressBook newAddressBook = addressBook.copy();
         for (final Address address : newAddressBook) {
-            final PublicKey publicKey = mock(PublicKey.class);
-            when(publicKey.getAlgorithm()).thenReturn("RSA");
-            final X509Certificate certificate = mock(X509Certificate.class);
-            when(certificate.getPublicKey()).thenReturn(publicKey);
+            // need to get signatures that are outside the current address book range from PreGeneratedX509Certs
+            final X509Certificate certificate = PreGeneratedX509Certs.getSigCert(
+                            50 + address.getNodeId().id())
+                    .getCertificate();
             final Address newAddress = address.copySetSigCert(certificate);
             // This replaces the old address
             newAddressBook.add(newAddress);
@@ -461,12 +482,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         // set node to zero weight
@@ -525,12 +546,12 @@ class StateSigningTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setWeightDistributionStrategy(
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withWeightDistributionStrategy(
                         evenWeighting
-                                ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
-                                : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSize(nodeCount)
+                                ? RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED
+                                : RandomAddressBookBuilder.WeightDistributionStrategy.GAUSSIAN)
+                .withSize(nodeCount)
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)

@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -27,63 +27,48 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
 /** - CONCURRENCY STATUS - . Can run concurrent without temporarySStoreRefundTest() */
-public class SStoreSuite extends HapiSuite {
+public class SStoreSuite {
 
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
 
-    public static void main(String... args) {
-        new SStoreSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
-    }
-
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
     @HapiTest
-    HapiSpec multipleSStoreOpsSucceed() {
+    final Stream<DynamicTest> multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiSpec.defaultHapiSpec(
-                        "multipleSStoreOpsSucceed", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                withOpContext((spec, opLog) -> {
                     final var step = 16;
-                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    final List<SpecOperation> subOps = new ArrayList<>();
 
                     for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
                         final var subOp1 = contractCall(contract, "growTo", BigInteger.valueOf(sizeNow))
@@ -92,10 +77,10 @@ public class SStoreSuite extends HapiSuite {
                         subOps.add(subOp1);
                     }
                     CustomSpecAssert.allRunFor(spec, subOps);
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     final var numberOfIterations = 10;
-                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    final List<SpecOperation> subOps = new ArrayList<>();
 
                     for (int i = 0; i < numberOfIterations; i++) {
                         final var subOp1 = contractCall(
@@ -111,12 +96,13 @@ public class SStoreSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec childStorage() {
+    final Stream<DynamicTest> childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
-        return defaultHapiSpec("ChildStorage", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(flattened(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                withOpContext((spec, opLog) -> {
                     final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
                     final var kbPerStep = 16;
 
@@ -143,13 +129,12 @@ public class SStoreSuite extends HapiSuite {
                                 getTxnRecord("large" + childKbStorage).logged();
                         CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3, subOp4);
                     }
-                }))
-                .then(flattened(
-                        valuesMatch(contract, 19, 17, 19),
-                        contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
-                        valuesMatch(contract, 23, 23, 19),
-                        contractCall(contract, "setBoth", BigInteger.valueOf(29)),
-                        valuesMatch(contract, 29, 29, 29)));
+                }),
+                valuesMatch(contract, 19, 17, 19),
+                contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
+                valuesMatch(contract, 23, 23, 19),
+                contractCall(contract, "setBoth", BigInteger.valueOf(29)),
+                valuesMatch(contract, 29, 29, 29)));
     }
 
     private HapiSpecOperation[] valuesMatch(
@@ -175,34 +160,23 @@ public class SStoreSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec benchmarkSingleSetter() {
+    final Stream<DynamicTest> benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
                 .toArray();
-        return defaultHapiSpec("benchmarkSingleSetter", HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
-                .when(
-                        contractCreate(contract)
-                                .payingWith("payer")
-                                .via("creationTx")
-                                .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", value)
-                                .gas(GAS_LIMIT)
-                                .via("storageTx"))
-                .then(
-                        getTxnRecord("storageTx").logged(),
-                        contractCallLocal(contract, "counter")
-                                .nodePayment(1_234_567)
-                                .has(ContractFnResultAsserts.resultWith()
-                                        .resultThruAbi(
-                                                Utils.getABIFor(FUNCTION, "counter", contract),
-                                                ContractFnResultAsserts.isLiteralResult(
-                                                        new Object[] {BigInteger.valueOf(1L)}))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+        return hapiTest(
+                cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract).payingWith("payer").via("creationTx").gas(GAS_LIMIT),
+                contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"),
+                getTxnRecord("storageTx").logged(),
+                contractCallLocal(contract, "counter")
+                        .nodePayment(1_234_567)
+                        .has(ContractFnResultAsserts.resultWith()
+                                .resultThruAbi(
+                                        Utils.getABIFor(FUNCTION, "counter", contract),
+                                        ContractFnResultAsserts.isLiteralResult(
+                                                new Object[] {BigInteger.valueOf(1L)}))));
     }
 }

@@ -17,44 +17,41 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
-import static com.swirlds.platform.state.signed.StartupStateUtils.doRecoveryCleanup;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateToDisk;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.StateCommonConfig_;
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.recovery.RecoveryScratchpad;
-import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.recovery.emergencyfile.Recovery;
-import com.swirlds.platform.recovery.emergencyfile.State;
-import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.snapshot.SignedStateFilePath;
+import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -62,8 +59,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +71,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("StartupStateUtilities Tests")
-class StartupStateUtilsTests {
+public class StartupStateUtilsTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -84,7 +81,7 @@ class StartupStateUtilsTests {
 
     private SignedStateFilePath signedStateFilePath;
 
-    private final NodeId selfId = new NodeId(0);
+    private final NodeId selfId = NodeId.of(0);
     private final String mainClassName = "mainClassName";
     private final String swirldName = "swirldName";
 
@@ -100,25 +97,30 @@ class StartupStateUtilsTests {
     @AfterEach
     void afterEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        PlatformMerkleStateRoot.class,
+                        () -> new PlatformMerkleStateRoot(
+                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @NonNull
-    private PlatformContext buildContext(final boolean deleteInvalidStateFiles) {
+    private PlatformContext buildContext(final boolean deleteInvalidStateFiles, @NonNull final RecycleBin recycleBin) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
                 .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
                 .getOrCreateConfig();
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+        return TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
+                .withRecycleBin(recycleBin)
                 .build();
-
-        return platformContext;
     }
 
     /**
@@ -134,11 +136,15 @@ class StartupStateUtilsTests {
             @Nullable final Hash epoch,
             final boolean corrupted)
             throws IOException {
+        MerkleDb.resetDefaultInstancePath();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setRound(round)
                 .setEpoch(epoch)
                 .build();
+
+        // make the state immutable
+        signedState.getState().copy();
 
         final Path savedStateDirectory =
                 signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
@@ -160,16 +166,16 @@ class StartupStateUtilsTests {
     @Test
     @DisplayName("Genesis Test")
     void genesisTest() throws SignedStateLoadingException {
-        final PlatformContext platformContext = buildContext(false);
+        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
+        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
+                        platformContext.getConfiguration(),
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        mock(EmergencyRecoveryManager.class))
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         assertNull(loadedState);
@@ -179,7 +185,7 @@ class StartupStateUtilsTests {
     @DisplayName("Normal Restart Test")
     void normalRestartTest() throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
+        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -190,14 +196,14 @@ class StartupStateUtilsTests {
             latestState = writeState(random, platformContext, latestRound, null, false);
         }
 
+        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
+                        platformContext.getConfiguration(),
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        mock(EmergencyRecoveryManager.class))
+                        new BasicSoftwareVersion(1))
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -211,7 +217,7 @@ class StartupStateUtilsTests {
     @DisplayName("Corrupted State No Recycling Test")
     void corruptedStateNoRecyclingTest() throws IOException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
+        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -221,15 +227,15 @@ class StartupStateUtilsTests {
             final boolean corrupted = i == stateCount - 1;
             writeState(random, platformContext, latestRound, null, corrupted);
         }
+        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
 
         assertThrows(SignedStateLoadingException.class, () -> StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
+                        platformContext.getConfiguration(),
+                        recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        mock(EmergencyRecoveryManager.class))
+                        new BasicSoftwareVersion(1))
                 .get());
     }
 
@@ -239,7 +245,19 @@ class StartupStateUtilsTests {
     void corruptedStateRecyclingPermittedTest(final int invalidStateCount)
             throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(true);
+
+        final AtomicInteger recycleCount = new AtomicInteger(0);
+        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
+        // increment recycle count every time recycleBin.recycle() is called
+        doAnswer(invocation -> {
+                    invocation.callRealMethod();
+                    recycleCount.incrementAndGet();
+                    return null;
+                })
+                .when(recycleBin)
+                .recycle(any());
+
+        final PlatformContext platformContext = buildContext(true, recycleBin);
 
         int stateCount = 5;
 
@@ -254,25 +272,13 @@ class StartupStateUtilsTests {
             }
         }
 
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
-
         final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
+                        platformContext.getConfiguration(),
                         recycleBin,
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        mock(EmergencyRecoveryManager.class))
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         if (latestUncorruptedState != null) {
@@ -290,612 +296,19 @@ class StartupStateUtilsTests {
         final Path savedStateDirectory = signedStateFilePath
                 .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
-
-        assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
+        int filesCount;
+        try (Stream<Path> list = Files.list(savedStateDirectory)) {
+            filesCount = (int) list.count();
+        }
+        assertEquals(5 - invalidStateCount, filesCount, "Unexpected number of files " + filesCount);
         assertEquals(invalidStateCount, recycleCount.get());
     }
 
-    @Test
-    @DisplayName("Latest State Exact Epoch Hash Test")
-    void latestStateHasExactEpochHashTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
-
-        int stateCount = 5;
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState latestState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            latestState = writeState(random, platformContext, latestRound, null, false);
-        }
-
-        final Hash epoch = latestState.getState().getHash();
-        final long epochRound = latestState.getRound();
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .get();
-
-        loadedState.getState().throwIfImmutable();
-        loadedState.getState().throwIfDestroyed();
-
-        assertEquals(latestState.getRound(), loadedState.getRound());
-        assertEquals(latestState.getState().getHash(), loadedState.getState().getHash());
-
-        assertTrue(emergencyStateLoaded.get());
-    }
-
-    @Test
-    @DisplayName("Previous State Has Epoch Hash Test")
-    void previousStateHasExactEpochHashTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
-
-        int stateCount = 5;
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState targetState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            final SignedState state = writeState(random, platformContext, latestRound, null, false);
-            if (i == 2) {
-                targetState = state;
-            }
-        }
-
-        final Hash epoch = targetState.getState().getHash();
-        final long epochRound = targetState.getRound();
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .get();
-
-        loadedState.getState().throwIfImmutable();
-        loadedState.getState().throwIfDestroyed();
-
-        assertEquals(targetState.getRound(), loadedState.getRound());
-        assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-
-        assertTrue(emergencyStateLoaded.get());
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 3, 4})
-    @DisplayName("Previous State Has Epoch Hash")
-    void noStateHasEpochHashPreviousRoundExistsTest(final int startingStateIndex)
-            throws IOException, SignedStateLoadingException {
-
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
-
-        int stateCount = 5;
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState targetState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            final SignedState state = writeState(random, platformContext, latestRound, null, false);
-            if (i == startingStateIndex) {
-                targetState = state;
-            }
-        }
-
-        final Hash epoch = randomHash(random);
-        final long epochRound = targetState.getRound() + 1;
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .get();
-
-        loadedState.getState().throwIfImmutable();
-        loadedState.getState().throwIfDestroyed();
-
-        assertEquals(targetState.getRound(), loadedState.getRound());
-        assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-
-        // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
-        // matches then it's a good signal that the correct state was loaded.
-        assertEquals(
-                targetState.getState().getPlatformState().getConsensusTimestamp(),
-                loadedState.getState().getPlatformState().getConsensusTimestamp());
-
-        assertFalse(emergencyStateLoaded.get());
-    }
-
-    @Test
-    @DisplayName("Recover From Genesis Test")
-    void recoverFromGenesisTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
-
-        int stateCount = 5;
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState firstState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            final SignedState state = writeState(random, platformContext, latestRound, null, false);
-            if (i == 0) {
-                firstState = state;
-            }
-        }
-
-        final Hash epoch = randomHash(random);
-        final long epochRound = firstState.getRound() - 1;
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .getNullable();
-
-        assertNull(loadedState);
-        assertFalse(emergencyStateLoaded.get());
-    }
-
-    @Test
-    @DisplayName("State After Epoch State Is Present Test")
-    void stateAfterEpochStateIsPresentTest() throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
-
-        int stateCount = 5;
-
-        final Hash epoch = randomHash(random);
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState targetState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-
-            final Hash epochHash = i == (stateCount - 1) ? epoch : null;
-
-            final SignedState state = writeState(random, platformContext, latestRound, epochHash, false);
-
-            if (i == (stateCount - 1)) {
-                targetState = state;
-            }
-        }
-
-        final long epochRound = targetState.getRound() - 1;
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .get();
-
-        loadedState.getState().throwIfImmutable();
-        loadedState.getState().throwIfDestroyed();
-
-        assertEquals(targetState.getRound(), loadedState.getRound());
-        assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-
-        assertTrue(emergencyStateLoaded.get());
-    }
-
-    @Test
-    @DisplayName("Recovery Corrupted State No Recycling Test")
-    void recoveryCorruptedStateNoRecyclingTest() throws IOException {
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false);
-
-        int stateCount = 5;
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            final boolean corrupted = i == stateCount - 1;
-            writeState(random, platformContext, latestRound, null, corrupted);
-        }
-
-        final Hash epoch = randomHash(random);
-        final long epochRound = latestRound + 1;
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        assertThrows(
-                SignedStateLoadingException.class,
-                () -> StartupStateUtils.loadStateFile(
-                        platformContext,
-                        TestRecycleBin.getInstance(),
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager));
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5})
-    @DisplayName("Recovery Corrupted State Recycling Permitted Test")
-    void recoveryCorruptedStateRecyclingPermittedTest(final int invalidStateCount)
-            throws IOException, SignedStateLoadingException {
-        final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(true);
-
-        int stateCount = 5;
-
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState latestUncorruptedState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            final boolean corrupted = (stateCount - i) <= invalidStateCount;
-            final SignedState state = writeState(random, platformContext, latestRound, null, corrupted);
-            if (!corrupted) {
-                latestUncorruptedState = state;
-            }
-        }
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
-
-        final Hash epoch = randomHash(random);
-        final long epochRound = latestRound + 1;
-
-        final AtomicBoolean emergencyStateLoaded = new AtomicBoolean(false);
-
-        final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
-        when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-        doAnswer(invocation -> {
-                    emergencyStateLoaded.set(true);
-                    return null;
-                })
-                .when(emergencyRecoveryManager)
-                .emergencyStateLoaded();
-
-        final State state = new State(epochRound, epoch, null);
-        final Recovery recovery = new Recovery(state, null, null, null);
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(recovery);
-        when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-
-        final SignedState loadedState = StartupStateUtils.loadStateFile(
-                        platformContext,
-                        recycleBin,
-                        selfId,
-                        mainClassName,
-                        swirldName,
-                        new BasicSoftwareVersion(1),
-                        emergencyRecoveryManager)
-                .getNullable();
-
-        if (latestUncorruptedState != null) {
-            loadedState.getState().throwIfImmutable();
-            loadedState.getState().throwIfDestroyed();
-
-            assertEquals(latestUncorruptedState.getRound(), loadedState.getRound());
-
-            assertEquals(
-                    latestUncorruptedState.getState().getHash(),
-                    loadedState.getState().getHash());
-
-            // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
-            // matches then it's a good signal that the correct state was loaded.
-            assertEquals(
-                    latestUncorruptedState.getState().getPlatformState().getConsensusTimestamp(),
-                    loadedState.getState().getPlatformState().getConsensusTimestamp());
-        } else {
-            assertNull(loadedState);
-        }
-
-        final Path savedStateDirectory = signedStateFilePath
-                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
-                .getParent();
-
-        assertEquals(5 - invalidStateCount, Files.list(savedStateDirectory).count());
-        assertEquals(invalidStateCount, recycleCount.get());
-    }
-
-    @Test
-    @DisplayName("doRecoveryCleanup() Initial Epoch Test")
-    void doRecoveryCleanupInitialEpochTest() throws IOException {
-
-        final PlatformContext platformContext = buildContext(false);
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
-
-        final Random random = getRandomPrintSeed();
-
-        int stateCount = 5;
-        int latestRound = random.nextInt(1_000, 10_000);
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            writeState(random, platformContext, latestRound, null, false);
-        }
-
-        // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
-        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
-        final Path savedStateDirectory = stateConfig.savedStateDirectory();
-        final Path pcesDirectory = savedStateDirectory
-                .resolve(preconsensusEventStreamConfig.databaseDirectory())
-                .resolve("0");
-        Files.createDirectories(pcesDirectory);
-
-        final Path markerFile = pcesDirectory.resolve("markerFile");
-        final BufferedWriter writer = Files.newBufferedWriter(markerFile);
-        writer.write("this is a marker file");
-        writer.close();
-
-        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, null, latestRound);
-
-        final Path signedStateDirectory = signedStateFilePath
-                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
-                .getParent();
-
-        assertEquals(0, recycleCount.get());
-        assertEquals(stateCount, Files.list(signedStateDirectory).count());
-
-        assertTrue(Files.exists(markerFile));
-    }
-
-    @Test
-    @DisplayName("doRecoveryCleanup() Already Cleaned Up Test")
-    void doRecoveryCleanupAlreadyCleanedUpTest() throws IOException {
-        final Random random = getRandomPrintSeed();
-
-        final Hash epoch = randomHash(random);
-
-        final PlatformContext platformContext = buildContext(false);
-
-        final Scratchpad<RecoveryScratchpad> scratchpad =
-                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
-        scratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
-
-        int stateCount = 5;
-        int latestRound = random.nextInt(1_000, 10_000);
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            writeState(random, platformContext, latestRound, null, false);
-        }
-
-        // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
-        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
-        final Path savedStateDirectory = stateConfig.savedStateDirectory();
-        final Path pcesDirectory = savedStateDirectory
-                .resolve(preconsensusEventStreamConfig.databaseDirectory())
-                .resolve("0");
-        Files.createDirectories(pcesDirectory);
-
-        final Path markerFile = pcesDirectory.resolve("markerFile");
-        final BufferedWriter writer = Files.newBufferedWriter(markerFile);
-        writer.write("this is a marker file");
-        writer.close();
-
-        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, latestRound);
-
-        final Path signedStateDirectory = signedStateFilePath
-                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
-                .getParent();
-
-        assertEquals(0, recycleCount.get());
-        assertEquals(stateCount, Files.list(signedStateDirectory).count());
-
-        assertTrue(Files.exists(markerFile));
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5})
-    @DisplayName("doRecoveryCleanup() Work Required Test")
-    void doRecoveryCleanupWorkRequiredTest(final int statesToDelete) throws IOException {
-        final Random random = getRandomPrintSeed();
-
-        final PlatformContext platformContext = buildContext(false);
-
-        final AtomicInteger recycleCount = new AtomicInteger(0);
-        final RecycleBin recycleBin = spy(TestRecycleBin.getInstance());
-        // increment recycle count every time recycleBin.recycle() is called
-        doAnswer(invocation -> {
-                    invocation.callRealMethod();
-                    recycleCount.incrementAndGet();
-                    return null;
-                })
-                .when(recycleBin)
-                .recycle(any());
-
-        int stateCount = 5;
-        int latestRound = random.nextInt(1_000, 10_000);
-        SignedState targetState = null;
-        for (int i = 0; i < stateCount; i++) {
-            latestRound += random.nextInt(100, 200);
-            final SignedState signedState = writeState(random, platformContext, latestRound, null, false);
-            if (i == (stateCount - statesToDelete - 1)) {
-                targetState = signedState;
-            }
-        }
-
-        final Hash epoch = randomHash(random);
-        final long epochRound;
-        if (statesToDelete == stateCount) {
-            // lower round than what all states have
-            epochRound = 999;
-        } else {
-            epochRound = targetState.getRound();
-        }
-
-        // Write a file into the PCES directory. This file will should be deleted
-        final StateCommonConfig stateConfig = platformContext.getConfiguration().getConfigData(StateCommonConfig.class);
-        final PcesConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PcesConfig.class);
-        final Path savedStateDirectory = stateConfig.savedStateDirectory();
-        final Path pcesDirectory = savedStateDirectory
-                .resolve(preconsensusEventStreamConfig.databaseDirectory())
-                .resolve("0");
-        Files.createDirectories(pcesDirectory);
-
-        final Path markerFile = pcesDirectory.resolve("markerFile");
-        final BufferedWriter writer = Files.newBufferedWriter(markerFile);
-        writer.write("this is a marker file");
-        writer.close();
-
-        doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, epochRound);
-
-        final Scratchpad<RecoveryScratchpad> scratchpad =
-                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
-
-        assertEquals(epoch, scratchpad.get(RecoveryScratchpad.EPOCH_HASH));
-
-        final Path signedStateDirectory = signedStateFilePath
-                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
-                .getParent();
-
-        assertEquals(statesToDelete, recycleCount.get());
-
-        assertEquals(
-                stateCount - statesToDelete, Files.list(signedStateDirectory).count());
-
-        assertTrue(Files.exists(markerFile));
+    private RecycleBin initializeRecycleBin(PlatformContext platformContext, NodeId selfId) {
+        final var metrics = new NoOpMetrics();
+        final var configuration = platformContext.getConfiguration();
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var time = Time.getCurrent();
+        return RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
     }
 }

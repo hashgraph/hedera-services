@@ -19,7 +19,6 @@ socket.socketIpTos, 1
 metrics.halfLife, 5
 consensus.coinFreq, 20
 logStack, false
-socket.useTLS, false
 socket.useLoopbackIp, false
 socket.tcpNoDelay, false
 socket.timeoutSyncClientSocket, 1000

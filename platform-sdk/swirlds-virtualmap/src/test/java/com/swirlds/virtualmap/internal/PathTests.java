@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.merkle.route.MerkleRoute;
@@ -24,6 +25,7 @@ import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -230,6 +232,77 @@ class PathTests {
         assertEquals(10, Path.getRightChildPath(4), "unexpected value from getRightChildPath(internal path 4)");
         assertEquals(12, Path.getRightChildPath(5), "unexpected value from getRightChildPath(internal path 5)");
         assertEquals(14, Path.getRightChildPath(6), "unexpected value from getRightChildPath(internal path 6)");
+    }
+
+    @Test
+    @Tag(TestComponentTags.VMAP)
+    @DisplayName("Check grand child computation")
+    void testGetGrandChild() {
+        // Root grand children
+        assertEquals(3, Path.getLeftGrandChildPath(0, 2), "Left grand child (0, 2) is not 3");
+        assertEquals(6, Path.getRightGrandChildPath(0, 2), "Right grand child (0, 2) is not 6");
+        assertEquals(7, Path.getLeftGrandChildPath(0, 3), "Left grand child (0, 3) is not 7");
+        assertEquals(14, Path.getRightGrandChildPath(0, 3), "Right grand child (0, 3) is not 14");
+
+        // Path 4 grand children
+        assertEquals(19, Path.getLeftGrandChildPath(4, 2), "Left grand child (0, 2) is not 19");
+        assertEquals(22, Path.getRightGrandChildPath(4, 2), "Right grand child (0, 2) is not 22");
+        assertEquals(39, Path.getLeftGrandChildPath(4, 3), "Left grand child (0, 3) is not 39");
+        assertEquals(46, Path.getRightGrandChildPath(4, 3), "Right grand child (0, 3) is not 46");
+
+        // Check distance between right and left grand child paths
+        for (int i = 0; i < 8; i++) {
+            final long parent = 7 + i; // rank 3
+            final long leftPath = Path.getLeftGrandChildPath(parent, i);
+            final long rightPath = Path.getRightGrandChildPath(parent, i);
+            assertEquals((1 << i) - 1, rightPath - leftPath);
+        }
+    }
+
+    @Test
+    @Tag(TestComponentTags.VMAP)
+    @DisplayName("Check isInSubTree")
+    void testCheckIsInSubTree() {
+        final Random r = new Random(1234509876);
+
+        // Root sub-tree: any path should be in path 0 sub-tree
+        for (int i = 0; i < 100; i++) {
+            final long path = r.nextLong(1L << 40);
+            assertTrue(Path.isInSubTree(0, path), "Any path should be in the root sub-tree");
+        }
+
+        // A few random checks
+        assertTrue(Path.isInSubTree(1, 15));
+        assertTrue(Path.isInSubTree(1, 19));
+        assertTrue(Path.isInSubTree(1, 10));
+        assertTrue(Path.isInSubTree(1, 22));
+        assertFalse(Path.isInSubTree(1, 11));
+        assertFalse(Path.isInSubTree(1, 14));
+        assertFalse(Path.isInSubTree(1, 23));
+        assertFalse(Path.isInSubTree(1, 27));
+        assertFalse(Path.isInSubTree(1, 2));
+
+        assertTrue(Path.isInSubTree(4, 19));
+        assertTrue(Path.isInSubTree(4, 22));
+        assertTrue(Path.isInSubTree(4, 46));
+        assertFalse(Path.isInSubTree(4, 3));
+        assertFalse(Path.isInSubTree(4, 5));
+        assertFalse(Path.isInSubTree(4, 8));
+        assertFalse(Path.isInSubTree(4, 18));
+        assertFalse(Path.isInSubTree(4, 11));
+        assertFalse(Path.isInSubTree(4, 14));
+
+        // Check using grand child paths
+        for (int parent = 7; parent <= 14; parent++) {
+            final int height = r.nextInt(5) + 2;
+            final long leftGrandChild = Path.getLeftGrandChildPath(parent, height);
+            final long rightGrandChild = Path.getRightGrandChildPath(parent, height);
+            assertFalse(Path.isInSubTree(parent, leftGrandChild - 1));
+            for (long p = leftGrandChild; p <= rightGrandChild; p++) {
+                assertTrue(Path.isInSubTree(parent, p));
+            }
+            assertFalse(Path.isInSubTree(parent, rightGrandChild + 1));
+        }
     }
 
     // Args are Path, and List<Long> { Rank, Index }

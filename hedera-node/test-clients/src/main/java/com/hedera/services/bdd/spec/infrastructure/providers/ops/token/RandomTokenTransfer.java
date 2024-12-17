@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -38,17 +39,20 @@ public class RandomTokenTransfer implements OpProvider {
     private static final Logger log = LogManager.getLogger(RandomTokenTransfer.class);
 
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
-
-    public RandomTokenTransfer(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
-        this.tokenRels = tokenRels;
-    }
-
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             INSUFFICIENT_TOKEN_BALANCE,
             ACCOUNT_FROZEN_FOR_TOKEN,
             ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN,
+            ACCOUNT_DELETED,
             TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
             TOKEN_WAS_DELETED);
+    private final ResponseCodeEnum[] customOutcomes;
+
+    public RandomTokenTransfer(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
+        this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
+    }
 
     @Override
     public Optional<HapiSpecOperation> get() {
@@ -68,9 +72,8 @@ public class RandomTokenTransfer implements OpProvider {
         } else {
             op = cryptoTransfer(moving(1, token).between(ignore -> rel.getLeft(), spec -> spec.registry()
                             .getTreasury(token)))
-                    .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                    .hasKnownStatusFrom(permissibleOutcomes)
-                    .showingResolvedStatus();
+                    .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                    .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         }
 
         return Optional.of(op);

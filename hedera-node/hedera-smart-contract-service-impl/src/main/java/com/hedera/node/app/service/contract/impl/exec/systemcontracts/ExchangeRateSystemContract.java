@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.hapi.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +36,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 public class ExchangeRateSystemContract extends AbstractFullContract implements HederaSystemContract {
-
     private static final String PRECOMPILE_NAME = "ExchangeRate";
     private static final BigIntegerType WORD_DECODER = TypeFactory.create("uint256");
 
@@ -74,7 +73,7 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
                     };
             requireNonNull(result);
             return new FullResult(PrecompileContractResult.success(result), gasRequirement, null);
-        } catch (Exception ignore) {
+        } catch (Exception e) {
             return new FullResult(
                     PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
                     gasRequirement,

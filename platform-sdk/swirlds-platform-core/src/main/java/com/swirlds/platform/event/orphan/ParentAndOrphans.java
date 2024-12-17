@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.orphan;
 
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -26,4 +26,4 @@ import java.util.List;
  * @param parent  the parent event
  * @param orphans the orphans that are missing the parent
  */
-record ParentAndOrphans(@NonNull EventDescriptor parent, @NonNull List<OrphanedEvent> orphans) {}
+record ParentAndOrphans(@NonNull EventDescriptorWrapper parent, @NonNull List<OrphanedEvent> orphans) {}

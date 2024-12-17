@@ -25,15 +25,18 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -67,9 +70,6 @@ class FreezeUpgradeActionsTest {
     @Mock
     private WritableFreezeStore freezeStore;
 
-    @Mock
-    private NetworkAdminConfig adminServiceConfig;
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -82,13 +82,28 @@ class FreezeUpgradeActionsTest {
     @Mock
     private WritableUpgradeFileStore upgradeFileStore;
 
+    @Mock
+    private ReadableNodeStore nodeStore;
+
+    @Mock
+    private ReadableStakingInfoStore stakingInfoStore;
+
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private NetworkAdminConfig adminServiceConfig;
+
     @BeforeEach
     void setUp() throws IOException {
+        given(configuration.getConfigData(NetworkAdminConfig.class)).willReturn(adminServiceConfig);
+
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
         final Executor freezeExectuor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
-        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor, upgradeFileStore);
+        subject = new FreezeUpgradeActions(
+                configuration, freezeStore, freezeExectuor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");

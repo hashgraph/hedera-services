@@ -18,7 +18,7 @@ package com.hedera.node.config.converter;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

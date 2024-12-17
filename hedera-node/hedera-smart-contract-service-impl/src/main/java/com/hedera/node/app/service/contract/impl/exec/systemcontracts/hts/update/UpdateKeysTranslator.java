@@ -25,22 +25,25 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class UpdateKeysTranslator extends AbstractHtsCallTranslator {
+public class UpdateKeysTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for updateTokenKeys(address, TOKEN_KEY[]) method. */
     public static final Function TOKEN_UPDATE_KEYS_FUNCTION =
             new Function("updateTokenKeys(address," + TOKEN_KEY + ARRAY_BRACKETS + ")", ReturnTypes.INT);
 
     private final UpdateDecoder decoder;
 
+    /**
+     * @param decoder the decoder to use for token update keys calls
+     */
     @Inject
     public UpdateKeysTranslator(UpdateDecoder decoder) {
         this.decoder = decoder;
@@ -48,11 +51,11 @@ public class UpdateKeysTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_KEYS_FUNCTION.selector());
+        return attempt.isSelector(TOKEN_UPDATE_KEYS_FUNCTION);
     }
 
     @Override
-    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt,
                 decoder.decodeTokenUpdateKeys(attempt),
@@ -60,6 +63,13 @@ public class UpdateKeysTranslator extends AbstractHtsCallTranslator {
                 FAILURE_CUSTOMIZER);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,

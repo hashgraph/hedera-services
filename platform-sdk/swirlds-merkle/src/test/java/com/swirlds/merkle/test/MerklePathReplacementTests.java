@@ -17,7 +17,6 @@
 package com.swirlds.merkle.test;
 
 import static com.swirlds.common.merkle.copy.MerklePathReplacement.replacePath;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.areTreesEqual;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils.buildSmallTreeList;
@@ -381,7 +380,6 @@ class MerklePathReplacementTests {
      */
     @Test
     @Tag(TestComponentTags.MERKLE)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Test Path Replacement")
     void testPathReplacement() {
         final int depthLimit = 5;

@@ -23,28 +23,10 @@ import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.bdd.suites.utils.sysfiles.FeeSchedulesListEntry;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
-    public static void main(String... args) {
-        var subject = new FeesJsonToGrpcBytes();
-        try {
-            var grpcBytes = subject.toRawFile(Files.readString(Paths.get("src/main/resource/FeeSchedule.json")), null);
-            var grpc = CurrentAndNextFeeSchedule.parseFrom(grpcBytes);
-            System.out.println(grpc.toString());
-            var json = subject.fromRawFile(grpcBytes);
-            System.out.println("-----");
-            System.out.println(json);
-            Files.write(Paths.get("ReconstructedFeeSchedule.json"), json.getBytes());
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override

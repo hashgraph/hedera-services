@@ -43,7 +43,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -95,14 +95,14 @@ class PreHandleContextImplTest implements Scenarios {
     void setup() throws PreCheckException {
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
-        given(account.key()).willReturn(payerKey);
+        given(account.keyOrThrow()).willReturn(payerKey);
 
         final var txn = createAccountTransaction();
         subject = new PreHandleContextImpl(storeFactory, txn, configuration, dispatcher);
     }
 
     @Test
-    void gettersWork() throws PreCheckException {
+    void gettersWork() {
         subject.requireKey(otherKey);
 
         assertThat(subject.body()).isEqualTo(createAccountTransaction());

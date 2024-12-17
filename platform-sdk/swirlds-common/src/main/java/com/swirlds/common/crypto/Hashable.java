@@ -16,6 +16,8 @@
 
 package com.swirlds.common.crypto;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 public interface Hashable {
 
     /**
@@ -32,6 +34,7 @@ public interface Hashable {
      *
      * @return a valid hash or null
      */
+    @Nullable
     Hash getHash();
 
     /**

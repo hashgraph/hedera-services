@@ -28,7 +28,7 @@ platformStatus.observingStatusDelay,      1ms
                                           #        Event Stream       #
                                           #############################
 
-event.enableEventStreaming,               false
+platformSchedulers.consensusEventStream,  NO_OP
 event.eventsLogDir,                       ./eventsStreams
 
                                           #############################
@@ -44,5 +44,4 @@ prometheus.endpointEnabled,               false
 
 loadKeysFromPfxFiles,                     false
 crypto.enableNewKeyStoreModel,            false
-crypto.cpuVerifierThreadRatio,            0.1
 crypto.cpuDigestThreadRatio,              0.1

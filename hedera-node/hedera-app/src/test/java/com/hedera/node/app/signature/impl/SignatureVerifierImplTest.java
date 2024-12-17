@@ -19,16 +19,19 @@ package com.hedera.node.app.signature.impl;
 import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.ecdsaPair;
 import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.ed25519Pair;
 import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.hollowPair;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.KECCAK_256_HASH;
+import static com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType.RAW;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.fixtures.Scenarios;
@@ -37,13 +40,14 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -62,13 +66,13 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
     private Cryptography cryptoEngine;
     /** Captures the args sent to the crypto engine. */
     @Captor
-    ArgumentCaptor<List<TransactionSignature>> sigsCaptor;
+    ArgumentCaptor<TransactionSignature> sigsCaptor;
     /** The verifier under test. */
     private SignatureVerifierImpl verifier;
 
     @BeforeEach
     void setUp() {
-        signedBytes = randomBytes(123);
+        signedBytes = randomBytes(32);
         verifier = new SignatureVerifierImpl(cryptoEngine);
     }
 
@@ -89,9 +93,17 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         assertThatThrownBy(() -> verifier.verify(signedBytes, null)).isInstanceOf(NullPointerException.class);
     }
 
+    @Test
+    @DisplayName("Requires 32 bytes with KECCAK_256_HASH message type")
+    void requires32BytesWithKeccak256HashMessageType() {
+        final Set<ExpandedSignaturePair> signatures = emptySet();
+        assertThatThrownBy(() -> verifier.verify(Bytes.wrap(new byte[31]), signatures, KECCAK_256_HASH))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     /**
-     * If we are asked to verify the keys for an empty signature map, then we get back an empty map, since there
-     * was nothing to verify.
+     * If we are asked to verify the keys for an empty signature map, then we get back an empty map, since there was
+     * nothing to verify.
      */
     @Test
     @DisplayName("If there are no signatures then the map is empty")
@@ -101,8 +113,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
     }
 
     /**
-     * Each {@link ExpandedSignaturePair} sent to the {@link SignatureVerifier} will be included in the
-     * returned map.
+     * Each {@link ExpandedSignaturePair} sent to the {@link SignatureVerifier} will be included in the returned map.
      */
     @Test
     @DisplayName("All signatures are included in the result")
@@ -116,15 +127,13 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
 
         //noinspection unchecked
         doAnswer((Answer<Void>) invocation -> {
-                    final List<TransactionSignature> signatures = invocation.getArgument(0);
-                    for (TransactionSignature signature : signatures) {
-                        signature.setSignatureStatus(VerificationStatus.VALID);
-                        signature.setFuture(completedFuture(null));
-                    }
+                    final TransactionSignature signature = invocation.getArgument(0);
+                    signature.setSignatureStatus(VerificationStatus.VALID);
+                    signature.setFuture(completedFuture(null));
                     return null;
                 })
                 .when(cryptoEngine)
-                .verifyAsync(any(List.class));
+                .verifySync(any(TransactionSignature.class));
 
         // When we verify them
         final var map = verifier.verify(signedBytes, sigs);
@@ -140,15 +149,15 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
                 .isEqualTo(true);
     }
 
-    @Test
+    @ParameterizedTest
+    @CsvSource({"RAW", "KECCAK_256_HASH"})
     @DisplayName("Crypto Engine is given array with all the required data")
-    void cryptoEngineIsGivenAllTheData() {
+    void cryptoEngineIsGivenAllTheData(com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType messageType) {
         // Given some different kinds of signatures
         final var sigs = new LinkedHashSet<ExpandedSignaturePair>(); // for predictable iteration for the test
         sigs.add(ecdsaPair(ALICE.keyInfo().publicKey()));
         sigs.add(ed25519Pair(BOB.keyInfo().publicKey()));
         sigs.add(hollowPair(ERIN.keyInfo().publicKey(), ERIN.account()));
-        doNothing().when(cryptoEngine).verifyAsync(sigsCaptor.capture());
 
         // The signed bytes for ECDSA keys are keccak hashes
         final var signedBytesArray = new byte[(int) signedBytes.length()];
@@ -156,20 +165,27 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         final var keccakSignedBytes = Bytes.wrap(MiscCryptoUtils.keccak256DigestOf(signedBytesArray));
 
         // When we verify them
-        verifier.verify(signedBytes, sigs);
+        verifier.verify(signedBytes, sigs, messageType);
 
         // Then we find the crypto engine was given an array with all the data
-        final var txSigs = sigsCaptor.getValue();
-        assertThat(txSigs).hasSize(3);
+        verify(cryptoEngine, times(3)).verifySync(sigsCaptor.capture());
+        final var txSigs = sigsCaptor.getAllValues();
 
         final var itr = sigs.iterator();
         for (int i = 0; i < 3; i++) {
             final var expandedSigPair = itr.next();
             final var txSig = txSigs.get(i);
             final var contents = Bytes.wrap(txSig.getContents());
-            assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
-                            .matchesPrefix(i == 1 ? signedBytes : keccakSignedBytes)) // index 1 is ed25519
-                    .isTrue();
+            if (messageType == RAW) {
+                assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
+                                .matchesPrefix(i == 1 ? signedBytes : keccakSignedBytes)) // index 1 is ed25519
+                        .isTrue();
+            } else {
+                // For a KECCAK_256_HASH message type, the signed bytes are always the given hash
+                assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
+                                .matchesPrefix(signedBytes))
+                        .isTrue();
+            }
 
             assertThat(contents.slice(txSig.getSignatureOffset(), txSig.getSignatureLength())
                             .matchesPrefix(expandedSigPair.signature()))

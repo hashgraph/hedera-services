@@ -21,27 +21,28 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.DefaultEventHasher;
+import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig_;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -59,11 +60,11 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<GossipEvent> receivedEventQueue;
-    private final List<IndexedEvent> generatedEvents;
-    private final List<IndexedEvent> discardedEvents;
+    private final BlockingQueue<PlatformEvent> receivedEventQueue;
+    private final List<EventImpl> generatedEvents;
+    private final List<EventImpl> discardedEvents;
 
-    private final List<GossipEvent> receivedEvents;
+    private final List<PlatformEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -118,7 +119,7 @@ public class SyncNode {
 
         this.ancientMode = Objects.requireNonNull(ancientMode);
         this.numNodes = numNodes;
-        this.nodeId = new NodeId(nodeId);
+        this.nodeId = NodeId.of(nodeId);
         this.eventEmitter = eventEmitter;
 
         syncManager = new TestingSyncManager();
@@ -142,7 +143,8 @@ public class SyncNode {
                 .withConfiguration(configuration)
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        shadowGraph = new Shadowgraph(platformContext, numNodes, new NoOpIntakeEventCounter());
+        shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(ancientMode));
         this.executor = executor;
     }
 
@@ -163,7 +165,7 @@ public class SyncNode {
      * @param numEvents the number of events to generate and add to the {@link Shadowgraph}
      * @return an immutable list of the events added to the {@link Shadowgraph}
      */
-    public List<IndexedEvent> generateAndAdd(final int numEvents) {
+    public List<EventImpl> generateAndAdd(final int numEvents) {
         return generateAndAdd(numEvents, (e) -> true);
     }
 
@@ -180,7 +182,7 @@ public class SyncNode {
      * @param numEvents the number of events to generate and add to the {@link Shadowgraph}
      * @return an immutable list of the events added to the {@link Shadowgraph}
      */
-    public List<IndexedEvent> generateAndAdd(final int numEvents, final Predicate<IndexedEvent> shouldAddToGraph) {
+    public List<EventImpl> generateAndAdd(final int numEvents, final Predicate<EventImpl> shouldAddToGraph) {
         if (eventEmitter == null) {
             throw new IllegalStateException(
                     "SyncNode.setEventGenerator(ShuffledEventGenerator) must be called prior to generateAndAdd"
@@ -188,13 +190,13 @@ public class SyncNode {
         }
         eventsEmitted += numEvents;
         eventEmitter.setCheckpoint(eventsEmitted);
-        final List<IndexedEvent> newEvents = eventEmitter.emitEvents(numEvents);
+        final List<EventImpl> newEvents = eventEmitter.emitEvents(numEvents);
 
-        for (final IndexedEvent newEvent : newEvents) {
+        for (final EventImpl newEvent : newEvents) {
 
             // Only add the event to the graphs and the list of generated events if the test passes
             if (shouldAddToGraph.test(newEvent)) {
-                addToShadowGraph(newEvent);
+                addToShadowGraph(newEvent.getBaseEvent());
                 if (saveGeneratedEvents) {
                     generatedEvents.add(newEvent);
                 }
@@ -206,7 +208,7 @@ public class SyncNode {
         return List.copyOf(newEvents);
     }
 
-    private void addToShadowGraph(final IndexedEvent newEvent) {
+    private void addToShadowGraph(final PlatformEvent newEvent) {
         try {
             shadowGraph.addEvent(newEvent);
         } catch (ShadowgraphInsertionException e) {
@@ -220,7 +222,8 @@ public class SyncNode {
      */
     public void drainReceivedEventQueue() {
         receivedEventQueue.drainTo(receivedEvents);
-        receivedEvents.forEach(e -> CryptographyHolder.get().digestSync((e).getHashedData()));
+        final EventHasher hasher = new DefaultEventHasher();
+        receivedEvents.forEach(hasher::hashEvent);
     }
 
     /**
@@ -228,7 +231,7 @@ public class SyncNode {
      * it.
      */
     public ShadowgraphSynchronizer getSynchronizer() {
-        final Consumer<GossipEvent> eventHandler = event -> {
+        final Consumer<PlatformEvent> eventHandler = event -> {
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
@@ -266,7 +269,7 @@ public class SyncNode {
 
     /**
      * <p>Calls the
-     * {@link Shadowgraph#updateEventWindow(com.swirlds.platform.consensus.NonAncientEventWindow)} method and saves the
+     * {@link Shadowgraph#updateEventWindow(EventWindow)} method and saves the
      * {@code expireBelow} value for use in validation. For the purposes of these tests, the {@code expireBelow} value
      * becomes the oldest non-expired ancient indicator in the shadow graph returned by
      * {@link SyncNode#getExpirationThreshold()} . In order words, these tests assume there are no reservations prior to
@@ -278,10 +281,10 @@ public class SyncNode {
     public void expireBelow(final long expirationThreshold) {
         this.expirationThreshold = expirationThreshold;
 
-        final long ancientThreshold = shadowGraph.getEventWindow().getAncientThreshold();
+        final long ancientThreshold = Math.max(shadowGraph.getEventWindow().getAncientThreshold(), expirationThreshold);
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
-                0 /* ignored by shadowgraph */, ancientThreshold, expirationThreshold, ancientMode);
+        final EventWindow eventWindow =
+                new EventWindow(0 /* ignored by shadowgraph */, ancientThreshold, expirationThreshold, ancientMode);
 
         updateEventWindow(eventWindow);
     }
@@ -303,9 +306,9 @@ public class SyncNode {
     }
 
     /**
-     * Sets the current {@link NonAncientEventWindow} for the {@link Shadowgraph}.
+     * Sets the current {@link EventWindow} for the {@link Shadowgraph}.
      */
-    public void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public void updateEventWindow(@NonNull final EventWindow eventWindow) {
         shadowGraph.updateEventWindow(eventWindow);
     }
 
@@ -313,11 +316,11 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<GossipEvent> getReceivedEvents() {
+    public List<PlatformEvent> getReceivedEvents() {
         return receivedEvents;
     }
 
-    public List<IndexedEvent> getGeneratedEvents() {
+    public List<EventImpl> getGeneratedEvents() {
         return generatedEvents;
     }
 

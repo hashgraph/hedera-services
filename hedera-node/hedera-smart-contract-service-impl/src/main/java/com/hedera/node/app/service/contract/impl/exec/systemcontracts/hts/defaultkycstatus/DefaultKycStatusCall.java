@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defau
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusTranslator.DEFAULT_KYC_STATUS;
 import static java.util.Objects.requireNonNull;
 
@@ -31,9 +32,18 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implements the token redirect {@code getTokenDefaultKycStatus()} call of the HTS system contract.
+ */
 public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
     private final boolean isStaticCall;
 
+    /**
+     * @param gasCalculator the gas calculator to use
+     * @param enhancement the enhancement to use
+     * @param isStaticCall whether this is a static call
+     * @param token the token against the call is executed
+     */
     public DefaultKycStatusCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
@@ -47,9 +57,10 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
      * {@inheritDoc}
      */
     @Override
-    protected @NonNull FullResult resultOfViewingToken(@Nullable final Token token) {
+    protected @NonNull PricedResult resultOfViewingToken(@Nullable final Token token) {
         requireNonNull(token);
-        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsKycGrantedByDefault());
+        final boolean kycStatus = !token.hasKycKey() || token.accountsKycGrantedByDefault();
+        return gasOnly(fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), kycStatus), SUCCESS, true);
     }
 
     @Override
@@ -60,7 +71,7 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean kycStatus) {
-        // @Future remove to revert #9068 after modularization is completed
+        // For backwards compatibility, we need to revert here per issue #8746.
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, 0);
         }

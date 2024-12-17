@@ -21,12 +21,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,17 +39,21 @@ import javax.inject.Singleton;
 @Singleton
 public class SynchronizedThrottleAccumulator {
 
+    private final InstantSource instantSource;
     private final ThrottleAccumulator frontendThrottle;
 
     @NonNull
     private Instant lastDecisionTime = Instant.EPOCH;
 
     @Inject
-    public SynchronizedThrottleAccumulator(@NonNull @IngestThrottle final ThrottleAccumulator frontendThrottle) {
+    public SynchronizedThrottleAccumulator(
+            @NonNull final InstantSource instantSource,
+            @NonNull @IngestThrottle final ThrottleAccumulator frontendThrottle) {
+        this.instantSource = requireNonNull(instantSource);
         this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
 
-    /*
+    /**
      * Updates the throttle requirements for the given transaction and returns whether the transaction
      * should be throttled for the current time(Instant.now).
      *
@@ -56,32 +61,30 @@ public class SynchronizedThrottleAccumulator {
      * @param state the current state of the node
      * @return whether the transaction should be throttled
      */
-    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        setDecisionTime(Instant.now());
-        return frontendThrottle.shouldThrottle(txnInfo, lastDecisionTime, state);
+    public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, State state) {
+        setDecisionTime(instantSource.instant());
+        return frontendThrottle.checkAndEnforceThrottle(txnInfo, lastDecisionTime, state);
     }
 
-    /*
+    /**
      * Updates the throttle requirements for the given query and returns whether the query should be throttled for the
      * current time(Instant.now).
      *
      * @param queryFunction the functionality of the query
      * @param query the query to update the throttle requirements for
+     * @param state the current state of the node
      * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
     public synchronized boolean shouldThrottle(
             @NonNull final HederaFunctionality queryFunction,
             @NonNull final Query query,
+            @NonNull final State state,
             @Nullable AccountID queryPayerId) {
         requireNonNull(query);
         requireNonNull(queryFunction);
-        setDecisionTime(Instant.now());
-        return frontendThrottle.shouldThrottle(queryFunction, lastDecisionTime, query, queryPayerId);
-    }
-
-    public void leakUnusedThrottlePreviouslyReserved(int n, HederaFunctionality function) {
-        frontendThrottle.leakCapacityForNOfUnscaled(n, function);
+        setDecisionTime(instantSource.instant());
+        return frontendThrottle.checkAndEnforceThrottle(queryFunction, lastDecisionTime, query, state, queryPayerId);
     }
 
     private void setDecisionTime(@NonNull final Instant time) {

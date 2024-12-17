@@ -12,6 +12,7 @@
             "ScheduleCreate",
             "CryptoCreate",
             "CryptoTransfer",
+            "TokenAirdrop",
             "CryptoUpdate",
             "CryptoDelete",
             "CryptoGetInfo",
@@ -39,7 +40,10 @@
             "TokenGetNftInfos",
             "CryptoApproveAllowance",
             "CryptoDeleteAllowance",
-            "UtilPrng"
+            "UtilPrng",
+            "NodeCreate",
+            "NodeUpdate",
+            "NodeDelete"
           ]
         },
         {
@@ -61,7 +65,7 @@
         },
         {
           "opsPerSec": 0,
-          "milliOpsPerSec": 1250000,
+          "milliOpsPerSec": 125000,
           "operations": [
             "TokenMint"
           ]
@@ -92,7 +96,11 @@
             "TokenGrantKycToAccount",
             "TokenRevokeKycFromAccount",
             "TokenPause",
-            "TokenUnpause"
+            "TokenUnpause",
+            "TokenUpdateNfts",
+            "TokenClaimAirdrop",
+            "TokenReject",
+            "TokenCancelAirdrop"
           ]
         }
       ]
@@ -139,14 +147,15 @@
       "throttleGroups": [
         {
           "opsPerSec": 0,
-          "milliOpsPerSec": 200000,
+          "milliOpsPerSec": 2000,
           "operations": [
-            "CryptoCreate"
+            "CryptoCreate",
+            "NodeCreate"
           ]
         },
         {
           "opsPerSec": 0,
-          "milliOpsPerSec": 50000,
+          "milliOpsPerSec": 5000,
           "operations": [
             "ConsensusCreateTopic"
           ]
@@ -157,7 +166,8 @@
           "operations": [
             "TokenCreate",
             "TokenAssociateToAccount",
-            "ScheduleCreate"
+            "ScheduleCreate",
+            "TokenAirdrop"
           ]
         }
       ]
@@ -171,8 +181,21 @@
           "opsPerSec": 0,
           "milliOpsPerSec": 1000000000,
           "operations": [
-            "CryptoGetAccountBalance",
             "TransactionGetReceipt"
+          ]
+        }
+      ]
+    },
+    {
+      "burstPeriod": 0,
+      "burstPeriodMs": 1000,
+      "name": "BalanceQueryLimits",
+      "throttleGroups": [
+        {
+          "opsPerSec": 0,
+          "milliOpsPerSec": 10000000,
+          "operations": [
+            "CryptoGetAccountBalance"
           ]
         }
       ]

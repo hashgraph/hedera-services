@@ -22,12 +22,15 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.toReadableString;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -46,14 +49,13 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,34 +71,29 @@ public class FeesAndRatesProvider {
     private TxnFactory txns;
     private KeyFactory keys;
     private HapiSpecSetup setup;
-    private HapiApiClients clients;
     private HapiSpecRegistry registry;
     private static long gasPrice;
     private static FeeSchedule feeSchedule;
     private static ExchangeRateSet rateSet;
+    private final HederaNetwork network;
     private final ScheduleTypePatching typePatching = new ScheduleTypePatching();
 
     public FeesAndRatesProvider(
-            TxnFactory txns, KeyFactory keys, HapiSpecSetup setup, HapiApiClients clients, HapiSpecRegistry registry) {
-        this.txns = txns;
-        this.keys = keys;
-        this.setup = setup;
-        this.clients = clients;
-        this.registry = registry;
+            @NonNull final TxnFactory txns,
+            @NonNull final KeyFactory keys,
+            @NonNull final HapiSpecSetup setup,
+            @NonNull final HapiSpecRegistry registry,
+            @NonNull final HederaNetwork network) {
+        this.txns = requireNonNull(txns);
+        this.keys = requireNonNull(keys);
+        this.setup = requireNonNull(setup);
+        this.registry = requireNonNull(registry);
+        this.network = requireNonNull(network);
     }
 
     public void init() throws IOException, ReflectiveOperationException, GeneralSecurityException {
-        if (setup.useFixedFee()) {
-            return;
-        }
-        if (setup.clientExchangeRatesFromDisk()) {
-            readRateSet();
-        } else {
+        if (!setup.useFixedFee()) {
             downloadRateSet();
-        }
-        if (setup.clientFeeScheduleFromDisk()) {
-            readFeeSchedule();
-        } else {
             downloadFeeSchedule();
         }
     }
@@ -119,26 +116,11 @@ public class FeesAndRatesProvider {
         log.info(message);
     }
 
-    public ExchangeRateSet rateSet() {
-        return rateSet;
-    }
-
     private ExchangeRate activeRates() {
         boolean useCurrent = Instant.now().getEpochSecond()
                 < rateSet.getCurrentRate().getExpirationTime().getSeconds();
 
         return useCurrent ? rateSet.getCurrentRate() : rateSet.getNextRate();
-    }
-
-    private void readRateSet() throws IOException {
-        File f = new File(setup.clientExchangeRatesPath());
-        byte[] bytes = Files.readAllBytes(f.toPath());
-        rateSet = ExchangeRateSet.parseFrom(bytes);
-        String newSetAsString = rateSetAsString(rateSet);
-
-        final String message =
-                String.format("The exchange rates from '%s' are :: %s", f.getAbsolutePath(), newSetAsString);
-        log.info(message);
     }
 
     public boolean hasRateSet() {
@@ -152,17 +134,6 @@ public class FeesAndRatesProvider {
         rateSet = ExchangeRateSet.parseFrom(bytes);
         String newSetAsString = rateSetAsString(rateSet);
         final String message = String.format("The exchange rates are :: %s", newSetAsString);
-        log.info(message);
-    }
-
-    private void readFeeSchedule() throws IOException {
-        File f = new File(setup.clientFeeSchedulePath());
-        byte[] bytes = Files.readAllBytes(f.toPath());
-        CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
-        setScheduleAndGasPriceFrom(wrapper.getCurrentFeeSchedule());
-        final String message = String.format(
-                "The fee schedule from '%s' covers %s ops.",
-                f.getAbsolutePath(), feeSchedule.getTransactionFeeScheduleList().size());
         log.info(message);
     }
 
@@ -193,9 +164,7 @@ public class FeesAndRatesProvider {
         do {
             var payment = defaultPayerSponsored(queryFee);
             var query = downloadQueryWith(payment, costOnly, fid);
-            response = clients.getFileSvcStub(setup.defaultNode(), setup.getConfigTLS())
-                    .getFileContent(query)
-                    .getFileGetContents();
+            response = network.send(query, FileGetContents, setup.defaultNode()).getFileGetContents();
             status = response.getHeader().getNodeTransactionPrecheckCode();
             if (status != OK) {
                 log.warn(
@@ -239,17 +208,22 @@ public class FeesAndRatesProvider {
         CryptoTransferTransactionBody opBody =
                 txns.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(
                         CryptoTransferTransactionBody.class, b -> b.setTransfers(transfers));
-        Transaction.Builder txnBuilder = txns.getReadyToSign(b -> {
-            b.setTransactionID(
-                    TransactionID.newBuilder().mergeFrom(b.getTransactionID()).setAccountID(setup.defaultPayer()));
-            b.setCryptoTransfer(opBody);
-        });
+        Transaction.Builder txnBuilder = txns.getReadyToSign(
+                b -> {
+                    b.setTransactionID(TransactionID.newBuilder()
+                            .mergeFrom(b.getTransactionID())
+                            .setAccountID(setup.defaultPayer()));
+                    b.setCryptoTransfer(opBody);
+                },
+                null,
+                null);
 
-        return keys.signWithFullPrefixEd25519Keys(
-                txnBuilder,
-                List.of(
-                        flattenedMaybeList(registry.getKey(setup.defaultPayerName())),
-                        flattenedMaybeList(registry.getKey(setup.defaultPayerName()))));
+        final var payerKey = flattenedMaybeList(registry.getKey(setup.defaultPayerName()));
+        try {
+            return keys.sign(null, txnBuilder, List.of(payerKey), Map.of(payerKey, SigControl.ED25519_ON));
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Key flattenedMaybeList(final Key k) {

@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.gui;
 
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.GuiUtils.winRect;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gui.internal.SwirldMenu;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -60,37 +62,12 @@ public final class SwirldsGui {
             return null;
         }
         final NodeId selfId = platform.getSelfId();
-        final AddressBook addressBook = platform.getAddressBook();
         final int winCount = nodesToStart.size();
+        final Roster roster = platform.getRoster();
         final Rectangle winRect = winRect(winCount, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
-        final Console console =
-                GuiUtils.createBasicConsole(addressBook.getAddress(selfId).getSelfName(), winRect, visible);
+        final Console console = GuiUtils.createBasicConsole(RosterUtils.formatNodeName(selfId.id()), winRect, visible);
         SwirldMenu.addTo(platform, console.getWindow(), 40, Color.white, false);
         return console;
-    }
-
-    /**
-     * Create a new window of the recommended size and location, including the Swirlds menu.
-     *
-     * @param visible should the window be initially visible? If not, call setVisible(true) later.
-     * @return the new window
-     */
-    public static JFrame createWindow(
-            final Platform platform, final Address address, final int winCount, int winNum, final boolean visible) {
-        if (GraphicsEnvironment.isHeadless()) {
-            return null;
-        }
-        final Rectangle winRect = winRect(winCount, winNum);
-        JFrame frame = null;
-        try {
-            final String name = address.getSelfName();
-            frame = GuiUtils.createBasicWindow(name, winRect, visible);
-            SwirldMenu.addTo(platform, frame, 40, Color.BLUE, false);
-        } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "", e);
-        }
-
-        return frame;
     }
 }

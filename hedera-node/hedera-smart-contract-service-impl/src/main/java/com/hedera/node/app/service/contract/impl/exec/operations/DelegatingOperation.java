@@ -28,6 +28,9 @@ import org.hyperledger.besu.evm.operation.Operation;
 public class DelegatingOperation implements Operation {
     private final Operation delegate;
 
+    /**
+     * @param delegate the given operation
+     */
     public DelegatingOperation(@NonNull final Operation delegate) {
         this.delegate = delegate;
     }

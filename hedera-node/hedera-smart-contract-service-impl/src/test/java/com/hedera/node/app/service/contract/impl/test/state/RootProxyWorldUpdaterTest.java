@@ -39,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -97,6 +98,9 @@ class RootProxyWorldUpdaterTest {
     @Mock
     private ContractStateStore store;
 
+    @Mock
+    private ThrottleAdviser throttleAdviser;
+
     private Enhancement enhancement;
     private RootProxyWorldUpdater subject;
 
@@ -138,7 +142,6 @@ class RootProxyWorldUpdaterTest {
         final var updatedNonces = new ArrayList<>(List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L)));
         given(hederaOperations.summarizeContractChanges())
                 .willReturn(new ContractChangeSummary(createdIds, updatedNonces));
-        given(context.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         subject.commit();
 

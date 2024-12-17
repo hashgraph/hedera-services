@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.benchmark.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.CONFIGURATION;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -24,21 +25,22 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
+import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
+import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import java.io.FileNotFoundException;
 import org.junit.jupiter.api.Assertions;
 
@@ -54,21 +56,27 @@ public abstract class VirtualMapReconnectBenchBase {
 
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
-    protected VirtualDataSourceBuilder<TestKey, TestValue> teacherBuilder;
-    protected VirtualDataSourceBuilder<TestKey, TestValue> learnerBuilder;
+    protected VirtualDataSourceBuilder teacherBuilder;
+    protected VirtualDataSourceBuilder learnerBuilder;
 
-    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+    protected final ReconnectConfig reconnectConfig = new TestConfigBuilder()
+            // This is lower than the default, helps test that is supposed to fail to finish faster.
+            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5s")
+            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
+            .getOrCreateConfig()
+            .getConfigData(ReconnectConfig.class);
 
-    protected VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() {
+    protected VirtualDataSourceBuilder createBuilder() {
         return new InMemoryBuilder();
     }
 
     protected void setupEach() {
         teacherBuilder = createBuilder();
         learnerBuilder = createBuilder();
-        teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", learnerBuilder);
+        teacherMap = new VirtualMap<>(
+                "Teacher", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, teacherBuilder, CONFIGURATION);
+        learnerMap = new VirtualMap<>(
+                "Learner", TestKeySerializer.INSTANCE, TestValueSerializer.INSTANCE, learnerBuilder, CONFIGURATION);
     }
 
     protected static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -79,18 +87,13 @@ public abstract class VirtualMapReconnectBenchBase {
         registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualRootNode.class,
+                () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
-
-        new TestConfigBuilder()
-                .withValue(ReconnectConfig_.ACTIVE, "true")
-                // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
-                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {

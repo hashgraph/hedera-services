@@ -35,7 +35,7 @@ public enum CallResultsSnapshot {
 
     private static final String CALL_RESULT_KEY = "callResults";
     private static final String STATIC_CALL_RESULT_KEY = "staticCallResults";
-    private static final String SNAPSHOT_LOC = "hedera-node/test-clients/src/main/resource/call-results-snapshot.json";
+    private static final String SNAPSHOT_LOC = "hedera-node/test-clients/src/main/resources/call-results-snapshot.json";
     private static final Map<String, Map<ClassicFailureMode, FailableCallResult>> CALL_RESULTS =
             new ConcurrentHashMap<>();
     private static final Map<String, Map<ClassicFailureMode, FailableStaticCallResult>> STATIC_CALL_RESULTS =

@@ -16,160 +16,142 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
-import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.event.creation.EventCreator;
-import com.swirlds.platform.event.creation.rules.EventCreationRule;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.system.events.UnsignedEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("EventCreationManager Tests")
 class EventCreationManagerTests {
+    private EventCreator creator;
+    private List<UnsignedEvent> eventsToCreate;
+    private FakeTime time;
+    private EventCreationManager manager;
 
-    @Test
-    @DisplayName("Basic Behavior Test")
-    void basicBehaviorTest() {
-        final EventCreator creator = mock(EventCreator.class);
-        final List<GossipEvent> eventsToCreate =
-                List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
+    @BeforeEach
+    void setUp() {
+        creator = mock(EventCreator.class);
+        eventsToCreate = List.of(mock(UnsignedEvent.class), mock(UnsignedEvent.class), mock(UnsignedEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
-        final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final EventCreationRule rule = new EventCreationRule() {
-            @Override
-            public boolean isEventCreationPermitted() {
-                return true;
-            }
+        time = new FakeTime();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue("event.creation.eventIntakeThrottle", 10)
+                        .withValue("event.creation.eventCreationRate", 1)
+                        .getOrCreateConfig())
+                .withTime(time)
+                .build();
 
-            @Override
-            public void eventWasCreated() {
-                eventWasCreatedCount.getAndIncrement();
-            }
+        manager = new DefaultEventCreationManager(platformContext, mock(TransactionPoolNexus.class), creator);
 
-            @NonNull
-            @Override
-            public EventCreationStatus getEventCreationStatus() {
-                return RATE_LIMITED;
-            }
-        };
+        manager.updatePlatformStatus(PlatformStatus.ACTIVE);
+    }
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final EventCreationManager manager = new EventCreationManager(platformContext, creator, rule);
-        assertEquals(0, eventWasCreatedCount.get());
-
-        final GossipEvent e0 = manager.maybeCreateEvent();
+    @Test
+    void basicBehaviorTest() {
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
+        verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
-        assertEquals(1, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(0), e0);
 
-        final GossipEvent e1 = manager.maybeCreateEvent();
-        assertEquals(2, eventWasCreatedCount.get());
+        time.tick(Duration.ofSeconds(1));
+
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
+        verify(creator, times(2)).maybeCreateEvent();
         assertNotNull(e1);
         assertSame(eventsToCreate.get(1), e1);
 
-        final GossipEvent e2 = manager.maybeCreateEvent();
+        time.tick(Duration.ofSeconds(1));
+
+        final UnsignedEvent e2 = manager.maybeCreateEvent();
+        verify(creator, times(3)).maybeCreateEvent();
         assertNotNull(e2);
-        assertEquals(3, eventWasCreatedCount.get());
         assertSame(eventsToCreate.get(2), e2);
     }
 
     @Test
-    @DisplayName("Rules Prevent Creation Test")
-    void rulesPreventCreationTest() {
-        final EventCreator creator = mock(EventCreator.class);
-        final List<GossipEvent> eventsToCreate =
-                List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
-        when(creator.maybeCreateEvent())
-                .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
-
-        final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final AtomicBoolean allowCreation = new AtomicBoolean(false);
-        final EventCreationRule rule = new EventCreationRule() {
-            @Override
-            public boolean isEventCreationPermitted() {
-                return allowCreation.get();
-            }
-
-            @Override
-            public void eventWasCreated() {
-                eventWasCreatedCount.getAndIncrement();
-            }
-
-            @NonNull
-            @Override
-            public EventCreationStatus getEventCreationStatus() {
-                return RATE_LIMITED;
-            }
-        };
-
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final EventCreationManager manager = new EventCreationManager(platformContext, creator, rule);
-
-        assertEquals(0, eventWasCreatedCount.get());
-
-        // Event creation is not permitted
-        for (int i = 0; i < 10; i++) {
-            assertNull(manager.maybeCreateEvent());
-            assertEquals(0, eventWasCreatedCount.get());
-        }
-
-        // Event creation is permitted
-        allowCreation.set(true);
-        final GossipEvent e0 = manager.maybeCreateEvent();
-        assertEquals(1, eventWasCreatedCount.get());
+    void statusPreventsCreation() {
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
+        verify(creator, times(1)).maybeCreateEvent();
+        assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
 
-        // Event creation is not permitted
-        allowCreation.set(false);
-        for (int i = 0; i < 10; i++) {
-            assertNull(manager.maybeCreateEvent());
-            assertEquals(1, eventWasCreatedCount.get());
-        }
+        time.tick(Duration.ofSeconds(1));
 
-        // Event creation is permitted
-        allowCreation.set(true);
-        final GossipEvent e1 = manager.maybeCreateEvent();
-        assertEquals(2, eventWasCreatedCount.get());
+        manager.updatePlatformStatus(PlatformStatus.BEHIND);
+        assertNull(manager.maybeCreateEvent());
+        verify(creator, times(1)).maybeCreateEvent();
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.updatePlatformStatus(PlatformStatus.ACTIVE);
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
+        assertNotNull(e1);
+        verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);
+    }
 
-        // Event creation is not permitted
-        allowCreation.set(false);
-        for (int i = 0; i < 10; i++) {
-            assertNull(manager.maybeCreateEvent());
-            assertEquals(2, eventWasCreatedCount.get());
-        }
+    @Test
+    void ratePreventsCreation() {
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
+        verify(creator, times(1)).maybeCreateEvent();
+        assertNotNull(e0);
+        assertSame(eventsToCreate.get(0), e0);
 
-        // Event creation is permitted
-        allowCreation.set(true);
-        final GossipEvent e2 = manager.maybeCreateEvent();
-        assertEquals(3, eventWasCreatedCount.get());
-        assertSame(eventsToCreate.get(2), e2);
+        // no tick
 
-        // Event creation is not permitted
-        allowCreation.set(false);
-        for (int i = 0; i < 10; i++) {
-            assertNull(manager.maybeCreateEvent());
-            assertEquals(3, eventWasCreatedCount.get());
-        }
+        assertNull(manager.maybeCreateEvent());
+        assertNull(manager.maybeCreateEvent());
+        verify(creator, times(1)).maybeCreateEvent();
+
+        time.tick(Duration.ofSeconds(1));
+
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
+        verify(creator, times(2)).maybeCreateEvent();
+        assertNotNull(e1);
+        assertSame(eventsToCreate.get(1), e1);
+    }
+
+    @Test
+    void unhealthyNodePreventsCreation() {
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
+        verify(creator, times(1)).maybeCreateEvent();
+        assertNotNull(e0);
+        assertSame(eventsToCreate.get(0), e0);
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.reportUnhealthyDuration(Duration.ofSeconds(10));
+
+        assertNull(manager.maybeCreateEvent());
+        verify(creator, times(1)).maybeCreateEvent();
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.reportUnhealthyDuration(Duration.ZERO);
+
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
+        assertNotNull(e1);
+        verify(creator, times(2)).maybeCreateEvent();
+        assertSame(eventsToCreate.get(1), e1);
     }
 }

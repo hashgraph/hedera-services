@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records;
+package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.NAME;
-import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.records.RecordTestData.BLOCK_NUM;
 import static com.hedera.node.app.records.RecordTestData.ENDING_RUNNING_HASH;
 import static com.hedera.node.app.records.RecordTestData.SIGNER;
@@ -27,15 +25,23 @@ import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_O
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
 import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
 import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE;
+import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
@@ -44,13 +50,17 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerConcurrent;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
-import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -75,13 +85,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class BlockRecordManagerTest extends AppTestBase {
     private static final Timestamp CONSENSUS_TIME =
             Timestamp.newBuilder().seconds(1_234_567L).nanos(13579).build();
-    /** Make it small enough to trigger roll over code with the number of test blocks we have */
+    /**
+     * Make it small enough to trigger roll over code with the number of test blocks we have
+     */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
 
     private static final Timestamp FIRST_CONS_TIME_OF_LAST_BLOCK = new Timestamp(1682899224, 38693760);
     private static final Instant FORCED_BLOCK_SWITCH_TIME = Instant.ofEpochSecond(1682899224L, 38693760);
-
-    /** Temporary in memory file system used for testing */
+    private static final NodeInfoImpl NODE_INFO =
+            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
+    /**
+     * Temporary in memory file system used for testing
+     */
     private FileSystem fs;
 
     private App app;
@@ -91,6 +106,7 @@ final class BlockRecordManagerTest extends AppTestBase {
 
     @BeforeEach
     void setUpEach() throws Exception {
+        PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
         // create in memory temp dir
         fs = Jimfs.newFileSystem(Configuration.unix());
         final var tempDir = fs.getPath("/temp");
@@ -108,7 +124,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .withConfigValue("hedera.recordStream.signatureFileVersion", 6)
                 .withConfigValue("hedera.recordStream.compressFilesOnCreation", true)
                 .withConfigValue("hedera.recordStream.sidecarMaxSizeMb", 256)
+                .withConfigValue("blockStream.streamMode", "BOTH")
                 .withService(new BlockRecordService())
+                .withService(PLATFORM_STATE_SERVICE)
                 .build();
 
         // Preload the specific state we want to test with
@@ -119,9 +137,11 @@ final class BlockRecordManagerTest extends AppTestBase {
                         BLOCK_INFO_STATE_KEY,
                         new BlockInfo(-1, EPOCH, STARTING_RUNNING_HASH_OBJ.hash(), null, false, EPOCH))
                 .commit();
+        app.stateMutator(PlatformStateService.NAME)
+                .withSingletonState(V0540PlatformStateSchema.PLATFORM_STATE_KEY, UNINITIALIZED_PLATFORM_STATE)
+                .commit();
 
-        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
-                app.configProvider(), app.networkInfo().selfNodeInfo(), SIGNER, fs);
+        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(app.configProvider(), NODE_INFO, SIGNER, fs);
     }
 
     @AfterEach
@@ -164,22 +184,18 @@ final class BlockRecordManagerTest extends AppTestBase {
                     .commit();
         }
 
-        final var hederaState = app.workingStateAccessor().getHederaState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = concurrent
                 ? new StreamFileProducerConcurrent(
-                        app.networkInfo().selfNodeInfo(),
-                        blockRecordFormat,
-                        blockRecordWriterFactory,
-                        ForkJoinPool.commonPool())
-                : new StreamFileProducerSingleThreaded(
-                        app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
+                        blockRecordFormat, blockRecordWriterFactory, ForkJoinPool.commonPool(), app.hapiVersion())
+                : new StreamFileProducerSingleThreaded(blockRecordFormat, blockRecordWriterFactory, app.hapiVersion());
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
-            assertThat(blockRecordManager.currentBlockTimestamp()).isNotNull();
+            assertThat(blockRecordManager.blockTimestamp()).isNotNull();
             assertThat(blockRecordManager.blockNo()).isEqualTo(blockRecordManager.lastBlockNo() + 1);
             // write a blocks & record files
             int transactionCount = 0;
@@ -189,18 +205,18 @@ final class BlockRecordManagerTest extends AppTestBase {
                 final var block = STARTING_BLOCK + i;
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
-                            fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
+                            fromTimestamp(record.transactionRecord().consensusTimestamp()), merkleState);
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
                         assertThat(blockRecordManager.getRunningHash().toHex())
                                 .isEqualTo(STARTING_RUNNING_HASH_OBJ.hash().toHex());
                     }
-                    blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
+                    blockRecordManager.endUserTransaction(Stream.of(record), merkleState);
                     transactionCount++;
                     // pretend rounds happen every 20 transactions
                     if (transactionCount % 20 == 0) {
-                        blockRecordManager.endRound(hederaState);
+                        blockRecordManager.endRound(merkleState);
                     }
                 }
                 assertThat(block - 1).isEqualTo(blockRecordManager.lastBlockNo());
@@ -212,7 +228,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 endOfBlockHashes.add(blockRecordManager.getRunningHash());
             }
             // end the last round
-            blockRecordManager.endRound(hederaState);
+            blockRecordManager.endRound(merkleState);
             // collect info for later validation
             finalRunningHash = blockRecordManager.getRunningHash();
             // try with resources will close the blockRecordManager and result in waiting for background threads to
@@ -224,8 +240,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var recordStreamConfig =
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
+                fs.getPath(recordStreamConfig.logDir()).resolve("record" + asAccountString(NODE_INFO.accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -256,12 +271,12 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .commit();
 
         final Random random = new Random(82792874);
-        final var hederaState = app.workingStateAccessor().getHederaState();
-        final var producer = new StreamFileProducerSingleThreaded(
-                app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
+        final var merkleState = app.workingStateAccessor().getState();
+        final var producer =
+                new StreamFileProducerSingleThreaded(blockRecordFormat, blockRecordWriterFactory, app.hapiVersion());
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;
@@ -283,8 +298,8 @@ final class BlockRecordManagerTest extends AppTestBase {
                     final var userTransactions = blockData.subList(j, j + batchSize);
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
-                                fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
-                        blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
+                                fromTimestamp(record.transactionRecord().consensusTimestamp()), merkleState);
+                        blockRecordManager.endUserTransaction(Stream.of(record), merkleState);
                         transactionCount++;
                         // collect hashes
                         runningHashNMinus3 = runningHashNMinus2;
@@ -295,19 +310,16 @@ final class BlockRecordManagerTest extends AppTestBase {
                         if (runningHashNMinus3 != null) {
                             // check running hash N - 3
                             assertThat(runningHashNMinus3.toHex())
-                                    .isEqualTo(blockRecordManager
-                                            .getNMinus3RunningHash()
-                                            .toHex());
+                                    .isEqualTo(blockRecordManager.prngSeed().toHex());
                         } else {
                             // check empty as well
-                            assertThat(blockRecordManager.getNMinus3RunningHash())
-                                    .isEqualTo(Bytes.EMPTY);
+                            assertThat(blockRecordManager.prngSeed()).isEqualTo(Bytes.EMPTY);
                         }
                     }
                     j += batchSize;
                     // pretend rounds happen every 20 or so transactions
                     if (transactionCount % 20 == 0) {
-                        blockRecordManager.endRound(hederaState);
+                        blockRecordManager.endRound(merkleState);
                     }
                 }
                 // VALIDATE BLOCK INFO METHODS
@@ -344,7 +356,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 endOfBlockHashes.add(blockRecordManager.getRunningHash());
             }
             // end the last round
-            blockRecordManager.endRound(hederaState);
+            blockRecordManager.endRound(merkleState);
             // collect info for later validation
             finalRunningHash = blockRecordManager.getRunningHash();
             // try with resources will close the blockRecordManager and result in waiting for background threads to
@@ -356,8 +368,7 @@ final class BlockRecordManagerTest extends AppTestBase {
         final var recordStreamConfig =
                 app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir())
-                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
+                fs.getPath(recordStreamConfig.logDir()).resolve("record" + asAccountString(NODE_INFO.accountId())),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -430,14 +441,14 @@ final class BlockRecordManagerTest extends AppTestBase {
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));
     }
 
-    private static HederaState simpleBlockInfoState(final BlockInfo blockInfo) {
-        return new HederaState() {
+    private static State simpleBlockInfoState(final BlockInfo blockInfo) {
+        return new State() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull final String serviceName) {
                 return new MapReadableStates(Map.of(
-                        BlockRecordService.BLOCK_INFO_STATE_KEY,
-                        new ReadableSingletonStateBase<>(BlockRecordService.BLOCK_INFO_STATE_KEY, () -> blockInfo),
+                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
+                        new ReadableSingletonStateBase<>(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, () -> blockInfo),
                         RUNNING_HASHES_STATE_KEY,
                         new ReadableSingletonStateBase<>(RUNNING_HASHES_STATE_KEY, () -> RunningHashes.DEFAULT)));
             }

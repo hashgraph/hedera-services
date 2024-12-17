@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-import com.google.protobuf.gradle.ProtobufExtract
-
 plugins {
-    id("com.hedera.hashgraph.application")
+    id("com.hedera.gradle.application")
+    id("com.hedera.gradle.feature.test-timing-sensitive")
     id("com.google.protobuf")
 }
 
-application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-static,-cast")
+}
+
+application.mainClass = "com.swirlds.demo.platform.PlatformTestingToolMain"
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
@@ -31,18 +36,32 @@ testModuleInfo {
     requires("org.mockito")
 }
 
-protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
-
-configurations {
-    // Give proto compile access to the dependency versions
-    compileProtoPath { extendsFrom(configurations.internal.get()) }
-    testCompileProtoPath { extendsFrom(configurations.internal.get()) }
+timingSensitiveModuleInfo {
+    requires("com.hedera.node.hapi")
+    requires("com.swirlds.common")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.demo.platform")
+    requires("com.swirlds.fcqueue")
+    requires("com.swirlds.merkle")
+    requires("com.swirlds.merkle.test.fixtures")
+    requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
 }
 
-tasks.withType<ProtobufExtract>().configureEach {
-    if (name == "extractIncludeProto") {
-        enabled = false
+protobuf { protoc { artifact = "com.google.protobuf:protoc" } }
+
+configurations.configureEach {
+    if (name.startsWith("protobufToolsLocator") || name.endsWith("ProtoPath")) {
+        @Suppress("UnstableApiUsage")
+        shouldResolveConsistentlyWith(configurations.getByName("mainRuntimeClasspath"))
+        attributes { attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API)) }
+        exclude(group = project.group.toString(), module = project.name)
+        withDependencies {
+            isTransitive = true
+            extendsFrom(configurations["internal"])
+        }
     }
 }
-
-tasks.withType<Javadoc>().configureEach { enabled = false }

@@ -393,14 +393,26 @@ public final class PcesFile implements Comparable<PcesFile> {
     }
 
     /**
-     * Get an object that can be used to write events to this file. Throws if there already exists a file on disk with
-     * the same path.
-     *
-     * @return a writer for this file
+     * Same as {@link #getMutableFile(boolean, boolean)} with both parameters set to false.
      */
     @NonNull
     public PcesMutableFile getMutableFile() throws IOException {
-        return new PcesMutableFile(this);
+        return new PcesMutableFile(this, false, false);
+    }
+
+    /**
+     * Get an object that can be used to write events to this file. Throws if there already exists a file on disk with
+     * the same path.
+     *
+     * @param useFileChannelWriter if true, use a {@link java.nio.channels.FileChannel} to write to the file. Otherwise,
+     *                             use a {@link java.io.FileOutputStream}.
+     * @param syncEveryEvent       if true, sync the file after every event is written
+     * @return a writer for this file
+     */
+    @NonNull
+    public PcesMutableFile getMutableFile(final boolean useFileChannelWriter, final boolean syncEveryEvent)
+            throws IOException {
+        return new PcesMutableFile(this, useFileChannelWriter, syncEveryEvent);
     }
 
     /**
@@ -418,7 +430,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * reached, which is never deleted.
      *
      * @param rootDirectory the root directory where event files are stored
-     * @param recycleBin    if not null, then recycle the files instead of deleting them
+     * @param recycleBin  if not null, then recycle the files instead of deleting them
      */
     public void deleteFile(@NonNull final Path rootDirectory, @Nullable final RecycleBin recycleBin)
             throws IOException {

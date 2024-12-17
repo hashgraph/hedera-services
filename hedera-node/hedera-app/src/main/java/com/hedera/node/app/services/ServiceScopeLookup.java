@@ -17,6 +17,7 @@
 package com.hedera.node.app.services;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
@@ -25,6 +26,7 @@ import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.tss.TssBaseService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -98,7 +100,12 @@ public class ServiceScopeLookup {
                     TOKEN_DISSOCIATE,
                     TOKEN_FEE_SCHEDULE_UPDATE,
                     TOKEN_PAUSE,
-                    TOKEN_UNPAUSE -> TokenService.NAME;
+                    TOKEN_UNPAUSE,
+                    TOKEN_UPDATE_NFTS,
+                    TOKEN_AIRDROP,
+                    TOKEN_CLAIM_AIRDROP,
+                    TOKEN_CANCEL_AIRDROP,
+                    TOKEN_REJECT -> TokenService.NAME;
 
             case UTIL_PRNG -> UtilService.NAME;
 
@@ -112,6 +119,9 @@ public class ServiceScopeLookup {
                 case FILE_ID -> FileService.NAME;
                 default -> NON_EXISTING_SERVICE;
             };
+
+            case NODE_CREATE, NODE_DELETE, NODE_UPDATE -> AddressBookService.NAME;
+            case TSS_MESSAGE, TSS_VOTE, TSS_SHARE_SIGNATURE -> TssBaseService.NAME;
 
             default -> NON_EXISTING_SERVICE;
         };

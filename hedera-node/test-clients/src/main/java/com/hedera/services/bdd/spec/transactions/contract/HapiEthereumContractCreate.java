@@ -16,30 +16,32 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
-import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_IN_A_TINYBAR;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
@@ -49,20 +51,20 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 
 public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEthereumContractCreate> {
     private EthTxData.EthTransactionType type;
-    private long nonce;
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private long nonce = 0L;
+    private boolean useSpecNonce = true;
+    private BigInteger gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(50L));
+    private BigInteger maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(50L));
     private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean invalidateEthData = false;
-    private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
+    private Long maxGasAllowance = ONE_HUNDRED_HBARS;
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
     private Integer chainId = CHAIN_ID;
 
@@ -93,6 +95,56 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         super(contract);
         this.payer = Optional.of(RELAYER);
         super.omitAdminKey = true;
+    }
+
+    public HapiEthereumContractCreate(
+            HapiContractCreate contractCreate, String privateKeyRef, Key adminKey, long defaultGas) {
+        super(contractCreate.contract);
+        this.adminKey = adminKey;
+        this.privateKeyRef = privateKeyRef;
+        this.type = EthTransactionType.EIP1559;
+        this.omitAdminKey = contractCreate.omitAdminKey;
+        this.makeImmutable = contractCreate.makeImmutable;
+        this.advertiseCreation = contractCreate.advertiseCreation;
+        this.shouldAlsoRegisterAsAccount = contractCreate.shouldAlsoRegisterAsAccount;
+        this.useDeprecatedAdminKey = contractCreate.useDeprecatedAdminKey;
+        this.contract = contractCreate.contract;
+        this.key = contractCreate.key;
+        this.autoRenewPeriodSecs = contractCreate.autoRenewPeriodSecs;
+        this.balance = contractCreate.balance;
+        this.adminKeyControl = contractCreate.adminKeyControl;
+        this.adminKeyType = contractCreate.adminKeyType;
+        this.memo = contractCreate.memo;
+        this.bytecodeFile = contractCreate.bytecodeFile;
+        this.bytecodeFileFn = contractCreate.bytecodeFileFn;
+        this.successCb = contractCreate.successCb;
+        this.abi = contractCreate.abi;
+        this.args = contractCreate.args;
+        this.gasObserver = contractCreate.gasObserver;
+        this.newNumObserver = contractCreate.newNumObserver;
+        this.proxy = contractCreate.proxy;
+        this.explicitHexedParams = contractCreate.explicitHexedParams;
+        this.stakedAccountId = contractCreate.stakedAccountId;
+        this.stakedNodeId = contractCreate.stakedNodeId;
+        this.isDeclinedReward = contractCreate.isDeclinedReward;
+        final var gas = contractCreate.gas.isPresent() ? contractCreate.gas.getAsLong() : defaultGas;
+        this.gas(gas);
+        this.shouldRegisterTxn = true;
+        this.deferStatusResolution = contractCreate.getDeferStatusResolution();
+        this.txnName = contractCreate.getTxnName();
+        this.expectedStatus = Optional.of(contractCreate.getExpectedStatus());
+        this.expectedPrecheck = Optional.of(contractCreate.getExpectedPrecheck());
+        this.fiddler = contractCreate.getFiddler();
+        this.validDurationSecs = contractCreate.getValidDurationSecs();
+        this.customTxnId = contractCreate.getCustomTxnId();
+        this.node = contractCreate.getNode();
+        this.usdFee = contractCreate.getUsdFee();
+        this.retryLimits = contractCreate.getRetryLimits();
+        this.permissibleStatuses = contractCreate.getPermissibleStatuses();
+        this.permissiblePrechecks = contractCreate.getPermissiblePrechecks();
+        this.payer = contractCreate.getPayer();
+        this.fee = contractCreate.getFee();
+        this.maxGasAllowance = FIVE_HBARS;
     }
 
     public HapiEthereumContractCreate(
@@ -139,8 +191,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate balance(long initial) {
-        balance = Optional.of(
-                WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(initial)).longValueExact());
+        balance = Optional.of(initial);
         return this;
     }
 
@@ -155,7 +206,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate maxGasAllowance(long maxGasAllowance) {
-        this.maxGasAllowance = Optional.of(maxGasAllowance);
+        this.maxGasAllowance = maxGasAllowance;
         return this;
     }
 
@@ -171,16 +222,17 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate nonce(long nonce) {
         this.nonce = nonce;
+        useSpecNonce = false;
         return this;
     }
 
     public HapiEthereumContractCreate gasPrice(long gasPrice) {
-        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        this.gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(gasPrice));
         return this;
     }
 
     public HapiEthereumContractCreate maxFeePerGas(long maxFeePerGas) {
-        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
+        this.maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 
@@ -213,13 +265,22 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var filePath = Utils.getResourcePath(bytecodeFile.get(), ".bin");
         final var fileContents = Utils.extractByteCode(filePath);
 
-        final byte[] callData =
-                Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
+        ByteString bytecode = fileContents;
+        if (args.isPresent() && abi.isPresent()) {
+            bytecode = bytecode.concat(TxnUtils.constructorArgsToByteString(abi.get(), args.get()));
+        }
+        final var callData =
+                Bytes.fromHexString(new String(bytecode.toByteArray())).toArray();
+
         final var gasPriceBytes = gasLongToBytes(gasPrice.longValueExact());
 
         final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());
         final var maxPriorityGasBytes = gasLongToBytes(maxPriorityGas);
 
+        if (useSpecNonce) {
+            nonce = spec.getNonce(privateKeyRef);
+            spec.incrementNonce(privateKeyRef);
+        }
         final var ethTxData = new EthTxData(
                 null,
                 type,
@@ -230,7 +291,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 maxFeePerGasBytes,
                 gas.orElse(0L),
                 new byte[] {},
-                BigInteger.valueOf(balance.orElse(0L)),
+                weibarsToTinybars(balance).orElse(BigInteger.ZERO),
                 callData,
                 new byte[] {},
                 0,
@@ -238,8 +299,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 null,
                 null);
 
-        final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
-        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        final byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
+        var signedEthTxData = Signing.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         final var extractedSignatures = EthTxSigs.extractSignatures(signedEthTxData);
@@ -261,9 +322,25 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                                 builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
                             }
                             ethFileID.ifPresent(builder::setCallData);
-                            maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
+                            builder.setMaxGasAllowance(maxGasAllowance);
                         });
-        return b -> b.setEthereumTransaction(opBody);
+
+        return b -> {
+            this.fee.ifPresent(b::setTransactionFee);
+            this.memo.ifPresent(b::setMemo);
+            b.setEthereumTransaction(opBody);
+        };
+    }
+
+    private Optional<BigInteger> weibarsToTinybars(Optional<Long> balance) {
+        if (balance.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(balance.get())));
+        } catch (ArithmeticException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -274,11 +351,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                         scFees::getEthereumTransactionFeeMatrices,
                         txn,
                         numPayerSigs);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 
     private EthereumTransactionBody explicitEthereumTransaction(HapiSpec spec)

@@ -17,11 +17,13 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.gui.GeneratorEventProvider;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -62,7 +64,17 @@ public class ConsensusTestOrchestrator {
     @SuppressWarnings("unused") // useful for debugging
     public void runGui() {
         final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
-        new TestGuiSource(node.getEventEmitter().getGraphGenerator(), node.getIntake()).runGui();
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final AddressBook addressBook =
+                node.getEventEmitter().getGraphGenerator().getAddressBook();
+
+        new TestGuiSource(
+                        platformContext,
+                        addressBook,
+                        new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
+                .runGui();
     }
 
     /** Generates all events defined in the input */
@@ -126,7 +138,7 @@ public class ConsensusTestOrchestrator {
      * restart, it discards all non-consensus events.
      */
     public void restartAllNodes() {
-        final long lastRoundDecided = nodes.get(0).getConsensus().getLastRoundDecided();
+        final long lastRoundDecided = nodes.getFirst().getLatestRound();
         if (lastRoundDecided < EventConstants.MINIMUM_ROUND_CREATED) {
             System.out.println("Cannot restart, no consensus reached yet");
             return;

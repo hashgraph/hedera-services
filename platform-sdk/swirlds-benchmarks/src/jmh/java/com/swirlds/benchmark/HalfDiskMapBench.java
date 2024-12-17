@@ -50,19 +50,20 @@ public class HalfDiskMapBench extends BaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         Arrays.fill(map, INVALID_PATH);
 
-        final var store = new HalfDiskHashMap<>(
-                getConfig(MerkleDbConfig.class),
-                maxKey,
-                new BenchmarkKeySerializer(),
-                getTestDir(),
-                storeName,
-                null,
-                false);
+        final var store = new HalfDiskHashMap(configuration, maxKey, getTestDir(), storeName, null, false);
         final var dataFileCompactor = new DataFileCompactor(
-                storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null, null);
+                getConfig(MerkleDbConfig.class),
+                storeName,
+                store.getFileCollection(),
+                store.getBucketIndexToBucketLocation(),
+                null,
+                null,
+                null,
+                null);
         System.out.println();
 
         // Write files
+        final BenchmarkKeySerializer keySerializer = new BenchmarkKeySerializer();
         long start = System.currentTimeMillis();
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
@@ -71,7 +72,7 @@ public class HalfDiskMapBench extends BaseBench {
                 long id = nextAscKey();
                 BenchmarkKey key = new BenchmarkKey(id);
                 long value = nextValue();
-                store.put(key, value);
+                store.put(keySerializer.toBytes(key), key.hashCode(), value);
                 if (verify) map[(int) id] = value;
             }
             store.endWriting();
@@ -87,7 +88,8 @@ public class HalfDiskMapBench extends BaseBench {
         if (verify) {
             start = System.currentTimeMillis();
             for (int id = 0; id < map.length; ++id) {
-                long value = store.get(new BenchmarkKey(id), INVALID_PATH);
+                final BenchmarkKey key = new BenchmarkKey(id);
+                long value = store.get(keySerializer.toBytes(key), key.hashCode(), INVALID_PATH);
                 if (value != map[id]) {
                     throw new RuntimeException("Bad value");
                 }

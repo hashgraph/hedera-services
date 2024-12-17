@@ -20,14 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,8 @@ final class NettyGrpcServerManagerTest {
     private ConfigProvider configProvider;
     private ServicesRegistry services;
     private IngestWorkflow ingestWorkflow;
-    private QueryWorkflow queryWorkflow;
+    private QueryWorkflow userQueryWorkflow;
+    private QueryWorkflow operatorQueryWorkflow;
     private Metrics metrics;
 
     @BeforeEach
@@ -50,34 +52,42 @@ final class NettyGrpcServerManagerTest {
 
         this.configProvider = () -> new VersionedConfigImpl(config, 1);
         this.metrics = metrics;
-        this.services = Set::of; // An empty set of services
+        this.services =
+                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), config); // An empty set of services
         this.ingestWorkflow = (req, res) -> {};
-        this.queryWorkflow = (req, res) -> {};
+        this.userQueryWorkflow = (req, res) -> {};
+        this.operatorQueryWorkflow = (req, res) -> {};
     }
 
     @Test
     @DisplayName("Null arguments are not allowed")
     @SuppressWarnings("DataFlowIssue")
     void nullArgsThrow() {
-        assertThatThrownBy(() -> new NettyGrpcServerManager(null, services, ingestWorkflow, queryWorkflow, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(
+                        null, services, ingestWorkflow, userQueryWorkflow, operatorQueryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new NettyGrpcServerManager(configProvider, null, ingestWorkflow, queryWorkflow, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(
+                        configProvider, null, ingestWorkflow, userQueryWorkflow, operatorQueryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new NettyGrpcServerManager(configProvider, services, null, queryWorkflow, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(
+                        configProvider, services, null, userQueryWorkflow, operatorQueryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new NettyGrpcServerManager(configProvider, services, ingestWorkflow, null, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(
+                        configProvider, services, ingestWorkflow, null, operatorQueryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new NettyGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, null))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(
+                        configProvider, services, ingestWorkflow, userQueryWorkflow, null, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new NettyGrpcServerManager(
+                        configProvider, services, ingestWorkflow, userQueryWorkflow, operatorQueryWorkflow, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     @DisplayName("Ports are -1 when not started")
     void portsAreMinusOneWhenNotStarted() {
-        final var subject =
-                new NettyGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, metrics);
+        final var subject = new NettyGrpcServerManager(
+                configProvider, services, ingestWorkflow, userQueryWorkflow, operatorQueryWorkflow, metrics);
         assertThat(subject.port()).isEqualTo(-1);
         assertThat(subject.tlsPort()).isEqualTo(-1);
     }

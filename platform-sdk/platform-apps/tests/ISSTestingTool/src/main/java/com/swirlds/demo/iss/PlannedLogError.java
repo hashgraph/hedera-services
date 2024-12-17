@@ -119,7 +119,7 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
 
         final List<NodeId> nodeIds = new ArrayList<>();
         for (final String nodeIdString : nodeIdsStrings) {
-            nodeIds.add(new NodeId(Integer.parseInt(nodeIdString)));
+            nodeIds.add(NodeId.of(Integer.parseInt(nodeIdString)));
         }
 
         return new PlannedLogError(Duration.ofSeconds(elapsedSeconds), nodeIds);

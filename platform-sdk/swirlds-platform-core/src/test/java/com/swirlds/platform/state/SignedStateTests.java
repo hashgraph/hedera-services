@@ -16,14 +16,10 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,28 +30,41 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedState Tests")
 class SignedStateTests {
+
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final State state) {
+    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
+    }
+
+    @BeforeEach
+    void setUp() {
+        MerkleDb.resetDefaultInstancePath();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.forgetAllBuiltSignedStatesWithoutReleasing();
     }
 
     /**
@@ -64,17 +73,15 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private State buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+    private PlatformMerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+        final var real = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
+        final PlatformMerkleStateRoot state = spy(real);
 
-        final State state = spy(new State());
-        final SwirldState swirldState = mock(SwirldState.class);
-
-        final PlatformState platformState = new PlatformState();
+        final PlatformStateModifier platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
-        when(state.getPlatformState()).thenReturn(platformState);
-
-        when(state.getSwirldState()).thenReturn(swirldState);
-
+        when(state.getWritablePlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -100,28 +107,21 @@ class SignedStateTests {
     @DisplayName("Reservation Test")
     void reservationTest() throws InterruptedException {
         final Random random = new Random();
-        final SignedStateGarbageCollector signedStateGarbageCollector =
-                new SignedStateGarbageCollector(getStaticThreadManager(), null);
-        signedStateGarbageCollector.start();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);
         final AtomicBoolean released = new AtomicBoolean(false);
 
-        final Thread mainThread = Thread.currentThread();
-
-        final State state = buildMockState(
+        final PlatformMerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
                 },
                 () -> {
                     assertFalse(released.get(), "should only be released once");
-                    assertNotSame(mainThread, Thread.currentThread(), "release should happen on background thread");
                     released.set(true);
                 });
 
         final SignedState signedState = generateSignedState(random, state);
-        signedState.setGarbageCollector(signedStateGarbageCollector);
 
         final ReservedSignedState reservedSignedState;
         reservedSignedState = signedState.reserve("test");
@@ -155,59 +155,6 @@ class SignedStateTests {
                 "should not be able to reserve after full release");
 
         assertEventuallyTrue(released::get, Duration.ofSeconds(1), "state should eventually be released");
-
-        signedStateGarbageCollector.stop();
-    }
-
-    @Test
-    @DisplayName("Finite Deletion Queue Test")
-    void finiteDeletionQueueTest() throws InterruptedException {
-        final Random random = new Random();
-        final SignedStateGarbageCollector signedStateGarbageCollector =
-                new SignedStateGarbageCollector(getStaticThreadManager(), null);
-        signedStateGarbageCollector.start();
-
-        // Deletion thread will hold one after it is removed from the queue, hence the +1
-        final int capacity = SignedStateGarbageCollector.DELETION_QUEUE_CAPACITY + 1;
-
-        final AtomicInteger deletionCount = new AtomicInteger();
-        final CountDownLatch deletionBlocker = new CountDownLatch(1);
-
-        final Thread mainThread = Thread.currentThread();
-
-        for (int i = 0; i < capacity; i++) {
-            final State state = buildMockState(null, () -> {
-                abortAndThrowIfInterrupted(deletionBlocker::await, "unexpected interruption");
-                deletionCount.getAndIncrement();
-            });
-
-            final SignedState signedState = generateSignedState(random, state);
-            signedState.setGarbageCollector(signedStateGarbageCollector);
-            signedState.reserve("test").close();
-        }
-
-        // At this point in time, the signed state deletion queue should be entirely filled up.
-        // Deleting one more signed state should cause the deletion to happen on the current thread.
-
-        final State state = buildMockState(null, () -> {
-            assertSame(mainThread, Thread.currentThread(), "called on wrong thread");
-            deletionCount.getAndIncrement();
-        });
-
-        final SignedState signedState = generateSignedState(random, state);
-        signedState.reserve("test").close();
-
-        assertEquals(1, deletionCount.get());
-
-        // Nothing should happen during this sleep, but give the background thread time to misbehave if it wants to
-        MILLISECONDS.sleep(10);
-
-        assertEquals(1, deletionCount.get());
-
-        deletionBlocker.countDown();
-        assertEventuallyEquals(
-                capacity + 1, deletionCount::get, Duration.ofSeconds(1), "all states should eventually be deleted");
-        signedStateGarbageCollector.stop();
     }
 
     /**
@@ -225,7 +172,7 @@ class SignedStateTests {
 
         final Thread mainThread = Thread.currentThread();
 
-        final State state = buildMockState(
+        final PlatformMerkleStateRoot state = buildMockState(
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -274,12 +221,20 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final State state = spy(new State());
-        final PlatformState platformState = mock(PlatformState.class);
-        when(state.getPlatformState()).thenReturn(platformState);
+        final PlatformMerkleStateRoot state = spy(new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        when(state.getReadablePlatformState()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
-        final SignedState signedState =
-                new SignedState(TestPlatformContextBuilder.create().build(), state, "test", false);
+        final SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build().getConfiguration(),
+                mock(SignatureVerifier.class),
+                state,
+                "test",
+                false,
+                false,
+                false);
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");
 

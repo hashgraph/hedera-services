@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
@@ -28,31 +27,38 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT_WITH_SIGNER_NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.processorsForAllCurrentEvmVersions;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCallWithGasLimit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
-import com.hedera.node.app.service.contract.impl.exec.failure.AbortException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,7 +67,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContextTransactionProcessorTest {
-    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.create()
+            .withValue("contracts.evm.ethTransaction.zeroHapiFees.enabled", true)
+            .getOrCreateConfig();
+
+    private static final Configuration CONFIG_NO_CHARGE_ON_EXCEPTION = HederaTestConfigBuilder.create()
+            .withValue("contracts.evm.chargeGasOnEvmHandleException", false)
+            .getOrCreateConfig();
 
     @Mock
     private HandleContext context;
@@ -70,7 +82,7 @@ class ContextTransactionProcessorTest {
     private HederaEvmContext hederaEvmContext;
 
     @Mock
-    private ActionSidecarContentTracer tracer;
+    private EvmActionTracer tracer;
 
     @Mock
     private HevmTransactionFactory hevmTransactionFactory;
@@ -96,10 +108,15 @@ class ContextTransactionProcessorTest {
     @Mock
     private HederaEvmAccount senderAccount;
 
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
+    private ExchangeRateInfo exchangeRateInfo;
+
     @Test
     void callsComponentInfraAsExpectedForValidEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
         final var subject = new ContextTransactionProcessor(
                 hydratedEthTxData,
@@ -107,17 +124,16 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         givenSenderAccount();
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
@@ -131,13 +147,13 @@ class ContextTransactionProcessorTest {
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.gasPrice(),
                 null,
                 null);
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
         assertEquals(expectedResult, subject.call());
     }
 
     @Test
     void callsComponentInfraAsExpectedForValidEthTxWithoutTo() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS);
         final var subject = new ContextTransactionProcessor(
                 hydratedEthTxData,
@@ -145,17 +161,16 @@ class ContextTransactionProcessorTest {
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         givenSenderAccount();
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT_WITH_SIGNER_NONCE);
@@ -170,28 +185,27 @@ class ContextTransactionProcessorTest {
                 null,
                 null);
         assertEquals(expectedResult, subject.call());
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
     }
 
     @Test
     void callsComponentInfraAsExpectedForNonEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
@@ -200,84 +214,161 @@ class ContextTransactionProcessorTest {
         final var expectedResult = new CallOutcome(
                 protoResult, SUCCESS, HEVM_CREATION.contractId(), SUCCESS_RESULT.gasPrice(), null, null);
         assertEquals(expectedResult, subject.call());
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
     }
 
     @Test
     void stillChargesHapiFeesOnAbort() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
+        final var processors = processorsForAllCurrentEvmVersions(processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
-        given(context.body()).willReturn(TransactionBody.DEFAULT);
-        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT))
-                .willReturn(HEVM_CREATION);
+        givenBodyWithTxnIdWillReturnHEVM();
         given(processor.processTransaction(
                         HEVM_CREATION, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
-                .willThrow(new AbortException(INVALID_CONTRACT_ID, SENDER_ID));
+                .willThrow(new HandleException(INVALID_CONTRACT_ID));
 
         subject.call();
 
+        verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
         verify(rootProxyWorldUpdater).commit();
     }
 
     @Test
-    void stillChargesHapiFeesOnHevmException() {
+    void chargeHapiFeeOnFailedEthTransaction() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
+        final var processors = processorsForAllCurrentEvmVersions(processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
+                customGasCharging);
+
+        given(context.body()).willReturn(TransactionBody.DEFAULT);
+        given(context.payer()).willReturn(AccountID.DEFAULT);
+        final var ethTx = wellKnownRelayedHapiCallWithGasLimit(1_000_000L);
+        given(hevmTransactionFactory.fromHapiTransaction(TransactionBody.DEFAULT, context.payer()))
+                .willReturn(ethTx);
+        given(processor.processTransaction(
+                        ethTx, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
+                .willThrow(new HandleException(INVALID_CONTRACT_ID));
+
+        given(hederaEvmContext.systemContractGasCalculator()).willReturn(systemContractGasCalculator);
+        given(systemContractGasCalculator.canonicalPriceInTinycents(any())).willReturn(1000L);
+        given(context.exchangeRateInfo()).willReturn(exchangeRateInfo);
+        final ExchangeRate exchangeRate = new ExchangeRate(1, 2, TimestampSeconds.DEFAULT);
+        given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
+
+        subject.call();
+        verify(rootProxyWorldUpdater).commit();
+        verify(rootProxyWorldUpdater).collectFee(any(), anyLong());
+    }
+
+    @Test
+    void stillChargesGasFeesOnHevmException() {
+        final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
+        final var subject = new ContextTransactionProcessor(
+                null,
+                context,
+                contractsConfig,
+                CONFIGURATION,
+                hederaEvmContext,
+                null,
+                tracer,
+                rootProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody)).willReturn(HEVM_Exception);
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
+                .willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
         given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
 
         final var outcome = subject.call();
 
+        verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
         verify(rootProxyWorldUpdater).commit();
         assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
 
     @Test
-    void stillChargesHapiFeesOnExceptionThrown() {
+    void doesNotChargeGasFeesOnHevmExceptionIfSoConfigured() {
+        final var contractsConfig = CONFIG_NO_CHARGE_ON_EXCEPTION.getConfigData(ContractsConfig.class);
+        final var subject = new ContextTransactionProcessor(
+                null,
+                context,
+                contractsConfig,
+                CONFIG_NO_CHARGE_ON_EXCEPTION,
+                hederaEvmContext,
+                null,
+                tracer,
+                rootProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processor,
+                customGasCharging);
+
+        given(context.body()).willReturn(transactionBody);
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
+                .willReturn(HEVM_Exception);
+        given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
+        given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
+
+        final var outcome = subject.call();
+
+        verify(customGasCharging, never()).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        verify(rootProxyWorldUpdater).commit();
+        assertEquals(INVALID_CONTRACT_ID, outcome.status());
+    }
+
+    @Test
+    void stillChargesGasFeesOnExceptionThrown() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
         given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
@@ -285,6 +376,44 @@ class ContextTransactionProcessorTest {
 
         final var outcome = subject.call();
 
+        verify(customGasCharging).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        // Verify that disabled zeroHapi fees flag won't charge on error
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
+        verify(rootProxyWorldUpdater).commit();
+        assertEquals(INVALID_CONTRACT_ID, outcome.status());
+    }
+
+    @Test
+    void doesNotChargeGasAndHapiFeesOnExceptionThrownIfSoConfigured() {
+        final var contractsConfig = CONFIG_NO_CHARGE_ON_EXCEPTION.getConfigData(ContractsConfig.class);
+        final var subject = new ContextTransactionProcessor(
+                null,
+                context,
+                contractsConfig,
+                CONFIG_NO_CHARGE_ON_EXCEPTION,
+                hederaEvmContext,
+                null,
+                tracer,
+                rootProxyWorldUpdater,
+                hevmTransactionFactory,
+                feesOnlyUpdater,
+                processor,
+                customGasCharging);
+
+        given(context.body()).willReturn(transactionBody);
+        final var payer = AccountID.DEFAULT;
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, payer))
+                .willThrow(new HandleException(INVALID_CONTRACT_ID));
+        given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
+        given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
+        given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
+
+        final var outcome = subject.call();
+
+        verify(customGasCharging, never()).chargeGasForAbortedTransaction(any(), any(), any(), any());
+        // Verify that disabled zeroHapi fees flag won't charge on error
+        verify(rootProxyWorldUpdater, never()).collectFee(any(), anyLong());
         verify(rootProxyWorldUpdater).commit();
         assertEquals(INVALID_CONTRACT_ID, outcome.status());
     }
@@ -292,24 +421,25 @@ class ContextTransactionProcessorTest {
     @Test
     void reThrowsExceptionWhenNotContractCall() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
+        given(context.payer()).willReturn(SENDER_ID);
         given(transactionBody.transactionIDOrThrow()).willReturn(transactionID);
         given(transactionID.accountIDOrThrow()).willReturn(SENDER_ID);
-        given(hevmTransactionFactory.fromHapiTransaction(transactionBody))
+        given(hevmTransactionFactory.fromHapiTransaction(transactionBody, SENDER_ID))
                 .willThrow(new HandleException(INVALID_CONTRACT_ID));
         given(hevmTransactionFactory.fromContractTxException(any(), any())).willReturn(HEVM_Exception);
 
@@ -321,18 +451,18 @@ class ContextTransactionProcessorTest {
     @Test
     void failsImmediatelyIfEthTxInvalid() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION),
                 context,
                 contractsConfig,
                 CONFIGURATION,
                 hederaEvmContext,
+                null,
                 tracer,
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         assertFailsWith(INVALID_ETHEREUM_TRANSACTION, subject::call);
@@ -341,5 +471,15 @@ class ContextTransactionProcessorTest {
     void givenSenderAccount() {
         given(rootProxyWorldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
         given(senderAccount.getNonce()).willReturn(1L);
+    }
+
+    void givenBodyWithTxnIdWillReturnHEVM() {
+        final var body = TransactionBody.newBuilder()
+                .transactionID(TransactionID.DEFAULT)
+                .build();
+        final var payer = AccountID.DEFAULT;
+        given(context.body()).willReturn(body);
+        given(context.payer()).willReturn(payer);
+        given(hevmTransactionFactory.fromHapiTransaction(body, payer)).willReturn(HEVM_CREATION);
     }
 }

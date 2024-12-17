@@ -16,48 +16,32 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.hollowAccountFuzzingWith;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Fuzz test, testing the completion of hollow accounts, by running a set of random operations for a period of time
  */
-@HapiTestSuite
-public class HollowAccountCompletionFuzzing extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(HollowAccountCompletionFuzzing.class);
-
-    private static final String PROPERTIES = "hollow-account-fuzzing.properties";
-
-    public static void main(String... args) {
-        new HollowAccountCompletionFuzzing().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(hollowAccountCompletionFuzzing());
-    }
+@Tag(NOT_REPEATABLE)
+public class HollowAccountCompletionFuzzing {
+    private static final String PROPERTIES = "hollow-account-completion-fuzzing.properties";
 
     @HapiTest
-    final HapiSpec hollowAccountCompletionFuzzing() {
+    final Stream<DynamicTest> hollowAccountCompletionFuzzing() {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
                 .given(initOperations())
                 .when()
-                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES))
+                        .maxOpsPerSec(10)
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 }

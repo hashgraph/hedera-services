@@ -20,19 +20,27 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fr
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class FungibleTokenInfoTranslator extends AbstractHtsCallTranslator {
+public class FungibleTokenInfoTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
+    /** Selector for getFungibleTokenInfo(address) method. */
     public static final Function FUNGIBLE_TOKEN_INFO =
             new Function("getFungibleTokenInfo(address)", ReturnTypes.RESPONSE_CODE_FUNGIBLE_TOKEN_INFO);
 
+    /** Selector for getFungibleTokenInfoV2(address) method. */
+    public static final Function FUNGIBLE_TOKEN_INFO_V2 =
+            new Function("getFungibleTokenInfoV2(address)", ReturnTypes.RESPONSE_CODE_FUNGIBLE_TOKEN_INFO_V2);
+
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public FungibleTokenInfoTranslator() {
         // Dagger2
@@ -44,22 +52,27 @@ public class FungibleTokenInfoTranslator extends AbstractHtsCallTranslator {
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return Arrays.equals(attempt.selector(), FUNGIBLE_TOKEN_INFO.selector());
+        final var v2Enabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).systemContractTokenInfoV2Enabled();
+        return attempt.isSelector(FUNGIBLE_TOKEN_INFO)
+                || attempt.isSelectorIfConfigEnabled(v2Enabled, FUNGIBLE_TOKEN_INFO_V2);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        final var args = FUNGIBLE_TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
+        final var function = attempt.isSelector(FUNGIBLE_TOKEN_INFO) ? FUNGIBLE_TOKEN_INFO : FUNGIBLE_TOKEN_INFO_V2;
+        final var args = function.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new FungibleTokenInfoCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),
                 token,
-                attempt.configuration());
+                attempt.configuration(),
+                function);
     }
 }

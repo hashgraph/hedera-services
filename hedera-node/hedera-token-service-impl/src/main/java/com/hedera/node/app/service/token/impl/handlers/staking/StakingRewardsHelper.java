@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
@@ -29,6 +29,8 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -43,16 +45,28 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Helper class for staking reward calculations
+ * Helper class for staking reward calculations.
  */
 @Singleton
 public class StakingRewardsHelper {
     private static final Logger log = LogManager.getLogger(StakingRewardsHelper.class);
+    /**
+     * The maximum pending rewards that can be paid out in a single staking period, which is 50B hbar.
+     */
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 
+    private final boolean assumeContiguousPeriods;
+
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public StakingRewardsHelper() {
-        // Exists for Dagger injection
+    public StakingRewardsHelper(@NonNull final ConfigProvider configProvider) {
+        requireNonNull(configProvider);
+        this.assumeContiguousPeriods = configProvider
+                .getConfiguration()
+                .getConfigData(StakingConfig.class)
+                .assumeContiguousPeriods();
     }
 
     /**
@@ -107,7 +121,7 @@ public class StakingRewardsHelper {
     /**
      * Returns true if the account is staked to a node and the current transaction modified the stakedToMe field
      * (by changing balance of the current account or the account which is staking to current account) or
-     * declineReward or the stakedId field
+     * declineReward or the stakedId field.
      *
      * @param modifiedAccount the account which is modified in the current transaction and is in modifications
      * @param originalAccount the account before the current transaction
@@ -151,7 +165,7 @@ public class StakingRewardsHelper {
      * reduced by that amount, since they no more need to be paid.
      * If the node is deleted, we do not decrease the pending rewards on the network, and on the node.
      *
-     * @param stakingInfoStore
+     * @param stakingInfoStore   The store to write to for updated values
      * @param stakingRewardsStore The store to write to for updated values
      * @param amount              The amount to decrease by
      * @param nodeId              The node id to decrease pending rewards for
@@ -165,10 +179,14 @@ public class StakingRewardsHelper {
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards - amount;
         if (newPendingRewards < 0) {
-            log.error(
-                    "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
-                    amount,
-                    newPendingRewards);
+            // If staking periods have been skipped in an environment, it is no longer
+            // guaranteed that pending rewards are maintained accurately
+            if (assumeContiguousPeriods) {
+                log.error(
+                        "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
+                        amount,
+                        newPendingRewards);
+            }
             newPendingRewards = 0;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -180,11 +198,15 @@ public class StakingRewardsHelper {
         final var currentNodePendingRewards = stakingInfo.pendingRewards();
         var newNodePendingRewards = currentNodePendingRewards - amount;
         if (newNodePendingRewards < 0) {
-            log.error(
-                    "Pending rewards decreased by {} to a meaningless {} for node {}, fixing to zero hbar",
-                    amount,
-                    newNodePendingRewards,
-                    nodeId);
+            // If staking periods have been skipped in an environment, it is no longer
+            // guaranteed that pending rewards are maintained accurately
+            if (assumeContiguousPeriods) {
+                log.error(
+                        "Pending rewards decreased by {} to a meaningless {} for node {}, fixing to zero hbar",
+                        amount,
+                        newNodePendingRewards,
+                        nodeId);
+            }
             newNodePendingRewards = 0;
         }
         final var stakingInfoCopy =
@@ -203,10 +225,12 @@ public class StakingRewardsHelper {
      * @param currStakingInfo    The current staking info
      * @return The clamped pending rewards
      */
-    StakingNodeInfo increasePendingRewardsBy(
-            final WritableNetworkStakingRewardsStore stakingRewardsStore,
-            long amount,
-            final StakingNodeInfo currStakingInfo) {
+    public StakingNodeInfo increasePendingRewardsBy(
+            @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
+            final long amount,
+            @NonNull final StakingNodeInfo currStakingInfo) {
+        requireNonNull(stakingRewardsStore);
+        requireNonNull(currStakingInfo);
         // increment the total pending rewards being tracked for the network
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         long nodePendingRewards = currStakingInfo.pendingRewards();
@@ -214,8 +238,8 @@ public class StakingRewardsHelper {
         long newNodePendingRewards;
         // Only increase the pending rewards if the node is not deleted
         if (!currStakingInfo.deleted()) {
-            newNetworkPendingRewards = currentPendingRewards + amount;
-            newNodePendingRewards = nodePendingRewards + amount;
+            newNetworkPendingRewards = clampedAdd(currentPendingRewards, amount);
+            newNodePendingRewards = clampedAdd(nodePendingRewards, amount);
         } else {
             newNetworkPendingRewards = currentPendingRewards;
             newNodePendingRewards = 0L;
@@ -231,8 +255,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards increased by {} to an un-payable {} for node {}, fixing to 50B hbar",
                     amount,
-                    newNetworkPendingRewards,
-                    nodePendingRewards);
+                    newNodePendingRewards,
+                    currStakingInfo.nodeNumber());
             newNodePendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -273,5 +297,13 @@ public class StakingRewardsHelper {
         // list the id of an account that doesn't exist in the store, but was created
         // and then reverted inside an overall successful transaction
         return account != null && account.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID;
+    }
+
+    private static long clampedAdd(final long addendA, final long addendB) {
+        try {
+            return Math.addExact(addendA, addendB);
+        } catch (final ArithmeticException ae) {
+            return addendA > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
     }
 }

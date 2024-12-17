@@ -36,4 +36,14 @@ public record LongPair(@NonNull Long left, @NonNull Long right) {
         Objects.requireNonNull(left, "left cannot be null");
         Objects.requireNonNull(right, "right cannot be null");
     }
+
+    /**
+     * Checks if the given value is within the range of this pair.
+     *
+     * @param value the value to check
+     * @return true if the value is within the range, false otherwise
+     */
+    public boolean containsInclusive(final long value) {
+        return left <= value && value <= right;
+    }
 }

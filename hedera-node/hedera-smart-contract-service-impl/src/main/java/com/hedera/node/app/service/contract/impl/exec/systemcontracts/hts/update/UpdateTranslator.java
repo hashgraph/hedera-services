@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updat
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_WITH_METADATA;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -26,17 +27,19 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 
-public class UpdateTranslator extends AbstractHtsCallTranslator {
+public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     private static final String UPDATE_TOKEN_INFO_STRING = "updateTokenInfo(address,";
     private static final String HEDERA_TOKEN_STRUCT =
             "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
@@ -44,34 +47,56 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     private static final String HEDERA_TOKEN_STRUCT_V3 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V1 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V2) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_STRUCT_V3) method. */
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_V3 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")", ReturnTypes.INT);
+    /** Selector for updateTokenInfo(address, HEDERA_TOKEN_WITH_METADATA) method. */
+    public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
+            new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
-    private final UpdateDecoder decoder;
+    private static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
 
+    /**
+     * @param decoder the decoder to use for token update info calls
+     */
     @Inject
-    public UpdateTranslator(UpdateDecoder decoder) {
-        // Dagger2
-        this.decoder = decoder;
+    public UpdateTranslator(final UpdateDecoder decoder) {
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V1, decoder::decodeTokenUpdateV1);
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V2, decoder::decodeTokenUpdateV2);
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_V3, decoder::decodeTokenUpdateV3);
+        updateSelectorsMap.put(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA, decoder::decodeTokenUpdateWithMetadata);
     }
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())
-                || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())
-                || Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
+        final boolean metadataSupport =
+                attempt.configuration().getConfigData(ContractsConfig.class).metadataKeyAndFieldEnabled();
+
+        return updateSelectorsMap.keySet().stream()
+                .anyMatch(selector -> selector.equals(TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA)
+                        ? attempt.isSelectorIfConfigEnabled(metadataSupport, selector)
+                        : attempt.isSelector(selector));
     }
 
     @Override
-    public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall(
                 attempt, nominalBodyFor(attempt), UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
     }
 
+    /**
+     * @param body                          the transaction body to be dispatched
+     * @param systemContractGasCalculator   the gas calculator for the system contract
+     * @param enhancement                   the enhancement to use
+     * @param payerId                       the payer of the transaction
+     * @return the required gas
+     */
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
@@ -81,12 +106,10 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V1.selector())) {
-            return decoder.decodeTokenUpdateV1(attempt);
-        } else if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())) {
-            return decoder.decodeTokenUpdateV2(attempt);
-        } else {
-            return decoder.decodeTokenUpdateV3(attempt);
-        }
+        return updateSelectorsMap.entrySet().stream()
+                .filter(entry -> attempt.isSelector(entry.getKey()))
+                .map(entry -> entry.getValue().decode(attempt))
+                .findFirst()
+                .orElse(null);
     }
 }

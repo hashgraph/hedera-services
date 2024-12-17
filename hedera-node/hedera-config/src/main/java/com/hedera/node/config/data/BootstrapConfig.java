@@ -24,7 +24,8 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("bootstrap")
 public record BootstrapConfig(
-        @ConfigProperty(value = "feeSchedulesJson.resource", defaultValue = "feeSchedules.json") @NetworkProperty
+        @ConfigProperty(value = "feeSchedulesJson.resource", defaultValue = "genesis/feeSchedules.json")
+                @NetworkProperty
                 String feeSchedulesJsonResource,
         @ConfigProperty(
                         value = "genesisPublicKey",
@@ -37,6 +38,8 @@ public record BootstrapConfig(
         @ConfigProperty(value = "networkProperties.path", defaultValue = "data/config/application.properties")
                 @NodeProperty
                 String networkPropertiesPath,
+        @ConfigProperty(value = "nodeAdminKeys.path", defaultValue = "data/config/node-admin-keys.json") @NodeProperty
+                String nodeAdminKeysPath,
         @ConfigProperty(value = "rates.currentHbarEquiv", defaultValue = "1") @NetworkProperty
                 int ratesCurrentHbarEquiv,
         @ConfigProperty(value = "rates.currentCentEquiv", defaultValue = "12") @NetworkProperty
@@ -48,5 +51,5 @@ public record BootstrapConfig(
         @ConfigProperty(value = "rates.nextExpiry", defaultValue = "4102444800") @NetworkProperty long ratesNextExpiry,
         @ConfigProperty(value = "system.entityExpiry", defaultValue = "1812637686") @NetworkProperty
                 long systemEntityExpiry,
-        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "throttles.json") @NodeProperty
+        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "genesis/throttles.json") @NodeProperty
                 String throttleDefsJsonResource) {}

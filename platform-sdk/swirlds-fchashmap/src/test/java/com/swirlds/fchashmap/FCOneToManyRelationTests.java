@@ -17,7 +17,6 @@
 package com.swirlds.fchashmap;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +31,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("FCOneToManyRelation Tests")
@@ -231,7 +229,6 @@ class FCOneToManyRelationTests {
     }
 
     @Test
-    @Tag(TIME_CONSUMING)
     @DisplayName("Randomized Test")
     void randomizedTest() {
 

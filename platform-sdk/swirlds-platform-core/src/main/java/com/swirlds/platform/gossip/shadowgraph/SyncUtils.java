@@ -19,20 +19,20 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -79,7 +79,7 @@ public final class SyncUtils {
      */
     public static Callable<Void> writeMyTipsAndEventWindow(
             @NonNull final Connection connection,
-            @NonNull final NonAncientEventWindow eventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final List<ShadowEvent> tips) {
         return () -> {
             final List<Hash> tipHashes =
@@ -89,16 +89,18 @@ public final class SyncUtils {
 
             connection.getDos().writeTipHashes(tipHashes);
             connection.getDos().flush();
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} sent event window: {}",
-                    connection::getDescription,
-                    eventWindow::toString);
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} sent tips: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortShadows(tips));
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} sent event window: {}",
+                        connection::getDescription,
+                        eventWindow::toString);
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} sent tips: {}",
+                        connection::getDescription,
+                        () -> SyncLogging.toShortShadows(tips));
+            }
             return null;
         };
     }
@@ -106,7 +108,7 @@ public final class SyncUtils {
     /**
      * Read the tips and event window from the peer. This is the first data exchanged during a sync (after protocol
      * negotiation). The complementary function to
-     * {@link #writeMyTipsAndEventWindow(Connection, NonAncientEventWindow, List)}.
+     * {@link #writeMyTipsAndEventWindow(Connection, EventWindow, List)}.
      *
      * @param connection    the connection to read from
      * @param numberOfNodes the number of nodes in the network
@@ -116,20 +118,22 @@ public final class SyncUtils {
     public static Callable<TheirTipsAndEventWindow> readTheirTipsAndEventWindow(
             final Connection connection, final int numberOfNodes, @NonNull final AncientMode ancientMode) {
         return () -> {
-            final NonAncientEventWindow eventWindow = deserializeEventWindow(connection.getDis(), ancientMode);
+            final EventWindow eventWindow = deserializeEventWindow(connection.getDis(), ancientMode);
 
             final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received event window: {}",
-                    connection::getDescription,
-                    eventWindow::toString);
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received tips: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortHashes(tips));
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} received event window: {}",
+                        connection::getDescription,
+                        eventWindow::toString);
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} received tips: {}",
+                        connection::getDescription,
+                        () -> SyncLogging.toShortHashes(tips));
+            }
 
             return new TheirTipsAndEventWindow(eventWindow, tips);
         };
@@ -148,11 +152,13 @@ public final class SyncUtils {
         return () -> {
             connection.getDos().writeBooleanList(theirTipsIHave);
             connection.getDos().flush();
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} sent booleans: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortBooleans(theirTipsIHave));
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} sent booleans: {}",
+                        connection::getDescription,
+                        () -> SyncLogging.toShortBooleans(theirTipsIHave));
+            }
             return null;
         };
     }
@@ -171,11 +177,13 @@ public final class SyncUtils {
             if (booleans == null) {
                 throw new SyncException(connection, "peer sent null booleans");
             }
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received booleans: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortBooleans(booleans));
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} received booleans: {}",
+                        connection::getDescription,
+                        () -> SyncLogging.toShortBooleans(booleans));
+            }
             return booleans;
         };
     }
@@ -194,28 +202,32 @@ public final class SyncUtils {
      */
     public static Callable<Void> sendEventsTheyNeed(
             final Connection connection,
-            final List<EventImpl> events,
+            final List<PlatformEvent> events,
             final CountDownLatch eventReadingDone,
             final AtomicBoolean writeAborted,
             final Duration syncKeepalivePeriod) {
         return () -> {
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} writing events start. send list size: {}",
-                    connection.getDescription(),
-                    events.size());
-            for (final EventImpl event : events) {
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(
+                        SYNC_INFO.getMarker(),
+                        "{} writing events start. send list size: {}",
+                        connection.getDescription(),
+                        events.size());
+            }
+            for (final PlatformEvent event : events) {
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
-                connection.getDos().writeEventData(event);
+                connection.getDos().writePbjRecord(event.getGossipEvent(), GossipEvent.PROTOBUF);
             }
             if (writeAborted.get()) {
                 logger.info(SYNC_INFO.getMarker(), "{} writing events aborted", connection.getDescription());
             } else {
-                logger.info(
-                        SYNC_INFO.getMarker(),
-                        "{} writing events done, wrote {} events",
-                        connection.getDescription(),
-                        events.size());
+                if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                    logger.debug(
+                            SYNC_INFO.getMarker(),
+                            "{} writing events done, wrote {} events",
+                            connection.getDescription(),
+                            events.size());
+                }
                 connection.getDos().writeByte(ByteConstants.COMM_EVENT_DONE);
             }
             connection.getDos().flush();
@@ -232,7 +244,9 @@ public final class SyncUtils {
             connection.getDos().writeByte(ByteConstants.COMM_SYNC_DONE);
             connection.getDos().flush();
 
-            logger.debug(SYNC_INFO.getMarker(), "{} sent COMM_SYNC_DONE", connection.getDescription());
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(SYNC_INFO.getMarker(), "{} sent COMM_SYNC_DONE", connection.getDescription());
+            }
 
             // (ignored)
             return null;
@@ -255,7 +269,7 @@ public final class SyncUtils {
      */
     public static Callable<Integer> readEventsINeed(
             final Connection connection,
-            final Consumer<GossipEvent> eventHandler,
+            final Consumer<PlatformEvent> eventHandler,
             final int maxEventCount,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
@@ -263,7 +277,9 @@ public final class SyncUtils {
             @NonNull final Duration maxSyncTime) {
 
         return () -> {
-            logger.info(SYNC_INFO.getMarker(), "{} reading events start", connection.getDescription());
+            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                logger.debug(SYNC_INFO.getMarker(), "{} reading events start", connection.getDescription());
+            }
             int eventsRead = 0;
             try {
                 final long startTime = System.nanoTime();
@@ -282,13 +298,13 @@ public final class SyncUtils {
                                     throw new IOException("max event count " + maxEventCount + " exceeded");
                                 }
                             }
+                            final GossipEvent gossipEvent = connection.getDis().readPbjRecord(GossipEvent.PROTOBUF);
+                            final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
 
-                            final GossipEvent gossipEvent = connection.getDis().readEventData();
-
-                            gossipEvent.setSenderId(connection.getOtherId());
+                            platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());
 
-                            eventHandler.accept(gossipEvent);
+                            eventHandler.accept(platformEvent);
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
@@ -299,11 +315,13 @@ public final class SyncUtils {
                             eventsRead = Integer.MIN_VALUE;
                         }
                         case ByteConstants.COMM_EVENT_DONE -> {
-                            logger.info(
-                                    SYNC_INFO.getMarker(),
-                                    "{} reading events done, read {} events",
-                                    connection.getDescription(),
-                                    eventsRead);
+                            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                                logger.debug(
+                                        SYNC_INFO.getMarker(),
+                                        "{} reading events done, read {} events",
+                                        connection.getDescription(),
+                                        eventsRead);
+                            }
                             syncMetrics.eventsReceived(startTime, eventsRead);
                             // we are done reading event, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
@@ -313,14 +331,20 @@ public final class SyncUtils {
                             // if they are still busy reading events
                         case ByteConstants.COMM_SYNC_ONGOING -> {
                             // peer is still reading events, waiting for them to finish
-                            logger.debug(
-                                    SYNC_INFO.getMarker(),
-                                    "{} received COMM_SYNC_ONGOING",
-                                    connection.getDescription());
+                            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                                logger.debug(
+                                        SYNC_INFO.getMarker(),
+                                        "{} received COMM_SYNC_ONGOING",
+                                        connection.getDescription());
+                            }
                         }
                         case ByteConstants.COMM_SYNC_DONE -> {
-                            logger.debug(
-                                    SYNC_INFO.getMarker(), "{} received COMM_SYNC_DONE", connection.getDescription());
+                            if (logger.isDebugEnabled(SYNC_INFO.getMarker())) {
+                                logger.debug(
+                                        SYNC_INFO.getMarker(),
+                                        "{} received COMM_SYNC_DONE",
+                                        connection.getDescription());
+                            }
                             return eventsRead;
                         }
                         default -> throw new SyncException(
@@ -370,13 +394,13 @@ public final class SyncUtils {
      * @return the events that should be actually sent, will be a subset of the eventsTheyNeed list
      */
     @NonNull
-    public static List<EventImpl> filterLikelyDuplicates(
+    public static List<PlatformEvent> filterLikelyDuplicates(
             @NonNull final NodeId selfId,
             @NonNull final Duration nonAncestorThreshold,
             @NonNull final Instant now,
-            @NonNull final List<EventImpl> eventsTheyNeed) {
+            @NonNull final List<PlatformEvent> eventsTheyNeed) {
 
-        final LinkedList<EventImpl> filteredList = new LinkedList<>();
+        final LinkedList<PlatformEvent> filteredList = new LinkedList<>();
 
         final Set<Hash> parentHashesOfEventsToSend = new HashSet<>();
 
@@ -385,14 +409,14 @@ public final class SyncUtils {
         // filtered list in reverse order, resulting in a list that is in topological order.
 
         for (int index = eventsTheyNeed.size() - 1; index >= 0; index--) {
-            final EventImpl event = eventsTheyNeed.get(index);
+            final PlatformEvent event = eventsTheyNeed.get(index);
 
             final boolean sendEvent =
                     // Always send self events
                     event.getCreatorId().equals(selfId)
                             ||
                             // Always send parents of other events we plan to send
-                            parentHashesOfEventsToSend.contains(event.getBaseHash())
+                            parentHashesOfEventsToSend.contains(event.getHash())
                             ||
                             // Send all other events if we've known about it for long enough
                             haveWeKnownAboutEventForALongTime(event, nonAncestorThreshold, now);
@@ -401,12 +425,8 @@ public final class SyncUtils {
                 // If we've decided to send an event, we also want to send its parents if those parents are needed
                 // by the peer.
                 filteredList.addFirst(event);
-                final Hash selfParentHash = event.getBaseEvent().getHashedData().getSelfParentHash();
-                if (selfParentHash != null) {
-                    parentHashesOfEventsToSend.add(selfParentHash);
-                }
-                for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-                    parentHashesOfEventsToSend.add(otherParent.getHash());
+                for (final EventDescriptorWrapper otherParent : event.getAllParents()) {
+                    parentHashesOfEventsToSend.add(otherParent.hash());
                 }
             }
         }
@@ -423,8 +443,10 @@ public final class SyncUtils {
      * @return true if we've known about the event for long enough, false otherwise
      */
     private static boolean haveWeKnownAboutEventForALongTime(
-            @NonNull final EventImpl event, @NonNull final Duration nonAncestorThreshold, @NonNull final Instant now) {
-        final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
+            @NonNull final PlatformEvent event,
+            @NonNull final Duration nonAncestorThreshold,
+            @NonNull final Instant now) {
+        final Instant eventReceivedTime = event.getTimeReceived();
         final Duration timeKnown = Duration.between(eventReceivedTime, now);
         return isGreaterThan(timeKnown, nonAncestorThreshold);
     }
@@ -443,8 +465,8 @@ public final class SyncUtils {
     @NonNull
     public static Predicate<ShadowEvent> unknownNonAncient(
             @NonNull final Collection<ShadowEvent> knownShadows,
-            @NonNull final NonAncientEventWindow myEventWindow,
-            @NonNull final NonAncientEventWindow theirEventWindow,
+            @NonNull final EventWindow myEventWindow,
+            @NonNull final EventWindow theirEventWindow,
             @NonNull final AncientMode ancientMode) {
 
         // When searching for events, we don't want to send any events that are known to be ancient to the peer.
@@ -456,8 +478,8 @@ public final class SyncUtils {
 
         final long minimumSearchThreshold =
                 Math.max(myEventWindow.getExpiredThreshold(), theirEventWindow.getAncientThreshold());
-        return s -> s.getEvent().getBaseEvent().getAncientIndicator(ancientMode) >= minimumSearchThreshold
-                && !knownShadows.contains(s);
+        return s ->
+                s.getEvent().getAncientIndicator(ancientMode) >= minimumSearchThreshold && !knownShadows.contains(s);
     }
 
     /**
@@ -498,10 +520,10 @@ public final class SyncUtils {
      *
      * @param sendList The list of events to sort.
      */
-    static void sort(@NonNull final List<EventImpl> sendList) {
+    static void sort(@NonNull final List<PlatformEvent> sendList) {
         // Note: regardless of ancient mode, sorting uses generations and not birth rounds.
         //       Sorting by generations yields a list in topological order, sorting by birth rounds does not.
-        sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
+        sendList.sort((PlatformEvent e1, PlatformEvent e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
     }
 
     /**
@@ -565,7 +587,7 @@ public final class SyncUtils {
      * @param eventWindow the event window
      */
     public static void serializeEventWindow(
-            @NonNull final SerializableDataOutputStream out, @NonNull final NonAncientEventWindow eventWindow)
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventWindow eventWindow)
             throws IOException {
 
         out.writeLong(eventWindow.getLatestConsensusRound());
@@ -583,13 +605,13 @@ public final class SyncUtils {
      * @return the deserialized event window
      */
     @NonNull
-    public static NonAncientEventWindow deserializeEventWindow(
+    public static EventWindow deserializeEventWindow(
             @NonNull final SerializableDataInputStream in, @NonNull final AncientMode ancientMode) throws IOException {
 
         final long latestConsensusRound = in.readLong();
         final long ancientThreshold = in.readLong();
         final long expiredThreshold = in.readLong();
 
-        return new NonAncientEventWindow(latestConsensusRound, ancientThreshold, expiredThreshold, ancientMode);
+        return new EventWindow(latestConsensusRound, ancientThreshold, expiredThreshold, ancientMode);
     }
 }

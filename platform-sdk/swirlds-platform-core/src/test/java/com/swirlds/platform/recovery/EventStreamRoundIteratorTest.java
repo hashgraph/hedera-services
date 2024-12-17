@@ -22,24 +22,25 @@ import static com.swirlds.platform.recovery.RecoveryTestUtils.getLastEventStream
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getMiddleEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.truncateFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
+import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.CesEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,7 +60,8 @@ import org.junit.jupiter.api.Test;
 class EventStreamRoundIteratorTest {
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
     }
 
@@ -68,41 +70,37 @@ class EventStreamRoundIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
-        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
-        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
+        assertEquals(expected, actual);
     }
 
     @Test
     @DisplayName("Read All Events Test")
-    void readAllEventsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readAllEventsTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
-                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
+                mock(Roster.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
+                final StreamedRound peekRound = iterator.peek();
+                final StreamedRound nextRound = iterator.next();
                 assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
+                nextRound.getEvents().iterator().forEachRemaining(event -> {
+                    deserializedEvents.add(event);
+                    assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                 });
             }
 
@@ -118,21 +116,17 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Starting From Round Test")
-    void readAllEventsStartingFromRoundTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readAllEventsStartingFromRoundTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
         final long firstRoundToRead = 10;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
-        final List<EventImpl> eventsToBeReturned = new ArrayList<>();
+        final List<CesEvent> eventsToBeReturned = new ArrayList<>();
         events.forEach(event -> {
             if (event.getRoundReceived() >= firstRoundToRead) {
                 eventsToBeReturned.add(event);
@@ -141,24 +135,23 @@ class EventStreamRoundIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<Round> iterator =
-                new EventStreamRoundIterator(mock(AddressBook.class), directory, firstRoundToRead, true)) {
+        try (final IOIterator<StreamedRound> iterator =
+                new EventStreamRoundIterator(mock(Roster.class), directory, firstRoundToRead, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
+                final StreamedRound peekRound = iterator.peek();
+                final StreamedRound nextRound = iterator.next();
                 assertSame(peekRound, nextRound, "peek returned wrong object");
 
                 assertTrue(
                         nextRound.getRoundNum() >= firstRoundToRead, "low rounds should not be returned for this test");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
+                nextRound.getEvents().iterator().forEachRemaining(event -> {
+                    deserializedEvents.add(event);
+                    assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                 });
             }
 
@@ -174,16 +167,14 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Missing Event File Test")
-    void missingEventFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void missingEventFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -191,24 +182,21 @@ class EventStreamRoundIteratorTest {
 
         boolean exception = false;
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
-                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
+                mock(Roster.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 while (iterator.hasNext()) {
 
-                    final Round peekRound = iterator.peek();
-                    final Round nextRound = iterator.next();
+                    final StreamedRound peekRound = iterator.peek();
+                    final StreamedRound nextRound = iterator.next();
                     assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                    nextRound.iterator().forEachRemaining(event -> {
-                        deserializedEvents.add((EventImpl) event);
-                        assertEquals(
-                                nextRound.getRoundNum(),
-                                ((EventImpl) event).getRoundReceived(),
-                                "event in wrong round");
+                    nextRound.getEvents().iterator().forEachRemaining(event -> {
+                        deserializedEvents.add(event);
+                        assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                     });
                 }
             } catch (final IOException e) {
@@ -238,22 +226,20 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Early Rounds Not Present Test")
-    void earlyRoundsNotPresentTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void earlyRoundsNotPresentTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         assertThrows(
                 NoSuchElementException.class,
-                () -> new EventStreamRoundIterator(mock(AddressBook.class), directory, 10, true),
+                () -> new EventStreamRoundIterator(mock(Roster.class), directory, 10, true),
                 "should be unable to start at requested round");
 
         FileUtils.deleteDirectory(directory);
@@ -261,40 +247,35 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Truncated File Test")
-    void readAllEventsTruncatedFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readAllEventsTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
-                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
+                mock(Roster.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 while (iterator.hasNext()) {
 
-                    final Round peekRound = iterator.peek();
-                    final Round nextRound = iterator.next();
+                    final StreamedRound peekRound = iterator.peek();
+                    final StreamedRound nextRound = iterator.next();
                     assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                    nextRound.iterator().forEachRemaining(event -> {
-                        deserializedEvents.add((EventImpl) event);
-                        assertEquals(
-                                nextRound.getRoundNum(),
-                                ((EventImpl) event).getRoundReceived(),
-                                "event in wrong round");
+                    nextRound.getEvents().iterator().forEachRemaining(event -> {
+                        deserializedEvents.add(event);
+                        assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                     });
                 }
             } catch (final IOException e) {
@@ -321,39 +302,34 @@ class EventStreamRoundIteratorTest {
     @Disabled("This test is disabled because it is flaky. Fails ~1/10 times, but only when run remotely.")
     @Test
     @DisplayName("Read Complete Rounds Truncated File Test")
-    void readCompleteRoundsTruncatedFileTest()
-            throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
-
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-
+    void readCompleteRoundsTruncatedFileTest() throws IOException, NoSuchAlgorithmException {
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory(CONFIGURATION);
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
-                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, false)) {
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
+                mock(Roster.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, false)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
+                final StreamedRound peekRound = iterator.peek();
+                final StreamedRound nextRound = iterator.next();
                 assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
+                nextRound.getEvents().iterator().forEachRemaining(event -> {
+                    deserializedEvents.add(event);
+                    assertEquals(nextRound.getRoundNum(), (event).getRoundReceived(), "event in wrong round");
                 });
             }
 

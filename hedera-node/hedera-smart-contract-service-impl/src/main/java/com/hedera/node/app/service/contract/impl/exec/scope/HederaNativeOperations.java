@@ -16,18 +16,24 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.node.app.spi.key.KeyVerifier.NO_AUTHORIZING_KEYS;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -35,6 +41,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.SortedSet;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -78,6 +85,14 @@ public interface HederaNativeOperations {
     ReadableAccountStore readableAccountStore();
 
     /**
+     * Returns the {@link ReadableScheduleStore} for this {@link HederaNativeOperations}.
+     *
+     * @return the {@link ReadableScheduleStore}
+     */
+    @NonNull
+    ReadableScheduleStore readableScheduleStore();
+
+    /**
      * Returns the {@link Account} with the given number.
      *
      * @param number the account number
@@ -112,12 +127,13 @@ public interface HederaNativeOperations {
     /**
      * Returns the {@link Key} of the account with the given number.
      *
-     * @param number the account number
+     * @param accountId the account number
      * @return the account, or {@code null} if no such account exists
      */
     @Nullable
-    default Key getAccountKey(final long number) {
-        final var maybeAccount = getAccount(number);
+    default Key getAccountKey(@NonNull final AccountID accountId) {
+        requireNonNull(accountId);
+        final var maybeAccount = getAccount(accountId);
         return maybeAccount == null ? null : maybeAccount.keyOrThrow();
     }
 
@@ -164,6 +180,18 @@ public interface HederaNativeOperations {
     }
 
     /**
+     * Returns the {@link Schedule} with the given number.
+     *
+     * @param number the schedule number
+     * @return the schedule transaction, or {@code null} if no such schedule transactionexists
+     */
+    @Nullable
+    default Schedule getSchedule(final long number) {
+        return readableScheduleStore()
+                .get(ScheduleID.newBuilder().scheduleNum(number).build());
+    }
+
+    /**
      * Given an EVM address, resolves to the account or contract number (if any) that this address
      * is an alias for.
      *
@@ -198,9 +226,7 @@ public interface HederaNativeOperations {
 
     /**
      * Finalizes an existing hollow account with the given address as a contract by setting
-     * {@code isContract=true}, {@code key=Key{contractID=...}}, and {@code nonce=1}. As with
-     * a "normal" internal {@code CONTRACT_CREATION}, the record of this finalization should
-     * only be externalized if the top-level HAPI transaction succeeds.
+     * {@code isContract=true}, {@code key=Key{contractID=...}}, and {@code nonce=1}.
      *
      * @param evmAddress the EVM address of the hollow account to finalize as a contract
      */
@@ -237,4 +263,12 @@ public interface HederaNativeOperations {
      * @return true if the given transaction body has custom fees, false otherwise
      */
     boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
+
+    /**
+     * Returns the {@link SortedSet} of authorizing simple keys for this transaction.
+     * @return the authorizing simple keys
+     */
+    default SortedSet<Key> authorizingSimpleKeys() {
+        return NO_AUTHORIZING_KEYS;
+    }
 }

@@ -27,11 +27,11 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_ME
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.DEFAULT_AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationForExternalization;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -43,6 +43,9 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import org.junit.jupiter.api.Test;
 
 class SynthTxnUtilsTest {
+
+    private static final String LAZY_CREATION_MEMO = "";
+
     @Test
     void createsExpectedHollowSynthBody() {
         final var expected = CryptoCreateTransactionBody.newBuilder()
@@ -95,6 +98,13 @@ class SynthTxnUtilsTest {
                 parent.autoRenewSeconds(), matchingCreation.autoRenewPeriod().seconds());
         assertEquals(parent.autoRenewAccountId(), matchingCreation.autoRenewAccountId());
         assertEquals(parent.key(), matchingCreation.adminKey());
+    }
+
+    @Test
+    void onlySetContractKeyForExternalization() {
+        final var matchingKey = Key.newBuilder().contractID(CALLED_CONTRACT_ID).build();
+        final var matchingCreation = synthContractCreationForExternalization(CALLED_CONTRACT_ID);
+        assertEquals(matchingKey, matchingCreation.adminKey());
     }
 
     @Test

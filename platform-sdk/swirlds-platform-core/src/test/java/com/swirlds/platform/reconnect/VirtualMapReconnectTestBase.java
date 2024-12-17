@@ -17,9 +17,11 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -29,26 +31,27 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.serialize.KeySerializer;
+import com.swirlds.virtualmap.serialize.ValueSerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,26 +82,33 @@ public abstract class VirtualMapReconnectTestBase {
     protected static final TestValue FOX = new TestValue("FOX");
     protected static final TestValue GOOSE = new TestValue("GOOSE");
 
+    protected static final KeySerializer<TestKey> KEY_SERIALIZER = new TestKeySerializer();
+    protected static final ValueSerializer<TestValue> VALUE_SERIALIZER = new TestValueSerializer();
+
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+    protected final ReconnectConfig reconnectConfig = new TestConfigBuilder()
+            // This is lower than the default, helps test that is supposed to fail to finish faster.
+            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5s")
+            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
+            .getOrCreateConfig()
+            .getConfigData(ReconnectConfig.class);
 
-    protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
+    protected abstract VirtualDataSourceBuilder createBuilder() throws IOException;
 
     @BeforeEach
     void setupEach() throws Exception {
         // Some tests set custom default VirtualMap settings, e.g. StreamEventParserTest calls
         // Browser.populateSettingsCommon(). These custom settings can't be used to run VM reconnect
         // tests. As a workaround, set default settings here explicitly
-        final VirtualDataSourceBuilder<TestKey, TestValue> dataSourceBuilder = createBuilder();
+        final VirtualDataSourceBuilder dataSourceBuilder = createBuilder();
         teacherBuilder = new BrokenBuilder(dataSourceBuilder);
         learnerBuilder = new BrokenBuilder(dataSourceBuilder);
-        teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
-        learnerMap = new VirtualMap<>("Learner", learnerBuilder);
+        teacherMap = new VirtualMap<>("Teacher", KEY_SERIALIZER, VALUE_SERIALIZER, teacherBuilder, CONFIGURATION);
+        learnerMap = new VirtualMap<>("Learner", KEY_SERIALIZER, VALUE_SERIALIZER, learnerBuilder, CONFIGURATION);
     }
 
     @BeforeAll
@@ -106,24 +116,16 @@ public abstract class VirtualMapReconnectTestBase {
         loadLog4jContext();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.virtualmap");
-        registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, VirtualMap::new));
+        registry.registerConstructable(new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
         registry.registerConstructable(new ClassConstructorPair(VirtualMapState.class, VirtualMapState::new));
-        registry.registerConstructable(new ClassConstructorPair(VirtualRootNode.class, VirtualRootNode::new));
+        registry.registerConstructable(new ClassConstructorPair(
+                VirtualRootNode.class,
+                () -> new VirtualRootNode<>(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
-
-        new TestConfigBuilder()
-                .withValue(ReconnectConfig_.ACTIVE, "true")
-                // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
-                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
-                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
@@ -161,10 +163,10 @@ public abstract class VirtualMapReconnectTestBase {
         }
     }
 
-    protected static final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, TestValue> {
+    protected static final class BrokenBuilder implements VirtualDataSourceBuilder {
 
         private static final long CLASS_ID = 0x5a79654cd0f96dcfL;
-        private VirtualDataSourceBuilder<TestKey, TestValue> delegate;
+        private VirtualDataSourceBuilder delegate;
         private int numCallsBeforeThrow = Integer.MAX_VALUE;
         private int numCalls = 0;
         private int numTimesToBreak = 0;
@@ -172,7 +174,7 @@ public abstract class VirtualMapReconnectTestBase {
 
         public BrokenBuilder() {}
 
-        public BrokenBuilder(VirtualDataSourceBuilder<TestKey, TestValue> delegate) {
+        public BrokenBuilder(VirtualDataSourceBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -211,13 +213,13 @@ public abstract class VirtualMapReconnectTestBase {
 
         @Override
         public BreakableDataSource copy(
-                final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive) {
+                final VirtualDataSource snapshotMe, final boolean makeCopyActive, final boolean offlineUse) {
             final var breakableSnapshot = (BreakableDataSource) snapshotMe;
-            return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive));
+            return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive, offlineUse));
         }
 
         @Override
-        public void snapshot(final Path destination, final VirtualDataSource<TestKey, TestValue> snapshotMe) {
+        public void snapshot(final Path destination, final VirtualDataSource snapshotMe) {
             final var breakableSnapshot = (BreakableDataSource) snapshotMe;
             delegate.snapshot(destination, breakableSnapshot.delegate);
         }
@@ -236,11 +238,12 @@ public abstract class VirtualMapReconnectTestBase {
         }
     }
 
-    protected static final class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
-        private final VirtualDataSource<TestKey, TestValue> delegate;
+    protected static final class BreakableDataSource implements VirtualDataSource {
+
+        private final VirtualDataSource delegate;
         private final BrokenBuilder builder;
 
-        public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource<TestKey, TestValue> delegate) {
+        public BreakableDataSource(final BrokenBuilder builder, final VirtualDataSource delegate) {
             this.delegate = Objects.requireNonNull(delegate);
             this.builder = Objects.requireNonNull(builder);
         }
@@ -249,13 +252,12 @@ public abstract class VirtualMapReconnectTestBase {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
                 final boolean isReconnectContext)
                 throws IOException {
-            final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
-                    leafRecordsToAddOrUpdate.collect(Collectors.toList());
+            final List<VirtualLeafBytes> leaves = leafRecordsToAddOrUpdate.toList();
 
             if (builder.numTimesBroken < builder.numTimesToBreak) {
                 builder.numCalls += leaves.size();
@@ -268,27 +270,32 @@ public abstract class VirtualMapReconnectTestBase {
             }
 
             delegate.saveRecords(
-                    firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
+                    firstLeafPath,
+                    lastLeafPath,
+                    pathHashRecordsToUpdate,
+                    leaves.stream(),
+                    leafRecordsToDelete,
+                    isReconnectContext);
         }
 
         @Override
-        public void close() throws IOException {
-            delegate.close();
+        public void close(final boolean keepData) throws IOException {
+            delegate.close(keepData);
         }
 
         @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final TestKey key) throws IOException {
-            return delegate.loadLeafRecord(key);
+        public VirtualLeafBytes loadLeafRecord(final Bytes key, final int keyHashCode) throws IOException {
+            return delegate.loadLeafRecord(key, keyHashCode);
         }
 
         @Override
-        public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final long path) throws IOException {
+        public VirtualLeafBytes loadLeafRecord(final long path) throws IOException {
             return delegate.loadLeafRecord(path);
         }
 
         @Override
-        public long findKey(final TestKey key) throws IOException {
-            return delegate.findKey(key);
+        public long findKey(final Bytes key, final int keyHashCode) throws IOException {
+            return delegate.findKey(key, keyHashCode);
         }
 
         @Override
@@ -302,18 +309,13 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {
+        public void copyStatisticsFrom(final VirtualDataSource that) {
             delegate.copyStatisticsFrom(that);
         }
 
         @Override
         public void registerMetrics(final Metrics metrics) {
             delegate.registerMetrics(metrics);
-        }
-
-        @Override
-        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
-            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
         }
 
         @Override
@@ -334,6 +336,18 @@ public abstract class VirtualMapReconnectTestBase {
         @Override
         public void stopAndDisableBackgroundCompaction() {
             delegate.stopAndDisableBackgroundCompaction();
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public KeySerializer getKeySerializer() {
+            throw new UnsupportedOperationException("This method should never be called");
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public ValueSerializer getValueSerializer() {
+            throw new UnsupportedOperationException("This method should never be called");
         }
     }
 }

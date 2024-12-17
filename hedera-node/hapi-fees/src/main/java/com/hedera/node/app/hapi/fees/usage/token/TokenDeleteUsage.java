@@ -21,7 +21,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenDeleteUsage extends TokenTxnUsage<TokenDeleteUsage> {
-    private TokenDeleteUsage(TransactionBody tokenDeletionOp, TxnUsageEstimator usageEstimator) {
+    public TokenDeleteUsage(TransactionBody tokenDeletionOp, TxnUsageEstimator usageEstimator) {
         super(tokenDeletionOp, usageEstimator);
     }
 

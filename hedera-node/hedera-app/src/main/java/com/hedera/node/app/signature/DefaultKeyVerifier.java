@@ -18,34 +18,40 @@ package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.AbstractMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Base implementation of {@link KeyVerifier}
+ * Base implementation of {@link AppKeyVerifier}
  */
-public class DefaultKeyVerifier implements KeyVerifier {
-
+public class DefaultKeyVerifier implements AppKeyVerifier {
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
+
+    private static final Comparator<Key> KEY_COMPARATOR = new KeyComparator();
 
     private final int legacyFeeCalcNetworkVpt;
     private final long timeout;
@@ -55,6 +61,7 @@ public class DefaultKeyVerifier implements KeyVerifier {
      * Creates a {@link DefaultKeyVerifier}
      *
      * @param legacyFeeCalcNetworkVpt the number of verifications to report for temporary mono-service parity
+     * @param config configuration for the node
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
     public DefaultKeyVerifier(
@@ -87,7 +94,7 @@ public class DefaultKeyVerifier implements KeyVerifier {
                 yield callback.test(key, result) ? passedVerification(key) : failedVerification(key);
             }
             case KEY_LIST -> {
-                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                final var keys = key.keyListOrThrow().keys();
                 var failed = keys.isEmpty();
                 for (final var childKey : keys) {
                     failed |= verificationFor(childKey, callback).failed();
@@ -97,7 +104,7 @@ public class DefaultKeyVerifier implements KeyVerifier {
             case THRESHOLD_KEY -> {
                 final var thresholdKey = key.thresholdKeyOrThrow();
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                final var keys = keyList.keysOrElse(emptyList());
+                final var keys = keyList.keys();
                 final var threshold = thresholdKey.threshold();
                 final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 var passed = 0;
@@ -137,6 +144,16 @@ public class DefaultKeyVerifier implements KeyVerifier {
         return legacyFeeCalcNetworkVpt;
     }
 
+    @Override
+    public SortedSet<Key> authorizingSimpleKeys() {
+        return keyVerifications.entrySet().stream()
+                .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
+                        entry.getKey(), resolveFuture(entry.getValue(), () -> failedVerification(entry.getKey()))))
+                .filter(e -> e.getValue().passed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toCollection(() -> new TreeSet<>(KEY_COMPARATOR)));
+    }
+
     /**
      * Get a {@link Future<SignatureVerification>} for the given key.
      *
@@ -162,13 +179,13 @@ public class DefaultKeyVerifier implements KeyVerifier {
                 yield result == null ? completedFuture(failedVerification(key)) : result;
             }
             case KEY_LIST -> {
-                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                final var keys = key.keyListOrThrow().keys();
                 yield verificationFutureFor(key, keys, 0);
             }
             case THRESHOLD_KEY -> {
                 final var thresholdKey = key.thresholdKeyOrThrow();
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                final var keys = keyList.keysOrElse(emptyList());
+                final var keys = keyList.keys();
                 final var threshold = thresholdKey.threshold();
                 final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 yield verificationFutureFor(key, keys, keys.size() - clampedThreshold);

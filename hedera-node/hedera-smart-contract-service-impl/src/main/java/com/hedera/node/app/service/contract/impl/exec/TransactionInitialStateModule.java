@@ -32,20 +32,20 @@ public interface TransactionInitialStateModule {
     @InitialState
     @TransactionScope
     static ReadableFileStore provideInitialFileStore(@NonNull final HandleContext context) {
-        return context.readableStore(ReadableFileStore.class);
+        return context.storeFactory().readableStore(ReadableFileStore.class);
     }
 
     @Provides
     @InitialState
     @TransactionScope
     static ReadableAccountStore provideInitialAccountStore(@NonNull final HandleContext context) {
-        return context.readableStore(ReadableAccountStore.class);
+        return context.storeFactory().readableStore(ReadableAccountStore.class);
     }
 
     @Provides
     @InitialState
     @TransactionScope
     static TokenServiceApi provideInitialTokenServiceApi(@NonNull final HandleContext context) {
-        return context.serviceApi(TokenServiceApi.class);
+        return context.storeFactory().serviceApi(TokenServiceApi.class);
     }
 }

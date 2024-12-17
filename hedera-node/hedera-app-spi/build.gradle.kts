@@ -15,19 +15,19 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.feature.test-fixtures")
 }
 
 description = "Hedera Application - SPI"
 
 testModuleInfo {
     requires("com.hedera.node.app.spi")
+    requires("com.swirlds.state.api.test.fixtures")
     requires("org.apache.commons.lang3")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
 }

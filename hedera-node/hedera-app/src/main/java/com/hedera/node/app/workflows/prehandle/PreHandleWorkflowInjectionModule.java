@@ -16,49 +16,26 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
-import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignatureExpander;
-import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Function;
 
 @Module
 public interface PreHandleWorkflowInjectionModule {
-    @Provides
-    static Function<SignatureMap, PubKeyToSigBytes> provideKeyToSigFactory() {
-        return signatureMap -> new PojoSigMapPubKeyToSigBytes(PbjConverter.fromPbj(signatureMap));
-    }
-
     @Binds
     PreHandleWorkflow bindPreHandleWorkflow(PreHandleWorkflowImpl preHandleWorkflow);
-
-    @Binds
-    SignaturePreparer bindSignaturePreparer(MonoSignaturePreparer signaturePreparer);
 
     @Binds
     SignatureVerifier bindSignatureVerifier(SignatureVerifierImpl signatureVerifier);
 
     @Binds
     SignatureExpander bindSignatureExpander(SignatureExpanderImpl signatureExpander);
-
-    /**
-     * This binding is only needed to have a PreHandleDispatcher implementation that can be provided by dagger.
-     */
-    @Deprecated
-    @Binds
-    PreHandleDispatcher bindPreHandleDispatcher(DummyPreHandleDispatcher preHandleDispatcher);
 
     @Provides
     static ExecutorService provideExecutorService() {

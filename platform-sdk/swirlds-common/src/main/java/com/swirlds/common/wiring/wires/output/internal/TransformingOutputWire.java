@@ -18,7 +18,7 @@ package com.swirlds.common.wiring.wires.output.internal;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
@@ -61,7 +61,7 @@ public class TransformingOutputWire<IN, OUT> extends ForwardingOutputWire<IN, OU
      *                      possible if offer soldering is used and the destination declines to take the data.
      */
     public TransformingOutputWire(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final Function<IN, OUT> transformer,
             @Nullable final Consumer<IN> inputCleanup,

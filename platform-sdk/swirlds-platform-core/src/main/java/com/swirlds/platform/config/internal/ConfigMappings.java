@@ -68,16 +68,11 @@ public final class ConfigMappings {
             new ConfigMapping("socket.timeoutSyncClientSocket", "timeoutSyncClientSocket"),
             new ConfigMapping("socket.timeoutSyncClientConnect", "timeoutSyncClientConnect"),
             new ConfigMapping("socket.timeoutServerAcceptConnect", "timeoutServerAcceptConnect"),
-            new ConfigMapping("socket.useTLS", "useTLS"),
             new ConfigMapping("socket.useLoopbackIp", "useLoopbackIp"),
             new ConfigMapping("socket.tcpNoDelay", "tcpNoDelay"),
             new ConfigMapping("socket.deadlockCheckPeriod", "deadlockCheckPeriod"),
             new ConfigMapping("jvmPauseDetectorSleepMs", "jVMPauseDetectorSleepMs"),
             new ConfigMapping("jvmPauseReportMs", "jVMPauseReportMs"),
-            new ConfigMapping("thread.threadPrioritySync", "threadPrioritySync"),
-            new ConfigMapping("thread.threadPriorityNonSync", "threadPriorityNonSync"),
-            new ConfigMapping("thread.threadDumpPeriodMs", "threadDumpPeriodMs"),
-            new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"),
             new ConfigMapping("reconnect.asyncOutputStreamFlush", "reconnect.asyncOutputStreamFlushMilliseconds"),
             new ConfigMapping("reconnect.maxAckDelay", "reconnect.maxAckDelayMilliseconds"));
 

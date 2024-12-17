@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.equivAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.solidityIdFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.doGasLookup;
@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -41,15 +42,16 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -81,6 +83,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<ByteString> inlineInitcode = Optional.empty();
+    private boolean convertableToEthCreate = true;
 
     @Nullable
     private BiConsumer<HapiSpec, ContractCreateTransactionBody.Builder> spec;
@@ -175,6 +178,11 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return this;
     }
 
+    public HapiContractCreate omitAdminKey(final boolean omitAdminKey) {
+        this.omitAdminKey = omitAdminKey;
+        return this;
+    }
+
     public HapiContractCreate omitAdminKey() {
         omitAdminKey = true;
         return this;
@@ -201,6 +209,10 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return this;
     }
 
+    public void args(Optional<Object[]> args) {
+        this.args = args;
+    }
+
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.ContractCreate;
@@ -223,6 +235,15 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     public HapiContractCreate declinedReward(boolean isDeclined) {
         isDeclinedReward = isDeclined;
+        return this;
+    }
+
+    public boolean isConvertableToEthCreate() {
+        return convertableToEthCreate;
+    }
+
+    public HapiContractCreate refusingEthConversion() {
+        convertableToEthCreate = false;
         return this;
     }
 
@@ -253,18 +274,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         }
         spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
         spec.registry().saveContractId(contract, newId);
-        final var otherInfoBuilder = ContractGetInfoResponse.ContractInfo.newBuilder()
-                .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
-                .setMemo(memo.orElse(spec.setup().defaultMemo()))
-                .setAutoRenewPeriod(Duration.newBuilder()
-                        .setSeconds(autoRenewPeriodSecs.orElse(
-                                spec.setup().defaultAutoRenewPeriod().getSeconds()))
-                        .build());
-        if (!omitAdminKey && !useDeprecatedAdminKey) {
-            otherInfoBuilder.setAdminKey(adminKey);
-        }
-        final var otherInfo = otherInfoBuilder.build();
-        spec.registry().saveContractInfo(contract, otherInfo);
+        spec.registry().saveContractInfo(contract, infoOfCreatedContractOrThrow());
         successCb.ifPresent(cb -> cb.accept(spec.registry()));
         if (advertiseCreation) {
             String banner = "\n\n"
@@ -276,6 +286,27 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         if (gasObserver.isPresent()) {
             doGasLookup(gas -> gasObserver.get().accept(SUCCESS, gas), spec, txnSubmitted, true);
         }
+    }
+
+    /**
+     * Returns the contract info of the created contract.
+     *
+     * @return the contract info
+     */
+    public ContractGetInfoResponse.ContractInfo infoOfCreatedContractOrThrow() {
+        if (lastReceipt == null || memo.isEmpty() || autoRenewPeriodSecs.isEmpty()) {
+            throw new IllegalStateException("Contract was not created");
+        }
+        final var builder = ContractGetInfoResponse.ContractInfo.newBuilder()
+                .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
+                .setMemo(memo.get())
+                .setAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(autoRenewPeriodSecs.get())
+                        .build());
+        if (!omitAdminKey && !useDeprecatedAdminKey) {
+            builder.setAdminKey(adminKey);
+        }
+        return builder.build();
     }
 
     @Override
@@ -307,6 +338,13 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
             params = abi.isPresent()
                     ? Optional.of(encodeParametersForConstructor(args.get(), abi.get()))
                     : Optional.empty();
+        }
+        if (memo.isEmpty()) {
+            memo = Optional.of(spec.setup().defaultMemo());
+        }
+        if (autoRenewPeriodSecs.isEmpty()) {
+            autoRenewPeriodSecs =
+                    Optional.of(spec.setup().defaultAutoRenewPeriod().getSeconds());
         }
         ContractCreateTransactionBody opBody = spec.txns()
                 .<ContractCreateTransactionBody, ContractCreateTransactionBody.Builder>body(
@@ -358,11 +396,6 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
-    }
-
-    @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         MoreObjects.ToStringHelper helper = super.toStringHelper().add("contract", contract);
         bytecodeFile.ifPresent(f -> helper.add("bytecode", f));
@@ -380,5 +413,63 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
+    }
+
+    public long numOfCreatedContractOrThrow() {
+        return Optional.ofNullable(lastReceipt)
+                .map(receipt -> receipt.getContractID().getContractNum())
+                .orElseThrow();
+    }
+
+    public boolean getDeferStatusResolution() {
+        return deferStatusResolution;
+    }
+
+    public String getTxnName() {
+        return txnName;
+    }
+
+    public Optional<String> getAbi() {
+        return abi;
+    }
+
+    public Optional<Object[]> getArgs() {
+        return args;
+    }
+
+    public String getContract() {
+        return contract;
+    }
+
+    public Optional<Function<Transaction, Transaction>> getFiddler() {
+        return fiddler;
+    }
+
+    public Optional<Long> getValidDurationSecs() {
+        return validDurationSecs;
+    }
+
+    public Optional<String> getCustomTxnId() {
+        return customTxnId;
+    }
+
+    public Optional<AccountID> getNode() {
+        return node;
+    }
+
+    public OptionalDouble getUsdFee() {
+        return usdFee;
+    }
+
+    public Optional<Integer> getRetryLimits() {
+        return retryLimits;
+    }
+
+    public Optional<EnumSet<ResponseCodeEnum>> getPermissiblePrechecks() {
+        return permissiblePrechecks;
+    }
+
+    public Optional<Long> getFee() {
+        return fee;
     }
 }

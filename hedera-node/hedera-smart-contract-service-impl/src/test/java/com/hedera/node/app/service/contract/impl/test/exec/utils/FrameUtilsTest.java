@@ -17,6 +17,9 @@
 package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.QUALIFIED_DELEGATE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType.UNQUALIFIED_DELEGATE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.HAPI_RECORD_BUILDER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
@@ -24,12 +27,13 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.stackIncludesActiveAddress;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_ADDRESS_CALLER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PERMITTED_CALLERS_CONFIG;
-import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -44,11 +48,14 @@ import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.EntityType;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils;
-import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -89,7 +96,13 @@ class FrameUtilsTest {
     private WorldUpdater worldUpdater;
 
     @Mock
+    private ProxyWorldUpdater proxyWorldUpdater;
+
+    @Mock
     private FeatureFlags featureFlags;
+
+    @Mock
+    private ProxyEvmContract proxyEvmContract;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
@@ -156,7 +169,7 @@ class FrameUtilsTest {
         // given
         stack.push(initialFrame);
         stack.push(frame);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(frame.getMessageFrameStack()).willReturn(stack);
 
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
@@ -164,35 +177,25 @@ class FrameUtilsTest {
         given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
         given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
 
-        given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
-        given(account.getNonce()).willReturn(TOKEN_PROXY_ACCOUNT_NONCE);
-        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isTokenFacade()).willReturn(true);
 
-        // when
-        final var isQualifiedForDelegate = !FrameUtils.unqualifiedDelegateDetected(frame);
-
-        // then
-        assertTrue(isQualifiedForDelegate);
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame, EntityType.TOKEN));
     }
 
     @Test
     void unqualifiedDelegateDetectedValidationFailTokenNull() {
         // given
         givenNonInitialFrame();
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
 
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
-        given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(null);
-        given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isTokenFacade()).willReturn(false);
 
-        // when
-        final var isQualifiedForDelegate = !FrameUtils.unqualifiedDelegateDetected(frame);
-
-        // then
-        assertFalse(isQualifiedForDelegate);
+        assertEquals(UNQUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame, EntityType.TOKEN));
     }
 
     @Test
@@ -201,21 +204,110 @@ class FrameUtilsTest {
         stack.push(initialFrame);
         stack.push(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
 
         given(frame.getRecipientAddress()).willReturn(PERMITTED_ADDRESS_CALLER);
         given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(initialFrame.getRecipientAddress()).willReturn(PERMITTED_ADDRESS_CALLER);
         given(initialFrame.getContractAddress()).willReturn(PERMITTED_ADDRESS_CALLER);
 
-        given(worldUpdater.get(PERMITTED_ADDRESS_CALLER)).willReturn(null);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(PERMITTED_CALLERS_CONFIG);
 
-        // when
-        final var isQualifiedForDelegate = !FrameUtils.unqualifiedDelegateDetected(frame);
+        assertEquals(QUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame, EntityType.TOKEN));
+    }
 
-        // then
-        assertTrue(isQualifiedForDelegate);
+    @Test
+    void detectDelegateCallToAccount() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame, EntityType.REGULAR_ACCOUNT));
+    }
+
+    @Test
+    void detectRedirectToRegularAccount() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isRegularAccount()).willReturn(true);
+
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame, EntityType.REGULAR_ACCOUNT));
+    }
+
+    @Test
+    void detectRedirectToNonRegularAccount() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isRegularAccount()).willReturn(false);
+
+        assertEquals(UNQUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame, EntityType.REGULAR_ACCOUNT));
+    }
+
+    @Test
+    void detectDelegateCallToScheduleTxn() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame, EntityType.SCHEDULE_TXN));
+    }
+
+    @Test
+    void detectRedirectToRegularScheduleTxn() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isScheduleTxnFacade()).willReturn(true);
+
+        assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeOf(frame, EntityType.SCHEDULE_TXN));
+    }
+
+    @Test
+    void detectRedirectToNonRegularScheduleTxn() {
+        // given
+        stack.push(initialFrame);
+        stack.push(frame);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isScheduleTxnFacade()).willReturn(false);
+
+        assertEquals(UNQUALIFIED_DELEGATE, FrameUtils.callTypeOf(frame, EntityType.SCHEDULE_TXN));
     }
 
     @Test
@@ -257,7 +349,7 @@ class FrameUtilsTest {
     void checksForBeneficiaryMapAsExpected() {
         givenNonInitialFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
-        final DeleteCapableTransactionRecordBuilder beneficiaries = mock(DeleteCapableTransactionRecordBuilder.class);
+        final DeleteCapableTransactionStreamBuilder beneficiaries = mock(DeleteCapableTransactionStreamBuilder.class);
         given(initialFrame.getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE))
                 .willReturn(beneficiaries);
         assertSame(beneficiaries, selfDestructBeneficiariesFor(frame));
@@ -275,7 +367,7 @@ class FrameUtilsTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         assertTrue(FrameUtils.contractRequired(frame, EIP_1014_ADDRESS, featureFlags));
-        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONFIG, null);
+        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null);
     }
 
     @Test
@@ -286,7 +378,7 @@ class FrameUtilsTest {
         assertTrue(FrameUtils.contractRequired(frame, NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS, featureFlags));
         verify(featureFlags)
                 .isAllowCallsToNonContractAccountsEnabled(
-                        DEFAULT_CONFIG,
+                        DEFAULT_CONTRACTS_CONFIG,
                         NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS
                                 .toUnsignedBigInteger()
                                 .longValueExact());
@@ -298,7 +390,7 @@ class FrameUtilsTest {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         assertTrue(FrameUtils.contractRequired(frame, Address.fromHexString("0xFFFFFFFFFFFFFFFF"), featureFlags));
-        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONFIG, null);
+        verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null);
     }
 
     void givenNonInitialFrame() {

@@ -32,7 +32,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21.0.4"
 
     secrets:
       gradle-cache-username:
@@ -56,14 +56,14 @@ env:
   DOCKER_MANIFEST_GENERATOR: .github/workflows/support/scripts/generate-docker-artifact-baseline.sh
   DOCKER_MANIFEST_PATH: ${{ github.workspace }}/.manifests/docker
   DOCKER_REGISTRY: localhost:5000
-  DOCKER_IMAGE_NAME: main-network-node
-  DOCKER_CONTEXT_PATH: hedera-node/infrastructure/docker/containers/production-next/main-network-node
+  DOCKER_IMAGE_NAME: consensus-node
+  DOCKER_CONTEXT_PATH: hedera-node/infrastructure/docker/containers/production-next/consensus-node
   SKOPEO_VERSION: v1.14.0
 
 jobs:
   generate-baseline:
     name: Generate Baseline
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: network-node-linux-medium
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
       sha-abbrev: ${{ steps.commit.outputs.sha-abbrev }}
@@ -71,21 +71,27 @@ jobs:
       path: ${{ steps.baseline.outputs.path }}
       file: ${{ steps.baseline.outputs.file }}
       name: ${{ steps.baseline.outputs.name }}
+
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.ref }}
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
 
       - name: Retrieve Commit Hash
         id: commit
@@ -112,14 +118,14 @@ jobs:
           echo "file=${BASELINE_FILE}" >> "${GITHUB_OUTPUT}"
 
       - name: Setup Java
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4.5.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         with:
           cache-disabled: true
@@ -130,66 +136,75 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends skopeo jq
 
-      - name: Install KillAll
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: sudo apt-get install --yes --no-install-recommends psmisc
+#      - name: Install KillAll
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: sudo apt-get install --yes --no-install-recommends psmisc
 
-      - name: Create Docker Working Directory
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: |
-          USER="$(id -un)"
-          GROUP="$(id -gn)"
-          sudo mkdir -p /x
-          sudo chown -vR ${USER}:${GROUP} /x
-          sudo ls -lah /x
+#      - name: Create Docker Working Directory
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: |
+#          USER="$(id -un)"
+#          GROUP="$(id -gn)"
+#          sudo mkdir -p /x
+#          sudo chown -vR ${USER}:${GROUP} /x
+#          sudo ls -lah /x
 
-      - name: Remove Docker from Self Hosted Runners
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: |
-          set -x
-          sudo killall dockerd || true
-          sudo killall containerd || true
-          sudo rm -rvf /usr/bin/*containerd* || true
-          sudo rm -rvf /usr/bin/docker* || true
-          sudo rm -rvf /usr/local/bin/docker* || true
-          sudo rm -rvf /usr/local/bin/*lima* || true
+#      - name: Remove Docker from Self Hosted Runners
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: |
+#          set -x
+#          sudo killall dockerd || true
+#          sudo killall containerd || true
+#          sudo rm -rvf /usr/bin/*containerd* || true
+#          sudo rm -rvf /usr/bin/docker* || true
+#          sudo rm -rvf /usr/local/bin/docker* || true
+#          sudo rm -rvf /usr/local/bin/*lima* || true
 
-      - name: Setup Containerd Support
-        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        with:
-          containerd-version: v1.7.2
+#      - name: Setup Containerd Support
+#        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        with:
+#          containerd-version: v1.7.2
 
-      - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        env:
-          HOME: /x
-        with:
-          version: v24.0.7
+#      - name: Setup Docker Support
+#        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        env:
+#          HOME: /x
+#        with:
+#          version: v25.0.5
+#          daemon-config: |
+#            {
+#              "registry-mirrors": [
+#                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
+#              ]
+#            }
 
-      - name: Configure Default Docker Context
-        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: |
-          set -x
-          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
-            docker context rm -f setup-docker-action
-          fi
-
-          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
-          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
-          docker context use setup-docker-action
+#      - name: Configure Default Docker Context
+#        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
+#        run: |
+#          set -x
+#          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+#            docker context rm -f setup-docker-action
+#          fi
+#
+#          DOCKER_CONTEXT_PATH="$(sudo find /x -name docker.sock | tr -d '[:space:]')"
+#          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+#          docker context use setup-docker-action
 
       - name: Setup QEmu Support
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         with:
-          version: v0.12.0
+          version: v0.16.2
           driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -220,8 +235,12 @@ jobs:
             cp -Rvf "${{ github.workspace }}/hedera-node/data/apps" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/data/"
           echo "::endgroup::"
 
+      - name: Write Artifact Version Descriptor
+        run: |
+          printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "$(./gradlew -q showVersion)" "$(git log -1 --format='%H' | cut -c1-8)" "$(date -u)" | tee "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/VERSION"
+
       - name: Build Docker Image
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         env:
           SOURCE_DATE_EPOCH: ${{ steps.commit.outputs.source-date }}
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
@@ -270,21 +289,26 @@ jobs:
           #- ubuntu-20.04
           #- macos-12
           #- macos-11
-          - [self-hosted, Linux, medium, ephemeral]
-          - [self-hosted, Linux, large, ephemeral]
+          - network-node-linux-medium
+          - network-node-linux-large
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
       - name: Standardize Git Line Endings
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
 
       - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.ref }}
 
       - name: Setup Python
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: 3.9
 
@@ -302,9 +326,9 @@ jobs:
             sudo apt-get install --yes --no-install-recommends skopeo
           fi
 
-      - name: Install KillAll (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        run: sudo apt-get install --yes --no-install-recommends psmisc
+#      - name: Install KillAll (Linux)
+#        if: ${{ runner.os == 'Linux' }}
+#        run: sudo apt-get install --yes --no-install-recommends psmisc
 
       - name: Install Skopeo and JQ (macOS)
         if: ${{ runner.os == 'macOS' }}
@@ -316,13 +340,13 @@ jobs:
 
       - name: Authenticate to Google Cloud
         id: google-auth
-        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
         with:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2.1.2
         env:
           CLOUDSDK_PYTHON: ${{ format('{0}{1}', env.pythonLocation, runner.os == 'Windows' && '\python.exe' || '/bin/python3') }}
 
@@ -336,17 +360,17 @@ jobs:
           tar -xzf "${{ needs.generate-baseline.outputs.name }}"
           mv "sdk" "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/"
 
-      - name: Create Docker Working Directory
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          USER="$(id -un)"
-          GROUP="$(id -gn)"
-          sudo mkdir -p /x
-          sudo chown -vR ${USER}:${GROUP} /x
-          sudo ls -lah /x
+#      - name: Create Docker Working Directory
+#        if: ${{ runner.os == 'Linux' }}
+#        run: |
+#          USER="$(id -un)"
+#          GROUP="$(id -gn)"
+#          sudo mkdir -p /x
+#          sudo chown -vR ${USER}:${GROUP} /x
+#          sudo ls -lah /x
 
       - name: Remove Preinstalled Docker
-        if: ${{ contains(matrix.os, 'self-hosted') || runner.os == 'macOS' }}
+        if: ${{ runner.os == 'macOS' }}
         run: |
           set -x
           sudo killall dockerd || true
@@ -366,40 +390,49 @@ jobs:
         id: home
         run: echo "directory=$(tr -d '[:space:]' < <(cd ~ && pwd))" >> "${GITHUB_OUTPUT}"
 
-      - name: Setup Containerd Support
-        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
-        if: ${{ runner.os == 'Linux' }}
-        with:
-          containerd-version: v1.7.2
-
-      - name: Setup Docker Support
-        uses: crazy-max/ghaction-setup-docker@d9be6cade441568ba10037bce5221b8f564981f1 # v3.0.0
-        env:
-          HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
-        with:
-          version: v24.0.7
-
-      - name: Configure Default Docker Context
-        env:
-          SEARCH_PATH: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
-        run: |
-          set -x
-          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
-            docker context rm -f setup-docker-action
-          fi
-
-          DOCKER_CONTEXT_PATH="$(sudo find "${SEARCH_PATH}" -name docker.sock | tr -d '[:space:]')"
-          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
-          docker context use setup-docker-action
+#      - name: Setup Containerd Support
+#        uses: crazy-max/ghaction-setup-containerd@60acbf31e6572da7b83a4ed6b428ed92a35ff4d7 # v3.0.0
+#        if: ${{ runner.os == 'Linux' }}
+#        with:
+#          containerd-version: v1.7.2
+#
+#      - name: Setup Docker Support
+#        uses: step-security/ghaction-setup-docker@42e219a378b907a83f1b323a1458fbf352af3ffd # v3.3.0
+#        env:
+#          HOME: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
+#        with:
+#          version: v25.0.5
+#          daemon-config: |
+#            {
+#              "registry-mirrors": [
+#                "https://hub.mirror.docker.lat.ope.eng.hashgraph.io"
+#              ]
+#            }
+#
+#      - name: Configure Default Docker Context
+#        env:
+#          SEARCH_PATH: ${{ runner.os == 'Linux' && '/x' || steps.home.outputs.directory }}
+#        run: |
+#          set -x
+#          if grep setup-docker-action < <(docker context ls --format '{{ .Name }}') >/dev/null; then
+#            docker context rm -f setup-docker-action
+#          fi
+#
+#          DOCKER_CONTEXT_PATH="$(sudo find "${SEARCH_PATH}" -name docker.sock | tr -d '[:space:]')"
+#          docker context create setup-docker-action --docker "host=unix://${DOCKER_CONTEXT_PATH}"
+#          docker context use setup-docker-action
 
       - name: Setup QEmu Support
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
 
       - name: Setup Docker Buildx Support
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
         with:
-          version: v0.12.0
+          version: v0.16.2
           driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."docker.io"]
+              mirrors = ["https://hub.mirror.docker.lat.ope.eng.hashgraph.io"]
 
       - name: Setup Local Docker Registry
         run: docker run -d -p 5000:5000 --restart=always --name registry registry:latest
@@ -411,7 +444,7 @@ jobs:
         run: docker info
 
       - name: Build Docker Image
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         env:
           SOURCE_DATE_EPOCH: ${{ needs.generate-baseline.outputs.source-date }}
         with:
@@ -466,7 +499,7 @@ jobs:
           fi
 
       - name: Publish Manifests
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         if: ${{ steps.regen-manifest.conclusion == 'success' && failure() && !cancelled() }}
         with:
           name: Docker Manifests [${{ join(matrix.os, ', ') }}]

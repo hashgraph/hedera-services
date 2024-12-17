@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -35,7 +37,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -62,7 +64,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     /**
      * The payer account ID. Specified in the transaction body, extracted and stored separately for convenience.
      */
-    private final AccountID payer;
+    private final AccountID payerId;
     /**
      * The payer's key, as found in state
      */
@@ -128,32 +130,28 @@ public class PreHandleContextImpl implements PreHandleContext {
     }
 
     /**
-     * Create a new instance
+     * Create a new instance of {@link PreHandleContextImpl}.
+     * @throws PreCheckException if the payer account does not exist
      */
     private PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
+            @NonNull final AccountID payerId,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
             final boolean isUserTx)
             throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
-        this.payer = requireNonNull(payer, "payer msut not be null!");
+        this.payerId = requireNonNull(payerId, "payer must not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
         this.isUserTx = isUserTx;
-
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
-
-        // Find the account, which must exist or throw a PreCheckException with the given response code.
-        final var account = accountStore.getAccountById(payer);
-        mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        // NOTE: While it is true that the key can be null on some special accounts like
-        // account 800, those accounts cannot be the payer.
-        payerKey = account.key();
-        mustExist(payerKey, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        // Find the account, which must exist or throw on construction
+        final var payer = mustExist(accountStore.getAccountById(payerId), INVALID_PAYER_ACCOUNT_ID);
+        // It would be a catastrophic invariant failure if an account in state didn't have a key
+        payerKey = payer.keyOrThrow();
     }
 
     @Override
@@ -171,7 +169,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public AccountID payer() {
-        return payer;
+        return payerId;
     }
 
     @Override
@@ -282,6 +280,26 @@ public class PreHandleContextImpl implements PreHandleContext {
             throws PreCheckException {
         requireNonNull(responseCode);
 
+        return requireKey(accountID, responseCode, false);
+    }
+
+    @Override
+    @NonNull
+    @SuppressWarnings(
+            "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
+    // false positive because of the !isValid(key) check
+    public PreHandleContext requireAliasedKeyOrThrow(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        requireNonNull(responseCode);
+        return requireKey(accountID, responseCode, true);
+    }
+
+    private @NonNull PreHandleContext requireKey(
+            final @Nullable AccountID accountID,
+            final @NonNull ResponseCodeEnum responseCode,
+            final boolean allowAliasedIds)
+            throws PreCheckException {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
@@ -290,11 +308,15 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If we repeated the payer requirement, we would be requiring "double authorization" from
         // the contract doing the dispatch; but the contract has already authorized the action by
         // the very execution of its bytecode.
-        if (accountID.equals(payer)) {
+        if (accountID.equals(payerId)) {
             return this;
         }
-
-        final var account = accountStore.getAccountById(accountID);
+        final Account account;
+        if (allowAliasedIds) {
+            account = accountStore.getAliasedAccountById(accountID);
+        } else {
+            account = accountStore.getAccountById(accountID);
+        }
         if (account == null) {
             throw new PreCheckException(responseCode);
         }
@@ -306,7 +328,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
         // Verify this key isn't for an immutable account
         verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
-        final var key = account.key();
+        final var key = account.keyOrThrow();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
@@ -454,42 +476,28 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public TransactionKeys allKeysForTransaction(
-            @NonNull TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException {
-        dispatcher.dispatchPureChecks(nestedTxn);
-        final var nestedContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
-        try {
-            dispatcher.dispatchPreHandle(nestedContext);
-        } catch (final PreCheckException ignored) {
-            // We must ignore/translate the exception here, as this is key gathering, not transaction validation.
-            throw new PreCheckException(ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
-        }
-        return nestedContext;
-    }
-
-    @Override
-    @NonNull
-    public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId)
             throws PreCheckException {
-        this.innerContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
-        return this.innerContext;
-    }
-
-    @Override
-    @Nullable
-    public PreHandleContext innerContext() {
-        return innerContext;
+        // Throws PreCheckException if the transaction body is structurally invalid
+        dispatcher.dispatchPureChecks(body);
+        // Throws PreCheckException if the payer account does not exist
+        final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher);
+        try {
+            // Accumulate all required keys in the context
+            dispatcher.dispatchPreHandle(context);
+        } catch (final PreCheckException ignored) {
+            // Translate all prehandle failures to unresolvable required signers
+            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
+        }
+        return context;
     }
 
     @Override
     public String toString() {
         return "PreHandleContextImpl{" + "accountStore="
                 + accountStore + ", txn="
-                + txn + ", payer="
-                + payer + ", payerKey="
+                + txn + ", payerId="
+                + payerId + ", payerKey="
                 + payerKey + ", requiredNonPayerKeys="
                 + requiredNonPayerKeys + ", innerContext="
                 + innerContext + ", storeFactory="

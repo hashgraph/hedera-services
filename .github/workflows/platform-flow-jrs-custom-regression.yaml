@@ -37,7 +37,7 @@ on:
         description: "Java JDK Version:"
         type: string
         required: false
-        default: "21.0.1"
+        default: "21"
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -66,7 +66,7 @@ jobs:
       branch-name: ${{ github.ref_name }}
       slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
       slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
-      java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
+      java-version: ${{ github.event.inputs.java-version || '21' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
       use-branch-for-slack-channel: false

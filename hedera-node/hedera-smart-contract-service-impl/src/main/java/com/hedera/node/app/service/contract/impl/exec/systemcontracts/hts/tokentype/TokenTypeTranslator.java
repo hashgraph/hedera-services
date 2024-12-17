@@ -19,17 +19,23 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.token
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
-public class TokenTypeTranslator extends AbstractHtsCallTranslator {
+/**
+ * Translates {@code getTokenType()} calls to the HTS system contract.
+ */
+public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for getTokenType(address) method. */
     public static final Function TOKEN_TYPE = new Function("getTokenType(address)", ReturnTypes.RESPONSE_CODE_INT32);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenTypeTranslator() {
         // Dagger2
@@ -40,14 +46,14 @@ public class TokenTypeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), TOKEN_TYPE.selector());
+        return attempt.isSelector(TOKEN_TYPE);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = TOKEN_TYPE.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenTypeCall(

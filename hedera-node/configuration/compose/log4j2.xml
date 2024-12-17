@@ -7,101 +7,77 @@
     </Console>
 
     <RollingFile name="RollingFile" fileName="output/hgcaa.log"
-      filePattern="output/hgcaa-%d{yyyy-MM-dd}-%i.log.gz">
+      filePattern="output/hgcaa-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10">
-        <Delete basePath="output" maxDepth="3">
-          <IfFileName glob="hgcaa-*.log.gz">
-            <IfLastModified age="P3D"/>
-          </IfFileName>
-        </Delete>
-      </DefaultRolloverStrategy>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
     <RollingFile name="QueriesRollingFile" fileName="output/queries.log"
-      filePattern="output/queries-%d{yyyy-MM-dd}-%i.log.gz">
+      filePattern="output/queries-%i.log">
       <BurstFilter level="INFO" rate="50" maxBurst="500"/>
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10">
-        <Delete basePath="output" maxDepth="3">
-          <IfFileName glob="queries-*.log.gz">
-            <IfLastModified age="P3D"/>
-          </IfFileName>
-        </Delete>
-      </DefaultRolloverStrategy>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
     <RollingFile name="fileLog" fileName="output/swirlds.log"
-      filePattern="output/swirlds-sdk-%d{yyyy-MM-dd}-%i.log.gz">
+      filePattern="output/swirlds-sdk-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10">
-        <Delete basePath="output" maxDepth="3">
-          <IfFileName glob="swirlds-sdk-*.log.gz">
-            <IfLastModified age="P10D"/>
-          </IfFileName>
-        </Delete>
-      </DefaultRolloverStrategy>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
     <RollingFile name="vMapLog" fileName="output/swirlds-vmap.log"
-      filePattern="output/swirlds-vmap-%d{yyyy-MM-dd}-%i.log.gz">
+      filePattern="output/swirlds-vmap-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10">
-        <Delete basePath="output" maxDepth="3">
-          <IfFileName glob="swirlds-vmap-*.log.gz">
-            <IfLastModified age="P3D"/>
-          </IfFileName>
-        </Delete>
-      </DefaultRolloverStrategy>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
     <!-- Platform hash stream logs -->
     <RollingFile name="swirldsHashStream" fileName="output/swirlds-hashstream/swirlds-hashstream.log"
-      filePattern="output/swirlds-hashstream/swirlds-hashstream-%d{yyyy-MM-dd}-%i.log.gz">
+      filePattern="output/swirlds-hashstream/swirlds-hashstream-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
       </PatternLayout>
       <Policies>
-        <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10">
-        <Delete basePath="output" maxDepth="3">
-          <IfFileName glob="swirlds-hashstream/swirlds-hashstream-*.log.gz">
-            <IfLastModified age="P3D"/>
-          </IfFileName>
-        </Delete>
-      </DefaultRolloverStrategy>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
     <!-- Transaction state logs -->
     <RollingFile name="TransactionStateLogs"
                  fileName="output/transaction-state/state-changes.log"
-                 filePattern="output/transaction-state/state-changes-%d{yyyy-MM-dd--HH-mm-ss}-%i.log.gz">
+                 filePattern="output/transaction-state/state-changes-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %m{nolookups}%n</pattern>
+      </PatternLayout>
+      <SizeBasedTriggeringPolicy size="50 MB" />
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
+    <!-- State logs -->
+    <RollingFile name="StateLogs"
+                 fileName="output/state/state-changes.log"
+                 filePattern="output/state/state-changes-%i.log">
       <PatternLayout>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %m{nolookups}%n</pattern>
       </PatternLayout>
@@ -240,6 +216,11 @@
     <!-- Send transaction state logs to their own appender   -->
     <Logger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="info" additivity="false">
       <AppenderRef ref="TransactionStateLogs"/>
+    </Logger>
+
+    <!-- Send state logs to their own appender   -->
+    <Logger name="com.swirlds.state.merkle.logging.StateLogger" level="info" additivity="false">
+      <AppenderRef ref="StateLogs"/>
     </Logger>
 
     <Logger name="com.hedera" level="info" additivity="false">
