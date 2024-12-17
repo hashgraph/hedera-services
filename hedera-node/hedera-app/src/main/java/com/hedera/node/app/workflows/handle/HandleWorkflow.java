@@ -98,8 +98,8 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -153,11 +153,12 @@ public class HandleWorkflow {
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final ScheduleService scheduleService;
 
+    private final Platform platform;
+
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
     // The last second for which this workflow has confirmed all scheduled transactions are executed
     private long lastExecutedSecond;
-    private KeysAndCerts keysAndCerts;
 
     @Inject
     public HandleWorkflow(
@@ -185,7 +186,8 @@ public class HandleWorkflow {
             @NonNull final TssBaseService tssBaseService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final ScheduleService scheduleService) {
+            @NonNull final ScheduleService scheduleService,
+            @NonNull final Platform platform) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -215,6 +217,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.platform = requireNonNull(platform);
     }
 
     /**
@@ -854,13 +857,5 @@ public class HandleWorkflow {
                 .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
                 .get();
         return !requireNonNull(blockInfo).migrationRecordsStreamed() ? POST_UPGRADE_TRANSACTION : ORDINARY_TRANSACTION;
-    }
-
-    /**
-     * Sets the keys and certificates for the handle workflow.
-     * @param keysAndCerts the keys and certificates
-     */
-    public void setKeysAndCerts(KeysAndCerts keysAndCerts) {
-        this.keysAndCerts = keysAndCerts;
     }
 }

@@ -32,6 +32,7 @@ import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -53,7 +54,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A fake implementation of the {@link TssBaseService} that,
@@ -263,8 +263,11 @@ public class FakeTssBaseService implements TssBaseService {
 
     @Override
     public void processTssEncryptionKeyChecks(
-            @NotNull UserTxn userTxn, @NotNull HandleContext handleContext, @NotNull KeysAndCerts keysAndCerts) {
-        delegate.processTssEncryptionKeyChecks(userTxn, handleContext, keysAndCerts);
+            @NonNull UserTxn userTxn,
+            @NonNull HandleContext handleContext,
+            @NonNull KeysAndCerts keysAndCerts,
+            @NonNull ConfigProvider configProvider) {
+        delegate.processTssEncryptionKeyChecks(userTxn, handleContext, keysAndCerts, configProvider);
     }
 
     @Override

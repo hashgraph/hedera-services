@@ -63,6 +63,7 @@ import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -131,6 +132,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     // This is set to null by default and will be updated from state when each second is processed.
     // This is also null when the network restarts or reconnects.
     private TssStatus tssStatus;
+
+    private Instant lastSuccessfulTssEncryptionKeySubmission;
+    private int tssEncryptionKeySubmissionAttempts = 0;
 
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
@@ -788,15 +792,22 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void processTssEncryptionKeyChecks(
             @NonNull final UserTxn userTxn,
             @NonNull final HandleContext handleContext,
-            @NonNull final KeysAndCerts keysAndCerts) {
-        final var readableStoreFactory = new ReadableStoreFactory(userTxn.state());
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final ConfigProvider configProvider) {
+        final var keyCandidateRoster =
+                configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster();
+        // Functionality to submit TSS Encryption public key to the network is behind keyCandidateRoster feature flag
+        if (!keyCandidateRoster) {
+            return;
+        }
+
+        final var readableStoreFactory = new ReadableStoreFactory(userTxn.stack());
         final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
         final var tssEncryptionKeys = tssStore.getTssEncryptionKeys(
                 handleContext.networkInfo().selfNodeInfo().nodeId());
-        Duration timeSinceLastSubmission = tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission() == null
+        Duration timeSinceLastSubmission = lastSuccessfulTssEncryptionKeySubmission == null
                 ? null
-                : Duration.between(
-                        tssSubmissions.getLastSuccessfulTssEncryptionKeySubmission(), userTxn.consensusNow());
+                : Duration.between(lastSuccessfulTssEncryptionKeySubmission, userTxn.consensusNow());
         final var tssEncryptionKeyRetryDelay =
                 handleContext.configuration().getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
         final var tssEncryptionKeySubmissionRetries =
@@ -808,7 +819,7 @@ public class TssBaseServiceImpl implements TssBaseService {
                                 tssEncryptionKeys.currentEncryptionKey().toByteArray()))
                 && (timeSinceLastSubmission == null
                         || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
-            if (tssSubmissions.getTssEncryptionKeySubmissionAttempts() >= tssEncryptionKeySubmissionRetries) {
+            if (tssEncryptionKeySubmissionAttempts >= tssEncryptionKeySubmissionRetries) {
                 log.error("Failed to submit TSS Encryption public key after " + tssEncryptionKeySubmissionRetries
                         + " attempts");
                 throw new IllegalStateException("Failed to submit TSS Encryption public key after "

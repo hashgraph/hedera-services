@@ -712,7 +712,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
         Locale.setDefault(Locale.US);
         logger.info("Locale to set to US en");
-        handleWorkflow().setKeysAndCerts(platform.getKeysAndCerts());
     }
 
     @Override

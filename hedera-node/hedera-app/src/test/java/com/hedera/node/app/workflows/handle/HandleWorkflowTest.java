@@ -56,6 +56,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
@@ -152,6 +153,9 @@ class HandleWorkflowTest {
     @Mock
     private TssSubmissions tssSubmissions;
 
+    @Mock
+    private Platform platform;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -231,6 +235,7 @@ class HandleWorkflowTest {
                 tssBaseService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                scheduleService);
+                scheduleService,
+                platform);
     }
 }

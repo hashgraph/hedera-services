@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,7 +73,8 @@ public class TssEncryptionKeyHandler implements TransactionHandler {
         TssEncryptionKeys currentTssEncryptionKeys =
                 tssStore.getTssEncryptionKeys(context.creatorInfo().nodeId());
         TssEncryptionKeys newTssEncryptionKeys;
-        if (currentTssEncryptionKeys == null) {
+        if (currentTssEncryptionKeys == null
+                || currentTssEncryptionKeys.currentEncryptionKey().equals(Bytes.EMPTY)) {
             newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
                     .currentEncryptionKey(op.publicTssEncryptionKey())
                     .build();
