@@ -33,8 +33,12 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureList;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -313,10 +317,15 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         try {
             final var transactionBytes = transaction.getApplicationTransaction();
 
-            final var parsedStateSignatureTransaction =
-                    StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes.toReadableSequentialData());
+            if (Bytes.EMPTY.equals(transaction.getApplicationTransaction())) {
+                return false;
+            }
 
-            if (parsedStateSignatureTransaction.signature() != Bytes.EMPTY) {
+            final var parsedTransaction = Transaction.PROTOBUF.parseStrict(transactionBytes.toReadableSequentialData());
+
+            final var stateSignatureTransaction = parsedTransaction.body();
+
+            if (stateSignatureTransaction.stateSignatureTransaction().signature() != Bytes.EMPTY) {
                 return true;
             }
         } catch (ParseException e) {
@@ -514,7 +523,20 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     }
 
     @Override
-    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
-        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
+    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction systemTransaction) {
+        if (systemTransaction == null) {
+            return Bytes.EMPTY;
+        }
+
+        final var transactionBody = TransactionBody.newBuilder()
+                .stateSignatureTransaction(systemTransaction)
+                .build();
+        final var transaction = Transaction.newBuilder()
+                .body(transactionBody)
+                .signedTransactionBytes(Bytes.EMPTY)
+                .sigMap(SignatureMap.DEFAULT)
+                .sigs(SignatureList.DEFAULT)
+                .build();
+        return Transaction.PROTOBUF.toBytes(transaction);
     }
 }

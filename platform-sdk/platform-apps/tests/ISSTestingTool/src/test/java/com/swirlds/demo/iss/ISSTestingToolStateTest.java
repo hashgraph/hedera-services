@@ -135,8 +135,28 @@ class ISSTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var bytes = Bytes.wrap(new byte[0]);
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(bytes);
+        final var encodedStateSignatureTransaction = state.encodeSystemTransaction(StateSignatureTransaction.DEFAULT);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(encodedStateSignatureTransaction);
+
+        // When
+        state.handleConsensusRound(round, platformStateModifier, consumer);
+
+        // Then
+        verify(round, times(1)).iterator();
+        verify(event, times(2)).getConsensusTimestamp();
+        verify(event, times(1)).consensusTransactionIterator();
+
+        assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
+                .isGreaterThan(0L);
+    }
+
+    @Test
+    void handleConsensusRoundWithNullTransaction() {
+        // Given
+        givenRoundAndEvent();
+
+        final var encodedStateSignatureTransaction = state.encodeSystemTransaction(null);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(encodedStateSignatureTransaction);
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);
