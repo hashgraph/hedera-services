@@ -21,6 +21,7 @@ import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.swirlds.base.utility.FileSystemUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -81,19 +82,20 @@ public class BucketConfigurationManager {
     public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
         final Path credentialsPath = Path.of(bucketCredentialsPath);
         try {
-            credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
+            if (FileSystemUtils.waitForPathPresence(credentialsPath)) {
+                credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
+            }
         } catch (IOException e) {
             logger.error("Failed to load bucket credentials from {}", credentialsPath, e);
-            throw new RuntimeException("Failed to load bucket credentials", e);
         }
 
         currentConfig.set(blockStreamConfig.buckets().stream()
                 .map(bucket -> {
-                    var bucketCredentials = credentials.credentials().get(bucket.name());
-                    if (bucketCredentials == null) {
+                    if (credentials == null || credentials.credentials().get(bucket.name()) == null) {
                         logger.error("No credentials found for bucket: {}", bucket.name());
                         return null;
                     }
+                    final var bucketCredentials = credentials.credentials().get(bucket.name());
                     return new CompleteBucketConfig(
                             bucket.name(),
                             bucket.provider(),
