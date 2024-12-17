@@ -1639,8 +1639,27 @@ enum ResponseCodeEnum {
     FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 377;
 
     /**
+     * If the topic's custom fees are updated the topic SHOULD have a
+     * fee schedule key
+     */
+    FEE_SCHEDULE_KEY_NOT_SET = 378;
+
+
+    /**
      * The fee amount is exceeding the amount that the payer
      * is willing to pay.
      */
-    CUSTOM_FEES_LIMIT_EXCEEDED = 378;
+    MAX_CUSTOM_FEE_LIMIT_EXCEEDED = 379;
+
+    /**
+     * No provided max custom fee, or there are no corresponding
+     * topic fees.
+     */
+    NO_VALID_MAX_CUSTOM_FEE = 380;
+
+    /**
+     * The provided max custom fee list contains fees with
+     * duplicate denominations.
+     */
+    DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST = 381;
 }
