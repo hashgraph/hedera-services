@@ -105,7 +105,7 @@ jobs:
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: combinedCodeCoverageReport.xml
+          coverage-reports: build_app_artifact/testCodeCoverageReport.xml
 
       # - name: Upload Combined Unit Test Results artifact
       #   uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
