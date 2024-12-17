@@ -50,11 +50,11 @@ public final class LongTermScheduleUtils {
     public static final String NEW_SENDER_KEY = "newSenderKey";
     public static final String RECEIVER = "receiver";
     public static final String CREATE_TXN = "createTxn";
+    public static final String TRIGGERING_TXN = "triggeringTxn";
     static final String PAYER = "payer";
     static final String ADMIN = "admin";
     static final String EXTRA_KEY = "extraKey";
     static final String SHARED_KEY = "sharedKey";
-    static final String TRIGGERING_TXN = "triggeringTxn";
     static final String BASIC_XFER = "basicXfer";
     static final String TWO_SIG_XFER = "twoSigXfer";
     static final String DEFERRED_XFER = "deferredXfer";
@@ -85,7 +85,7 @@ public final class LongTermScheduleUtils {
 
     private LongTermScheduleUtils() {}
 
-    static boolean transferListCheck(
+    public static boolean transferListCheck(
             HapiGetTxnRecord triggered,
             AccountID givingAccountID,
             AccountID receivingAccountID,

@@ -117,9 +117,6 @@ public class ScheduleLongTermExecutionTest {
     private static final String RECEIVER = "receiver";
     private static final String SENDER = "sender";
     private static final String SENDER_TXN = "senderTxn";
-    private static final String BASIC_XFER = "basicXfer";
-    private static final String CREATE_TX = "createTxn";
-    private static final String SIGN_TX = "sign_tx";
     private static final String PAYING_ACCOUNT_TXN = "payingAccountTxn";
     private static final String LUCKY_RECEIVER = "luckyReceiver";
     private static final String FAILED_XFER = "failedXfer";
@@ -129,6 +126,10 @@ public class ScheduleLongTermExecutionTest {
     private static final long ONE_MINUTE = 60;
     private static final long TWO_MONTHS = 5356800;
     private static final long PAYER_INITIAL_BALANCE = 1000000000000L;
+
+    public static final String BASIC_XFER = "basicXfer";
+    public static final String CREATE_TX = "createTxn";
+    public static final String SIGN_TX = "sign_tx";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -405,95 +406,6 @@ public class ScheduleLongTermExecutionTest {
                                     asId(RECEIVER, spec),
                                     asId(PAYING_ACCOUNT, spec),
                                     1L),
-                            WRONG_TRANSFER_LIST);
-                })));
-    }
-
-    @HapiTest
-    @Order(4)
-    public Stream<DynamicTest> executionWithDefaultPayerWorks() {
-        long transferAmount = 1;
-        return hapiTest(flattened(
-                cryptoCreate(SENDER).via(SENDER_TXN),
-                cryptoCreate(RECEIVER),
-                cryptoCreate(PAYING_ACCOUNT),
-                scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .payingWith(PAYING_ACCOUNT)
-                        .recordingScheduledTxn()
-                        .via(CREATE_TX),
-                scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(SIGN_TX),
-                getScheduleInfo(BASIC_XFER)
-                        .hasScheduleId(BASIC_XFER)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
-                        .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                withOpContext((spec, opLog) -> {
-                    var createTx = getTxnRecord(CREATE_TX);
-                    var signTx = getTxnRecord(SIGN_TX);
-                    var triggeringTx = getTxnRecord(TRIGGERING_TXN);
-                    var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
-                    allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
-
-                    Assertions.assertEquals(
-                            SUCCESS,
-                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-
-                    Instant triggerTime = Instant.ofEpochSecond(
-                            triggeringTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getSeconds(),
-                            triggeringTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getNanos());
-
-                    Instant triggeredTime = Instant.ofEpochSecond(
-                            triggeredTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getSeconds(),
-                            triggeredTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getNanos());
-
-                    Assertions.assertTrue(triggerTime.isBefore(triggeredTime), WRONG_CONSENSUS_TIMESTAMP);
-
-                    Assertions.assertEquals(
-                            createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-                            triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-                            WRONG_TRANSACTION_VALID_START);
-
-                    Assertions.assertEquals(
-                            createTx.getResponseRecord().getTransactionID().getAccountID(),
-                            triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
-                            WRONG_RECORD_ACCOUNT_ID);
-
-                    Assertions.assertTrue(
-                            triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
-                            TRANSACTION_NOT_SCHEDULED);
-
-                    Assertions.assertEquals(
-                            createTx.getResponseRecord().getReceipt().getScheduleID(),
-                            triggeredTx.getResponseRecord().getScheduleRef(),
-                            WRONG_SCHEDULE_ID);
-
-                    Assertions.assertTrue(
-                            transferListCheck(
-                                    triggeredTx,
-                                    asId(SENDER, spec),
-                                    asId(RECEIVER, spec),
-                                    asId(PAYING_ACCOUNT, spec),
-                                    transferAmount),
                             WRONG_TRANSFER_LIST);
                 })));
     }

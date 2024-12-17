@@ -145,7 +145,8 @@ public interface LifecycleTest {
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
                 sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
-                waitForActiveNetwork(RESTART_TIMEOUT));
+                waitForActiveNetwork(RESTART_TIMEOUT),
+                doingContextual(spec -> ((SubProcessNetwork) spec.targetNetworkOrThrow()).refreshClients()));
     }
 
     /**
@@ -161,7 +162,8 @@ public interface LifecycleTest {
                 confirmFreezeAndShutdown(),
                 sourcing(() ->
                         FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
-                waitForActiveNetwork(RESTART_TIMEOUT));
+                waitForActiveNetwork(RESTART_TIMEOUT),
+                doingContextual(spec -> ((SubProcessNetwork) spec.targetNetworkOrThrow()).refreshClients()));
     }
 
     /**

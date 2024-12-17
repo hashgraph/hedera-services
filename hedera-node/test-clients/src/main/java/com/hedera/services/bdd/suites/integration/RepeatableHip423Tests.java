@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
@@ -55,6 +54,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -92,6 +92,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeSpecSecondTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMutation;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -124,7 +125,12 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.CREATE
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.NEW_SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_TXN;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TRIGGERING_TXN;
+import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
+import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.BASIC_XFER;
+import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.CREATE_TX;
+import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.SIGN_TX;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -149,6 +155,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -179,6 +186,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.state.spi.ReadableKVState;
@@ -199,7 +207,6 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -664,7 +671,8 @@ public class RepeatableHip423Tests {
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     final Stream<DynamicTest> executionResultsAreStreamedAsExpected() {
         return hapiTest(
-                blockStreamMustIncludePassFrom(scheduledExecutionResult("one", withStatus(SUCCESS))),
+                blockStreamMustIncludePassFrom(scheduledExecutionResult(
+                        "one", withStatus(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS))),
                 blockStreamMustIncludePassFrom(scheduledExecutionResult("two", withStatus(INVALID_SIGNATURE))),
                 cryptoCreate("luckyYou").balance(0L),
                 cryptoCreate("cautiousYou").balance(0L).receiverSigRequired(true),
@@ -1153,8 +1161,7 @@ public class RepeatableHip423Tests {
                                                 .hasRetryPrecheckFrom(BUSY)
                                                 .via("fungibleTokenAssociate")
                                                 .gas(4_000_000L)
-                                                .hasKnownStatus(
-                                                        com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS))
+                                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
                                 .waitForExpiry(true)
                                 .expiringIn(THIRTY_MINUTES))),
                 sleepForSeconds(THIRTY_MINUTES * 2),
@@ -1289,8 +1296,8 @@ public class RepeatableHip423Tests {
                 getTxnRecord("second").exposingTo(record -> secondFee.set(record.getTransactionFee())),
                 getTxnRecord("third").exposingTo(record -> thirdFee.set(record.getTransactionFee())),
                 withOpContext((spec, log) -> {
-                    Assertions.assertEquals(firstFee.get(), secondFee.get());
-                    Assertions.assertTrue(secondFee.get() < thirdFee.get());
+                    assertEquals(firstFee.get(), secondFee.get());
+                    assertTrue(secondFee.get() < thirdFee.get());
                 }));
     }
 
@@ -1559,6 +1566,88 @@ public class RepeatableHip423Tests {
                 getAccountInfo(account).hasToken(relationshipWith(token))));
     }
 
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    public Stream<DynamicTest> executionWithDefaultPayerWorks() {
+        long transferAmount = 1;
+        return hapiTest(
+                cryptoCreate(SENDER).via(SENDER_TXN),
+                cryptoCreate(RECEIVER),
+                cryptoCreate(PAYING_ACCOUNT),
+                scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 5)
+                        .payingWith(PAYING_ACCOUNT)
+                        .recordingScheduledTxn()
+                        .via(CREATE_TX),
+                logIt("WTF"),
+                scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(SIGN_TX),
+                logIt("SERIOUSLY"),
+                getScheduleInfo(BASIC_XFER)
+                        .hasScheduleId(BASIC_XFER)
+                        .hasWaitForExpiry()
+                        .isNotExecuted()
+                        .isNotDeleted()
+                        .hasRelativeExpiry(SENDER_TXN, 5)
+                        .hasRecordedScheduledTxn(),
+                sleepFor(5000),
+                cryptoCreate("foo").via(TRIGGERING_TXN),
+                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                withOpContext((spec, opLog) -> {
+                    var createTx = getTxnRecord(CREATE_TX);
+                    var signTx = getTxnRecord(SIGN_TX);
+                    var triggeringTx = getTxnRecord(TRIGGERING_TXN);
+                    var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
+                    allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
+
+                    assertEquals(
+                            ResponseCodeEnum.SUCCESS,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            "Scheduled transaction must succeed");
+                    final var triggerTime = Instant.ofEpochSecond(
+                            triggeringTx
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getSeconds(),
+                            triggeringTx
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getNanos());
+                    final var triggeredTime = Instant.ofEpochSecond(
+                            triggeredTx
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getSeconds(),
+                            triggeredTx
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getNanos());
+                    assertTrue(triggerTime.isBefore(triggeredTime), "Wrong consensus timestamp");
+                    assertEquals(
+                            createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+                            triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
+                            "Wrong transaction valid start");
+                    assertEquals(
+                            createTx.getResponseRecord().getTransactionID().getAccountID(),
+                            triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
+                            "Wrong record account ID");
+                    assertTrue(
+                            triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
+                            "Transaction not scheduled");
+                    assertEquals(
+                            createTx.getResponseRecord().getReceipt().getScheduleID(),
+                            triggeredTx.getResponseRecord().getScheduleRef(),
+                            "Wrong schedule ID");
+                    assertTrue(
+                            transferListCheck(
+                                    triggeredTx,
+                                    asId(SENDER, spec),
+                                    asId(RECEIVER, spec),
+                                    asId(PAYING_ACCOUNT, spec),
+                                    transferAmount),
+                            "Wrong transfer list");
+                }));
+    }
+
     private SpecOperation[] uploadTestContracts(String... contracts) {
         final var ops = new ArrayList<>(List.of(
                 uploadScheduledContractPrices(GENESIS),
@@ -1574,16 +1663,14 @@ public class RepeatableHip423Tests {
                 .scheduled()
                 .andAllChildRecords()
                 .hasChildRecords(recordWith()
-                        .status(com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS)
+                        .status(ResponseCodeEnum.SUCCESS)
                         .contractCallResult(resultWith()
-                                .contractCallResult(htsPrecompileResult()
-                                        .withStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS))));
+                                .contractCallResult(htsPrecompileResult().withStatus(ResponseCodeEnum.SUCCESS))));
     }
 
     private SpecOperation[] triggerAndValidateSuccessfulExecution(
             final long sleepDuration, String... scheduledTransactions) {
-        return triggerAndValidateStatus(
-                sleepDuration, com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS, scheduledTransactions);
+        return triggerAndValidateStatus(sleepDuration, ResponseCodeEnum.SUCCESS, scheduledTransactions);
     }
 
     private SpecOperation[] triggerAndValidateStatus(
@@ -1604,8 +1691,7 @@ public class RepeatableHip423Tests {
                 allRunFor(spec, ops.toArray(SpecOperation[]::new));
                 ops.forEach(op -> {
                     // assert success
-                    Assertions.assertEquals(
-                            status, op.getResponseRecord().getReceipt().getStatus());
+                    assertEquals(status, op.getResponseRecord().getReceipt().getStatus());
                 });
             }),
         };
