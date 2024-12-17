@@ -16,14 +16,22 @@
 
 package com.hedera.node.app.tss.schemas;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
+import com.hedera.node.app.tss.stores.WritableTssStore;
+import com.hedera.node.config.data.TssConfig;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Schema for the TSS service.
@@ -41,8 +49,22 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(58).patch(0).build();
 
-    public V0580TssBaseSchema() {
+    /**
+     * The factory to use to create the writable roster store.
+     */
+    private final Function<WritableStates, WritableTssStore> tssStoreFactory;
+
+    private final Supplier<ReadableRosterStore> readableRosterStoreSupplier;
+
+    /**
+     * Create a new instance.
+     */
+    public V0580TssBaseSchema(
+            @NonNull final Function<WritableStates, WritableTssStore> tssStoreFactory,
+            @NonNull final Supplier<ReadableRosterStore> readableRosterStoreSupplier) {
         super(VERSION);
+        this.tssStoreFactory = requireNonNull(tssStoreFactory);
+        this.readableRosterStoreSupplier = requireNonNull(readableRosterStoreSupplier);
     }
 
     @Override
@@ -52,7 +74,24 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
     }
 
     @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        // remove TssEncryptionKeys from state if node ids are not present
+        // in both active and candidate roster's entries
+        if (ctx.appConfig().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            final var tssStore = tssStoreFactory.apply(ctx.newStates());
+            tssStore.removeIfNotPresent(readableRosterStoreSupplier.get().getCombinedRosterEntriesNodeIds());
+        }
+    }
+
+    @Override
     public void restart(@NonNull final MigrationContext ctx) {
         TssBaseTransplantSchema.super.restart(ctx);
+
+        // remove TssEncryptionKeys from state if node ids are not present
+        // in both active and candidate roster's entries
+        if (ctx.appConfig().getConfigData(TssConfig.class).keyCandidateRoster()) {
+            final var tssStore = tssStoreFactory.apply(ctx.newStates());
+            tssStore.removeIfNotPresent(readableRosterStoreSupplier.get().getCombinedRosterEntriesNodeIds());
+        }
     }
 }

@@ -21,8 +21,6 @@ import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBo
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_ENCRYPTION_KEY_MAP_KEY;
-import static com.hedera.node.app.tss.schemas.V0570TssBaseSchema.TSS_STATUS_KEY;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,7 +44,6 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssStatus;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
@@ -142,9 +139,6 @@ public class NodeStakeUpdatesTest {
 
     @Mock
     private WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
-
-    @Mock
-    private WritableSingletonState<TssStatus> tssStatusState;
 
     private StakePeriodChanges subject;
 
@@ -432,9 +426,6 @@ public class NodeStakeUpdatesTest {
                 .willReturn(tssMessageState);
         given(writableStates.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
                 .willReturn(tssVoteState);
-        given(writableStates.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEY_MAP_KEY))
-                .willReturn(tssEncryptionKeyState);
-        given(writableStates.<TssStatus>getSingleton(TSS_STATUS_KEY)).willReturn(tssStatusState);
         given(tssEncryptionKeyState.keys())
                 .willReturn(List.of(new EntityNumber(0)).iterator());
         simulateCandidateAndActiveRosters();

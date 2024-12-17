@@ -31,8 +31,6 @@ import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.FAKE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.NO_OP_METRICS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

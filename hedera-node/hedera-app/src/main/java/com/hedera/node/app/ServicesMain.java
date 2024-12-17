@@ -367,7 +367,7 @@ public class ServicesMain implements SwirldMain {
      * @param metrics  the metrics
      * @return the {@link Hedera} instance
      */
-    public static Hedera newHedera(@NonNull final NodeId selfNodeId, @NonNull final Metrics metrics, @NonNull final ) {
+    public static Hedera newHedera(@NonNull final NodeId selfNodeId, @NonNull final Metrics metrics) {
         requireNonNull(selfNodeId);
         requireNonNull(metrics);
         return new Hedera(
