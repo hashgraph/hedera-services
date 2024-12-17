@@ -45,22 +45,37 @@ class ISSTestingToolStateTest {
 
     private static final int RUNNING_SUM_INDEX = 3;
     private Random random;
+    private ISSTestingToolMain main;
     private ISSTestingToolState state;
     private PlatformStateModifier platformStateModifier;
     private Round round;
     private ConsensusEvent event;
     private Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> consumer;
+    private int consumerSize;
     private ConsensusTransaction consensusTransaction;
+    private StateSignatureTransaction stateSignatureTransaction;
 
     @BeforeEach
     void setUp() {
         state = new ISSTestingToolState(mock(MerkleStateLifecycles.class), mock(Function.class));
+        main = mock(ISSTestingToolMain.class);
         random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
-        consumer = mock(Consumer.class);
+
+        consumer = systemTransactions -> consumerSize = systemTransactions.size();
         consensusTransaction = mock(TransactionWrapper.class);
+
+        final byte[] signature = new byte[384];
+        random.nextBytes(signature);
+        final byte[] hash = new byte[48];
+        random.nextBytes(hash);
+        stateSignatureTransaction = StateSignatureTransaction.newBuilder()
+                .signature(Bytes.wrap(signature))
+                .hash(Bytes.wrap(hash))
+                .round(round.getRoundNum())
+                .build();
     }
 
     @Test
@@ -80,7 +95,8 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
-                .isGreaterThan(0L);
+                .isPositive();
+        assertThat(consumerSize).isZero();
     }
 
     @Test
@@ -88,18 +104,10 @@ class ISSTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final byte[] signature = new byte[384];
-        random.nextBytes(signature);
-        final byte[] hash = new byte[48];
-        random.nextBytes(hash);
-        final var stateSignatureTransaction = StateSignatureTransaction.newBuilder()
-                .signature(Bytes.wrap(signature))
-                .hash(Bytes.wrap(hash))
-                .round(round.getRoundNum())
-                .build();
-
-        final var encodedStateSignatureTransaction = state.encodeSystemTransaction(stateSignatureTransaction);
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(encodedStateSignatureTransaction);
+        final var stateSignatureTransactionBytes =
+                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        when(main.encodeSystemTransaction(stateSignatureTransaction)).thenReturn(stateSignatureTransactionBytes);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);
@@ -110,6 +118,37 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+        assertThat(consumerSize).isEqualTo(1);
+    }
+
+    @Test
+    void handleConsensusRoundWithMultipleSystemTransaction() {
+        // Given
+        final var secondConsensusTransaction = mock(TransactionWrapper.class);
+        final var thirdConsensusTransaction = mock(TransactionWrapper.class);
+        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
+        when(event.getConsensusTimestamp()).thenReturn(Instant.now());
+        when(event.consensusTransactionIterator())
+                .thenReturn(List.of(consensusTransaction, secondConsensusTransaction, thirdConsensusTransaction)
+                        .iterator());
+
+        final var stateSignatureTransactionBytes =
+                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        when(main.encodeSystemTransaction(stateSignatureTransaction)).thenReturn(stateSignatureTransactionBytes);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+        when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+        when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+
+        // When
+        state.handleConsensusRound(round, platformStateModifier, consumer);
+
+        // Then
+        verify(round, times(1)).iterator();
+        verify(event, times(2)).getConsensusTimestamp();
+        verify(event, times(1)).consensusTransactionIterator();
+
+        assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+        assertThat(consumerSize).isEqualTo(3);
     }
 
     @Test
@@ -128,6 +167,7 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+        assertThat(consumerSize).isEqualTo(1);
     }
 
     @Test
@@ -135,8 +175,12 @@ class ISSTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var encodedStateSignatureTransaction = state.encodeSystemTransaction(StateSignatureTransaction.DEFAULT);
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(encodedStateSignatureTransaction);
+        final var emptyStateSignatureTransaction = StateSignatureTransaction.DEFAULT;
+        final var emptyStateSignatureTransactionBytes =
+                StateSignatureTransaction.PROTOBUF.toBytes(emptyStateSignatureTransaction);
+        when(main.encodeSystemTransaction(emptyStateSignatureTransaction))
+                .thenReturn(emptyStateSignatureTransactionBytes);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);
@@ -147,7 +191,8 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
-                .isGreaterThan(0L);
+                .isZero();
+        assertThat(consumerSize).isZero();
     }
 
     @Test
@@ -155,8 +200,12 @@ class ISSTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var encodedStateSignatureTransaction = state.encodeSystemTransaction(null);
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(encodedStateSignatureTransaction);
+        final var emptyStateSignatureTransaction = StateSignatureTransaction.DEFAULT;
+        final var emptyStateSignatureTransactionBytes =
+                StateSignatureTransaction.PROTOBUF.toBytes(emptyStateSignatureTransaction);
+        when(main.encodeSystemTransaction(null))
+                .thenReturn(StateSignatureTransaction.PROTOBUF.toBytes(emptyStateSignatureTransaction));
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);
@@ -167,7 +216,8 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
-                .isEqualTo(0L);
+                .isZero();
+        assertThat(consumerSize).isZero();
     }
 
     private void givenRoundAndEvent() {

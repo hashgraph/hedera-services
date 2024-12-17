@@ -20,6 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -103,8 +105,7 @@ public class ISSTestingToolMain implements SwirldMain {
                 platform.getContext().getConfiguration().getConfigData(ISSTestingToolConfig.class);
 
         final var state = platform.getLatestImmutableState("ISSTestingToolMain.run()");
-        new TransactionGenerator(new Random(), platform, testingToolConfig.transactionsPerSecond(), state.get())
-                .start();
+        new TransactionGenerator(new Random(), platform, testingToolConfig.transactionsPerSecond()).start();
     }
 
     /**
@@ -135,5 +136,10 @@ public class ISSTestingToolMain implements SwirldMain {
     @Override
     public List<Class<? extends Record>> getConfigDataTypes() {
         return List.of(ISSTestingToolConfig.class);
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

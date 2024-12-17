@@ -33,12 +33,8 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.SignatureList;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -70,6 +66,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -255,10 +252,17 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
+        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
         while (eventIterator.hasNext()) {
             final ConsensusEvent event = eventIterator.next();
             captureTimestamp(event);
-            event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                final var systemTransaction = handleTransaction(transaction);
+                if (systemTransaction != null) {
+                    scopedSystemTransactions.add(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                }
+            });
             if (!eventIterator.hasNext()) {
                 final Instant currentTimestamp = event.getConsensusTimestamp();
                 final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
@@ -281,6 +285,8 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                 }
             }
         }
+
+        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
     /**
@@ -298,15 +304,17 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      *
      * @param transaction the transaction to apply
      */
-    private void handleTransaction(final ConsensusTransaction transaction) {
+    private ConsensusTransaction handleTransaction(final ConsensusTransaction transaction) {
         if (isSystemTransaction(transaction)) {
-            return;
+            return transaction;
         }
 
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
+
+        return null;
     }
 
     private boolean isSystemTransaction(final ConsensusTransaction transaction) {
@@ -321,11 +329,10 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                 return false;
             }
 
-            final var parsedTransaction = Transaction.PROTOBUF.parseStrict(transactionBytes.toReadableSequentialData());
+            final var parsedTransaction =
+                    StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes.toReadableSequentialData());
 
-            final var stateSignatureTransaction = parsedTransaction.body();
-
-            if (stateSignatureTransaction.stateSignatureTransaction().signature() != Bytes.EMPTY) {
+            if (parsedTransaction.signature() != Bytes.EMPTY) {
                 return true;
             }
         } catch (ParseException e) {
@@ -520,23 +527,5 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
-    }
-
-    @Override
-    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction systemTransaction) {
-        if (systemTransaction == null) {
-            return Bytes.EMPTY;
-        }
-
-        final var transactionBody = TransactionBody.newBuilder()
-                .stateSignatureTransaction(systemTransaction)
-                .build();
-        final var transaction = Transaction.newBuilder()
-                .body(transactionBody)
-                .signedTransactionBytes(Bytes.EMPTY)
-                .sigMap(SignatureMap.DEFAULT)
-                .sigs(SignatureList.DEFAULT)
-                .build();
-        return Transaction.PROTOBUF.toBytes(transaction);
     }
 }
