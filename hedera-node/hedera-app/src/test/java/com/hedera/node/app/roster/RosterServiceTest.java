@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.RosterTransplantSchema;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.util.function.Predicate;
@@ -42,13 +42,13 @@ class RosterServiceTest {
     private Predicate<Roster> canAdopt;
 
     @Mock
-    private Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+    private Supplier<State> stateSupplier;
 
     private RosterService rosterService;
 
     @BeforeEach
     void setUp() {
-        rosterService = new RosterService(canAdopt, platformStateStoreFactory);
+        rosterService = new RosterService(canAdopt, stateSupplier);
     }
 
     @Test
