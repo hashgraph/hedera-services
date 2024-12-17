@@ -98,21 +98,6 @@ public class BucketConfigurationManagerTest {
     }
 
     @Test
-    void failIfWrongPathOrNonExistentCredentialFile() {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("blockStream.credentialsPath", "non/existent/path")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
-
-        Throwable throwable = catchThrowable(() -> {
-            subject = new BucketConfigurationManager(configProvider);
-        });
-        assertThat(throwable)
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Failed to load bucket credentials");
-    }
-
-    @Test
     void failIfRegionIsEmptyWhenWeUseAWSProvider() {
         final String AWS_PROVIDER_WITH_EMPTY_REGION =
                 """

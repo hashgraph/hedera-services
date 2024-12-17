@@ -39,6 +39,8 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A singleton class that will handle the entire bucket configuration. This is needed since we will have
  * cloud bucket configuration file and on disk credentials.
@@ -48,8 +50,7 @@ public class BucketConfigurationManager {
     private static final Logger logger = LogManager.getLogger(BucketConfigurationManager.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private final BlockStreamConfig blockStreamConfig;
-    private final String bucketCredentialsPath;
+    private final ConfigProvider configProvider;
     private volatile OnDiskBucketConfig credentials;
     private final AtomicReference<List<CompleteBucketConfig>> currentConfig = new AtomicReference<>();
 
@@ -61,9 +62,8 @@ public class BucketConfigurationManager {
      */
     @Inject
     public BucketConfigurationManager(@NonNull final ConfigProvider configProvider) {
-        this.blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        this.bucketCredentialsPath = blockStreamConfig.credentialsPath();
-        loadCompleteBucketConfigs(blockStreamConfig);
+        this.configProvider = requireNonNull(configProvider);
+        loadCompleteBucketConfigs();
         watchCredentialsFile();
     }
 
@@ -79,8 +79,9 @@ public class BucketConfigurationManager {
     /**
      * Combines the buckets configuration with their respective credentials.
      */
-    public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
-        final Path credentialsPath = Path.of(bucketCredentialsPath);
+    public void loadCompleteBucketConfigs() {
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final Path credentialsPath = Path.of(blockStreamConfig.credentialsPath());
         try {
             if (FileSystemUtils.waitForPathPresence(credentialsPath)) {
                 credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
@@ -117,6 +118,8 @@ public class BucketConfigurationManager {
      * Watch the bucket credentials file for changes and apply them at runtime.
      */
     private void watchCredentialsFile() {
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final var bucketCredentialsPath = blockStreamConfig.credentialsPath();
         final Path credentialsPath = Path.of(bucketCredentialsPath);
         new Thread(() -> {
                     try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
@@ -127,7 +130,7 @@ public class BucketConfigurationManager {
                             for (WatchEvent<?> event : key.pollEvents()) {
                                 if (event.context().toString().equals(bucketCredentialsPath)) {
                                     System.out.println("Configuration file changed. Reloading...");
-                                    loadCompleteBucketConfigs(blockStreamConfig);
+                                    loadCompleteBucketConfigs();
                                 }
                             }
                             key.reset();
