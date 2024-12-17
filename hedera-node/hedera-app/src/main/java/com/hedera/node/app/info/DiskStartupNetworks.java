@@ -44,8 +44,7 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.AddressBook;
@@ -164,32 +163,31 @@ public class DiskStartupNetworks implements StartupNetworks {
     public static void writeNetworkInfo(@NonNull final State state, @NonNull final Path path) {
         requireNonNull(state);
         writeNetworkInfo(
+                state,
                 new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME)),
                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME)),
                 new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)),
-                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME)),
                 path);
     }
 
     /**
      * Writes a JSON representation of the {@link Network} information in the given state to a given path.
      *
-     * @param platformStateStore the platform state store to read the network information from
+     * @param state the state to read the network information from
      * @param path the path to write the JSON network information to.
      */
     public static void writeNetworkInfo(
+            @NonNull final State state,
             @NonNull final ReadableTssStore tssStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final ReadablePlatformStateStore platformStateStore,
             @NonNull final Path path) {
+        requireNonNull(state);
         requireNonNull(tssStore);
         requireNonNull(nodeStore);
         requireNonNull(rosterStore);
         requireNonNull(path);
-        requireNonNull(platformStateStore);
-        Optional.ofNullable(rosterStore.getActiveRoster())
-                .or(() -> Optional.ofNullable(buildRoster(platformStateStore.getAddressBook())))
+        Optional.ofNullable(RosterRetriever.retrieveActiveOrGenesisRoster(state))
                 .ifPresent(activeRoster -> {
                     final var network = Network.newBuilder();
                     final List<NodeMetadata> nodeMetadata = new ArrayList<>();

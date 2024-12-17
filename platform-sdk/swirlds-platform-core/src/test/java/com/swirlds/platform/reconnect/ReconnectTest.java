@@ -40,7 +40,6 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.address.AddressBook;
@@ -144,8 +143,8 @@ final class ReconnectTest {
 
             final Thread thread = new Thread(() -> {
                 try {
+                    signedState.reserve("test");
                     final ReconnectTeacher sender = buildSender(
-                            signedState.reserve("test"),
                             new DummyConnection(
                                     platformContext, pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
                             reconnectMetrics);
@@ -161,10 +160,7 @@ final class ReconnectTest {
         }
     }
 
-    private ReconnectTeacher buildSender(
-            final ReservedSignedState signedState,
-            final SocketConnection connection,
-            final ReconnectMetrics reconnectMetrics)
+    private ReconnectTeacher buildSender(final SocketConnection connection, final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
         final PlatformContext platformContext =

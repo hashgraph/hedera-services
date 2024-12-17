@@ -23,15 +23,19 @@ import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
 import com.swirlds.state.State;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
@@ -274,6 +278,20 @@ public final class RosterUtils {
     }
 
     /**
+     * Sets the active Roster in a given State.
+     *
+     * @param state a state to set a Roster in
+     * @param roster a Roster to set as active
+     * @param round a round number since which the roster is considered active
+     */
+    public static void setActiveRoster(@NonNull final State state, @NonNull final Roster roster, final long round) {
+        final WritableStates writableStates = state.getWritableStates(RosterStateId.NAME);
+        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableStates);
+        writableRosterStore.putActiveRoster(roster, round);
+        ((CommittableWritableStates) writableStates).commit();
+    }
+
+    /**
      * Build an Address object out of a given RosterEntry object.
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param entry a RosterEntry
@@ -325,13 +343,18 @@ public final class RosterUtils {
 
     /**
      * Build an AddressBook object out of a given Roster object.
+     * Returns null if the input roster is null.
      * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param roster a Roster
      * @return an AddressBook
      */
     @Deprecated(forRemoval = true)
-    @NonNull
-    public static AddressBook buildAddressBook(@NonNull final Roster roster) {
+    @Nullable
+    public static AddressBook buildAddressBook(@Nullable final Roster roster) {
+        if (roster == null) {
+            return null;
+        }
+
         AddressBook addressBook = new AddressBook();
 
         for (final RosterEntry entry : roster.rosterEntries()) {
