@@ -668,23 +668,5 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .payingWith(collector),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
         }
-
-        @HapiTest
-        @DisplayName("Submit with another collector and allCollectorsExempt=true")
-        // TOPIC_FEE_155
-        final Stream<DynamicTest> anotherSubmitWithCollectorAndAllCollectorsExempt() {
-            final var collector = "collector";
-            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
-            return hapiTest(
-                    cryptoCreate(collector).balance(ONE_HBAR),
-                    tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
-                            .message("TEST")
-                            .signedBy(SUBMITTER)
-                            .payingWith(collector),
-                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
-        }
     }
 }
