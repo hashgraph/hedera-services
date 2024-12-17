@@ -16,29 +16,20 @@
 
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
-import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.internal.network.Network;
-import com.hedera.node.internal.network.NodeMetadata;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
-import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A restart-only schema that ensures address book state reflects any overrides in
- * {@link Network}s returned from {@link MigrationContext#startupNetworks()} on
- * disk at startup. (Note that once the network has written at least one state to
- * disk after restart, all such override {@link Network}s will be archived, and
- * hence are applied to at most one state after restart.)
+ * A genesis-only schema that ensures address book state reflects the genesis {@link Network}s returned from
+ * {@link MigrationContext#startupNetworks()} on disk at startup when using the roster lifecycle.
  */
-public class V057AddressBookSchema extends Schema {
+public class V057AddressBookSchema extends Schema implements AddressBookTransplantSchema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(57).build();
 
@@ -47,29 +38,18 @@ public class V057AddressBookSchema extends Schema {
     }
 
     @Override
-    public void restart(@NonNull final MigrationContext ctx) {
+    public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        final AtomicReference<Network> network = new AtomicReference<>();
-        if (ctx.isGenesis()) {
-            try {
-                network.set(ctx.startupNetworks().genesisNetworkOrThrow());
-            } catch (Exception ignore) {
-                // FUTURE - fail hard here once the roster lifecycle is always enabled
-                return;
-            }
-        } else {
-            ctx.startupNetworks().overrideNetworkFor(ctx.roundNumber()).ifPresent(network::set);
+        if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+            return;
         }
-        if (network.get() != null) {
-            setNodeMetadata(network.get(), ctx.newStates());
+        if (ctx.isGenesis()) {
+            setNodeMetadata(ctx.startupNetworks().genesisNetworkOrThrow(), ctx.newStates());
         }
     }
 
-    private void setNodeMetadata(@NonNull final Network network, @NonNull final WritableStates writableStates) {
-        final WritableKVState<EntityNumber, Node> nodes = writableStates.get(NODES_KEY);
-        network.nodeMetadata().stream()
-                .filter(NodeMetadata::hasNode)
-                .map(NodeMetadata::nodeOrThrow)
-                .forEach(node -> nodes.put(new EntityNumber(node.nodeId()), node));
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        AddressBookTransplantSchema.super.restart(ctx);
     }
 }

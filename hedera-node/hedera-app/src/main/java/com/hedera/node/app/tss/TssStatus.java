@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit;
+package com.hedera.node.app.tss;
+
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An override for a bootstrap property.
+ * A Singleton state object that represents the status of the TSS keying process.
+ * This key SHALL be used to determine the stage of the TSS keying process.
  */
-public @interface BootstrapOverride {
-    String key();
-
-    String value();
-}
+public record TssStatus(TssKeyingStatus tssKeyingStatus, RosterToKey rosterToKey, @NonNull Bytes ledgerId) {}

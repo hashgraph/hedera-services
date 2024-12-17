@@ -358,7 +358,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         case ONLY_FREEZE_BLOCK -> roundNum == freezeRoundNumber;
                     };
             if (exportNetworkToDisk) {
-                DiskStartupNetworks.writeNetworkInfo(state, Paths.get(diskNetworkExportFile));
+                final var exportPath = Paths.get(diskNetworkExportFile);
+                log.info(
+                        "Writing network info to disk @ {} (REASON = {})",
+                        exportPath.toAbsolutePath(),
+                        diskNetworkExport);
+                DiskStartupNetworks.writeNetworkInfo(state, exportPath);
             }
         }
     }
