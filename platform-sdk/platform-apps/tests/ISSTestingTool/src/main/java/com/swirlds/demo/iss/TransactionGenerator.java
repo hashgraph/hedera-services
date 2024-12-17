@@ -32,6 +32,7 @@ public class TransactionGenerator implements Startable {
 
     private final Random random;
     private final Platform platform;
+
     private final StoppableThread thread;
 
     public TransactionGenerator(

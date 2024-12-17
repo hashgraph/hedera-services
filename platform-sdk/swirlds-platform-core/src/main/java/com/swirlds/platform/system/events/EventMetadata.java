@@ -64,7 +64,6 @@ public class EventMetadata extends AbstractHashable {
      * list of transactions
      */
     private final List<TransactionWrapper> transactions;
-
     /**
      * The event descriptor for this event. Is not itself hashed.
      */
