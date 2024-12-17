@@ -92,7 +92,7 @@ public class TopicCustomFeeBase {
             tokenCreate(BASE_TOKEN)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
                     .treasury(TOKEN_TREASURY)
-                    .initialSupply(500L),
+                    .initialSupply(1000L),
             tokenCreate(SECOND_TOKEN).treasury(TOKEN_TREASURY).initialSupply(500L),
             tokenAssociate(SUBMITTER, BASE_TOKEN, SECOND_TOKEN),
             cryptoTransfer(
