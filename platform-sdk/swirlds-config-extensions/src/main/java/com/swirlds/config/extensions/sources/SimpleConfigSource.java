@@ -19,41 +19,54 @@ package com.swirlds.config.extensions.sources;
 import static com.swirlds.config.extensions.sources.ConfigSourceOrdinalConstants.PROGRAMMATIC_VALUES_ORDINAL;
 
 import com.swirlds.base.ArgumentUtils;
-import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values of properties
+ * A {@link ConfigSource} implementation that can be used to provide values of properties
  * programmatically by calling {@link #withValue(String, Long)} (String, String)}.
  */
-public final class SimpleConfigSource extends AbstractConfigSource {
+public final class SimpleConfigSource implements ConfigSource {
 
     private final Map<String, String> internalProperties;
+    private final Map<String, List<String>> internalListProperties;
 
-    private int oridinal = PROGRAMMATIC_VALUES_ORDINAL;
+    private int ordinal = PROGRAMMATIC_VALUES_ORDINAL;
 
     /**
      * Creates an instance without any config properties.
      */
     public SimpleConfigSource() {
-        this.internalProperties = new HashMap<>();
+        internalProperties = new HashMap<>();
+        internalListProperties = new HashMap<>();
     }
 
     /**
-     * Creates an instance without any config properties.
+     * Creates an instance with the given config properties and empty list properties.
      */
     public SimpleConfigSource(@NonNull final Map<String, String> properties) {
+        this(properties, new HashMap<>());
+    }
+
+    /**
+     * Creates an instance with the given config properties and list properties.
+     */
+    public SimpleConfigSource(
+            @NonNull final Map<String, String> properties, @NonNull final Map<String, List<String>> listProperties) {
         // defensive copy
-        this.internalProperties = new HashMap<>(Objects.requireNonNull(properties));
+        internalProperties = new HashMap<>(Objects.requireNonNull(properties));
+        internalListProperties = new HashMap<>(Objects.requireNonNull(listProperties));
     }
 
     /**
@@ -65,6 +78,11 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     public SimpleConfigSource(final String propertyName, final String value) {
         this();
         withValue(propertyName, value);
+    }
+
+    public SimpleConfigSource(final String propertyName, final List<?> value) {
+        this();
+        setValues(propertyName, value, Object::toString);
     }
 
     /**
@@ -259,12 +277,12 @@ public final class SimpleConfigSource extends AbstractConfigSource {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         Objects.requireNonNull(converter, "converter must not be null");
         if (values == null) {
-            internalProperties.put(propertyName, null);
+            internalListProperties.put(propertyName, null);
         } else if (values.isEmpty()) {
-            internalProperties.put(propertyName, Configuration.EMPTY_LIST);
+            internalListProperties.put(propertyName, List.of());
         } else {
-            String rawValues = values.stream().map(converter).collect(Collectors.joining(","));
-            internalProperties.put(propertyName, rawValues);
+            final List<String> rawValues = values.stream().map(converter).toList();
+            internalListProperties.put(propertyName, rawValues);
         }
     }
 
@@ -275,7 +293,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
      * @return this
      */
     public SimpleConfigSource withOrdinal(final int ordinal) {
-        this.oridinal = ordinal;
+        this.ordinal = ordinal;
         return this;
     }
 
@@ -289,9 +307,43 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    protected Map<String, String> getInternalProperties() {
-        return Collections.unmodifiableMap(internalProperties);
+    public Set<String> getPropertyNames() {
+        return Stream.concat(internalProperties.keySet().stream(), internalListProperties.keySet().stream())
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
+    @Override
+    public String getValue(@NonNull final String propertyName) throws NoSuchElementException {
+        if (internalProperties.containsKey(propertyName)) {
+            return internalProperties.get(propertyName);
+        }
+        throw new NoSuchElementException(propertyName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isListProperty(@NonNull final String propertyName) throws NoSuchElementException {
+        return internalListProperties.containsKey(propertyName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public List<String> getListValue(@NonNull final String propertyName) throws NoSuchElementException {
+        if (internalListProperties.containsKey(propertyName)) {
+            return internalListProperties.get(propertyName);
+        }
+        throw new NoSuchElementException(propertyName);
     }
 
     /**
@@ -299,6 +351,6 @@ public final class SimpleConfigSource extends AbstractConfigSource {
      */
     @Override
     public int getOrdinal() {
-        return oridinal;
+        return ordinal;
     }
 }
