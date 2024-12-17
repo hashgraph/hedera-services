@@ -135,7 +135,7 @@ public class YamlConfigSource implements ConfigSource {
             final Map<?, ?> mapValue,
             final String newPrefix)
             throws JsonProcessingException {
-        if (mapValue.values().stream().noneMatch(v -> v instanceof Map)) {
+        if (mapValue.values().stream().noneMatch(v -> v instanceof Map || v instanceof List)) {
             simpleProps.put(newPrefix, OBJECT_MAPPER.writeValueAsString(mapValue));
         } else {
             processYamlNode(newPrefix, mapValue, simpleProps, listProps);
