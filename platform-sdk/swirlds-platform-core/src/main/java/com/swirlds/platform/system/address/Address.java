@@ -228,26 +228,6 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Get local IP port
-     *
-     * @param a the Address object to be operated on
-     * @return port number
-     */
-    public int getConnectPort(Address a) {
-        return isLocalTo(a) ? getPortInternal() : getPortExternal();
-    }
-
-    /**
-     * Check whether a given Address has the same external address as mine.
-     *
-     * @param a Given Address to check.
-     * @return True if they are exactly the same.
-     */
-    public boolean isLocalTo(Address a) {
-        return Objects.equals(getHostnameExternal(), a.getHostnameExternal());
-    }
-
-    /**
      * Get listening port used on the local network.
      *
      * @return The port number.
