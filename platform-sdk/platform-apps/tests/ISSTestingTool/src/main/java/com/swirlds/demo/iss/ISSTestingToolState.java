@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.demo.iss;
 /*
  * This file is public domain.
@@ -36,8 +21,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -318,29 +301,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private boolean isSystemTransaction(final ConsensusTransaction transaction) {
-        if (transaction.isSystem()) {
+        if (transaction.isSystem() || transaction.getApplicationTransaction().length() > 4) {
             return true;
-        }
-
-        try {
-            final var transactionBytes = transaction.getApplicationTransaction();
-
-            if (Bytes.EMPTY.equals(transaction.getApplicationTransaction())) {
-                return false;
-            }
-
-            final var parsedTransaction =
-                    StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes.toReadableSequentialData());
-
-            if (parsedTransaction.signature() != Bytes.EMPTY) {
-                return true;
-            }
-        } catch (ParseException e) {
-            logger.error("Failed to parse transaction body", e);
+        } else {
             return false;
         }
-
-        return false;
     }
 
     /**
