@@ -91,9 +91,10 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     @Override
-    public Network genesisNetworkOrThrow() {
+    public Network genesisNetworkOrThrow(@NonNull final Configuration platformConfig) {
+        requireNonNull(platformConfig);
         return loadNetwork(AssetUse.GENESIS, configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
-                .or(this::genesisNetworkFromConfigTxt)
+                .or(() -> genesisNetworkFromConfigTxt(platformConfig))
                 .orElseThrow(() -> new IllegalStateException("Genesis network not found"));
     }
 
@@ -308,32 +309,21 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     /**
-     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
-     * to set its gossip certificates to the same certificates used by nodes in a test network.
-     * @param path the path to the address book file
-     * @return the loaded address book
-     */
-    public static AddressBook loadLegacyBookWithGeneratedCerts(@NonNull final Path path) {
-        requireNonNull(path);
-        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        try {
-            final var addressBook = configFile.getAddressBook();
-            CryptoStatic.generateKeysAndCerts(addressBook);
-            return addressBook;
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating keys and certs", e);
-        }
-    }
-
-    /**
      * Attempts to load the genesis network from the default <i>config.txt</i> file.
      * @return the loaded genesis network, if it was found and successfully loaded
      */
     @Deprecated(forRemoval = true)
-    private Optional<Network> genesisNetworkFromConfigTxt() {
+    private Optional<Network> genesisNetworkFromConfigTxt(@NonNull final Configuration platformConfig) {
         try {
-            log.info("No genesis-network.json detected, falling back to config.txt with generated certs");
-            final var legacyBook = loadLegacyBookWithGeneratedCerts(Paths.get(DEFAULT_CONFIG_FILE_NAME));
+            log.info("No genesis-network.json detected, falling back to config.txt and initNodeSecurity()");
+            final AddressBook legacyBook;
+            final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(Paths.get(DEFAULT_CONFIG_FILE_NAME));
+            try {
+                legacyBook = configFile.getAddressBook();
+                CryptoStatic.initNodeSecurity(legacyBook, platformConfig);
+            } catch (Exception e) {
+                throw new IllegalStateException("Error generating keys and certs", e);
+            }
             final var network = fromLegacyAddressBook(legacyBook);
             return Optional.of(network);
         } catch (Exception e) {

@@ -4,7 +4,6 @@ package com.hedera.services.bdd.junit.support.validators.block;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
-import static com.hedera.node.app.info.DiskStartupNetworks.loadLegacyBookWithGeneratedCerts;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
@@ -50,8 +49,11 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -645,5 +647,23 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
         return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
+    }
+
+    /**
+     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
+     * to set its gossip certificates to the same certificates used by nodes in a test network.
+     * @param path the path to the address book file
+     * @return the loaded address book
+     */
+    private static AddressBook loadLegacyBookWithGeneratedCerts(@NonNull final Path path) {
+        requireNonNull(path);
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
+        try {
+            final var addressBook = configFile.getAddressBook();
+            CryptoStatic.generateKeysAndCerts(addressBook);
+            return addressBook;
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating keys and certs", e);
+        }
     }
 }

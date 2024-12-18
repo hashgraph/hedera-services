@@ -4,6 +4,8 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
@@ -135,6 +137,30 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
 
         assertThat(platformStateBackingStore.get().freezeTime()).isNull();
+    }
+
+    @Test
+    void unknownFreezeIsNoop() {
+        platformStateBackingStore.set(
+                PlatformState.newBuilder().freezeTime(Timestamp.DEFAULT).build());
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(UNKNOWN_FREEZE_TYPE));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isEqualTo(Timestamp.DEFAULT);
+    }
+
+    @Test
+    void telemetryUpgradeIsNoop() {
+        platformStateBackingStore.set(
+                PlatformState.newBuilder().freezeTime(Timestamp.DEFAULT).build());
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(TELEMETRY_UPGRADE));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isEqualTo(Timestamp.DEFAULT);
     }
 
     @Test

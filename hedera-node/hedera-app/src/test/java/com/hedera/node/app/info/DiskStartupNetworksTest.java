@@ -149,7 +149,8 @@ class DiskStartupNetworksTest {
     @Test
     void throwsOnMissingGenesisNetwork() {
         givenConfig();
-        assertThatThrownBy(() -> subject.genesisNetworkOrThrow()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> subject.genesisNetworkOrThrow(DEFAULT_CONFIG))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -162,7 +163,7 @@ class DiskStartupNetworksTest {
     void findsAvailableGenesisNetwork() throws IOException {
         givenConfig();
         putJsonAt(GENESIS_NETWORK_JSON, WithTssKeys.NO);
-        final var network = subject.genesisNetworkOrThrow();
+        final var network = subject.genesisNetworkOrThrow(DEFAULT_CONFIG);
         assertThat(network).isEqualTo(networkWithoutTssKeys);
     }
 
