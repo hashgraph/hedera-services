@@ -84,9 +84,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -103,6 +101,7 @@ import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -505,20 +504,18 @@ public class UtilVerbs {
         return new WaitForStatusOp(selector, ACTIVE, timeout);
     }
 
-    public static WaitForStatusOp waitForBehind(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), BEHIND, timeout);
-    }
-
-    public static WaitForStatusOp waitForReconnectComplete(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), RECONNECT_COMPLETE, timeout);
-    }
-
-    public static WaitForStatusOp waitForFreezeComplete(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
-    }
-
-    public static WaitForStatusOp waitForActiveNetwork(@NonNull final Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
+    /**
+     * Returns an operation that waits for the target network to be active, and if this is a subprocess network,
+     * refreshes the gRPC clients to reflect reassigned ports.
+     * @param timeout the maximum time to wait for the network to become active
+     * @return the operation that waits for the network to become active
+     */
+    public static SpecOperation waitForActiveNetworkWithReassignedPorts(@NonNull final Duration timeout) {
+        return blockingOrder(new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout), doingContextual(spec -> {
+            if (spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork) {
+                subProcessNetwork.refreshClients();
+            }
+        }));
     }
 
     /**

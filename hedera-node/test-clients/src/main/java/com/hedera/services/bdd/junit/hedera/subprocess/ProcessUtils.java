@@ -124,7 +124,6 @@ public class ProcessUtils {
         environment.put("grpc.nodeOperatorPortEnabled", Boolean.toString(metadata.grpcNodeOperatorPortEnabled()));
         environment.put("hedera.config.version", Integer.toString(configVersion));
         environment.put("networkAdmin.exportCandidateRoster", "true");
-        environment.put("addressBook.useRosterLifecycle", "true");
         try {
             final var redirectFile = guaranteedExtantFile(
                     metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));

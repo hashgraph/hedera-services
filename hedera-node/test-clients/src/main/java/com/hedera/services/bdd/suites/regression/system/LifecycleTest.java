@@ -34,7 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runBackgroundTraffi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetworkWithReassignedPorts;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.suites.regression.system.MixedOperations.b
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -145,8 +144,7 @@ public interface LifecycleTest {
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
                 sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
-                waitForActiveNetwork(RESTART_TIMEOUT),
-                doingContextual(spec -> ((SubProcessNetwork) spec.targetNetworkOrThrow()).refreshClients()));
+                waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT));
     }
 
     /**
@@ -162,8 +160,7 @@ public interface LifecycleTest {
                 confirmFreezeAndShutdown(),
                 sourcing(() ->
                         FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
-                waitForActiveNetwork(RESTART_TIMEOUT),
-                doingContextual(spec -> ((SubProcessNetwork) spec.targetNetworkOrThrow()).refreshClients()));
+                waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT));
     }
 
     /**
@@ -207,8 +204,7 @@ public interface LifecycleTest {
                 blockingOrder(preRestartOps),
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
-                waitForActiveNetwork(RESTART_TIMEOUT),
-                doingContextual(spec -> ((SubProcessNetwork) spec.targetNetworkOrThrow()).refreshClients()),
+                waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT),
                 cryptoCreate("postUpgradeAccount"),
                 // Ensure we have a post-upgrade transaction in a new period to trigger
                 // system file exports while still streaming records
