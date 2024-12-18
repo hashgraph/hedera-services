@@ -28,6 +28,9 @@ dependencies {
 }
 
 dependencies.constraints {
+    api("com.squareup.okio:okio-jvm:3.9.1") {
+        because("okio")
+    }
     api("io.helidon.common:helidon-common:4.1.1") {
         because("io.helidon.common")
     }
@@ -36,6 +39,9 @@ dependencies.constraints {
     }
     api("io.helidon.webclient:helidon-webclient-grpc:4.1.1") {
         because("io.helidon.webclient.grpc")
+    }
+    api("io.minio:minio:8.5.14") {
+        because("io.minio")
     }
     api("org.awaitility:awaitility:4.2.0") {
         because("awaitility")

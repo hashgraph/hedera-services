@@ -16,6 +16,7 @@
 
 package com.swirlds.config.impl.internal;
 
+import com.hedera.node.config.data.CloudBucketConfig;
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -149,7 +150,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             @Nullable final List<T> defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         Objects.requireNonNull(propertyType, "propertyType must not be null");
-        if (!exists(propertyName)) {
+        if (!exists(propertyName) || propertyType.equals(CloudBucketConfig.class)) {
             return defaultValue;
         }
         return getValues(propertyName, propertyType);

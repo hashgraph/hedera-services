@@ -16,12 +16,16 @@
 
 package com.swirlds.config.impl.internal;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.node.config.data.CloudBucketConfig;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -165,6 +169,15 @@ class ConfigDataFactory {
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
             return null;
+        }
+
+        if (type.equals(CloudBucketConfig.class)) {
+            try {
+                return (List<T>)
+                        new ObjectMapper().readValue(rawValue, new TypeReference<List<CloudBucketConfig>>() {});
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to load bucket configuration", e);
+            }
         }
         return (List<T>) ConfigListUtils.createList(rawValue).stream()
                 .map(value -> converterService.convert(value, type))
