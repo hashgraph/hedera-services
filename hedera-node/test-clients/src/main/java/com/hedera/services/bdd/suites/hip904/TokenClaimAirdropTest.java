@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -181,40 +166,6 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                 getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
 
-                // assert token associations
-                getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
-                getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> claimFungibleTokenAirdrop() {
-        return hapiTest(flattened(
-                setUpTokensAndAllReceivers(),
-                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
-                // do pending airdrop
-                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
-                        .payingWith(OWNER),
-                tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER))
-                        .payingWith(OWNER),
-
-                // do claim
-                tokenClaimAirdrop(
-                                pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN),
-                                pendingNFTAirdrop(OWNER, RECEIVER, NON_FUNGIBLE_TOKEN, 1))
-                        .payingWith(RECEIVER)
-                        .via("claimTxn"),
-                // assert txn record
-                getTxnRecord("claimTxn")
-                        .hasPriority(recordWith()
-                                .tokenTransfers(includingFungibleMovement(
-                                        moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))
-                                .tokenTransfers(includingNonfungibleMovement(
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 1).between(OWNER, RECEIVER)))),
-                validateChargedUsd("claimTxn", 0.001, 1),
-                // assert balance fungible tokens
-                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                // assert balances NFT
-                getAccountBalance(RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                 // assert token associations
                 getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                 getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))));
