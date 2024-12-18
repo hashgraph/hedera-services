@@ -89,7 +89,8 @@ public class HgcaaLogValidator {
                 List.of("Properties file", "does not exist and won't be used as configuration source"),
                 // Using a 1-minute staking period in CI can lead to periods with no transactions, breaking invariants
                 List.of("StakingRewardsHelper", "Pending rewards decreased"),
-                List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"));
+                List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"),
+                List.of("No credentials found in", "for bucket:"));
 
         private int numProblems = 0;
         private int linesSinceInitialProblem = -1;

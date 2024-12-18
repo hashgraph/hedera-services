@@ -97,7 +97,7 @@ public class BucketConfigurationManager {
         currentConfig.set(this.blockStreamConfig.buckets().stream()
                 .map(bucket -> {
                     if (credentials == null || credentials.credentials().get(bucket.name()) == null) {
-                        logger.error("No credentials found for bucket: {}", bucket.name());
+                        logger.error("No credentials found in {} for bucket: {}", credentialsPath, bucket.name());
                         return null;
                     }
                     final var bucketCredentials = credentials.credentials().get(bucket.name());
