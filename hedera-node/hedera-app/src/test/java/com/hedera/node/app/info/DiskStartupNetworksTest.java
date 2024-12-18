@@ -76,8 +76,6 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.Address;
@@ -348,10 +346,7 @@ class DiskStartupNetworksTest {
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,
                         new EntityIdService(),
-                        new RosterService(
-                                roster -> true,
-                                () -> new ReadablePlatformStateStore(
-                                        state.getReadableStates(PlatformStateService.NAME))),
+                        new RosterService(roster -> true, () -> state),
                         new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
@@ -383,7 +378,7 @@ class DiskStartupNetworksTest {
         final var rosters = writableStates.<ProtoBytes, Roster>get(ROSTER_KEY);
         rosters.put(new ProtoBytes(currentRosterHash), currentRoster);
         final var rosterState = writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY);
-        rosterState.put(new RosterState(Bytes.EMPTY, List.of(new RoundRosterPair(1L, currentRosterHash))));
+        rosterState.put(new RosterState(Bytes.EMPTY, List.of(new RoundRosterPair(0L, currentRosterHash))));
         ((CommittableWritableStates) writableStates).commit();
     }
 

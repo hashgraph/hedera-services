@@ -120,8 +120,9 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         if (!roundRosterPairs.isEmpty()) {
             final RoundRosterPair activeRosterPair = roundRosterPairs.getFirst();
             if (round < 0 || round <= activeRosterPair.roundNumber()) {
-                throw new IllegalArgumentException(
-                        "incoming round number must be greater than the round number of the current active roster.");
+                throw new IllegalArgumentException("incoming round number = " + round
+                        + " must be greater than the round number of the current active roster = "
+                        + activeRosterPair.roundNumber() + ".");
             }
         }
         final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
