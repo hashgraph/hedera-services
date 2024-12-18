@@ -616,9 +616,6 @@ public class PlatformWiring {
         final OutputWire<ReservedSignedState> hashedStateOutputWire =
                 hashedStateAndRoundOutputWire.buildAdvancedTransformer(
                         new StateAndRoundToStateReserver("postHasher_stateReserver"));
-        final OutputWire<ConsensusRound> hashedConsensusRoundOutput = stateHasherWiring
-                .getOutputWire()
-                .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
 
         transactionHandlerWiring
                 .getOutputWire()
