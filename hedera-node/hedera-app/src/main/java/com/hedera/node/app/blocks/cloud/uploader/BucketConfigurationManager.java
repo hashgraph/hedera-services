@@ -132,14 +132,14 @@ public class BucketConfigurationManager {
                             WatchKey key = watchService.take();
                             for (WatchEvent<?> event : key.pollEvents()) {
                                 if (event.context().toString().equals(bucketCredentialsPath)) {
-                                    System.out.println("Configuration file changed. Reloading...");
+                                    logger.info("Configuration file changed. Reloading...");
                                     loadCompleteBucketConfigs(blockStreamConfig);
                                 }
                             }
                             key.reset();
                         }
                     } catch (IOException | InterruptedException e) {
-                        System.err.println("Error watching configuration file: " + e.getMessage());
+                        logger.error("Error watching configuration file: {}", e.getMessage());
                     }
                 })
                 .start();

@@ -32,5 +32,5 @@ public enum BlockStreamWriterMode {
     /**
      * Write block streams to files and upload them to cloud buckets.
      */
-    FILE_AND_BUCKET
+    BUCKET
 }
