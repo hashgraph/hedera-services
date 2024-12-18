@@ -18,8 +18,10 @@ package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -244,6 +246,11 @@ public class CustomFeeSpecs {
 
     public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, AccountID collector) {
         return spec -> builtConsensusFixedHbar(amount, collector);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(
+            long amount, ByteString collectorAddress) {
+        return spec -> builtConsensusFixedHbar(amount, asIdWithAlias(collectorAddress));
     }
 
     public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHtsFee(

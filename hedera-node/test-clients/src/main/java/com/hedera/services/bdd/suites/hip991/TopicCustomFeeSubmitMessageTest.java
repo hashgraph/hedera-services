@@ -16,35 +16,55 @@
 
 package com.hedera.services.bdd.suites.hip991;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
+import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
 
+import com.esaulpaugh.headlong.abi.Address;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -54,12 +74,15 @@ import org.junit.jupiter.api.Nested;
 @DisplayName("Submit message")
 public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
+    private static final Logger LOG = LogManager.getLogger(TopicCustomFeeSubmitMessageTest.class);
+
     @Nested
     @DisplayName("Positive scenarios")
     class SubmitMessagesPositiveScenarios {
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+            lifecycle.doAdhoc(setupBaseForUpdate());
             lifecycle.doAdhoc(associateFeeTokensAndSubmitter());
         }
 
@@ -455,6 +478,104 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .maxCustomFee(correctFeeLimit)
                             .message("TEST")
                             .payingWith(SUBMITTER));
+        }
+
+        @HapiTest
+        @DisplayName("Hollow account and create2 contract as collector")
+        // TOPIC_FEE_128
+        final Stream<DynamicTest> hollowAccountAsCollector() {
+            final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+            final AtomicReference<ByteString> expectedAddrByteStr = new AtomicReference<>();
+            final var salt = BigInteger.valueOf(69);
+            final var contract = "Create2Factory";
+            final var hollowAccount = "HollowAccount";
+            return hapiTest(flattened(
+                    // deploy create2Factory and calculate expected address of the test contract
+                    calculateTestContractAddress(salt, testContractInitcode, expectedAddrByteStr),
+                    createHollowAccountAtGivenAddress(hollowAccount, expectedAddrByteStr),
+                    // create topic and submit
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHtsFee(5, BASE_TOKEN, hollowAccount)),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fixedConsensusHtsFee(5, BASE_TOKEN, hollowAccount))
+                            .message("TEST")
+                            .payingWith(SUBMITTER),
+                    // deploy the test contract via create2
+                    sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                            .gas(4_000_000L)
+                            .sending(1_234L)),
+                    // assert the hollow account token balance (1 at creation + 5 topic fee collected)
+                    getAccountBalance(hollowAccount).hasTokenBalance(BASE_TOKEN, 6)));
+        }
+
+        // TOPIC_FEE_128
+        protected static SpecOperation[] calculateTestContractAddress(
+                final BigInteger salt,
+                final AtomicReference<byte[]> testContractInitcode,
+                final AtomicReference<ByteString> expectedAddrByteStr) {
+            final var contract = "Create2Factory";
+            final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+
+            return new SpecOperation[] {
+                // upload and create factory
+                uploadInitCode(contract),
+                sourcing(() -> contractCreate(contract)
+                        .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)))),
+                // get bytecode of the test contract
+                sourcing(() -> contractCallLocal(
+                                contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                        .exposingTypedResultsTo(results -> testContractInitcode.set((byte[]) results[0]))),
+                // calculate expected address of the test contract
+                sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                        .exposingTypedResultsTo(results -> {
+                            final var expectedAddr = ((Address) results[0]).toString();
+                            expectedAddrByteStr.set(ByteString.copyFrom(
+                                    Bytes.fromHexString(expectedAddr).toArray()));
+                        })),
+            };
+        }
+
+        // TOPIC_FEE_128
+        protected static SpecOperation[] createHollowAccountAtGivenAddress(
+                final String accountRegistryName, final AtomicReference<ByteString> expectedAddrByteStr) {
+            final AtomicReference<AccountID> createdContractAccountId = new AtomicReference<>();
+            return new SpecOperation[] {
+                // create hollow account at the expected address
+                sourcing(() -> cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, expectedAddrByteStr.get()))),
+                // save the hollow account to the registry
+                withOpContext((spec, log) -> {
+                    allRunFor(
+                            spec,
+                            getAliasedAccountInfo(expectedAddrByteStr.get())
+                                    .exposingIdTo(createdContractAccountId::set));
+                    spec.registry().saveAccountId(accountRegistryName, createdContractAccountId.get());
+                }),
+            };
+        }
+
+        @HapiTest
+        @DisplayName("Submitter was removed from FEKL")
+        // TOPIC_FEE_129
+        final Stream<DynamicTest> submitterWasRemovedFromFEKL() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHbarFee(ONE_HBAR, collector);
+            return hapiTest(
+                    cryptoCreate(collector).balance(0L),
+                    // Create a topic with submitter in FEKL
+                    createTopic(TOPIC)
+                            .adminKeyName(ADMIN_KEY)
+                            .withConsensusCustomFee(fee)
+                            .feeExemptKeys(SUBMITTER)
+                            .feeScheduleKeyName(FEE_SCHEDULE_KEY),
+                    // Submit and check there was no fee
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
+                    // check collector's balance
+                    getAccountBalance(collector).hasTinyBars(0L),
+                    // Update the topic with empty FEKL
+                    updateTopic(TOPIC).feeExemptKeys().signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY),
+                    // Submit and check there was no fee
+                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST").payingWith(SUBMITTER),
+                    // check collector's balance
+                    getAccountBalance(collector).hasTinyBars(ONE_HBAR));
         }
     }
 }
