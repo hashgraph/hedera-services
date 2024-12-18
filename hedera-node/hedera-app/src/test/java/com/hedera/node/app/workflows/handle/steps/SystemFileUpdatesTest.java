@@ -44,6 +44,7 @@ import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -95,6 +96,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var config = new TestConfigBuilder(false)
                 .withConverter(Bytes.class, new BytesConverter())
                 .withConverter(LongPair.class, new LongPairConverter())
+                .withConfigDataType(BlockStreamConfig.class)
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(LedgerConfig.class)
