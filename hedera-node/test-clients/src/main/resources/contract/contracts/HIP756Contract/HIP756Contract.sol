@@ -33,8 +33,8 @@ contract HIP756Contract is HederaScheduleService, KeyHelper {
         expiry.autoRenewAccount = autoRenew;
         token.expiry = expiry;
 
-        token.name = "test";
-        token.symbol = "TTT";
+        token.name = "test with designated payer";
+        token.symbol = "TTTP";
 
         bytes memory tokenCreateBytes = abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector, token, 1000, 10);
         (responseCode, scheduleAddress) = scheduleNative( address(0x167), tokenCreateBytes, payer);
@@ -63,8 +63,8 @@ contract HIP756Contract is HederaScheduleService, KeyHelper {
 
     function scheduleCreateNFTWithDesignatedPayer(address autoRenew, address treasury, address payer) external payable returns (int64 responseCode, address scheduleAddress) {
         IHederaTokenService.HederaToken memory token;
-        token.name = "nft";
-        token.symbol = "nft";
+        token.name = "nft with designated payer";
+        token.symbol = "nftp";
         token.treasury = address(treasury);
         IHederaTokenService.Expiry memory expiry;
         expiry.autoRenewAccount = autoRenew;

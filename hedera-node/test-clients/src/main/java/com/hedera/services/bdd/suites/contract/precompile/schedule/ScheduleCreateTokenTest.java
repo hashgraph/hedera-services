@@ -30,19 +30,24 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 
 @OrderedInIsolation
 @HapiTestLifecycle
 public class ScheduleCreateTokenTest {
+
+    private static final String CONTRACT_KEY = "contractKey";
 
     @Contract(contract = "HIP756Contract", creationGas = 4_000_000L, isImmutable = true)
     static SpecContract contract;
@@ -53,12 +58,19 @@ public class ScheduleCreateTokenTest {
     @Account
     static SpecAccount autoRenew;
 
+    @Account
+    static SpecAccount designatedPayer;
+
     @BeforeAll
     public static void setup(TestLifecycle lifecycle) {
-        lifecycle.doAdhoc(contract.getInfo(), newKeyNamed("contractKey").shape(CONTRACT.signedWith(contract.name())));
+        lifecycle.doAdhoc(
+                contract.getInfo(),
+                newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(contract.name())),
+                designatedPayer.authorizeContract(contract));
     }
 
     @HapiTest
+    @Order(0)
     @DisplayName("Can successfully schedule a create fungible token operation")
     public Stream<DynamicTest> scheduledCreateToken() {
         return hapiTest(withOpContext((spec, opLog) -> {
@@ -70,19 +82,29 @@ public class ScheduleCreateTokenTest {
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateFT", scheduleID);
-            allRunFor(
-                    spec,
-                    getScheduleInfo("scheduledCreateFT").isNotExecuted().hasScheduleId("scheduledCreateFT"),
-                    scheduleSign("scheduledCreateFT").alsoSigningWith(treasury.name()),
-                    getScheduleInfo("scheduledCreateFT").isNotExecuted().hasSignatories("contractKey", treasury.name()),
-                    scheduleSign("scheduledCreateFT").alsoSigningWith(autoRenew.name()),
-                    getScheduleInfo("scheduledCreateFT")
-                            .isExecuted()
-                            .hasSignatories("contractKey", autoRenew.name(), treasury.name()));
+            assertScheduleAndSign(spec, "scheduledCreateFT");
         }));
     }
 
     @HapiTest
+    @Order(1)
+    @DisplayName("Can successfully schedule a create fungible token operation with designated payer")
+    public Stream<DynamicTest> scheduledCreateTokenWithDesignatedPayer() {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var scheduleAddress = new AtomicReference<Address>();
+            allRunFor(
+                    spec,
+                    contract.call("scheduleCreateFTWithDesignatedPayer", autoRenew, treasury, designatedPayer)
+                            .gas(1_000_000L)
+                            .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
+            final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
+            spec.registry().saveScheduleId("scheduledCreateFTDesignatedPayer", scheduleID);
+            assertScheduleAndSign(spec, "scheduledCreateFTDesignatedPayer");
+        }));
+    }
+
+    @HapiTest
+    @Order(2)
     @DisplayName("Can successfully schedule a create non fungible token operation")
     public Stream<DynamicTest> scheduledCreateNonFungibleToken() {
         return hapiTest(withOpContext((spec, opLog) -> {
@@ -94,19 +116,36 @@ public class ScheduleCreateTokenTest {
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateNFT", scheduleID);
+            assertScheduleAndSign(spec, "scheduledCreateNFT");
+        }));
+    }
+
+    @HapiTest
+    @Order(3)
+    @DisplayName("Can successfully schedule a create non fungible token operation with designated payer")
+    public Stream<DynamicTest> scheduledCreateNonFungibleTokenWithDesignatedPayer() {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var scheduleAddress = new AtomicReference<Address>();
             allRunFor(
                     spec,
-                    getScheduleInfo("scheduledCreateNFT")
-                            .hasScheduleId("scheduledCreateNFT")
-                            .isNotExecuted(),
-                    scheduleSign("scheduledCreateNFT").alsoSigningWith(treasury.name()),
-                    getScheduleInfo("scheduledCreateNFT")
-                            .isNotExecuted()
-                            .hasSignatories("contractKey", treasury.name()),
-                    scheduleSign("scheduledCreateNFT").alsoSigningWith(autoRenew.name()),
-                    getScheduleInfo("scheduledCreateNFT")
-                            .isExecuted()
-                            .hasSignatories("contractKey", autoRenew.name(), treasury.name()));
+                    contract.call("scheduleCreateNFTWithDesignatedPayer", autoRenew, treasury, designatedPayer)
+                            .gas(1_000_000L)
+                            .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
+            final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
+            spec.registry().saveScheduleId("scheduledCreateNFTDesignatedPayer", scheduleID);
+            assertScheduleAndSign(spec, "scheduledCreateNFTDesignatedPayer");
         }));
+    }
+
+    private static void assertScheduleAndSign(@NonNull final HapiSpec spec, @NonNull final String scheduleID) {
+        allRunFor(
+                spec,
+                getScheduleInfo(scheduleID).hasScheduleId(scheduleID).isNotExecuted(),
+                scheduleSign(scheduleID).alsoSigningWith(treasury.name()),
+                getScheduleInfo(scheduleID).isNotExecuted().hasSignatories(CONTRACT_KEY, treasury.name()),
+                scheduleSign(scheduleID).alsoSigningWith(autoRenew.name()),
+                getScheduleInfo(scheduleID)
+                        .isExecuted()
+                        .hasSignatories(CONTRACT_KEY, autoRenew.name(), treasury.name()));
     }
 }
