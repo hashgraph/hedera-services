@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.blocks;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,12 +66,8 @@ public class BlockRetentionManagerBenchmark {
     @Setup(Level.Invocation)
     public void setUpInvocation() throws IOException {
         uploadedDir = Files.createTempDirectory("uploaded");
-        blockRetentionManager = new BlockRetentionManager(
-                uploadedDir,
-                Duration.ZERO,
-                Duration.ZERO,
-                cleanupThreadPoolSize,
-                new BlockStreamBucketMetrics(new NoOpMetrics()));
+        blockRetentionManager =
+                new BlockRetentionManager(uploadedDir, Duration.ZERO, Duration.ZERO, cleanupThreadPoolSize);
 
         // Create a number of block files for the benchmark
         for (int i = 0; i < blockFilesCount; i++) {

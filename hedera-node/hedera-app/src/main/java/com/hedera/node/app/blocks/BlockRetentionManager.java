@@ -48,19 +48,16 @@ public class BlockRetentionManager {
     private final ExecutorService cleanupExecutor;
     public static final String BLOCK_FILE_EXTENSION = ".blk";
     public static final String BLOCK_FILE_EXTENSION_GZ = ".blk.gz";
-    private final BlockStreamBucketMetrics blockStreamBucketMetrics;
 
     @Inject
     public BlockRetentionManager(
             @NonNull final Path uploadedDir,
             @NonNull final Duration retentionPeriod,
             @NonNull final Duration cleanupInterval,
-            final int cleanupThreadPoolSize,
-            @NonNull final BlockStreamBucketMetrics blockStreamBucketMetrics) {
+            final int cleanupThreadPoolSize) {
         this.uploadedDir = requireNonNull(uploadedDir, "uploadedDir must not be null");
         this.retentionPeriod = requireNonNull(retentionPeriod, "retentionPeriod must not be null");
         this.cleanupInterval = requireNonNull(cleanupInterval, "cleanupInterval must not be null");
-        this.blockStreamBucketMetrics = (requireNonNull(blockStreamBucketMetrics, "metrics must not be null"));
 
         this.cleanupExecutor = Executors.newFixedThreadPool(cleanupThreadPoolSize);
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -92,9 +89,6 @@ public class BlockRetentionManager {
 
         // Wait for all deletion tasks to complete
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-        // Update the metrics
-        blockStreamBucketMetrics.updateBlocksRetainedCount(listFiles().count());
     }
 
     public void shutdown() {
