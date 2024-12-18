@@ -6,6 +6,13 @@
 - What are the throttle parameters?
 - How should fees be calculated?
 - Is batchKey required?
+- What will be the mechanism for gathering signatures for the inner transactions? For the schedule we have ScheduleSign,
+  do we have something similar for batch transactions?
+- Node that if we use dispatch mechanism for each transaction we are limited by the maximum proceeding child
+  transactions(50 at the moment, see ConsensusConfig.handleMaxFollowingRecords). This includes all the child
+  transactions.
+  E.g. we can have a batch with 50 transactions each of them with 0 child transactions or 1 transaction that has 49
+  child transactions.
 
 # Introduce AtomicBatchTransaction
 
