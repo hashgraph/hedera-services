@@ -109,7 +109,7 @@ dependencies.constraints {
     api("org.hyperledger.besu:secp256k1:0.8.2") {
         because("org.hyperledger.besu.nativelib.secp256k1")
     }
-    api("org.json:json:20231013") { because("org.json") }
+    api("org.json:json:20240303") { because("org.json") }
     api("org.junit.jupiter:junit-jupiter-api:$junit5") { because("org.junit.jupiter.api") }
     api("org.junit.jupiter:junit-jupiter-engine:$junit5") { because("org.junit.jupiter.engine") }
     api("org.junit-pioneer:junit-pioneer:2.0.1") { because("org.junitpioneer") }
