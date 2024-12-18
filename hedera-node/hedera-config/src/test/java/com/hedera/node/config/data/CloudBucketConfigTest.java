@@ -42,7 +42,7 @@ public class CloudBucketConfigTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new CloudBucketConfig("test-bucket", "aws", "test-endpoint", null, "hedera-bucket", true),
-                "region cannot be null if the provider is AWS");
+                "region cannot be null or blank if the provider is AWS");
     }
 
     @Test
@@ -50,6 +50,6 @@ public class CloudBucketConfigTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new CloudBucketConfig("test-bucket", "aws", "test-endpoint", "", "hedera-bucket", true),
-                "region cannot be null if the provider is AWS");
+                "region cannot be null or blank if the provider is AWS");
     }
 }

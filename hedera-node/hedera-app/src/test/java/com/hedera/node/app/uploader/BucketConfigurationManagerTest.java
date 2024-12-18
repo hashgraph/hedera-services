@@ -120,7 +120,7 @@ public class BucketConfigurationManagerTest {
         assertThrows(
                 ValueInstantiationException.class,
                 () -> mapper.readValue(AWS_PROVIDER_WITH_EMPTY_REGION, new TypeReference<List<CloudBucketConfig>>() {}),
-                "region cannot be null if the provider is AWS");
+                "region cannot be null or blank if the provider is AWS");
     }
 
     private List<CompleteBucketConfig> generateCompleteBucketConfigs(

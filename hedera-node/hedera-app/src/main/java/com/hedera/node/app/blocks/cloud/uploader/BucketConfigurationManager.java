@@ -50,7 +50,7 @@ public class BucketConfigurationManager {
     private static final Logger logger = LogManager.getLogger(BucketConfigurationManager.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private final ConfigProvider configProvider;
+    private BlockStreamConfig blockStreamConfig;
     private volatile OnDiskBucketConfig credentials;
     private final AtomicReference<List<CompleteBucketConfig>> currentConfig = new AtomicReference<>();
 
@@ -62,8 +62,9 @@ public class BucketConfigurationManager {
      */
     @Inject
     public BucketConfigurationManager(@NonNull final ConfigProvider configProvider) {
-        this.configProvider = requireNonNull(configProvider);
-        loadCompleteBucketConfigs();
+        requireNonNull(configProvider, "configProvider must not be null");
+        this.blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        loadCompleteBucketConfigs(blockStreamConfig);
         watchCredentialsFile();
     }
 
@@ -79,9 +80,12 @@ public class BucketConfigurationManager {
     /**
      * Combines the buckets configuration with their respective credentials.
      */
-    public void loadCompleteBucketConfigs() {
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        final Path credentialsPath = Path.of(blockStreamConfig.credentialsPath());
+    public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
+        // update local BlockStreamConfig if there was a network properties change
+        if (this.blockStreamConfig != blockStreamConfig) {
+            this.blockStreamConfig = blockStreamConfig;
+        }
+        final Path credentialsPath = Path.of(this.blockStreamConfig.credentialsPath());
         try {
             if (FileSystemUtils.waitForPathPresence(credentialsPath)) {
                 credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
@@ -90,7 +94,7 @@ public class BucketConfigurationManager {
             logger.error("Failed to load bucket credentials from {}", credentialsPath, e);
         }
 
-        currentConfig.set(blockStreamConfig.buckets().stream()
+        currentConfig.set(this.blockStreamConfig.buckets().stream()
                 .map(bucket -> {
                     if (credentials == null || credentials.credentials().get(bucket.name()) == null) {
                         logger.error("No credentials found for bucket: {}", bucket.name());
@@ -118,7 +122,6 @@ public class BucketConfigurationManager {
      * Watch the bucket credentials file for changes and apply them at runtime.
      */
     private void watchCredentialsFile() {
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var bucketCredentialsPath = blockStreamConfig.credentialsPath();
         final Path credentialsPath = Path.of(bucketCredentialsPath);
         new Thread(() -> {
@@ -130,7 +133,7 @@ public class BucketConfigurationManager {
                             for (WatchEvent<?> event : key.pollEvents()) {
                                 if (event.context().toString().equals(bucketCredentialsPath)) {
                                     System.out.println("Configuration file changed. Reloading...");
-                                    loadCompleteBucketConfigs();
+                                    loadCompleteBucketConfigs(blockStreamConfig);
                                 }
                             }
                             key.reset();

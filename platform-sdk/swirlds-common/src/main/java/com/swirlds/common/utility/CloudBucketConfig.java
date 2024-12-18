@@ -40,8 +40,9 @@ public record CloudBucketConfig(
         requireNonNull(bucketName, "bucketName cannot be null");
 
         if (provider.equals("aws")) {
-            if (requireNonNull(region).isBlank()) {
-                throw new IllegalArgumentException("region cannot be null if the provider is AWS");
+            if (requireNonNull(region, "region cannot be null if the provider is AWS")
+                    .isBlank()) {
+                throw new IllegalArgumentException("region cannot be null or blank if the provider is AWS");
             }
         }
     }
