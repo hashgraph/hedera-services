@@ -240,10 +240,10 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             final ConsensusEvent event = eventIterator.next();
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
-                final var systemTransaction = handleTransaction(transaction);
-                if (systemTransaction != null) {
+                final var transactionWithSystemBytes = handleTransaction(transaction);
+                if (transactionWithSystemBytes != null) {
                     scopedSystemTransactions.add(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
                 }
             });
             if (!eventIterator.hasNext()) {
@@ -286,9 +286,14 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * Apply a transaction to the state.
      *
      * @param transaction the transaction to apply
+     * @return {@link ConsensusTransaction} only if it represents system transaction wrapped in Bytes
      */
     private ConsensusTransaction handleTransaction(final ConsensusTransaction transaction) {
-        if (isSystemTransaction(transaction)) {
+        if (transaction.isSystem()) {
+            return null;
+        }
+
+        if (areTransactionBytesSystemOnes(transaction)) {
             return transaction;
         }
 
@@ -300,8 +305,8 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         return null;
     }
 
-    private boolean isSystemTransaction(final ConsensusTransaction transaction) {
-        if (transaction.isSystem() || transaction.getApplicationTransaction().length() > 4) {
+    private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
+        if (transaction.getApplicationTransaction().length() > 4) {
             return true;
         } else {
             return false;
