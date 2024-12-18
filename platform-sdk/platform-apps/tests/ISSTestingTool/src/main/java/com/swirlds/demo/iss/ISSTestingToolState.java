@@ -242,8 +242,8 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
                 final var transactionWithSystemBytes = handleTransaction(transaction);
                 if (transactionWithSystemBytes != null) {
-                    scopedSystemTransactions.add(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
+                    scopedSystemTransactions.add(new ScopedSystemTransaction(
+                            event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
                 }
             });
             if (!eventIterator.hasNext()) {
