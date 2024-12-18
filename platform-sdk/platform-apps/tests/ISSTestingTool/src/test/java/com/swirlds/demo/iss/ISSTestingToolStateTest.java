@@ -152,7 +152,7 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
-        assertThat(consumerSize).isEqualTo(1);
+        assertThat(consumerSize).isEqualTo(0);
     }
 
     @Test
