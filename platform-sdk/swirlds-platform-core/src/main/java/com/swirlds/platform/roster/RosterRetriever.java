@@ -245,6 +245,7 @@ public final class RosterRetriever {
         if (addressBook == null) {
             return null;
         }
+
         return Roster.newBuilder()
                 .rosterEntries(addressBook.getNodeIdSet().stream()
                         .map(addressBook::getAddress)

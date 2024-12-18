@@ -29,6 +29,7 @@ import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.events.EventConstants;
@@ -197,7 +198,7 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
     private void checkSignatures(@NonNull final SignedState reservedState) {
         // this is debug information for ticket #11422
         final long signingWeight1 = reservedState.getSigningWeight();
-        final long totalWeight1 = reservedState.getAddressBook().getTotalWeight();
+        final long totalWeight1 = RosterUtils.computeTotalWeight(reservedState.getRoster());
         if (reservedState.isComplete() || reservedState.isPcesRound()) {
             // state is complete, nothing to do
             // no signatures are generated for PCES rounds: https://github.com/hashgraph/hedera-services/issues/15229
@@ -206,12 +207,12 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
         metrics.getTotalUnsignedDiskStatesMetric().increment();
 
         final long signingWeight2 = reservedState.getSigningWeight();
-        final long totalWeight2 = reservedState.getAddressBook().getTotalWeight();
+        final long totalWeight2 = RosterUtils.computeTotalWeight(reservedState.getRoster());
 
         // don't log an error if this is a freeze state. they are expected to lack signatures
         if (reservedState.isFreezeState()) {
             final double signingWeightPercent = (((double) reservedState.getSigningWeight())
-                            / ((double) reservedState.getAddressBook().getTotalWeight()))
+                            / ((double) RosterUtils.computeTotalWeight(reservedState.getRoster())))
                     * 100.0;
 
             logger.info(
@@ -222,7 +223,7 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
                             """,
                     reservedState.getRound(),
                     reservedState.getSigningWeight(),
-                    reservedState.getAddressBook().getTotalWeight(),
+                    RosterUtils.computeTotalWeight(reservedState.getRoster()),
                     signingWeightPercent);
         } else {
             final double signingWeight1Percent = (((double) signingWeight1) / ((double) totalWeight1)) * 100.0;
