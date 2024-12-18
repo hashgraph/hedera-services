@@ -22,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERWRITE_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
@@ -63,6 +64,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.config.extensions.sources.YamlConfigSource;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
@@ -394,7 +396,8 @@ public class ServicesMain implements SwirldMain {
     public static Configuration buildPlatformConfig() {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance());
+                .withSource(SystemPropertiesConfigSource.getInstance())
+                .withSource(new YamlConfigSource(getAbsolutePath(DEFAULT_OVERWRITE_YAML_FILE_NAME)));
         rethrowIO(() ->
                 BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
         final Configuration configuration = configurationBuilder.build();

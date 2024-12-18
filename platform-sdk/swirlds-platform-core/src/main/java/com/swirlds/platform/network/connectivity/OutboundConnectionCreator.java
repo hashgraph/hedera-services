@@ -25,6 +25,8 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.gossip.config.GossipConfig;
+import com.swirlds.platform.gossip.config.InterfaceBinding;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.Connection;
@@ -36,9 +38,11 @@ import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.roster.RosterUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,6 +55,7 @@ public class OutboundConnectionCreator {
     private static final String LOCALHOST = "127.0.0.1";
     private final NodeId selfId;
     private final SocketConfig socketConfig;
+    private final GossipConfig gossipConfig;
     private final ConnectionTracker connectionTracker;
     private final SocketFactory socketFactory;
     private final Roster roster;
@@ -68,6 +73,7 @@ public class OutboundConnectionCreator {
         this.socketFactory = Objects.requireNonNull(socketFactory);
         this.roster = Objects.requireNonNull(roster);
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
+        this.gossipConfig = platformContext.getConfiguration().getConfigData(GossipConfig.class);
     }
 
     /**
@@ -79,7 +85,6 @@ public class OutboundConnectionCreator {
      */
     public Connection createConnection(final NodeId otherId) {
         final RosterEntry other = RosterUtils.getRosterEntry(roster, otherId.id());
-        final RosterEntry ownRosterEntry = RosterUtils.getRosterEntry(roster, selfId.id());
 
         // NOTE: we always connect to the first ServiceEndpoint, which for now represents a legacy "external" address
         // (which may change in the future as new Rosters get installed).
@@ -87,15 +92,24 @@ public class OutboundConnectionCreator {
         // and it would be complex and error-prone to build logic to guess which one is which.
         // Ideally, this code should use a randomized and/or round-robin approach to choose an appropriate endpoint.
         // For now, we default to the very first one at all times.
-        final int port = RosterUtils.fetchPort(other, 0);
-        final String hostname = RosterUtils.fetchHostname(other, 0);
+        final InterfaceBinding binding = gossipConfig
+                .getEndpointOverride(otherId.id())
+                .orElseGet(() -> {
+                    final String host = RosterUtils.fetchHostname(other, 0);
+                    try {
+                        return new InterfaceBinding(
+                                otherId.id(), InetAddress.getByName(host), RosterUtils.fetchPort(other, 0));
+                    } catch (UnknownHostException e) {
+                        throw new RuntimeException("Host '" + host + "' not found", e);
+                    }
+                });
 
         Socket clientSocket = null;
         SyncOutputStream dos = null;
         SyncInputStream dis = null;
 
         try {
-            clientSocket = socketFactory.createClientSocket(hostname, port);
+            clientSocket = socketFactory.createClientSocket(binding.hostname().getHostAddress(), binding.port());
 
             dos = SyncOutputStream.createSyncOutputStream(
                     platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());

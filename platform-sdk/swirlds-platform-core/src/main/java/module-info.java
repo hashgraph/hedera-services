@@ -1,6 +1,3 @@
-import com.swirlds.config.api.ConfigurationExtension;
-import com.swirlds.platform.config.PlatformConfigurationExtension;
-
 /**
  * The Swirlds public API module used by platform applications.
  */
@@ -58,6 +55,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system.status;
     exports com.swirlds.platform.system.status.actions;
     exports com.swirlds.platform.util;
+    exports com.swirlds.platform.gossip.config;
 
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
@@ -161,6 +159,6 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires org.hiero.event.creator.impl;
 
-    provides ConfigurationExtension with
-            PlatformConfigurationExtension;
+    provides com.swirlds.config.api.ConfigurationExtension with
+            com.swirlds.platform.config.PlatformConfigurationExtension;
 }

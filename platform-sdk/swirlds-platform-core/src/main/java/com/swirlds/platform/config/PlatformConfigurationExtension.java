@@ -34,6 +34,9 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
+import com.swirlds.platform.gossip.config.GossipConfig;
+import com.swirlds.platform.gossip.config.InterfaceBinding;
+import com.swirlds.platform.gossip.config.InterfaceBindingConverter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
@@ -91,12 +94,15 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 VirtualMapConfig.class,
                 WiringConfig.class,
                 InternalLoggingConfig.class,
-                ComponentWiringConfig.class);
+                ComponentWiringConfig.class,
+                GossipConfig.class);
     }
 
     @NonNull
     @Override
     public Set<ConverterPair<?>> getConverters() {
-        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
+        return Set.of(
+                new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse),
+                new ConverterPair<>(InterfaceBinding.class, new InterfaceBindingConverter()));
     }
 }
