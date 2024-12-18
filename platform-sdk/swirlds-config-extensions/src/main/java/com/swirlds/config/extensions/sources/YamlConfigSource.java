@@ -26,10 +26,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,21 +99,51 @@ public class YamlConfigSource implements ConfigSource {
         this.listProperties = new HashMap<>();
         this.ordinal = ordinal;
 
-        convertYamlToMaps(fileName);
+        try (InputStream resource =
+                Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
+            if (resource == null) {
+                throw new UncheckedIOException(new IOException("Resource not found: " + fileName));
+            }
+            convertYamlToMaps(resource);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read YAML file", e);
+        }
     }
 
-    private void convertYamlToMaps(String resourceName) {
-        try (final InputStream in =
-                Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName)) {
-            if (in == null) {
-                throw new UncheckedIOException(new IOException("Resource not found: " + resourceName));
-            }
-            final Yaml yaml = new Yaml();
-            final Object rawData = yaml.load(in);
-            processYamlNode("", rawData, properties, listProperties);
+    /**
+     * Creates a new {@link YamlConfigSource} instance with the given file path and default ordinal.
+     *
+     * @param filePath the name of the file that contains the properties
+     * @see ConfigSource#DEFAULT_ORDINAL
+     */
+    public YamlConfigSource(@NonNull final Path filePath) {
+        this(filePath, DEFAULT_ORDINAL);
+    }
+
+    /**
+     * Creates a new {@link YamlConfigSource} instance with the given file path and ordinal.
+     *
+     * @param filePath the name of the file that contains the properties
+     * @param ordinal the ordinal of this config source
+     */
+    public YamlConfigSource(@NonNull final Path filePath, final int ordinal) {
+        requireNonNull(filePath, "filePath must not be null");
+        this.properties = new HashMap<>();
+        this.listProperties = new HashMap<>();
+        this.ordinal = ordinal;
+
+        try (InputStream resource = Files.newInputStream(filePath)) {
+            convertYamlToMaps(resource);
         } catch (IOException e) {
-            throw new UncheckedIOException("Unable to load resource " + resourceName, e);
+            throw new UncheckedIOException("Failed to read YAML file", e);
         }
+    }
+
+    private void convertYamlToMaps(@NonNull final InputStream resource) {
+        Objects.requireNonNull(resource, "resource must not be null");
+        final Yaml yaml = new Yaml();
+        final Object rawData = yaml.load(resource);
+        processYamlNode("", rawData, properties, listProperties);
     }
 
     @SuppressWarnings("unchecked")
