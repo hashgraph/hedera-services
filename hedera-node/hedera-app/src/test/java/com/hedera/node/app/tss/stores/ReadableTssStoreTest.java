@@ -22,6 +22,7 @@ import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -212,6 +213,18 @@ class ReadableTssStoreTest {
     }
 
     @Test
+    void testGetsAllVotes() {
+        TssVoteTransactionBody vote = TssVoteTransactionBody.DEFAULT;
+        when(readableTssVoteState.keys())
+                .thenReturn(singletonList(TssVoteMapKey.DEFAULT).iterator());
+        when(readableTssVoteState.get(TssVoteMapKey.DEFAULT)).thenReturn(vote);
+
+        final var result = tssStore.allVotes();
+        assertEquals(1, result.size());
+        assertEquals(vote, result.get(0));
+    }
+
+    @Test
     void testGetMessagesForTarget() {
         Bytes rosterHash = Bytes.wrap("targetHash".getBytes());
         TssMessageMapKey key = mock(TssMessageMapKey.class);
@@ -249,6 +262,44 @@ class ReadableTssStoreTest {
         LongUnaryOperator weightFn = nodeId -> 10L;
         Optional<TssVoteTransactionBody> result =
                 tssStore.anyWinningVoteFrom(sourceRosterHash, targetRosterHash, 10L, weightFn);
+        assertTrue(result.isPresent());
+    }
+
+    @Test
+    void testAnyWinningVoteForWhenNoVote() {
+        Bytes sourceRosterHash = Bytes.wrap("sourceHash".getBytes());
+        Bytes targetRosterHash = Bytes.wrap("targetHash".getBytes());
+        TssVoteMapKey key = mock(TssVoteMapKey.class);
+        TssVoteTransactionBody vote = TssVoteTransactionBody.newBuilder()
+                .sourceRosterHash(sourceRosterHash)
+                .tssVote(Bytes.wrap("vote".getBytes()))
+                .targetRosterHash(targetRosterHash)
+                .build();
+        when(readableTssVoteState.keys()).thenReturn(singletonList(key).iterator());
+        when(readableTssVoteState.get(key)).thenReturn(vote);
+        when(rosterStore.get(sourceRosterHash)).thenReturn(SOURCE_ROSTER);
+
+        Optional<TssVoteTransactionBody> result = tssStore.anyWinningVoteFor(targetRosterHash, rosterStore);
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void testAnyWinningVoteFor() {
+        doCallRealMethod().when(subject).anyWinningVoteFor(any(), any());
+        Bytes sourceRosterHash = Bytes.wrap("sourceHash".getBytes());
+        Bytes targetRosterHash = Bytes.wrap("targetHash".getBytes());
+        TssVoteMapKey key =
+                TssVoteMapKey.newBuilder().rosterHash(targetRosterHash).build();
+        TssVoteTransactionBody vote = TssVoteTransactionBody.newBuilder()
+                .sourceRosterHash(sourceRosterHash)
+                .tssVote(Bytes.wrap("vote".getBytes()))
+                .targetRosterHash(targetRosterHash)
+                .build();
+        when(subject.allVotes()).thenReturn(List.of(vote));
+        when(subject.anyWinningVoteFrom(any(), any(), any())).thenReturn(Optional.of(vote));
+
+        Optional<TssVoteTransactionBody> result = subject.anyWinningVoteFor(targetRosterHash, rosterStore);
+
         assertTrue(result.isPresent());
     }
 }

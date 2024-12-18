@@ -42,8 +42,7 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
@@ -182,10 +181,7 @@ public class DiskStartupNetworks implements StartupNetworks {
         final var tssStore = new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME));
         final var nodeStore = new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
         final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
-        final var platformStateStore =
-                new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        Optional.ofNullable(rosterStore.getActiveRoster())
-                .or(() -> Optional.ofNullable(buildRoster(platformStateStore.getAddressBook())))
+        Optional.ofNullable(RosterRetriever.retrieveActiveOrGenesisRoster(state))
                 .ifPresent(activeRoster -> {
                     final var network = Network.newBuilder();
                     final List<NodeMetadata> nodeMetadata = new ArrayList<>();

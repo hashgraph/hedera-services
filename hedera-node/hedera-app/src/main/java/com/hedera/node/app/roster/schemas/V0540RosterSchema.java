@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.roster.schemas;
 
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -24,10 +23,11 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -74,16 +74,16 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
      * we must initialize the active roster from the platform state's legacy address books.
      */
     @Deprecated
-    private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+    private final Supplier<State> stateSupplier;
 
     public V0540RosterSchema(
             @NonNull final Predicate<Roster> canAdopt,
             @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
-            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory) {
+            @NonNull final Supplier<State> stateSupplier) {
         super(VERSION);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
-        this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
+        this.stateSupplier = requireNonNull(stateSupplier);
     }
 
     @Override
@@ -113,8 +113,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
             } else if (rosterStore.getActiveRoster() == null) {
                 // (FUTURE) Once the roster lifecycle is active by default, remove this code building an initial
                 // roster history  from the last address book and the first roster at the upgrade boundary
-                final var addressBook = platformStateStoreFactory.get().getAddressBook();
-                final var previousRoster = buildRoster(requireNonNull(addressBook));
+                final var previousRoster = RosterRetriever.retrieveActiveOrGenesisRoster(stateSupplier.get());
                 rosterStore.putActiveRoster(previousRoster, 0);
                 final var currentRoster = RosterUtils.rosterFrom(startupNetworks.migrationNetworkOrThrow());
                 rosterStore.putActiveRoster(currentRoster, activeRoundNumber);

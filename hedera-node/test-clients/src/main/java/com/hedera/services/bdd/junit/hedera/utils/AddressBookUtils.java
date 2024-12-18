@@ -86,6 +86,10 @@ public class AddressBookUtils {
         return new TssKeyMaterial(Bytes.wrap(FAKE_LEDGER_ID.toBytes()), tssMessageOps);
     };
 
+    private AddressBookUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     /**
      * Given a config.txt file, generates the same map of node ids to ASN.1 DER encodings of X.509 certificates
      * as will be produced in a test network.
@@ -116,10 +120,6 @@ public class AddressBookUtils {
                         throw new IllegalStateException(e);
                     }
                 }));
-    }
-
-    private AddressBookUtils() {
-        throw new UnsupportedOperationException("Utility Class");
     }
 
     /**
