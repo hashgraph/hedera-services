@@ -18,7 +18,6 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromEvent;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
@@ -82,8 +81,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public List<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
-            @NonNull final PlatformEvent event) {
+    public void prehandleApplicationTransactions(@NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
 
         ReservedSignedState latestImmutableState = null;
@@ -104,9 +102,5 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
 
             preHandleTime.update(startTime, time.nanoTime());
         }
-
-        // TODO adapt this logic to read transactions directly from the callback passed in SwirldState.preHandle() when
-        // implemented
-        return extractFromEvent(event, StateSignatureTransaction.class);
     }
 }

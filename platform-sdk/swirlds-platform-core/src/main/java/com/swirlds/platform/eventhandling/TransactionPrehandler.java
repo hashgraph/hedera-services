@@ -16,12 +16,9 @@
 
 package com.swirlds.platform.eventhandling;
 
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * Performs the prehandling of transactions
@@ -33,6 +30,5 @@ public interface TransactionPrehandler {
      * @param event the event to prehandle
      */
     @InputWireLabel("PlatformEvent")
-    List<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
-            @NonNull PlatformEvent event);
+    void prehandleApplicationTransactions(@NonNull PlatformEvent event);
 }

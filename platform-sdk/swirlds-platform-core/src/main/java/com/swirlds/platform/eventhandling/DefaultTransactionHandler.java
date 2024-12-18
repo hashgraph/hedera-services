@@ -27,12 +27,10 @@ import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATIN
 import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
 import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.WAITING_FOR_PREHANDLE;
 
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.PlatformEvent;
@@ -50,7 +48,6 @@ import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -201,12 +198,12 @@ public class DefaultTransactionHandler implements TransactionHandler {
             }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
-            final var systemTransactions = swirldStateManager.handleConsensusRound(consensusRound);
+            swirldStateManager.handleConsensusRound(consensusRound);
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE_RUNNING_HASH);
             updateRunningEventHash(consensusRound);
 
-            return createSignedState(consensusRound, systemTransactions);
+            return createSignedState(consensusRound);
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
             Thread.currentThread().interrupt();
@@ -271,10 +268,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @throws InterruptedException if this thread is interrupted
      */
     @NonNull
-    private StateAndRound createSignedState(
-            @NonNull final ConsensusRound consensusRound,
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions)
-            throws InterruptedException {
+    private StateAndRound createSignedState(@NonNull final ConsensusRound consensusRound) throws InterruptedException {
         if (freezeRoundReceived) {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
@@ -295,6 +289,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
                 consensusRound.isPcesRound());
 
         final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
-        return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
+        return new StateAndRound(reservedSignedState, consensusRound);
     }
 }
