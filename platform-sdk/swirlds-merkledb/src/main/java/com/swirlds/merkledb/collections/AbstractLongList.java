@@ -239,6 +239,7 @@ public abstract class AbstractLongList<C> implements LongList {
     /**
      * Initializes the list from the given file channel. At the moment of the call all the class metadata
      * is already initialized from the file header.
+     *
      * @param sourceFileName the name of the file from which the list is initialized
      * @param fileChannel the file channel to read the list body from
      * @throws IOException if there was a problem reading the file
@@ -254,24 +255,83 @@ public abstract class AbstractLongList<C> implements LongList {
         final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
 
         for (int chunkIndex = firstChunkWithDataIndex; chunkIndex < totalNumberOfChunks; chunkIndex++) {
-            final int startIndex = (chunkIndex == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
-            C chunk = readChunkData(fileChannel, chunkIndex, startIndex);
-            chunkList.set(chunkIndex, chunk);
+            final int startIndexInChunk = (chunkIndex == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
+            final long dataIndex = (long) chunkIndex * numLongsPerChunk;
+            final long dataStartIndex = dataIndex + startIndexInChunk;
+            final long dataEndCalculatedIndex = dataIndex + numLongsPerChunk - 1;
+            final long dataEndIndex = Math.min(dataEndCalculatedIndex, maxValidIndex.get());
+            final int endIndexInChunk = startIndexInChunk + toIntExact(dataEndIndex - dataStartIndex);
+
+            C chunk = readChunkData(fileChannel, chunkIndex, startIndexInChunk, endIndexInChunk);
+            setChunk(chunkIndex, chunk, startIndexInChunk, endIndexInChunk);
         }
     }
 
     /**
-     * Subclasses must implement this method to read data from the provided fileChannel
-     * and store it into the chunk at `chunkIndex`, starting at `startIndex` within that
-     * chunk.
+     * Reads data from the specified {@code fileChannel} and stores it into a chunk.
+     * The data is read from the specified range within the chunk.
+     * Subclasses must implement this method to read data from the provided {@code fileChannel}
+     * and store it into the chunk at {@code chunkIndex}.
      *
-     * @param fileChannel   the file channel to read from
-     * @param chunkIndex    the index of the chunk to store the read data
-     * @param startIndex   the starting index within the chunk to begin writing data
+     * @param fileChannel the file channel to read from
+     * @param chunkIndex the index of the chunk to store the read data
+     * @param startIndex the starting position within the chunk
+     * @param endIndex the ending position within the chunk
      * @return a chunk (byte buffer, array or long that represents an offset of the chunk)
      * @throws IOException if there is an error reading the file
      */
-    protected abstract C readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException;
+    protected abstract C readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex, int endIndex)
+            throws IOException;
+
+    /**
+     * Stores the specified chunk at the given {@code chunkIndex}. Subclasses may override
+     * this method to perform additional actions (e.g., persisting the chunk to a file).
+     *
+     * @param chunkIndex the index where the chunk is to be stored
+     * @param chunk      the chunk to store
+     * @param startIndex the starting position within the chunk to write data
+     * @param endIndex   the ending position within the chunk
+     * @throws IOException if an I/O error occurs, when overridden by a subclass
+     */
+    protected void setChunk(int chunkIndex, C chunk, int startIndex, int endIndex) throws IOException {
+        chunkList.set(chunkIndex, chunk);
+    }
+
+    /**
+     * Reads a specified range of elements from a file channel into the given buffer.
+     * <p>
+     * This method computes the appropriate byte offsets within the buffer and the number of bytes
+     * to read based on the provided {@code startIndex} and {@code endIndex}. It then performs a
+     * complete read of that data from the file channel into the buffer.
+     *
+     * @param fileChannel the file channel to read data from
+     * @param chunkIndex the index of the chunk being read
+     * @param startIndex the starting index within the chunk of the first element to read
+     * @param endIndex the ending index within the chunk of the last element to read
+     * @param buffer the buffer into which data will be read
+     * @throws IOException if an error occurs while reading from the file,
+     * or if the number of bytes read does not match the expected size
+     */
+    protected static void readDataIntoBuffer(
+            final FileChannel fileChannel,
+            final int chunkIndex,
+            final int startIndex,
+            final int endIndex,
+            final ByteBuffer buffer)
+            throws IOException {
+        final int startOffset = startIndex * Long.BYTES;
+        final int endOffset = (endIndex + 1) * Long.BYTES;
+
+        buffer.position(startOffset);
+        buffer.limit(endOffset);
+
+        final int bytesToRead = endOffset - startOffset;
+        final long bytesRead = MerkleDbFileUtils.completelyRead(fileChannel, buffer);
+        if (bytesRead != bytesToRead) {
+            throw new IOException("Failed to read chunks, chunkIndex=" + chunkIndex + " expected=" + bytesToRead
+                    + " actual=" + bytesRead);
+        }
+    }
 
     /**
      * Called when the list is initialized from an empty or absent source file.

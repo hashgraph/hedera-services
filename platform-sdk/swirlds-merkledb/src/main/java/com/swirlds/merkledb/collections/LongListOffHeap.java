@@ -87,17 +87,10 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
 
     /** {@inheritDoc} */
     @Override
-    protected ByteBuffer readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex) throws IOException {
+    protected ByteBuffer readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex, int endIndex)
+            throws IOException {
         ByteBuffer chunk = createChunk();
-
-        int startByteOffset = startIndex * Long.BYTES;
-        chunk.position(startByteOffset);
-        chunk.limit(chunk.capacity());
-
-        MerkleDbFileUtils.completelyRead(fileChannel, chunk);
-
-        chunk.position(0);
-
+        readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, chunk);
         return chunk;
     }
 

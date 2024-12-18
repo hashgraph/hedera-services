@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
@@ -262,24 +264,36 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
         }
     }
 
-    @Test
-    void writeReadSizeOfOne(@TempDir final Path tempDir) throws IOException {
-        try (final AbstractLongList<?> list = createLongList()) {
-            list.updateValidRange(1, 1);
-            list.put(1, 1);
-            final Path file = tempDir.resolve("writeReadSizeOfOne.ll");
-            // write longList data
+    @ParameterizedTest(name = "writeReadRangeElement [startIndex={0},endIndex={1},numLongsPerChunk={2},maxLongs={3}]")
+    @CsvSource({"1,1,100,1000", "1,5,100,1000", "150,150,100,1000", "150,155,100,1000"})
+    void writeReadRangeElement(
+            final int startIndex,
+            final int endIndex,
+            final int numLongsPerChunk,
+            final long maxLongs,
+            @TempDir final Path tempDir)
+            throws IOException {
+
+        try (final AbstractLongList<?> list = createFullyParameterizedLongListWith(numLongsPerChunk, maxLongs)) {
+            list.updateValidRange(startIndex, endIndex);
+
+            for (int i = startIndex; i <= endIndex; i++) {
+                list.put(i, i + 100);
+            }
+
+            final Path file = tempDir.resolve("writeReadRangeElement-" + startIndex + "-" + endIndex + "-chunk"
+                    + numLongsPerChunk + "-max" + maxLongs + ".ll");
             list.writeToFile(file);
-            // check file exists and contains some data
             assertTrue(Files.exists(file), "file does not exist");
-            // now try and construct a new LongList reading from the file
+
             try (final LongList list2 = createLongListFromFile(file, CONFIGURATION)) {
-                // now check data and other attributes
                 assertEquals(list.capacity(), list2.capacity(), "Unexpected value for list2.capacity()");
                 assertEquals(list.size(), list2.size(), "Unexpected value for list2.size()");
-                assertEquals(1, list2.get(1));
+                for (int i = startIndex; i <= endIndex; i++) {
+                    assertEquals(i + 100, list2.get(i));
+                }
             }
-            // delete file as we are done with it
+
             Files.delete(file);
         }
     }
@@ -367,6 +381,32 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             }
             // delete file as we are done with it
             Files.delete(file);
+        }
+    }
+
+    @Test
+    void closeAndRecreateLongListMultipleTimes(@TempDir final Path tempDir) throws IOException {
+        final Path file = tempDir.resolve("closeAndRecreateLongListMultipleTimes.ll");
+
+        try (final AbstractLongList<?> list = createLongList()) {
+            list.updateValidRange(0, getSampleSize());
+            for (int i = 0; i <= getSampleSize(); i++) {
+                list.put(i, i + 100);
+            }
+            list.writeToFile(file);
+            assertTrue(Files.exists(file), "The file should exist after writing with the first list");
+        }
+
+        try (final LongList listFromFile = createLongListFromFile(file, CONFIGURATION)) {
+            for (int i = 0; i <= getSampleSize(); i++) {
+                assertEquals(i + 100, listFromFile.get(i), "Data should match in the second list");
+            }
+        }
+
+        try (final LongList anotherListFromFile = createLongListFromFile(file, CONFIGURATION)) {
+            for (int i = 0; i <= getSampleSize(); i++) {
+                assertEquals(i + 100, anotherListFromFile.get(i), "Data should still match in the third list");
+            }
         }
     }
 
