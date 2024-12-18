@@ -17,7 +17,7 @@ public class FakeStartupNetworks implements StartupNetworks {
     }
 
     @Override
-    public Network genesisNetworkOrThrow(Configuration platformConfig) {
+    public Network genesisNetworkOrThrow(@NonNull final Configuration platformConfig) {
         return genesisNetwork;
     }
 

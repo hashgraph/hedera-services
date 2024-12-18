@@ -8,8 +8,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -29,7 +31,7 @@ class V057AddressBookSchemaTest {
                     NodeMetadata.newBuilder()
                             .node(Node.newBuilder().nodeId(1L).description("A"))
                             .build(),
-                    NodeMetadata.DEFAULT,
+                    NodeMetadata.newBuilder().node(Node.DEFAULT).build(),
                     NodeMetadata.newBuilder()
                             .node(Node.newBuilder().nodeId(2L).description("B"))
                             .build())
@@ -60,6 +62,9 @@ class V057AddressBookSchemaTest {
 
     @Test
     void usesGenesisNodeMetadataIfPresent() {
+        final var bootstrapAdminKey = Key.newBuilder()
+                .ed25519(DEFAULT_CONFIG.getConfigData(BootstrapConfig.class).genesisPublicKey())
+                .build();
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(NETWORK);
@@ -71,8 +76,23 @@ class V057AddressBookSchemaTest {
         subject.migrate(ctx);
 
         verify(nodes)
-                .put(new EntityNumber(1L), NETWORK.nodeMetadata().getFirst().nodeOrThrow());
-        verify(nodes).put(new EntityNumber(2L), NETWORK.nodeMetadata().getLast().nodeOrThrow());
+                .put(
+                        new EntityNumber(1L),
+                        NETWORK.nodeMetadata()
+                                .getFirst()
+                                .nodeOrThrow()
+                                .copyBuilder()
+                                .adminKey(bootstrapAdminKey)
+                                .build());
+        verify(nodes)
+                .put(
+                        new EntityNumber(2L),
+                        NETWORK.nodeMetadata()
+                                .getLast()
+                                .nodeOrThrow()
+                                .copyBuilder()
+                                .adminKey(bootstrapAdminKey)
+                                .build());
     }
 
     @Test

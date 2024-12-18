@@ -3,6 +3,7 @@ package com.swirlds.state.lifecycle;
 
 import com.hedera.node.internal.network.Network;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
@@ -15,7 +16,7 @@ public interface StartupNetworks {
      *
      * @return the network information that should be used to populate the node's genesis state
      */
-    Network genesisNetworkOrThrow(Configuration platformConfig);
+    Network genesisNetworkOrThrow(@NonNull Configuration platformConfig);
 
     /**
      * Called by a node at a restart boundary to check if there is an override {@link Network}
