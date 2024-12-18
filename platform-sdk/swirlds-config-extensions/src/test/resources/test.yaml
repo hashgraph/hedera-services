@@ -10,3 +10,8 @@ gossip:
   randomList:
     - "foo"
     - "bar"
+  randomListOfList:
+    - - "foo"
+      - "bar"
+    - - "baz"
+      - "qux"

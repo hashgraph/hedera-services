@@ -323,7 +323,7 @@ public final class SimpleConfigSource implements ConfigSource {
         if (internalProperties.containsKey(propertyName)) {
             return internalProperties.get(propertyName);
         }
-        throw new NoSuchElementException(propertyName);
+        throw new NoSuchElementException("Property " + propertyName + " not found");
     }
 
     /**
@@ -343,7 +343,7 @@ public final class SimpleConfigSource implements ConfigSource {
         if (internalListProperties.containsKey(propertyName)) {
             return internalListProperties.get(propertyName);
         }
-        throw new NoSuchElementException(propertyName);
+        throw new NoSuchElementException("Property " + propertyName + " not found");
     }
 
     /**

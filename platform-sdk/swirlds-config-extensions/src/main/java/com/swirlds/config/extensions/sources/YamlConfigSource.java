@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.sources;
+package com.swirlds.config.extensions.sources;
 
 import static java.util.Objects.requireNonNull;
 
@@ -30,14 +30,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * A config source that wraps a {@link Properties} object.
+ * A config source that reads properties from a YAML file.
+ * <br>
+ * The config source reads the properties from the YAML file.
+ * <br>
+ * The keys of the properties are the full path of the property in the YAML file, separated by dots.
+ * For example:
+ * <code>
+ *     a:
+ *       b:
+ *          c: value
+ * </code>
+ * For the above YAML file, the key for the property would be "a.b.c" to retrieve the "value". This complies with the way the
+ * properties are stored and accessed in the {@link ConfigSource} interface.
+ * <br>
+ * All list elements are stored as JSON strings and can be deserialized in an {@link com.swirlds.config.api.converter.ConfigConverter}
  */
 public class YamlConfigSource implements ConfigSource {
 
