@@ -303,7 +303,6 @@ public class ServicesMain implements SwirldMain {
         if (hedera.isRosterLifecycleEnabled()) {
             final var rosterStore = new ReadableStoreFactory(stateRoot).getStore(ReadableRosterStore.class);
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
-            logger.info("History {}", rosterHistory.getHistory());
         } else {
             // This constructor both does extensive validation and has the side effect of
             // moving unused config.txt files to an archive directory; so keep calling it
