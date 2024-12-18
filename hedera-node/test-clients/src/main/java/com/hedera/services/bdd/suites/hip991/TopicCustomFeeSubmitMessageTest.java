@@ -474,7 +474,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submitter has insufficient hbar balance")
-        // TOPIC_FEE_146
+        // TOPIC_FEE_158
         final Stream<DynamicTest> submitterHasInsufficientHbarBalance() {
             final var collector = "collector";
             final var submitterWithLowBalance = "submitterWithLowBalance";
@@ -492,7 +492,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submitter has insufficient token balance")
-        // TOPIC_FEE_147
+        // TOPIC_FEE_159
         final Stream<DynamicTest> submitterHasInsufficientTokenBalance() {
             final var collector = "collector";
             final var submitterWithLowBalance = "submitterWithLowBalance";
@@ -516,7 +516,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submitter is not associated to the fee token")
-        // TOPIC_FEE_148
+        // TOPIC_FEE_160
         final Stream<DynamicTest> submitterIsNotAssociatedToFeeToken() {
             final var collector = "collector";
             final var submitterWithNoAssociation = "submitterWithNoAssociation";
@@ -537,7 +537,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Message submit by collector with 0 Hbar balance")
-        // TOPIC_FEE_149
+        // TOPIC_FEE_161
         final Stream<DynamicTest> messageSubmitByCollectorWith0HbarBalance() {
             final var collector = "collector";
             final var fee = fixedConsensusHbarFee(ONE_HUNDRED_HBARS, collector);
@@ -553,7 +553,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Message submit by treasury with 0 Hbar balance")
-        // TOPIC_FEE_150
+        // TOPIC_FEE_162
         final Stream<DynamicTest> messageSubmitByTreasuryWith0HbarBalance() {
             final var collector = "collector";
             final var treasury = "treasury";
@@ -589,7 +589,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submitter key is in FEKL - hbar fee")
-        // TOPIC_FEE_151
+        // TOPIC_FEE_163
         final Stream<DynamicTest> submitterKeyIsInFEKLHbar() {
             final var collector = "collector";
             final var fee = fixedConsensusHbarFee(ONE_HUNDRED_HBARS, collector);
@@ -605,7 +605,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submitter key is in FEKL - hts fee")
-        // TOPIC_FEE_152
+        // TOPIC_FEE_164
         final Stream<DynamicTest> submitterKeyIsInFEKLHts() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
@@ -622,7 +622,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("FEKL is empty - hbar fee")
-        // TOPIC_FEE_153
+        // TOPIC_FEE_165
         final Stream<DynamicTest> FEKLIsEmptyHbar() {
             final var collector = "collector";
             final var fee = fixedConsensusHbarFee(ONE_HBAR, collector);
@@ -635,7 +635,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submit with treasury and FEKL is empty")
-        // TOPIC_FEE_154
+        // TOPIC_FEE_166
         final Stream<DynamicTest> SubmitWithTreasuryAndFEKLIsEmpty() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
@@ -653,7 +653,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         @DisplayName("Submit with collector and FEKL is empty")
-        // TOPIC_FEE_155
+        // TOPIC_FEE_167
         final Stream<DynamicTest> SubmitWithCollectorAndFEKLIsEmpty() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
