@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,7 +40,7 @@ class BlockRetentionManagerTest {
     private BlockRetentionManager blockRetentionManager;
 
     @Test
-    void testCleanupShouldNotRunUntilScheduleTime() throws IOException, InterruptedException {
+    void testCleanupShouldNotRunUntilScheduleTime() throws IOException {
         final long retentionPeriodMs = 10;
         final long cleanupPeriodMs = 100;
         blockRetentionManager = new BlockRetentionManager(
@@ -50,12 +52,16 @@ class BlockRetentionManagerTest {
 
         createTestFile(blockFileName);
 
-        Thread.sleep(retentionPeriodMs * 2);
+        await().atLeast(2 * retentionPeriodMs, TimeUnit.MILLISECONDS);
         assertTrue(Files.exists(uploadedDir.resolve(blockFileName)), blockFileName + " should not have been deleted");
+
+        await().atMost(2 * cleanupPeriodMs, TimeUnit.MILLISECONDS)
+                .until(() -> !Files.exists(uploadedDir.resolve(blockFileName)));
+        assertFalse(Files.exists(uploadedDir.resolve(blockFileName)), blockFileName + " should have been deleted");
     }
 
     @Test
-    void testScheduleCleanup() throws IOException, InterruptedException {
+    void testScheduleCleanup() throws IOException {
         final long retentionPeriodMs = 20;
         final long cleanupPeriodMs = 10;
         blockRetentionManager = new BlockRetentionManager(
@@ -71,7 +77,10 @@ class BlockRetentionManagerTest {
         createTestFile(nonBlockFileName);
         createTestFile(compressedBlockFileName);
 
-        Thread.sleep(retentionPeriodMs * 2);
+        await().atMost(1, TimeUnit.SECONDS)
+                .until(() -> !Files.exists(uploadedDir.resolve(blockFileName))
+                        && !Files.exists(uploadedDir.resolve(compressedBlockFileName)));
+
         assertFalse(Files.exists(uploadedDir.resolve(blockFileName)), blockFileName + " should have been deleted");
         assertTrue(
                 Files.exists(uploadedDir.resolve(nonBlockFileName)),
@@ -83,7 +92,8 @@ class BlockRetentionManagerTest {
         final var anotherBlockFileName = "file4" + BlockRetentionManager.BLOCK_FILE_EXTENSION;
         createTestFile(anotherBlockFileName);
 
-        Thread.sleep(retentionPeriodMs * 2);
+        await().atMost(1, TimeUnit.SECONDS).until(() -> !Files.exists(uploadedDir.resolve(anotherBlockFileName)));
+
         assertFalse(
                 Files.exists(uploadedDir.resolve(anotherBlockFileName)),
                 anotherBlockFileName + " should have been deleted");
