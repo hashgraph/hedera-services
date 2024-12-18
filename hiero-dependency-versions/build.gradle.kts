@@ -78,10 +78,10 @@ dependencies.constraints {
     api("org.assertj:assertj-core:3.23.1") { because("org.assertj.core") }
     api("org.bouncycastle:bcpkix-jdk18on:1.79") { because("org.bouncycastle.pkix") }
     api("org.bouncycastle:bcprov-jdk18on:1.78") { because("org.bouncycastle.provider") }
-    api("org.eclipse.collections:eclipse-collections-api:10.4.0") {
+    api("org.eclipse.collections:eclipse-collections-api:11.1.0") {
         because("org.eclipse.collections.api")
     }
-    api("org.eclipse.collections:eclipse-collections:10.4.0") {
+    api("org.eclipse.collections:eclipse-collections:11.1.0") {
         because("org.eclipse.collections.impl")
     }
     api("org.hamcrest:hamcrest:2.2") { because("org.hamcrest") }
