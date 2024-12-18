@@ -79,7 +79,7 @@ public class BlockRetentionManager {
         });
     }
 
-    private void cleanupExpiredBlocks() {
+    public void cleanupExpiredBlocks() {
         // Collect files into a list to avoid consuming the stream multiple times
         List<Path> fileList = listFiles()
                 .filter(file -> isBlockFile(file) && isFileExpired(file))
@@ -95,6 +95,23 @@ public class BlockRetentionManager {
 
         // Update the metrics
         blockStreamBucketMetrics.updateBlocksRetainedCount(listFiles().count());
+    }
+
+    public void shutdown() {
+        scheduler.shutdown();
+        cleanupExecutor.shutdown();
+        try {
+            if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+            if (!cleanupExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            cleanupExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     private Stream<Path> listFiles() {
