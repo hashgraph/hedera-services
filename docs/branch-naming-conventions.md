@@ -25,7 +25,7 @@ branches.
 
 **Default Branches**
 
-The default branch for a repository will be `develop` as per the branching workflow.
+The default branch for a repository will be `main` as per the branching workflow.
 
 ### Branch to Issue Relationship
 

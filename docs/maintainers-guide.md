@@ -1,3 +1,5 @@
+# THIS FILE SHOULD BE EDITED BEFORE MIGRATING FROM DEVELOP TO MAIN, BUT I'M NOT SURE EXACTLY HOW
+
 # Maintainers Guide
 
 This document outlines the process and keynotes for the core maintainers of this repository .

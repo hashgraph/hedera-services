@@ -4,8 +4,6 @@
 
 This document describes the general design of the main metrics functionality.
 
-
-
 ## The Metrics interface
 
 _TBD_
@@ -17,8 +15,6 @@ In the default implementation, the notification mechanism is implemented via the
 Each `DefaultMetrics` contains a method `subscribe()` that allows to register an Observer.
 The moment an Observer subscribes, it will receive `ADDED`-events for all metrics, that are currently registered.
 It will continue to receive `ADDED` and `REMOVED` events until unsubscribed.
-
-
 
 ## Global and platform metrics
 
@@ -48,12 +44,10 @@ All metrics, that measure the behavior of platform code, are typical examples of
 
 Each platform `Metrics` is implemented by `DefaultMetrics`.
 
-
-
 ## Metric Registry
 
 When metrics are output, the metrics from several `Metrics` instances need to be merged and therefore must not conflict.
-Two metrics with the same `category` and `name` are conflicting, if they are implemented by different classes or if one of them is a platform metric and the other global. 
+Two metrics with the same `category` and `name` are conflicting, if they are implemented by different classes or if one of them is a platform metric and the other global.
 To ensure this, the `MetricRegistry` was introduced.
 
 ![MetricRegistry](metrics_registry.png)
@@ -61,8 +55,6 @@ To ensure this, the `MetricRegistry` was introduced.
 Before a new metric is added (via one of the `Metrics`-instances), it needs to be registered with the `MetricRegistry`.
 The registration is successful, if there is no conflicting configuration stored.
 Only if the registration succeeded, is it possible to create the metric.
-
-
 
 ## Snapshot Service
 

@@ -185,9 +185,9 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
 
     @Override
     public Integer call() {
-        // if no targets were specified, then default to the develop branch
+        // if no targets were specified, then default to the main branch
         if (targets == null) {
-            targets = List.of("develop");
+            targets = List.of("main");
         }
 
         final Map<JrsTestIdentifier, JrsTestMetadata> metadata = JtrUtils.getTestMetadata(metadataFile);

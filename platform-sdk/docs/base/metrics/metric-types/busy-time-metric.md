@@ -12,9 +12,9 @@ performance issues often requires a lot of time to narrow down the issue.
   subsequent sampling period, giving us misleading information.
 - Some attempts have been made to unify this with cycle metrics. These are a collection of metrics updated through a
   single instance.
-    - Since they all need to be updated through a single class, this would mean that all classes executing on a
-      particular thread need a dependency to it.
-    - Since they track cyclical work, they do not handle situations where a thread does different type of work
+  - Since they all need to be updated through a single class, this would mean that all classes executing on a
+    particular thread need a dependency to it.
+  - Since they track cyclical work, they do not handle situations where a thread does different type of work
 
 ## Busy time metric
 

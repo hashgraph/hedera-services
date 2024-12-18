@@ -19,9 +19,9 @@ The handover needs to ensure that the peer receives all events, duplicates are p
 - After this, it needs to ensure that events will either be sent through the sync or through chatter afterwards. To
   ensure this, it needs to wait for the intake thread to finish its current cycle, to avoid a situation where an event
   is being processed and does not get sent through either channel (explained in the diagram below).
-    - NOTE: this would have been easier to solve if the event was first added to the shadowgraph and then to chatter. We
-      cannot do this because of orphan events. Orphans need to be sent through chatter as soon as they are validated,
-      but cannot be added to the shadowgraph until we get their parents (see [orphans](orphan-buffer.md))
+  - NOTE: this would have been easier to solve if the event was first added to the shadowgraph and then to chatter. We
+    cannot do this because of orphan events. Orphans need to be sent through chatter as soon as they are validated,
+    but cannot be added to the shadowgraph until we get their parents (see [orphans](orphan-buffer.md))
 - Once the intake finishes any cycle it was in the middle of, we ask the shadowgraph for the latest tips, and send
   events that are unknown ancestors of those tips
 - Once all of this is done, chatter sync is done, and chatter can start running

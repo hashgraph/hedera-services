@@ -47,10 +47,12 @@ In Hedera (desired behavior):
 The implementation related to blocked accounts will be gated by a feature flag.
 
 ### File containing the list of blocked accounts
+
 We will store the list of blocked accounts in a regular CSV resource file.
 Each row in the file will have a hex encoded ECDSA private key that corresponds to the EVM address that we want to block and an optional memo field that will be used to indicate the reason for blocking the account.
 
 ### Creating the blocked accounts in state
+
 After the node starts (on handling the first transaction), for each of the EVM addresses that we want to block create a regular account with the following properties:
 - `receiverSigRequired` equal to `true`, thus blocking all future transfers to these accounts
 - `key` equal to the `GENESIS` key
@@ -62,17 +64,21 @@ The EVM already has checks integrated for accounts configured with `receiverSigR
 This approach does not require us to introduce a property file with random addresses and to have custom checks and logic executed in the EVM.
 
 ### Externalizing the blocked accounts
+
 All created blocked accounts will be externalized as synthetic account creations.
 
 ### New Classes
+
 `BlocklistAccountCreator` class will encapsulate the logic for reading blocked accounts from file and creating them in state.
 
 ## Acceptance Tests
+
 * Verify that blocked accounts are created in state and that synthetic records are externalized for them when the node starts after the first transaction is handled.
 * Verify that the externalization of synthetic records is done only _once_ per blocked account.
 * Verify that funds cannot be transferred to blocked accounts unless the transaction is initiated by `GENESIS` account.
 
 ## Alternative Approaches Considered
+
 * Having the list of blocked accounts in a proper Hedera file so that updates to the file automatically take effect without needing to restart or upgrade the network.
   * This is not applicable to our case because we create the accounts on upgrade and perform a migration for the mirror nodes.
   * An additional thing to consider is that removing a private key from the file will not uncreate the account, so we can add more private keys to the list, but not remove already created ones - or more precisely, we can remove already created ones, but that will only remove them from the file, not from the network.

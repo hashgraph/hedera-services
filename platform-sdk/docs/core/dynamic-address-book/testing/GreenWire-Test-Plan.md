@@ -10,28 +10,28 @@ Testing of the Green Wire is broken up into the following phases:
 
 * Introduce `AncientMode` enumeration to switch between `GENERATION_THRESHOLD` and `BIRTH_ROUND_THRESHOLD`.
 * Introduce `AncientThreshold` that changes definition based on `AncientMode`.
-    * when in `GENERATION_THRESHOLD` mode, `AncientThreshold` is the minimum generation of the judges of
-      round (`pendingConsensusRound` - `roundsNonAncient`).
-    * when in `BIRTH_ROUND_THRESHOLD` mode, `AncientThreshold` is the minimum birth round of the judges of
-      round (`pendingConsensusRound` - `roundsNonAncient`).
+  * when in `GENERATION_THRESHOLD` mode, `AncientThreshold` is the minimum generation of the judges of
+    round (`pendingConsensusRound` - `roundsNonAncient`).
+  * when in `BIRTH_ROUND_THRESHOLD` mode, `AncientThreshold` is the minimum birth round of the judges of
+    round (`pendingConsensusRound` - `roundsNonAncient`).
 * Introduce `NonAncientEventWindow` (aka `EventWindow`) that contains `AncientThreshold` for both `GENERATION_THRESHOLD`
   and `BIRTH_ROUND_THRESHOLD`.
 * Events implement a `getAncientIndicator(AncientMode)` method which returns their generation in `GENERATION_THRESHOLD`
   mode and birth round in `BIRTH_ROUND_THRESHOLD` mode.
 * Events are ancient when `Event.getAncientIndicator(AncientMode) < EventWindow.getAncientThreshold(AncientMode)`.
 * Consensus:
-    * Rename `MinGenInfo` to `MininumJudgeInfo` which contains the minimum generation or birth round of judges depending
-      on which mode the platform is in.
-    * Each `Round` produced by consensus has an `EventWindow` that contains the `AncientThreshold` for that round.
+  * Rename `MinGenInfo` to `MininumJudgeInfo` which contains the minimum generation or birth round of judges depending
+    on which mode the platform is in.
+  * Each `Round` produced by consensus has an `EventWindow` that contains the `AncientThreshold` for that round.
 * Software Migration: (First version to use birth round as ancient threshold)
-    * Let R be the last round to come to consensus pre-migration.
-    * Let G be the minimum generation of the judges of round R.
-    * For all events with an older software version:
-        * if the event's generation is less than G, then its birth round is set to `ROUND_FIRST` and it will be ANCIENT.
-        * if the event's generation is greater than or equal to G, then its birth round is set to `R` and it will be
-          NON-ANCIENT (at the moment of migration).
-        * Update the consensus snapshot, for each non-ancient round, set the minimum judge ancient indicator to be R
-        * when changing an event's birth round the hash of the event will not be modified.
+  * Let R be the last round to come to consensus pre-migration.
+  * Let G be the minimum generation of the judges of round R.
+  * For all events with an older software version:
+    * if the event's generation is less than G, then its birth round is set to `ROUND_FIRST` and it will be ANCIENT.
+    * if the event's generation is greater than or equal to G, then its birth round is set to `R` and it will be
+      NON-ANCIENT (at the moment of migration).
+    * Update the consensus snapshot, for each non-ancient round, set the minimum judge ancient indicator to be R
+    * when changing an event's birth round the hash of the event will not be modified.
 
 # New Edge Cases
 
@@ -65,7 +65,7 @@ The Component's unit tests cover the following cases:
 * The ability of the component to receive events with birth rounds in addition to generation
 * The ability of the component to receive EventWindows containing the AncientThreshold.
 * The ability of the component to behave appropriately when an event is determined to be ancient by the event window.
-    * The behavior of the component must be the same in both modes, i.e. that it handles ancient events in the same way.
+  * The behavior of the component must be the same in both modes, i.e. that it handles ancient events in the same way.
 
 # Intake Unit Tests
 
@@ -113,4 +113,4 @@ Test loading of state that has birth round as ancient instead of generation.
 
 ## Perf Test
 
-Longevity test, high stress, large number of nodes, with reconnects. 
+Longevity test, high stress, large number of nodes, with reconnects.

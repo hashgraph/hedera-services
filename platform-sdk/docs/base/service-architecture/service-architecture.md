@@ -27,7 +27,7 @@ package com.swirlds.base.foo;
 * This is the service that provides the foo functionality.
 */
 public interface FooService {
-    
+
     /**
     * This method does something.
     */
@@ -113,12 +113,12 @@ package com.swirlds.base.foo;
 * This is the service that provides the foo functionality.
 */
 public interface FooService {
-    
+
     /**
     * This method does something.
     */
     void doSomething();
-    
+
     /**
     * This method creates a new instance of the service.
     */
@@ -142,12 +142,12 @@ package com.swirlds.base.foo;
 * This is the service that provides the foo functionality.
 */
 public interface FooService {
-    
+
     /**
     * This method does something.
     */
     void doSomething();
-    
+
     /**
     * This method returns a singleton instance of the service.
     */
@@ -155,7 +155,7 @@ public interface FooService {
         return FooServiceImpl.getInstance();
     }
 }
-``` 
+```
 
 In the given sample the service implementation is a singleton and the factory method returns the singleton instance.
 It makes sense to give a name to the factory method that contains information about the scope of the service.
@@ -174,15 +174,15 @@ package com.swirlds.base.foo;
 * This is the factory that creates instances of the foo service.
 */
 public interface FooServiceFactory {
-    
+
     /**
     * Returns an instance of the service.
     */
     FooService getOrCreate();
-    
+
     /**
     * Returns the real factory.
-    */ 
+    */
     FooServiceFactory getFactory() {
         return SpiLoader.load(FooServiceFactory.class);
     }
@@ -211,19 +211,19 @@ import com.swirlds.base.foo.FooService;
 * This is the service that provides the foo functionality.
 */
 public class FooServiceImpl implements FooService {
-    
+
     private static class InstanceHolder {
         private static final FooService INSTANCE = new FooServiceImpl();
     }
-        
+
     private FooServiceImpl() {
         // private constructor
     }
-    
+
     public static FooServiceImpl getInstance() {
         return InstanceHolder.INSTANCE;
     }
-    
+
     @Override
     public void doSomething() {
         // do something
@@ -234,7 +234,3 @@ public class FooServiceImpl implements FooService {
 The service implementation is a singleton and the singleton instance is created in a static inner class.
 The singleton instance is created when the class is loaded and is thread safe.
 The singleton is created lazy and is only created when the `getInstance` method is called the first time.
-
-
-
-

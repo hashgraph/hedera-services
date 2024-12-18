@@ -105,24 +105,25 @@ An update into the `feeSchedule` file would be needed to specify that.
 
 - Update `TokenServiceDefinition` class to include the new RPC method definition for token rejection.
 - Implement new `TokenRejectHandler` class which should be invoked when the gRPC server handles `TokenReject` transactions. The class should be responsible for:
-    - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
-    - Pre-handle: additional validation that will that can be done using a read-only underlying state
-        - We should have a signature verification logic validating that we have the signature of the payer of the transaction
-        - We should have a signature verification logic validating that we have the signature of the sender/owner of a given token
-        - Does the account have a positive balance (in case of FT) of the token or is the account owner of the token (in case of NFT) they try to reject
-    - Handle:
-        - Any additional validation depending on config or state i.e. semantics checks
-        - The business logic for token reject
-            - We should not decrement `used_auto_associations` field
-            - We should not dissociate the token from the account after token reject is performed
-            - In case `receiver_sig_required` is set on a treasury account it should be ignored and the token reject should succeed
-            - In case the token is frozen or paused the token reject should fail
-        - Update state
-    - Fees calculation
-        - Custom fees are not applied and no tokens are deducted from the sender balance
-        - Token dissociate fees are not applied
+  - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
+  - Pre-handle: additional validation that will that can be done using a read-only underlying state
+    - We should have a signature verification logic validating that we have the signature of the payer of the transaction
+    - We should have a signature verification logic validating that we have the signature of the sender/owner of a given token
+    - Does the account have a positive balance (in case of FT) of the token or is the account owner of the token (in case of NFT) they try to reject
+  - Handle:
+    - Any additional validation depending on config or state i.e. semantics checks
+    - The business logic for token reject
+      - We should not decrement `used_auto_associations` field
+      - We should not dissociate the token from the account after token reject is performed
+      - In case `receiver_sig_required` is set on a treasury account it should be ignored and the token reject should succeed
+      - In case the token is frozen or paused the token reject should fail
+    - Update state
+  - Fees calculation
+    - Custom fees are not applied and no tokens are deducted from the sender balance
+    - Token dissociate fees are not applied
 
 ### Token allowances
+
 An owner can provide a token allowance for non-fungible and fungible tokens. The owner is the account that owns the tokens and grants the allowance to the spender. The spender is the account that spends tokens authorized by the owner from the owners account.
 
 If `TokenReject` is executed on the owner of a token allowance, then the allowance for that token should be canceled.

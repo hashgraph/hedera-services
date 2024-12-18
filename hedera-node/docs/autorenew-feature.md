@@ -1,9 +1,11 @@
 # The Entity Auto Renewal feature
 
 ## Goal
+
 - Prior to the implementation of the Entity Auto Renewal feature, the expiration time of a Hedera entity, which is specified in the HAPI document, has not been checked or enforced. An entity remains active in the ledger even after its expiration time, without additional fees being charged. Upon implementation of this feature, Hedera Services will __begin to charge rent__ for automatically renewed entities; and will remove from the ledger expired entities which are either deleted or have an admin/autorenew account with zero balance at the time renewal fees are due.
 
 ## Design
+
 - Introduce new settings in `application.properties`:
   * `autorenew.isEnabled`
   * `autorenew.numberOfEntitiesToScan`
@@ -24,13 +26,14 @@
 - Every entity will receive one free auto renewal at implementation of this feature. This will have the effect of extending the initial period for autorenewal ~92 days.
 
 ## Implementation
+
 Hedera Services will perform a circular scanning of entities, meaning after we reach the last entity in the ledger, we will go back scanning from the first entity in the ledger.
 
 After handling a transaction, when trying to renew an entity:
 1. Calculate the fee to extend the entity's `expirationTime` for another `autoRenewPeriod`.
 2. If the `autoRenewAccount` of the entity has enough balance to cover this fee:
-  - extend the entity's `expirationTime` for another `autoRenewPeriod`.
-  - otherwise, translate the remaining balance of the `autoRenewAccount` into an extension, preferably proportional to the fee calculated in step 1, then extend accordingly.
+- extend the entity's `expirationTime` for another `autoRenewPeriod`.
+- otherwise, translate the remaining balance of the `autoRenewAccount` into an extension, preferably proportional to the fee calculated in step 1, then extend accordingly.
 3. If the grace period also passes, permanently delete the entity from the ledger.
 4. The consensus timestamp of the autorenewal or autodeletion of the first entity will be 1 nanosecond after the consensus timestamp of the handled transaction. If Hedera Services autorenew or autodelete more than one entity in the same handled transaction, the consensus timestamp of the autorenewal or autodeletion of the next entity will be 1 nanosecond after that of the previous entity.
 
@@ -41,42 +44,45 @@ For restart, reconnect and for controlling the pace of auto renewal/deletion, th
 4. The number of entities changed (autorenewed/autodeleted) in this second
 
 ## Autorenewal record
+
 After autorenewing an entity, Hedera Services will generate a `TransactionRecord` that serves as an autorenewal record and contains the following:
 
-| Field | Type | Label | Description |
-|---|---|---|---|
-| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got autorenewed |
-| transactionHash | bytes | | empty |
-| consensusTimestamp | Timestamp | | The consensus timestamp of the autorenewal |
-| transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
-| memo | string | | "Entity {ID} was automatically renewed. New expiry: {newExpiry}" |
-| transactionFee | uint64 | | The fee charged for the autorenewal of the entity |
-| contractCallResult | ContractFunctionResult | | empty |
-| contractCreateResult | ContractFunctionResult | | empty |
-| transferList | TransferList | | {(autoRenewAccount, -transactionFee), (defaultFeeCollectionAccount, transactionFee)} |
-| tokenTransferLists | TokenTransferList | repeated | empty |
-| scheduleRef | ScheduleID | | empty |
+|        Field         |          Type          |  Label   |                                                  Description                                                  |
+|----------------------|------------------------|----------|---------------------------------------------------------------------------------------------------------------|
+| receipt              | TransactionReceipt     |          | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got autorenewed |
+| transactionHash      | bytes                  |          | empty                                                                                                         |
+| consensusTimestamp   | Timestamp              |          | The consensus timestamp of the autorenewal                                                                    |
+| transactionID        | TransactionID          |          | { empty transactionValidStart, autoRenewAccount }                                                             |
+| memo                 | string                 |          | "Entity {ID} was automatically renewed. New expiry: {newExpiry}"                                              |
+| transactionFee       | uint64                 |          | The fee charged for the autorenewal of the entity                                                             |
+| contractCallResult   | ContractFunctionResult |          | empty                                                                                                         |
+| contractCreateResult | ContractFunctionResult |          | empty                                                                                                         |
+| transferList         | TransferList           |          | {(autoRenewAccount, -transactionFee), (defaultFeeCollectionAccount, transactionFee)}                          |
+| tokenTransferLists   | TokenTransferList      | repeated | empty                                                                                                         |
+| scheduleRef          | ScheduleID             |          | empty                                                                                                         |
 
 The main difference between an autorenewal record and a regular `TransactionRecord` is that it has an empty `transactionHash` and an empty `transactionID.transactionValidStart`. There were older versions of Hedera Services that did not have `transactionHash` in a `TransactionRecord`, but an empty `transactionID.transactionValidStart` will guarantee that the `TransactionRecord` was generated in place of an autorenewal record.
 
 ## Entity removal record
+
 After permanently deleting an entity from the ledger due to the zero balance of the `autoRenewAccount`, Hedera Services will generate a `TransactionRecord` that serves as an entity removal record and contains the following:
 
-| Field | Type | Label | Description |
-|---|---|---|---|
-| receipt | TransactionReceipt | | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got autodeleted |
-| transactionHash | bytes | | empty |
-| consensusTimestamp | Timestamp | | The consensus timestamp of the autodeletion |
-| transactionID | TransactionID | | { empty transactionValidStart, autoRenewAccount } |
-| memo | string | | "Entity {ID} was automatically deleted." |
-| transactionFee | uint64 | | 0 |
-| contractCallResult | ContractFunctionResult | | empty |
-| contractCreateResult | ContractFunctionResult | | empty |
-| transferList | TransferList | | empty |
-| tokenTransferLists | TokenTransferList | repeated | empty unless the removed entity was an account that owned units of a non-deleted token, in which case this will record those units being returned to the token's treasury |
-| scheduleRef | ScheduleID | | empty |
+|        Field         |          Type          |  Label   |                                                                                Description                                                                                |
+|----------------------|------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| receipt              | TransactionReceipt     |          | receipt will contain either an accountID, a fileID, a contractID, a topicID or a tokenID that got autodeleted                                                             |
+| transactionHash      | bytes                  |          | empty                                                                                                                                                                     |
+| consensusTimestamp   | Timestamp              |          | The consensus timestamp of the autodeletion                                                                                                                               |
+| transactionID        | TransactionID          |          | { empty transactionValidStart, autoRenewAccount }                                                                                                                         |
+| memo                 | string                 |          | "Entity {ID} was automatically deleted."                                                                                                                                  |
+| transactionFee       | uint64                 |          | 0                                                                                                                                                                         |
+| contractCallResult   | ContractFunctionResult |          | empty                                                                                                                                                                     |
+| contractCreateResult | ContractFunctionResult |          | empty                                                                                                                                                                     |
+| transferList         | TransferList           |          | empty                                                                                                                                                                     |
+| tokenTransferLists   | TokenTransferList      | repeated | empty unless the removed entity was an account that owned units of a non-deleted token, in which case this will record those units being returned to the token's treasury |
+| scheduleRef          | ScheduleID             |          | empty                                                                                                                                                                     |
 
 An entity removal record will be very similar to an autorenewal record. The `memo` will reflect that the entity was automatically deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
 
 ## Special notes
+
 - At the time of this writing, __only topics__ have an AUTORENEW_GRACE_PERIOD of 7 days being mentioned in the HAPI document.  `autorenew.gracePeriod` setting, defaulted to 7 days, will be added in `application.properties` to specify the autorenew grace period for __all entities__.

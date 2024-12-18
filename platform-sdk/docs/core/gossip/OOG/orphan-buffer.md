@@ -4,11 +4,11 @@ In order to allow events to be gossiped out of order, we will need a buffer for 
 have all of their non-ancient parents
 
 - A received event will go through 2 phases of validation
-    - phase 1: check that it can be parsed correctly and that its signature is correct, and it meets basic correctness
-      checks (such as its parents generations are not negative and are not so much higher than the highest known event
-      that they could be used as an attack to exhaust memory).
-    - phase 2: at the moment that its last non-ancient parent has been received and passed phase 2, then the event is
-      considered to have passed phase 2.
+  - phase 1: check that it can be parsed correctly and that its signature is correct, and it meets basic correctness
+    checks (such as its parents generations are not negative and are not so much higher than the highest known event
+    that they could be used as an attack to exhaust memory).
+  - phase 2: at the moment that its last non-ancient parent has been received and passed phase 2, then the event is
+    considered to have passed phase 2.
 
 The hash of an event is sent to all neighbors as soon as it passes phase 1. It is added to the hashgraph as soon as it
 passes phase 2. It can only be sent to neighbors after passing phase 2.
@@ -49,11 +49,11 @@ Event has no parents, so its considered linked
 |----------------|---|
 | Orphans        |   |
 
-| Newly linked | 0  |
-|--------------|----|
+| Newly linked | 0 |
+|--------------|---|
 
-| Output | 0  |
-|--------|----|
+| Output | 0 |
+|--------|---|
 
 **Add 2**
 
@@ -87,7 +87,7 @@ Event 3 is missing event 2. Even though we have event 2, since it's an orphan, w
 
 Event 4 is missing both 1 and 3
 
-| Missing parent | 1    | 2 | 3 |
+| Missing parent |  1   | 2 | 3 |
 |----------------|------|---|---|
 | Orphans        | 2, 4 | 3 | 4 |
 
@@ -103,7 +103,7 @@ When event 1 is added, it will trigger a series of actions where all events will
 
 1 is linked
 
-| Missing parent | 1    | 2 | 3 |
+| Missing parent |  1   | 2 | 3 |
 |----------------|------|---|---|
 | Orphans        | 2, 4 | 3 | 4 |
 

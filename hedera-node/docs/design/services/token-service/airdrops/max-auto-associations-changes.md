@@ -109,33 +109,33 @@ We will not perform state migration for now but at some later stage we can do it
 All of the expected behaviour described below should be present only if the new `maxAutoAssociations` feature flag is enabled.
 
 - `CryptoCreate`
-    - A successful `CryptoCreate` transaction that does not specify value for `maxAutoAssociations` should result in an account with `maxAutoAssociations = 0`
-    - `CryptoCreate` transaction with `maxAutoAssociations = -1` should successfully create an account
-    - `CryptoCreate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
-    - `CryptoCreate` transaction fees should not depend on the value of `maxAutoAssociations`
+  - A successful `CryptoCreate` transaction that does not specify value for `maxAutoAssociations` should result in an account with `maxAutoAssociations = 0`
+  - `CryptoCreate` transaction with `maxAutoAssociations = -1` should successfully create an account
+  - `CryptoCreate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
+  - `CryptoCreate` transaction fees should not depend on the value of `maxAutoAssociations`
 - `ContractCreate`
-    - A successful `ContractCreate` transaction that does not specify value for `maxAutoAssociations` should result in a contract account with `maxAutoAssociations` equal to 0
-    - `ContractCreate` transaction with `maxAutoAssociations = -1` should successfully create a contract account
-    - `ContractCreate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
-    - `ContractCreate` transaction fees should not depend on the value of `maxAutoAssociations`
+  - A successful `ContractCreate` transaction that does not specify value for `maxAutoAssociations` should result in a contract account with `maxAutoAssociations` equal to 0
+  - `ContractCreate` transaction with `maxAutoAssociations = -1` should successfully create a contract account
+  - `ContractCreate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
+  - `ContractCreate` transaction fees should not depend on the value of `maxAutoAssociations`
 - EVM contract creations (`CREATE` & `CREATE2`)
-    - Contract accounts by default will be spam-free in nature i.e. with `maxAutoAssociations` value default to 0.
-    - Contract accounts resulting from `CREATE2` merge into existing hollow account should have `maxAutoAssociations` value equal to the number of token associations of the hollow account
+  - Contract accounts by default will be spam-free in nature i.e. with `maxAutoAssociations` value default to 0.
+  - Contract accounts resulting from `CREATE2` merge into existing hollow account should have `maxAutoAssociations` value equal to the number of token associations of the hollow account
 - `ContractCall`
-    - An `ContractCall` that calls method of `Contract A` which creates `Contract B` should result in `Contract B` having `maxAutoAssociations` equal to 0
+  - An `ContractCall` that calls method of `Contract A` which creates `Contract B` should result in `Contract B` having `maxAutoAssociations` equal to 0
 - `EthereumTransaction`
-    - An `EthereumTransaction` that explicitly creates a contract should result in a contract account with `maxAutoAssociations` equal to 0
-    - An `EthereumTransaction` that calls method of `Contract A` which creates `Contract B` should result in `Contract B` having `maxAutoAssociations` equal to 0
+  - An `EthereumTransaction` that explicitly creates a contract should result in a contract account with `maxAutoAssociations` equal to 0
+  - An `EthereumTransaction` that calls method of `Contract A` which creates `Contract B` should result in `Contract B` having `maxAutoAssociations` equal to 0
 - `CryptoUpdate`
-    - An account should be able to update its `maxAutoAssociations` value to -1, 0 or any positive integer
-    - `CryptoUpdate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
-    - `CryptoUpdate` transaction fees should not depend on the value of `maxAutoAssociations`
+  - An account should be able to update its `maxAutoAssociations` value to -1, 0 or any positive integer
+  - `CryptoUpdate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
+  - `CryptoUpdate` transaction fees should not depend on the value of `maxAutoAssociations`
 - `ContractUpdate`
-    - A contract account should be able to update its `maxAutoAssociations` value to -1, 0 or any positive integer
-    - `ContractUpdate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
-    - `ContractUpdate` transaction fees should not depend on the value of `maxAutoAssociations`
+  - A contract account should be able to update its `maxAutoAssociations` value to -1, 0 or any positive integer
+  - `ContractUpdate` transaction with `maxAutoAssociations = -2` or any other negative value should fail
+  - `ContractUpdate` transaction fees should not depend on the value of `maxAutoAssociations`
 - `CryptoTransfer`
-    - `CryptoTransfer` transaction resulting in automatic token association should charge the fee for the auto association and the first auto-renewal period’s rent from the sender of the token; no fees should be charged from the receiver of the transfer
+  - `CryptoTransfer` transaction resulting in automatic token association should charge the fee for the auto association and the first auto-renewal period’s rent from the sender of the token; no fees should be charged from the receiver of the transfer
 - Auto- / Lazy-creation
-    - Any transaction which results in auto-creation should have its resulting account with `maxAutoAssociations = -1`
-    - Any transaction which results in lazy-creation should have its resulting hollow account with `maxAutoAssociations = -1`
+  - Any transaction which results in auto-creation should have its resulting account with `maxAutoAssociations = -1`
+  - Any transaction which results in lazy-creation should have its resulting hollow account with `maxAutoAssociations = -1`

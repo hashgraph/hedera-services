@@ -32,7 +32,7 @@ To run on Windows:
 
 ```cmd
 $ ./grafana/run-docker.cmd
-````
+```
 
 To stop:
 

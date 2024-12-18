@@ -211,7 +211,7 @@ Nodes are not permitted to create a new event unless one of the following two co
 1) this is the first event a node has ever created (i.e. this is genesis), or
 2) the snapshot improvement score exceeds the snapshot improvement score of the previous event, or
 3) the snapshot improvement score is greater than zero and this is the first event created since
-   we last updated the snapshot
+we last updated the snapshot
 
 By following this rule, this ensures that a given node stops creating new events in a finite amount of time if that
 node no longer is in communication with a quorum of its peers.
