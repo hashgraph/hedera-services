@@ -92,7 +92,7 @@ dependencies.constraints {
     }
     api("org.json:json:20231013") { because("org.json") }
     api("org.junit.jupiter:junit-jupiter-api:5.10.2") { because("org.junit.jupiter.api") }
-    api("org.junit.jupiter:junit-jupiter-engine:5.10.2") { because("org.junit.jupiter.engine") }
+    api("org.junit.jupiter:junit-jupiter-engine:5.11.4") { because("org.junit.jupiter.engine") }
     api("org.junit-pioneer:junit-pioneer:2.0.1") { because("org.junitpioneer") }
     api("org.mockito:mockito-core:5.8.0") { because("org.mockito") }
     api("org.mockito:mockito-junit-jupiter:5.8.0") { because("org.mockito.junit.jupiter") }
