@@ -85,12 +85,4 @@ public class RosterHistory {
         }
         return null;
     }
-
-    public List<RoundRosterPair> getHistory() {
-        return history;
-    }
-
-    public Map<Bytes, Roster> getRosters() {
-        return rosters;
-    }
 }
