@@ -32,14 +32,14 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
+import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
-import com.swirlds.state.merkle.SigSet;
 import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -95,26 +95,18 @@ public final class SignedStateFileReader {
 
         final DeserializedSignedState returnState;
         final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(stateFile);
-
-        final MerkleTreeSnapshotReader.StateFileData normalizedData;
-        if (data.sigSet() == null) {
-            final File sigSetFile =
-                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
-            normalizedData = deserializeAndDebugOnFailure(
-                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
-                    (final MerkleDataInputStream in) -> {
-                        readAndCheckSigSetFileVersion(in);
-                        final SigSet sigSet = in.readSerializable();
-                        return new MerkleTreeSnapshotReader.StateFileData(data.stateRoot(), data.hash(), sigSet);
-                    });
-        } else {
-            normalizedData = data;
-        }
+        final File sigSetFile =
+                stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
+        final SigSet sigSet = deserializeAndDebugOnFailure(
+                () -> new BufferedInputStream(new FileInputStream(sigSetFile)), (final MerkleDataInputStream in) -> {
+                    readAndCheckSigSetFileVersion(in);
+                    return in.readSerializable();
+                });
 
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                (MerkleRoot) normalizedData.stateRoot(),
+                (MerkleRoot) data.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
@@ -122,10 +114,10 @@ public final class SignedStateFileReader {
 
         registerServiceStates(newSignedState);
 
-        newSignedState.setSigSet(normalizedData.sigSet());
+        newSignedState.setSigSet(sigSet);
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
 
         return returnState;
     }
@@ -189,7 +181,7 @@ public final class SignedStateFileReader {
      */
     public static void registerServiceStates(@NonNull final State state) {
         registerServiceState(state, new V0540PlatformStateSchema(), PlatformStateService.NAME);
-        registerServiceState(state, new V0540RosterSchema(), RosterStateId.NAME);
+        registerServiceState(state, new V0540RosterBaseSchema(), RosterStateId.NAME);
     }
 
     private static void registerServiceState(

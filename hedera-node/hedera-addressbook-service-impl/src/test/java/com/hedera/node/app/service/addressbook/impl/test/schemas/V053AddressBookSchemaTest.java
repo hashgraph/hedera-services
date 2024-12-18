@@ -305,7 +305,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private void setupMigrationContext2() {
@@ -332,7 +332,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         adminKeysLoc.toAbsolutePath().toString())
                 .withValue("accounts.addressBookAdmin", "55")
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private void setupMigrationContext3() {
@@ -367,7 +367,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("accounts.addressBookAdmin", "55")
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private void setupMigrationContext4() {
@@ -388,7 +388,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("accounts.addressBookAdmin", "55")
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private String nodeAdminKeysJson() {

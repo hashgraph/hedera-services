@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -182,7 +183,11 @@ class PcesReplayerTests {
                     "Event count should have increased from %s to %s".formatted(i - 1, i));
         }
 
-        assertTrue(flushIntakeCalled.get());
-        assertTrue(flushTransactionHandlingCalled.get());
+        assertEventuallyTrue(
+                () -> flushIntakeCalled.get(), Duration.ofSeconds(1), "Flush intake should have been called");
+        assertEventuallyTrue(
+                () -> flushTransactionHandlingCalled.get(),
+                Duration.ofSeconds(1),
+                "Flush transaction handling should have been called");
     }
 }

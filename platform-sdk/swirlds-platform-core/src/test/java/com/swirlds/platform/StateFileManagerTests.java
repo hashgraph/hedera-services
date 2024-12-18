@@ -157,6 +157,7 @@ class StateFileManagerTests {
 
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
+        MerkleDb.resetDefaultInstancePath();
         final DeserializedSignedState deserializedSignedState =
                 readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
         MerkleCryptoFactory.getInstance()
@@ -272,7 +273,10 @@ class StateFileManagerTests {
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final int totalStates = 100;
+        // Each state now has a VirtualMap for ROSTERS, and each VirtualMap consumes a lot of RAM.
+        // So one cannot keep too many VirtualMaps in memory at once, or OOMs pop up.
+        // Therefore, the number of states this test can use at once should be reasonably small:
+        final int totalStates = 10;
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
@@ -318,7 +322,8 @@ class StateFileManagerTests {
                     .build();
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
-            controller.markSavedState(new StateAndRound(reservedSignedState, mock(ConsensusRound.class)));
+            controller.markSavedState(
+                    new StateAndRound(reservedSignedState, mock(ConsensusRound.class), mock(ArrayList.class)));
             makeImmutable(reservedSignedState.get());
 
             if (signedState.isStateToSave()) {
