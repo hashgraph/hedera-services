@@ -65,6 +65,7 @@ class V057AddressBookSchemaTest {
         given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(NETWORK);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
+        given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodes);
 
         subject.migrate(ctx);

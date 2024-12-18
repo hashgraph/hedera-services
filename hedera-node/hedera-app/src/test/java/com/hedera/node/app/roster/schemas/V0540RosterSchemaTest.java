@@ -137,6 +137,7 @@ class V0540RosterSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
+        given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
         given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(NETWORK);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
 

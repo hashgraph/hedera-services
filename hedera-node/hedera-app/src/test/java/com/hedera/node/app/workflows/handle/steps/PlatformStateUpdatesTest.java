@@ -15,7 +15,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +44,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.nio.file.Path;
@@ -223,8 +228,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
-    void exportsCandidateRosterIfRequestedEvenWhenNotUsingRosterLifecycle() {
-        // given
+    void worksAroundFailureToPutCandidateRoster() {
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
         final var txBody = TransactionBody.newBuilder()
@@ -232,13 +236,30 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         nodes.put(
                 new EntityNumber(0L),
                 Node.newBuilder()
-                        .weight(1)
+                        .weight(0)
                         .gossipCaCertificate(Bytes.fromHex("0123"))
                         .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
                         .build());
 
+        subject.handleTxBody(state, txBody.build(), configWith(false, true));
+
+        verify(rosterExportHelper, never()).accept(any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsCandidateRosterIfRequestedEvenWhenNotUsingRosterLifecycle() {
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        final var problemState = mock(State.class);
+        final var writableStates = mock(WritableStates.class);
+        final WritableSingletonState<PlatformState> singleton = mock(WritableSingletonStateBase.class);
+        given(problemState.getWritableStates(PlatformStateService.NAME)).willReturn(writableStates);
+        given(writableStates.<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+                .willReturn(singleton);
+
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(false, false));
+        subject.handleTxBody(problemState, txBody.build(), configWith(false, false));
 
         // then
         final var captor = ArgumentCaptor.forClass(Path.class);
