@@ -125,16 +125,20 @@ public class TopicCustomFeeBase {
     }
 
     /**
+     * Create and transfer tokens with 2 layer custom fees to given account.
      *
-     *
-     *
-     * @param owner
-     * @param tokenName
-     * @param createTreasury
-     * @return
+     * @param owner account to transfer tokens
+     * @param tokenName token name
+     * @param createTreasury create treasury or not
+     * @return list of spec operations
      */
     protected static List<SpecOperation> createTokenWith2LayerFee(
             String owner, String tokenName, boolean createTreasury) {
+        return createTokenWith2LayerFee(owner, tokenName, createTreasury, 1, ONE_HBAR);
+    }
+
+    protected static List<SpecOperation> createTokenWith2LayerFee(
+            String owner, String tokenName, boolean createTreasury, long htsFee, long hbarFee) {
         final var specOperations = new ArrayList<SpecOperation>();
         final var collectorName = COLLECTOR_PREFIX + tokenName;
         final var denomToken = DENOM_TOKEN_PREFIX + tokenName;
@@ -149,14 +153,14 @@ public class TopicCustomFeeBase {
         specOperations.add(tokenCreate(denomToken)
                 .tokenType(TokenType.FUNGIBLE_COMMON)
                 .treasury(DENOM_TREASURY)
-                .withCustom(fixedHbarFee(ONE_HBAR, collectorName)));
+                .withCustom(fixedHbarFee(hbarFee, collectorName)));
         // associate the denomination token with the collector
         specOperations.add(tokenAssociate(collectorName, denomToken));
         // create the token with fixed HTS fee
         specOperations.add(tokenCreate(tokenName)
                 .tokenType(TokenType.FUNGIBLE_COMMON)
                 .treasury(TOKEN_TREASURY)
-                .withCustom(fixedHtsFee(1, denomToken, collectorName)));
+                .withCustom(fixedHtsFee(htsFee, denomToken, collectorName)));
         // associate the owner with the two new tokens
         specOperations.add(tokenAssociate(owner, tokenName));
         specOperations.add(tokenAssociate(owner, denomToken));
