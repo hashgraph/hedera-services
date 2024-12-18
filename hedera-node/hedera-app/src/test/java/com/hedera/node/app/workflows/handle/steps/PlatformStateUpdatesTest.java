@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
@@ -24,6 +25,7 @@ import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -139,6 +141,18 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
+    void freezeAbortNullsOutFreezeTime() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_ABORT));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isNull();
+    }
+
+    @Test
     void testFreezeUpgradeWhenKeying() {
         // given
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
@@ -189,6 +203,31 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
 
         // when
         subject.handleTxBody(state, txBody.build(), configWith(false, true));
+
+        // then
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(rosterExportHelper).accept(any(), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
+    }
+
+    @Test
+    void exportsCandidateRosterIfRequestedEvenWhenNotUsingRosterLifecycle() {
+        // given
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        nodes.put(
+                new EntityNumber(0L),
+                Node.newBuilder()
+                        .weight(1)
+                        .gossipCaCertificate(Bytes.fromHex("0123"))
+                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .build());
+
+        // when
+        subject.handleTxBody(state, txBody.build(), configWith(false, false));
 
         // then
         final var captor = ArgumentCaptor.forClass(Path.class);

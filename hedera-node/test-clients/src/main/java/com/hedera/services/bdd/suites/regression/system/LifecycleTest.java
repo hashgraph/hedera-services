@@ -136,7 +136,7 @@ public interface LifecycleTest {
      * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
      * @return the operation
      */
-    default SpecOperation restartAtNextConfigVersion() {
+    static SpecOperation restartAtNextConfigVersion() {
         return blockingOrder(
                 freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
                 // Immediately submit a transaction in the same round to ensure freeze time is only
@@ -151,15 +151,24 @@ public interface LifecycleTest {
      * Returns an operation that upgrades the network with disabled node operator port to the next configuration version using a fake upgrade ZIP.
      * @return the operation
      */
-    default SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+    static SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+        return restartAtNextConfigVersionVia(sourcing(
+                () -> FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())));
+    }
+
+    /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    static SpecOperation restartAtNextConfigVersionVia(@NonNull final SpecOperation restartOp) {
+        requireNonNull(restartOp);
         return blockingOrder(
                 freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
                 // Immediately submit a transaction in the same round to ensure freeze time is only
                 // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
-                sourcing(() ->
-                        FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
+                restartOp,
                 waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT));
     }
 
@@ -215,7 +224,7 @@ public interface LifecycleTest {
      * Returns an operation that confirms the network has been frozen and shut down.
      * @return the operation
      */
-    default HapiSpecOperation confirmFreezeAndShutdown() {
+    static HapiSpecOperation confirmFreezeAndShutdown() {
         return blockingOrder(
                 waitForFrozenNetwork(FREEZE_TIMEOUT),
                 // Shut down all nodes, since the platform doesn't automatically go back to ACTIVE status

@@ -127,8 +127,8 @@ public class PlatformStateUpdates {
                             doExport(candidateRoster, networkAdminConfig);
                         }
                     } else if (networkAdminConfig.exportCandidateRoster()) {
-                        // Having the option to export candidate-roster.json even without roster lifecycle
-                        // enabled simplifies test automation in the lifecycle adoption phase
+                        // Having the option to export candidate-roster.json even before using the roster
+                        // lifecycle simplifies test automation in the adoption period
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var candidateRoster = new Roster(StreamSupport.stream(

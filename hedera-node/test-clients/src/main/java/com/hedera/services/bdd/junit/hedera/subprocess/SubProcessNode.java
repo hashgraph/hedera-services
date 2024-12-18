@@ -48,6 +48,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -198,11 +199,27 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         return this;
     }
 
+    /**
+     * Starts the node with the given config version.
+     * @param configVersion the config version to use
+     * @return this node
+     */
     public SubProcessNode startWithConfigVersion(final int configVersion) {
+        return startWithConfigVersion(configVersion, Map.of());
+    }
+
+    /**
+     * Starts the node with the given config version.
+     * @param configVersion the config version to use
+     * @param envOverrides the environment overrides to use
+     * @return this node
+     */
+    public SubProcessNode startWithConfigVersion(
+            final int configVersion, @NonNull final Map<String, String> envOverrides) {
         assertStopped();
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
-        processHandle = startSubProcessNodeFrom(metadata, configVersion);
+        processHandle = startSubProcessNodeFrom(metadata, configVersion, envOverrides);
         return this;
     }
 
@@ -231,13 +248,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      */
     public void reassignNodeAccountIdFrom(@NonNull final AccountID accountId) {
         metadata = metadata.withNewAccountId(accountId);
-    }
-
-    /**
-     * Reassigns node operator port to be disabled for this node.
-     */
-    public void reassignWithNodeOperatorPortDisabled() {
-        metadata = metadata.withNewNodeOperatorPortDisabled();
     }
 
     private boolean swirldsLogContains(@NonNull final String text) {

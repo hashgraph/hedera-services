@@ -30,7 +30,6 @@ public record NodeMetadata(
         String host,
         int grpcPort,
         int grpcNodeOperatorPort,
-        boolean grpcNodeOperatorPortEnabled,
         int internalGossipPort,
         int externalGossipPort,
         int prometheusPort,
@@ -60,7 +59,6 @@ public record NodeMetadata(
                 host,
                 grpcPort,
                 grpcNodeOperatorPort,
-                grpcNodeOperatorPortEnabled,
                 internalGossipPort,
                 externalGossipPort,
                 prometheusPort,
@@ -81,26 +79,6 @@ public record NodeMetadata(
                 host,
                 grpcPort,
                 grpcNodeOperatorPort,
-                grpcNodeOperatorPortEnabled,
-                internalGossipPort,
-                externalGossipPort,
-                prometheusPort,
-                workingDir);
-    }
-
-    /**
-     * @return a new instance with the same values as this instance, but with disabled node operator port
-     */
-    public NodeMetadata withNewNodeOperatorPortDisabled() {
-        requireNonNull(accountId);
-        return new NodeMetadata(
-                nodeId,
-                name,
-                accountId,
-                host,
-                grpcPort,
-                grpcNodeOperatorPort,
-                false,
                 internalGossipPort,
                 externalGossipPort,
                 prometheusPort,

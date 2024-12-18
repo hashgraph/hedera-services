@@ -38,7 +38,7 @@ public class MixedOpsRestartTest implements LifecycleTest {
     final Stream<DynamicTest> restartMixedOps() {
         return hapiTest(
                 burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
-                restartAtNextConfigVersion(),
+                LifecycleTest.restartAtNextConfigVersion(),
                 burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION));
     }
 }

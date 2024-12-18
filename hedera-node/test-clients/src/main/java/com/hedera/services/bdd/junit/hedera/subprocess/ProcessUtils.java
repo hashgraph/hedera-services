@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -115,15 +116,31 @@ public class ProcessUtils {
      * @return the {@link ProcessHandle} of the started node
      */
     public static ProcessHandle startSubProcessNodeFrom(@NonNull final NodeMetadata metadata, final int configVersion) {
+        return startSubProcessNodeFrom(metadata, configVersion, Map.of());
+    }
+
+    /**
+     * Starts a sub-process node from the given metadata and main class reference with the requested environment
+     * overrides, and returns its {@link ProcessHandle}.
+     *
+     * @param metadata the metadata of the node to start
+     * @param configVersion the version of the configuration to use
+     * @param envOverrides the environment variables to override
+     * @return the {@link ProcessHandle} of the started node
+     */
+    public static ProcessHandle startSubProcessNodeFrom(
+            @NonNull final NodeMetadata metadata,
+            final int configVersion,
+            @NonNull final Map<String, String> envOverrides) {
         final var builder = new ProcessBuilder();
         final var environment = builder.environment();
         environment.put("LC_ALL", "en.UTF-8");
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
         environment.put("grpc.nodeOperatorPort", Integer.toString(metadata.grpcNodeOperatorPort()));
-        environment.put("grpc.nodeOperatorPortEnabled", Boolean.toString(metadata.grpcNodeOperatorPortEnabled()));
         environment.put("hedera.config.version", Integer.toString(configVersion));
         environment.put("networkAdmin.exportCandidateRoster", "true");
+        environment.putAll(envOverrides);
         try {
             final var redirectFile = guaranteedExtantFile(
                     metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));

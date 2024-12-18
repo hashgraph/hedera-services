@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.utilops.upgrade.AddNodeOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.RemoveNodeOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Contains operations that in a real environment could only be accomplished by the
@@ -48,7 +49,8 @@ public class FakeNmt {
      * @return the operation that restarts the network
      */
     public static TryToStartNodesOp restartNetwork(final int configVersion) {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, SubProcessNode.ReassignPorts.YES);
+        return new TryToStartNodesOp(
+                NodeSelector.allNodes(), configVersion, SubProcessNode.ReassignPorts.YES, Map.of());
     }
 
     /**
@@ -58,7 +60,11 @@ public class FakeNmt {
      * @return the operation that restarts the network
      */
     public static TryToStartNodesOp restartNetworkWithDisabledNodeOperatorPort(final int configVersion) {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, true);
+        return new TryToStartNodesOp(
+                NodeSelector.allNodes(),
+                configVersion,
+                SubProcessNode.ReassignPorts.YES,
+                Map.of("grpc.nodeOperatorPortEnabled", "false"));
     }
 
     /**

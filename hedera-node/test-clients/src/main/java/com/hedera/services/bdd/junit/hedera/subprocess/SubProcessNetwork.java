@@ -61,7 +61,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -72,7 +71,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -291,16 +289,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * Refreshes the clients for the network, e.g. after reassigning metadata.
      */
     public void refreshClients() {
-        HapiClients.tearDown();
-        this.clients = HapiClients.clientsFor(this);
-    }
-
-    /**
-     * Assigns disabled node operator port to nodes from the current <i>config.txt</i>.
-     */
-    public void assignWithDisabledNodeOperatorPort() {
-        nodes.forEach(node -> ((SubProcessNode) node).reassignWithNodeOperatorPortDisabled());
-        refreshOverrideNetworks(ReassignPorts.NO);
         HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
     }
@@ -536,31 +524,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     private static int randomPortAfter(final int firstAvailable, final int numRequired) {
         return RANDOM.nextInt(firstAvailable, LAST_CANDIDATE_PORT + 1 - numRequired);
-    }
-
-    /**
-     * Returns the given <i>config.txt</i> with the ports reassigned for the given node id.
-     *
-     * @param nodeId the node id
-     * @param firstNewPort the new internal port
-     * @param secondNewPort the new external port
-     * @param configTxt the <i>config.txt</i> to update
-     * @return the updated <i>config.txt</i>
-     */
-    private static String withReassignedPorts(
-            @NonNull final String configTxt, final long nodeId, final int firstNewPort, final int secondNewPort) {
-        return Arrays.stream(configTxt.split("\n"))
-                .map(line -> {
-                    if (line.contains("address, " + nodeId)) {
-                        final var parts = line.split(", ");
-                        parts[6] = "" + firstNewPort;
-                        parts[8] = "" + secondNewPort;
-                        return String.join(", ", parts);
-                    } else {
-                        return line;
-                    }
-                })
-                .collect(Collectors.joining("\n"));
     }
 
     /**
