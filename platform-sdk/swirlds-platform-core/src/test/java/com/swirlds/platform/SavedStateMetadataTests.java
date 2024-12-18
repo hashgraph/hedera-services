@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
@@ -44,7 +29,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -209,7 +194,7 @@ class SavedStateMetadataTests {
 
         final SignedState signedState = mock(SignedState.class);
         final SigSet sigSet = mock(SigSet.class);
-        final MerkleRoot state = mock(MerkleRoot.class);
+        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
         when(state.getHash()).thenReturn(randomHash(random));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
@@ -217,7 +202,6 @@ class SavedStateMetadataTests {
 
         final Roster roster = mock(Roster.class);
         final State theState = mock(State.class, withSettings().extraInterfaces(SwirldState.class));
-        when(state.getSwirldState()).thenReturn((SwirldState) theState);
         RosterServiceStateMock.setup(theState, roster);
 
         when(signedState.getState()).thenReturn(state);

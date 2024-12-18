@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
@@ -71,8 +56,7 @@ import java.util.function.Function;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 @ConstructableIgnored
-public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot>
-        implements SwirldState, MerkleRoot {
+public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot> implements SwirldState {
 
     private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     /**
@@ -160,6 +144,9 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
         lifecycles.onHandleConsensusRound(round, this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void sealConsensusRound(@NonNull final Round round) {
         requireNonNull(round);
@@ -188,10 +175,12 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     }
 
     /**
-     * {@inheritDoc}
+     * Get writable platform state. Works only on mutable {@link PlatformMerkleStateRoot}.
+     * Call this method only if you need to modify the platform state.
+     *
+     * @return mutable platform state
      */
     @NonNull
-    @Override
     public PlatformStateModifier getWritablePlatformState() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
@@ -204,16 +193,17 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      *
      * @param accessor a source of values
      */
-    @Override
     public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
         writablePlatformStateStore().setAllFrom(accessor);
     }
 
     /**
-     * {@inheritDoc}
+     * Get readable platform state.
+     * Works on both - mutable and immutable {@link PlatformMerkleStateRoot} and, therefore, this method should be preferred.
+     *
+     * @return immutable platform state
      */
     @NonNull
-    @Override
     public PlatformStateAccessor getReadablePlatformState() {
         return getServices().isEmpty()
                 ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
@@ -245,25 +235,17 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
                 : getPlatformState().consensusSnapshot().round();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public SwirldState getSwirldState() {
-        return this;
-    }
-
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
     /**
-     * {@inheritDoc}
+     * Generate a string that describes this state.
+     *
+     * @param hashDepth the depth of the tree to visit and print
      */
     @NonNull
-    @Override
     public String getInfoString(final int hashDepth) {
         return createInfoString(hashDepth, getReadablePlatformState(), getHash(), this);
     }

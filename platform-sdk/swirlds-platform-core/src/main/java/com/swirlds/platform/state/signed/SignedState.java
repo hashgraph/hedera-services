@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.utility.Threshold.MAJORITY;
@@ -39,12 +24,11 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
@@ -106,7 +90,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private final MerkleRoot state;
+    private final PlatformMerkleStateRoot state;
 
     /**
      * The timestamp of when this object was created.
@@ -188,7 +172,7 @@ public class SignedState implements SignedStateInfo {
     public SignedState(
             @NonNull final Configuration configuration,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final MerkleRoot state,
+            @NonNull final PlatformMerkleStateRoot state,
             @NonNull final String reason,
             final boolean freezeState,
             final boolean deleteOnBackgroundThread,
@@ -270,8 +254,7 @@ public class SignedState implements SignedStateInfo {
         Ideally the roster would be captured in the constructor but due to the mutable underlying state, the roster
         can change from underneath us. Therefore, the roster must be regenerated on each access.
          */
-        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(
-                (MerkleStateRoot) getState().getSwirldState());
+        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
         return requireNonNull(roster, "Roster stored in signed state is null (this should never happen)");
     }
 
@@ -281,7 +264,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public @NonNull MerkleRoot getState() {
+    public @NonNull PlatformMerkleStateRoot getState() {
         return state;
     }
 
@@ -484,7 +467,7 @@ public class SignedState implements SignedStateInfo {
      * @return the root node of the application's state.
      */
     public @NonNull SwirldState getSwirldState() {
-        return state.getSwirldState();
+        return state;
     }
 
     /**

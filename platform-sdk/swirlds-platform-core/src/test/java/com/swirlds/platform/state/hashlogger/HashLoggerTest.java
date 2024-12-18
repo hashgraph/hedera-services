@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.state.hashlogger;
 
 import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
@@ -35,7 +20,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -150,7 +135,8 @@ public class HashLoggerTest {
         final MerkleNode merkleNode = MerkleTestUtils.buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
-        final MerkleRoot state = mock(MerkleRoot.class, withSettings().extraInterfaces(State.class, SwirldState.class));
+        final PlatformMerkleStateRoot state =
+                mock(PlatformMerkleStateRoot.class, withSettings().extraInterfaces(State.class, SwirldState.class));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
         when(platformState.getRound()).thenReturn(round);
@@ -160,7 +146,6 @@ public class HashLoggerTest {
         when(state.getHash()).thenReturn(merkleNode.getHash());
 
         when(signedState.getState()).thenReturn(state);
-        when(state.getSwirldState()).thenReturn((SwirldState) state);
         when(signedState.getRound()).thenReturn(round);
 
         ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);

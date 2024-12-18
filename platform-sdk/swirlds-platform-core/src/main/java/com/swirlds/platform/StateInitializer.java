@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
@@ -25,7 +10,7 @@ import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -70,18 +55,18 @@ public final class StateInitializer {
             trigger = RESTART;
         }
 
-        final MerkleRoot initialState = signedState.getState();
+        final PlatformMerkleStateRoot initialState = signedState.getState();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.
         if (initialState.getHash() != null) {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
-        if (initialState.getSwirldState().getHash() != null) {
+        if (initialState.getHash() != null) {
             throw new IllegalStateException("Expected initial swirld state to be unhashed");
         }
 
-        initialState.getSwirldState().init(platform, trigger, previousSoftwareVersion);
+        initialState.init(platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(
                 () -> {

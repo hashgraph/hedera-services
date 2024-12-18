@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.system.address;
 
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
@@ -26,12 +11,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.text.ParseException;
@@ -259,7 +243,7 @@ public class AddressBookUtils {
                 .getConfigData(AddressBookConfig.class)
                 .useRosterLifecycle();
         if (!useRosterLifecycle && addressBookInitializer.hasAddressBookChanged()) {
-            final MerkleRoot state = initialState.get().getState();
+            final PlatformMerkleStateRoot state = initialState.get().getState();
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
@@ -276,8 +260,8 @@ public class AddressBookUtils {
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.
-        final AddressBook addressBook = RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
-                (State) initialState.get().getState().getSwirldState()));
+        final AddressBook addressBook = RosterUtils.buildAddressBook(
+                RosterRetriever.retrieveActiveOrGenesisRoster(initialState.get().getState()));
         if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }

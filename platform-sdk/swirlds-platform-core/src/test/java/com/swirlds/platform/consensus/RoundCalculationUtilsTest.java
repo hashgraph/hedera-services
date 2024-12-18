@@ -1,25 +1,10 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.events.EventConstants;
@@ -69,7 +54,7 @@ class RoundCalculationUtilsTest {
         final Map<Long, Long> map =
                 LongStream.range(1, 50).collect(HashMap::new, (m, l) -> m.put(l, l * 10), HashMap::putAll);
         final SignedState signedState = mock(SignedState.class);
-        final MerkleRoot state = mock(MerkleRoot.class);
+        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getReadablePlatformState()).thenReturn(platformState);

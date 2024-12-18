@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
@@ -83,7 +68,7 @@ class StateRegistryTests {
                 RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "no states have been created yet");
 
-        final List<MerkleRoot> states = new LinkedList<>();
+        final List<PlatformMerkleStateRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
             states.add(new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
@@ -94,10 +79,10 @@ class StateRegistryTests {
         }
 
         // Fast copy a state
-        final MerkleRoot stateToCopy =
+        final PlatformMerkleStateRoot stateToCopy =
                 new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
         states.add(stateToCopy);
-        final MerkleRoot copyOfStateToCopy = stateToCopy.copy();
+        final PlatformMerkleStateRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
@@ -120,7 +105,7 @@ class StateRegistryTests {
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
         io.startReading();
-        final MerkleRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
+        final PlatformMerkleStateRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
         states.add(deserializedState);
         assertEquals(
                 states.size(),

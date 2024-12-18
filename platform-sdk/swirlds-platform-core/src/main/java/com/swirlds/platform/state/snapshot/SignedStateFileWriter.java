@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
@@ -35,11 +20,10 @@ import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -70,7 +54,7 @@ public final class SignedStateFileWriter {
      * @param directory       the directory where the state is being written
      */
     public static void writeHashInfoFile(
-            @NonNull final PlatformContext platformContext, final Path directory, final MerkleRoot state)
+            @NonNull final PlatformContext platformContext, final Path directory, final PlatformMerkleStateRoot state)
             throws IOException {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
@@ -151,10 +135,8 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(directory);
         Objects.requireNonNull(signedState);
 
-        final MerkleRoot state = signedState.getState();
-        if (state instanceof MerkleStateRoot merkleStateRoot) {
-            merkleStateRoot.setTime(platformContext.getTime());
-        }
+        final PlatformMerkleStateRoot state = signedState.getState();
+        state.setTime(platformContext.getTime());
         state.createSnapshot(directory);
         writeSignatureSetFile(directory, signedState);
         writeHashInfoFile(platformContext, directory, signedState.getState());
