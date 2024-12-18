@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.any;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -46,6 +47,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,13 +150,21 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
 
     @Test
     void createsCall() {
-
         // given
+        final var inputBytes = Bytes.wrapByteBuffer(SCHEDULED_NATIVE_CALL.encodeCallWithArgs(
+                asHeadlongAddress(HTS_SYSTEM_CONTRACT_ADDRESS),
+                CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+                        .encodeCall(CREATE_FUNGIBLE_V3_TUPLE)
+                        .array(),
+                asHeadlongAddress(SENDER_ID.accountNum())));
+
         given(attempt.enhancement()).willReturn(mockEnhancement());
-        given(attempt.senderId()).willReturn(SENDER_ID);
-        given(attempt.isSelector(SCHEDULED_NATIVE_CALL)).willReturn(true);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.inputBytes()).willReturn(inputBytes.toArray());
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(attempt.keySetFor()).willReturn(Set.of());
+        given(addressIdConverter.convert(any())).willReturn(SENDER_ID);
 
         // when
         final var call = subject.callFrom(attempt);
