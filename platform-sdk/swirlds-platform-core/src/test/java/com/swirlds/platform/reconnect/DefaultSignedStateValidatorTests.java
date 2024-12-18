@@ -122,10 +122,15 @@ class DefaultSignedStateValidatorTests {
             final List<Node> signingNodes = getRandomizedSigningNodes(r, nodes);
             final long validSigningWeight = getValidSignatureWeight(signingNodes);
             final long totalWeight = getTotalWeight(nodes);
-            final String desc = String.format(
-                    "\nseed: %sL:, valid signing weight: %s, total weight: %s\n",
-                    seed, validSigningWeight, totalWeight);
-            arguments.add(Arguments.of(desc, nodes, signingNodes));
+
+            // A Roster object is considered invalid if it has a total weight of zero
+            // because such a Roster is practically unusable. Therefore, we don't test it.
+            if (totalWeight != 0L) {
+                final String desc = String.format(
+                        "\nseed: %sL:, valid signing weight: %s, total weight: %s\n",
+                        seed, validSigningWeight, totalWeight);
+                arguments.add(Arguments.of(desc, nodes, signingNodes));
+            }
         }
 
         return arguments.stream();

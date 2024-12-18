@@ -22,7 +22,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,10 +34,6 @@ import java.util.Set;
 public class MerkleTreeSnapshotReader {
 
     /**
-     * The previous version of the signed state file
-     */
-    public static final int INIT_STATE_FILE_VERSION = 1;
-    /**
      * The current version of the signed state file. A file of this version no longer contains the signature set,
      * instead the signature set is stored in a separate file.
      */
@@ -46,8 +41,7 @@ public class MerkleTreeSnapshotReader {
     /**
      * The supported versions of the signed state file
      */
-    public static final Set<Integer> SUPPORTED_STATE_FILE_VERSIONS =
-            Set.of(INIT_STATE_FILE_VERSION, SIG_SET_SEPARATE_STATE_FILE_VERSION);
+    public static final Set<Integer> SUPPORTED_STATE_FILE_VERSIONS = Set.of(SIG_SET_SEPARATE_STATE_FILE_VERSION);
     /**
      * Prior to v1, the signed state file was not versioned. This byte was introduced in v1 to mark a versioned file.
      */
@@ -64,10 +58,8 @@ public class MerkleTreeSnapshotReader {
      * This is a helper class to hold the data read from a state file.
      * @param stateRoot the root of Merkle tree state
      * @param hash the hash of the state
-     * @param sigSet the signature set
      */
-    public record StateFileData(
-            @NonNull PartialNaryMerkleInternal stateRoot, @NonNull Hash hash, @Nullable SigSet sigSet) {}
+    public record StateFileData(@NonNull PartialNaryMerkleInternal stateRoot, @NonNull Hash hash) {}
 
     /**
      * Reads a state file from disk
@@ -83,10 +75,8 @@ public class MerkleTreeSnapshotReader {
                     final int fileVersion = readAndCheckStateFileVersion(in);
 
                     final Path directory = stateFile.getParent();
-                    if (fileVersion == INIT_STATE_FILE_VERSION) {
-                        return readStateFileDataV1(stateFile, in, directory);
-                    } else if (fileVersion == SIG_SET_SEPARATE_STATE_FILE_VERSION) {
-                        return readStateFileDataV2(stateFile, in, directory);
+                    if (fileVersion == SIG_SET_SEPARATE_STATE_FILE_VERSION) {
+                        return readStateFileData(stateFile, in, directory);
                     } else {
                         throw new IOException("Unsupported state file version: " + fileVersion);
                     }
@@ -94,36 +84,16 @@ public class MerkleTreeSnapshotReader {
     }
 
     /**
-     * This method reads the state file data from a version 1 state file. This version of the state file contains
-     * signature set data.
+     * This method reads the state file data from state file.
      */
     @NonNull
-    private static StateFileData readStateFileDataV1(
-            @NonNull final Path stateFile, @NonNull final MerkleDataInputStream in, @NonNull final Path directory)
-            throws IOException {
-        try {
-            final PartialNaryMerkleInternal state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
-            final Hash hash = in.readSerializable();
-            final SigSet sigSet = in.readSerializable();
-            return new StateFileData(state, hash, sigSet);
-        } catch (final IOException e) {
-            throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
-        }
-    }
-
-    /**
-     * This method reads the state file data from a version 2 state file. This version of the state file
-     * doesn't contain signature set data. Instead, the signature set data is stored in a separate file,
-     * and the resulting object doesn't have {@link SigSet} field initialized.
-     */
-    @NonNull
-    private static StateFileData readStateFileDataV2(
+    private static StateFileData readStateFileData(
             @NonNull final Path stateFile, @NonNull final MerkleDataInputStream in, @NonNull final Path directory)
             throws IOException {
         try {
             final MerkleStateRoot<?> state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
             final Hash hash = in.readSerializable();
-            return new StateFileData(state, hash, null);
+            return new StateFileData(state, hash);
 
         } catch (final IOException e) {
             throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
