@@ -160,7 +160,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                             })
                             .toList();
                     final var round = new FakeRound(roundNo.getAndIncrement(), requireNonNull(roster), consensusEvents);
-                    hedera.handleWorkflow().handleRound(state, round);
+                    hedera.handleWorkflow().handleRound(state, round, txns -> {});
                     hedera.onSealConsensusRound(round, state);
                     notifyStateHashed(round.getRoundNum());
                     prehandledEvents.clear();
@@ -168,7 +168,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                 // Now drain all events that will go in the next round and pre-handle them
                 final List<FakeEvent> newEvents = new ArrayList<>();
                 queue.drainTo(newEvents);
-                newEvents.forEach(event -> hedera.onPreHandle(event, state));
+                newEvents.forEach(event -> hedera.onPreHandle(event, state, txns -> {}));
                 prehandledEvents.addAll(newEvents);
             } catch (Throwable t) {
                 log.error("Error handling transactions", t);

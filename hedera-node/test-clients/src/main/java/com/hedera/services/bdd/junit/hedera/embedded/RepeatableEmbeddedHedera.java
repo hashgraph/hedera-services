@@ -145,13 +145,13 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
      * @param skipsSignatureTxn whether to skip handling the last-created event if it is a signature txn
      */
     private void handleNextRound(final boolean skipsSignatureTxn) {
-        hedera.onPreHandle(platform.lastCreatedEvent, state);
+        hedera.onPreHandle(platform.lastCreatedEvent, state, txns -> {});
         if (skipsSignatureTxn && platform.lastCreatedEvent.function() == TSS_SHARE_SIGNATURE) {
             return;
         }
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
-        hedera.handleWorkflow().handleRound(state, round);
+        hedera.handleWorkflow().handleRound(state, round, txns -> {});
         hedera.onSealConsensusRound(round, state);
         notifyStateHashed(round.getRoundNum());
     }

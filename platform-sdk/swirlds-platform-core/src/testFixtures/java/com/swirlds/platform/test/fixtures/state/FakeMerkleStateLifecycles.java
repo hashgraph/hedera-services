@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -35,6 +36,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
@@ -70,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
@@ -205,12 +208,14 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     }
 
     @Override
-    public void onPreHandle(@NonNull Event event, @NonNull State state) {
+    public void onPreHandle(@NonNull Event event, @NonNull State state,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
         // no-op
     }
 
     @Override
-    public void onHandleConsensusRound(@NonNull Round round, @NonNull State state) {
+    public void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
         // no-op
     }
 

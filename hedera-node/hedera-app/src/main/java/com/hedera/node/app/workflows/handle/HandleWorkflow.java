@@ -31,11 +31,14 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
@@ -76,13 +79,16 @@ import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -96,6 +102,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -205,8 +212,10 @@ public class HandleWorkflow {
      *
      * @param state the writable {@link State} that this round will work on
      * @param round the next {@link Round} that needs to be processed
+     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      */
-    public void handleRound(@NonNull final State state, @NonNull final Round round) {
+    public void handleRound(@NonNull final State state, @NonNull final Round round,
+            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
@@ -227,7 +236,7 @@ public class HandleWorkflow {
         }
         recordCache.resetRoundReceipts();
         try {
-            handleEvents(state, round);
+            handleEvents(state, round, stateSignatureTxnCallback);
         } finally {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
@@ -241,8 +250,10 @@ public class HandleWorkflow {
      *
      * @param state the state to apply the effects to
      * @param round the round to apply the effects of
+     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      */
-    private void handleEvents(@NonNull final State state, @NonNull final Round round) {
+    private void handleEvents(@NonNull final State state, @NonNull final Round round,
+            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
         boolean userTransactionsHandled = false;
         for (final var event : round) {
             if (streamMode != RECORDS) {
@@ -268,17 +279,19 @@ public class HandleWorkflow {
                 }
                 continue;
             }
+
+            final Consumer<StateSignatureTransaction> simplifiedStateSignatureTxnCallback = txn -> {
+                final var scopedTxn = new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), txn);
+                stateSignatureTxnCallback.accept(List.of(scopedTxn));
+            };
+
             // log start of event to transaction state log
             logStartEvent(event, creator);
             // handle each transaction of the event
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
                 try {
-                    // skip system transactions
-                    if (!platformTxn.isSystem()) {
-                        userTransactionsHandled = true;
-                        handlePlatformTransaction(state, creator, platformTxn, event.getSoftwareVersion());
-                    }
+                    userTransactionsHandled |= handlePlatformTransaction(state, creator, platformTxn, event.getSoftwareVersion(), simplifiedStateSignatureTxnCallback);
                 } catch (final Exception e) {
                     logger.fatal(
                             "Possibly CATASTROPHIC failure while running the handle workflow. "
@@ -310,12 +323,18 @@ public class HandleWorkflow {
      * @param txn        the {@link ConsensusTransaction} to be handled
      * @param txnVersion the software version for the event containing the transaction
      */
-    private void handlePlatformTransaction(
+    private boolean handlePlatformTransaction(
             @NonNull final State state,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
-            @NonNull final SemanticVersion txnVersion) {
+            @NonNull final SemanticVersion txnVersion,
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
         final var handleStart = System.nanoTime();
+
+        // Temporary check until we can deprecate StateSignatureTransaction
+        if (stateSignatureTransactionEncountered(txn, stateSignatureTxnCallback)) {
+            return false;
+        }
 
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
@@ -373,6 +392,30 @@ public class HandleWorkflow {
                 blockStreamManager.setLastIntervalProcessTime(userTxn.consensusNow());
             }
         }
+        return true;
+    }
+
+    private boolean stateSignatureTransactionEncountered(
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
+        if (txn.getMetadata() instanceof PreHandleResult preHandleResult && preHandleResult.txInfo() != null
+                && preHandleResult.txInfo().functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
+            stateSignatureTxnCallback.accept(preHandleResult.txInfo().txBody().stateSignatureTransactionOrThrow());
+            return true;
+        } else if (txn.getMetadata() == null) {
+            // This should not happen, but to be sure, we deserialize the transaction and check anyway
+            try {
+                final Transaction parsedTxn = Transaction.PROTOBUF.parse(txn.getApplicationTransaction());
+                final var stateSignatureTxn = parsedTxn.bodyOrElse(TransactionBody.DEFAULT).stateSignatureTransaction();
+                if (stateSignatureTxn != null) {
+                    stateSignatureTxnCallback.accept(stateSignatureTxn);
+                    return true;
+                }
+            } catch (ParseException e) {
+                // Ignore, this will be handled as part of the regular workflow
+            }
+        }
+        return false;
     }
 
     /**

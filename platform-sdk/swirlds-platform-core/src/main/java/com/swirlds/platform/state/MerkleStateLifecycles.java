@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.state;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -27,6 +29,8 @@ import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Implements the major lifecycle events for the Merkle state.
@@ -41,17 +45,22 @@ public interface MerkleStateLifecycles {
      *
      * @param event the event that was added
      * @param state the latest immutable state at the time of the event
+     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     *                                   will be used for callbacks
      */
-    void onPreHandle(@NonNull Event event, @NonNull State state);
+    void onPreHandle(@NonNull Event event, @NonNull State state,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions);
 
     /**
-     * Called when a round of events have reached consensus, and are ready to be handled
-     * by the network.
+     * Called when a round of events have reached consensus, and are ready to be handled by the network.
      *
      * @param round the round that has just reached consensus
      * @param state the working state of the network
+     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     *                                   will be used for callbacks
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull State state);
+    void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.

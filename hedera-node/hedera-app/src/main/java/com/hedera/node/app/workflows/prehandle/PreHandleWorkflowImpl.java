@@ -28,10 +28,12 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFai
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -54,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -128,26 +131,27 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     public void preHandle(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final AccountID creator,
-            @NonNull final Stream<Transaction> transactions) {
+            @NonNull final Stream<Transaction> transactions,
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
 
         requireNonNull(readableStoreFactory);
         requireNonNull(creator);
         requireNonNull(transactions);
+        requireNonNull(stateSignatureTxnCallback);
 
         // Used for looking up payer account information.
         final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
 
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {
-            if (tx.isSystem()) return;
             try {
-                tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
+                tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx, stateSignatureTxnCallback));
             } catch (final Exception unexpectedException) {
                 // If some random exception happened, then we should not charge the node for it. Instead,
                 // we will just record the exception and try again during handle. Then if we fail again
                 // at handle, then we will throw away the transaction (hopefully, deterministically!)
                 logger.error(
-                        "Possibly CATASTROPHIC failure while running the pre-handle workflow", unexpectedException);
+                        "Unexpected Exception while running the pre-handle workflow", unexpectedException);
                 tx.setMetadata(unknownFailure());
             }
         });
@@ -163,7 +167,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final Transaction platformTx,
-            @Nullable PreHandleResult previousResult) {
+            @Nullable PreHandleResult previousResult,
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTransactionCallback) {
         // 0. Ignore the previous result if it was computed using different node configuration
         if (!wasComputedWithCurrentNodeConfiguration(previousResult)) {
             previousResult = null;
@@ -174,9 +179,26 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         try {
             // Transaction info is a pure function of the transaction, so we can
             // always reuse it from a prior result
-            txInfo = previousResult == null
-                    ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
-                    : previousResult.txInfo();
+//            txInfo = previousResult == null
+//                    ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
+//                    : previousResult.txInfo();
+
+            // Temporary solution until we can deprecate StateSignatureTransaction
+            if (previousResult == null) {
+                final var txn = transactionChecker.parse(platformTx.getApplicationTransaction());
+                final var stateSignatureTransaction = txn.bodyOrElse(TransactionBody.DEFAULT).stateSignatureTransaction();
+                if (stateSignatureTransaction != null) {
+                    stateSignatureTransactionCallback.accept(stateSignatureTransaction);
+                    return PreHandleResult.stateSignatureTransactionEncountered(txn);
+                }
+                txInfo = transactionChecker.check(txn, platformTx.getApplicationTransaction());
+            } else {
+                txInfo = previousResult.txInfo();
+                if (txInfo != null && txInfo.functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
+                    throw new IllegalStateException("Encountered StateSignatureTransaction while re-processing preHandle");
+                }
+            }
+
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status
                 return previousResult;
