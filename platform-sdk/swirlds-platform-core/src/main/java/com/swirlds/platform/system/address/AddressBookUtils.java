@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system.address;
 
+import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
+import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -24,8 +26,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -258,7 +258,8 @@ public class AddressBookUtils {
                 initialState.get(),
                 bootstrapAddressBook.copy(),
                 platformContext,
-                s -> s.getState().getReadablePlatformState().getAddressBook());
+                s -> buildAddressBook(
+                        retrieveActiveOrGenesisRoster((State) s.getState().getSwirldState())));
 
         final boolean useRosterLifecycle = platformContext
                 .getConfiguration()
@@ -282,7 +283,7 @@ public class AddressBookUtils {
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.
-        final AddressBook addressBook = RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
+        final AddressBook addressBook = buildAddressBook(retrieveActiveOrGenesisRoster(
                 (State) initialState.get().getState().getSwirldState()));
         if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
