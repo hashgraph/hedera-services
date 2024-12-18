@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.hapi.utils.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
@@ -31,6 +16,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.util.BigIntegers;
 
 public record EthTxData(
         byte[] rawTx,
@@ -385,7 +371,12 @@ public record EthTxData(
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
             // after EIP155 the chain id is equal to
             // CHAIN_ID = (v - {0,1} - 35) / 2
-            chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+            // BigIntegers.asUnsignedByteArray method is used here to ensure no extra byte is added at the beginning
+            // of the byte array, which can happen in BigInteger.toByteArray when the highest bit
+            // in the result is already occupied by stored values. This issue is further explained
+            // in https://github.com/hashgraph/hedera-services/issues/15953
+            chainId = BigIntegers.asUnsignedByteArray(
+                    vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
         } else if (isLegacyUnprotectedEtx(vBI)) {
             // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];

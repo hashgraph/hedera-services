@@ -16,10 +16,10 @@ module com.hedera.node.app.hapi.utils {
     exports com.hedera.node.app.hapi.utils.sysfiles.validation;
 
     requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.esaulpaugh.headlong;
     requires transitive com.google.protobuf;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive java.compiler;
     requires transitive javax.inject;
