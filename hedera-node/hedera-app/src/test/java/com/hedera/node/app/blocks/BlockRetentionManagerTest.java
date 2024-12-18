@@ -17,12 +17,14 @@
 package com.hedera.node.app.blocks;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.RejectedExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,7 +38,7 @@ class BlockRetentionManagerTest {
     private BlockRetentionManager blockRetentionManager;
 
     @Test
-    void testCleanupShouldNotRunUntilScheduleTime() throws Exception {
+    void testCleanupShouldNotRunUntilScheduleTime() throws IOException, InterruptedException {
         final long retentionPeriodMs = 10;
         final long cleanupPeriodMs = 100;
         blockRetentionManager = new BlockRetentionManager(
@@ -53,7 +55,7 @@ class BlockRetentionManagerTest {
     }
 
     @Test
-    void testScheduleCleanup() throws Exception {
+    void testScheduleCleanup() throws IOException, InterruptedException {
         final long retentionPeriodMs = 20;
         final long cleanupPeriodMs = 10;
         blockRetentionManager = new BlockRetentionManager(
@@ -85,6 +87,19 @@ class BlockRetentionManagerTest {
         assertFalse(
                 Files.exists(uploadedDir.resolve(anotherBlockFileName)),
                 anotherBlockFileName + " should have been deleted");
+    }
+
+    @Test
+    void testShutdown() {
+        final long retentionPeriodMs = 20;
+        final long cleanupPeriodMs = 10;
+        blockRetentionManager = new BlockRetentionManager(
+                uploadedDir, Duration.ofMillis(retentionPeriodMs), Duration.ofMillis(cleanupPeriodMs), 4);
+
+        blockRetentionManager.shutdown();
+
+        assertThrows(RejectedExecutionException.class, () -> blockRetentionManager.scheduleRepeating(() -> {}));
+        assertThrows(RejectedExecutionException.class, () -> blockRetentionManager.startCleanup());
     }
 
     private void createTestFile(final String fileName) throws IOException {
