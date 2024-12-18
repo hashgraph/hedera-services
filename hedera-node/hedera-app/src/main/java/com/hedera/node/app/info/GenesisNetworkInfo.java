@@ -18,8 +18,7 @@ package com.hedera.node.app.info;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -43,9 +42,9 @@ public class GenesisNetworkInfo implements NetworkInfo {
      * @param genesisNetwork The genesis network
      * @param ledgerId      The ledger ID
      */
-    public GenesisNetworkInfo(@NonNull final List<NodeMetadata> genesisNetwork, @NonNull final Bytes ledgerId) {
+    public GenesisNetworkInfo(@NonNull final Network genesisNetwork, @NonNull final Bytes ledgerId) {
         this.ledgerId = requireNonNull(ledgerId);
-        this.nodeInfos = GenesisNetworkInfo.fromMetadata(genesisNetwork);
+        this.nodeInfos = nodeInfosFrom(genesisNetwork);
     }
 
     /**
@@ -97,20 +96,16 @@ public class GenesisNetworkInfo implements NetworkInfo {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    @Override
-    public Roster roster() {
-        // This class should be constructed using the genesis AddressBook. The roster, on the other hand, should not be
-        // created until just before handing the roster over to the platform; therefore, we throw an illegal exception
-        // here
-        throw new IllegalStateException("No roster available at network genesis");
-    }
-
-    private static Map<Long, NodeInfo> fromMetadata(@NonNull List<NodeMetadata> metadatas) {
+    private static Map<Long, NodeInfo> nodeInfosFrom(@NonNull final Network network) {
         final var nodeInfos = new LinkedHashMap<Long, NodeInfo>();
-        for (final var metadata : metadatas) {
+        for (final var metadata : network.nodeMetadata()) {
             final var node = metadata.nodeOrThrow();
             final var nodeInfo = new NodeInfoImpl(
-                    node.nodeId(), node.accountId(), node.weight(), node.gossipEndpoint(), node.gossipCaCertificate());
+                    node.nodeId(),
+                    node.accountIdOrThrow(),
+                    node.weight(),
+                    node.gossipEndpoint(),
+                    node.gossipCaCertificate());
             nodeInfos.put(node.nodeId(), nodeInfo);
         }
         return nodeInfos;

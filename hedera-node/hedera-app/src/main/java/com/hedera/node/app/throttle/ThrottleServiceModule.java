@@ -66,7 +66,7 @@ public interface ThrottleServiceModule {
             @NonNull final Metrics metrics) {
         final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
         final IntSupplier frontendThrottleSplit =
-                () -> networkInfo.roster().rosterEntries().size();
+                () -> networkInfo.addressBook().size();
         return new ThrottleAccumulator(
                 frontendThrottleSplit,
                 configProvider::getConfiguration,

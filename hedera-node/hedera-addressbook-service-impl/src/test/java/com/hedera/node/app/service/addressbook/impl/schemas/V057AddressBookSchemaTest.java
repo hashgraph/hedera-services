@@ -66,7 +66,7 @@ class V057AddressBookSchemaTest {
 
     @Test
     void migrationIsNoOpIfRosterLifecycleNotEnabled() {
-        given(ctx.configuration()).willReturn(DEFAULT_CONFIG);
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
 
         subject.restart(ctx);
 
@@ -75,7 +75,7 @@ class V057AddressBookSchemaTest {
 
     @Test
     void usesGenesisNodeMetadataIfPresent() {
-        given(ctx.configuration()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
         given(ctx.newStates()).willReturn(writableStates);
@@ -91,7 +91,7 @@ class V057AddressBookSchemaTest {
 
     @Test
     void usesOverrideMetadataIfPresent() {
-        given(ctx.configuration()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.overrideNetworkFor(0L)).willReturn(Optional.of(NETWORK));
         given(ctx.newStates()).willReturn(writableStates);

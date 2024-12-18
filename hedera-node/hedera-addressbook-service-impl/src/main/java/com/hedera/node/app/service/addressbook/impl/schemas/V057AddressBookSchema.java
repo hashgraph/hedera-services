@@ -40,7 +40,7 @@ public class V057AddressBookSchema extends Schema implements AddressBookTranspla
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
         if (ctx.isGenesis()) {

@@ -23,9 +23,11 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,7 +48,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -128,6 +129,7 @@ public class WorkingDirUtils {
         requireNonNull(configTxt);
         requireNonNull(tssEncryptionKeyFn);
         requireNonNull(tssKeyMaterialFn);
+
         // Clean up any existing directory structure
         rm(workingDir);
         // Initialize the data folders
@@ -162,6 +164,7 @@ public class WorkingDirUtils {
 
     /**
      * Updates the given key/value property override at the given location
+     *
      * @param propertiesPath the path to the properties file
      * @param overrides the key/value property overrides
      */
@@ -188,6 +191,19 @@ public class WorkingDirUtils {
      */
     public static JutilPropertySource hapiTestStartupProperties() {
         return new JutilPropertySource(bootstrapAssetsLoc().resolve(APPLICATION_PROPERTIES));
+    }
+
+    /**
+     * Returns the version in the project's {@code version.txt} file.
+     *
+     * @return the version
+     */
+    public @NonNull static SemanticVersion workingDirVersion() {
+        final var loc = Paths.get(System.getProperty("user.dir")).endsWith("hedera-services")
+                ? "version.txt"
+                : "../version.txt";
+        final var versionLiteral = readStringUnchecked(Paths.get(loc)).trim();
+        return requireNonNull(new SemanticVersionConverter().convert(versionLiteral));
     }
 
     private static Path bootstrapAssetsLoc() {
@@ -388,13 +404,6 @@ public class WorkingDirUtils {
             @NonNull final String configTxt,
             @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
             @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
-        // TODO - Use the "live" gossip certificates that subprocess nodes will adopt
-        final Bytes mockCert;
-        try {
-            mockCert = Bytes.wrap(SIG_CERT.getEncoded());
-        } catch (CertificateEncodingException e) {
-            throw new IllegalStateException(e);
-        }
         final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
                 .filter(line -> line.contains("address, "))
                 .map(line -> {
@@ -403,16 +412,16 @@ public class WorkingDirUtils {
                     final long weight = Long.parseLong(parts[4]);
                     final var gossipEndpoints =
                             List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
+                    final var cert = AddressBookUtils.testCertFor(nodeId);
                     return NodeMetadata.newBuilder()
-                            .rosterEntry(new RosterEntry(nodeId, weight, mockCert, gossipEndpoints))
+                            .rosterEntry(new RosterEntry(nodeId, weight, cert, gossipEndpoints))
                             .node(new Node(
                                     nodeId,
                                     toPbj(HapiPropertySource.asAccount(parts[9])),
                                     "node" + (nodeId + 1),
                                     gossipEndpoints,
-                                    // TODO - Use the real service endpoint
                                     List.of(),
-                                    mockCert,
+                                    cert,
                                     // The gRPC certificate hash is irrelevant for PR checks
                                     Bytes.EMPTY,
                                     weight,

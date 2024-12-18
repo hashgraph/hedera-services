@@ -31,11 +31,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * Roster Schema
  */
-public class V0540RosterSchema extends Schema {
+public class V0540RosterBaseSchema extends Schema {
     public static final String ROSTER_KEY = "ROSTERS";
     public static final String ROSTER_STATES_KEY = "ROSTER_STATE";
 
-    private static final Logger log = LogManager.getLogger(V0540RosterSchema.class);
+    private static final Logger log = LogManager.getLogger(V0540RosterBaseSchema.class);
     /**
      * this can't be increased later so we pick some number large enough, 2^16.
      */
@@ -50,7 +50,7 @@ public class V0540RosterSchema extends Schema {
     /**
      * Create a new instance
      */
-    public V0540RosterSchema() {
+    public V0540RosterBaseSchema() {
         super(VERSION);
     }
 

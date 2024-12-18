@@ -27,9 +27,9 @@
       "weight": "50",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      },
-      "tssEncryptionKey": "ASM="
-    }
+      }
+    },
+    "tssEncryptionKey": "ASM="
   }, {
     "rosterEntry": {
       "nodeId": "1",
@@ -60,9 +60,9 @@
       "weight": "100",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      },
-      "tssEncryptionKey": "ASM="
-    }
+      }
+    },
+    "tssEncryptionKey": "ASM="
   }, {
     "rosterEntry": {
       "nodeId": "2",
@@ -93,9 +93,9 @@
       "weight": "150",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      },
-      "tssEncryptionKey": "ASM="
-    }
+      }
+    },
+    "tssEncryptionKey": "ASM="
   }, {
     "rosterEntry": {
       "nodeId": "3",
@@ -126,9 +126,9 @@
       "weight": "200",
       "adminKey": {
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
-      },
-      "tssEncryptionKey": "ASM="
-    }
+      }
+    },
+    "tssEncryptionKey": "ASM="
   }],
   "tssMessages": [{
     "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",

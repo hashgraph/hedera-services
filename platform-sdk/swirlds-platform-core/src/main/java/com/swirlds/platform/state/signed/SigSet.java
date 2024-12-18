@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.merkle;
+package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Signature;

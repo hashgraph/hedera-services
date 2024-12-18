@@ -40,7 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface AddressBookTransplantSchema {
     default void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (!ctx.configuration().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (!ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             return;
         }
         ctx.startupNetworks()
