@@ -36,6 +36,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -61,7 +62,10 @@ public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAtte
 
     @Override
     public boolean matches(@NonNull final HssCallAttempt attempt) {
-        return attempt.isSelector(SCHEDULED_NATIVE_CALL) && innerCallValidation(attempt);
+        final var schedulingEnabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).systemContractScheduleServiceEnabled();
+        return attempt.isSelectorIfConfigEnabled(schedulingEnabled, SCHEDULED_NATIVE_CALL)
+                && innerCallValidation(attempt);
     }
 
     @Override
