@@ -17,6 +17,7 @@
 package com.hedera.node.app.info;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
@@ -42,6 +43,8 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.AddressBook;
@@ -87,6 +90,15 @@ public class DiskStartupNetworks implements StartupNetworks {
         NODE_DETAILS,
     }
 
+    /**
+     * The types of network information that could be exported to disk.
+     */
+    private enum AssetUse {
+        GENESIS,
+        OVERRIDE,
+        MIGRATION,
+    }
+
     public DiskStartupNetworks(
             @NonNull final ConfigProvider configProvider, @NonNull final TssBaseService tssBaseService) {
         this.configProvider = requireNonNull(configProvider);
@@ -95,7 +107,8 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     @Override
     public Network genesisNetworkOrThrow() {
-        return loadNetwork("genesis", configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
+        return loadNetwork(AssetUse.GENESIS, configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
+                .or(this::genesisNetworkFromConfigTxt)
                 .orElseThrow(() -> new IllegalStateException("Genesis network not found"));
     }
 
@@ -105,11 +118,11 @@ public class DiskStartupNetworks implements StartupNetworks {
             return Optional.empty();
         }
         final var config = configProvider.getConfiguration();
-        final var unscopedNetwork = loadNetwork("override", config, OVERRIDE_NETWORK_JSON);
+        final var unscopedNetwork = loadNetwork(AssetUse.OVERRIDE, config, OVERRIDE_NETWORK_JSON);
         if (unscopedNetwork.isPresent()) {
             return unscopedNetwork;
         }
-        return loadNetwork("override", config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
+        return loadNetwork(AssetUse.OVERRIDE, config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
     }
 
     @Override
@@ -165,7 +178,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     @Override
     public Network migrationNetworkOrThrow() {
         // FUTURE - look into sourcing this from a config.txt and public.pfx to ease migration
-        return loadNetwork("migration", configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
+        return loadNetwork(AssetUse.MIGRATION, configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 
@@ -269,21 +282,21 @@ public class DiskStartupNetworks implements StartupNetworks {
      * Attempts to load a {@link Network} from a given file in the directory whose relative path is given
      * by the provided {@link Configuration}.
      *
-     * @param type the type of network to load
+     * @param use the use of the network file
      * @param config the configuration to use to determine the location of the network file
      * @param segments the path segments of the file to load the network from
      * @return the loaded network, if it was found and successfully loaded
      */
     private Optional<Network> loadNetwork(
-            @NonNull final String type, @NonNull final Configuration config, @NonNull final String... segments) {
+            @NonNull final AssetUse use, @NonNull final Configuration config, @NonNull final String... segments) {
         final var path = networksPath(config, segments);
-        log.info("Checking for {} network info at {}", type, path.toAbsolutePath());
+        log.info("Checking for {} network info at {}", use, path.toAbsolutePath());
         final var maybeNetwork = loadNetworkFrom(path);
         maybeNetwork.ifPresentOrElse(
                 network -> {
                     log.info(
                             "  -> Parsed {} network info for N={} nodes from {}",
-                            type,
+                            use,
                             network.nodeMetadata().size(),
                             path.toAbsolutePath());
                     assertValidTssKeys(network);
@@ -307,6 +320,41 @@ public class DiskStartupNetworks implements StartupNetworks {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
+     * to set its gossip certificates to the same certificates used by nodes in a test network.
+     * @param path the path to the address book file
+     * @return the loaded address book
+     */
+    public static AddressBook loadLegacyBookWithGeneratedCerts(@NonNull final Path path) {
+        requireNonNull(path);
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
+        try {
+            final var addressBook = configFile.getAddressBook();
+            CryptoStatic.generateKeysAndCerts(addressBook);
+            return addressBook;
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating keys and certs", e);
+        }
+    }
+
+    /**
+     * Attempts to load the genesis network from the default <i>config.txt</i> file.
+     * @return the loaded genesis network, if it was found and successfully loaded
+     */
+    @Deprecated(forRemoval = true)
+    private Optional<Network> genesisNetworkFromConfigTxt() {
+        try {
+            log.info("No genesis-network.json detected, falling back to config.txt with generated certs");
+            final var legacyBook = loadLegacyBookWithGeneratedCerts(Paths.get(DEFAULT_CONFIG_FILE_NAME));
+            final var network = fromLegacyAddressBook(legacyBook);
+            return Optional.of(network);
+        } catch (Exception e) {
+            log.warn("Fallback loading genesis network from config.txt also failed", e);
+            throw new IllegalStateException(e);
+        }
     }
 
     /**

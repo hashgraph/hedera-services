@@ -35,7 +35,6 @@ import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -397,24 +396,6 @@ public class WorkingDirUtils {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(SIG_CERT))
                 .toList());
-    }
-
-    /**
-     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
-     * to set its gossip certificates to the same certificates used in each position by a test network.
-     * @param path the path to the address book file
-     * @return the loaded address book
-     */
-    public static AddressBook loadAddressBookWithDeterministicCerts(@NonNull final Path path) {
-        requireNonNull(path);
-        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        try {
-            final var addressBook = configFile.getAddressBook();
-            CryptoStatic.generateKeysAndCerts(addressBook);
-            return addressBook;
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating keys and certs", e);
-        }
     }
 
     /**
