@@ -1,8 +1,23 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabels.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -69,21 +84,22 @@ public class AllBaseOpFeesSuite {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
-        return hapiTest(
-                newKeyNamed(SUPPLY_KEY).shape(listOf(numOfSigs)),
-                cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
-                tokenCreate(UNIQUE_TOKEN)
-                        .initialSupply(0L)
-                        .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
-                        .supplyKey(SUPPLY_KEY)
-                        .tokenType(NON_FUNGIBLE_UNIQUE),
-                mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
+        return defaultHapiSpec("NftMintsScaleLinearlyBasedOnNumberOfSignatures")
+                .given(
+                        newKeyNamed(SUPPLY_KEY).shape(listOf(numOfSigs)),
+                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
+                        tokenCreate(UNIQUE_TOKEN)
+                                .initialSupply(0L)
+                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                                .supplyKey(SUPPLY_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE))
+                .when(mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
                         .payingWith(CIVILIAN_ACCT)
                         .signedBy(SUPPLY_KEY, SUPPLY_KEY, SUPPLY_KEY)
                         .blankMemo()
                         .fee(ONE_HUNDRED_HBARS)
-                        .via("moreSigsTxn"),
-                validateChargedUsdWithin("moreSigsTxn", expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
+                        .via("moreSigsTxn"))
+                .then(validateChargedUsdWithin("moreSigsTxn", expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     @HapiTest
@@ -92,28 +108,32 @@ public class AllBaseOpFeesSuite {
         KeyLabels ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
         SigControl SIGN_ONCE = threshSigs(2, threshSigs(3, ON, OFF, OFF), threshSigs(3, OFF, OFF, OFF));
 
-        return hapiTest(
-                newKeyNamed("repeatingKey").shape(SHAPE).labels(ONE_UNIQUE_KEY),
-                cryptoCreate("testAccount").key("repeatingKey").balance(1_000_000_000L),
-                QueryVerbs.getAccountInfo("testAccount")
-                        .sigControl(forKey("repeatingKey", SIGN_ONCE))
-                        .payingWith("testAccount")
-                        .numPayerSigs(5)
-                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
-                QueryVerbs.getAccountInfo("testAccount")
-                        .sigControl(forKey("repeatingKey", SIGN_ONCE))
-                        .payingWith("testAccount")
-                        .numPayerSigs(6));
+        return defaultHapiSpec("PayerSigRedundancyRecognized")
+                .given(
+                        newKeyNamed("repeatingKey").shape(SHAPE).labels(ONE_UNIQUE_KEY),
+                        cryptoCreate("testAccount").key("repeatingKey").balance(1_000_000_000L))
+                .when()
+                .then(
+                        QueryVerbs.getAccountInfo("testAccount")
+                                .sigControl(forKey("repeatingKey", SIGN_ONCE))
+                                .payingWith("testAccount")
+                                .numPayerSigs(5)
+                                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
+                        QueryVerbs.getAccountInfo("testAccount")
+                                .sigControl(forKey("repeatingKey", SIGN_ONCE))
+                                .payingWith("testAccount")
+                                .numPayerSigs(6));
     }
 
     @HapiTest
     final Stream<DynamicTest> payerRecordCreationSanityChecks() {
-        return hapiTest(
-                cryptoCreate(PAYER),
-                createTopic("ofGeneralInterest").payingWith(PAYER),
-                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)).payingWith(PAYER),
-                submitMessageTo("ofGeneralInterest").message("I say!").payingWith(PAYER),
-                assertionsHold((spec, opLog) -> {
+        return defaultHapiSpec("PayerRecordCreationSanityChecks")
+                .given(cryptoCreate(PAYER))
+                .when(
+                        createTopic("ofGeneralInterest").payingWith(PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)).payingWith(PAYER),
+                        submitMessageTo("ofGeneralInterest").message("I say!").payingWith(PAYER))
+                .then(assertionsHold((spec, opLog) -> {
                     final var payerId = spec.registry().getAccountID(PAYER);
                     final var subOp = getAccountRecords(PAYER).logged();
                     allRunFor(spec, subOp);

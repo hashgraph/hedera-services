@@ -1,8 +1,24 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -865,24 +881,27 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
     @DisplayName("Claim frozen token airdrop")
     final Stream<DynamicTest> claimFrozenToken() {
         final var tokenFreezeKey = "freezeKey";
-        return hapiTest(flattened(
-                setUpTokensAndAllReceivers(),
-                newKeyNamed(tokenFreezeKey),
-                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
-                tokenCreate(FUNGIBLE_TOKEN)
-                        .treasury(OWNER)
-                        .freezeKey(tokenFreezeKey)
-                        .tokenType(FUNGIBLE_COMMON)
-                        .initialSupply(1000L),
-                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
-                        .payingWith(OWNER),
-                tokenFreeze(FUNGIBLE_TOKEN, OWNER),
-                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
-                        .payingWith(RECEIVER)
-                        .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0)));
+        return defaultHapiSpec("should fail - ACCOUNT_FROZEN_FOR_TOKEN")
+                .given(flattened(
+                        setUpTokensAndAllReceivers(),
+                        newKeyNamed(tokenFreezeKey),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .treasury(OWNER)
+                                .freezeKey(tokenFreezeKey)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(1000L)))
+                .when(
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
+                                .payingWith(OWNER),
+                        tokenFreeze(FUNGIBLE_TOKEN, OWNER))
+                .then(
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        tokenClaimAirdrop(pendingAirdrop(OWNER, RECEIVER, FUNGIBLE_TOKEN))
+                                .payingWith(RECEIVER)
+                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 0));
     }
 
     @HapiTest
