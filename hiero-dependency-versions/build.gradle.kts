@@ -108,7 +108,7 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
-    api("com.google.protobuf:protoc:3.25.4")
+    api("com.google.protobuf:protoc:4.29.1")
     api("io.grpc:protoc-gen-grpc-java:1.66.0")
 
     api("com.hedera.cryptography:hedera-cryptography-pairings-api:0.1.1-SNAPSHOT") {
