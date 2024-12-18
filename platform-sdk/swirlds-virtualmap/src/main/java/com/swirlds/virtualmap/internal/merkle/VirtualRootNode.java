@@ -444,7 +444,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         updateShouldBeFlushed();
         requireNonNull(dataSourceBuilder);
         if (dataSource == null) {
-            dataSource = dataSourceBuilder.build(state.getLabel(), true);
+            dataSource = dataSourceBuilder.build(state.getLabel());
         }
         this.records = new RecordAccessorImpl<>(this.state, cache, keySerializer, valueSerializer, dataSource);
         if (statistics == null) {

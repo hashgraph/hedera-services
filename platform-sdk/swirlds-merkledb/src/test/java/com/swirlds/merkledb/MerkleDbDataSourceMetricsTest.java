@@ -216,7 +216,7 @@ class MerkleDbDataSourceMetricsTest {
             final int size,
             final long hashesRamToDiskThreshold)
             throws IOException {
-        return testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
+        return testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false);
     }
 
     public static VirtualHashRecord createVirtualInternalRecord(final int i) {

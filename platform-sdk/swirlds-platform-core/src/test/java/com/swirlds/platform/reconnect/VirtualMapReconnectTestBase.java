@@ -207,8 +207,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public BreakableDataSource build(final String label, final boolean withDbCompactionEnabled) {
-            return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled));
+        public BreakableDataSource build(final String label) {
+            return new BreakableDataSource(this, delegate.build(label));
         }
 
         @Override

@@ -119,7 +119,7 @@ public class MerkleDbTest {
         final MerkleDb sourceDb = MerkleDb.getInstance(dbDir, sourceConfig);
 
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource sourceDs = sourceDb.createDataSource("table" + sourceUsePbj, tableConfig, false);
+        final MerkleDbDataSource sourceDs = sourceDb.createDataSource("table" + sourceUsePbj, tableConfig);
 
         for (final boolean snapshotUsePbj : new boolean[] {true, false}) {
             final Path snapshotDir =
@@ -134,7 +134,7 @@ public class MerkleDbTest {
                     .build();
 
             final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDir.resolve("db"), snapshotConfig);
-            final MerkleDbDataSource snapshotDs = snapshotDb.getDataSource("table" + sourceUsePbj, false);
+            final MerkleDbDataSource snapshotDs = snapshotDb.getDataSource("table" + sourceUsePbj);
             Assertions.assertNotNull(snapshotDs);
             snapshotDs.close();
         }
@@ -150,7 +150,7 @@ public class MerkleDbTest {
         final Path dbDir = instance.getStorageDir();
         final String tableName = "tabley";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
         Assertions.assertTrue(Files.exists(dbDir.resolve("database_metadata.pbj")));
         final int tableId = dataSource.getTableId();
@@ -166,10 +166,10 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablez";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
         Assertions.assertThrows(
-                IllegalStateException.class, () -> instance.createDataSource(tableName, tableConfig, false));
+                IllegalStateException.class, () -> instance.createDataSource(tableName, tableConfig));
         dataSource.close();
     }
 
@@ -179,11 +179,11 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = UUID.randomUUID().toString();
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        instance.createDataSource(tableName, tableConfig, false).close();
+        instance.createDataSource(tableName, tableConfig).close();
 
         // create datasource reusing existing metadata
         MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig, false, false);
+                new MerkleDbDataSource(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
         // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
         // Assertion error is expected
         assertThrows(AssertionError.class, dataSource::close);
@@ -198,7 +198,7 @@ public class MerkleDbTest {
         // creating empty table directory with no metadata
         Path tableStorageDir = instance.getTableDir(tableName, instance.getNextTableId() + 1);
         Files.createDirectories(tableStorageDir);
-        assertThrows(IOException.class, () -> instance.createDataSource(tableName, tableConfig, false));
+        assertThrows(IOException.class, () -> instance.createDataSource(tableName, tableConfig));
         Files.delete(tableStorageDir);
     }
 
@@ -207,7 +207,7 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablea";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
         final int tableId = dataSource.getTableId();
         Assertions.assertEquals(tableConfig, dataSource.getTableConfig());
@@ -233,7 +233,7 @@ public class MerkleDbTest {
         MerkleDb.setDefaultPath(dbDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tableb";
-        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName));
     }
 
     @Test
@@ -242,10 +242,10 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablec";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
         dataSource.close();
-        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName));
     }
 
     @Test
@@ -254,14 +254,14 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablec";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
 
         final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         instance.snapshot(snapshotDir, dataSource);
 
         final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir, CONFIGURATION);
-        final MerkleDbDataSource dataSource2 = instance2.getDataSource(tableName, false);
+        final MerkleDbDataSource dataSource2 = instance2.getDataSource(tableName);
         Assertions.assertNotNull(dataSource2);
         Assertions.assertNotEquals(dataSource2, dataSource);
 
@@ -275,10 +275,10 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final MerkleDbTableConfig tableConfig = fixedConfig();
         final String tableName1 = "tabled1";
-        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig, false);
+        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig);
         Assertions.assertNotNull(dataSource1);
         final String tableName2 = "tabled2";
-        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig, false);
+        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig);
         Assertions.assertNotNull(dataSource2);
 
         final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
@@ -290,10 +290,10 @@ public class MerkleDbTest {
         Assertions.assertFalse(Files.exists(instance2.getTableDir("tabled", dataSource1.getTableId())));
         Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName2, dataSource2.getTableId())));
         Assertions.assertFalse(Files.exists(instance2.getTableDir("tabled", dataSource2.getTableId())));
-        final MerkleDbDataSource restored1 = instance2.getDataSource(tableName1, false);
+        final MerkleDbDataSource restored1 = instance2.getDataSource(tableName1);
         Assertions.assertEquals(tableConfig, restored1.getTableConfig());
         restored1.close();
-        final MerkleDbDataSource restored2 = instance2.getDataSource(tableName2, false);
+        final MerkleDbDataSource restored2 = instance2.getDataSource(tableName2);
         Assertions.assertEquals(tableConfig, restored2.getTableConfig());
         Assertions.assertEquals(tableConfig, instance2.getTableConfig(restored2.getTableId()));
         restored2.close();
@@ -308,10 +308,10 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final MerkleDbTableConfig tableConfig = fixedConfig();
         final String tableName1 = "tablee1";
-        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig, false);
+        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig);
         Assertions.assertNotNull(dataSource1);
         final String tableName2 = "tablee2";
-        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig, false);
+        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig);
         Assertions.assertNotNull(dataSource2);
 
         final MerkleDbDataSource activeCopy = instance.copyDataSource(dataSource2, true, false);
@@ -330,10 +330,10 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final MerkleDbTableConfig tableConfig = fixedConfig();
         final String tableName1 = "tablee3";
-        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig, false);
+        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig);
         Assertions.assertNotNull(dataSource1);
         final String tableName2 = "tablee4";
-        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig, false);
+        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig);
         Assertions.assertNotNull(dataSource2);
 
         final MerkleDbDataSource inactiveCopy1 = instance.copyDataSource(dataSource1, false, false);
@@ -382,7 +382,7 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tableg";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
         final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         instance.snapshot(snapshotDir, dataSource);
@@ -390,7 +390,7 @@ public class MerkleDbTest {
         final Path newDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
         MerkleDb.setDefaultPath(newDir);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, null, CONFIGURATION);
-        final MerkleDbDataSource dataSource2 = instance2.getDataSource(tableName, false);
+        final MerkleDbDataSource dataSource2 = instance2.getDataSource(tableName);
         Assertions.assertNotNull(dataSource2);
         Assertions.assertEquals(tableConfig, dataSource2.getTableConfig());
 
@@ -404,7 +404,7 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tableh";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName, tableConfig);
         Assertions.assertNotNull(dataSource);
 
         final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
@@ -426,9 +426,9 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablei";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName + "1", tableConfig, false);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName + "1", tableConfig);
         Assertions.assertNotNull(dataSource);
-        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName + "2", tableConfig, false);
+        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName + "2", tableConfig);
         Assertions.assertNotNull(dataSource2);
 
         final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryFile(CONFIGURATION);
@@ -448,11 +448,11 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName1 = "tablej1";
         final MerkleDbTableConfig tableConfig1 = fixedConfig();
-        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig1, false);
+        final MerkleDbDataSource dataSource1 = instance.createDataSource(tableName1, tableConfig1);
         Assertions.assertNotNull(dataSource1);
         final String tableName2 = "tablej2";
         final MerkleDbTableConfig tableConfig2 = fixedConfig();
-        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig2, false);
+        final MerkleDbDataSource dataSource2 = instance.createDataSource(tableName2, tableConfig2);
         Assertions.assertNotNull(dataSource2);
 
         final MerkleDbDataSource inactiveCopy1 = instance.copyDataSource(dataSource1, false, false);
@@ -475,7 +475,7 @@ public class MerkleDbTest {
         final MerkleDb instance = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablek";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance.createDataSource(tableName + "1", tableConfig, true);
+        final MerkleDbDataSource dataSource = instance.createDataSource(tableName + "1", tableConfig);
         Assertions.assertNotNull(dataSource);
         final MerkleDbDataSource dataSourceCopy = instance.copyDataSource(dataSource, false, false);
         Assertions.assertNotNull(dataSourceCopy);
@@ -492,7 +492,7 @@ public class MerkleDbTest {
         final MerkleDb instance1 = MerkleDb.getDefaultInstance(CONFIGURATION);
         final String tableName = "tablel";
         final MerkleDbTableConfig tableConfig = fixedConfig();
-        final MerkleDbDataSource dataSource = instance1.createDataSource(tableName + "1", tableConfig, true);
+        final MerkleDbDataSource dataSource = instance1.createDataSource(tableName + "1", tableConfig);
         Assertions.assertNotNull(dataSource);
 
         final Path snapshotDir =

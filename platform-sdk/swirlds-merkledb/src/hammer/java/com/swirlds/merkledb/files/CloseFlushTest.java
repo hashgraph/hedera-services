@@ -85,7 +85,7 @@ public class CloseFlushTest {
         for (int j = 0; j < 100; j++) {
             final Path storeDir = tmpFileDir.resolve("closeFlushTest-" + j);
             final VirtualDataSource dataSource =
-                    TestType.fixed_fixed.dataType().createDataSource(storeDir, "closeFlushTest", count, 0, false, true);
+                    TestType.fixed_fixed.dataType().createDataSource(storeDir, "closeFlushTest", count, 0, true);
             // Create a custom data source builder, which creates a custom data source to capture
             // all exceptions happened in saveRecords()
             final VirtualDataSourceBuilder builder = new CustomDataSourceBuilder(dataSource, exception, CONFIGURATION);
@@ -158,7 +158,7 @@ public class CloseFlushTest {
 
         @NonNull
         @Override
-        public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
+        public VirtualDataSource build(final String label) {
             return new VirtualDataSource() {
                 @Override
                 public void close(boolean keepData) throws IOException {
