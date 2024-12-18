@@ -116,8 +116,14 @@ public class PlatformStateUpdates {
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
                         final var candidateRoster = nodeStore.snapshotOfFutureRoster();
                         logger.info("Candidate roster is {}", candidateRoster);
-                        rosterStore.putCandidateRoster(candidateRoster);
-                        if (networkAdminConfig.exportCandidateRoster()) {
+                        boolean rosterAccepted = false;
+                        try {
+                            rosterStore.putCandidateRoster(candidateRoster);
+                            rosterAccepted = true;
+                        } catch (Exception e) {
+                            logger.warn("Candidate roster was rejected", e);
+                        }
+                        if (rosterAccepted && networkAdminConfig.exportCandidateRoster()) {
                             doExport(candidateRoster, networkAdminConfig);
                         }
                     } else if (networkAdminConfig.exportCandidateRoster()) {

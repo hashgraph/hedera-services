@@ -653,8 +653,8 @@ public class HandleWorkflow {
      * @param dispatch the dispatch to manage time for
      */
     private void advanceTimeFor(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
-        // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
-        // correctly detect stake period boundary, so the order of the following two lines is important
+        // WARNING: The two time-based checks below rely on the BlockStreamManager's last-handled time
+        // not being updated yet, so we must not call setLastHandleTime() until after them
         processStakePeriodChanges(userTxn, dispatch);
         if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
             // Check if the tss encryption keys are present in the state and reached threshold

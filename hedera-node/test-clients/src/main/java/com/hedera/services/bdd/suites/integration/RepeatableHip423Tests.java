@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSch
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_LAST_ASSIGNED_CONSENSUS_TIME;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_STATE_ACCESS;
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.RepeatableReason.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
@@ -1646,6 +1647,54 @@ public class RepeatableHip423Tests {
                                     transferAmount),
                             "Wrong transfer list");
                 }));
+    }
+
+    @RepeatableHapiTest(NEEDS_SYNCHRONOUS_HANDLE_WORKFLOW)
+    final Stream<DynamicTest> scheduleCreateMinimumTime() {
+        return hapiTest(
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
+                        .waitForExpiry(false)
+                        .expiringIn(2)
+                        .via("createTxn"),
+                getScheduleInfo("one").isExecuted().hasRelativeExpiry("createTxn", 1));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> multiSigRequirementsCanAccumulate() {
+        var senderShape = threshOf(1, 3);
+        var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
+        var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
+
+        return hapiTest(flattened(
+                newKeyNamed(senderKey).shape(senderShape),
+                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
+                cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+                        .waitForExpiry()
+                        .withRelativeExpiry(SENDER_TXN, 10)
+                        .recordingScheduledTxn()
+                        .payingWith(DEFAULT_PAYER),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigOne)),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(receiver),
+                getAccountBalance(receiver).hasTinyBars(0L),
+                getScheduleInfo(schedule)
+                        .hasScheduleId(schedule)
+                        .hasWaitForExpiry()
+                        .isNotExecuted()
+                        .isNotDeleted()
+                        .hasRelativeExpiry(SENDER_TXN, 10)
+                        .hasRecordedScheduledTxn(),
+                triggerSchedule(schedule, 10),
+                getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
     private SpecOperation[] uploadTestContracts(String... contracts) {

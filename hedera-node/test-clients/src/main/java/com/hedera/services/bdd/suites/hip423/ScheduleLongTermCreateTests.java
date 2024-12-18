@@ -40,7 +40,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 @HapiTestLifecycle
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleLongTermCreateTests {
-
     private static final long MAX_SCHEDULE_EXPIRY_TIME = TimeUnit.DAYS.toSeconds(60);
 
     @BeforeAll
@@ -59,16 +58,5 @@ public class ScheduleLongTermCreateTests {
                 scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
                         .via("createTxn"),
                 getScheduleInfo("one").hasRelativeExpiry("createTxn", MAX_SCHEDULE_EXPIRY_TIME));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> scheduleCreateMinimumTime() {
-        return hapiTest(
-                cryptoCreate(RECEIVER).balance(0L),
-                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L)))
-                        .waitForExpiry(false)
-                        .expiringIn(1)
-                        .via("createTxn"),
-                getScheduleInfo("one").isExecuted().hasRelativeExpiry("createTxn", 1));
     }
 }
