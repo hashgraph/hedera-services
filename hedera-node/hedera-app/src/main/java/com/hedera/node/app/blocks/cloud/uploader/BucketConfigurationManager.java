@@ -32,9 +32,9 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,9 +54,6 @@ public class BucketConfigurationManager {
     private volatile OnDiskBucketConfig credentials;
     private final AtomicReference<List<CompleteBucketConfig>> currentConfig = new AtomicReference<>();
 
-    /** The list of registered block closed listeners */
-    private final List<BucketConfigurationListener> bucketConfigurationListeners = new ArrayList<>();
-
     /**
      * @param configProvider the configuration provider to use
      */
@@ -69,16 +66,8 @@ public class BucketConfigurationManager {
     }
 
     /**
-     * Register a listener for bucket configuration changes.
-     *
-     * @param listener the listener to register
-     */
-    public void registerBucketConfigurationListener(@NonNull final BucketConfigurationListener listener) {
-        bucketConfigurationListeners.add(listener);
-    }
-
-    /**
      * Combines the buckets configuration with their respective credentials.
+     * @param blockStreamConfig configuration properties for block streams
      */
     public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
         // update local BlockStreamConfig if there was a network properties change
@@ -113,9 +102,6 @@ public class BucketConfigurationManager {
                 .filter(Objects::nonNull)
                 .filter(CompleteBucketConfig::enabled)
                 .toList());
-
-        // Notify listeners
-        bucketConfigurationListeners.forEach(listener -> listener.onBucketConfigurationsUpdated(currentConfig.get()));
     }
 
     /**
@@ -124,25 +110,25 @@ public class BucketConfigurationManager {
     private void watchCredentialsFile() {
         final var bucketCredentialsPath = blockStreamConfig.credentialsPath();
         final Path credentialsPath = Path.of(bucketCredentialsPath);
-        new Thread(() -> {
-                    try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-                        credentialsPath.getParent().register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
-                        while (true) {
-                            WatchKey key = watchService.take();
-                            for (WatchEvent<?> event : key.pollEvents()) {
-                                if (event.context().toString().equals(bucketCredentialsPath)) {
-                                    logger.info("Configuration file changed. Reloading...");
-                                    loadCompleteBucketConfigs(blockStreamConfig);
-                                }
-                            }
-                            key.reset();
+        CompletableFuture.runAsync(() -> {
+            try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
+                credentialsPath.getParent().register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+
+                while (true) {
+                    WatchKey key = watchService.take();
+                    for (WatchEvent<?> event : key.pollEvents()) {
+                        if (event.context().toString().equals(bucketCredentialsPath)) {
+                            logger.info("Configuration file changed. Reloading...");
+                            loadCompleteBucketConfigs(blockStreamConfig);
                         }
-                    } catch (IOException | InterruptedException e) {
-                        logger.error("Error watching configuration file: {}", e.getMessage());
                     }
-                })
-                .start();
+                    key.reset();
+                }
+            } catch (IOException | InterruptedException e) {
+                logger.error("Error watching configuration file: {}", e.getMessage());
+            }
+        });
     }
 
     /**
