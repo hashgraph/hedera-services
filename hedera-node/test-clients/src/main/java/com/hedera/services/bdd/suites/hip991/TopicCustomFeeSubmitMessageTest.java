@@ -848,6 +848,42 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
+        @DisplayName("MessageSubmit to a topic with a custom fee and not enough max_custom_fee")
+        // TOPIC_FEE_213/214
+        final Stream<DynamicTest> messageSubmitToTopicWithCustomFeesAndMaxCustomFee() {
+            final var collector = "collector";
+            final var tokenFee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var hbarFee = fixedConsensusHbarFee(2, collector);
+            final var tokenFeeLimit = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var hbarFeeLimit = fixedConsensusHbarFee(1, collector);
+
+            return hapiTest(
+                    cryptoCreate(collector).balance(0L),
+                    cryptoCreate("submitter").balance(ONE_HBAR),
+                    tokenAssociate("submitter", BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(tokenFee).withConsensusCustomFee(hbarFee),
+                    cryptoTransfer(moving(10, BASE_TOKEN).between(TOKEN_TREASURY, "submitter")),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(tokenFeeLimit)
+                            .maxCustomFee(hbarFee)
+                            .message("TEST")
+                            .payingWith("submitter")
+                            .hasKnownStatus(MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(tokenFee)
+                            .maxCustomFee(hbarFeeLimit)
+                            .message("TEST")
+                            .payingWith("submitter")
+                            .hasKnownStatus(MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(tokenFee)
+                            .message("TEST")
+                            .payingWith("submitter")
+                            .hasKnownStatus(NO_VALID_MAX_CUSTOM_FEE));
+        }
+
+        @HapiTest
         @DisplayName("Submit to topic with frozen FT for fee")
         // TOPIC_FEE_230
         final Stream<DynamicTest> submitToTopicFrozenToken() {
