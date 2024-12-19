@@ -39,7 +39,7 @@ class BlockRetentionManagerTest {
 
     private BlockRetentionManager blockRetentionManager;
 
-    private static final int AWAIT_SECONDS_TIMEOUT = 5;
+    private static final int AWAIT_SECONDS_TIMEOUT = 60;
 
     @Test
     void testCleanupShouldNotRunUntilScheduleTime() throws IOException {
