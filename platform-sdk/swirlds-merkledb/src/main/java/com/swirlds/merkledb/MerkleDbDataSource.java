@@ -187,6 +187,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig tableConfig,
+            final boolean compactionEnabled,
             final boolean preferDiskBasedIndices)
             throws IOException {
         this.database = database;
@@ -400,7 +401,9 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 pathToKeyValueFileCompactor,
                 merkleDbConfig);
 
-        enableBackgroundCompaction();
+        if (compactionEnabled) {
+            enableBackgroundCompaction();
+        }
     }
 
     /**

@@ -457,7 +457,7 @@ class MerkleDbDataSourceTest {
 
         // reopen data source and check
         final MerkleDbDataSource dataSource2 =
-                testType.dataType().getDataSource(snapshotDbPathRef[0], tableName);
+                testType.dataType().getDataSource(snapshotDbPathRef[0], tableName, false);
         try {
             // check all the leaf data
             IntStream.range(count, count * 2)
@@ -518,7 +518,7 @@ class MerkleDbDataSourceTest {
             // There is no way to use MerkleDbPaths to get bucket index file path
             Files.deleteIfExists(snapshotPaths.keyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
 
-            final MerkleDbDataSource snapshotDataSource = snapshotDb.getDataSource(tableName);
+            final MerkleDbDataSource snapshotDataSource = snapshotDb.getDataSource(tableName, false);
             reinitializeDirectMemoryUsage();
             IntStream.range(0, count * 2).forEach(i -> assertHash(snapshotDataSource, i, i + 1));
             IntStream.range(count, count * 2)
@@ -587,7 +587,7 @@ class MerkleDbDataSourceTest {
         assertDoesNotThrow(
                 () -> TestType.fixed_fixed
                         .dataType()
-                        .createDataSource(testDirectory, "testDB", 1000, Long.MAX_VALUE, false)
+                        .createDataSource(testDirectory, "testDB", 1000, Long.MAX_VALUE, false, false)
                         .close(),
                 "Should be possible to instantiate data source with merging disabled");
         // check db count
@@ -778,7 +778,7 @@ class MerkleDbDataSourceTest {
             CheckedConsumer<MerkleDbDataSource, Exception> dataSourceConsumer)
             throws IOException {
         final MerkleDbDataSource dataSource =
-                testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false);
+                testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
         try {
             dataSourceConsumer.accept(dataSource);
         } catch (Throwable e) {

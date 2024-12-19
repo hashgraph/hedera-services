@@ -72,8 +72,8 @@ public final class BrokenBuilder implements VirtualDataSourceBuilder {
     }
 
     @Override
-    public BreakableDataSource build(final String label) {
-        return new BreakableDataSource(this, delegate.build(label));
+    public BreakableDataSource build(final String label, final boolean withDbCompactionEnabled) {
+        return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled));
     }
 
     @Override

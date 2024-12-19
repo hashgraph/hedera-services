@@ -84,7 +84,7 @@ class ReconnectHashListenerTest {
     @Test
     @DisplayName("Null statistics throws")
     void nullStatisticsThrows() {
-        final VirtualDataSource ds = new InMemoryBuilder().build("nullStatisticsThrows");
+        final VirtualDataSource ds = new InMemoryBuilder().build("nullStatisticsThrows", false);
         final ReconnectNodeRemover<TestKey, TestValue> nodeRemover = mock(ReconnectNodeRemover.class);
         assertThrows(
                 NullPointerException.class,
@@ -103,7 +103,7 @@ class ReconnectHashListenerTest {
     @Test
     @DisplayName("Null node remover throws")
     void nullNodeRemoverThrows() {
-        final VirtualDataSource ds = new InMemoryBuilder().build("nullStatisticsThrows");
+        final VirtualDataSource ds = new InMemoryBuilder().build("nullStatisticsThrows", false);
         final VirtualMapStatistics statistics = mock(VirtualMapStatistics.class);
         assertThrows(
                 NullPointerException.class,
@@ -132,7 +132,7 @@ class ReconnectHashListenerTest {
     }) // Invalid (both should be equal only if == 1
     @DisplayName("Illegal first and last leaf path combinations throw")
     void badLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths");
+        final VirtualDataSource ds = new InMemoryBuilder().build("badLeafPaths", false);
         final VirtualMapStatistics statistics = mock(VirtualMapStatistics.class);
         final ReconnectNodeRemover<TestKey, TestValue> nodeRemover = mock(ReconnectNodeRemover.class);
         assertThrows(
@@ -153,7 +153,7 @@ class ReconnectHashListenerTest {
     @CsvSource({"-1, -1", " 1,  1", " 1,  2", " 4,  8"})
     @DisplayName("Valid configurations create an instance")
     void goodLeafPaths(long firstLeafPath, long lastLeafPath) {
-        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths");
+        final VirtualDataSource ds = new InMemoryBuilder().build("goodLeafPaths", true);
         final VirtualMapStatistics statistics = mock(VirtualMapStatistics.class);
         final ReconnectNodeRemover<TestKey, TestValue> nodeRemover = mock(ReconnectNodeRemover.class);
         try {
@@ -176,7 +176,7 @@ class ReconnectHashListenerTest {
     @ValueSource(ints = {1, 2, 10, 100, 1000, 10_000, 100_000, 1_000_000})
     @DisplayName("Flushed data is always done in the right order")
     void flushOrder(int size) {
-        final VirtualDataSourceSpy ds = new VirtualDataSourceSpy(new InMemoryBuilder().build("flushOrder"));
+        final VirtualDataSourceSpy ds = new VirtualDataSourceSpy(new InMemoryBuilder().build("flushOrder", true));
 
         final VirtualMapStatistics statistics = mock(VirtualMapStatistics.class);
         final ReconnectNodeRemover<TestKey, TestValue> nodeRemover = mock(ReconnectNodeRemover.class);

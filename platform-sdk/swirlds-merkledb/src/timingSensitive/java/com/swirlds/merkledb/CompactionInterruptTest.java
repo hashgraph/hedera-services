@@ -80,7 +80,7 @@ class CompactionInterruptTest {
         final Path storeDir = tmpFileDir.resolve("startMergeThenInterruptImpl");
         String tableName = "mergeThenInterrupt";
         final MerkleDbDataSource dataSource =
-                TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, true);
+                TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
         try {
@@ -124,7 +124,7 @@ class CompactionInterruptTest {
         final Path storeDir = tmpFileDir.resolve("startMergeWhileSnapshottingThenInterruptImpl");
         String tableName = "mergeWhileSnapshotting";
         final MerkleDbDataSource dataSource =
-                TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, true);
+                TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
         final ExecutorService exec = Executors.newCachedThreadPool();

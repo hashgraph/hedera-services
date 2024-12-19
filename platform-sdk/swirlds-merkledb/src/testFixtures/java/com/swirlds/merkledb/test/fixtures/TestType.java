@@ -218,20 +218,21 @@ public enum TestType {
                 final String name,
                 final int size,
                 final long hashesRamToDiskThreshold,
+                final boolean enableMerging,
                 boolean preferDiskBasedIndexes)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
             final MerkleDbTableConfig tableConfig =
                     new MerkleDbTableConfig((short) 1, DigestType.SHA_384, size * 10L, hashesRamToDiskThreshold);
-            MerkleDbDataSource dataSource = database.createDataSource(name, tableConfig);
+            MerkleDbDataSource dataSource = database.createDataSource(name, tableConfig, enableMerging);
             dataSource.registerMetrics(getMetrics());
             return dataSource;
         }
 
-        public MerkleDbDataSource getDataSource(final Path dbPath, final String name)
+        public MerkleDbDataSource getDataSource(final Path dbPath, final String name, final boolean enableMerging)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath, CONFIGURATION);
-            return database.getDataSource(name);
+            return database.getDataSource(name, enableMerging);
         }
 
         public VirtualHashRecord createVirtualInternalRecord(final int i) {

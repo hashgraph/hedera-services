@@ -63,7 +63,7 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder {
      */
     @NonNull
     @Override
-    public InMemoryDataSource build(final String label) {
+    public InMemoryDataSource build(final String label, final boolean withDbCompactionEnabled) {
         return databases.computeIfAbsent(label, (s) -> createDataSource(label));
     }
 

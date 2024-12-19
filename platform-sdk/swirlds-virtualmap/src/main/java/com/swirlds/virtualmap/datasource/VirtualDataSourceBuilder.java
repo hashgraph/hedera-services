@@ -38,11 +38,14 @@ public interface VirtualDataSourceBuilder extends SelfSerializable {
      * @param label
      * 		The label. Cannot be null. Labels can be used in logs and stats, and also to build
      * 		full disk paths to store data source files. This is builder implementation specific
+     * @param withDbCompactionEnabled
+     * 		If true then the new database will have background compaction enabled, false and the
+     * 		new database will not have background compaction enabled
      * @return
      * 		An opened {@link VirtualDataSource}.
      */
     @NonNull
-    VirtualDataSource build(String label);
+    VirtualDataSource build(String label, final boolean withDbCompactionEnabled);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder by creating

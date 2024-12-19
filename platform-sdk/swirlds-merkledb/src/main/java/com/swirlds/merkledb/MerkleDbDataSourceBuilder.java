@@ -107,7 +107,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
      */
     @NonNull
     @Override
-    public VirtualDataSource build(final String label) {
+    public VirtualDataSource build(final String label, final boolean withDbCompactionEnabled) {
         if (tableConfig == null) {
             throw new IllegalArgumentException("Table serialization config is missing");
         }
@@ -116,7 +116,8 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
         try {
             return database.createDataSource(
                     label, // use VirtualMap name as the table name
-                    tableConfig);
+                    tableConfig,
+                    withDbCompactionEnabled);
         } catch (final IOException ex) {
             throw new UncheckedIOException(ex);
         }
@@ -167,7 +168,7 @@ public class MerkleDbDataSourceBuilder implements VirtualDataSourceBuilder {
             // Restore to the default database. Assuming the default database hasn't been initialized yet.
             // Note that all database data, shared and per-table for all tables, will be restored.
             final MerkleDb database = MerkleDb.restore(source, databaseDir, configuration);
-            return database.getDataSource(label);
+            return database.getDataSource(label, true);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);
         }

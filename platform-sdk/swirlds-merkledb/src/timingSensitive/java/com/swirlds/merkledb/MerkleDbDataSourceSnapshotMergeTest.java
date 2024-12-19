@@ -112,7 +112,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
         final KeySerializer keySerializer = testType.dataType().getKeySerializer();
         final ValueSerializer valueSerializer = testType.dataType().getValueSerializer();
         final MerkleDbDataSource dataSource = testType.dataType()
-                .createDataSource(storeDir, tableName, COUNT, hashesRamToDiskThreshold, preferDiskBasedIndexes);
+                .createDataSource(storeDir, tableName, COUNT, hashesRamToDiskThreshold, false, preferDiskBasedIndexes);
         final ExecutorService exec = Executors.newCachedThreadPool();
         try {
             // create some internal and leaf nodes in batches
@@ -175,7 +175,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
             checkData(COUNT2, testType, keySerializer, valueSerializer, dataSource);
             // load snapshot and check data
             final MerkleDbDataSource snapshotDataSource =
-                    testType.dataType().getDataSource(snapshotDir, tableName);
+                    testType.dataType().getDataSource(snapshotDir, tableName, false);
             checkData(COUNT, testType, keySerializer, valueSerializer, snapshotDataSource);
             // validate all data in the snapshot
             final DataSourceValidator<VirtualKey, ExampleByteArrayVirtualValue> dataSourceValidator =

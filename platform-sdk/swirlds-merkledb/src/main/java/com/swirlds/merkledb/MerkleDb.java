@@ -347,13 +347,15 @@ public final class MerkleDb {
      * @param label Table name. Used in logs and stats and also as a folder name to store table data
      *     in the tables storage dir
      * @param tableConfig Table serialization config
+     * @param dbCompactionEnabled Whether background compaction process needs to be enabled for this
+     *     data source
      * @return A created data source
      * @throws IOException If an I/O error happened while creating a new data source
      * @throws IllegalStateException If a data source (table) with the specified name already exists
      *     in the database instance
      */
     public MerkleDbDataSource createDataSource(
-            final String label, final MerkleDbTableConfig tableConfig)
+            final String label, final MerkleDbTableConfig tableConfig, final boolean dbCompactionEnabled)
             throws IOException {
         // This method should be synchronized, as between tableExists() and tableConfigs.set()
         // a new data source can be created in a parallel thread. However, the current assumption
@@ -366,7 +368,7 @@ public final class MerkleDb {
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         final MerkleDbDataSource dataSource =
-                new MerkleDbDataSource(this, label, tableId, tableConfig, false);
+                new MerkleDbDataSource(this, label, tableId, tableConfig, dbCompactionEnabled, false);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -396,7 +398,7 @@ public final class MerkleDb {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
         importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
-        return getDataSource(tableId, label, offlineUse);
+        return getDataSource(tableId, label, false, offlineUse);
     }
 
     private void importDataSource(
@@ -433,19 +435,21 @@ public final class MerkleDb {
      * table name, throws an exception.
      *
      * @param name Table name
+     * @param dbCompactionEnabled Whether background compaction process needs to be enabled for this
+     *     data source. If the data source was previously opened, this flag is ignored
      * @return The datasource
      */
-    public MerkleDbDataSource getDataSource(final String name) throws IOException {
+    public MerkleDbDataSource getDataSource(final String name, final boolean dbCompactionEnabled) throws IOException {
         final TableMetadata metadata = getTableMetadata(name);
         if (metadata == null) {
             throw new IllegalStateException("Unknown table: " + name);
         }
         final int tableId = metadata.getTableId();
-        return getDataSource(tableId, name, false);
+        return getDataSource(tableId, name, dbCompactionEnabled, false);
     }
 
     private MerkleDbDataSource getDataSource(
-            final int tableId, final String tableName, final boolean useDiskIndices)
+            final int tableId, final String tableName, final boolean dbCompactionEnabled, final boolean useDiskIndices)
             throws IOException {
         final MerkleDbTableConfig tableConfig = getTableConfig(tableId);
         if (tableConfig == null) {
@@ -458,7 +462,7 @@ public final class MerkleDb {
             }
             try {
                 return new MerkleDbDataSource(
-                        this, tableName, tableId, tableConfig, useDiskIndices);
+                        this, tableName, tableId, tableConfig, dbCompactionEnabled, useDiskIndices);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -473,7 +477,7 @@ public final class MerkleDb {
     /**
      * Marks the data source as closed in this database instance. The corresponding table
      * configuration and table files are preserved, so the data source can be re-opened later using
-     * {@link #getDataSource(String)} method.
+     * {@link #getDataSource(String, boolean)} method.
      *
      * @param dataSource The closed data source
      * @param deleteData Indicates whether to delete the data source directory
