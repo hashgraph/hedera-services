@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -141,7 +142,12 @@ public class BodyIdClearingStrategy extends IdClearingStrategy<TxnModification> 
             entry(
                     "proto.EthereumTransactionBody.call_data",
                     ExpectedResponse.atConsensus(INVALID_ETHEREUM_TRANSACTION)),
-            entry("proto.TokenUpdateNftsTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)));
+            entry("proto.TokenUpdateNftsTransactionBody.token", ExpectedResponse.atIngest(INVALID_TOKEN_ID)),
+            entry("proto.PendingAirdropId.receiver_id", ExpectedResponse.atIngest(INVALID_PENDING_AIRDROP_ID)),
+            entry(
+                    "proto.PendingAirdropId.fungible_token_type",
+                    ExpectedResponse.atConsensus(INVALID_PENDING_AIRDROP_ID)),
+            entry("proto.PendingAirdropId.sender_id", ExpectedResponse.atIngest(INVALID_PENDING_AIRDROP_ID)));
 
     private static final Map<String, ExpectedResponse> SCHEDULED_CLEARED_ID_RESPONSES = Map.ofEntries(
             entry("proto.AccountAmount.accountID", ExpectedResponse.atConsensusOneOf(INVALID_ACCOUNT_ID)));

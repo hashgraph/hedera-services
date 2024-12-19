@@ -18,9 +18,7 @@ package com.swirlds.config.api.source;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -49,10 +47,29 @@ public interface ConfigSource {
      *
      * @param propertyName the name of the property
      * @return the string value of the property
-     * @throws NoSuchElementException if the property with the given name is not defined in the source
+     * @throws NoSuchElementException if the property with the given name is not defined in the source OR is a list property
      */
     @Nullable
     String getValue(@NonNull String propertyName) throws NoSuchElementException;
+
+    /**
+     * Checks if the property with the given name is a list property.
+     *
+     * @param propertyName the name of the property
+     * @return {@code true} if the property is a list property, {@code false} otherwise
+     * @throws NoSuchElementException if the property with the given name is not defined in the source OR is not a list property
+     */
+    boolean isListProperty(@NonNull String propertyName) throws NoSuchElementException;
+
+    /**
+     * Returns the list value of the property with the given name.
+     *
+     * @param propertyName the name of the property
+     * @return the list value of the property
+     * @throws NoSuchElementException if the property with the given name is not defined in the source OR is not a list property
+     */
+    @NonNull
+    List<String> getListValue(@NonNull String propertyName) throws NoSuchElementException;
 
     /**
      * Returns the ordinal. The ordinal is used to define a priority order of all config sources while the config source
@@ -64,18 +81,6 @@ public interface ConfigSource {
      */
     default int getOrdinal() {
         return DEFAULT_ORDINAL;
-    }
-
-    /**
-     * Returns all properties of this source as an immutable map.
-     *
-     * @return the map with all properties
-     */
-    @NonNull
-    default Map<String, String> getProperties() {
-        final Map<String, String> props = new HashMap<>();
-        getPropertyNames().forEach(prop -> props.put(prop, getValue(prop)));
-        return Collections.unmodifiableMap(props);
     }
 
     /**

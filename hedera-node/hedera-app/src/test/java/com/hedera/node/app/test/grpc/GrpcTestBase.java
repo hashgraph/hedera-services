@@ -59,6 +59,7 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -332,6 +333,17 @@ abstract class GrpcTestBase extends TestBase {
                 case "netty.startRetries" -> String.valueOf(startRetries);
                 default -> null;
             };
+        }
+
+        @Override
+        public boolean isListProperty(@NonNull final String propertyName) throws NoSuchElementException {
+            return false;
+        }
+
+        @NonNull
+        @Override
+        public List<String> getListValue(@NonNull final String propertyName) throws NoSuchElementException {
+            return List.of();
         }
 
         public int port() {

@@ -1,13 +1,22 @@
+/**
+ * # Local Contract Call
+ * A Contract Call executed directly on the current node
+ * (that is, without consensus).
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
 
-/*-
- * ‌
- * Hedera Network Services Protobuf
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +28,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -27,213 +35,100 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "basic_types.proto";
+import "contract_types.proto";
 import "query_header.proto";
 import "response_header.proto";
-import "contract_types.proto";
-
-import "google/protobuf/wrappers.proto";
 
 /**
- * The log information for an event returned by a smart contract function call. One function call
- * may return several such events.
- */
-message ContractLoginfo {
-    /**
-     * address of a contract that emitted the event
-     */
-    ContractID contractID = 1;
-
-    /**
-     * bloom filter for a particular log
-     */
-    bytes bloom = 2;
-
-    /**
-     * topics of a particular event
-     */
-    repeated bytes topic = 3;
-
-    /**
-     * event data
-     */
-    bytes data = 4;
-}
-
-/**
- * The result returned by a call to a smart contract function. This is part of the response to a
- * ContractCallLocal query, and is in the record for a ContractCall or ContractCreateInstance
- * transaction. The ContractCreateInstance transaction record has the results of the call to the
- * constructor.
- */
-message ContractFunctionResult {
-    /**
-     * the smart contract instance whose function was called
-     */
-    ContractID contractID = 1;
-
-    /**
-     * the result returned by the function
-     */
-    bytes contractCallResult = 2;
-
-    /**
-     * message In case there was an error during smart contract execution
-     */
-    string errorMessage = 3;
-
-    /**
-     * bloom filter for record
-     */
-    bytes bloom = 4;
-
-    /**
-     * units of gas used to execute contract
-     */
-    uint64 gasUsed = 5;
-
-    /**
-     * the log info for events returned by the function
-     */
-    repeated ContractLoginfo logInfo = 6;
-
-    /**
-     * [DEPRECATED] the list of smart contracts that were created by the function call.
-     * 
-     * The created ids will now _also_ be externalized through internal transaction 
-     * records, where each record has its alias field populated with the new contract's 
-     * EVM address. (This is needed for contracts created with CREATE2, since 
-     * there is no longer a simple relationship between the new contract's 0.0.X id 
-     * and its Solidity address.)
-     */
-    repeated ContractID createdContractIDs = 7 [deprecated=true];
-
-    reserved 8;
-
-    /**
-     * The new contract's 20-byte EVM address. Only populated after release 0.23, 
-     * where each created contract will have its own record. (This is an important 
-     * point--the field is not <tt>repeated</tt> because there will be a separate 
-     * child record for each created contract.)
-     * 
-     * Every contract has an EVM address determined by its <tt>shard.realm.num</tt> id.
-     * This address is as follows:
-     *   <ol>
-     *     <li>The first 4 bytes are the big-endian representation of the shard.</li>
-     *     <li>The next 8 bytes are the big-endian representation of the realm.</li>
-     *     <li>The final 8 bytes are the big-endian representation of the number.</li>
-     *   </ol>  
-     * 
-     * Contracts created via CREATE2 have an <b>additional, primary address</b> that is 
-     * derived from the <a href="https://eips.ethereum.org/EIPS/eip-1014">EIP-1014</a> 
-     * specification, and does not have a simple relation to a <tt>shard.realm.num</tt> id. 
-     * 
-     * (Please do note that CREATE2 contracts can also be referenced by the three-part 
-     * EVM address described above.)
-     */
-    google.protobuf.BytesValue evm_address = 9;
-
-    /**
-     * The amount of gas available for the call, aka the gasLimit. 
-     *
-     * This field should only be populated when the paired TransactionBody in the record stream is not a
-     * ContractCreateTransactionBody or a ContractCallTransactionBody.     
-     */
-    int64 gas = 10;
-
-    /**
-     * Number of tinybars sent (the function must be payable if this is nonzero).
-     *
-     * This field should only be populated when the paired TransactionBody in the record stream is not a
-     * ContractCreateTransactionBody or a ContractCallTransactionBody.     
-     */
-    int64 amount = 11;
-
-    /**
-     * The parameters passed into the contract call.
-     *
-     * This field should only be populated when the paired TransactionBody in the record stream is not a
-     * ContractCreateTransactionBody or a ContractCallTransactionBody.     
-     */
-    bytes functionParameters = 12;
-
-    /**
-     * The account that is the "sender." If not present it is the accountId from the transactionId.
-     *
-     * This field should only be populated when the paired TransactionBody in the record stream is not a
-     * ContractCreateTransactionBody or a ContractCallTransactionBody.     
-     */
-    AccountID sender_id = 13;
-
-    /**
-     * A list of updated contract account nonces containing the new nonce value for each contract account.
-     * This is always empty in a ContractCallLocalResponse#ContractFunctionResult message, since no internal creations can happen in a static EVM call.
-     */
-    repeated ContractNonceInfo contract_nonces = 14;
-
-    /**
-     * If not null this field specifies what the value of the signer account nonce is post transaction execution.
-     * For transactions that don't update the signer nonce, this field should be null.
-     */
-    google.protobuf.Int64Value signer_nonce = 15;
-}
-
-/**
- * Call a function of the given smart contract instance, giving it functionParameters as its inputs.
- * This is performed locally on the particular node that the client is communicating with.
- * It cannot change the state of the contract instance (and so, cannot spend anything from the instance's cryptocurrency account).
- * It will not have a consensus timestamp. It cannot generate a record or a receipt. The response will contain the output
- * returned by the function call.  This is useful for calling getter functions, which purely read the state and don't change it.
- * It is faster and cheaper than a normal call, because it is purely local to a single  node.
- * 
- * Unlike a ContractCall transaction, the node will consume the entire amount of provided gas in determining
- * the fee for this query.
+ * Call a view function of a given smart contract<br/>
+ * The call must provide function parameter inputs as needed.<br/>
+ * This is potentially useful for calling view functions that will not revert
+ * when executed in a static EVM context. Many such use cases will be better
+ * served by using a Mirror Node API, however.
+ *
+ * This is performed locally on the particular node that the client is
+ * communicating with. Executing the call locally is faster and less costly,
+ * but imposes certain restrictions.<br/>
+ * The call MUST NOT change the state of the contract instance. This also
+ * precludes any expenditure or transfer of HBAR or other tokens.<br/>
+ * The call SHALL NOT have a separate consensus timestamp.<br/>
+ * The call SHALL NOT generate a record nor a receipt.<br/>
+ * The response SHALL contain the output returned by the function call.<br/>
+ * Any contract call that would use the `STATICCALL` opcode MAY be called via
+ * contract call local with performance and cost benefits.
+ *
+ * Unlike a ContractCall transaction, the node SHALL always consume the
+ * _entire_ amount of offered "gas" in determining the fee for this query, so
+ * accurate gas estimation is important.
  */
 message ContractCallLocalQuery {
     /**
-     * standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither). The payment must cover the fees and all of the gas offered.
+     * Standard information sent with every query operation.<br/>
+     * This includes the signed payment and what kind of response is requested
+     * (cost, state proof, both, or neither).
+     * <p>
+     * The payment MUST be sufficient for the base fees _and_ the full amount
+     * in the `gas` field.
      */
     QueryHeader header = 1;
 
     /**
-     * The contract to make a static call against
+     * The ID of a smart contract to call.
      */
     ContractID contractID = 2;
 
     /**
-     * The amount of gas to use for the call; all of the gas offered will be used and charged a corresponding fee
+     * The amount of "gas" to use for this call.
+     * <p>
+     * This transaction SHALL consume all of the gas offered and charge the
+     * corresponding fee according to the current exchange rate between
+     * HBAR and "gas".
      */
     int64 gas = 3;
 
     /**
-     * which function to call, and the parameters to pass to the function
+     * The smart contract function to call, and the parameters to pass to that
+     * function.
+     * <p>
+     * These SHALL be presented in EVM bytecode function call format.
      */
     bytes functionParameters = 4;
 
     /**
-     * max number of bytes that the result might include. The run will fail if it would have returned more than this number of bytes.
+     * Do not use this field; it is ignored in the current software.
+     * <p>
+     * The maximum number of bytes that the result might include.<br/>
+     * The call will fail if it would have returned more than this number
+     * of bytes.
      */
-    int64 maxResultSize = 5 [deprecated=true];
-
+    int64 maxResultSize = 5 [deprecated = true];
 
     /**
-     * The account that is the "sender." If not present it is the accountId from the transactionId.
-     * Typically a different value than specified in the transactionId requires a valid signature 
-     * over either the hedera transaction or foreign transaction data.
+     * The account that is the "sender" for this contract call.
+     * <p>
+     * If this is not set it SHALL be interpreted as the accountId from the
+     * associated transactionId.<br/>
+     * If this is set then either the associated transaction or the foreign
+     * transaction data MUST be signed by the referenced account.
      */
     AccountID sender_id = 6;
 }
 
 /**
- * Response when the client sends the node ContractCallLocalQuery
+ * The response returned by a `ContractCallLocalQuery` transaction.
  */
 message ContractCallLocalResponse {
     /**
-     * standard response from node to client, including the requested fields: cost, or state proof, or both, or neither
+     * The standard response information for queries.<br/>
+     * This includes the values requested in the `QueryHeader`
+     * (cost, state proof, both, or neither).
      */
     ResponseHeader header = 1;
 
     /**
-     * the value returned by the function (if it completed and didn't fail)
+     * The result(s) returned by the function call, if successful.
+     * <p>
+     * If the call failed this value SHALL be unset.
      */
     ContractFunctionResult functionResult = 2;
 }

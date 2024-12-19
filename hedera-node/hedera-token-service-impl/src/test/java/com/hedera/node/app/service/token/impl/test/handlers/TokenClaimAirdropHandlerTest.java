@@ -170,6 +170,34 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
+    void pureChecksEmptySenderThrows() {
+        final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
+        pendingAirdropIds.add(PendingAirdropId.newBuilder()
+                .receiverId(ACCOUNT_ID_3333)
+                .fungibleTokenType(TOKEN_2468)
+                .build());
+        final var txn = newTokenClaimAirdrop(TokenClaimAirdropTransactionBody.newBuilder()
+                .pendingAirdrops(pendingAirdropIds)
+                .build());
+        Assertions.assertThatThrownBy(() -> tokenClaimAirdropHandler.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void pureChecksEmptyReceiverThrows() {
+        final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
+        pendingAirdropIds.add(PendingAirdropId.newBuilder()
+                .senderId(ACCOUNT_ID_4444)
+                .fungibleTokenType(TOKEN_2468)
+                .build());
+        final var txn = newTokenClaimAirdrop(TokenClaimAirdropTransactionBody.newBuilder()
+                .pendingAirdrops(pendingAirdropIds)
+                .build());
+        Assertions.assertThatThrownBy(() -> tokenClaimAirdropHandler.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
     void preHandleAccountNotExistPath() throws PreCheckException {
         final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
         final var token9754 = asToken(9754);

@@ -1,22 +1,6 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
-import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
@@ -32,10 +16,10 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.start
 import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newLogAttempt;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -49,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -199,11 +184,27 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         return this;
     }
 
+    /**
+     * Starts the node with the given config version.
+     * @param configVersion the config version to use
+     * @return this node
+     */
     public SubProcessNode startWithConfigVersion(final int configVersion) {
+        return startWithConfigVersion(configVersion, Map.of());
+    }
+
+    /**
+     * Starts the node with the given config version.
+     * @param configVersion the config version to use
+     * @param envOverrides the environment overrides to use
+     * @return this node
+     */
+    public SubProcessNode startWithConfigVersion(
+            final int configVersion, @NonNull final Map<String, String> envOverrides) {
         assertStopped();
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
-        processHandle = startSubProcessNodeFrom(metadata, configVersion);
+        processHandle = startSubProcessNodeFrom(metadata, configVersion, envOverrides);
         return this;
     }
 
@@ -228,17 +229,10 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     /**
      * Reassigns the account ID used by this node.
      *
-     * @param memo the memo containing the new account ID to use
+     * @param accountId the new account ID
      */
-    public void reassignNodeAccountIdFrom(@NonNull final String memo) {
-        metadata = metadata.withNewAccountId(toPbj(asAccount(memo)));
-    }
-
-    /**
-     * Reassigns node operator port to be disabled for this node.
-     */
-    public void reassignWithNodeOperatorPortDisabled() {
-        metadata = metadata.withNewNodeOperatorPortDisabled();
+    public void reassignNodeAccountIdFrom(@NonNull final AccountID accountId) {
+        metadata = metadata.withNewAccountId(accountId);
     }
 
     private boolean swirldsLogContains(@NonNull final String text) {

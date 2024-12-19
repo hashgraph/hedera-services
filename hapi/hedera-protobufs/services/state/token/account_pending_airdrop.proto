@@ -1,3 +1,14 @@
+/**
+ * # Account Pending Airdrop.
+ * A single pending airdrop awaiting claim by the recipient.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
@@ -36,35 +47,36 @@ option java_multiple_files = true;
  * The pending airdrop MUST NOT be canceled.<br/>
  * The pending airdrop `sender` account's `head_pending_airdrop_id` field
  * MUST match the `pending_airdrop_id` field in this message.
- *
- * ### Record Stream Effects
- * This value is not currently published in the record stream.
  */
 message AccountPendingAirdrop {
-  /**
-   * The value of the current airdrop id. SHALL NOT be set for non fungible tokens
-   */
-  PendingAirdropValue pending_airdrop_value = 1;
+    /**
+     * An amount of fungible tokens to be sent for this pending airdrop.
+     * <p>
+     * This field SHALL NOT be set for non-fungible/unique tokens.
+     */
+    PendingAirdropValue pending_airdrop_value = 1;
 
-  /**
-   * A pending airdrop identifier.<br/>
-   * This identifies the specific pending airdrop that precedes this position
-   * within the doubly linked list of pending airdrops "owed" by the sending
-   * account associated with this account airdrop "list".
-   * <p>
-   * This SHALL match `pending_airdrop_id` if this is the only entry
-   * in the "list".
-   */
-  PendingAirdropId previous_airdrop = 2;
+    /**
+     * A pending airdrop identifier.
+     * <p>
+     * This field SHALL identify the specific pending airdrop that
+     * precedes this position within the doubly linked list of pending
+     * airdrops "owed" by the sending account associated with this
+     * account airdrop "list".<br/>
+     * This SHALL match `pending_airdrop_id` if this is the only entry
+     * in the "list".
+     */
+    PendingAirdropId previous_airdrop = 2;
 
-  /**
-   * A pending airdrop identifier.<br/>
-   * This identifies the specific pending airdrop that follows this position
-   * within the doubly linked list of pending airdrops "owed" by the sending
-   * account associated with this account airdrop "list".
-   * <p>
-   * This SHALL match `pending_airdrop_id` if this is the only entry
-   * in the "list".
-   */
-  PendingAirdropId next_airdrop = 3;
+    /**
+     * A pending airdrop identifier.<br/>
+     * <p>
+     * This field SHALL identify the specific pending airdrop that
+     * follows this position within the doubly linked list of pending
+     * airdrops "owed" by the sending account associated with this
+     * account airdrop "list".<br/>
+     * This SHALL match `pending_airdrop_id` if this is the only entry
+     * in the "list".
+     */
+    PendingAirdropId next_airdrop = 3;
 }

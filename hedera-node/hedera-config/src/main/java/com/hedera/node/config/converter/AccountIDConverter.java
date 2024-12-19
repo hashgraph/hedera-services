@@ -18,6 +18,7 @@ package com.hedera.node.config.converter;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 
 /**
@@ -26,7 +27,7 @@ import java.util.stream.Stream;
 public class AccountIDConverter implements ConfigConverter<AccountID> {
 
     @Override
-    public AccountID convert(final String value) throws IllegalArgumentException, NullPointerException {
+    public AccountID convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }
