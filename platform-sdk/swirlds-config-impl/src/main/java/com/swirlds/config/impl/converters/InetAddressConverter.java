@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,27 @@ package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Objects;
 
 /**
- * Concrete {@link ConfigConverter} implementation that provides the support for {@link File} values in the
- * configuration.
+ * A {@link ConfigConverter} that converts a string to an {@link InetAddress}.
  */
-public final class FileConverter implements ConfigConverter<File> {
+public class InetAddressConverter implements ConfigConverter<InetAddress> {
 
     /**
-     * {@inheritDoc}
+     * {{@inheritDoc}}
      */
+    @Nullable
     @Override
-    public File convert(@NonNull final String value) throws IllegalArgumentException {
-        return new File(value);
+    public InetAddress convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
+        Objects.requireNonNull(value, "value must not be null");
+        try {
+            return InetAddress.getByName(value);
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }
