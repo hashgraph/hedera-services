@@ -34,8 +34,10 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,6 +46,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -224,10 +227,18 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      *
      * @param transaction the transaction to apply to the state
      */
-    private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
+    private void applyTransactionToState(
+            final @NonNull ConsensusEvent consensusEvent,
+            final @NonNull ConsensusTransaction transaction,
+            final @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions) {
         Objects.requireNonNull(transaction);
         if (transaction.isSystem()) {
             return;
+        }
+
+        if (isSystemTransaction(transaction)) {
+            scopedSystemTransactions.add(new ScopedSystemTransaction(
+                    consensusEvent.getCreatorId(), consensusEvent.getSoftwareVersion(), transaction));
         }
 
         final long transactionContents =
@@ -249,9 +260,15 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             @NonNull
                     final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
                             stateSignatureTransactions) {
+        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
         event.forEachTransaction(transaction -> {
             if (transaction.isSystem()) {
                 return;
+            }
+
+            if (isSystemTransaction(transaction)) {
+                scopedSystemTransactions.add(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
             }
             final long transactionContents =
                     byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
@@ -261,6 +278,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
                         EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
             }
         });
+        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
     /**
@@ -289,12 +307,26 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
         roundsHandled++;
 
-        round.forEachTransaction(this::applyTransactionToState);
+        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
+        round.forEachEventTransaction((ev, tx) -> {
+            applyTransactionToState(ev, tx, scopedSystemTransactions);
+        });
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
 
         setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
         setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
+        stateSignatureTransactions.accept(scopedSystemTransactions);
+    }
+
+    /**
+     * Determines if the given transaction is a system transaction for this app.
+     *
+     * @param transaction the transaction to check
+     * @return true if the transaction is a system transaction, false otherwise
+     */
+    private boolean isSystemTransaction(final Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 8;
     }
 }
