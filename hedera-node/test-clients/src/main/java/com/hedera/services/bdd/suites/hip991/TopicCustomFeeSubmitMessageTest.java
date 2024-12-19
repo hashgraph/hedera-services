@@ -461,6 +461,87 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(SUBMITTER));
         }
+
+        @HapiTest
+        // TOPIC_FEE_250
+        @DisplayName("Submitter pays fees with accept_all_custom_fees=true and the submitter as collector")
+        final Stream<DynamicTest> multipleCustomFeesWithSenderAsCollectorWithAcceptAllCustomFees() {
+            final var alice = "alice";
+            final var bob = "bob";
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, alice);
+            final var fee2 = fixedConsensusHtsFee(2, BASE_TOKEN, bob);
+            return hapiTest(
+                    cryptoCreate(alice).balance(ONE_HBAR),
+                    cryptoCreate(bob).balance(0L),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(bob, BASE_TOKEN),
+                    cryptoTransfer(moving(2, BASE_TOKEN).between(SUBMITTER, alice)),
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).withConsensusCustomFee(fee2),
+                    submitMessageTo(TOPIC)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(alice),
+
+                    // Verifying that alice pays bob but not herself
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0L),
+                    getAccountBalance(bob).hasTokenBalance(BASE_TOKEN, 2L));
+        }
+
+        @HapiTest
+        // TOPIC_FEE_251
+        @DisplayName("Submitter pays fees with accept_all_custom_fees=true, the submitter as collector and max fee")
+        final Stream<DynamicTest> multipleCustomFeesWithSenderAsCollectorWithAcceptAllCustomFeesAndMaxFee() {
+            final var alice = "alice";
+            final var bob = "bob";
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, alice);
+            final var fee2 = fixedConsensusHtsFee(2, BASE_TOKEN, bob);
+            return hapiTest(
+                    cryptoCreate(alice).balance(ONE_HBAR),
+                    cryptoCreate(bob).balance(0L),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(bob, BASE_TOKEN),
+                    cryptoTransfer(moving(2, BASE_TOKEN).between(SUBMITTER, alice)),
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).withConsensusCustomFee(fee2),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee2)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(alice),
+
+                    // Verifying that alice pays bob but not herself
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0L),
+                    getAccountBalance(bob).hasTokenBalance(BASE_TOKEN, 2L));
+        }
+
+        @HapiTest
+        // TOPIC_FEE_253
+        @DisplayName("Submitter have enough balance to pay with submitter as collector")
+        final Stream<DynamicTest> submitHaveEnoughBalanceToPayWithSubmitterAsCollector() {
+            final var alice = "alice";
+            final var bob = "bob";
+            final var dave = "dave";
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, alice);
+            final var fee2 = fixedConsensusHtsFee(2, BASE_TOKEN, bob);
+            final var fee3 = fixedConsensusHtsFee(3, BASE_TOKEN, dave);
+            return hapiTest(
+                    cryptoCreate(alice).balance(ONE_HBAR),
+                    cryptoCreate(bob).balance(0L),
+                    cryptoCreate(dave).balance(0L),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(bob, BASE_TOKEN),
+                    tokenAssociate(dave, BASE_TOKEN),
+                    cryptoTransfer(moving(5, BASE_TOKEN).between(SUBMITTER, alice)),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee1)
+                            .withConsensusCustomFee(fee2)
+                            .withConsensusCustomFee(fee3),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee2)
+                            .maxCustomFee(fee3)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(alice));
+        }
     }
 
     @Nested
@@ -575,6 +656,36 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(treasury)
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+        }
+
+        @HapiTest
+        // TOPIC_FEE_252
+        @DisplayName("Submitter doesn't have enough balance to pay with submitter as collector")
+        final Stream<DynamicTest> submitDoesNotHaveEnoughBalanceToPayWithSubmitterAsCollector() {
+            final var alice = "alice";
+            final var bob = "bob";
+            final var dave = "dave";
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, alice);
+            final var fee2 = fixedConsensusHtsFee(2, BASE_TOKEN, bob);
+            final var fee3 = fixedConsensusHtsFee(3, BASE_TOKEN, dave);
+            return hapiTest(
+                    cryptoCreate(alice).balance(ONE_HBAR),
+                    cryptoCreate(bob).balance(0L),
+                    cryptoCreate(dave).balance(0L),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(bob, BASE_TOKEN),
+                    tokenAssociate(dave, BASE_TOKEN),
+                    cryptoTransfer(moving(3, BASE_TOKEN).between(SUBMITTER, alice)),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee1)
+                            .withConsensusCustomFee(fee2)
+                            .withConsensusCustomFee(fee3),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee3)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(alice)
+                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
     }
 
