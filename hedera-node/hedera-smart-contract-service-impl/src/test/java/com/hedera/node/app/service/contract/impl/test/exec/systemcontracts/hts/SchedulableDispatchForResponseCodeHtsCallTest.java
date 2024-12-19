@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall.OutputFn;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SchedulableDispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,9 +76,8 @@ class SchedulableDispatchForResponseCodeHtsCallTest extends CallTestBase {
                 .tokenCreation(tokenCreation)
                 .build();
 
-        transactionBody = TransactionBody.newBuilder()
-                .tokenCreation(tokenCreation)
-                .build();
+        transactionBody =
+                TransactionBody.newBuilder().tokenCreation(tokenCreation).build();
     }
 
     @Test
@@ -106,10 +104,7 @@ class SchedulableDispatchForResponseCodeHtsCallTest extends CallTestBase {
         // given/when
         mockAttempt();
         subject = new SchedulableDispatchForResponseCodeHtsCall(
-                attempt,
-                transactionBody,
-                dispatchGasCalculator,
-                schedulableTransactionBody);
+                attempt, transactionBody, dispatchGasCalculator, schedulableTransactionBody);
 
         // then
         assertNotNull(subject);
@@ -121,11 +116,7 @@ class SchedulableDispatchForResponseCodeHtsCallTest extends CallTestBase {
         // given/when
         mockAttempt();
         subject = new SchedulableDispatchForResponseCodeHtsCall(
-                attempt,
-                transactionBody,
-                dispatchGasCalculator,
-                failureCustomizer,
-                schedulableTransactionBody);
+                attempt, transactionBody, dispatchGasCalculator, failureCustomizer, schedulableTransactionBody);
 
         // then
         assertNotNull(subject);
@@ -153,10 +144,7 @@ class SchedulableDispatchForResponseCodeHtsCallTest extends CallTestBase {
         // given
         mockAttempt();
         subject = new SchedulableDispatchForResponseCodeHtsCall(
-                attempt,
-                transactionBody,
-                dispatchGasCalculator,
-                schedulableTransactionBody);
+                attempt, transactionBody, dispatchGasCalculator, schedulableTransactionBody);
 
         // when
         final var result = subject.asSchedulableDispatchIn();
@@ -172,4 +160,4 @@ class SchedulableDispatchForResponseCodeHtsCallTest extends CallTestBase {
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
     }
-} 
+}
