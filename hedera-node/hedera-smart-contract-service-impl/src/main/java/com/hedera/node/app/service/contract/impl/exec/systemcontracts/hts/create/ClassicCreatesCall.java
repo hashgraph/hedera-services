@@ -180,8 +180,7 @@ public class ClassicCreatesCall extends AbstractCall {
 
     @NonNull
     @Override
-    public SchedulableTransactionBody asSchedulableDispatchIn(@NonNull MessageFrame frame) {
-        requireNonNull(frame);
+    public SchedulableTransactionBody asSchedulableDispatchIn() {
         requireNonNull(syntheticCreate);
         return SchedulableTransactionBody.newBuilder()
                 .tokenCreation(syntheticCreate.tokenCreation())

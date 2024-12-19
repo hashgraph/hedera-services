@@ -98,7 +98,7 @@ class ScheduleNativeCallTest extends CallTestBase {
         given(recordBuilder.scheduleID()).willReturn(CALLED_SCHEDULE_ID);
         given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(nativeCall);
-        given(nativeCall.asSchedulableDispatchIn(frame))
+        given(nativeCall.asSchedulableDispatchIn())
                 .willReturn(SchedulableTransactionBody.newBuilder().build());
 
         // when
@@ -122,7 +122,7 @@ class ScheduleNativeCallTest extends CallTestBase {
         given(recordBuilder.status()).willReturn(failureStatus);
         given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(nativeCall);
-        given(nativeCall.asSchedulableDispatchIn(frame))
+        given(nativeCall.asSchedulableDispatchIn())
                 .willReturn(SchedulableTransactionBody.newBuilder().build());
 
         // when
@@ -151,7 +151,7 @@ class ScheduleNativeCallTest extends CallTestBase {
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(nativeCall);
-        given(nativeCall.asSchedulableDispatchIn(frame))
+        given(nativeCall.asSchedulableDispatchIn())
                 .willReturn(SchedulableTransactionBody.newBuilder().build());
         given(recordBuilder.scheduleID()).willReturn(CALLED_SCHEDULE_ID);
 

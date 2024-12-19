@@ -155,11 +155,10 @@ public interface Call {
     /**
      * Prepares a {@link SchedulableTransactionBody} for dispatching a scheduled call.
      *
-     * @param frame the message frame
      * @return the native TransactionBody implied by this call
      */
     @NonNull
-    default SchedulableTransactionBody asSchedulableDispatchIn(@NonNull final MessageFrame frame) {
+    default SchedulableTransactionBody asSchedulableDispatchIn() {
         throw new UnsupportedOperationException("Needs scheduleNative() support");
     }
 }
