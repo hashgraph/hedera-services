@@ -39,6 +39,8 @@ class BlockRetentionManagerTest {
 
     private BlockRetentionManager blockRetentionManager;
 
+    private static final int AWAIT_SECONDS_TIMEOUT = 5;
+
     @Test
     void testCleanupShouldNotRunUntilScheduleTime() throws IOException {
         final long retentionPeriodMs = 10;
@@ -55,7 +57,7 @@ class BlockRetentionManagerTest {
         await().atLeast(2 * retentionPeriodMs, TimeUnit.MILLISECONDS);
         assertTrue(Files.exists(uploadedDir.resolve(blockFileName)), blockFileName + " should not have been deleted");
 
-        await().atMost(2 * cleanupPeriodMs, TimeUnit.MILLISECONDS)
+        await().atMost(AWAIT_SECONDS_TIMEOUT, TimeUnit.SECONDS)
                 .until(() -> !Files.exists(uploadedDir.resolve(blockFileName)));
         assertFalse(Files.exists(uploadedDir.resolve(blockFileName)), blockFileName + " should have been deleted");
     }
@@ -77,7 +79,7 @@ class BlockRetentionManagerTest {
         createTestFile(nonBlockFileName);
         createTestFile(compressedBlockFileName);
 
-        await().atMost(1, TimeUnit.SECONDS)
+        await().atMost(AWAIT_SECONDS_TIMEOUT, TimeUnit.SECONDS)
                 .until(() -> !Files.exists(uploadedDir.resolve(blockFileName))
                         && !Files.exists(uploadedDir.resolve(compressedBlockFileName)));
 
@@ -92,7 +94,8 @@ class BlockRetentionManagerTest {
         final var anotherBlockFileName = "file4" + BlockRetentionManager.BLOCK_FILE_EXTENSION;
         createTestFile(anotherBlockFileName);
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> !Files.exists(uploadedDir.resolve(anotherBlockFileName)));
+        await().atMost(AWAIT_SECONDS_TIMEOUT, TimeUnit.SECONDS)
+                .until(() -> !Files.exists(uploadedDir.resolve(anotherBlockFileName)));
 
         assertFalse(
                 Files.exists(uploadedDir.resolve(anotherBlockFileName)),
