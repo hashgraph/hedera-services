@@ -55,7 +55,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
@@ -113,7 +112,6 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.node.internal.network.Network;
@@ -135,7 +133,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -355,8 +352,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
 
     @Nullable
     private StartupNetworks startupNetworks;
-
-    private RosterHistory rosterHistory;
 
     @FunctionalInterface
     public interface TssBaseServiceFactory {
@@ -919,15 +914,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         initialStateHashFuture = completedFuture(stateHash.getBytes());
     }
 
-    /**
-     * Called to set the roster history used when building the platform.
-     *
-     * @param rosterHistory the roster history used when building the platform
-     */
-    public void setRosterHistory(@NonNull final RosterHistory rosterHistory) {
-        this.rosterHistory = rosterHistory;
-    }
-
     /*==================================================================================================================
     *
     * Exposed for use by embedded Hedera
@@ -1018,12 +1004,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
-        final Roster activeRoster;
-        if (!configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
-            activeRoster = rosterHistory.getCurrentRoster();
-        } else {
-            activeRoster = tssBaseService.chooseRosterForNetwork(state, trigger, serviceMigrator, version);
-        }
+        final var activeRoster = tssBaseService.chooseRosterForNetwork(state, trigger, serviceMigrator, version);
         final var networkInfo = new StateNetworkInfo(platform.getSelfId().id(), state, activeRoster, configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()

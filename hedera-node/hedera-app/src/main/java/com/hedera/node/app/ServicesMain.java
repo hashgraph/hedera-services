@@ -311,8 +311,6 @@ public class ServicesMain implements SwirldMain {
                 .withConfiguration(platformConfig)
                 .withKeysAndCerts(keysAndCerts);
 
-        hedera.setRosterHistory(rosterHistory);
-
         final var platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
