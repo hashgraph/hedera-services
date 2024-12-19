@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
@@ -8,6 +23,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
@@ -22,7 +38,6 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
@@ -30,8 +45,8 @@ import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -64,7 +79,7 @@ public class RandomSignedStateGenerator {
     private PlatformMerkleStateRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
-    private AddressBook addressBook;
+    private Roster roster;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
     private SoftwareVersion softwareVersion;
@@ -106,15 +121,14 @@ public class RandomSignedStateGenerator {
      * @return a new signed state
      */
     public SignedState build() {
-        final AddressBook addressBookInstance;
-        if (addressBook == null) {
-            addressBookInstance = RandomAddressBookBuilder.create(random)
-                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+        final Roster rosterInstance;
+        if (roster == null) {
+            rosterInstance = RandomRosterBuilder.create(random)
+                    .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                     .build();
         } else {
-            addressBookInstance = addressBook;
+            rosterInstance = roster;
         }
-        final Roster rosterInstance = RosterRetriever.buildRoster(addressBookInstance);
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
@@ -230,9 +244,10 @@ public class RandomSignedStateGenerator {
             final List<NodeId> signingNodeIdsInstance;
             if (signingNodeIds == null) {
                 signingNodeIdsInstance = new LinkedList<>();
-                if (addressBookInstance.getSize() > 0) {
-                    for (int i = 0; i < addressBookInstance.getSize() / 3 + 1; i++) {
-                        signingNodeIdsInstance.add(addressBookInstance.getNodeId(i));
+                if (!rosterInstance.rosterEntries().isEmpty()) {
+                    for (int i = 0; i < rosterInstance.rosterEntries().size() / 3 + 1; i++) {
+                        final RosterEntry node = rosterInstance.rosterEntries().get(i);
+                        signingNodeIdsInstance.add(NodeId.of(node.nodeId()));
                     }
                 }
             } else {
@@ -315,12 +330,12 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the address book.
+     * Set the roster.
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setAddressBook(final AddressBook addressBook) {
-        this.addressBook = addressBook;
+    public RandomSignedStateGenerator setRoster(final Roster roster) {
+        this.roster = roster;
         return this;
     }
 

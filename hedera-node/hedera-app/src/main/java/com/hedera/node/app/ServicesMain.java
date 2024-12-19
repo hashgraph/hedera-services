@@ -54,7 +54,6 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -244,10 +243,10 @@ public class ServicesMain implements SwirldMain {
         // --- Construct the Hedera instance and use it to initialize the starting state ---
         hedera = newHedera(selfId, metrics);
         final var version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
         final var isGenesis = new AtomicBoolean(false);
         // We want to be able to see the schema migration logs, so init logging here
         initLogging();
+        logger.info("Starting node {} with version {}", selfId, version);
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
@@ -277,11 +276,8 @@ public class ServicesMain implements SwirldMain {
 
         // --- Now build the platform and start it ---
         final var stateRoot = initialState.get().getState();
-        // Roster history naturally derives from RosterService state if the roster
-        // lifecycle is enabled; but until then, is translated from the legacy
-        // previous and current AddressBook fields in the PlatformState
         final RosterHistory rosterHistory;
-        if (platformConfig.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (hedera.isRosterLifecycleEnabled()) {
             final var rosterStore = new ReadableStoreFactory(stateRoot).getStore(ReadableRosterStore.class);
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {
