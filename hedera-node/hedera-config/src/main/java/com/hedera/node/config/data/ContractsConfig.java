@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.scheduleService.signSchedule.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSignScheduleEnabled,
-        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAuthorizeScheduleEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")

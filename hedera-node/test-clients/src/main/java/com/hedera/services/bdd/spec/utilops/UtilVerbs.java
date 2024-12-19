@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
@@ -84,9 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -97,11 +80,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -126,13 +111,9 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyAddLiveHashNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetExecutionTimeNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
@@ -149,7 +130,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.CandidateRosterValidationOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.PurgeUpgradeArtifactsOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
@@ -198,7 +179,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -505,20 +485,18 @@ public class UtilVerbs {
         return new WaitForStatusOp(selector, ACTIVE, timeout);
     }
 
-    public static WaitForStatusOp waitForBehind(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), BEHIND, timeout);
-    }
-
-    public static WaitForStatusOp waitForReconnectComplete(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), RECONNECT_COMPLETE, timeout);
-    }
-
-    public static WaitForStatusOp waitForFreezeComplete(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
-    }
-
-    public static WaitForStatusOp waitForActiveNetwork(@NonNull final Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
+    /**
+     * Returns an operation that waits for the target network to be active, and if this is a subprocess network,
+     * refreshes the gRPC clients to reflect reassigned ports.
+     * @param timeout the maximum time to wait for the network to become active
+     * @return the operation that waits for the network to become active
+     */
+    public static SpecOperation waitForActiveNetworkWithReassignedPorts(@NonNull final Duration timeout) {
+        return blockingOrder(new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout), doingContextual(spec -> {
+            if (spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork) {
+                subProcessNetwork.refreshClients();
+            }
+        }));
     }
 
     /**
@@ -599,12 +577,11 @@ public class UtilVerbs {
      * Returns an operation that validates that each node's generated <i>config.txt</i> in its upgrade
      * artifacts directory passes the given validator.
      *
-     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @param rosterValidator the validator to apply to each node's <i>config.txt</i>
      * @return the operation that validates the <i>config.txt</i> files
      */
-    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
-            @NonNull final Consumer<AddressBook> bookValidator) {
-        return validateUpgradeAddressBooks(NodeSelector.allNodes(), bookValidator);
+    public static CandidateRosterValidationOp validateCandidateRoster(@NonNull final Consumer<Roster> rosterValidator) {
+        return validateCandidateRoster(NodeSelector.allNodes(), rosterValidator);
     }
 
     /**
@@ -612,12 +589,12 @@ public class UtilVerbs {
      * artifacts directory passes the given validator.
      *
      * @param selector the selector for the nodes to validate
-     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @param rosterValidator the validator to apply to each node's <i>config.txt</i>
      * @return the operation that validates the <i>config.txt</i> files
      */
-    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
-            @NonNull final NodeSelector selector, @NonNull final Consumer<AddressBook> bookValidator) {
-        return new ConfigTxtValidationOp(selector, bookValidator);
+    public static CandidateRosterValidationOp validateCandidateRoster(
+            @NonNull final NodeSelector selector, @NonNull final Consumer<Roster> rosterValidator) {
+        return new CandidateRosterValidationOp(selector, rosterValidator);
     }
 
     /**
@@ -831,24 +808,8 @@ public class UtilVerbs {
         return new VerifyGetExecutionTimeNotSupported();
     }
 
-    public static VerifyGetStakersNotSupported getStakersNotSupported() {
-        return new VerifyGetStakersNotSupported();
-    }
-
-    public static VerifyGetFastRecordNotSupported getFastRecordNotSupported() {
-        return new VerifyGetFastRecordNotSupported();
-    }
-
     public static VerifyGetBySolidityIdNotSupported getBySolidityIdNotSupported() {
         return new VerifyGetBySolidityIdNotSupported();
-    }
-
-    public static VerifyGetAccountNftInfosNotSupported getAccountNftInfosNotSupported() {
-        return new VerifyGetAccountNftInfosNotSupported();
-    }
-
-    public static VerifyGetTokenNftInfosNotSupported getTokenNftInfosNotSupported() {
-        return new VerifyGetTokenNftInfosNotSupported();
     }
 
     public static VerifyAddLiveHashNotSupported verifyAddLiveHashNotSupported() {

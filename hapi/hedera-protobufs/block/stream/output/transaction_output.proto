@@ -51,7 +51,7 @@ import "stream/output/smart_contract_service.proto";
  * >> Only a few transactions produce output that is not in the transaction
  * >> and also not reflected in state changes. All other transaction types
  * >> are _currently_ not included here. We have, however, allocated names
- * >> and indexes for those transaction types to preserve consistency if we
+ * >> for those transaction types to preserve consistency if we
  * >> add them later.
  *
  * <!--

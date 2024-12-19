@@ -19,8 +19,6 @@ package com.swirlds.config.extensions.sources;
 import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Represents a mapping between an original name and a mapped name. This class is used to hold the mapping configuration
@@ -30,8 +28,6 @@ import org.apache.logging.log4j.Logger;
  * @param originalName original property name
  */
 public record ConfigMapping(@NonNull String mappedName, @NonNull String originalName) {
-
-    private static final Logger logger = LogManager.getLogger(MappedConfigSource.class);
 
     /**
      * Creates a new {@code ConfigMapping}.

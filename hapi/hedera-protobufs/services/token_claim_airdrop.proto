@@ -5,7 +5,9 @@
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
  * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
- * document are to be interpreted as described in [RFC2119](https://www.ietf.org/rfc/rfc2119).
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
  */
 syntax = "proto3";
 
@@ -25,7 +27,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -48,17 +49,17 @@ import "basic_types.proto";
  * SHALL NOT be restated in the record file.<br/>
  * All claims MUST succeed for this transaction to succeed.
  *
- * ### Record Stream Effects
+ * ### Block Stream Effects
  * The completed transfers SHALL be present in the transfer list.
  */
 message TokenClaimAirdropTransactionBody {
-  /**
-   * A list of one or more pending airdrop identifiers.
-   * <p>
-   * This transaction MUST be signed by the account identified by
-   * the `receiver_id` for each entry in this list.<br/>
-   * This list MUST contain between 1 and 10 entries, inclusive.<br/>
-   * This list MUST NOT have any duplicate entries.
-   */
-  repeated PendingAirdropId pending_airdrops = 1;
+    /**
+     * A list of one or more pending airdrop identifiers.
+     * <p>
+     * This transaction MUST be signed by the account identified by
+     * the `receiver_id` for each entry in this list.<br/>
+     * This list MUST contain between 1 and 10 entries, inclusive.<br/>
+     * This list MUST NOT have any duplicate entries.
+     */
+    repeated PendingAirdropId pending_airdrops = 1;
 }

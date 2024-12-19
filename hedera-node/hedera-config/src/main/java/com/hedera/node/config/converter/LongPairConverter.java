@@ -18,6 +18,7 @@ package com.hedera.node.config.converter;
 
 import com.hedera.node.config.types.LongPair;
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -29,7 +30,7 @@ public class LongPairConverter implements ConfigConverter<LongPair> {
     private static final String PATTERN = Pattern.quote("-");
 
     @Override
-    public LongPair convert(final String value) throws IllegalArgumentException, NullPointerException {
+    public LongPair convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
         Objects.requireNonNull(value, "Parameter 'value' cannot be null");
         final String[] split = value.split(PATTERN, 2);
         if (split.length <= 1) {

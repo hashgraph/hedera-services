@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -352,44 +337,6 @@ public class ScheduleLongTermSignTest {
                         .hasRelativeExpiry(SENDER_TXN, 10)
                         .hasRecordedScheduledTxn(),
                 triggerSchedule(schedule, 11),
-                getAccountBalance(receiver).hasTinyBars(1L)));
-    }
-
-    @HapiTest
-    @Order(6)
-    final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
-        var senderShape = threshOf(1, 3);
-        var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
-        var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
-
-        return hapiTest(flattened(
-                newKeyNamed(senderKey).shape(senderShape),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .payingWith(DEFAULT_PAYER),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigOne)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(receiver),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                getScheduleInfo(schedule)
-                        .hasScheduleId(schedule)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
-                        .hasRecordedScheduledTxn(),
-                triggerSchedule(schedule),
                 getAccountBalance(receiver).hasTinyBars(1L)));
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ class StateSigningTests {
                 .withSize(nodeCount)
                 .build();
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -191,7 +191,7 @@ class StateSigningTests {
                 .withSize(nodeCount)
                 .build();
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -286,7 +286,7 @@ class StateSigningTests {
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -371,7 +371,7 @@ class StateSigningTests {
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -414,7 +414,7 @@ class StateSigningTests {
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -484,7 +484,7 @@ class StateSigningTests {
         final Roster roster = new Roster(rosterEntries);
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 
@@ -534,7 +534,7 @@ class StateSigningTests {
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setSignatures(new HashMap<>())
                 .build();
 

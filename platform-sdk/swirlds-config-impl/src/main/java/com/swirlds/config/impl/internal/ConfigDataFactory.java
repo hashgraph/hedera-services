@@ -110,7 +110,11 @@ class ConfigDataFactory {
                 final Class<?> genericType = getGenericSetType(component);
                 return configuration.getValueSet(name, genericType);
             }
-            return configuration.getValue(name, valueType);
+            if (configuration.isListValue(name)) {
+                return configuration.getValues(name, valueType);
+            } else {
+                return configuration.getValue(name, valueType);
+            }
         }
     }
 

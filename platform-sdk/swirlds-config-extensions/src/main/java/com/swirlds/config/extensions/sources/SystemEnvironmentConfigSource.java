@@ -19,6 +19,7 @@ package com.swirlds.config.extensions.sources;
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -52,6 +53,7 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Set<String> getPropertyNames() {
         return System.getenv().keySet();
@@ -67,6 +69,23 @@ public final class SystemEnvironmentConfigSource implements ConfigSource {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }
         return System.getenv(propertyName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isListProperty(@NonNull final String propertyName) throws NoSuchElementException {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public List<String> getListValue(@NonNull final String propertyName) throws NoSuchElementException {
+        return List.of();
     }
 
     /**

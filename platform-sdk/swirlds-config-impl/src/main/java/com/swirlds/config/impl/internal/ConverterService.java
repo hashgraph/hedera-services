@@ -27,6 +27,7 @@ import com.swirlds.config.impl.converters.DurationConverter;
 import com.swirlds.config.impl.converters.EnumConverter;
 import com.swirlds.config.impl.converters.FileConverter;
 import com.swirlds.config.impl.converters.FloatConverter;
+import com.swirlds.config.impl.converters.InetAddressConverter;
 import com.swirlds.config.impl.converters.IntegerConverter;
 import com.swirlds.config.impl.converters.LongConverter;
 import com.swirlds.config.impl.converters.PathConverter;
@@ -40,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -91,6 +93,8 @@ class ConverterService implements ConfigLifecycle {
     private static final ConfigConverter<Duration> DURATION_CONVERTER = new DurationConverter();
 
     private static final ConfigConverter<ChronoUnit> CHRONO_UNIT_CONVERTER = new ChronoUnitConverter();
+
+    private static final ConfigConverter<InetAddress> INET_ADDRESS_CONFIG_CONVERTER = new InetAddressConverter();
 
     ConverterService() {
         this.converters = new ConcurrentHashMap<>();
@@ -173,6 +177,7 @@ class ConverterService implements ConfigLifecycle {
         addConverter(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
         addConverter(Duration.class, DURATION_CONVERTER);
         addConverter(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
+        addConverter(InetAddress.class, INET_ADDRESS_CONFIG_CONVERTER);
         initialized = true;
     }
 
