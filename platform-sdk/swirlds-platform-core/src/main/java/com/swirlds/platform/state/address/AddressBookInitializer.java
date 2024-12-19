@@ -3,6 +3,8 @@ package com.swirlds.platform.state.address;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
+import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -12,6 +14,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookValidator;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -25,7 +28,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -99,7 +101,6 @@ public class AddressBookInitializer {
      * @param initialState The initial state to start from.
      * @param configAddressBook The address book derived from config.txt.
      * @param platformContext The context for the platform.
-     * @param stateBookFn A function to get the address book from the state
      */
     public AddressBookInitializer(
             @NonNull final NodeId selfId,
@@ -107,8 +108,7 @@ public class AddressBookInitializer {
             final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Function<SignedState, AddressBook> stateBookFn) {
+            @NonNull final PlatformContext platformContext) {
         this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.softwareUpgrade = softwareUpgrade;
@@ -118,7 +118,8 @@ public class AddressBookInitializer {
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
 
-        final var book = stateBookFn.apply(initialState);
+        final var book = buildAddressBook(
+                retrieveActiveOrGenesisRoster((State) initialState.getState().getSwirldState()));
         this.stateAddressBook = (book == null || book.getSize() == 0) ? null : book;
         if (stateAddressBook == null && !initialState.isGenesisState()) {
             throw new IllegalStateException("Only genesis states can have null address books.");

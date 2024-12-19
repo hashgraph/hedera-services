@@ -237,14 +237,7 @@ public class AddressBookUtils {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                selfId,
-                version,
-                softwareUpgrade,
-                initialState.get(),
-                bootstrapAddressBook.copy(),
-                platformContext,
-                s -> buildAddressBook(
-                        retrieveActiveOrGenesisRoster((State) s.getState().getSwirldState())));
+                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
 
         final boolean useRosterLifecycle = platformContext
                 .getConfiguration()

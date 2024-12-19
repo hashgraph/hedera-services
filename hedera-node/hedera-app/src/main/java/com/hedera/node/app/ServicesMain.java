@@ -13,8 +13,6 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
-import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.roster.RosterUtils.buildRosterHistory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSignedState;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
@@ -298,12 +296,7 @@ public class ServicesMain implements SwirldMain {
                     detectSoftwareUpgrade(version, initialState.get()),
                     initialState.get(),
                     diskAddressBook.copy(),
-                    platformContext,
-                    signedState -> {
-                        final var state =
-                                (MerkleStateRoot<?>) signedState.getState().getSwirldState();
-                        return buildAddressBook(retrieveActiveOrGenesisRoster(state));
-                    });
+                    platformContext);
             rosterHistory = buildRosterHistory((State) initialState.get().getState());
         }
         final var platformBuilder = PlatformBuilder.create(

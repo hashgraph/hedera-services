@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform;
 
-import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
@@ -75,9 +74,7 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(true),
-                initialState -> buildAddressBook(retrieveActiveOrGenesisRoster(
-                        (State) initialState.getState().getSwirldState())));
+                getPlatformContext(true));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
@@ -107,8 +104,7 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                s -> s.getState().getReadablePlatformState().getAddressBook());
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
@@ -135,8 +131,7 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                s -> s.getState().getReadablePlatformState().getAddressBook());
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
@@ -163,9 +158,7 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                initialState -> buildAddressBook(retrieveActiveOrGenesisRoster(
-                        (State) initialState.getState().getSwirldState())));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
@@ -195,9 +188,7 @@ class AddressBookInitializerTest {
                 false,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                initialState -> buildAddressBook(retrieveActiveOrGenesisRoster(
-                        (State) initialState.getState().getSwirldState())));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
@@ -242,9 +233,7 @@ class AddressBookInitializerTest {
                 true,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                initialState -> buildAddressBook(retrieveActiveOrGenesisRoster(
-                        (State) initialState.getState().getSwirldState())));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
@@ -275,9 +264,7 @@ class AddressBookInitializerTest {
                 true,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                initialState -> buildAddressBook(retrieveActiveOrGenesisRoster(
-                        (State) initialState.getState().getSwirldState())));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertEquals(
                 configAddressBook,
@@ -306,9 +293,7 @@ class AddressBookInitializerTest {
                 true,
                 signedState,
                 configAddressBook,
-                getPlatformContext(false),
-                initialState -> buildAddressBook(retrieveActiveOrGenesisRoster(
-                        (State) initialState.getState().getSwirldState())));
+                getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
         assertNotEquals(
                 configAddressBook,
