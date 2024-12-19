@@ -420,35 +420,35 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> createWith10FeesWithSameTokenAndCollector() {
             final var collector = "collector";
             return hapiTest(
-                cryptoCreate(collector),
-                tokenCreate("testToken")
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(500),
-                tokenAssociate(collector, "testToken"),
-                createTopic(TOPIC)
-                    .adminKeyName(ADMIN_KEY)
-                    .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(2, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(3, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(4, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(5, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(6, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(7, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(8, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(9, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(10, "testToken", "collector")),
-                getTopicInfo(TOPIC)
-                    .hasAdminKey(ADMIN_KEY)
-                    .hasCustomFee(expectedConsensusFixedHTSFee(1, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(2, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(3, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(4, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(5, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(6, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(7, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(8, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(9, "testToken", "collector"))
-                    .hasCustomFee(expectedConsensusFixedHTSFee(10, "testToken", "collector")));
+                    cryptoCreate(collector),
+                    tokenCreate("testToken")
+                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                            .initialSupply(500),
+                    tokenAssociate(collector, "testToken"),
+                    createTopic(TOPIC)
+                            .adminKeyName(ADMIN_KEY)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(2, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(3, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(4, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(5, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(6, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(7, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(8, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(9, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(10, "testToken", "collector")),
+                    getTopicInfo(TOPIC)
+                            .hasAdminKey(ADMIN_KEY)
+                            .hasCustomFee(expectedConsensusFixedHTSFee(1, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(2, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(3, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(4, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(5, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(6, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(7, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(8, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(9, "testToken", "collector"))
+                            .hasCustomFee(expectedConsensusFixedHTSFee(10, "testToken", "collector")));
         }
     }
 
@@ -652,25 +652,25 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> createWith11FeesWithSameTokenAndCollector() {
             final var collector = "collector";
             return hapiTest(
-                cryptoCreate(collector),
-                tokenCreate("testToken")
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(500),
-                tokenAssociate(collector, "testToken"),
-                createTopic(TOPIC)
-                    .adminKeyName(ADMIN_KEY)
-                    .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(2, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(3, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(4, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(5, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(6, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(7, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(8, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(9, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(10, "testToken", "collector"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(11, "testToken", "collector"))
-                    .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
+                    cryptoCreate(collector),
+                    tokenCreate("testToken")
+                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                            .initialSupply(500),
+                    tokenAssociate(collector, "testToken"),
+                    createTopic(TOPIC)
+                            .adminKeyName(ADMIN_KEY)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(2, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(3, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(4, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(5, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(6, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(7, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(8, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(9, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(10, "testToken", "collector"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(11, "testToken", "collector"))
+                            .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
         }
 
         @HapiTest
@@ -679,25 +679,25 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> createWith11HBARFeesAndTheSameCollector() {
             final var collector = "collector";
             return hapiTest(
-                cryptoCreate(collector),
-                tokenCreate("testToken")
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(500),
-                tokenAssociate(collector, "testToken"),
-                createTopic(TOPIC)
-                    .adminKeyName(ADMIN_KEY)
-                    .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(2, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(3, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(4, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(5, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(6, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(7, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(8, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(9, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(10, "collector"))
-                    .withConsensusCustomFee(fixedConsensusHbarFee(11, "collector"))
-                    .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
+                    cryptoCreate(collector),
+                    tokenCreate("testToken")
+                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                            .initialSupply(500),
+                    tokenAssociate(collector, "testToken"),
+                    createTopic(TOPIC)
+                            .adminKeyName(ADMIN_KEY)
+                            .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(2, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(3, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(4, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(5, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(6, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(7, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(8, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(9, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(10, "collector"))
+                            .withConsensusCustomFee(fixedConsensusHbarFee(11, "collector"))
+                            .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
         }
 
         @HapiTest
@@ -716,45 +716,45 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
             final var collector10 = "collector10";
             final var collector11 = "collector11";
             return hapiTest(
-                cryptoCreate(collector1),
-                cryptoCreate(collector2),
-                cryptoCreate(collector3),
-                cryptoCreate(collector4),
-                cryptoCreate(collector5),
-                cryptoCreate(collector6),
-                cryptoCreate(collector7),
-                cryptoCreate(collector8),
-                cryptoCreate(collector9),
-                cryptoCreate(collector10),
-                cryptoCreate(collector11),
-                tokenCreate("testToken")
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(500),
-                tokenAssociate(collector1, "testToken"),
-                tokenAssociate(collector2, "testToken"),
-                tokenAssociate(collector3, "testToken"),
-                tokenAssociate(collector4, "testToken"),
-                tokenAssociate(collector5, "testToken"),
-                tokenAssociate(collector6, "testToken"),
-                tokenAssociate(collector7, "testToken"),
-                tokenAssociate(collector8, "testToken"),
-                tokenAssociate(collector9, "testToken"),
-                tokenAssociate(collector10, "testToken"),
-                tokenAssociate(collector11, "testToken"),
-                createTopic(TOPIC)
-                    .adminKeyName(ADMIN_KEY)
-                    .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", "collector1"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(2, "testToken", "collector2"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(3, "testToken", "collector3"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(4, "testToken", "collector4"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(5, "testToken", "collector5"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(6, "testToken", "collector6"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(7, "testToken", "collector7"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(8, "testToken", "collector8"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(9, "testToken", "collector9"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(10, "testToken", "collector10"))
-                    .withConsensusCustomFee(fixedConsensusHtsFee(11, "testToken", "collector11"))
-                    .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
+                    cryptoCreate(collector1),
+                    cryptoCreate(collector2),
+                    cryptoCreate(collector3),
+                    cryptoCreate(collector4),
+                    cryptoCreate(collector5),
+                    cryptoCreate(collector6),
+                    cryptoCreate(collector7),
+                    cryptoCreate(collector8),
+                    cryptoCreate(collector9),
+                    cryptoCreate(collector10),
+                    cryptoCreate(collector11),
+                    tokenCreate("testToken")
+                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                            .initialSupply(500),
+                    tokenAssociate(collector1, "testToken"),
+                    tokenAssociate(collector2, "testToken"),
+                    tokenAssociate(collector3, "testToken"),
+                    tokenAssociate(collector4, "testToken"),
+                    tokenAssociate(collector5, "testToken"),
+                    tokenAssociate(collector6, "testToken"),
+                    tokenAssociate(collector7, "testToken"),
+                    tokenAssociate(collector8, "testToken"),
+                    tokenAssociate(collector9, "testToken"),
+                    tokenAssociate(collector10, "testToken"),
+                    tokenAssociate(collector11, "testToken"),
+                    createTopic(TOPIC)
+                            .adminKeyName(ADMIN_KEY)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1, "testToken", "collector1"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(2, "testToken", "collector2"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(3, "testToken", "collector3"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(4, "testToken", "collector4"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(5, "testToken", "collector5"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(6, "testToken", "collector6"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(7, "testToken", "collector7"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(8, "testToken", "collector8"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(9, "testToken", "collector9"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(10, "testToken", "collector10"))
+                            .withConsensusCustomFee(fixedConsensusHtsFee(11, "testToken", "collector11"))
+                            .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
         }
     }
 
