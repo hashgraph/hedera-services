@@ -37,13 +37,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getAccountNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getBySolidityIdNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getExecutionTimeNotSupported;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
@@ -84,14 +80,7 @@ public class MiscCryptoSuite {
 
     @HapiTest
     final Stream<DynamicTest> verifyUnsupportedOps() {
-        return hapiTest(
-                getClaimNotSupported(),
-                getStakersNotSupported(),
-                getFastRecordNotSupported(),
-                getBySolidityIdNotSupported(),
-                getExecutionTimeNotSupported(),
-                getTokenNftInfosNotSupported(),
-                getAccountNftInfosNotSupported());
+        return hapiTest(getClaimNotSupported(), getBySolidityIdNotSupported(), getExecutionTimeNotSupported());
     }
 
     @HapiTest

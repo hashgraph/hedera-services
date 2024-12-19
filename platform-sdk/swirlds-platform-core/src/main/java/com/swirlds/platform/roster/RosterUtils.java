@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.roster;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -193,7 +178,7 @@ public final class RosterUtils {
     /**
      * Returns a RosterEntry with a given nodeId by simply iterating all entries,
      * w/o building a temporary map.
-     *
+     * <p>
      * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId,
      * then the code should use the RosterUtils.toMap() method and keep the map instance
      * for the look-ups.
@@ -236,6 +221,7 @@ public final class RosterUtils {
 
     /**
      * Count the number of RosterEntries with non-zero weight.
+     *
      * @param roster a roster
      * @return the number of RosterEntries with non-zero weight
      */
@@ -248,13 +234,13 @@ public final class RosterUtils {
 
     /**
      * Build an instance of RosterHistory from the current/previous rosters as reported by the RosterRetriever.
-     *
+     * <p>
      * The RosterRetriever implementation fetches the rosters from the RosterState/RosterMap,
      * and automatically falls back to fetching them from the PlatformState if the RosterState is empty.
      *
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param state a State object to fetch data from
      * @return a RosterHistory
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -286,18 +272,11 @@ public final class RosterUtils {
     @NonNull
     public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
         final var roundRosterPairs = rosterStore.getRosterHistory();
-        // If there exists active rosters in the roster state.
-        if (roundRosterPairs != null) {
-            final var rosterMap = roundRosterPairs.stream()
-                    .collect(Collectors.toMap(
-                            RoundRosterPair::activeRosterHash, pair -> rosterStore.get(pair.activeRosterHash())));
-
-            return new RosterHistory(roundRosterPairs, rosterMap);
-        } else {
-            // If there is no roster state content, this is a fatal error: The migration did not happen on software
-            // upgrade.
-            throw new IllegalStateException("No active rosters found in the roster state");
-        }
+        final var rosterMap = roundRosterPairs.stream()
+                .collect(Collectors.toMap(
+                        RoundRosterPair::activeRosterHash,
+                        pair -> Objects.requireNonNull(rosterStore.get(pair.activeRosterHash()))));
+        return new RosterHistory(roundRosterPairs, rosterMap);
     }
 
     /**
@@ -327,9 +306,10 @@ public final class RosterUtils {
 
     /**
      * Build an Address object out of a given RosterEntry object.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     *
      * @param entry a RosterEntry
      * @return an Address
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -378,9 +358,9 @@ public final class RosterUtils {
     /**
      * Build an AddressBook object out of a given Roster object.
      * Returns null if the input roster is null.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param roster a Roster
      * @return an AddressBook
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @Nullable
