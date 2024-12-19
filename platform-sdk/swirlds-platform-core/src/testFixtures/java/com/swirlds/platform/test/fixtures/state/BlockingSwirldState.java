@@ -114,9 +114,7 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
         if (!(obj instanceof final BlockingSwirldState that)) {
             return false;
         }
-        return Objects.equals(
-                this.getReadablePlatformState().getAddressBook(),
-                that.getReadablePlatformState().getAddressBook());
+        return Objects.equals(this.getReadablePlatformState(), that.getReadablePlatformState());
     }
 
     /**
