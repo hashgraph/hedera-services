@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -666,8 +651,8 @@ public class HandleWorkflow {
      * @param dispatch the dispatch to manage time for
      */
     private void advanceTimeFor(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
-        // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
-        // correctly detect stake period boundary, so the order of the following two lines is important
+        // WARNING: The two time-based checks below rely on the BlockStreamManager's last-handled time
+        // not being updated yet, so we must not call setLastHandleTime() until after them
         processStakePeriodChanges(userTxn, dispatch);
         if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
             // Check the tss status and manage it if necessary

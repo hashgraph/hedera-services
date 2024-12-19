@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,9 +42,8 @@ import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.io.IOException;
@@ -120,15 +119,15 @@ final class ReconnectTest {
                 IntStream.range(0, numNodes).mapToObj(NodeId::of).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(numNodes)
                 .withAverageWeight(weightPerNode)
-                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {
             final SignedState signedState = new RandomSignedStateGenerator()
-                    .setAddressBook(addressBook)
+                    .setRoster(roster)
                     .setSigningNodeIds(nodeIds)
                     .build();
 
