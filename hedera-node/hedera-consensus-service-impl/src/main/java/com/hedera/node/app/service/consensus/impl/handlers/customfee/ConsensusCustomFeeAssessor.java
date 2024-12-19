@@ -25,12 +25,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ConsensusCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,31 +55,17 @@ public class ConsensusCustomFeeAssessor {
      * @return List of synthetic crypto transfer transaction bodies
      */
     public List<CryptoTransferTransactionBody> assessCustomFee(
-            @NonNull final Topic topic, @NonNull final HandleContext context) {
+            @NonNull final List<ConsensusCustomFee> customFees, @NonNull final AccountID payer) {
         final List<CryptoTransferTransactionBody> transactionBodies = new ArrayList<>();
-        final var payer = context.payer();
-        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
 
         // build crypto transfer bodies for the first layer of custom fees,
         // if there is a second or third layer it will be assessed in crypto transfer handler
-        for (ConsensusCustomFee fee : topic.customFees()) {
-
-            // check if payer is collector
-            if (context.payer().equals(fee.feeCollectorAccountId())) {
-                continue;
-            }
-
+        for (ConsensusCustomFee fee : customFees) {
             final var tokenTransfers = new ArrayList<TokenTransferList>();
             List<AccountAmount> hbarTransfers = new ArrayList<>();
 
             final var fixedFee = fee.fixedFeeOrThrow();
             if (fixedFee.hasDenominatingTokenId()) {
-                final var tokenId = fixedFee.denominatingTokenIdOrThrow();
-                final var tokenTreasury = getTokenTreasury(tokenId, tokenStore);
-                // check if payer is treasury
-                if (context.payer().equals(tokenTreasury)) {
-                    continue;
-                }
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
             } else {
                 hbarTransfers = buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee);
