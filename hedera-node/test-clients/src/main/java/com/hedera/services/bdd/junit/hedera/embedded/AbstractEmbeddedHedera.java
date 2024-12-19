@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
@@ -42,7 +41,6 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.info.DiskStartupNetworks;
-import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -61,9 +59,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -196,16 +192,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .addressBook(toPbjAddressBook(addressBook))
                 .build());
         ((CommittableWritableStates) writableStates).commit();
-
-        final var writableRosterStates = state.getWritableStates(RosterService.NAME);
-        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableRosterStates);
-        if (!hedera.isRosterLifecycleEnabled()) {
-            writableRosterStore.putActiveRoster(buildRoster(addressBook), 0);
-            ((CommittableWritableStates) writableRosterStates).commit();
-        }
         // --- end of temporary code block ---
 
-        hedera.setRosterHistory(RosterUtils.createRosterHistory(writableRosterStore));
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);
         hedera.init(fakePlatform(), defaultNodeId);
