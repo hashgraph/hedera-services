@@ -1625,34 +1625,34 @@ enum ResponseCodeEnum {
     RECURSIVE_SCHEDULING_LIMIT_REACHED = 374;
 
     /**
-    * The provided fee exempt key list size exceeded the limit.
-    */
+     * The provided fee exempt key list size exceeded the limit.
+     */
     MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED = 375;
 
     /**
-    * The provided fee exempt key list contains duplicated keys.
-    */
+     * The provided fee exempt key list contains duplicated keys.
+     */
     FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS = 376;
 
     /**
-    * The provided fee exempt key list contains an invalid key.
-    */
+     * The provided fee exempt key list contains an invalid key.
+     */
     INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 377;
 
     /**
-    * The provided fee schedule key contains an invalid key.
-    */
+     * The provided fee schedule key contains an invalid key.
+     */
     INVALID_FEE_SCHEDULE_KEY = 378;
 
     /**
-    * If a fee schedule key is not set when we create a topic
-    * we cannot add it on update.
-    */
+     * If a fee schedule key is not set when we create a topic
+     * we cannot add it on update.
+     */
     FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 379;
 
     /**
-    * If the topic's custom fees are updated the topic SHOULD have a
-    * fee schedule key
+     * If the topic's custom fees are updated the topic SHOULD have a
+     * fee schedule key
      */
     FEE_SCHEDULE_KEY_NOT_SET = 380;
 
