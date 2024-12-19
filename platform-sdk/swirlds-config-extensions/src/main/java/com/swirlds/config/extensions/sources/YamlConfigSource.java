@@ -106,7 +106,7 @@ public class YamlConfigSource implements ConfigSource {
             }
             convertYamlToMaps(resource);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read YAML file", e);
+            throw new UncheckedIOException("Failed to read YAML file " + fileName, e);
         }
     }
 
@@ -135,7 +135,7 @@ public class YamlConfigSource implements ConfigSource {
         try (InputStream resource = Files.newInputStream(filePath)) {
             convertYamlToMaps(resource);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read YAML file", e);
+            throw new UncheckedIOException("Failed to read YAML file " + filePath, e);
         }
     }
 
