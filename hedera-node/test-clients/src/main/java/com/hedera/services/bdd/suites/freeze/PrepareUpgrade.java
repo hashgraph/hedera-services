@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHash;
@@ -48,7 +47,7 @@ public final class PrepareUpgrade extends HapiSuite {
         return List.of(prepareUpgrade());
     }
 
-    Stream<DynamicTest> prepareUpgrade() {
+    final Stream<DynamicTest> prepareUpgrade() {
         return defaultHapiSpec("PrepareUpgrade")
                 .given(initializeSettings())
                 .when(sourcing(() -> UtilVerbs.prepareUpgrade()
