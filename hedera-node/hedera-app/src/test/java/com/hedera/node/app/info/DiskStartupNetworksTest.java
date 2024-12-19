@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.info;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
@@ -56,6 +41,7 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -76,8 +62,6 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -92,6 +76,7 @@ import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -164,7 +149,8 @@ class DiskStartupNetworksTest {
     @Test
     void throwsOnMissingGenesisNetwork() {
         givenConfig();
-        assertThatThrownBy(() -> subject.genesisNetworkOrThrow()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> subject.genesisNetworkOrThrow(DEFAULT_CONFIG))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -177,7 +163,7 @@ class DiskStartupNetworksTest {
     void findsAvailableGenesisNetwork() throws IOException {
         givenConfig();
         putJsonAt(GENESIS_NETWORK_JSON, WithTssKeys.NO);
-        final var network = subject.genesisNetworkOrThrow();
+        final var network = subject.genesisNetworkOrThrow(DEFAULT_CONFIG);
         assertThat(network).isEqualTo(networkWithoutTssKeys);
     }
 
@@ -295,7 +281,7 @@ class DiskStartupNetworksTest {
     void writesExpectedStateInfo() throws IOException, ParseException {
         final var state = stateContainingInfoFrom(networkWithTssKeys);
         final var loc = tempDir.resolve("reproduced-network.json");
-        DiskStartupNetworks.writeNetworkInfo(state, loc);
+        DiskStartupNetworks.writeNetworkInfo(state, loc, EnumSet.allOf(InfoType.class));
         try (final var fin = Files.newInputStream(loc)) {
             var network = Network.JSON.parse(new ReadableStreamingData(fin));
             network = network.copyBuilder()
@@ -343,10 +329,7 @@ class DiskStartupNetworksTest {
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,
                         new EntityIdService(),
-                        new RosterService(
-                                roster -> true,
-                                () -> new ReadablePlatformStateStore(
-                                        state.getReadableStates(PlatformStateService.NAME))),
+                        new RosterService(roster -> true, () -> state),
                         new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
@@ -378,7 +361,7 @@ class DiskStartupNetworksTest {
         final var rosters = writableStates.<ProtoBytes, Roster>get(ROSTER_KEY);
         rosters.put(new ProtoBytes(currentRosterHash), currentRoster);
         final var rosterState = writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY);
-        rosterState.put(new RosterState(Bytes.EMPTY, List.of(new RoundRosterPair(1L, currentRosterHash))));
+        rosterState.put(new RosterState(Bytes.EMPTY, List.of(new RoundRosterPair(0L, currentRosterHash))));
         ((CommittableWritableStates) writableStates).commit();
     }
 

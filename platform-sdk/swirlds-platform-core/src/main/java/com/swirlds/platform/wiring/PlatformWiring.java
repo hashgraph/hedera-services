@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -616,9 +616,6 @@ public class PlatformWiring {
         final OutputWire<ReservedSignedState> hashedStateOutputWire =
                 hashedStateAndRoundOutputWire.buildAdvancedTransformer(
                         new StateAndRoundToStateReserver("postHasher_stateReserver"));
-        final OutputWire<ConsensusRound> hashedConsensusRoundOutput = stateHasherWiring
-                .getOutputWire()
-                .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
 
         transactionHandlerWiring
                 .getOutputWire()

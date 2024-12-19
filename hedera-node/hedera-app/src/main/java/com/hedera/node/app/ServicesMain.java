@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
@@ -70,7 +55,6 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -261,10 +245,10 @@ public class ServicesMain implements SwirldMain {
         // --- Construct the Hedera instance and use it to initialize the starting state ---
         hedera = newHedera(selfId, metrics);
         final var version = hedera.getSoftwareVersion();
-        logger.info("Starting node {} with version {}", selfId, version);
         final var isGenesis = new AtomicBoolean(false);
         // We want to be able to see the schema migration logs, so init logging here
         initLogging();
+        logger.info("Starting node {} with version {}", selfId, version);
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
@@ -299,11 +283,8 @@ public class ServicesMain implements SwirldMain {
 
         // --- Now build the platform and start it ---
         final var stateRoot = (PlatformMerkleStateRoot) initialState.get().getState();
-        // Roster history naturally derives from RosterService state if the roster
-        // lifecycle is enabled; but until then, is translated from the legacy
-        // previous and current AddressBook fields in the PlatformState
         final RosterHistory rosterHistory;
-        if (platformConfig.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+        if (hedera.isRosterLifecycleEnabled()) {
             final var rosterStore = new ReadableStoreFactory(stateRoot).getStore(ReadableRosterStore.class);
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {

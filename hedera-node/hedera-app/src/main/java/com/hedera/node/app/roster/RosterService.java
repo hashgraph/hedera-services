@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,13 +54,11 @@ public class RosterService implements Service {
      * we must initialize the active roster from the platform state's legacy address books.
      */
     @Deprecated
-    private final Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+    private final Supplier<State> stateSupplier;
 
-    public RosterService(
-            @NonNull final Predicate<Roster> canAdopt,
-            @NonNull final Supplier<ReadablePlatformStateStore> platformStateStoreFactory) {
+    public RosterService(@NonNull final Predicate<Roster> canAdopt, @NonNull final Supplier<State> stateSupplier) {
         this.canAdopt = requireNonNull(canAdopt);
-        this.platformStateStoreFactory = requireNonNull(platformStateStoreFactory);
+        this.stateSupplier = requireNonNull(stateSupplier);
     }
 
     @NonNull
@@ -77,6 +75,6 @@ public class RosterService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema(canAdopt, WritableRosterStore::new, platformStateStoreFactory));
+        registry.register(new V0540RosterSchema(canAdopt, WritableRosterStore::new, stateSupplier));
     }
 }
