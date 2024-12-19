@@ -65,6 +65,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.lifecycle.Service;
@@ -97,7 +99,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
     private static final SplittableRandom RANDOM = new SplittableRandom(System.currentTimeMillis());
     private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
-
+    private static final byte[] EMPTY_ARRAY = new byte[] {};
     private static final int HASH_SIZE = 48;
     private static final int VISUALIZATION_HASH_DEPTH = 5;
     /**
@@ -203,7 +205,14 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
         final var metrics = new NoOpMetrics();
-        final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics);
+        KeysAndCerts keysAndCerts;
+        try {
+            keysAndCerts =
+                    KeysAndCerts.generate("a-validator", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics, keysAndCerts);
         this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
         final var platformConfig = ServicesMain.buildPlatformConfig();
         hedera.initializeStatesApi(

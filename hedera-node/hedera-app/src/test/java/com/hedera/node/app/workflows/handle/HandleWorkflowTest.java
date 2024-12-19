@@ -43,7 +43,6 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.handlers.TssSubmissions;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -55,8 +54,8 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
@@ -151,10 +150,7 @@ class HandleWorkflowTest {
     private TssBaseService tssBaseService;
 
     @Mock
-    private TssSubmissions tssSubmissions;
-
-    @Mock
-    private Platform platform;
+    private KeysAndCerts keysAndCerts;
 
     private HandleWorkflow subject;
 
@@ -236,6 +232,6 @@ class HandleWorkflowTest {
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 scheduleService,
-                platform);
+                keysAndCerts);
     }
 }

@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -175,11 +174,6 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         @Override
         public void start() {
             // No-op
-        }
-
-        @Override
-        public KeysAndCerts getKeysAndCerts() {
-            return null;
         }
 
         private Round nextConsensusRound() {

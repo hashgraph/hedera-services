@@ -128,6 +128,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -297,6 +298,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     private ConfigProviderImpl configProvider;
     /**
+     * The Keys and Certs for the node.
+     */
+    private KeysAndCerts keysAndCerts;
+    /**
      * DI for all objects needed to implement Hedera node lifecycles; non-final because
      * it is completely recreated every time the platform initializes a new state as the
      * basis for applying consensus transactions.
@@ -390,11 +395,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
-            @NonNull final StartupNetworksFactory startupNetworksFactory) {
+            @NonNull final StartupNetworksFactory startupNetworksFactory,
+            @NonNull final KeysAndCerts keysAndCerts) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
+        this.keysAndCerts = requireNonNull(keysAndCerts);
         logger.info(
                 """
 
@@ -1035,6 +1042,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .initialStateHash(initialStateHash)
                 .networkInfo(networkInfo)
                 .startupNetworks(startupNetworks)
+                .keysAndCerts(keysAndCerts)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);

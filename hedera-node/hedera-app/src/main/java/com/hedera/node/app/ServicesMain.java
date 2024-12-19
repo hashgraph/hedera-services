@@ -74,6 +74,7 @@ import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
@@ -258,7 +259,7 @@ public class ServicesMain implements SwirldMain {
                 merkleCryptography);
 
         // --- Construct the Hedera instance and use it to initialize the starting state ---
-        hedera = newHedera(selfId, metrics);
+        hedera = newHedera(selfId, metrics, keysAndCerts);
         final var version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
         final var isGenesis = new AtomicBoolean(false);
@@ -367,7 +368,10 @@ public class ServicesMain implements SwirldMain {
      * @param metrics  the metrics
      * @return the {@link Hedera} instance
      */
-    public static Hedera newHedera(@NonNull final NodeId selfNodeId, @NonNull final Metrics metrics) {
+    public static Hedera newHedera(
+            @NonNull final NodeId selfNodeId,
+            @NonNull final Metrics metrics,
+            @NonNull final KeysAndCerts keysAndCerts) {
         requireNonNull(selfNodeId);
         requireNonNull(metrics);
         return new Hedera(
@@ -382,7 +386,8 @@ public class ServicesMain implements SwirldMain {
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
-                DiskStartupNetworks::new);
+                DiskStartupNetworks::new,
+                keysAndCerts);
     }
 
     /**
