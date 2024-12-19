@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ class EvmAddressAliasTranslatorTest {
     @Test
     void callFromEvmAddressAliasTest() {
         final Bytes inputBytes =
-                Bytes.wrapByteBuffer(EVM_ADDRESS_ALIAS.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                Bytes.wrapByteBuffer(EVM_ADDRESS_ALIAS.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         givenCommonForCall(inputBytes);
 
         final var call = subject.callFrom(attempt);

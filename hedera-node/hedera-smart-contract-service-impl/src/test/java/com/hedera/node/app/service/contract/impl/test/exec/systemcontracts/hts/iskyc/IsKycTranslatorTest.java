@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ class IsKycTranslatorTest {
 
     @Test
     void callFromTest() {
-        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS);
+        final Tuple tuple = Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS);
         final Bytes inputBytes = Bytes.wrapByteBuffer(IS_KYC.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.linkedToken(fromHeadlongAddress(FUNGIBLE_TOKEN_HEADLONG_ADDRESS)))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,11 +71,11 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(FUNGIBLE_TOKEN_INFO
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Tuple.of(
-                                        Tuple.of(
-                                                Tuple.of(
+                                        Tuple.from(
+                                                Tuple.from(
                                                         "Fungible Everything Token",
                                                         "FET",
                                                         headlongAddressOf(SENDER_ID),
@@ -94,7 +94,7 @@ class FungibleTokenInfoCallTest extends CallTestBase {
                                                 EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 Bytes.wrap(expectedLedgerId.toByteArray())
                                                         .toString()),
-                                        6))
+                                        6)))
                         .array()),
                 result.getOutput());
     }
@@ -114,11 +114,11 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(FUNGIBLE_TOKEN_INFO_V2
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 SUCCESS.protoOrdinal(),
                                 Tuple.of(
-                                        Tuple.of(
-                                                Tuple.of(
+                                        Tuple.from(
+                                                Tuple.from(
                                                         "Fungible Everything Token",
                                                         "FET",
                                                         headlongAddressOf(SENDER_ID),
@@ -139,7 +139,7 @@ class FungibleTokenInfoCallTest extends CallTestBase {
                                                 EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 Bytes.wrap(expectedLedgerId.toByteArray())
                                                         .toString()),
-                                        6))
+                                        6)))
                         .array()),
                 result.getOutput());
     }
@@ -159,11 +159,11 @@ class FungibleTokenInfoCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(FUNGIBLE_TOKEN_INFO
                         .getOutputs()
-                        .encodeElements(
+                        .encode(Tuple.of(
                                 INVALID_TOKEN_ID.protoOrdinal(),
                                 Tuple.of(
-                                        Tuple.of(
-                                                Tuple.of(
+                                        Tuple.from(
+                                                Tuple.from(
                                                         "",
                                                         "",
                                                         headlongAddressOf(ZERO_ACCOUNT_ID),
@@ -182,7 +182,7 @@ class FungibleTokenInfoCallTest extends CallTestBase {
                                                 Collections.emptyList().toArray(new Tuple[0]),
                                                 Bytes.wrap(expectedLedgerId.toByteArray())
                                                         .toString()),
-                                        0))
+                                        0)))
                         .array()),
                 result.getOutput());
     }

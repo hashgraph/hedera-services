@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ class NftTokenInfoTranslatorTest {
 
     @Test
     void callFromTest() {
-        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L);
+        final Tuple tuple = Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L);
         final Bytes inputBytes = Bytes.wrapByteBuffer(NON_FUNGIBLE_TOKEN_INFO.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
@@ -124,7 +124,7 @@ class NftTokenInfoTranslatorTest {
 
     @Test
     void callFromTestV2() {
-        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L);
+        final Tuple tuple = Tuple.of(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, 0L);
         final Bytes inputBytes = Bytes.wrapByteBuffer(NON_FUNGIBLE_TOKEN_INFO_V2.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);

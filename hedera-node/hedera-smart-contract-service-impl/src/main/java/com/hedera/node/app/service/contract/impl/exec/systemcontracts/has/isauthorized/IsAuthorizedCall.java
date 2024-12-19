@@ -26,6 +26,7 @@ import static com.hedera.pbj.runtime.io.buffer.Bytes.wrap;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -115,7 +116,7 @@ public class IsAuthorizedCall extends AbstractCall {
     protected PricedResult encodedOutput(
             final ResponseCodeEnum rce, final boolean authorized, final long gasRequirement) {
         final long code = rce.protoOrdinal();
-        final var output = IsAuthorizedTranslator.IS_AUTHORIZED.getOutputs().encodeElements(code, authorized);
+        final var output = IsAuthorizedTranslator.IS_AUTHORIZED.getOutputs().encode(Tuple.of(code, authorized));
         final var result = gasOnly(successResult(output, gasRequirement), SUCCESS, true);
         return result;
     }

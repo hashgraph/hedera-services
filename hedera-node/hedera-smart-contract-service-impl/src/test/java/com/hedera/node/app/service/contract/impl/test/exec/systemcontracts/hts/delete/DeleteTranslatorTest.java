@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ class DeleteTranslatorTest {
 
     @Test
     void callFromDeleteTest() {
-        Tuple tuple = new Tuple(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        Tuple tuple = Tuple.singleton(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
         byte[] inputBytes = Bytes.wrapByteBuffer(DELETE_TOKEN.encodeCall(tuple)).toArray();
         given(attempt.inputBytes()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);

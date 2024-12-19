@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 plugins {
     id("org.hiero.gradle.base.lifecycle")
     id("org.hiero.gradle.base.jpms-modules")
@@ -69,7 +84,7 @@ dependencies.constraints {
     api("io.grpc:grpc-netty:$grpc") { because("io.grpc.netty") }
     api("io.grpc:grpc-protobuf:$grpc") { because("io.grpc.protobuf") }
     api("io.grpc:grpc-stub:$grpc") { because("io.grpc.stub") }
-    api("com.esaulpaugh:headlong:6.1.1") { because("com.esaulpaugh.headlong") }
+    api("com.esaulpaugh:headlong:12.3.3") { because("com.esaulpaugh.headlong") }
     api("info.picocli:picocli:4.6.3") { because("info.picocli") }
     api("io.github.classgraph:classgraph:4.8.65") { because("io.github.classgraph") }
     api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class TokenExpiryTranslatorTest {
 
     @Test
     void callFromTest() {
-        final Tuple tuple = new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final Tuple tuple = Tuple.singleton(FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
         final Bytes inputBytes = Bytes.wrapByteBuffer(TOKEN_EXPIRY.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);

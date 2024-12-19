@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ class UpdateExpiryTranslatorTest {
 
     @Test
     void callFromUpdateTest() {
-        Tuple tuple = new Tuple(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, expiry);
+        Tuple tuple = Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, expiry);
         Bytes inputBytes = Bytes.wrapByteBuffer(UPDATE_TOKEN_EXPIRY_INFO_V1.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.selector()).willReturn(UPDATE_TOKEN_EXPIRY_INFO_V1.selector());

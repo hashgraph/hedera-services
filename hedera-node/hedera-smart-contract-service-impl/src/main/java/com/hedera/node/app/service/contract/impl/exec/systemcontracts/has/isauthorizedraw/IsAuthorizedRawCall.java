@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.is
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
@@ -207,7 +208,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     /** Encode the _output_ of our system contract: it's a boolean */
     @NonNull
     ByteBuffer encodedAuthorizationOutput(final boolean authorized) {
-        return IsAuthorizedRawTranslator.IS_AUTHORIZED_RAW.getOutputs().encodeElements(authorized);
+        return IsAuthorizedRawTranslator.IS_AUTHORIZED_RAW.getOutputs().encode(Tuple.singleton(authorized));
     }
 
     /** Format our message hash and signature for input to the ECRECOVER precompile */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ class UpdateNFTsMetadataTranslatorTest {
 
     @Test
     void callFromUpdateTest() {
-        final var tuple = new Tuple(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new long[] {1}, "P. Griffin".getBytes());
+        final var tuple = Tuple.of(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new long[] {1}, "P. Griffin".getBytes());
         final var inputBytes =
                 Bytes.wrapByteBuffer(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA.encodeCall(tuple));
 

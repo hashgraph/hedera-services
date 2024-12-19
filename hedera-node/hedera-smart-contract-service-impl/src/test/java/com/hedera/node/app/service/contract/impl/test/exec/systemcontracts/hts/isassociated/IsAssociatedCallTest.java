@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isassociated.IsAssociatedCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isassociated.IsAssociatedTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
@@ -40,7 +41,7 @@ class IsAssociatedCallTest extends CallTestBase {
         assertEquals(
                 Bytes.wrap(IsAssociatedTranslator.IS_ASSOCIATED
                         .getOutputs()
-                        .encodeElements(false)
+                        .encode(Tuple.singleton(false))
                         .array()),
                 result.getOutput());
     }

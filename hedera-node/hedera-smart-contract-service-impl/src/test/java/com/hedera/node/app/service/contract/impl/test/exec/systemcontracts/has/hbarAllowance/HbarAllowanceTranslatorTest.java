@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public class HbarAllowanceTranslatorTest {
     @Test
     void callFromHbarAllowanceProxyTest() {
         final Bytes inputBytes = Bytes.wrapByteBuffer(
-                HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         givenCommonForCall(inputBytes);
         given(attempt.isSelector(HBAR_ALLOWANCE_PROXY)).willReturn(true);
         given(attempt.isSelector(HBAR_ALLOWANCE)).willReturn(false);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -740,7 +740,7 @@ public class TxnVerbs {
             final byte[] params = args.length == 0
                     ? new byte[] {}
                     : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
-                            .encodeCall(Tuple.of(args))
+                            .encodeCall(Tuple.from(args))
                             .array();
             final var updatedFile = updateLargeFile(
                     GENESIS,

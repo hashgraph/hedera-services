@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ class GrantApprovalTranslatorTest {
 
     @Test
     void callFromHapiFungible() {
-        final Tuple tuple = new Tuple(
+        final Tuple tuple = Tuple.of(
                 FUNGIBLE_TOKEN_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(123L));
         final byte[] inputBytes = Bytes.wrapByteBuffer(GrantApprovalTranslator.GRANT_APPROVAL.encodeCall(tuple))
                 .toArray();
@@ -156,7 +156,7 @@ class GrantApprovalTranslatorTest {
 
     @Test
     void callFromHapiNonFungible() {
-        final Tuple tuple = new Tuple(
+        final Tuple tuple = Tuple.of(
                 NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(123L));
         final byte[] inputBytes = Bytes.wrapByteBuffer(GrantApprovalTranslator.GRANT_APPROVAL_NFT.encodeCall(tuple))
                 .toArray();
@@ -176,7 +176,7 @@ class GrantApprovalTranslatorTest {
 
     @Test
     void callFromERCFungible() {
-        final Tuple tuple = new Tuple(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(123L));
+        final Tuple tuple = Tuple.of(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(123L));
         final byte[] inputBytes =
                 Bytes.wrapByteBuffer(ERC_GRANT_APPROVAL.encodeCall(tuple)).toArray();
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
@@ -195,7 +195,7 @@ class GrantApprovalTranslatorTest {
 
     @Test
     void callFromERCNonFungible() {
-        final Tuple tuple = new Tuple(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(123L));
+        final Tuple tuple = Tuple.of(UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(123L));
         final byte[] inputBytes = Bytes.wrapByteBuffer(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT.encodeCall(tuple))
                 .toArray();
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
