@@ -53,6 +53,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.state.merkle.singleton.StringLeaf;
@@ -235,6 +236,21 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void preHandle(
+            @NonNull Event event,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
+        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
+        ((ConsensusEvent) event).consensusTransactionIterator().forEachRemaining(transaction -> {
+            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                scopedSystemTransactions.add(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            }
+        });
+
+        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
     /**

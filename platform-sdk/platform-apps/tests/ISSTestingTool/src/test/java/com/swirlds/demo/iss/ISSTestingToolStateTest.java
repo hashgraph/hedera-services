@@ -220,6 +220,76 @@ class ISSTestingToolStateTest {
         assertThat(consumerSize).isZero();
     }
 
+    @Test
+    void preHandleEventWithMultipleSystemTransaction() {
+        // Given
+        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
+        final var secondConsensusTransaction = mock(TransactionWrapper.class);
+        final var thirdConsensusTransaction = mock(TransactionWrapper.class);
+        when(event.consensusTransactionIterator())
+                .thenReturn(List.of(consensusTransaction, secondConsensusTransaction, thirdConsensusTransaction)
+                        .iterator());
+        final var stateSignatureTransactionBytes =
+                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+        when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+        when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+
+        // When
+        state.preHandle(event, consumer);
+
+        // Then
+        assertThat(consumerSize).isEqualTo(3);
+    }
+
+    @Test
+    void preHandleEventWithSystemTransaction() {
+        // Given
+        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
+        when(event.consensusTransactionIterator())
+                .thenReturn(Collections.singletonList(consensusTransaction).iterator());
+        final var emptyStateSignatureBytes = StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureBytes);
+
+        // When
+        state.preHandle(event, consumer);
+
+        // Then
+        assertThat(consumerSize).isEqualTo(1);
+    }
+
+    @Test
+    void preHandleEventWithDeprecatedSystemTransaction() {
+        // Given
+        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
+        when(event.consensusTransactionIterator())
+                .thenReturn(Collections.singletonList(consensusTransaction).iterator());
+        when(consensusTransaction.isSystem()).thenReturn(true);
+
+        // When
+        state.preHandle(event, consumer);
+
+        // Then
+        assertThat(consumerSize).isZero();
+    }
+
+    @Test
+    void preHandleEventWithEmptyTransaction() {
+        // Given
+        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
+        when(event.consensusTransactionIterator())
+                .thenReturn(Collections.singletonList(consensusTransaction).iterator());
+        final var emptyStateSignatureBytes =
+                StateSignatureTransaction.PROTOBUF.toBytes(StateSignatureTransaction.DEFAULT);
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureBytes);
+
+        // When
+        state.preHandle(event, consumer);
+
+        // Then
+        assertThat(consumerSize).isZero();
+    }
+
     private void givenRoundAndEvent() {
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());
