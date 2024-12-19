@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -102,12 +101,16 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
 
             // Create new uploaders for each config
             for (CompleteBucketConfig config : configs) {
-                try {
-                    CloudBucketUploader newUploader = new MinioBucketUploader(executorService, configProvider, config);
-                    uploaders.add(newUploader);
-                    logger.info("Created new uploader for bucket: {}", config.bucketName());
-                } catch (Exception e) {
-                    logger.error("Failed to create uploader for bucket {}: {}", config.bucketName(), e.getMessage());
+                if (config.enabled()) {
+                    try {
+                        CloudBucketUploader newUploader =
+                                new MinioBucketUploader(executorService, configProvider, config);
+                        uploaders.add(newUploader);
+                        logger.info("Created new uploader for bucket: {}", config.bucketName());
+                    } catch (Exception e) {
+                        logger.error(
+                                "Failed to create uploader for bucket {}: {}", config.bucketName(), e.getMessage());
+                    }
                 }
             }
         } finally {
@@ -168,12 +171,10 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
                         uploader.uploadBlock(blockPath);
                     } catch (HashMismatchException e) {
                         logger.error(
-                                "Error uploading block to {}: {}",
+                                "Hash mismatch while uploading block to {}: {}",
                                 uploader.getProvider().name(),
                                 e.getCause());
-                        if (e.getCause() instanceof HashMismatchException) {
-                            handleHashMismatch(blockPath, uploader.getProvider().name());
-                        }
+                        handleHashMismatch(blockPath, uploader.getProvider().name());
                     }
                 },
                 executorService);

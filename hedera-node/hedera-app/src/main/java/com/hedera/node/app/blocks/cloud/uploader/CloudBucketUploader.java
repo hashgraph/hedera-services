@@ -18,7 +18,6 @@ package com.hedera.node.app.blocks.cloud.uploader;
 
 import com.hedera.node.config.types.BucketProvider;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 
 public interface CloudBucketUploader {
     void uploadBlock(Path blockPath);

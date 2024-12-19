@@ -20,10 +20,13 @@ import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.BucketProvider;
+import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
+import io.minio.Result;
 import io.minio.StatObjectArgs;
 import io.minio.UploadObjectArgs;
 import io.minio.errors.ErrorResponseException;
+import io.minio.messages.Item;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +34,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import org.apache.logging.log4j.LogManager;
@@ -75,27 +77,54 @@ public class MinioBucketUploader implements CloudBucketUploader {
                 ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
                 : "";
         try {
-            // First check if object already exists
-            if (blockExistsOnCloud(objectKey)) {
-                String existingMd5 = getBlockMd5Internal(objectKey);
-                if (existingMd5.equals(calculateMD5Hash(blockPath))) {
+            String localMd5 = calculateMD5Hash(blockPath);
+            boolean matchFound = false;
+            boolean hashMismatchFound = false;
+
+            // List all objects with the same key prefix
+            Iterable<Result<Item>> results = minioClient.listObjects(ListObjectsArgs.builder()
+                    .bucket(bucketName)
+                    .prefix(objectKey)
+                    .recursive(false)
+                    .build());
+
+            // Check each existing object
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                String existingMd5 = item.etag();
+
+                if (existingMd5.equals(localMd5)) {
                     logger.debug("Block {} already exists with matching MD5", objectKey);
-                    return;
+                    matchFound = true;
+                    break;
+                } else {
+                    hashMismatchFound = true;
                 }
-                throw new HashMismatchException(objectKey, provider.toString());
             }
-            // Upload with retry logic
-            RetryUtils.withRetry(
-                    () -> {
-                        minioClient.uploadObject(UploadObjectArgs.builder()
-                                .bucket(bucketName)
-                                .object(objectKey)
-                                .filename(blockPath.toString())
-                                .contentType("application/octet-stream")
-                                .build());
-                        return null;
-                    },
-                    maxRetryAttempts);
+
+            // If no match was found, upload the block
+            if (!matchFound) {
+                // Upload with retry logic
+                RetryUtils.withRetry(
+                        () -> {
+                            minioClient.uploadObject(UploadObjectArgs.builder()
+                                    .bucket(bucketName)
+                                    .object(objectKey)
+                                    .filename(blockPath.toString())
+                                    .contentType("application/octet-stream")
+                                    .build());
+                            return null;
+                        },
+                        maxRetryAttempts);
+
+                // If we found mismatched hashes earlier, throw the exception after uploading
+                if (hashMismatchFound) {
+                    throw new HashMismatchException(objectKey, provider.toString(), bucketName);
+                }
+            }
+        } catch (HashMismatchException e) {
+            // Re-throw HashMismatchException
+            throw e;
         } catch (Exception e) {
             throw new CompletionException("Failed to upload block " + objectKey, e);
         }
