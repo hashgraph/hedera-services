@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.BlockItem.ItemOneOfType.TRANSACTION_RESULT;
@@ -53,6 +38,7 @@ import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
@@ -82,6 +68,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -363,7 +350,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         "Writing network info to disk @ {} (REASON = {})",
                         exportPath.toAbsolutePath(),
                         diskNetworkExport);
-                DiskStartupNetworks.writeNetworkInfo(state, exportPath);
+                DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
         }
     }
@@ -405,12 +392,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
      *
-     * @param message   the number of the block to finish
+     * @param message   the block hash to finish the block proof for
      * @param signature the signature to use in the block proof
      */
     @Override
     public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
-        // Find the block whose hash as the signed message, tracking any sibling hashes
+        // Find the block whose hash is the signed message, tracking any sibling hashes
         // needed for indirect proofs of earlier blocks along the way
         long blockNumber = Long.MIN_VALUE;
         boolean impliesIndirectProof = false;
