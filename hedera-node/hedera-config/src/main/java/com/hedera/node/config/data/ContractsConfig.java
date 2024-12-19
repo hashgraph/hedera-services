@@ -83,7 +83,7 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.scheduleService.signSchedule.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSignScheduleEnabled,
-        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAuthorizeScheduleEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
