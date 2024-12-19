@@ -61,6 +61,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -102,6 +103,9 @@ class IngestComponentTest {
 
     @Mock
     private StartupNetworks startupNetworks;
+
+    @Mock
+    private KeysAndCerts keysAndCerts;
 
     private HederaInjectionComponent app;
 
@@ -160,6 +164,7 @@ class IngestComponentTest {
                 .networkInfo(mock(NetworkInfo.class))
                 .startupNetworks(startupNetworks)
                 .throttleFactory(throttleFactory)
+                .keysAndCerts(keysAndCerts)
                 .build();
 
         final var state = new FakeState();
