@@ -106,10 +106,13 @@ The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to th
 - validate that `getScheduledFungibleTokenCreateTransaction` returns the correct token info for a given schedule address.
 - validate that `getScheduledNonFungibleTokenCreateTransaction` returns the correct non-fungible token info for a given schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create token and returns the schedule address.
+- validate that `scheduleNative` successfully creates a schedule for create token with a designated payer and returns the schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create token with custom fees and returns the schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create nft and returns the schedule address.
+- validate that `scheduleNative` successfully creates a schedule for create nft with a designated payer and returns the schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create nft with custom fees and returns the schedule address.
 - validate that `scheduleNative` successfully creates a schedule for token update and returns the schedule address.
+- validate that `scheduleNative` successfully creates a schedule for token update with a designated payer and returns the schedule address.
 - validate that the gas cost is correctly calculated for the newly added functions.
 
 #### Negative Tests
