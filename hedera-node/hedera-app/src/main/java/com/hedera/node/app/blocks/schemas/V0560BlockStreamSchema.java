@@ -85,7 +85,7 @@ public class V0560BlockStreamSchema extends Schema {
     public void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         final var state = ctx.newStates().getSingleton(BLOCK_STREAM_INFO_KEY);
-        if (ctx.previousVersion() == null) {
+        if (ctx.isGenesis()) {
             state.put(BlockStreamInfo.DEFAULT);
         } else {
             final var blockStreamInfo = state.get();

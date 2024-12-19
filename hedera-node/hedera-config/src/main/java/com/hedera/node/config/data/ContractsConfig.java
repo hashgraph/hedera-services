@@ -118,8 +118,6 @@ public record ContractsConfig(
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
         @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean evmEthTransactionZeroHapiFeesEnabled,
-        @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
-                boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
                 boolean evmAllowCallsToNonContractAccounts,
         @ConfigProperty(value = "evm.chargeGasOnEvmHandleException", defaultValue = "true") @NetworkProperty

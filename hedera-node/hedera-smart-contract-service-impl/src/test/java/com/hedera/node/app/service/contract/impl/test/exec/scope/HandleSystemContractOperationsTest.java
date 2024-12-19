@@ -136,7 +136,8 @@ class HandleSystemContractOperationsTest {
                         strategy,
                         A_NEW_ACCOUNT_ID,
                         CryptoTransferStreamBuilder.class,
-                        Set.of());
+                        Set.of(),
+                        DispatchOptions.UsePresetTxnId.NO);
     }
 
     @Test
@@ -159,7 +160,8 @@ class HandleSystemContractOperationsTest {
                 strategy,
                 A_NEW_ACCOUNT_ID,
                 CryptoTransferStreamBuilder.class,
-                Set.of(AN_ED25519_KEY));
+                Set.of(AN_ED25519_KEY),
+                DispatchOptions.UsePresetTxnId.NO);
 
         verify(context).dispatch(captor.capture());
         final var options = captor.getValue();

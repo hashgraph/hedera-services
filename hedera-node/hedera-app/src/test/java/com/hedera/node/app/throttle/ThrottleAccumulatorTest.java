@@ -53,7 +53,6 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
@@ -1408,10 +1407,7 @@ class ThrottleAccumulatorTest {
         "BACKEND_THROTTLE,false,true",
         "BACKEND_THROTTLE,false,false",
     })
-    void usesScheduleSignThrottle(
-            final ThrottleAccumulator.ThrottleType throttleType,
-            final boolean longTermEnabled,
-            final boolean waitForExpiry)
+    void usesScheduleSignThrottle(final ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
         subject = new ThrottleAccumulator(
@@ -1422,26 +1418,6 @@ class ThrottleAccumulatorTest {
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
-        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
-        given(schedulingConfig.longTermEnabled()).willReturn(longTermEnabled);
-
-        if (longTermEnabled && throttleType == FRONTEND_THROTTLE) {
-            final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
-                    .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
-                    .build();
-
-            final var txnInfo = scheduleCreate(scheduledSubmit, waitForExpiry, null);
-            final var schedule = Schedule.newBuilder()
-                    .waitForExpiry(txnInfo.txBody().scheduleCreate().waitForExpiry())
-                    .originalCreateTransaction(txnInfo.txBody())
-                    .payerAccountId(txnInfo.payerID())
-                    .scheduledTransaction(scheduledSubmit)
-                    .build();
-
-            given(state.getReadableStates(any())).willReturn(readableStates);
-            given(readableStates.get(any())).willReturn(schedules);
-            given(schedules.get(SCHEDULE_ID)).willReturn(schedule);
-        }
 
         final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
@@ -1455,7 +1431,7 @@ class ThrottleAccumulatorTest {
         }
 
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_SIGN);
-        final var aNow = throttlesNow.get(0);
+        final var aNow = throttlesNow.getFirst();
 
         // then
         assertFalse(firstAns);
@@ -1463,8 +1439,8 @@ class ThrottleAccumulatorTest {
         assertEquals(149999992500000L, aNow.used());
 
         assertEquals(
-                longTermEnabled && throttleType == FRONTEND_THROTTLE && (!waitForExpiry) ? 149999255000000L : 0,
-                subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
+                0,
+                subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).getFirst().used());
     }
 
     @ParameterizedTest
@@ -1478,10 +1454,7 @@ class ThrottleAccumulatorTest {
         "BACKEND_THROTTLE,false,true",
         "BACKEND_THROTTLE,false,false",
     })
-    void usesScheduleSignThrottleWithNestedThrottleExempt(
-            final ThrottleAccumulator.ThrottleType throttleType,
-            final boolean longTermEnabled,
-            final boolean waitForExpiry)
+    void usesScheduleSignThrottleWithNestedThrottleExempt(final ThrottleAccumulator.ThrottleType throttleType)
             throws IOException, ParseException {
         // given
         subject = new ThrottleAccumulator(
@@ -1492,29 +1465,6 @@ class ThrottleAccumulatorTest {
         given(accountsConfig.lastThrottleExempt()).willReturn(100L);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
-        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
-        given(schedulingConfig.longTermEnabled()).willReturn(longTermEnabled);
-
-        if (longTermEnabled && throttleType == FRONTEND_THROTTLE) {
-            final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
-                    .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
-                    .build();
-
-            final var txnInfo = scheduleCreate(
-                    scheduledSubmit,
-                    waitForExpiry,
-                    AccountID.newBuilder().accountNum(2L).build());
-            final var schedule = Schedule.newBuilder()
-                    .waitForExpiry(txnInfo.txBody().scheduleCreate().waitForExpiry())
-                    .originalCreateTransaction(txnInfo.txBody())
-                    .payerAccountId(AccountID.newBuilder().accountNum(2L).build())
-                    .scheduledTransaction(scheduledSubmit)
-                    .build();
-
-            given(state.getReadableStates(any())).willReturn(readableStates);
-            given(readableStates.get(any())).willReturn(schedules);
-            given(schedules.get(SCHEDULE_ID)).willReturn(schedule);
-        }
 
         final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
@@ -1528,7 +1478,7 @@ class ThrottleAccumulatorTest {
         }
 
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_SIGN);
-        final var aNow = throttlesNow.get(0);
+        final var aNow = throttlesNow.getFirst();
 
         // then
         assertFalse(firstAns);
@@ -1536,98 +1486,8 @@ class ThrottleAccumulatorTest {
         assertEquals(149999992500000L, aNow.used());
 
         assertEquals(
-                0, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
-    }
-
-    @Test
-    void scheduleSignAlwaysThrottledWhenNoBody() throws IOException, ParseException {
-        // given
-        subject = new ThrottleAccumulator(
-                () -> CAPACITY_SPLIT,
-                configProvider::getConfiguration,
-                FRONTEND_THROTTLE,
-                throttleMetrics,
-                gasThrottle);
-
-        given(configProvider.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
-        given(accountsConfig.lastThrottleExempt()).willReturn(100L);
-        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
-        given(contractsConfig.throttleThrottleByGas()).willReturn(false);
-        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
-        given(schedulingConfig.longTermEnabled()).willReturn(true);
-
-        final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
-        subject.rebuildFor(defs);
-
-        final var scheduleCreateTxnInfo = scheduleCreate(SchedulableTransactionBody.DEFAULT, false, null);
-        final var schedule = Schedule.newBuilder()
-                .waitForExpiry(scheduleCreateTxnInfo.txBody().scheduleCreate().waitForExpiry())
-                .originalCreateTransaction(scheduleCreateTxnInfo.txBody())
-                .payerAccountId(AccountID.newBuilder().accountNum(2L).build())
-                .scheduledTransaction(SchedulableTransactionBody.DEFAULT)
-                .build();
-
-        given(state.getReadableStates(any())).willReturn(readableStates);
-        given(readableStates.get(any())).willReturn(schedules);
-        given(schedules.get(SCHEDULE_ID)).willReturn(schedule);
-
-        // when
-        final var scheduleSignTxnInfo = scheduleSign(SCHEDULE_ID);
-        final var firstAns = subject.checkAndEnforceThrottle(scheduleSignTxnInfo, TIME_INSTANT, state);
-        for (int i = 1; i <= 150; i++) {
-            assertTrue(subject.checkAndEnforceThrottle(scheduleSignTxnInfo, TIME_INSTANT.plusNanos(i), state));
-        }
-
-        final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_SIGN);
-        final var aNow = throttlesNow.get(0);
-
-        // then
-        assertTrue(firstAns);
-        assertEquals(0L, aNow.used());
-        assertEquals(
-                0, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
-    }
-
-    @Test
-    void scheduleSignAlwaysThrottledWhenNotExisting() throws IOException, ParseException {
-        // given
-        subject = new ThrottleAccumulator(
-                () -> CAPACITY_SPLIT,
-                configProvider::getConfiguration,
-                FRONTEND_THROTTLE,
-                throttleMetrics,
-                gasThrottle);
-
-        given(configProvider.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AccountsConfig.class)).willReturn(accountsConfig);
-        given(accountsConfig.lastThrottleExempt()).willReturn(100L);
-        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
-        given(contractsConfig.throttleThrottleByGas()).willReturn(false);
-        given(configuration.getConfigData(SchedulingConfig.class)).willReturn(schedulingConfig);
-        given(schedulingConfig.longTermEnabled()).willReturn(true);
-
-        final var defs = getThrottleDefs("bootstrap/schedule-create-throttles.json");
-        subject.rebuildFor(defs);
-
-        given(state.getReadableStates(any())).willReturn(readableStates);
-        given(readableStates.get(any())).willReturn(schedules);
-
-        // when
-        final var scheduleSignTxnInfo = scheduleSign(SCHEDULE_ID);
-        final var firstAns = subject.checkAndEnforceThrottle(scheduleSignTxnInfo, TIME_INSTANT, state);
-        for (int i = 1; i <= 150; i++) {
-            assertTrue(subject.checkAndEnforceThrottle(scheduleSignTxnInfo, TIME_INSTANT.plusNanos(i), state));
-        }
-
-        final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_SIGN);
-        final var aNow = throttlesNow.get(0);
-
-        assertTrue(firstAns);
-        assertEquals(0L, aNow.used());
-
-        assertEquals(
-                0, subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).get(0).used());
+                0,
+                subject.activeThrottlesFor(CONSENSUS_SUBMIT_MESSAGE).getFirst().used());
     }
 
     @ParameterizedTest
@@ -1704,22 +1564,12 @@ class ThrottleAccumulatorTest {
         final var scheduleSignTxnInfo = scheduleSign(SCHEDULE_ID);
         final var ans = subject.checkAndEnforceThrottle(scheduleSignTxnInfo, TIME_INSTANT, state);
         final var throttlesNow = subject.activeThrottlesFor(SCHEDULE_SIGN);
-        final var aNow = throttlesNow.get(0);
+        final var aNow = throttlesNow.getFirst();
 
         // then
         assertFalse(ans);
-        if (longTermEnabled && throttleType == FRONTEND_THROTTLE) {
-            // with long term enabled, we count the schedule create in addition to the auto
-            // creations, which
-            // is how it should have been to start with
-            assertEquals(51 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
-        } else {
-            // with long term disabled or mode not being HAPI, ScheduleSign is the only part that
-            // counts
-            assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
-        }
-
-        assertEquals(0, subject.activeThrottlesFor(CRYPTO_TRANSFER).get(0).used());
+        assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+        assertEquals(0, subject.activeThrottlesFor(CRYPTO_TRANSFER).getFirst().used());
     }
 
     @Test

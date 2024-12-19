@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
@@ -38,7 +39,8 @@ import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.state.State;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.Logger;
@@ -148,20 +150,17 @@ public class HashLoggerTest {
         final MerkleNode merkleNode = MerkleTestUtils.buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
-        final MerkleRoot state = mock(MerkleRoot.class);
+        final MerkleRoot state = mock(MerkleRoot.class, withSettings().extraInterfaces(State.class, SwirldState.class));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
-        final AddressBook addressBook = new AddressBook();
-        addressBook.setHash(merkleNode.getHash());
-
         when(platformState.getRound()).thenReturn(round);
-        when(platformState.getAddressBook()).thenReturn(addressBook);
 
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());
         when(state.getHash()).thenReturn(merkleNode.getHash());
 
         when(signedState.getState()).thenReturn(state);
+        when(state.getSwirldState()).thenReturn((SwirldState) state);
         when(signedState.getRound()).thenReturn(round);
 
         ReservedSignedState reservedSignedState = mock(ReservedSignedState.class);

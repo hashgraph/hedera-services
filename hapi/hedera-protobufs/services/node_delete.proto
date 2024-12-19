@@ -25,9 +25,9 @@ option java_multiple_files = true;
 /**
  * A transaction body to delete a node from the network address book.
  *
- * This transaction body SHALL be considered a "privileged transaction".
- *
- * - A `NodeDeleteTransactionBody` MUST be signed by the governing council.
+ * - A `NodeDeleteTransactionBody` MUST be signed by one of those keys:
+ *   adminKey, treasure account (2) key, systemAdmin(50) key, or
+ *   addressBookAdmin(55) key.
  * - Upon success, the address book entry SHALL enter a "pending delete"
  *   state.
  * - All address book entries pending deletion SHALL be removed from the

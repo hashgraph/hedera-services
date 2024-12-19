@@ -231,7 +231,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
         final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
         return index == -1
-                ? V0540PlatformStateSchema.GENESIS_PLATFORM_STATE
+                ? V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE
                 : ((SingletonNode<PlatformState>) getChild(index)).getValue();
     }
 

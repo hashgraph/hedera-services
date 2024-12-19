@@ -16,10 +16,15 @@
 
 package com.hedera.node.app.info;
 
+import static com.hedera.hapi.util.HapiUtils.parseAccount;
+import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -37,9 +42,12 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,41 +70,36 @@ import org.apache.logging.log4j.Logger;
 public class DiskStartupNetworks implements StartupNetworks {
     private static final Logger log = LogManager.getLogger(DiskStartupNetworks.class);
 
-    private static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
-
     public static final String ARCHIVE = ".archive";
     public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
     public static final String OVERRIDE_NETWORK_JSON = "override-network.json";
+    public static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
 
-    private final long selfNodeId;
     private final ConfigProvider configProvider;
     private final TssBaseService tssBaseService;
 
     private boolean isArchived = false;
 
     public DiskStartupNetworks(
-            final long selfNodeId,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService) {
-        this.selfNodeId = selfNodeId;
+            @NonNull final ConfigProvider configProvider, @NonNull final TssBaseService tssBaseService) {
         this.configProvider = requireNonNull(configProvider);
         this.tssBaseService = tssBaseService;
     }
 
     @Override
     public Network genesisNetworkOrThrow() {
-        return loadNetwork(configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
+        return loadNetwork("genesis", configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
                 .orElseThrow(() -> new IllegalStateException("Genesis network not found"));
     }
 
     @Override
     public Optional<Network> overrideNetworkFor(final long roundNumber) {
         final var config = configProvider.getConfiguration();
-        final var unscopedNetwork = loadNetwork(config, OVERRIDE_NETWORK_JSON);
+        final var unscopedNetwork = loadNetwork("override", config, OVERRIDE_NETWORK_JSON);
         if (unscopedNetwork.isPresent()) {
             return unscopedNetwork;
         }
-        return loadNetwork(config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
+        return loadNetwork("override", config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
     }
 
     @Override
@@ -147,18 +150,20 @@ public class DiskStartupNetworks implements StartupNetworks {
     @Override
     public Network migrationNetworkOrThrow() {
         // FUTURE - look into sourcing this from a config.txt and public.pfx to ease migration
-        return loadNetwork(configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
+        return loadNetwork("migration", configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 
     /**
      * Writes a JSON representation of the {@link Network} information in the given state to a given path.
+     *
      * @param state the state to write network information from.
      * @param path the path to write the JSON network information to.
      */
     public static void writeNetworkInfo(@NonNull final State state, @NonNull final Path path) {
         requireNonNull(state);
         writeNetworkInfo(
+                state,
                 new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME)),
                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME)),
                 new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)),
@@ -167,62 +172,126 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Writes a JSON representation of the {@link Network} information in the given state to a given path.
+     *
+     * @param state the state to read the network information from
      * @param path the path to write the JSON network information to.
      */
     public static void writeNetworkInfo(
+            @NonNull final State state,
             @NonNull final ReadableTssStore tssStore,
             @NonNull final ReadableNodeStore nodeStore,
             @NonNull final ReadableRosterStore rosterStore,
             @NonNull final Path path) {
+        requireNonNull(state);
         requireNonNull(tssStore);
         requireNonNull(nodeStore);
         requireNonNull(rosterStore);
         requireNonNull(path);
-        Optional.ofNullable(rosterStore.getActiveRoster()).ifPresent(activeRoster -> {
-            final var network = Network.newBuilder();
-            final List<NodeMetadata> nodeMetadata = new ArrayList<>();
-            rosterStore.getActiveRoster().rosterEntries().forEach(entry -> {
-                final var node = requireNonNull(nodeStore.get(entry.nodeId()));
-                nodeMetadata.add(new NodeMetadata(entry, node, Bytes.EMPTY));
-            });
-            network.nodeMetadata(nodeMetadata);
-            final var sourceRosterHash =
-                    Optional.ofNullable(rosterStore.getPreviousRosterHash()).orElse(Bytes.EMPTY);
-            tssStore.consensusRosterKeys(
-                            sourceRosterHash, requireNonNull(rosterStore.getCurrentRosterHash()), rosterStore)
-                    .ifPresent(rosterKeys ->
-                            network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
-            try (final var fout = Files.newOutputStream(path)) {
-                Network.JSON.write(network.build(), new WritableStreamingData(fout));
-            } catch (IOException e) {
-                log.warn("Failed to write network info", e);
-            }
-        });
+        Optional.ofNullable(RosterRetriever.retrieveActiveOrGenesisRoster(state))
+                .ifPresent(activeRoster -> {
+                    final var network = Network.newBuilder();
+                    final List<NodeMetadata> nodeMetadata = new ArrayList<>();
+                    activeRoster.rosterEntries().forEach(entry -> {
+                        final var node = requireNonNull(nodeStore.get(entry.nodeId()));
+                        final var encryptionKey = Optional.ofNullable(tssStore.getTssEncryptionKeys(node.nodeId()))
+                                .map(TssEncryptionKeys::currentEncryptionKey)
+                                .orElse(Bytes.EMPTY);
+                        nodeMetadata.add(new NodeMetadata(entry, node, encryptionKey));
+                    });
+                    network.nodeMetadata(nodeMetadata);
+                    final var currentRosterHash = rosterStore.getCurrentRosterHash();
+                    if (currentRosterHash != null) {
+                        final var sourceRosterHash = Optional.ofNullable(rosterStore.getPreviousRosterHash())
+                                .orElse(Bytes.EMPTY);
+                        tssStore.consensusRosterKeys(sourceRosterHash, currentRosterHash, rosterStore)
+                                .ifPresent(rosterKeys ->
+                                        network.ledgerId(rosterKeys.ledgerId()).tssMessages(rosterKeys.tssMessages()));
+                    }
+                    try (final var fout = Files.newOutputStream(path)) {
+                        Network.JSON.write(network.build(), new WritableStreamingData(fout));
+                    } catch (IOException e) {
+                        log.warn("Failed to write network info", e);
+                    }
+                });
+    }
+
+    /**
+     * Converts a {@link AddressBook} to a {@link Network}. The resulting network will have no TSS
+     * keys of any kind.
+     *
+     * @param addressBook the address book to convert
+     * @return the converted network
+     */
+    public static @NonNull Network fromLegacyAddressBook(@NonNull final AddressBook addressBook) {
+        final var roster = buildRoster(addressBook);
+        return Network.newBuilder()
+                .nodeMetadata(roster.rosterEntries().stream()
+                        .map(rosterEntry -> {
+                            final var nodeId = rosterEntry.nodeId();
+                            final var nodeAccountId = parseAccount(
+                                    addressBook.getAddress(NodeId.of(nodeId)).getMemo());
+                            // Currently the ReadableFreezeUpgradeActions.writeConfigLineAndPem()
+                            // assumes that the gossip endpoints in the Node objects are in the order
+                            // (Internal, External)...even though Roster format is the reverse :/
+                            final var legacyGossipEndpoints = List.of(
+                                    rosterEntry.gossipEndpoint().getLast(),
+                                    rosterEntry.gossipEndpoint().getFirst());
+                            return NodeMetadata.newBuilder()
+                                    .rosterEntry(rosterEntry)
+                                    .node(Node.newBuilder()
+                                            .nodeId(nodeId)
+                                            .accountId(nodeAccountId)
+                                            .description("node" + (nodeId + 1))
+                                            .gossipEndpoint(legacyGossipEndpoints)
+                                            .serviceEndpoint(List.of())
+                                            .gossipCaCertificate(rosterEntry.gossipCaCertificate())
+                                            .grpcCertificateHash(Bytes.EMPTY)
+                                            .weight(rosterEntry.weight())
+                                            .deleted(false)
+                                            .adminKey(Key.DEFAULT)
+                                            .build())
+                                    .tssEncryptionKey(Bytes.EMPTY)
+                                    .build();
+                        })
+                        .toList())
+                .build();
     }
 
     /**
      * Attempts to load a {@link Network} from a given file in the directory whose relative path is given
      * by the provided {@link Configuration}.
+     *
+     * @param type the type of network to load
      * @param config the configuration to use to determine the location of the network file
      * @param segments the path segments of the file to load the network from
      * @return the loaded network, if it was found and successfully loaded
      */
-    private Optional<Network> loadNetwork(@NonNull final Configuration config, @NonNull final String... segments) {
+    private Optional<Network> loadNetwork(
+            @NonNull final String type, @NonNull final Configuration config, @NonNull final String... segments) {
         final var path = networksPath(config, segments);
+        log.info("Loading {} network info from {}", type, path.toAbsolutePath());
         if (Files.exists(path)) {
             try (final var fin = Files.newInputStream(path)) {
                 final var network = Network.JSON.parse(new ReadableStreamingData(fin));
+                log.info(
+                        "Parsed {} network info for N={} nodes from {}",
+                        type,
+                        network.nodeMetadata().size(),
+                        path.toAbsolutePath());
                 assertValidTssKeys(network);
                 return Optional.of(network);
             } catch (Exception e) {
-                log.warn("Failed to load network info from {}", path.toAbsolutePath(), e);
+                log.warn("Failed to load {} network info from {}", path.toAbsolutePath(), e);
             }
         }
         return Optional.empty();
     }
 
     /**
-     * If the given network has a ledger id, then it asserts that the TSS keys in the network are valid.
+     * If the given network has a ledger id, then it asserts that the TSS keys in the network are valid. This includes
+     * the encryption keys within the {@link NodeMetadata} messages, since without these specified the TSS messages
+     * would be unusable.
+     *
      * @param network the network to assert the TSS keys of
      * @throws IllegalArgumentException if the TSS keys are invalid
      */
@@ -240,7 +309,8 @@ public class DiskStartupNetworks implements StartupNetworks {
                     .getConfiguration()
                     .getConfigData(TssConfig.class)
                     .maxSharesPerNode();
-            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode);
+            final var encryptionKeysFn = TssUtils.encryptionKeysFnFor(network);
+            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode, encryptionKeysFn);
             final var tssMessages = network.tssMessages().stream()
                     .map(TssMessageTransactionBody::tssMessage)
                     .map(Bytes::toByteArray)
@@ -256,6 +326,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Attempts to archive the given segments in the given configuration.
+     *
      * @param segments the segments to archive
      */
     private static void archiveIfPresent(@NonNull final Configuration config, @NonNull final String... segments) {
@@ -275,6 +346,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Ensures that the archive directory exists in the given configuration.
+     *
      * @param config the configuration to ensure the archive directory exists in
      */
     private static void ensureArchiveDir(@NonNull final Configuration config) throws IOException {
@@ -283,6 +355,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Creates the given path as a directory if it does not already exist.
+     *
      * @param path the path to the directory create if it does not already exist
      */
     private static void createIfAbsent(@NonNull final Path path) throws IOException {
@@ -293,6 +366,7 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     /**
      * Gets the path to the directory containing network files.
+     *
      * @param config the configuration to use to determine the location of the network files
      * @return the path to the directory containing network files
      */
