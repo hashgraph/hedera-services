@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.freeze;
 
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
@@ -54,18 +55,21 @@ public class UpdateFileForUpgrade extends HapiSuite {
     }
 
     final Stream<DynamicTest> updateFileForUpgrade() {
-        return hapiTest(flattened(initializeSettings(), sourcing(() -> {
-            try {
-                return UtilVerbs.updateSpecialFile(
-                        GENESIS,
-                        upgradeFileId(),
-                        ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
-                        TxnUtils.BYTES_4K,
-                        upgradeFileAppendsPerBurst());
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        })));
+        return defaultHapiSpec("UpdateFileForUpgrade")
+                .given(initializeSettings())
+                .when(sourcing(() -> {
+                    try {
+                        return UtilVerbs.updateSpecialFile(
+                                GENESIS,
+                                upgradeFileId(),
+                                ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
+                                TxnUtils.BYTES_4K,
+                                upgradeFileAppendsPerBurst());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }))
+                .then();
     }
 }
