@@ -136,7 +136,7 @@ final class ServicesMainTest {
         nodeIds.add(NodeId.of(2));
 
         bootstrapUtilsMockedStatic
-                .when(() -> BootstrapUtils.getNodesToRun(any(), any()))
+                .when(() -> BootstrapUtils.getNodesToRun(any(), any(), any()))
                 .thenReturn(nodeIds);
     }
 }

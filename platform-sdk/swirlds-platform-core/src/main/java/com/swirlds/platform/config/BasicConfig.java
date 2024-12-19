@@ -20,8 +20,10 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
@@ -56,7 +58,8 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime,
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<Long> nodesToRun) {
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

@@ -154,6 +154,7 @@ public final class BootstrapUtils {
 
     /**
      * Add classes to the constructable registry which need the configuration.
+     *
      * @param configuration configuration
      */
     public static void setupConstructableRegistryWithConfiguration(Configuration configuration)
@@ -317,26 +318,40 @@ public final class BootstrapUtils {
     /**
      * Determine which nodes should be run locally
      *
-     * @param addressBook  the address book
-     * @param nodesToStart nodes specified to start by the user
+     * @param addressBook   the address book
+     * @param cliNodesToRun nodes specified to start by the user on the command line
+     * @param envNodesToRun nodes specified to start by the user in the environment
      * @return the nodes to run locally
      */
     public static @NonNull List<NodeId> getNodesToRun(
-            @NonNull final AddressBook addressBook, @NonNull final Set<NodeId> nodesToStart) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final Set<NodeId> cliNodesToRun,
+            @NonNull final List<NodeId> envNodesToRun) {
         Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(nodesToStart);
+        Objects.requireNonNull(cliNodesToRun);
+        Objects.requireNonNull(envNodesToRun);
+
         final List<NodeId> nodesToRun = new ArrayList<>();
-        // if the nodes to start are not specified, start all nodes. Otherwise, start specified.
-        if (nodesToStart.isEmpty()) {
-            nodesToRun.addAll(addressBook.getNodeIdSet());
-        } else {
-            for (final NodeId nodeId : nodesToStart) {
-                if (!addressBook.contains(nodeId)) {
-                    // all nodes to start must exist in the address book.
-                    throw new IllegalArgumentException("Node " + nodeId + " is not in the address book");
-                }
+        final Set<NodeId> addressBookNodeIds = addressBook.getNodeIdSet();
+
+        if (cliNodesToRun.isEmpty()) {
+            if (envNodesToRun.isEmpty()) {
+                // if no node ids are provided by cli or env, run all nodes from the address book.
+                return new ArrayList<>(addressBookNodeIds);
+            } else {
+                // CLI did not provide any nodes to run, so use the node ids from the environment
+                nodesToRun.addAll(envNodesToRun);
             }
-            nodesToRun.addAll(nodesToStart);
+        } else {
+            // CLI provided nodes override environment provided nodes to run
+            nodesToRun.addAll(cliNodesToRun);
+        }
+
+        for (final NodeId nodeId : nodesToRun) {
+            if (!addressBook.contains(nodeId)) {
+                // all nodes to start must exist in the address book.
+                throw new IllegalArgumentException("Node " + nodeId + " is not in the address book");
+            }
         }
 
         return nodesToRun;

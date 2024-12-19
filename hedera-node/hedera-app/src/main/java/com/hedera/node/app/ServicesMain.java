@@ -70,6 +70,7 @@ import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -231,10 +232,14 @@ public class ServicesMain implements SwirldMain {
                     "Multiple nodes were supplied via the command line. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
         }
-        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, commandLineArgs.localNodesToStart());
+        final var platformConfig = buildPlatformConfig();
+        final var cliNodesToRun = commandLineArgs.localNodesToStart();
+        final var envNodesToRun = platformConfig.getConfigData(BasicConfig.class).nodesToRun().stream()
+                .map(NodeId::of)
+                .toList();
+        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, cliNodesToRun, envNodesToRun);
         checkNodesToRun(nodesToRun);
         final var selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
-        final var platformConfig = buildPlatformConfig();
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
         final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, new HashSet<>(nodesToRun));
         final var keysAndCerts = networkKeysAndCerts.get(selfId);

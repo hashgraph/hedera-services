@@ -53,9 +53,11 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -85,6 +87,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -177,19 +180,24 @@ public class Browser {
     private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery)
             throws Exception {
         Objects.requireNonNull(commandLineArgs);
+        final ConfigurationBuilder bootstrapConfigBuilder =
+                ConfigurationBuilder.create().withSource(SystemEnvironmentConfigSource.getInstance());
+        BootstrapUtils.setupConfigBuilder(bootstrapConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+        final Configuration bootstrapConfiguration = bootstrapConfigBuilder.build();
 
-        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
-                .withConfigDataType(PathsConfig.class)
-                .build()
-                .getConfigData(PathsConfig.class);
+        final PathsConfig defaultPathsConfig = bootstrapConfiguration.getConfigData(PathsConfig.class);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
 
         // Determine which nodes to run locally
-        final List<NodeId> nodesToRun =
-                getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
+        final AddressBook appAddressBook = appDefinition.getConfigAddressBook();
+        final List<NodeId> envNodesToRun = bootstrapConfiguration.getConfigData(BasicConfig.class).nodesToRun().stream()
+                .map(NodeId::of)
+                .toList();
+        final Set<NodeId> cliNodesToRun = commandLineArgs.localNodesToStart();
+        final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, envNodesToRun);
         checkNodesToRun(nodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
@@ -208,19 +216,8 @@ public class Browser {
             final InfoSwirld infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
             new InfoMember(infoSwirld, "Node" + nodesToRun.getFirst().id());
 
-            // Duplicating config here is ugly, but Browser is test only code now.
-            // In the future we should clean it up, but it's not urgent to do so.
-            final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
-            BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
-            final Configuration guiConfig = guiConfigBuilder.build();
-
-            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
-            rethrowIO(() ->
-                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
-            final Configuration configuration = configBuilder.build();
-
-            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration, new HashSet<>(nodesToRun));
-            guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
+            initNodeSecurity(appDefinition.getConfigAddressBook(), bootstrapConfiguration, new HashSet<>(nodesToRun));
+            guiEventStorage = new GuiEventStorage(bootstrapConfiguration, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
         } else {
