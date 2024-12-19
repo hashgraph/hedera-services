@@ -16,7 +16,6 @@
 
 package com.swirlds.config.extensions.test.fixtures;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -165,7 +164,6 @@ public class TestConfigBuilder {
         try (final Locked ignore = configLock.lock()) {
             if (configuration == null) {
                 configuration = builder.build();
-                ConfigurationHolder.getInstance().setConfiguration(configuration);
             }
             return configuration;
         }

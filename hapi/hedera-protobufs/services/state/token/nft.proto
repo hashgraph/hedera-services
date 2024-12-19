@@ -1,13 +1,20 @@
+/**
+ * # NFT.
+ * This is a single, whole, unique, non-fungible token within the Hedera network.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in [RFC2119](https://www.ietf.org/rfc/rfc2119)
+ * and clarified in [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
 
-/*-
- * ‌
- * Hedera Network Services Protobuf
- * ​
- * Copyright (C) 2018 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +26,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import "timestamp.proto";
@@ -30,48 +36,67 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * Representation of a Hedera Token Service NFT in the network Merkle tree.
+ * An Hedera Token Service non-fungible token (NFT).<br/>
+ * Every NFT is a unique instance of a token with non-fungible type.
+ *
+ * The NFT SHALL be identified by token ID and serial number.<br/>
+ * The token treasury account SHALL own all minted NFTs of that token type
+ * initially.<br/>
+ * NFTs owned by the token treasury SHALL NOT be linked into that account's
+ * virtual linked list of NFTs.<br/>
+ * NFTs not owned by the token treasury SHALL be linked into the owner
+ * account's virtual linked list of NFTs.
  */
 message Nft {
 
     /**
-     * The id of this NFT.
+     * The id of this NFT, consisting of a Token ID and serial number.
      */
     NftID nft_id = 1;
 
     /**
      * The account or contract id that owns this NFT.
-     *
-     * If this number is zero in state, the NFT is owned by its token type's current treasury.
+     * <p>
+     * If this NFT is owned by its token type's current treasury account,
+     * this value SHALL be zero.
      */
     AccountID owner_id = 2;
 
     /**
      * The account or contract id approved to spend this NFT.
-     *
-     * If this number is zero, there is no approved spender.
+     * <p>
+     * If there is no approved spender, this value SHALL be null.
      */
     AccountID spender_id = 3;
 
     /**
-     * The consensus time of the TokenMint that created this NFT.
+     * The consensus time of the TokenMint that created this NFT as
+     * offset from the epoch.
+     * <p>
+     * For this purpose, `epoch` SHALL be the UNIX epoch with 0 at `1970-01-01T00:00:00.000Z`.
      */
     Timestamp mint_time = 4;
 
     /**
-     * The metadata of this NFT, up to 100 bytes; usually the UTF-8 encoding of a URI.
+     * The metadata bytes for this NFT. This is often a URI value.
+     * <p>
+     * This value, if set, SHALL NOT exceed 100 bytes.
      */
     bytes metadata = 5;
 
     /**
-     * If the owner of this NFT is not its token treasury, the id of the previous NFT 
-     * in the owner's "doubly-linked list" of owned NFTs (if any).
+     * The NFT ID of the previous entry in the current owner's "virtual
+     * double-linked list" of owned NFTs.
+     * <p>
+     * If the owner of this NFT is the token treasury, this SHALL be unset.
      */
     NftID owner_previous_nft_id = 6;
 
     /**
-     * If the owner of this NFT is not its token treasury, the id of the next NFT in 
-     * the owner's "doubly-linked list" of owned NFTs (if any).
+     * The NFT ID of the next entry in the current owner's "virtual
+     * double-linked list" of owned NFTs.
+     * <p>
+     * If the owner of this NFT is the token treasury, this SHALL be unset.
      */
     NftID owner_next_nft_id = 7;
 }
