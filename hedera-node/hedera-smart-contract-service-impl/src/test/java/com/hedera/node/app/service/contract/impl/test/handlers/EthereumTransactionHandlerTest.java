@@ -76,6 +76,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -383,10 +384,22 @@ class EthereumTransactionHandlerTest {
         final var txn1 = ethTxWithNoTx();
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn1));
 
+        // check bad to evm address
+        try (MockedStatic<EthTxData> ethTxData = Mockito.mockStatic(EthTxData.class)) {
+            final var toAddress = new byte[] {1, 0, 1, 0};
+            ethTxData.when(() -> EthTxData.populateEthTxData(any())).thenReturn(ethTxDataReturned);
+            given(ethTxDataReturned.gasLimit()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD + 1);
+            given(ethTxDataReturned.value()).willReturn(BigInteger.ZERO);
+            given(ethTxDataReturned.hasToAddress()).willReturn(true);
+            given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
+                    .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
+            given(ethTxDataReturned.to()).willReturn(toAddress);
+            assertThrows(PreCheckException.class, () -> subject.pureChecks(ethTxWithTx()));
+        }
+
         // check at least intrinsic gas
         try (MockedStatic<EthTxData> ethTxData = Mockito.mockStatic(EthTxData.class)) {
             ethTxData.when(() -> EthTxData.populateEthTxData(any())).thenReturn(ethTxDataReturned);
-            given(ethTxDataReturned.gasLimit()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1);
             given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
                     .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
             assertThrows(PreCheckException.class, () -> subject.pureChecks(ethTxWithTx()));

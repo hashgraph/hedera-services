@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
@@ -114,6 +115,11 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
 
         final var uniqueAirdrops = Set.copyOf(pendingAirdrops);
         validateTruePreCheck(pendingAirdrops.size() == uniqueAirdrops.size(), PENDING_AIRDROP_ID_REPEATED);
+
+        validateTruePreCheck(
+                pendingAirdrops.stream().allMatch(PendingAirdropId::hasSenderId), INVALID_PENDING_AIRDROP_ID);
+        validateTruePreCheck(
+                pendingAirdrops.stream().allMatch(PendingAirdropId::hasReceiverId), INVALID_PENDING_AIRDROP_ID);
     }
 
     @Override

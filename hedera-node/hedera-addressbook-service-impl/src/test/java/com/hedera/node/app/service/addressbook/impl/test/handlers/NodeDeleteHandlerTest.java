@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -31,11 +32,14 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
@@ -44,6 +48,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -219,8 +224,57 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleDoesNothing() {
-        assertDoesNotThrow(() -> subject.preHandle(mock(PreHandleContext.class)));
+    void preHandleWorksWhenExistingAdminKeyValid() throws PreCheckException {
+        givenValidNodeWithAdminKey(anotherKey);
+        refreshStoresWithCurrentNodeInReadable();
+
+        final var txn = newDeleteTxnWithNodeId(nodeId.number());
+        final var context = setupPreHandlePayerKey(txn, accountId, key);
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        assertThat(context.payerKey()).isEqualTo(key);
+        assertThat(context.requiredNonPayerKeys()).contains(anotherKey);
+    }
+
+    @Test
+    void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
+        givenValidNodeWithAdminKey(invalidKey);
+        refreshStoresWithCurrentNodeInReadable();
+        final var txn = newDeleteTxnWithNodeId(nodeId.number());
+        final var context = setupPreHandlePayerKey(txn, accountId, anotherKey);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    void preHandleWorksWhenTreasureSign() throws PreCheckException {
+        final var txn = newDeleteTxn();
+        final var context = setupPreHandlePayerKey(txn, payerId, anotherKey);
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        assertThat(context.payerKey()).isEqualTo(anotherKey);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
+    }
+
+    @Test
+    void preHandleWorksWhenSysAdminSign() throws PreCheckException {
+        final var accountID = AccountID.newBuilder().accountNum(50).build();
+        final var txn = newDeleteTxnWithPayerId(accountID);
+        final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        assertThat(context.payerKey()).isEqualTo(anotherKey);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
+    }
+
+    @Test
+    void preHandleWorksWhenAddressBookAdminSign() throws PreCheckException {
+        final var accountID = AccountID.newBuilder().accountNum(55).build();
+        final var txn = newDeleteTxnWithPayerId(accountID);
+        final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        assertThat(context.payerKey()).isEqualTo(anotherKey);
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     private TransactionBody newDeleteTxn() {
@@ -230,6 +284,37 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
                 .transactionID(txnId)
                 .nodeDelete(deleteFileBuilder.build())
                 .build();
+    }
+
+    private TransactionBody newDeleteTxnWithPayerId(AccountID accountID) {
+        final var txnId = TransactionID.newBuilder().accountID(accountID).build();
+        final var deleteFileBuilder = NodeDeleteTransactionBody.newBuilder().nodeId(WELL_KNOWN_NODE_ID);
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .nodeDelete(deleteFileBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newDeleteTxnWithNodeId(long nodeId) {
+        final var txnId = TransactionID.newBuilder().accountID(accountId).build();
+        final var deleteFileBuilder = NodeDeleteTransactionBody.newBuilder().nodeId(nodeId);
+        return TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .nodeDelete(deleteFileBuilder.build())
+                .build();
+    }
+
+    private PreHandleContext setupPreHandlePayerKey(TransactionBody txn, AccountID contextPayerId, Key key)
+            throws PreCheckException {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("accounts.treasury", 2)
+                .withValue("accounts.systemAdmin", 50)
+                .withValue("accounts.addressBookAdmin", 55)
+                .getOrCreateConfig();
+        mockPayerLookup(key, contextPayerId, accountStore);
+        final var context = new FakePreHandleContext(accountStore, txn, config);
+        context.registerStore(ReadableNodeStore.class, readableStore);
+        return context;
     }
 
     private static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {

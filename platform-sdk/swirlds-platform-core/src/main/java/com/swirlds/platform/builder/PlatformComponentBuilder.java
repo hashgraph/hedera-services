@@ -45,8 +45,10 @@ import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.preconsensus.DefaultInlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
+import com.swirlds.platform.event.preconsensus.InlinePcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileManager;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
@@ -72,6 +74,7 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
@@ -140,6 +143,7 @@ public class PlatformComponentBuilder {
     private StatusStateMachine statusStateMachine;
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
+    private InlinePcesWriter inlinePcesWriter;
     private IssDetector issDetector;
     private IssHandler issHandler;
     private Gossip gossip;
@@ -759,6 +763,22 @@ public class PlatformComponentBuilder {
     }
 
     /**
+     * Provide an Inline PCES writer in place of the platform's default Inline PCES writer.
+     *
+     * @param inlinePcesWriter the PCES writer to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withInlinePcesWriter(@NonNull final InlinePcesWriter inlinePcesWriter) {
+        throwIfAlreadyUsed();
+        if (this.inlinePcesWriter != null) {
+            throw new IllegalStateException("Inline PCES writer has already been set");
+        }
+        this.inlinePcesWriter = Objects.requireNonNull(inlinePcesWriter);
+        return this;
+    }
+
+    /**
      * Build the PCES writer if it has not yet been built. If one has been provided via
      * {@link #withPcesWriter(PcesWriter)}, that writer will be used. If this method is called more than once, only the
      * first call will build the PCES writer. Otherwise, the default writer will be created and returned.
@@ -781,6 +801,33 @@ public class PlatformComponentBuilder {
             }
         }
         return pcesWriter;
+    }
+
+    /**
+     * Build the Inline PCES writer if it has not yet been built. If one has been provided via
+     * {@link #withInlinePcesWriter(InlinePcesWriter)}, that writer will be used. If this method is called more than
+     * once, only the first call will build the Inline PCES writer. Otherwise, the default writer will be created and
+     * returned.
+     *
+     * @return the Inline PCES writer
+     */
+    @NonNull
+    public InlinePcesWriter buildInlinePcesWriter() {
+        if (inlinePcesWriter == null) {
+            try {
+                final PcesFileManager preconsensusEventFileManager = new PcesFileManager(
+                        blocks.platformContext(),
+                        blocks.initialPcesFiles(),
+                        blocks.selfId(),
+                        blocks.initialState().get().getRound());
+                inlinePcesWriter = new DefaultInlinePcesWriter(
+                        blocks.platformContext(), preconsensusEventFileManager, blocks.selfId());
+
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return inlinePcesWriter;
     }
 
     /**
@@ -844,11 +891,7 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getAddressBook(),
+                    RosterUtils.buildAddressBook(blocks.rosterHistory().getCurrentRoster()),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

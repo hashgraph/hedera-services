@@ -31,10 +31,13 @@ import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -60,13 +63,11 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -97,7 +98,7 @@ public class NodeCreateTest {
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+    static void beforeAll() {
         gossipCertificates = generateX509Certificates(2);
     }
 
@@ -555,6 +556,55 @@ public class NodeCreateTest {
                         .description("toolarge")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .hasPrecheck(NOT_SUPPORTED));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> createNodeWorkWithTreasuryPayer() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .payingWith(DEFAULT_PAYER)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .description("newNode"),
+                viewNode("testNode", node -> assertEquals("newNode", node.description(), "Description invalid")));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> createNodeWorkWithAddressBookAdminPayer() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .description("newNode"),
+                viewNode("testNode", node -> assertEquals("newNode", node.description(), "Description invalid")));
+    }
+
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
+    final Stream<DynamicTest> createNodeWorkWithSysAdminPayer() throws CertificateEncodingException {
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .payingWith(SYSTEM_ADMIN)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .description("newNode"),
+                viewNode("testNode", node -> assertEquals("newNode", node.description(), "Description invalid")));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createNodeFailsWithRegPayer() throws CertificateEncodingException {
+        return hapiTest(
+                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
+                newKeyNamed("adminKey"),
+                nodeCreate("testNode")
+                        .adminKey("adminKey")
+                        .payingWith("payer")
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .description("newNode")
+                        .hasKnownStatus(UNAUTHORIZED));
     }
 
     private static void assertEqualServiceEndpoints(

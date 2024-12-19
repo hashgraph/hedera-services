@@ -32,12 +32,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -211,23 +209,6 @@ public class TopicCreateSuite {
                         .adminKeyName("adminKey")
                         .submitKeyName("submitKey")
                         .autoRenewAccountId("autoRenewAccount"));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> feeAsExpected() {
-        return hapiTest(
-                newKeyNamed("adminKey"),
-                newKeyNamed("submitKey"),
-                cryptoCreate("autoRenewAccount"),
-                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                createTopic("testTopic")
-                        .topicMemo("testmemo")
-                        .adminKeyName("adminKey")
-                        .submitKeyName("submitKey")
-                        .autoRenewAccountId("autoRenewAccount")
-                        .payingWith("payer")
-                        .via("topicCreate"),
-                validateChargedUsd("topicCreate", 0.0226));
     }
 
     @HapiTest

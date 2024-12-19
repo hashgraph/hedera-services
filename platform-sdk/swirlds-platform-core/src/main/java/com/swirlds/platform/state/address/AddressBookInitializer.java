@@ -22,11 +22,14 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookValidator;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -130,8 +133,8 @@ public class AddressBookInitializer {
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
 
-        this.stateAddressBook =
-                initialState.getState().getReadablePlatformState().getAddressBook();
+        this.stateAddressBook = RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
+                (State) initialState.getState().getSwirldState()));
         if (stateAddressBook == null && !initialState.isGenesisState()) {
             throw new IllegalStateException("Only genesis states can have null address books.");
         }

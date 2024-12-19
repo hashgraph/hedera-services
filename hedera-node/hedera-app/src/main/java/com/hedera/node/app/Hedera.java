@@ -36,7 +36,6 @@ import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -115,6 +114,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -133,12 +133,10 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
-import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -286,11 +284,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final StartupNetworksFactory startupNetworksFactory;
 
     /**
-     * The id of this node.
-     */
-    private final NodeId selfNodeId;
-
-    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -309,6 +302,15 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * basis for applying consensus transactions.
      */
     private HederaInjectionComponent daggerApp;
+
+    /**
+     * When applying and migrating schemas to a target state, it is set here to support
+     * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
+     * before the roster lifecycle is adopted.
+     */
+    @Nullable
+    @Deprecated
+    private State initState;
 
     /**
      * The metrics object being used for reporting.
@@ -360,8 +362,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
-        StartupNetworks apply(
-                long selfNodeId, @NonNull ConfigProvider configProvider, @NonNull TssBaseService tssBaseService);
+        StartupNetworks apply(@NonNull ConfigProvider configProvider, @NonNull TssBaseService tssBaseService);
     }
 
     /*==================================================================================================================
@@ -382,7 +383,6 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param migrator the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
      * @param startupNetworksFactory the factory for the startup networks
-     * @param selfNodeId the node ID of this node
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -390,11 +390,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
-            @NonNull final StartupNetworksFactory startupNetworksFactory,
-            @NonNull final NodeId selfNodeId) {
+            @NonNull final StartupNetworksFactory startupNetworksFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
-        this.selfNodeId = requireNonNull(selfNodeId);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         logger.info(
@@ -460,7 +458,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         // FUTURE: a lambda that tests if a ReadableTssStore
                         // constructed from the migration state returns a
                         // RosterKeys with the ledger id for the given roster
-                        new RosterService(roster -> true),
+                        new RosterService(roster -> true, () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -539,10 +537,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final State state,
             @NonNull final Metrics metrics,
             @NonNull final InitTrigger trigger,
-            @Nullable final AddressBook genesisAddressBook,
-            @NonNull final Configuration platformConfiguration) {
+            @Nullable final Network genesisNetwork,
+            @NonNull final Configuration platformConfig,
+            @Deprecated @Nullable final AddressBook diskAddressBook) {
         requireNonNull(state);
-        requireNonNull(platformConfiguration);
+        requireNonNull(platformConfig);
         this.metrics = requireNonNull(metrics);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
@@ -568,7 +567,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
         }
         try {
-            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisAddressBook, platformConfiguration);
+            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisNetwork, platformConfig, diskAddressBook);
             logConfiguration();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during schema migration", t);
@@ -598,16 +597,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         this.platform = requireNonNull(platform);
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
             initializeStatesApi(
-                    state,
-                    metrics,
-                    trigger,
-                    RosterUtils.buildAddressBook(platform.getRoster()),
-                    platform.getContext().getConfiguration());
-
-            contractServiceImpl.registerMetrics();
+                    state, metrics, trigger, null, platform.getContext().getConfiguration(), null);
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
+        contractServiceImpl.registerMetrics();
     }
 
     /**
@@ -619,19 +613,21 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
      * and thus all schemas will be executed.
      *
-     * @param state                 current state
-     * @param deserializedVersion   version deserialized
-     * @param trigger               trigger that is calling migration
-     * @param genesisAddressBook    the genesis address book, if applicable
-     * @param platformConfiguration platform configuration
+     * @param state current state
+     * @param deserializedVersion version deserialized
+     * @param trigger trigger that is calling migration
+     * @param genesisNetwork the genesis address book, if applicable
+     * @param platformConfig platform configuration
+     * @param diskAddressBook before enabling the roster lifecycle, the address book from disk
      */
     private void migrateSchemas(
             @NonNull final State state,
             @Nullable final ServicesSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
-            @Nullable final AddressBook genesisAddressBook,
-            @NonNull final Configuration platformConfiguration) {
+            @Nullable final Network genesisNetwork,
+            @NonNull final Configuration platformConfig,
+            @Deprecated @Nullable final AddressBook diskAddressBook) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(
@@ -648,14 +644,17 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (trigger == GENESIS) {
             final var config = configProvider.getConfiguration();
             final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-            final var genesisRoster = buildRoster(requireNonNull(genesisAddressBook));
-            genesisNetworkInfo = new GenesisNetworkInfo(genesisRoster, ledgerConfig.id());
+            genesisNetworkInfo = new GenesisNetworkInfo(requireNonNull(genesisNetwork), ledgerConfig.id());
         }
         blockStreamService.resetMigratedLastBlockHash();
-        startupNetworks = startupNetworksFactory.apply(selfNodeId.id(), configProvider, tssBaseService);
-        PLATFORM_STATE_SERVICE.setAppVersionFn(() -> version);
-        PLATFORM_STATE_SERVICE.setActiveRosterFn(
-                () -> new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)).getActiveRoster());
+        startupNetworks = startupNetworksFactory.apply(configProvider, tssBaseService);
+        PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
+        // If the client code did not provide a disk address book, we are reconnecting; and
+        // PlatformState schemas must not try to update the current address book anyway
+        if (diskAddressBook != null) {
+            PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
+        }
+        this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -664,11 +663,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 // (FUTURE) In principle, the FileService could change the active configuration during a
                 // migration, implying we should pass a config provider; but we don't need this yet
                 configProvider.getConfiguration(),
-                platformConfiguration,
+                platformConfig,
                 genesisNetworkInfo,
                 metrics,
                 startupNetworks);
-        PLATFORM_STATE_SERVICE.clearActiveRosterFn();
+        this.initState = null;
+        PLATFORM_STATE_SERVICE.clearDiskAddressBook();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
@@ -1006,8 +1006,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
 
         final var activeRoster = tssBaseService.chooseRosterForNetwork(
                 state, trigger, serviceMigrator, version, configProvider.getConfiguration(), platform.getRoster());
-        final var networkInfo =
-                new StateNetworkInfo(state, activeRoster, platform.getSelfId().id(), configProvider);
+        final var networkInfo = new StateNetworkInfo(platform.getSelfId().id(), state, activeRoster, configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
