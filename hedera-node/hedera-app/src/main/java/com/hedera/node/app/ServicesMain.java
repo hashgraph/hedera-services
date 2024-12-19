@@ -64,7 +64,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
-import com.swirlds.config.extensions.sources.YamlConfigSource;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
@@ -396,10 +395,11 @@ public class ServicesMain implements SwirldMain {
     public static Configuration buildPlatformConfig() {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance())
-                .withSource(new YamlConfigSource(getAbsolutePath(DEFAULT_OVERWRITE_YAML_FILE_NAME)));
-        rethrowIO(() ->
-                BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+                .withSource(SystemPropertiesConfigSource.getInstance());
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
+                configurationBuilder,
+                getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME),
+                getAbsolutePath(DEFAULT_OVERWRITE_YAML_FILE_NAME)));
         final Configuration configuration = configurationBuilder.build();
         checkConfiguration(configuration);
         return configuration;
