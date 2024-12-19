@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.schedule.ScheduleUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -77,6 +78,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     private List<String> initialSigners = Collections.emptyList();
     private Optional<String> adminKey = Optional.empty();
     private Optional<String> payerAccountID = Optional.empty();
+    private Optional<Boolean> withNonExistingPayerAccountID = Optional.empty();
     private Optional<String> entityMemo = Optional.empty();
     private Optional<Boolean> waitForExpiry = Optional.empty();
     private Optional<Pair<String, Long>> expirationTimeRelativeTo = Optional.empty();
@@ -142,6 +144,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     public HapiScheduleCreate<T> designatingPayer(String s) {
         payerAccountID = Optional.of(s);
+        return this;
+    }
+
+    public HapiScheduleCreate<T> withNonExistingDesignatingPayer() {
+        withNonExistingPayerAccountID = Optional.of(true);
         return this;
     }
 
@@ -245,6 +252,12 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
                             payerAccountID.ifPresent(a -> {
                                 var payer = TxnUtils.asId(a, spec);
                                 b.setPayerAccountID(payer);
+                            });
+                            withNonExistingPayerAccountID.ifPresent(a -> {
+                                var nonExistingPayer = AccountID.newBuilder()
+                                        .setAccountNum(7431)
+                                        .build();
+                                b.setPayerAccountID(nonExistingPayer);
                             });
                         });
         return b -> b.setScheduleCreate(opBody);

@@ -68,7 +68,6 @@ public class StressTestingToolMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(StressTestingToolState.class, () -> {
                 StressTestingToolState stressTestingToolState = new StressTestingToolState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initStates(stressTestingToolState);
                 return stressTestingToolState;
             }));
             registerMerkleStateRootClassIds();

@@ -62,7 +62,6 @@ public class HelloSwirldDemoMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(HelloSwirldDemoState.class, () -> {
                 HelloSwirldDemoState helloSwirldDemoState = new HelloSwirldDemoState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initStates(helloSwirldDemoState);
                 return helloSwirldDemoState;
             }));
             registerMerkleStateRootClassIds();

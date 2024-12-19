@@ -19,12 +19,15 @@ package com.swirlds.platform.system.state.notifications;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -47,6 +50,9 @@ class StateHashedNotificationTest {
     @Mock
     private ReservedSignedState reservedSignedState;
 
+    @Mock
+    private List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions;
+
     @Test
     void factoryWorksAsExpected() {
         given(round.getRoundNum()).willReturn(ROUND);
@@ -54,7 +60,8 @@ class StateHashedNotificationTest {
         given(signedState.getState()).willReturn(merkleRoot);
         given(merkleRoot.getHash()).willReturn(HASH);
 
-        final var notification = StateHashedNotification.from(new StateAndRound(reservedSignedState, round));
+        final var notification =
+                StateHashedNotification.from(new StateAndRound(reservedSignedState, round, systemTransactions));
 
         assertEquals(ROUND, notification.round());
         assertEquals(HASH, notification.hash());

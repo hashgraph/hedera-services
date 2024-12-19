@@ -28,10 +28,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.legacy.payload.IssPayload;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.platform.sequence.map.SequenceMap;
@@ -247,7 +245,7 @@ public class DefaultIssDetector implements IssDetector {
                 issNotifications.add(selfHashCheckResult);
             }
 
-            issNotifications.addAll(handlePostconsensusSignatures(stateAndRound.round()));
+            issNotifications.addAll(handlePostconsensusSignatures(stateAndRound.systemTransactions()));
 
             return issNotifications.isEmpty() ? null : issNotifications;
         }
@@ -292,14 +290,12 @@ public class DefaultIssDetector implements IssDetector {
     /**
      * Handle postconsensus state signatures.
      *
-     * @param round the round that may contain state signatures
+     * @param stateSignatureTransactions the transactions containining state signatures
      * @return a list of ISS notifications, which may be empty, but will not contain null
      */
     @NonNull
-    private List<IssNotification> handlePostconsensusSignatures(@NonNull final ConsensusRound round) {
-        final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
-
+    private List<IssNotification> handlePostconsensusSignatures(
+            final List<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
         if (stateSignatureTransactions == null) {
             return List.of();
         }

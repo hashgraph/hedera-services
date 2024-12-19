@@ -103,7 +103,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final ConsensusUpdateTopicTransactionBody op = txn.consensusUpdateTopicOrThrow();
         validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
 
-        if (op.feeExemptKeyList() != null) {
+        if (op.hasFeeExemptKeyList()) {
             final var uniqueKeysCount =
                     op.feeExemptKeyList().keys().stream().distinct().count();
             validateTruePreCheck(
@@ -144,12 +144,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             if (!designatesAccountRemoval(autoRenewAccountID)) {
                 context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
             }
-        }
-
-        // If the fee schedule key is changed then the transaction must also be signed by the new fee schedule key
-        if (op.hasFeeScheduleKey()
-                && !KeyOneOfType.UNSET.equals(op.feeScheduleKey().key().kind())) {
-            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         }
 
         // If we change the custom fees the topic needs to have a fee schedule key, and it needs to sign the transaction
@@ -255,7 +249,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
         if (op.hasFeeScheduleKey()) {
             final var newFeeScheduleKey = op.feeScheduleKey();
-            if (newFeeScheduleKey == null || isKeyRemoval(newFeeScheduleKey)) {
+            if (isKeyRemoval(newFeeScheduleKey)) {
                 builder.feeScheduleKey((Key) null);
             } else {
                 builder.feeScheduleKey(newFeeScheduleKey);
