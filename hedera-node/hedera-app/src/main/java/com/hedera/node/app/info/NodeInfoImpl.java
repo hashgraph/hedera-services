@@ -29,7 +29,7 @@ import java.util.List;
 public record NodeInfoImpl(
         long nodeId,
         @NonNull AccountID accountId,
-        long stake,
+        long weight,
         List<ServiceEndpoint> gossipEndpoints,
         @Nullable Bytes sigCertBytes)
         implements NodeInfo {

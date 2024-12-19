@@ -21,17 +21,21 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils.buildFakeSignatureBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -94,13 +98,16 @@ public class AbstractStateSignatureCollectorTest {
             return;
         }
 
-        final AddressBook addressBook = signedState.getAddressBook();
+        final Roster roster = signedState.getRoster();
+        final RosterEntry rosterEntry = RosterUtils.getRosterEntryOrNull(roster, nodeId.id());
+        assertNotNull(rosterEntry);
+        final PublicKey publicKey =
+                RosterUtils.fetchGossipCaCertificate(rosterEntry).getPublicKey();
         final Hash hash = signedState.getState().getHash();
 
         final StateSignatureTransaction transaction = StateSignatureTransaction.newBuilder()
                 .round(round)
-                .signature(
-                        buildFakeSignatureBytes(addressBook.getAddress(nodeId).getSigPublicKey(), hash))
+                .signature(buildFakeSignatureBytes(publicKey, hash))
                 .hash(hash.getBytes())
                 .build();
 

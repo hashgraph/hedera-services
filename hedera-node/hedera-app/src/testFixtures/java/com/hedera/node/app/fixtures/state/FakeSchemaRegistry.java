@@ -79,6 +79,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 CURRENT_VERSION,
                 networkInfo,
                 DEFAULT_CONFIG,
+                DEFAULT_CONFIG,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -89,10 +90,19 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @NonNull final FakeState state,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final Configuration config,
+            @NonNull final Configuration appConfig,
+            @NonNull final Configuration platformConfig,
             @NonNull final Map<String, Object> sharedValues,
             @NonNull final AtomicLong nextEntityNum,
             @NonNull final StartupNetworks startupNetworks) {
+        requireNonNull(serviceName);
+        requireNonNull(state);
+        requireNonNull(networkInfo);
+        requireNonNull(appConfig);
+        requireNonNull(platformConfig);
+        requireNonNull(sharedValues);
+        requireNonNull(nextEntityNum);
+        requireNonNull(startupNetworks);
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
             return;
@@ -108,14 +118,14 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
             final var applications =
-                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, appConfig);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             final var readableStates = state.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, config, state);
+                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, appConfig, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -125,7 +135,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                     previousVersion,
                     previousStates,
                     newStates,
-                    config,
+                    appConfig,
+                    platformConfig,
                     networkInfo,
                     nextEntityNum,
                     sharedValues,
@@ -183,7 +194,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @NonNull final ReadableStates previousStates,
             @NonNull final WritableStates writableStates,
-            @NonNull final Configuration config,
+            @NonNull final Configuration appConfig,
+            @NonNull final Configuration platformConfig,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final AtomicLong nextEntityNum,
             @NonNull final Map<String, Object> sharedValues,
@@ -224,8 +236,14 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
             @NonNull
             @Override
-            public Configuration configuration() {
-                return config;
+            public Configuration appConfig() {
+                return appConfig;
+            }
+
+            @NonNull
+            @Override
+            public Configuration platformConfig() {
+                return platformConfig;
             }
 
             @Override

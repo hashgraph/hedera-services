@@ -120,9 +120,9 @@ public class ConsensusCustomFeesValidator {
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var denomToken = getIfUsable(tokenNum, tokenStore, REQUIRE_NOT_PAUSED, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateFalse(
-                TokenSupplyType.FINITE.equals(denomToken.supplyType()) && feeAmount > denomToken.maxSupply(),
-                AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
+        if (denomToken.supplyType().equals(TokenSupplyType.FINITE)) {
+            validateFalse(feeAmount > denomToken.maxSupply(), AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
+        }
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         final var tokenRel = tokenRelationStore.get(feeCollectorNum, tokenNum);
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);

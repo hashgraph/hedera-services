@@ -34,11 +34,15 @@ import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SOFTWA
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.TOTAL_WEIGHT;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.WALL_CLOCK_TIME;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
@@ -168,6 +172,8 @@ public record SavedStateMetadata(
         Objects.requireNonNull(now, "now must not be null");
 
         final PlatformStateAccessor platformState = signedState.getState().getReadablePlatformState();
+        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(
+                (State) signedState.getState().getSwirldState());
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
@@ -186,9 +192,7 @@ public record SavedStateMetadata(
                 selfId,
                 signingNodes,
                 signedState.getSigningWeight(),
-                platformState.getAddressBook() == null
-                        ? 0
-                        : platformState.getAddressBook().getTotalWeight());
+                roster == null ? 0 : RosterUtils.computeTotalWeight(roster));
     }
 
     /**
