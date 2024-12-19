@@ -71,7 +71,6 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -222,9 +221,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(platformState, "the platform state cannot be null");
         throwIfImmutable();

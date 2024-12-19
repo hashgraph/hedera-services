@@ -36,7 +36,6 @@ import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -83,9 +82,7 @@ public class StatsDemoState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {}
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {}
 
     /**
      * {@inheritDoc}
