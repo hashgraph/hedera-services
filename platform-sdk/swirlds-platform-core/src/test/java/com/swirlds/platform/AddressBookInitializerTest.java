@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
@@ -47,13 +46,11 @@ import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -394,13 +391,13 @@ class AddressBookInitializerTest {
             boolean fromGenesis) {
         final SignedState signedState = mock(SignedState.class);
         final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
-        final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
-        when(signedState.getSwirldState()).thenReturn(swirldState);
+        final PlatformMerkleStateRoot state =
+                getMockSwirldStateSupplier(weightValue).get();
+        when(signedState.getSwirldState()).thenReturn(state);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
-        RosterServiceStateMock.setup(
-                (State) swirldState, currentRoster, 1L, RosterRetriever.buildRoster(previousAddressBook));
-        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
+        RosterServiceStateMock.setup(state, currentRoster, 1L, RosterRetriever.buildRoster(previousAddressBook));
+
         when(state.getReadablePlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);
         when(signedState.isGenesisState()).thenReturn(fromGenesis);
@@ -414,10 +411,10 @@ class AddressBookInitializerTest {
      * @param scenario The scenario to load.
      * @return A SwirldState which behaves according to the input scenario.
      */
-    private Supplier<SwirldState> getMockSwirldStateSupplier(int scenario) {
+    private Supplier<PlatformMerkleStateRoot> getMockSwirldStateSupplier(int scenario) {
 
         final AtomicReference<AddressBook> configAddressBook = new AtomicReference<>();
-        final SwirldState swirldState = mock(SwirldState.class, withSettings().extraInterfaces(State.class));
+        final PlatformMerkleStateRoot swirldState = mock(PlatformMerkleStateRoot.class);
 
         final OngoingStubbing<AddressBook> stub = when(swirldState.updateWeight(
                 argThat(confAB -> {

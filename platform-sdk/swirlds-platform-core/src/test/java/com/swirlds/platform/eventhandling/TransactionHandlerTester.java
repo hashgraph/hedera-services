@@ -60,7 +60,6 @@ public class TransactionHandlerTester {
         platformState = new PlatformStateValueAccumulator();
 
         final PlatformMerkleStateRoot consensusState = mock(PlatformMerkleStateRoot.class);
-        final SwirldState swirldState = mock(SwirldState.class);
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.getReadablePlatformState()).thenReturn(platformState);
         when(consensusState.getWritablePlatformState()).thenReturn(platformState);
@@ -68,7 +67,7 @@ public class TransactionHandlerTester {
                     handledRounds.add(i.getArgument(0));
                     return null;
                 })
-                .when(swirldState)
+                .when(consensusState)
                 .handleConsensusRound(any(), any(), any());
         final StatusActionSubmitter statusActionSubmitter = submittedActions::add;
         swirldStateManager = new SwirldStateManager(
