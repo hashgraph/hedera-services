@@ -45,10 +45,14 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Inject;
@@ -186,11 +190,24 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         }
     }
 
+    /**
+     * Extracts the key set for a {@code signSchedule(address, bytes)} call.
+     *
+     * @param attempt the call attempt
+     * @return the key set
+     */
     @NonNull
     private static Set<Key> getKeyForSignSchedule(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
         final Set<Key> keys = new HashSet<>();
         final var call = SIGN_SCHEDULE.decodeCall(attempt.inputBytes());
+        final var scheduleId = requireNonNull(getScheduleIDFromCall(attempt, call));
+
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
+        buffer.putLong(scheduleId.realmNum());
+        buffer.putLong(scheduleId.shardNum());
+        buffer.putLong(scheduleId.scheduleNum());
+        final Bytes message = Bytes.wrap(buffer.array());
 
         final var signatureBlob = (byte[]) call.get(SIGNATURE_MAP_INDEX);
         SignatureMap sigMap;
@@ -199,12 +216,30 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
             for (var sigPair : sigMap.sigPair()) {
                 if (sigPair.hasEd25519()) {
                     // verify the key and add it to the set
-                    keys.add(Key.newBuilder().ed25519(sigPair.ed25519OrThrow()).build());
+                    var key = Key.newBuilder().ed25519(sigPair.ed25519OrThrow()).build();
+                    if (attempt.signatureVerifier()
+                            .verifySignature(
+                                    key,
+                                    message,
+                                    MessageType.RAW,
+                                    sigMap,
+                                    ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID)) {
+                        keys.add(key);
+                    }
                 }
                 if (sigPair.hasEcdsaSecp256k1()) {
-                    keys.add(Key.newBuilder()
+                    var key = Key.newBuilder()
                             .ecdsaSecp256k1(sigPair.ecdsaSecp256k1OrThrow())
-                            .build());
+                            .build();
+                    if (attempt.signatureVerifier()
+                            .verifySignature(
+                                    key,
+                                    message,
+                                    MessageType.RAW,
+                                    sigMap,
+                                    ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID)) {
+                        keys.add(key);
+                    }
                 }
             }
         } catch (@NonNull final ParseException | NullPointerException ex) {
