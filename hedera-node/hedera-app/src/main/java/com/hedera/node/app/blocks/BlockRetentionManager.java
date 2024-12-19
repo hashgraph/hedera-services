@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -35,7 +36,7 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/*
+/**
  * The BlockRetentionManager is responsible for managing the lifecycle of block files in the uploaded directory after a configurable retention period.
  */
 @Singleton
@@ -49,6 +50,13 @@ public class BlockRetentionManager {
     public static final String BLOCK_FILE_EXTENSION = ".blk";
     public static final String BLOCK_FILE_EXTENSION_GZ = ".blk.gz";
 
+    /**
+     * Creates a new BlockRetentionManager instance.
+     * @param uploadedDir the directory where uploaded block files are stored
+     * @param retentionPeriod the duration after which block files are considered expired and eligible for deletion
+     * @param cleanupInterval the interval at which the cleanup task should run
+     * @param cleanupThreadPoolSize the number of threads to use for cleanup tasks
+     */
     @Inject
     public BlockRetentionManager(
             @NonNull final Path uploadedDir,
@@ -63,12 +71,20 @@ public class BlockRetentionManager {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
+    /**
+     * Schedules a cleanup task to run at a fixed interval.
+     *
+     * @param cleanupTask the task to run
+     */
     public void scheduleRepeating(@NonNull final Runnable cleanupTask) {
         requireNonNull(cleanupTask, "cleanupTask must not be null");
         scheduler.scheduleAtFixedRate(
                 cleanupTask, cleanupInterval.toMillis(), cleanupInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Starts the cleanup process asynchronously.
+     */
     public void startCleanup() {
         CompletableFuture.runAsync(this::cleanupExpiredBlocks, cleanupExecutor).exceptionally(ex -> {
             log.warn("Error during cleanup: {}", ex.getMessage());
@@ -76,14 +92,17 @@ public class BlockRetentionManager {
         });
     }
 
+    /**
+     * Deletes all block files that have expired.
+     */
     public void cleanupExpiredBlocks() {
         // Collect files into a list to avoid consuming the stream multiple times
-        List<Path> fileList = listFiles()
+        final List<Path> fileList = listFiles()
                 .filter(file -> isBlockFile(file) && isFileExpired(file))
                 .toList();
 
         // Submit deletion tasks for each file
-        List<CompletableFuture<Void>> futures = fileList.stream()
+        final List<CompletableFuture<Void>> futures = fileList.stream()
                 .map(file -> CompletableFuture.runAsync(() -> deleteFile(file), cleanupExecutor))
                 .toList();
 
@@ -91,6 +110,9 @@ public class BlockRetentionManager {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
+    /**
+     * Shuts down the underlying scheduler and cleanup executor services.
+     */
     public void shutdown() {
         scheduler.shutdown();
         cleanupExecutor.shutdown();
@@ -109,36 +131,40 @@ public class BlockRetentionManager {
     }
 
     private Stream<Path> listFiles() {
+        Stream<Path> files = Stream.empty();
         try {
-            return Files.list(uploadedDir);
-        } catch (Exception ex) {
+            files = Files.list(uploadedDir);
+        } catch (IOException ex) {
             log.warn("Error scanning directory: {}", ex.getMessage());
-            return Stream.empty();
         }
+
+        return files;
     }
 
     private void deleteFile(@NonNull final Path file) {
         try {
             Files.delete(file);
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             log.warn("Failed to delete file {}: {}", file, ex.getMessage());
         }
     }
 
     private boolean isBlockFile(@NonNull final Path file) {
-        String fileName = file.getFileName().toString();
+        final String fileName = file.getFileName().toString();
         return fileName.endsWith(BLOCK_FILE_EXTENSION) || fileName.endsWith(BLOCK_FILE_EXTENSION_GZ);
     }
 
     private boolean isFileExpired(@NonNull final Path file) {
+        Instant fileTime;
         try {
-            Instant fileTime = Files.getLastModifiedTime(file).toInstant();
-            Instant now = Instant.now();
-            Instant expirationTime = now.minus(retentionPeriod);
-            return fileTime.isBefore(expirationTime);
-        } catch (Exception e) {
+            fileTime = Files.getLastModifiedTime(file).toInstant();
+        } catch (IOException e) {
             log.warn("Failed to get last modified time for file {}: {}", file, e.getMessage());
-            return false;
+            fileTime = Instant.MAX;
         }
+
+        final Instant now = Instant.now();
+        final Instant expirationTime = now.minus(retentionPeriod);
+        return fileTime.isBefore(expirationTime);
     }
 }
