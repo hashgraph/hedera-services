@@ -44,6 +44,7 @@ import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -61,7 +62,6 @@ import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -164,6 +164,11 @@ public class NodeStakeUpdatesTest {
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
         given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
+        given(blockStore.getLastBlockInfo())
+                .willReturn(BlockInfo.newBuilder()
+                        .consTimeOfLastHandledTxn(Timestamp.newBuilder().seconds(1_234_567L))
+                        .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
 
         subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 

@@ -91,7 +91,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
                 RosterUtils.hash(candidateRoster).getBytes();
 
         // update the roster state/map
-        final RosterState previousRosterState = rosterStateOrThrow();
+        final RosterState previousRosterState = rosterStateOrDefault();
         final Bytes previousCandidateRosterHash = previousRosterState.candidateRosterHash();
         final Builder newRosterStateBuilder =
                 previousRosterState.copyBuilder().candidateRosterHash(incomingCandidateRosterHash);
@@ -115,13 +115,14 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         RosterValidator.validate(roster);
 
         // update the roster state
-        final RosterState previousRosterState = rosterStateOrThrow();
+        final RosterState previousRosterState = rosterStateOrDefault();
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
         if (!roundRosterPairs.isEmpty()) {
             final RoundRosterPair activeRosterPair = roundRosterPairs.getFirst();
             if (round < 0 || round <= activeRosterPair.roundNumber()) {
-                throw new IllegalArgumentException(
-                        "incoming round number must be greater than the round number of the current active roster.");
+                throw new IllegalArgumentException("incoming round number = " + round
+                        + " must be greater than the round number of the current active roster = "
+                        + activeRosterPair.roundNumber() + ".");
             }
         }
         final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
@@ -152,13 +153,13 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     }
 
     /**
-     * Returns the roster state or throws an exception if the state is null.
+     * Returns the roster state; or the default roster state if the roster state is not yet set at genesis.
      * @return the roster state
-     * @throws NullPointerException if the roster state is null
      */
     @NonNull
-    private RosterState rosterStateOrThrow() {
-        return requireNonNull(rosterState.get());
+    private RosterState rosterStateOrDefault() {
+        RosterState state;
+        return (state = rosterState.get()) == null ? RosterState.DEFAULT : state;
     }
 
     /**
@@ -168,7 +169,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param rosterHash the hash of the roster
      */
     private void removeRoster(@NonNull final Bytes rosterHash) {
-        final List<RoundRosterPair> activeRosterHistory = rosterStateOrThrow().roundRosterPairs();
+        final List<RoundRosterPair> activeRosterHistory = rosterStateOrDefault().roundRosterPairs();
         if (activeRosterHistory.stream()
                 .noneMatch(rosterPair -> rosterPair.activeRosterHash().equals(rosterHash))) {
             this.rosterMap.remove(ProtoBytes.newBuilder().value(rosterHash).build());

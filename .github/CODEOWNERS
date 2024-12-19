@@ -16,7 +16,7 @@
 #########################
 
 /hapi/                                          @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
-/hapi/hedera-protobufs/services                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds
+/hapi/hedera-protobufs/services                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds @hashgraph/mirror-node
 
 
 #########################

@@ -203,16 +203,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @Order(3)
 @Tag(INTEGRATION)
 @HapiTestLifecycle
 @TargetEmbeddedMode(REPEATABLE)
-@TestMethodOrder(OrderAnnotation.class)
 public class RepeatableHip423Tests {
 
     private static final long ONE_MINUTE = 60;
