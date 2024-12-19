@@ -16,18 +16,25 @@
 
 package com.hedera.services.bdd.junit.hedera.remote;
 
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.AbstractNode;
 import com.hedera.services.bdd.junit.hedera.ExternalPath;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 
 public class RemoteNode extends AbstractNode implements HederaNode {
     public RemoteNode(@NonNull final NodeMetadata metadata) {
@@ -41,6 +48,15 @@ public class RemoteNode extends AbstractNode implements HederaNode {
 
     @Override
     public HederaNode initWorkingDir(@NonNull final String configTxt) {
+        throw new UnsupportedOperationException("Cannot initialize a remote node's working directory");
+    }
+
+    @NonNull
+    @Override
+    public HederaNode initWorkingDir(
+            @NonNull final String configTxt,
+            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
         throw new UnsupportedOperationException("Cannot initialize a remote node's working directory");
     }
 

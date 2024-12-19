@@ -22,7 +22,9 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -35,6 +37,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
@@ -45,6 +49,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -125,6 +130,7 @@ public class RandomSignedStateGenerator {
         } else {
             addressBookInstance = addressBook;
         }
+        final Roster rosterInstance = RosterRetriever.buildRoster(addressBookInstance);
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
@@ -200,7 +206,6 @@ public class RandomSignedStateGenerator {
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);
-            v.setAddressBook(addressBookInstance);
             v.setLegacyRunningEventHash(legacyRunningEventHashInstance);
             v.setCreationSoftwareVersion(softwareVersionInstance);
             v.setRoundsNonAncient(roundsNonAncientInstance);
@@ -208,7 +213,7 @@ public class RandomSignedStateGenerator {
         });
 
         FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
-        // Future Work: populate roster history and stop setting AddressBook on platformState above.
+        RosterUtils.setActiveRoster((State) stateInstance, rosterInstance, roundInstance);
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
@@ -464,14 +469,22 @@ public class RandomSignedStateGenerator {
     }
 
     /**
+     * Keep calling release() on a given Reservable until it's completely released.
+     * @param reservable a reservable to release
+     */
+    public static void releaseReservable(@NonNull final Reservable reservable) {
+        while (reservable.getReservationCount() >= 0) {
+            reservable.release();
+        }
+    }
+
+    /**
      * Release all the SignedState objects built by this generator on the current thread,
      * and then clear the list of built states.
      */
     public static void releaseAllBuiltSignedStates() {
         builtSignedStates.get().forEach(signedState -> {
-            while (signedState.getState().getReservationCount() >= 0) {
-                signedState.getState().release();
-            }
+            releaseReservable(signedState.getState());
         });
         builtSignedStates.get().clear();
     }

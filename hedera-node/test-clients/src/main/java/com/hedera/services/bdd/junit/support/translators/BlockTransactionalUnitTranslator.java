@@ -215,6 +215,7 @@ public class BlockTransactionalUnitTranslator {
                 translatedRecords.add(translation);
             }
         }
+        baseTranslator.finishLastUnit();
         return translatedRecords;
     }
 }

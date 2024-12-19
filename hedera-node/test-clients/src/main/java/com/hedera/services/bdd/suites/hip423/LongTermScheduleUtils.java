@@ -151,6 +151,6 @@ public final class LongTermScheduleUtils {
     }
 
     public static SpecOperation[] triggerSchedule(String schedule) {
-        return triggerSchedule(schedule, 5);
+        return triggerSchedule(schedule, 6);
     }
 }

@@ -63,7 +63,9 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
         final var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
         final NodeDeleteTransactionBody opBody = spec.txns()
                 .<NodeDeleteTransactionBody, NodeDeleteTransactionBody.Builder>body(
-                        NodeDeleteTransactionBody.class, builder -> builder.setNodeId(nodeId));
+                        NodeDeleteTransactionBody.class, builder -> {
+                            builder.setNodeId(nodeId);
+                        });
         return builder -> builder.setNodeDelete(opBody);
     }
 
@@ -72,6 +74,7 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
+
         if (verboseLoggingOn) {
             LOG.info("Actual status was {}", actualStatus);
             LOG.info("Deleted node {} with ID {} ", nodeName, spec.registry().getNodeId(nodeName));
