@@ -52,7 +52,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         };
     }
 
-    static byte[] resolveLegacy(EthTxData ethTx) {
+    static byte[] resolveLegacy(final EthTxData ethTx) {
         return ethTx.chainId() != null && ethTx.chainId().length > 0
                 ?
                 RLPEncoder.encodeAsList(
@@ -74,7 +74,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
                         ethTx.callData());
     }
 
-    static byte[] resolveEIP1559(EthTxData ethTx) {
+    static byte[] resolveEIP1559(final EthTxData ethTx) {
         return RLPEncoder.encodeSequentially(Integers.toBytes(2), new Object[] {
                 ethTx.chainId(),
                 Integers.toBytes(ethTx.nonce()),
@@ -88,7 +88,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         });
     }
 
-    static byte[] resolveEIP2930(EthTxData ethTx) {
+    static byte[] resolveEIP2930(final EthTxData ethTx) {
         return RLPEncoder.encodeSequentially(Integers.toBytes(1), new Object[] {
                 ethTx.chainId(),
                 Integers.toBytes(ethTx.nonce()),
