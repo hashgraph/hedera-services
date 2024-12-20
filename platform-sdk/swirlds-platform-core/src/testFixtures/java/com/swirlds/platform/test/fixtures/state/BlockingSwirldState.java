@@ -36,7 +36,6 @@ import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -86,9 +85,7 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         // intentionally does nothing
     }
 
