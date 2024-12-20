@@ -37,20 +37,24 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SavedStateMetadata;
 import com.swirlds.platform.state.snapshot.SavedStateMetadataField;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.merkle.SigSet;
+import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -210,11 +214,14 @@ class SavedStateMetadataTests {
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
         when(platformState.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
-        final AddressBook addressBook = mock(AddressBook.class);
+
+        final Roster roster = mock(Roster.class);
+        final State theState = mock(State.class, withSettings().extraInterfaces(SwirldState.class));
+        when(state.getSwirldState()).thenReturn((SwirldState) theState);
+        RosterServiceStateMock.setup(theState, roster);
 
         when(signedState.getState()).thenReturn(state);
         when(state.getReadablePlatformState()).thenReturn(platformState);
-        when(platformState.getAddressBook()).thenReturn(addressBook);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())
                 .thenReturn(new ArrayList<>(List.of(NodeId.of(3L), NodeId.of(1L), NodeId.of(2L))));

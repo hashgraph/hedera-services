@@ -1,35 +1,26 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.roster;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.PbjRecordHasher;
 import com.swirlds.state.State;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
@@ -37,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -186,7 +178,7 @@ public final class RosterUtils {
     /**
      * Returns a RosterEntry with a given nodeId by simply iterating all entries,
      * w/o building a temporary map.
-     *
+     * <p>
      * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId,
      * then the code should use the RosterUtils.toMap() method and keep the map instance
      * for the look-ups.
@@ -197,16 +189,39 @@ public final class RosterUtils {
      * @throws RosterEntryNotFoundException if RosterEntry is not found in Roster
      */
     public static RosterEntry getRosterEntry(@NonNull final Roster roster, final long nodeId) {
+        final RosterEntry entry = getRosterEntryOrNull(roster, nodeId);
+        if (entry != null) {
+            return entry;
+        }
+
+        throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in Roster: " + roster);
+    }
+
+    /**
+     * Retrieves the roster entry that matches the specified node ID, returning null if one does not exist.
+     * <p>
+     * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId, then the code should use the
+     * {@link #toMap(Roster)} method and keep the map instance for the look-ups.
+     *
+     * @param roster the roster to search
+     * @param nodeId the ID of the node to retrieve
+     * @return the found roster entry that matches the specified node ID, else null
+     */
+    public static RosterEntry getRosterEntryOrNull(@NonNull final Roster roster, final long nodeId) {
+        Objects.requireNonNull(roster, "roster");
+
         for (final RosterEntry entry : roster.rosterEntries()) {
             if (entry.nodeId() == nodeId) {
                 return entry;
             }
         }
-        throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in Roster: " + roster);
+
+        return null;
     }
 
     /**
      * Count the number of RosterEntries with non-zero weight.
+     *
      * @param roster a roster
      * @return the number of RosterEntries with non-zero weight
      */
@@ -219,13 +234,13 @@ public final class RosterUtils {
 
     /**
      * Build an instance of RosterHistory from the current/previous rosters as reported by the RosterRetriever.
-     *
+     * <p>
      * The RosterRetriever implementation fetches the rosters from the RosterState/RosterMap,
      * and automatically falls back to fetching them from the PlatformState if the RosterState is empty.
      *
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param state a State object to fetch data from
      * @return a RosterHistory
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -257,25 +272,33 @@ public final class RosterUtils {
     @NonNull
     public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
         final var roundRosterPairs = rosterStore.getRosterHistory();
-        // If there exists active rosters in the roster state.
-        if (roundRosterPairs != null) {
-            final var rosterMap = roundRosterPairs.stream()
-                    .collect(Collectors.toMap(
-                            RoundRosterPair::activeRosterHash, pair -> rosterStore.get(pair.activeRosterHash())));
+        final var rosterMap = roundRosterPairs.stream()
+                .collect(Collectors.toMap(
+                        RoundRosterPair::activeRosterHash,
+                        pair -> Objects.requireNonNull(rosterStore.get(pair.activeRosterHash()))));
+        return new RosterHistory(roundRosterPairs, rosterMap);
+    }
 
-            return new RosterHistory(roundRosterPairs, rosterMap);
-        } else {
-            // If there is no roster state content, this is a fatal error: The migration did not happen on software
-            // upgrade.
-            throw new IllegalStateException("No active rosters found in the roster state");
-        }
+    /**
+     * Sets the active Roster in a given State.
+     *
+     * @param state a state to set a Roster in
+     * @param roster a Roster to set as active
+     * @param round a round number since which the roster is considered active
+     */
+    public static void setActiveRoster(@NonNull final State state, @NonNull final Roster roster, final long round) {
+        final WritableStates writableStates = state.getWritableStates(RosterStateId.NAME);
+        final WritableRosterStore writableRosterStore = new WritableRosterStore(writableStates);
+        writableRosterStore.putActiveRoster(roster, round);
+        ((CommittableWritableStates) writableStates).commit();
     }
 
     /**
      * Build an Address object out of a given RosterEntry object.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     *
      * @param entry a RosterEntry
      * @return an Address
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -323,13 +346,18 @@ public final class RosterUtils {
 
     /**
      * Build an AddressBook object out of a given Roster object.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     * Returns null if the input roster is null.
      * @param roster a Roster
      * @return an AddressBook
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
-    @NonNull
-    public static AddressBook buildAddressBook(@NonNull final Roster roster) {
+    @Nullable
+    public static AddressBook buildAddressBook(@Nullable final Roster roster) {
+        if (roster == null) {
+            return null;
+        }
+
         AddressBook addressBook = new AddressBook();
 
         for (final RosterEntry entry : roster.rosterEntries()) {
@@ -337,5 +365,16 @@ public final class RosterUtils {
         }
 
         return addressBook;
+    }
+
+    /**
+     * Build a Roster object out of a given {@link Network} address book.
+     * @param network a network
+     * @return a Roster
+     */
+    public static @NonNull Roster rosterFrom(@NonNull final Network network) {
+        return new Roster(network.nodeMetadata().stream()
+                .map(NodeMetadata::rosterEntryOrThrow)
+                .toList());
     }
 }
