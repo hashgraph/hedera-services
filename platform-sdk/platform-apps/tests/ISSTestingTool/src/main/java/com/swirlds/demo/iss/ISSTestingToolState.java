@@ -264,10 +264,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             final ConsensusEvent event = eventIterator.next();
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
-                final var transactionWithSystemBytes = handleTransaction(transaction);
-                if (transactionWithSystemBytes != null) {
-                    stateSignatureTransaction.accept(new ScopedSystemTransaction(
-                            event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                } else {
+                    handleTransaction(transaction);
                 }
             });
             if (!eventIterator.hasNext()) {
@@ -308,27 +309,21 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * Apply a transaction to the state.
      *
      * @param transaction the transaction to apply
-     * @return {@link ConsensusTransaction} only if it represents system transaction wrapped in Bytes
      */
-    private ConsensusTransaction handleTransaction(final ConsensusTransaction transaction) {
+    private void handleTransaction(final ConsensusTransaction transaction) {
         if (transaction.isSystem()) {
-            return null;
-        }
-
-        if (areTransactionBytesSystemOnes(transaction)) {
-            return transaction;
+            return;
         }
 
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
-
-        return null;
     }
 
     /**
-     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4. System transactions will be always bigger than that.
+     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4.
+     * System transactions will be always bigger than that.
      *
      * @param transaction the consensus transaction to check
      * @return true if the transaction bytes are system ones, false otherwise
