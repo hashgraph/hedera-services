@@ -26,6 +26,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
+import com.hedera.node.config.converter.CloudBucketConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
@@ -71,6 +72,7 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.CloudBucketConfig;
 import com.hedera.node.config.types.CongestionMultipliers;
 import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.node.config.types.HederaFunctionalitySet;
@@ -201,6 +203,7 @@ public final class HederaTestConfigBuilder {
                 .withConverter(LongPair.class, new LongPairConverter())
                 .withConverter(HederaFunctionalitySet.class, new FunctionalitySetConverter())
                 .withConverter(Bytes.class, new BytesConverter())
+                .withConverter(CloudBucketConfig.class, new CloudBucketConverter())
                 .withValidator(new EmulatesMapValidator());
     }
 

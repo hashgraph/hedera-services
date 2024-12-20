@@ -8,10 +8,7 @@ module com.swirlds.config.impl {
 
     requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
-    requires com.swirlds.common;
     requires com.swirlds.config.extensions;
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.databind;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
 

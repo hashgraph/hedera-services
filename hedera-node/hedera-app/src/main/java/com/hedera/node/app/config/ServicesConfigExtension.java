@@ -25,6 +25,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
+import com.hedera.node.config.converter.CloudBucketConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
@@ -70,6 +71,7 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.CloudBucketConfig;
 import com.hedera.node.config.types.CongestionMultipliers;
 import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.node.config.types.HederaFunctionalitySet;
@@ -128,7 +130,8 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 TraceabilityConfig.class,
                 UtilPrngConfig.class,
                 VersionConfig.class,
-                TssConfig.class);
+                TssConfig.class,
+                CloudBucketConfig.class);
     }
 
     @NonNull
@@ -146,7 +149,8 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 ConverterPair.of(LongPair.class, new LongPairConverter()),
                 ConverterPair.of(KeyValuePair.class, new KeyValuePairConverter()),
                 ConverterPair.of(HederaFunctionalitySet.class, new FunctionalitySetConverter()),
-                ConverterPair.of(Bytes.class, new BytesConverter()));
+                ConverterPair.of(Bytes.class, new BytesConverter()),
+                ConverterPair.of(CloudBucketConfig.class, new CloudBucketConverter()));
     }
 
     @NonNull

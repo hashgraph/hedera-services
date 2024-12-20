@@ -19,10 +19,11 @@ package com.hedera.node.config.data;
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
 import com.hedera.node.config.types.BlockStreamWriterMode;
+import com.hedera.node.config.types.CloudBucketConfig;
 import com.hedera.node.config.types.StreamMode;
-import com.swirlds.common.utility.CloudBucketConfig;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.annotation.Max;
 import com.swirlds.config.api.validation.annotation.Min;
 import java.util.List;
@@ -54,29 +55,4 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "3") @NetworkProperty int uploadRetryAttempts,
         @ConfigProperty(defaultValue = "168") @NetworkProperty int localRetentionHours,
         @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
-
-        // Bucket configurations with default AWS and GCP public buckets
-        @ConfigProperty(
-                        defaultValue =
-                                """
-        [
-            {
-                "name": "default-aws-bucket",
-                "provider": "aws",
-                "endpoint": "https://s3.amazonaws.com",
-                "region": "us-east-1",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            },
-            {
-                "name": "default-gcp-bucket",
-                "provider": "gcp",
-                "endpoint": "https://storage.googleapis.com",
-                "region": "",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            }
-        ]
-        """)
-                @NetworkProperty
-                List<CloudBucketConfig> buckets) {}
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) @NetworkProperty List<CloudBucketConfig> buckets) {}

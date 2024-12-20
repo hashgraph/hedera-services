@@ -19,7 +19,7 @@ package com.hedera.node.config.data;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.utility.CloudBucketConfig;
+import com.hedera.node.config.types.CloudBucketConfig;
 import org.junit.jupiter.api.Test;
 
 public class CloudBucketConfigTest {

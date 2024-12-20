@@ -20,16 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import com.hedera.node.app.blocks.cloud.uploader.BucketConfigurationManager;
 import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.utility.CloudBucketConfig;
+import com.hedera.node.config.types.CloudBucketConfig;
+import com.swirlds.config.extensions.sources.YamlConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
@@ -44,43 +43,22 @@ public class BucketConfigurationManagerTest {
     private ConfigProvider configProvider;
 
     private BucketConfigurationManager subject;
-    private static final String DEFAULT_BUCKETS_CONFIG =
-            """
-        [
-            {
-                "name": "default-aws-bucket",
-                "provider": "aws",
-                "endpoint": "https://s3.amazonaws.com",
-                "region": "us-east-1",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            },
-            {
-                "name": "default-gcp-bucket",
-                "provider": "gcp",
-                "endpoint": "https://storage.googleapis.com",
-                "region": "",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            }
-        ]
-        """;
+    private static final CloudBucketConfig AWS_DEFAULT_BUCKET_CONFIG = new CloudBucketConfig(
+            "default-aws-bucket", "aws", "https://s3.amazonaws.com", "us-east-1", "hedera-mainnet-blocks", true);
+    private static final CloudBucketConfig GCP_DEFAULT_BUCKET_CONFIG = new CloudBucketConfig(
+            "default-gcp-bucket", "gcp", "https://storage.googleapis.com", "", "hedera-mainnet-blocks", true);
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Test
     void testHappyCompletionOfBucketConfigs() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var config = HederaTestConfigBuilder.create()
+                .withSource(new YamlConfigSource("uploader/buckets-config.yaml"))
+                .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new BucketConfigurationManager(configProvider);
 
-        List<CloudBucketConfig> cloudBucketConfigs;
-        try {
-            cloudBucketConfigs = mapper.readValue(DEFAULT_BUCKETS_CONFIG, new TypeReference<>() {});
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+        List<CloudBucketConfig> cloudBucketConfigs = List.of(AWS_DEFAULT_BUCKET_CONFIG, GCP_DEFAULT_BUCKET_CONFIG);
         final var credentialsPath = BucketConfigurationManagerTest.class
                 .getClassLoader()
                 .getResourceAsStream("uploader/bucket-credentials.json");
@@ -98,28 +76,11 @@ public class BucketConfigurationManagerTest {
 
     @Test
     void failIfRegionIsEmptyWhenWeUseAWSProvider() {
-        final String AWS_PROVIDER_WITH_EMPTY_REGION =
-                """
-        [
-            {
-                "name": "default-aws-bucket",
-                "provider": "aws",
-                "endpoint": "https://s3.amazonaws.com",
-                "region": "",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            }
-        ]
-        """;
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("blockStream.buckets", AWS_PROVIDER_WITH_EMPTY_REGION)
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
-
-        subject = new BucketConfigurationManager(configProvider);
         assertThrows(
-                ValueInstantiationException.class,
-                () -> mapper.readValue(AWS_PROVIDER_WITH_EMPTY_REGION, new TypeReference<List<CloudBucketConfig>>() {}),
+                IllegalStateException.class,
+                () -> HederaTestConfigBuilder.create()
+                        .withSource(new YamlConfigSource("uploader/aws-bucket-empty-region-config.yaml"))
+                        .getOrCreateConfig(),
                 "region cannot be null or blank if the provider is AWS");
     }
 

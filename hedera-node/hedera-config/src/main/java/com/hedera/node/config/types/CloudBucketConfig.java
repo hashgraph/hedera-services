@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.hedera.node.config.types;
 
 import static java.util.Objects.requireNonNull;
 
