@@ -112,7 +112,7 @@ dependencies.constraints {
     api("org.json:json:20231013") { because("org.json") }
     api("org.junit.jupiter:junit-jupiter-api:$junit5") { because("org.junit.jupiter.api") }
     api("org.junit.jupiter:junit-jupiter-engine:$junit5") { because("org.junit.jupiter.engine") }
-    api("org.junit-pioneer:junit-pioneer:2.0.1") { because("org.junitpioneer") }
+    api("org.junit-pioneer:junit-pioneer:2.3.0") { because("org.junitpioneer") }
     api("org.mockito:mockito-core:$mockito") { because("org.mockito") }
     api("org.mockito:mockito-junit-jupiter:$mockito") { because("org.mockito.junit.jupiter") }
     api("org.opentest4j:opentest4j:1.2.0") { because("org.opentest4j") }
