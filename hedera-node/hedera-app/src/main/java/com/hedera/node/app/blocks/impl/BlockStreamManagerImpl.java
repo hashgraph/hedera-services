@@ -233,7 +233,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             .hapiProtoVersion(hapiVersion))
                     .build());
 
-            writer.openBlock(blockNumber);
+            writeFuture = writeFuture.thenRunAsync(() -> {
+                writer.openBlock(blockNumber);
+            });
         }
     }
 
