@@ -26,6 +26,7 @@ import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.base.units.UnitConstants.WEEKS_TO_DAYS;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Matcher;
@@ -51,7 +52,7 @@ public final class DurationConverter implements ConfigConverter<Duration> {
      * {@inheritDoc}
      */
     @Override
-    public Duration convert(final String value) throws IllegalArgumentException {
+    public Duration convert(@NonNull final String value) throws IllegalArgumentException {
         return parseDuration(value);
     }
 
