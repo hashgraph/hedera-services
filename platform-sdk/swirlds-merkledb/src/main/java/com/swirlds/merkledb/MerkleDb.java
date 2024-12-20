@@ -398,7 +398,7 @@ public final class MerkleDb {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
         importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
-        return getDataSource(tableId, label, false, offlineUse);
+        return getDataSource(tableId, label, makeCopyPrimary, offlineUse);
     }
 
     private void importDataSource(
