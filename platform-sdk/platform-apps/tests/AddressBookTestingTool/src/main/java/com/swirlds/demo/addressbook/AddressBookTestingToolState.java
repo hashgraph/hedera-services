@@ -60,6 +60,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -215,6 +216,17 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         logger.info(STARTUP.getMarker(), "Registered PlatformService and RosterService states.");
     }
 
+    @Override
+    public void preHandle(@NonNull Event event,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+        ((ConsensusEvent) event).consensusTransactionIterator().forEachRemaining(transaction -> {
+            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            }
+        });
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -223,8 +235,8 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
             @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransaction) {
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(platformState, "the platform state cannot be null");
         throwIfImmutable();
@@ -245,7 +257,14 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
         while (eventIterator.hasNext()) {
             final ConsensusEvent event = eventIterator.next();
-            event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                } else {
+                    handleTransaction(transaction);
+                }
+            });
         }
 
         if (!validationPerformed.getAndSet(true)) {
@@ -256,6 +275,17 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
                 logger.error(EXCEPTION.getMarker(), "Test scenario {}: validation failed with errors.", testScenario);
             }
         }
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4.
+     * System transactions will be always bigger than that.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
+        return transaction.getApplicationTransaction().length() > 4;
     }
 
     /**
