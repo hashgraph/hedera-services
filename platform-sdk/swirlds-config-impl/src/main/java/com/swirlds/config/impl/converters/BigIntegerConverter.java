@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
 /**
@@ -29,7 +30,7 @@ public final class BigIntegerConverter implements ConfigConverter<BigInteger> {
      * {@inheritDoc}
      */
     @Override
-    public BigInteger convert(final String value) throws IllegalArgumentException {
+    public BigInteger convert(@NonNull final String value) throws IllegalArgumentException {
         return new BigInteger(value);
     }
 }

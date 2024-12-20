@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -50,11 +35,11 @@ public final class LongTermScheduleUtils {
     public static final String NEW_SENDER_KEY = "newSenderKey";
     public static final String RECEIVER = "receiver";
     public static final String CREATE_TXN = "createTxn";
+    public static final String TRIGGERING_TXN = "triggeringTxn";
     static final String PAYER = "payer";
     static final String ADMIN = "admin";
     static final String EXTRA_KEY = "extraKey";
     static final String SHARED_KEY = "sharedKey";
-    static final String TRIGGERING_TXN = "triggeringTxn";
     static final String BASIC_XFER = "basicXfer";
     static final String TWO_SIG_XFER = "twoSigXfer";
     static final String DEFERRED_XFER = "deferredXfer";
@@ -85,7 +70,7 @@ public final class LongTermScheduleUtils {
 
     private LongTermScheduleUtils() {}
 
-    static boolean transferListCheck(
+    public static boolean transferListCheck(
             HapiGetTxnRecord triggered,
             AccountID givingAccountID,
             AccountID receivingAccountID,

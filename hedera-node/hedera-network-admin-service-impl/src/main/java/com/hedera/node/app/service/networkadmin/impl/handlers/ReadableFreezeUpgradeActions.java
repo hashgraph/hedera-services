@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -65,9 +50,9 @@ public class ReadableFreezeUpgradeActions {
     private static final com.hedera.hapi.node.base.FileID UPGRADE_FILE_ID =
             com.hedera.hapi.node.base.FileID.newBuilder().fileNum(150L).build();
 
-    private final NetworkAdminConfig adminServiceConfig;
     private final NodesConfig nodesConfig;
     private final AddressBookConfig addressBookConfig;
+    private final NetworkAdminConfig networkAdminConfig;
     private final ReadableFreezeStore freezeStore;
     private final ReadableUpgradeFileStore upgradeFileStore;
 
@@ -103,7 +88,7 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
         requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
 
-        this.adminServiceConfig = configuration.getConfigData(NetworkAdminConfig.class);
+        this.networkAdminConfig = configuration.getConfigData(NetworkAdminConfig.class);
         this.nodesConfig = configuration.getConfigData(NodesConfig.class);
         this.addressBookConfig = configuration.getConfigData(AddressBookConfig.class);
         this.freezeStore = freezeStore;
@@ -132,7 +117,7 @@ public class ReadableFreezeUpgradeActions {
      */
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
-        final Path artifactsDirPath = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
+        final Path artifactsDirPath = getAbsolutePath(networkAdminConfig.upgradeArtifactsPath());
         final var filePath = artifactsDirPath.resolve(file);
         try {
             if (!artifactsDirPath.toFile().exists()) {
@@ -224,8 +209,8 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(desc);
         requireNonNull(marker);
 
-        final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
-        final Path keysLoc = getAbsolutePath(adminServiceConfig.keysPath());
+        final Path artifactsLoc = getAbsolutePath(networkAdminConfig.upgradeArtifactsPath());
+        final Path keysLoc = getAbsolutePath(networkAdminConfig.keysPath());
         requireNonNull(artifactsLoc);
         requireNonNull(keysLoc);
         final long size = archiveData.length();
@@ -274,7 +259,9 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (nodes != null && nodesConfig.enableDAB() && !addressBookConfig.useRosterLifecycle()) {
+            if (nodes != null
+                    && nodesConfig.enableDAB()
+                    && (!addressBookConfig.useRosterLifecycle() || networkAdminConfig.exportCandidateRoster())) {
                 generateConfigPem(artifactsLoc, keysLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }

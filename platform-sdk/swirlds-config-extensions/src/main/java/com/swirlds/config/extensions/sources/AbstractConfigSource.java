@@ -19,6 +19,7 @@ package com.swirlds.config.extensions.sources;
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -38,6 +39,7 @@ public abstract class AbstractConfigSource implements ConfigSource {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public final Set<String> getPropertyNames() {
         return getInternalProperties().keySet();
@@ -53,5 +55,22 @@ public abstract class AbstractConfigSource implements ConfigSource {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }
         return getInternalProperties().get(propertyName);
+    }
+
+    /**
+     * This implementation always returns {@code false}.
+     */
+    @Override
+    public boolean isListProperty(@NonNull final String propertyName) throws NoSuchElementException {
+        return false;
+    }
+
+    /**
+     * This implementation always returns an empty list.
+     */
+    @NonNull
+    @Override
+    public List<String> getListValue(@NonNull final String propertyName) throws NoSuchElementException {
+        return List.of();
     }
 }
