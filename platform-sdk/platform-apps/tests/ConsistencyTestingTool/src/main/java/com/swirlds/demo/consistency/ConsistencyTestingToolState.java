@@ -223,7 +223,9 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * Sets the new {@link #stateLong} to the non-cryptographic hash of the existing state, and the contents of the
      * transaction being handled
      *
+     * @param consensusEvent the consensus event
      * @param transaction the transaction to apply to the state
+     * @param scopedSystemTransaction a consumer to handle scoped system transactions
      */
     private void applyTransactionToState(
             final @NonNull ConsensusEvent consensusEvent,
