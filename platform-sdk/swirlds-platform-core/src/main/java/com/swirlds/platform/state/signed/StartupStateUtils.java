@@ -35,6 +35,8 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
@@ -42,6 +44,7 @@ import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -326,7 +329,12 @@ public final class StartupStateUtils {
             @NonNull final MerkleRoot stateRoot) {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            initGenesisPlatformState(configuration, stateRoot.getWritablePlatformState(), addressBook, appVersion);
+            initGenesisState(
+                    configuration,
+                    (State) stateRoot.getSwirldState(),
+                    stateRoot.getWritablePlatformState(),
+                    addressBook,
+                    appVersion);
         }
 
         final SignedState signedState = new SignedState(
@@ -335,21 +343,24 @@ public final class StartupStateUtils {
     }
 
     /**
-     * Initializes a genesis platform state.
+     * Initializes a genesis platform state and RosterService state.
      * @param configuration the configuration for this node
+     * @param state the State instance to initialize
      * @param platformState the platform state to initialize
      * @param addressBook the current address book
      * @param appVersion the software version of the app
      */
-    private static void initGenesisPlatformState(
+    private static void initGenesisState(
             final Configuration configuration,
+            final State state,
             final PlatformStateModifier platformState,
             final AddressBook addressBook,
             final SoftwareVersion appVersion) {
+        final long round = 0L;
+
         platformState.bulkUpdate(v -> {
-            v.setAddressBook(addressBook.copy());
             v.setCreationSoftwareVersion(appVersion);
-            v.setRound(0);
+            v.setRound(round);
             v.setLegacyRunningEventHash(null);
             v.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
@@ -360,5 +371,7 @@ public final class StartupStateUtils {
                 v.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
             }
         });
+
+        RosterUtils.setActiveRoster(state, RosterRetriever.buildRoster(addressBook), round);
     }
 }
