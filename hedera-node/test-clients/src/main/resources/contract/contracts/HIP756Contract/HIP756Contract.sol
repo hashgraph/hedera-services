@@ -61,7 +61,10 @@ contract HIP756Contract is HederaScheduleService, KeyHelper {
         }
     }
 
-    function scheduleCreateNFTWithDesignatedPayer(address autoRenew, address treasury, address payer) external payable returns (int64 responseCode, address scheduleAddress) {
+    function scheduleCreateNFTWithDesignatedPayer(
+        address autoRenew,
+        address treasury,
+        address payer) external payable returns (int64 responseCode, address scheduleAddress) {
         IHederaTokenService.HederaToken memory token;
         token.name = "nft with designated payer";
         token.symbol = "nftp";
@@ -76,6 +79,48 @@ contract HIP756Contract is HederaScheduleService, KeyHelper {
         (responseCode, scheduleAddress) = scheduleNative(address(0x167), tokenCreateBytes, payer);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
+        }
+    }
+
+    function scheduleUpdateTreasuryAndAutoRenewAcc(
+        address tokenAddress,
+        address treasuryAddress,
+        address autoRenewAddress,
+        string memory name,
+        string memory symbol,
+        string memory memo) external returns (int64 responseCode, address scheduleAddress) {
+        IHederaTokenService.HederaToken memory token;
+        token.name = name;
+        token.symbol = symbol;
+        token.treasury = treasuryAddress;
+        token.memo = memo;
+        IHederaTokenService.Expiry memory expiry;
+        expiry.autoRenewAccount = autoRenewAddress;
+        token.expiry = expiry;
+
+        bytes memory tokenUpdateBytes = abi.encodeWithSelector(IHederaTokenService.updateTokenInfo.selector, tokenAddress, token);
+        (responseCode, scheduleAddress) = scheduleNative(address(0x167), tokenUpdateBytes, address(this));
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of tokenInfo.treasury failed!");
+        }
+    }
+
+    function scheduleUpdateTreasuryAndAutoRenewAccWithDesignatedPayer(address tokenAddress, address treasuryAddress, address autoRenewAddress, string memory name, string memory symbol, string memory memo, address designatedPayer) external returns (int64 responseCode, address scheduleAddress) {
+        IHederaTokenService.HederaToken memory token;
+        token.name = name;
+        token.symbol = symbol;
+        token.treasury = treasuryAddress;
+        token.memo = memo;
+        IHederaTokenService.Expiry memory expiry;
+        expiry.autoRenewAccount = autoRenewAddress;
+        token.expiry = expiry;
+
+        bytes memory tokenUpdateBytes = abi.encodeWithSelector(IHederaTokenService.updateTokenInfo.selector, tokenAddress, token);
+        (responseCode, scheduleAddress) = scheduleNative(address(0x167), tokenUpdateBytes, designatedPayer);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of tokenInfo.treasury failed!");
         }
     }
 }

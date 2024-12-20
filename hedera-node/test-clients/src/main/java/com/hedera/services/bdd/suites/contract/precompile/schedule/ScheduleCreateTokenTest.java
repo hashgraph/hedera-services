@@ -33,8 +33,10 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -134,6 +136,59 @@ public class ScheduleCreateTokenTest {
             final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateNFTDesignatedPayer", scheduleID);
             assertScheduleAndSign(spec, "scheduledCreateNFTDesignatedPayer");
+        }));
+    }
+
+    @HapiTest
+    @Order(4)
+    @DisplayName("Can successfully schedule an update token operation to set treasury and auto renew account")
+    public Stream<DynamicTest> scheduledUpdateToken(@FungibleToken(initialSupply = 1000) SpecFungibleToken token) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var scheduleAddress = new AtomicReference<Address>();
+            allRunFor(
+                    spec,
+                    token.authorizeContracts(contract),
+                    contract.call(
+                                    "scheduleUpdateTreasuryAndAutoRenewAcc",
+                                    token,
+                                    treasury,
+                                    autoRenew,
+                                    token.name(),
+                                    "",
+                                    "")
+                            .gas(1_000_000L)
+                            .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
+            final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
+            spec.registry().saveScheduleId("scheduledUpdateToken", scheduleID);
+            assertScheduleAndSign(spec, "scheduledUpdateToken");
+        }));
+    }
+
+    @HapiTest
+    @Order(5)
+    @DisplayName(
+            "Can successfully schedule an update token operation to set treasury and auto renew account with a designated payer")
+    public Stream<DynamicTest> scheduledUpdateTokenWithDesignatedPayer(
+            @FungibleToken(initialSupply = 1000) SpecFungibleToken token) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            final var scheduleAddress = new AtomicReference<Address>();
+            allRunFor(
+                    spec,
+                    token.authorizeContracts(contract),
+                    contract.call(
+                                    "scheduleUpdateTreasuryAndAutoRenewAccWithDesignatedPayer",
+                                    token,
+                                    treasury,
+                                    autoRenew,
+                                    token.name(),
+                                    "",
+                                    "",
+                                    designatedPayer)
+                            .gas(1_000_000L)
+                            .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
+            final var scheduleID = ConversionUtils.asScheduleId(scheduleAddress.get());
+            spec.registry().saveScheduleId("scheduledUpdateToken", scheduleID);
+            assertScheduleAndSign(spec, "scheduledUpdateToken");
         }));
     }
 
