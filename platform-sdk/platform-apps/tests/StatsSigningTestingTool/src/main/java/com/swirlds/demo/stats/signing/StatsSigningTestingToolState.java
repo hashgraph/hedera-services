@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.swirlds.demo.stats.signing;
 /*
  * This file is public domain.
@@ -46,6 +31,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -118,12 +104,20 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             @NonNull
                     final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
                             stateSignatureTransactions) {
+
+        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
                 if (transaction.isSystem()) {
                     return;
                 }
+
+                if (areTransactionBytesSystemOnes((ConsensusTransaction) transaction)) {
+                    scopedSystemTransactions.add(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                }
+
                 final TransactionSignature transactionSignature =
                         sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
                 if (transactionSignature != null) {
@@ -132,6 +126,8 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                 }
             });
         }
+
+        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
     /**
@@ -145,13 +141,28 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                     final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
                             stateSignatureTransactions) {
         throwIfImmutable();
-        round.forEachTransaction(this::handleTransaction);
+        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
+
+        round.forEachEventTransaction((event, transaction) -> {
+            final var transactionWithSystemBytes = handleTransaction(transaction);
+            if (transactionWithSystemBytes != null) {
+                scopedSystemTransactions.add(new ScopedSystemTransaction(
+                        event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
+            }
+        });
+
+        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
-    private void handleTransaction(final ConsensusTransaction trans) {
+    private ConsensusTransaction handleTransaction(final ConsensusTransaction trans) {
         if (trans.isSystem()) {
-            return;
+            return null;
         }
+
+        if (areTransactionBytesSystemOnes(trans)) {
+            return trans;
+        }
+
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -177,6 +188,23 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
+
+        return null;
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
+        // We have maximum allocation of 100 bytes for the transaction + 10 bytes for the preamble size in
+        // TransactionCodec
+        // + 64 bytes for the maximum public key + 64 bytes for the maximum signature size + 12 bytes for 3 integer
+        // bytes
+        final var maximumSignedEncodedTransactionSize = 100 + 10 + 64 + 64 + 12;
+        return transaction.getApplicationTransaction().length() > maximumSignedEncodedTransactionSize;
     }
 
     private void maybeDelay() {

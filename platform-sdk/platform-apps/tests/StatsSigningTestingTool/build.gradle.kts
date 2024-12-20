@@ -6,3 +6,9 @@ plugins { id("org.hiero.gradle.module.application") }
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-cast") }
 
 application.mainClass = "com.swirlds.demo.stats.signing.StatsSigningTestingToolMain"
+
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+}
