@@ -130,8 +130,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 TraceabilityConfig.class,
                 UtilPrngConfig.class,
                 VersionConfig.class,
-                TssConfig.class,
-                CloudBucketConfig.class);
+                TssConfig.class);
     }
 
     @NonNull
