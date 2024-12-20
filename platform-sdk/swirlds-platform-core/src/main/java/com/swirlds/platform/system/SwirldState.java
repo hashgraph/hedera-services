@@ -71,25 +71,25 @@ public interface SwirldState extends MerkleNode {
      * <strong>This method is always invoked on an immutable state.</strong>
      *
      * @param event the event to perform pre-handling on
-     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     * @param stateSignatureTransaction a consumer that accepts a list of {@link ScopedSystemTransaction}s that
      *                                   will be used for callbacks
      */
     default void preHandle(
             final Event event,
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {}
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {}
 
     /**
      * This method should apply the transactions in the provided round to the state. Only called on mutable states.
      *
      * @param round         the round to apply
      * @param platformState the platform state
-     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     * @param stateSignatureTransaction a consumer that accepts a list of {@link ScopedSystemTransaction}s that
      *                                   will be used for callbacks
      */
     void handleConsensusRound(
             final Round round,
             final PlatformStateModifier platformState,
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions);
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.

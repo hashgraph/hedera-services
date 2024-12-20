@@ -115,7 +115,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
@@ -124,7 +124,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                 }
 
                 if (areTransactionBytesSystemOnes((ConsensusTransaction) transaction)) {
-                    stateSignatureTransactions.accept(
+                    stateSignatureTransaction.accept(
                             new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
                 }
 
@@ -145,13 +145,13 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
 
         round.forEachEventTransaction((event, transaction) -> {
             final var transactionWithSystemBytes = handleTransaction(transaction);
             if (transactionWithSystemBytes != null) {
-                stateSignatureTransactions.accept(new ScopedSystemTransaction(
+                stateSignatureTransaction.accept(new ScopedSystemTransaction(
                         event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
             }
         });
