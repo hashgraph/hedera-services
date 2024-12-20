@@ -57,8 +57,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -185,6 +187,23 @@ public class TokenClaimAirdropTest extends TokenAirdropBase {
                 // assert token associations
                 getAccountInfo(RECEIVER).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                 getAccountInfo(RECEIVER).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))));
+    }
+
+    @HapiTest
+    @DisplayName("fails gracefully with null parameters")
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return hapiTest(
+                cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                        .balance(ONE_HUNDRED_HBARS)
+                        .maxAutomaticTokenAssociations(0),
+                createFT(FUNGIBLE_TOKEN_1, OWNER, 1000L),
+                tokenAirdrop(moving(1, FUNGIBLE_TOKEN_1).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .payingWith(OWNER),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenClaimAirdrop(
+                                pendingAirdrop(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN_1))
+                        .signedBy(DEFAULT_PAYER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                        .payingWith(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)));
     }
 
     @HapiTest

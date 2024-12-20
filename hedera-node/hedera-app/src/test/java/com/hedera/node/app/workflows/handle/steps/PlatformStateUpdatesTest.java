@@ -1,30 +1,23 @@
-/*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -51,14 +44,17 @@ import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -78,6 +74,9 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
 
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
+
+    @Mock
+    private BiConsumer<Roster, Path> rosterExportHelper;
 
     @BeforeEach
     void setUp() {
@@ -99,7 +98,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         PlatformStateService.NAME,
                         Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
 
-        subject = new PlatformStateUpdates();
+        subject = new PlatformStateUpdates(rosterExportHelper);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -127,6 +126,42 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         // then
         Assertions.assertThatCode(() -> subject.handleTxBody(state, txBody, DEFAULT_CONFIG))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void freezeAbortNullsOutFreezeTime() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_ABORT));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isNull();
+    }
+
+    @Test
+    void unknownFreezeIsNoop() {
+        platformStateBackingStore.set(
+                PlatformState.newBuilder().freezeTime(Timestamp.DEFAULT).build());
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(UNKNOWN_FREEZE_TYPE));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isEqualTo(Timestamp.DEFAULT);
+    }
+
+    @Test
+    void telemetryUpgradeIsNoop() {
+        platformStateBackingStore.set(
+                PlatformState.newBuilder().freezeTime(Timestamp.DEFAULT).build());
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(TELEMETRY_UPGRADE));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isEqualTo(Timestamp.DEFAULT);
     }
 
     @Test
@@ -169,7 +204,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
         final var txBody = TransactionBody.newBuilder()
-                .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
         nodes.put(
                 new EntityNumber(0L),
                 Node.newBuilder()
@@ -182,15 +217,62 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build(), configWith(false, true));
 
         // then
-        final var platformState = platformStateBackingStore.get();
-        assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
-        assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(rosterExportHelper).accept(any(), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
+    }
+
+    @Test
+    void worksAroundFailureToPutCandidateRoster() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        nodes.put(
+                new EntityNumber(0L),
+                Node.newBuilder()
+                        .weight(0)
+                        .gossipCaCertificate(Bytes.fromHex("0123"))
+                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .build());
+
+        subject.handleTxBody(state, txBody.build(), configWith(false, true));
+
+        verify(rosterExportHelper, never()).accept(any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsCandidateRosterIfRequestedEvenWhenNotUsingRosterLifecycle() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        nodes.put(
+                new EntityNumber(0L),
+                Node.newBuilder()
+                        .weight(1)
+                        .gossipCaCertificate(Bytes.fromHex("0123"))
+                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .build());
+
+        // when
+        subject.handleTxBody(state, txBody.build(), configWith(false, false));
+
+        // then
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(rosterExportHelper).accept(any(), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
     private Configuration configWith(final boolean keyCandidateRoster, final boolean useRosterLifecycle) {
         return HederaTestConfigBuilder.create()
                 .withValue("tss.keyCandidateRoster", "" + keyCandidateRoster)
                 .withValue("addressBook.useRosterLifecycle", "" + useRosterLifecycle)
+                .withValue("networkAdmin.exportCandidateRoster", "true")
+                .withValue("networkAdmin.candidateRosterExportFile", "candidate-network.json")
                 .getOrCreateConfig();
     }
 }
