@@ -251,7 +251,7 @@ public class AddressBookUtils {
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                 selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
-        final State state = (State) initialState.get().getState().getSwirldState();
+        final State state = initialState.get().getState();
 
         if (addressBookInitializer.hasAddressBookChanged()) {
             if (addressBookInitializer.getPreviousAddressBook() != null) {
