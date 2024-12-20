@@ -239,6 +239,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         if (isSystemTransaction(transaction)) {
             scopedSystemTransaction.accept(new ScopedSystemTransaction(
                     consensusEvent.getCreatorId(), consensusEvent.getSoftwareVersion(), transaction));
+            return;
         }
 
         final long transactionContents =
@@ -266,6 +267,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             if (isSystemTransaction(transaction)) {
                 stateSignatureTransaction.accept(
                         new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                return;
             }
             final long transactionContents =
                     byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
