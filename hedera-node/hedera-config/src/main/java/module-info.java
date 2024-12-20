@@ -9,9 +9,9 @@ module com.hedera.node.config {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
-    requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.config.extensions;
+    requires com.swirlds.common;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.testcontainers;
