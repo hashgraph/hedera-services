@@ -173,9 +173,9 @@ public class EnhancedKeyStoreLoader {
     private static final String MSG_KEY_STORE_PASSPHRASE_NON_NULL = "keyStorePassphrase must not be null";
 
     /**
-     * The constant message to use when the {@code nodesToStart} required parameter is {@code null}.
+     * The constant message to use when the {@code localNodes} required parameter is {@code null}.
      */
-    private static final String MSG_NODES_TO_START_NON_NULL = "nodesToStart must not be null";
+    private static final String MSG_NODES_TO_START_NON_NULL = "the local nodes must not be null";
 
     /**
      * The Log4j2 logger instance to use for all logging.
@@ -248,14 +248,14 @@ public class EnhancedKeyStoreLoader {
      * @param addressBook        the address book to use for loading the key stores.
      * @param keyStoreDirectory  the absolute path to the key store directory.
      * @param keyStorePassphrase the passphrase used to protect the key stores.
-     * @param nodesToStart       the set of nodes to start and load key stores for
+     * @param localNodes         the set of local nodes that need private keys loaded
      * @throws NullPointerException if {@code addressBook} or {@code configuration} is {@code null}.
      */
     private EnhancedKeyStoreLoader(
             @NonNull final AddressBook addressBook,
             @NonNull final Path keyStoreDirectory,
             @NonNull final char[] keyStorePassphrase,
-            @NonNull final Set<NodeId> nodesToStart) {
+            @NonNull final Set<NodeId> localNodes) {
         this.addressBook = Objects.requireNonNull(addressBook, MSG_ADDRESS_BOOK_NON_NULL);
         this.keyStoreDirectory = Objects.requireNonNull(keyStoreDirectory, MSG_KEY_STORE_DIRECTORY_NON_NULL);
         this.keyStorePassphrase = Objects.requireNonNull(keyStorePassphrase, MSG_KEY_STORE_PASSPHRASE_NON_NULL);
@@ -263,8 +263,7 @@ public class EnhancedKeyStoreLoader {
         this.sigCertificates = HashMap.newHashMap(addressBook.getSize());
         this.agrPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.agrCertificates = HashMap.newHashMap(addressBook.getSize());
-        this.localNodes =
-                Collections.unmodifiableSet(Objects.requireNonNull(nodesToStart, MSG_NODES_TO_START_NON_NULL));
+        this.localNodes = Collections.unmodifiableSet(Objects.requireNonNull(localNodes, MSG_NODES_TO_START_NON_NULL));
         this.tssPrivateKeys = HashMap.newHashMap(addressBook.getSize());
         this.tssPublicKeys = HashMap.newHashMap(addressBook.getSize());
     }
@@ -275,7 +274,7 @@ public class EnhancedKeyStoreLoader {
      *
      * @param addressBook   the address book to use for loading the key stores.
      * @param configuration the configuration to use for loading the key stores.
-     * @param nodesToStart  the set of nodes to start and load key stores for.
+     * @param localNodes    the local nodes that need private keys loaded.
      * @return a new {@link EnhancedKeyStoreLoader} instance.
      * @throws NullPointerException     if {@code addressBook} or {@code configuration} is {@code null}.
      * @throws IllegalArgumentException if the value from the configuration element {@code crypto.keystorePassword} is
@@ -285,10 +284,10 @@ public class EnhancedKeyStoreLoader {
     public static EnhancedKeyStoreLoader using(
             @NonNull final AddressBook addressBook,
             @NonNull final Configuration configuration,
-            @NonNull final Set<NodeId> nodesToStart) {
+            @NonNull final Set<NodeId> localNodes) {
         Objects.requireNonNull(addressBook, MSG_ADDRESS_BOOK_NON_NULL);
         Objects.requireNonNull(configuration, "configuration must not be null");
-        Objects.requireNonNull(nodesToStart, MSG_NODES_TO_START_NON_NULL);
+        Objects.requireNonNull(localNodes, MSG_NODES_TO_START_NON_NULL);
 
         final String keyStorePassphrase =
                 configuration.getConfigData(CryptoConfig.class).keystorePassword();
@@ -299,8 +298,7 @@ public class EnhancedKeyStoreLoader {
             throw new IllegalArgumentException("keyStorePassphrase must not be null or blank");
         }
 
-        return new EnhancedKeyStoreLoader(
-                addressBook, keyStoreDirectory, keyStorePassphrase.toCharArray(), nodesToStart);
+        return new EnhancedKeyStoreLoader(addressBook, keyStoreDirectory, keyStorePassphrase.toCharArray(), localNodes);
     }
 
     /**

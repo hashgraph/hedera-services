@@ -18,7 +18,6 @@ package com.swirlds.platform.gui;
 
 import static com.swirlds.platform.gui.GuiUtils.winRect;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.Console;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gui.internal.SwirldMenu;
@@ -46,20 +45,19 @@ public final class SwirldsGui {
      *
      * @param platform the platform to create the console with
      * @param visible  should the window be initially visible? If not, call setVisible(true) later.
-     * @param nodesToStart the set of nodes to start windows for
+     * @param localNodes the set of nodes running locally need content rendered in the gui.
      * @return the new window
      */
     public static Console createConsole(
             @NonNull final Platform platform,
             final int winNum,
             final boolean visible,
-            @NonNull final Set<NodeId> nodesToStart) {
+            @NonNull final Set<NodeId> localNodes) {
         if (GraphicsEnvironment.isHeadless()) {
             return null;
         }
         final NodeId selfId = platform.getSelfId();
-        final int winCount = nodesToStart.size();
-        final Roster roster = platform.getRoster();
+        final int winCount = localNodes.size();
         final Rectangle winRect = winRect(winCount, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
         final Console console = GuiUtils.createBasicConsole(RosterUtils.formatNodeName(selfId.id()), winRect, visible);

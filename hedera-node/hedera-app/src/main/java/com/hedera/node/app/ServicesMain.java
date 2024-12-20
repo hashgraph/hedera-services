@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
@@ -18,7 +33,6 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSig
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
@@ -79,7 +93,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
@@ -222,10 +235,9 @@ public class ServicesMain implements SwirldMain {
                 .map(NodeId::of)
                 .toList();
         final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, cliNodesToRun, envNodesToRun);
-        checkNodesToRun(nodesToRun);
-        final var selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
+        final var selfId = ensureSingleNode(nodesToRun);
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
-        final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, new HashSet<>(nodesToRun));
+        final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, Set.copyOf(nodesToRun));
         final var keysAndCerts = networkKeysAndCerts.get(selfId);
         setupGlobalMetrics(platformConfig);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
@@ -381,7 +393,9 @@ public class ServicesMain implements SwirldMain {
     public static Configuration buildPlatformConfig() {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance());
+                .withSource(SystemPropertiesConfigSource.getInstance())
+                .withConfigDataType(BasicConfig.class);
+
         rethrowIO(() ->
                 BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
         final Configuration configuration = configurationBuilder.build();
@@ -390,44 +404,29 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
-     * Selects the node to run locally from either the command line arguments or the address book.
+     * Ensures there is exactly 1 node to run.
      *
-     * @param nodesToRun        the list of nodes configured to run based on the address book.
-     * @param localNodesToStart the node ids specified on the command line.
+     * @param nodesToRun        the list of nodes configured to run.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
      */
-    private static NodeId ensureSingleNode(
-            @NonNull final List<NodeId> nodesToRun, @NonNull final Set<NodeId> localNodesToStart) {
+    private static NodeId ensureSingleNode(@NonNull final List<NodeId> nodesToRun) {
         requireNonNull(nodesToRun);
-        requireNonNull(localNodesToStart);
-        // If no node is specified on the command line and detection by AB IP address is ambiguous, exit.
-        if (nodesToRun.size() > 1 && localNodesToStart.isEmpty()) {
+
+        logger.info(STARTUP.getMarker(), "there are {} nodes set to run locally", nodesToRun.size());
+        if (nodesToRun.isEmpty()) {
+            logger.error(STARTUP.getMarker(), "No node has been configured to run.");
+            throw new ConfigurationException("No nodes have been configured to run.");
+        }
+
+        if (nodesToRun.size() > 1) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Multiple nodes are configured to run. Only one node can be started per java process.");
-            exitSystem(NODE_ADDRESS_MISMATCH);
+                    "Multiple nodes are configured to run. Exactly one node must be started per java process.");
             throw new ConfigurationException(
-                    "Multiple nodes are configured to run. Only one node can be started per java process.");
+                    "Multiple nodes have been configured to run. Exactly one node must be started per java process.");
         }
-
-        // If a node is specified on the command line, use that node.
-        final NodeId requestedNodeId = localNodesToStart.stream().findFirst().orElse(null);
-
-        // If a node is specified on the command line but does not have a matching local IP address in the AB, exit.
-        if (nodesToRun.size() > 1 && !nodesToRun.contains(requestedNodeId)) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The requested node id {} is not configured to run. Please check the address book.",
-                    requestedNodeId);
-            exitSystem(NODE_ADDRESS_MISMATCH);
-            throw new ConfigurationException(String.format(
-                    "The requested node id %s is not configured to run. Please check the address book.",
-                    requestedNodeId));
-        }
-
-        // Return either the node requested via the command line or the only matching node from the AB.
-        return requestedNodeId != null ? requestedNodeId : nodesToRun.get(0);
+        return nodesToRun.getFirst();
     }
 
     /**

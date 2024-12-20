@@ -33,8 +33,8 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
@@ -73,7 +73,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -83,7 +82,6 @@ import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -198,7 +196,6 @@ public class Browser {
                 .toList();
         final Set<NodeId> cliNodesToRun = commandLineArgs.localNodesToStart();
         final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, envNodesToRun);
-        checkNodesToRun(nodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
@@ -216,7 +213,7 @@ public class Browser {
             final InfoSwirld infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
             new InfoMember(infoSwirld, "Node" + nodesToRun.getFirst().id());
 
-            initNodeSecurity(appDefinition.getConfigAddressBook(), bootstrapConfiguration, new HashSet<>(nodesToRun));
+            initNodeSecurity(appDefinition.getConfigAddressBook(), bootstrapConfiguration, Set.copyOf(nodesToRun));
             guiEventStorage = new GuiEventStorage(bootstrapConfiguration, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
@@ -253,7 +250,7 @@ public class Browser {
             final var cryptography = CryptographyFactory.create();
             CryptographyHolder.set(cryptography);
             final KeysAndCerts keysAndCerts = initNodeSecurity(
-                            appDefinition.getConfigAddressBook(), configuration, new HashSet<>(nodesToRun))
+                            appDefinition.getConfigAddressBook(), configuration, Set.copyOf(nodesToRun))
                     .get(nodeId);
 
             // the AddressBook is not changed after this point, so we calculate the hash now
@@ -332,7 +329,7 @@ public class Browser {
             // PCES recovery is only expected to be done on a single node
             // due to the structure of Browser atm, it makes more sense to enable the feature for multiple platforms
             platforms.values().forEach(SwirldsPlatform::performPcesRecovery);
-            SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
+            exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
         }
 
         startPlatforms(new ArrayList<>(platforms.values()), appMains);

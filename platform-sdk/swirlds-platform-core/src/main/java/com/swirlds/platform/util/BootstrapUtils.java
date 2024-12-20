@@ -33,7 +33,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
-import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
@@ -41,13 +40,13 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
+import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.gui.WindowConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
-import com.swirlds.platform.network.Network;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
@@ -316,12 +315,16 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Determine which nodes should be run locally
+     * Determine which nodes should be run locally. The nodes specified on the commandline override the nodes specified
+     * through the system environment.   If no nodes are specified on the commandline or through the system environment,
+     * all nodes in the address book are returned to run locally.
      *
      * @param addressBook   the address book
      * @param cliNodesToRun nodes specified to start by the user on the command line
      * @param envNodesToRun nodes specified to start by the user in the environment
-     * @return the nodes to run locally
+     * @return A non-empty list of nodes to run locally
+     * @throws IllegalArgumentException if a node to run is not in the address book or the list of nodes to run is
+     *                                  empty
      */
     public static @NonNull List<NodeId> getNodesToRun(
             @NonNull final AddressBook addressBook,
@@ -349,29 +352,14 @@ public final class BootstrapUtils {
 
         for (final NodeId nodeId : nodesToRun) {
             if (!addressBook.contains(nodeId)) {
-                // all nodes to start must exist in the address book.
-                throw new IllegalArgumentException("Node " + nodeId + " is not in the address book");
+                // all nodes to start must exist in the address book
+                exitSystem(NODE_ADDRESS_MISMATCH);
+                throw new ConfigurationException(
+                        "Node " + nodeId + " is not in the address book and cannot be started.");
             }
         }
 
         return nodesToRun;
-    }
-
-    /**
-     * Checks the nodes to run and exits if there are no nodes to run
-     *
-     * @param nodesToRun the nodes to run
-     */
-    public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun) {
-        // if the local machine did not match any address in the address book then we should log an error and exit
-        if (nodesToRun.isEmpty()) {
-            final String externalIpAddress = Network.getExternalIpAddress().getIpAddress();
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
-            exitSystem(NODE_ADDRESS_MISMATCH);
-        }
-        logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", nodesToRun.size());
     }
 
     /**
