@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
@@ -58,6 +73,7 @@ import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MerkleRoot;
@@ -242,7 +258,7 @@ public class ServicesMain implements SwirldMain {
                 merkleCryptography);
 
         // --- Construct the Hedera instance and use it to initialize the starting state ---
-        hedera = newHedera(selfId, metrics);
+        hedera = newHedera(selfId, metrics, keysAndCerts);
         final var version = hedera.getSoftwareVersion();
         final var isGenesis = new AtomicBoolean(false);
         // We want to be able to see the schema migration logs, so init logging here
@@ -348,7 +364,10 @@ public class ServicesMain implements SwirldMain {
      * @param metrics  the metrics
      * @return the {@link Hedera} instance
      */
-    public static Hedera newHedera(@NonNull final NodeId selfNodeId, @NonNull final Metrics metrics) {
+    public static Hedera newHedera(
+            @NonNull final NodeId selfNodeId,
+            @NonNull final Metrics metrics,
+            @NonNull final KeysAndCerts keysAndCerts) {
         requireNonNull(selfNodeId);
         requireNonNull(metrics);
         return new Hedera(
@@ -363,7 +382,8 @@ public class ServicesMain implements SwirldMain {
                         new TssLibraryImpl(appContext),
                         ForkJoinPool.commonPool(),
                         metrics),
-                DiskStartupNetworks::new);
+                DiskStartupNetworks::new,
+                keysAndCerts);
     }
 
     /**

@@ -22,6 +22,8 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.roster.RosterService;
@@ -34,11 +36,13 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,6 +50,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -137,12 +142,39 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
+
             if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                rotateTssEncryptionKeys(stack, config);
                 tssBaseService.regenerateKeyMaterial(stack);
                 startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
         }
         return !isGenesis && isStakePeriodBoundary;
+    }
+
+    private void rotateTssEncryptionKeys(@NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var tssStore = newWritableTssStore(stack, config);
+        final var rosterStore = newWritableRosterStore(stack, config);
+        final var rosterEntries = Stream.of(rosterStore.getActiveRoster(), rosterStore.getCandidateRoster())
+                .filter(Objects::nonNull)
+                .flatMap(roster -> roster.rosterEntries().stream())
+                .toList();
+
+        for (final var rosterEntry : rosterEntries) {
+            final var nodeId = rosterEntry.nodeId();
+            final var currentTssEncryptionKeys = tssStore.getTssEncryptionKeys(nodeId);
+            if (currentTssEncryptionKeys != null
+                    && !currentTssEncryptionKeys.nextEncryptionKey().equals(Bytes.EMPTY)) {
+                final var newTssEncryptionKeys = TssEncryptionKeys.newBuilder()
+                        .currentEncryptionKey(currentTssEncryptionKeys.nextEncryptionKey())
+                        .build();
+                tssStore.put(EntityNumber.newBuilder().number(nodeId).build(), newTssEncryptionKeys);
+            }
+        }
+
+        if (!rosterEntries.isEmpty()) {
+            stack.commitSystemStateChanges();
+        }
     }
 
     private boolean isStakingPeriodBoundary(
@@ -209,6 +241,12 @@ public class StakePeriodChanges {
         final var writableFactory =
                 new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService);
         return writableFactory.getStore(WritableNodeStore.class);
+    }
+
+    private WritableTssStore newWritableTssStore(
+            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var writableFactory = new WritableStoreFactory(stack, TssBaseService.NAME, config, storeMetricsService);
+        return writableFactory.getStore(WritableTssStore.class);
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {

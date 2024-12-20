@@ -121,7 +121,7 @@ public class ServiceScopeLookup {
             };
 
             case NODE_CREATE, NODE_DELETE, NODE_UPDATE -> AddressBookService.NAME;
-            case TSS_MESSAGE, TSS_VOTE, TSS_SHARE_SIGNATURE -> TssBaseService.NAME;
+            case TSS_MESSAGE, TSS_VOTE, TSS_SHARE_SIGNATURE, TSS_ENCRYPTION_KEY -> TssBaseService.NAME;
 
             default -> NON_EXISTING_SERVICE;
         };

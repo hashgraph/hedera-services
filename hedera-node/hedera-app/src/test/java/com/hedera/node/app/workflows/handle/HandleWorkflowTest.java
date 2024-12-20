@@ -54,6 +54,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -148,6 +149,9 @@ class HandleWorkflowTest {
     @Mock
     private TssBaseService tssBaseService;
 
+    @Mock
+    private KeysAndCerts keysAndCerts;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -227,6 +231,7 @@ class HandleWorkflowTest {
                 tssBaseService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                scheduleService);
+                scheduleService,
+                keysAndCerts);
     }
 }

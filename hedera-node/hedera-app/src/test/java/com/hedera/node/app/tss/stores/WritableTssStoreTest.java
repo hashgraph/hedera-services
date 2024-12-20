@@ -22,9 +22,9 @@ import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_
 import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
-import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
@@ -45,7 +45,7 @@ class WritableTssStoreTest {
     private WritableKVState<TssVoteMapKey, TssVoteTransactionBody> tssVoteState;
 
     @Mock
-    private WritableKVState<EntityNumber, TssEncryptionKeyTransactionBody> tssEncryptionKeyState;
+    private WritableKVState<EntityNumber, TssEncryptionKeys> tssEncryptionKeyState;
 
     @Mock
     private WritableStates states;
@@ -58,7 +58,7 @@ class WritableTssStoreTest {
                 .thenReturn(tssMessageState);
         when(states.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
                 .thenReturn(tssVoteState);
-        when(states.<EntityNumber, TssEncryptionKeyTransactionBody>get(TSS_ENCRYPTION_KEYS_KEY))
+        when(states.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .thenReturn(tssEncryptionKeyState);
 
         tssStore = new WritableTssStore(states);
@@ -83,9 +83,9 @@ class WritableTssStoreTest {
     @Test
     void testPutEncryptionKey() {
         EntityNumber entityNumber = new EntityNumber(1);
-        TssEncryptionKeyTransactionBody body = TssEncryptionKeyTransactionBody.DEFAULT;
-        tssStore.put(entityNumber, body);
-        verify(tssEncryptionKeyState).put(entityNumber, body);
+        TssEncryptionKeys tssEncryptionKeys = TssEncryptionKeys.DEFAULT;
+        tssStore.put(entityNumber, tssEncryptionKeys);
+        verify(tssEncryptionKeyState).put(entityNumber, tssEncryptionKeys);
     }
 
     @Test

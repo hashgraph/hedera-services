@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -65,6 +80,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.tss.handlers.TssEncryptionKeyHandler;
 import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.tss.handlers.TssMessageHandler;
 import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
@@ -260,6 +276,9 @@ class HandleWorkflowModuleTest {
     @Mock
     private TssShareSignatureHandler tssShareSignatureHandler;
 
+    @Mock
+    private TssEncryptionKeyHandler tssEncryptionKeyHandler;
+
     @TempDir
     java.nio.file.Path tempDir;
 
@@ -331,7 +350,8 @@ class HandleWorkflowModuleTest {
                 consensusHandlers,
                 fileHandlers,
                 () -> contractHandlers,
-                () -> new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler),
+                () -> new TssHandlers(
+                        tssMessageHandler, tssVoteHandler, tssShareSignatureHandler, tssEncryptionKeyHandler),
                 scheduleHandlers,
                 tokenHandlers,
                 utilHandlers,

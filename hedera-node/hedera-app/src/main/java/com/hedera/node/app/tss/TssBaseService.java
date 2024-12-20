@@ -28,6 +28,7 @@ import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
@@ -170,6 +171,16 @@ public interface TssBaseService extends Service {
     void ensureParticipantDirectoryKnown(@NonNull State state);
 
     /**
+     * Processes the TSS encryption key checks for the given network state, handle context, and keys and certificates.
+     *
+     * @param state           the network state
+     * @param handleContext   the handle context
+     * @param keysAndCerts    the keys and certificates
+     */
+    void processTssEncryptionKeyChecks(
+            final State state, final HandleContext handleContext, final KeysAndCerts keysAndCerts);
+
+    /**
      * Returns the ledger id from the given TSS participant directory and TSS messages.
      * @param directory the participant directory
      * @param tssMessages the TSS messages
@@ -186,19 +197,22 @@ public interface TssBaseService extends Service {
     TssMessage getTssMessageFromBytes(Bytes wrap, TssParticipantDirectory directory);
 
     /**
-     * Manages and does work based on the TSS status.
-     * It is called each second and computes the TSS status, based on the network state.
-     * If the self-node has any pending TSS submissions that can help progress the TSS Status, then it will
-     * submit them.
+     * Manages and does work based on the TSS status. It is called each second and computes the TSS status, based on the
+     * network state. If the self-node has any pending TSS submissions that can help progress the TSS Status, then it
+     * will submit them.
      *
-     * @param state   the network state
+     * @param state                 the network state
      * @param isStakePeriodBoundary whether the current consensus round is a stake period boundary
-     * @param consensusNow         the current consensus time
-     * @param storeMetricsService the store metrics service
+     * @param consensusNow          the current consensus time
+     * @param storeMetricsService   the store metrics service
+     * @param handleContext         the handle context
+     * @param keysAndCerts          the keys and certificates
      */
     void manageTssStatus(
             final State state,
             final boolean isStakePeriodBoundary,
             final Instant consensusNow,
-            final StoreMetricsService storeMetricsService);
+            final StoreMetricsService storeMetricsService,
+            final HandleContext handleContext,
+            final KeysAndCerts keysAndCerts);
 }

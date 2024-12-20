@@ -58,6 +58,8 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
@@ -91,6 +93,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             SemanticVersion.newBuilder().patch(1).build();
     private static final SemanticVersion LATER_SEMVER =
             SemanticVersion.newBuilder().major(999).build();
+    private static final byte[] EMPTY_ARRAY = new byte[] {};
 
     protected static final NodeId MISSING_NODE_ID = NodeId.of(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
@@ -115,6 +118,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private final KeysAndCerts keysAndCerts;
 
     /**
      * Non-final because a "saved state" may be provided via {@link EmbeddedHedera#restart(FakeState)}.
@@ -144,6 +148,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Pair::left, Pair::right));
         defaultNodeId = NodeId.FIRST_NODE_ID;
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
+        try {
+            keysAndCerts =
+                    KeysAndCerts.generate("a-embedded", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
@@ -153,7 +163,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                     this.tssBaseService = new FakeTssBaseService(appContext);
                     return this.tssBaseService;
                 },
-                DiskStartupNetworks::new);
+                DiskStartupNetworks::new,
+                keysAndCerts);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));

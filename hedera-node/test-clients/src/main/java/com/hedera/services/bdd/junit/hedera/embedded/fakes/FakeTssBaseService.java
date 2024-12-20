@@ -36,6 +36,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -258,6 +259,13 @@ public class FakeTssBaseService implements TssBaseService {
         delegate.ensureParticipantDirectoryKnown(state);
     }
 
+    public void processTssEncryptionKeyChecks(
+            @NonNull final State state,
+            @NonNull final HandleContext handleContext,
+            @NonNull final KeysAndCerts keysAndCerts) {
+        delegate.processTssEncryptionKeyChecks(state, handleContext, keysAndCerts);
+    }
+
     @Override
     public Bytes ledgerIdFrom(
             @NonNull final TssParticipantDirectory directory, @NonNull final List<TssMessage> tssMessages) {
@@ -276,7 +284,10 @@ public class FakeTssBaseService implements TssBaseService {
             final State state,
             final boolean isStakePeriodBoundary,
             final Instant lastUsedConsensusNow,
-            final StoreMetricsService storeMetricsService) {
-        delegate.manageTssStatus(state, isStakePeriodBoundary, lastUsedConsensusNow, storeMetricsService);
+            final StoreMetricsService storeMetricsService,
+            final HandleContext handleContext,
+            final KeysAndCerts keysAndCerts) {
+        delegate.manageTssStatus(
+                state, isStakePeriodBoundary, lastUsedConsensusNow, storeMetricsService, handleContext, keysAndCerts);
     }
 }

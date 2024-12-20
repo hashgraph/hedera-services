@@ -46,4 +46,6 @@ public record TssConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean signWithLedgerId,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean keyActiveRoster,
         @ConfigProperty(defaultValue = "5") @NetworkProperty int signatureLivenessPeriodMinutes,
-        @ConfigProperty(defaultValue = "2") @NetworkProperty int ledgerSignatureFailureThreshold) {}
+        @ConfigProperty(defaultValue = "2") @NetworkProperty int ledgerSignatureFailureThreshold,
+        @ConfigProperty(defaultValue = "5") @NetworkProperty int tssEncryptionKeySubmissionRetries,
+        @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration tssEncryptionKeyRetryDelay) {}

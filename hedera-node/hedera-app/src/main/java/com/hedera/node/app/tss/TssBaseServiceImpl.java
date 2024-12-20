@@ -42,6 +42,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.services.auxiliary.tss.TssEncryptionKeyTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -66,6 +67,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.system.InitTrigger;
@@ -75,8 +77,10 @@ import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -88,6 +92,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -127,6 +132,9 @@ public class TssBaseServiceImpl implements TssBaseService {
     // This is also null when the network restarts or reconnects.
     private TssStatus tssStatus;
 
+    private Instant lastTssEncryptionKeySubmission;
+    private int tssEncryptionKeySubmissionAttempts = 0;
+
     public TssBaseServiceImpl(
             @NonNull final AppContext appContext,
             @NonNull final Executor signingExecutor,
@@ -152,7 +160,10 @@ public class TssBaseServiceImpl implements TssBaseService {
         this.tssDirectoryAccessor = component.tssDirectoryAccessor();
         this.tssMetrics = component.tssMetrics();
         this.tssHandlers = new TssHandlers(
-                component.tssMessageHandler(), component.tssVoteHandler(), component.tssShareSignatureHandler());
+                component.tssMessageHandler(),
+                component.tssVoteHandler(),
+                component.tssShareSignatureHandler(),
+                component.tssEncryptionKeyHandler());
         this.tssSubmissions = component.tssSubmissions();
         this.tssCryptographyManager = component.tssCryptographyManager();
     }
@@ -420,7 +431,9 @@ public class TssBaseServiceImpl implements TssBaseService {
             final State state,
             final boolean isStakePeriodBoundary,
             final Instant consensusNow,
-            final StoreMetricsService storeMetricsService) {
+            final StoreMetricsService storeMetricsService,
+            final HandleContext handleContext,
+            final KeysAndCerts keysAndCerts) {
         if (!appContext.configSupplier().get().getConfigData(TssConfig.class).keyCandidateRoster()) {
             return;
         }
@@ -431,6 +444,10 @@ public class TssBaseServiceImpl implements TssBaseService {
         if (tssStatus == null) {
             tssStatus = computeInitialTssStatus(tssStore, rosterStore);
         }
+
+        // If this node is in the active or candidate roster and the public TSS Encryption Key is not in state
+        // then submit the public TSS Encryption Key to the network.
+        checkAndSubmitTssEncryptionKey(state, handleContext, keysAndCerts, rosterStore);
 
         // In order for the TSS state machine to run asynchronously in a separate thread, all the necessary
         // information is collected and passed to the manageTssStatus method.
@@ -460,6 +477,21 @@ public class TssBaseServiceImpl implements TssBaseService {
                 tssStore.getVote(voteKey));
         CompletableFuture.runAsync(
                 () -> updateTssStatus(isStakePeriodBoundary, consensusNow, info), tssLibraryExecutor);
+    }
+
+    private void checkAndSubmitTssEncryptionKey(
+            State state, HandleContext handleContext, KeysAndCerts keysAndCerts, ReadableRosterStore rosterStore) {
+        final var activeRoster = rosterStore.getActiveRoster();
+        final var candidateRoster = rosterStore.getCandidateRoster();
+        final var selfNodeInfo = appContext.selfNodeInfoSupplier().get();
+        final var selfNodeId = selfNodeInfo.nodeId();
+
+        if (Stream.of(activeRoster, candidateRoster)
+                .filter(Objects::nonNull)
+                .flatMap(roster -> roster.rosterEntries().stream())
+                .anyMatch(rosterEntry -> rosterEntry.nodeId() == selfNodeId)) {
+            processTssEncryptionKeyChecks(state, handleContext, keysAndCerts);
+        }
     }
 
     /**
@@ -775,5 +807,50 @@ public class TssBaseServiceImpl implements TssBaseService {
     @VisibleForTesting
     public boolean haveSentMessageForTargetRoster() {
         return haveSentMessageForTargetRoster;
+    }
+
+    public void processTssEncryptionKeyChecks(
+            @NonNull final State state,
+            @NonNull final HandleContext handleContext,
+            @NonNull final KeysAndCerts keysAndCerts) {
+        final var configuration = handleContext.configuration();
+        final var nodeId = handleContext.networkInfo().selfNodeInfo().nodeId();
+        final var consensusNow = handleContext.consensusNow();
+        // Functionality to submit TSS Encryption public key to the network is behind keyCandidateRoster feature flag
+        if (!configuration.getConfigData(TssConfig.class).keyCandidateRoster()) {
+            return;
+        }
+
+        final var readableStoreFactory = new ReadableStoreFactory(state);
+        final var tssStore = readableStoreFactory.getStore(ReadableTssStore.class);
+        final var tssEncryptionKeys = tssStore.getTssEncryptionKeys(nodeId);
+        Duration timeSinceLastSubmission = lastTssEncryptionKeySubmission == null
+                ? null
+                : Duration.between(lastTssEncryptionKeySubmission, consensusNow);
+        final var tssEncryptionKeyRetryDelay =
+                configuration.getConfigData(TssConfig.class).tssEncryptionKeyRetryDelay();
+        final var tssEncryptionKeySubmissionRetries =
+                configuration.getConfigData(TssConfig.class).tssEncryptionKeySubmissionRetries();
+        if ((tssEncryptionKeys == null
+                        || tssEncryptionKeys.currentEncryptionKey().equals(Bytes.EMPTY)
+                        || !Arrays.equals(
+                                keysAndCerts.publicTssEncryptionKey().toBytes(),
+                                tssEncryptionKeys.currentEncryptionKey().toByteArray()))
+                && (timeSinceLastSubmission == null
+                        || timeSinceLastSubmission.compareTo(tssEncryptionKeyRetryDelay) > 0)) {
+            if (tssEncryptionKeySubmissionAttempts >= tssEncryptionKeySubmissionRetries) {
+                log.error("Failed to submit TSS Encryption public key after " + tssEncryptionKeySubmissionRetries
+                        + " attempts");
+                throw new IllegalStateException("Failed to submit TSS Encryption public key after "
+                        + tssEncryptionKeySubmissionRetries + " attempts");
+            }
+            TssEncryptionKeyTransactionBody tssEncryptionKey = TssEncryptionKeyTransactionBody.newBuilder()
+                    .publicTssEncryptionKey(
+                            Bytes.wrap(keysAndCerts.publicTssEncryptionKey().toBytes()))
+                    .build();
+            tssEncryptionKeySubmissionAttempts++;
+            lastTssEncryptionKeySubmission = consensusNow;
+            tssSubmissions.submitTssEncryptionKey(tssEncryptionKey, handleContext);
+        }
     }
 }

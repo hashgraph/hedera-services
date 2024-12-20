@@ -62,6 +62,7 @@ import com.hedera.node.app.workflows.query.annotations.OperatorQueries;
 import com.hedera.node.app.workflows.query.annotations.UserQueries;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
@@ -148,6 +149,8 @@ public interface HederaInjectionComponent {
 
     SubmissionManager submissionManager();
 
+    KeysAndCerts keysAndCerts();
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -218,6 +221,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder startupNetworks(StartupNetworks startupNetworks);
+
+        @BindsInstance
+        Builder keysAndCerts(KeysAndCerts keysAndCerts);
 
         HederaInjectionComponent build();
     }

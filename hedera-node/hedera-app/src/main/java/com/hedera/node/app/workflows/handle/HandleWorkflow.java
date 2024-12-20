@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -31,6 +46,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChanges.Builder;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -39,6 +55,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
+import com.hedera.node.app.blocks.impl.BlockStreamBuilder.Output;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -58,6 +75,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordSource;
+import com.hedera.node.app.spi.records.RecordSource.IdentifiedReceipt;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
@@ -83,6 +101,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -128,7 +147,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final StakePeriodManager stakePeriodManager;
-    private final List<StateChanges.Builder> migrationStateChanges;
+    private final List<Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
     private final TssBaseService tssBaseService;
@@ -136,6 +155,7 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final ScheduleService scheduleService;
+    private final KeysAndCerts keysAndCerts;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -162,13 +182,14 @@ public class HandleWorkflow {
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final StakePeriodManager stakePeriodManager,
-            @NonNull final List<StateChanges.Builder> migrationStateChanges,
+            @NonNull final List<Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final TssBaseService tssBaseService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final ScheduleService scheduleService) {
+            @NonNull final ScheduleService scheduleService,
+            @NonNull final KeysAndCerts keysAndCerts) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -198,6 +219,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.keysAndCerts = requireNonNull(keysAndCerts);
     }
 
     /**
@@ -651,7 +673,12 @@ public class HandleWorkflow {
             // Check the tss status and manage it if necessary
             final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
             tssBaseService.manageTssStatus(
-                    userTxn.stack(), isStakePeriodBoundary, userTxn.consensusNow(), storeMetricsService);
+                    userTxn.stack(),
+                    isStakePeriodBoundary,
+                    userTxn.consensusNow(),
+                    storeMetricsService,
+                    dispatch.handleContext(),
+                    keysAndCerts);
         }
         blockStreamManager.setLastHandleTime(userTxn.consensusNow());
         if (streamMode != BLOCKS) {
@@ -706,7 +733,7 @@ public class HandleWorkflow {
             final var failInvalidRecord = failInvalidBuilder.build();
             cacheableRecordSource = recordSource = new LegacyListRecordSource(
                     List.of(failInvalidRecord),
-                    List.of(new RecordSource.IdentifiedReceipt(
+                    List.of(new IdentifiedReceipt(
                             failInvalidRecord.transactionRecord().transactionIDOrThrow(),
                             failInvalidRecord.transactionRecord().receiptOrThrow())));
         } else {
@@ -714,7 +741,7 @@ public class HandleWorkflow {
         }
         final BlockRecordSource blockRecordSource;
         if (streamMode != RECORDS) {
-            final List<BlockStreamBuilder.Output> outputs = new LinkedList<>();
+            final List<Output> outputs = new LinkedList<>();
             final var failInvalidBuilder = new BlockStreamBuilder(REVERSIBLE, NOOP_TRANSACTION_CUSTOMIZER, USER);
             initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo(), exchangeRateManager.exchangeRates())
                     .status(FAIL_INVALID)
