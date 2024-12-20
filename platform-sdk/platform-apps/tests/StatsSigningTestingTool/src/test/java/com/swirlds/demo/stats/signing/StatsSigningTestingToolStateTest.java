@@ -46,6 +46,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -62,8 +63,8 @@ class StatsSigningTestingToolStateTest {
     private PlatformStateModifier platformStateModifier;
     private Round round;
     private PlatformEvent event;
-    private Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> consumer;
-    private int consumerSize;
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer;
+    private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedSystemTransactions;
     private ConsensusTransaction consensusTransaction;
     private StateSignatureTransaction stateSignatureTransaction;
     private Supplier<SttTransactionPool> transactionPoolSupplier;
@@ -92,7 +93,8 @@ class StatsSigningTestingToolStateTest {
                 false,
                 Instant.now());
 
-        consumer = systemTransactions -> consumerSize = systemTransactions.size();
+        consumedSystemTransactions = new ArrayList<>();
+        consumer = systemTransaction -> consumedSystemTransactions.add(systemTransaction);
         consensusTransaction = mock(TransactionWrapper.class);
 
         final byte[] signature = new byte[384];
@@ -122,7 +124,7 @@ class StatsSigningTestingToolStateTest {
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
         // Then
-        assertThat(consumerSize).isZero();
+        assertThat(consumedSystemTransactions.size()).isZero();
     }
 
     @Test
@@ -138,7 +140,7 @@ class StatsSigningTestingToolStateTest {
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
         // Then
-        assertThat(consumerSize).isEqualTo(1);
+        assertThat(consumedSystemTransactions.size()).isEqualTo(1);
     }
 
     @Test
@@ -161,7 +163,7 @@ class StatsSigningTestingToolStateTest {
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
         // Then
-        assertThat(consumerSize).isEqualTo(3);
+        assertThat(consumedSystemTransactions.size()).isEqualTo(3);
     }
 
     @Test
@@ -175,7 +177,7 @@ class StatsSigningTestingToolStateTest {
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
         // Then
-        assertThat(consumerSize).isZero();
+        assertThat(consumedSystemTransactions.size()).isZero();
     }
 
     @Test
@@ -197,7 +199,7 @@ class StatsSigningTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isZero();
+        assertThat(consumedSystemTransactions.size()).isZero();
     }
 
     @Test
@@ -218,7 +220,7 @@ class StatsSigningTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isEqualTo(1);
+        assertThat(consumedSystemTransactions.size()).isEqualTo(1);
     }
 
     @Test
@@ -248,7 +250,7 @@ class StatsSigningTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isEqualTo(3);
+        assertThat(consumedSystemTransactions.size()).isEqualTo(3);
     }
 
     @Test
@@ -269,7 +271,7 @@ class StatsSigningTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isZero();
+        assertThat(consumedSystemTransactions.size()).isZero();
     }
 
     private void givenRoundAndEvent() {

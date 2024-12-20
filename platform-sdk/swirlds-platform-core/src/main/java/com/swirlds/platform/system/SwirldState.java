@@ -26,7 +26,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -77,7 +76,7 @@ public interface SwirldState extends MerkleNode {
      */
     default void preHandle(
             final Event event,
-            final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {}
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {}
 
     /**
      * This method should apply the transactions in the provided round to the state. Only called on mutable states.
@@ -90,7 +89,7 @@ public interface SwirldState extends MerkleNode {
     void handleConsensusRound(
             final Round round,
             final PlatformStateModifier platformState,
-            final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions);
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.

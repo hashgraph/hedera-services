@@ -211,9 +211,7 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
         throwIfImmutable();
         round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
     }
