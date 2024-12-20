@@ -329,12 +329,7 @@ public final class StartupStateUtils {
             @NonNull final PlatformMerkleStateRoot stateRoot) {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            initGenesisState(
-                    configuration,
-                    (State) stateRoot.getSwirldState(),
-                    stateRoot.getWritablePlatformState(),
-                    addressBook,
-                    appVersion);
+            initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
         }
 
         final SignedState signedState = new SignedState(
