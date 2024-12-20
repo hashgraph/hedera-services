@@ -334,6 +334,7 @@ public final class CallAttemptHelpers {
             final HederaWorldUpdater.Enhancement enhancement,
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
+            final SignatureVerifier signatureVerifier,
             final SystemContractGasCalculator gasCalculator,
             final Configuration config) {
 
@@ -345,6 +346,7 @@ public final class CallAttemptHelpers {
                 config,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 List.of(translator),
                 false);

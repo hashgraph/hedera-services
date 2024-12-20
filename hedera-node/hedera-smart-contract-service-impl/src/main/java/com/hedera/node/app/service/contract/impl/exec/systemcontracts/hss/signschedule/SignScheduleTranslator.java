@@ -191,10 +191,10 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     }
 
     /**
-     * Extracts the key set for a {@code signSchedule(address, bytes)} call.
+     * Returns the key set for a {@code signSchedule(address, bytes)} call.
      *
      * @param attempt the call attempt
-     * @return the key set
+     * @return the verified key set
      */
     @NonNull
     private static Set<Key> getKeyForSignSchedule(@NonNull HssCallAttempt attempt) {
@@ -203,6 +203,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         final var call = SIGN_SCHEDULE.decodeCall(attempt.inputBytes());
         final var scheduleId = requireNonNull(getScheduleIDFromCall(attempt, call));
 
+        // compute the message as the concatenation of the realm, shard, and schedule numbers
         final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
         buffer.putLong(scheduleId.realmNum());
         buffer.putLong(scheduleId.shardNum());
@@ -214,16 +215,10 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         try {
             sigMap = requireNonNull(SignatureMap.PROTOBUF.parse(wrap(signatureBlob)));
             for (var sigPair : sigMap.sigPair()) {
+                // For ED25519 and ECDSA keys, verify the key and add it to the key set as
                 if (sigPair.hasEd25519()) {
-                    // verify the key and add it to the set
                     var key = Key.newBuilder().ed25519(sigPair.ed25519OrThrow()).build();
-                    if (attempt.signatureVerifier()
-                            .verifySignature(
-                                    key,
-                                    message,
-                                    MessageType.RAW,
-                                    sigMap,
-                                    ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID)) {
+                    if (isVerifiedSignature(attempt, key, message, sigMap)) {
                         keys.add(key);
                     }
                 }
@@ -231,13 +226,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
                     var key = Key.newBuilder()
                             .ecdsaSecp256k1(sigPair.ecdsaSecp256k1OrThrow())
                             .build();
-                    if (attempt.signatureVerifier()
-                            .verifySignature(
-                                    key,
-                                    message,
-                                    MessageType.RAW,
-                                    sigMap,
-                                    ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID)) {
+                    if (isVerifiedSignature(attempt, key, message, sigMap)) {
                         keys.add(key);
                     }
                 }
@@ -246,6 +235,20 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
             throw new HandleException(INVALID_TRANSACTION_BODY);
         }
         return keys;
+    }
+
+    /**
+     * Verifies the signature for a given key.
+     * @param attempt the call attempt
+     * @param key the key to verify
+     * @param message the message to verify - concatenation of realm, shard, and schedule numbers
+     * @param sigMap the signature map used for verification
+     * @return true if the signature is verified, false otherwise
+     */
+    private static boolean isVerifiedSignature(
+            @NotNull HssCallAttempt attempt, Key key, Bytes message, SignatureMap sigMap) {
+        return attempt.signatureVerifier()
+                .verifySignature(key, message, MessageType.RAW, sigMap, ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID);
     }
 
     @NonNull

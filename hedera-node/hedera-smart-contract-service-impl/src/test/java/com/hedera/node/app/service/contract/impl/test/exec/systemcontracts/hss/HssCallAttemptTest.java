@@ -103,6 +103,7 @@ class HssCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
