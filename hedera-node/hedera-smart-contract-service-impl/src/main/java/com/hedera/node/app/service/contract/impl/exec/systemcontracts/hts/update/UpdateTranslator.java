@@ -24,7 +24,6 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KE
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -36,7 +35,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -114,11 +112,5 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
                 .map(entry -> entry.getValue().decode(attempt))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private SchedulableTransactionBody schedulableBodyFor(@Nullable final TransactionBody transactionBody) {
-        return SchedulableTransactionBody.newBuilder()
-                .tokenUpdate(transactionBody != null ? transactionBody.tokenUpdate() : null)
-                .build();
     }
 }

@@ -181,7 +181,9 @@ public class ClassicCreatesCall extends AbstractCall {
     @NonNull
     @Override
     public SchedulableTransactionBody asSchedulableDispatchIn() {
-        requireNonNull(syntheticCreate);
+        if (syntheticCreate == null) {
+            return super.asSchedulableDispatchIn();
+        }
         return SchedulableTransactionBody.newBuilder()
                 .tokenCreation(syntheticCreate.tokenCreation())
                 .build();
