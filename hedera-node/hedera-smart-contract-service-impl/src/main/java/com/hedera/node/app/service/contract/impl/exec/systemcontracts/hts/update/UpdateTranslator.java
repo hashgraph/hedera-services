@@ -30,9 +30,9 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SchedulableDispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -89,12 +89,8 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     @Override
     public Call callFrom(@NonNull HtsCallAttempt attempt) {
         final var transactionBody = nominalBodyFor(attempt);
-        return new SchedulableDispatchForResponseCodeHtsCall(
-                attempt,
-                transactionBody,
-                UpdateTranslator::gasRequirement,
-                UpdateDecoder.FAILURE_CUSTOMIZER,
-                schedulableBodyFor(transactionBody));
+        return new DispatchForResponseCodeHtsCall(
+                attempt, transactionBody, UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
     }
 
     /**
