@@ -102,7 +102,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         busyWait(config.preHandleTime());
     }
 
@@ -113,7 +113,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

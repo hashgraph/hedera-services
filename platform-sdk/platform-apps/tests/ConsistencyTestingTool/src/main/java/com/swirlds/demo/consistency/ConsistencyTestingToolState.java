@@ -286,7 +286,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             final @NonNull Round round,
             final @NonNull PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         Objects.requireNonNull(round);
         Objects.requireNonNull(platformState);
 
@@ -302,7 +302,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         roundsHandled++;
 
         round.forEachEventTransaction((ev, tx) -> {
-            applyTransactionToState(ev, tx, stateSignatureTransactions);
+            applyTransactionToState(ev, tx, stateSignatureTransaction);
         });
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
