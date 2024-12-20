@@ -126,6 +126,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                 if (areTransactionBytesSystemOnes((ConsensusTransaction) transaction)) {
                     stateSignatureTransaction.accept(
                             new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                    return;
                 }
 
                 final TransactionSignature transactionSignature =
