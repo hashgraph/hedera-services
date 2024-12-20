@@ -48,7 +48,6 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -153,9 +152,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
@@ -173,9 +170,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         lifecycles.onPreHandle(event, this);
     }
 
