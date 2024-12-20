@@ -112,7 +112,7 @@ dependencies.constraints {
     api("org.json:json:20240303") { because("org.json") }
     api("org.junit.jupiter:junit-jupiter-api:$junit5") { because("org.junit.jupiter.api") }
     api("org.junit.jupiter:junit-jupiter-engine:$junit5") { because("org.junit.jupiter.engine") }
-    api("org.junit-pioneer:junit-pioneer:2.0.1") { because("org.junitpioneer") }
+    api("org.junit-pioneer:junit-pioneer:2.3.0") { because("org.junitpioneer") }
     api("org.mockito:mockito-core:$mockito") { because("org.mockito") }
     api("org.mockito:mockito-junit-jupiter:$mockito") { because("org.mockito.junit.jupiter") }
     api("org.opentest4j:opentest4j:1.2.0") { because("org.opentest4j") }
@@ -130,7 +130,7 @@ dependencies.constraints {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
     api("com.google.protobuf:protoc:3.25.4")
-    api("io.grpc:protoc-gen-grpc-java:1.66.0")
+    api("io.grpc:protoc-gen-grpc-java:1.69.0")
 
     api("com.hedera.cryptography:hedera-cryptography-pairings-api:$hederaCryptography") {
         because("com.hedera.cryptography.pairings.api")
