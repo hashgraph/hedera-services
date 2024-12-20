@@ -152,7 +152,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
@@ -170,7 +170,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         lifecycles.onPreHandle(event, this);
     }
 
