@@ -111,13 +111,9 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyAddLiveHashNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetExecutionTimeNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
-import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
@@ -812,24 +808,8 @@ public class UtilVerbs {
         return new VerifyGetExecutionTimeNotSupported();
     }
 
-    public static VerifyGetStakersNotSupported getStakersNotSupported() {
-        return new VerifyGetStakersNotSupported();
-    }
-
-    public static VerifyGetFastRecordNotSupported getFastRecordNotSupported() {
-        return new VerifyGetFastRecordNotSupported();
-    }
-
     public static VerifyGetBySolidityIdNotSupported getBySolidityIdNotSupported() {
         return new VerifyGetBySolidityIdNotSupported();
-    }
-
-    public static VerifyGetAccountNftInfosNotSupported getAccountNftInfosNotSupported() {
-        return new VerifyGetAccountNftInfosNotSupported();
-    }
-
-    public static VerifyGetTokenNftInfosNotSupported getTokenNftInfosNotSupported() {
-        return new VerifyGetTokenNftInfosNotSupported();
     }
 
     public static VerifyAddLiveHashNotSupported verifyAddLiveHashNotSupported() {

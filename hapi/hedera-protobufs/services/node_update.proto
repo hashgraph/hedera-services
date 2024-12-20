@@ -66,7 +66,8 @@ message NodeUpdateTransactionBody {
     /**
      * A short description of the node.
      * <p>
-     * This value, if set, MUST NOT exceed 100 bytes when encoded as UTF-8.<br/>
+     * This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+     * (default 100) bytes when encoded as UTF-8.<br/>
      * If set, this value SHALL replace the previous value.
      */
     google.protobuf.StringValue description = 3;

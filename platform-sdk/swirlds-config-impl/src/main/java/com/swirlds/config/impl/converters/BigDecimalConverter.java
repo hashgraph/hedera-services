@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
 
 /**
@@ -29,7 +30,7 @@ public final class BigDecimalConverter implements ConfigConverter<BigDecimal> {
      * {@inheritDoc}
      */
     @Override
-    public BigDecimal convert(final String value) throws IllegalArgumentException {
+    public BigDecimal convert(@NonNull final String value) throws IllegalArgumentException {
         return new BigDecimal(value);
     }
 }
