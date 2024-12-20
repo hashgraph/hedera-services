@@ -327,12 +327,14 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         return null;
     }
 
+    /**
+     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4. System transactions will be always bigger than that.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
     private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
-        if (transaction.getApplicationTransaction().length() > 4) {
-            return true;
-        } else {
-            return false;
-        }
+        return transaction.getApplicationTransaction().length() > 4;
     }
 
     /**
