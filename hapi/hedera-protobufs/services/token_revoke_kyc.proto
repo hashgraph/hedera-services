@@ -1,13 +1,30 @@
+/**
+ * # Token Revoke KYC
+ * Revoke "KYC" status from an account with respect to a token.
+ *
+ * The "KYC' property is named for the "Know Your Customer" requirements in
+ * US federal regulations (FINRA 2090 and related US Code) that was subsequently
+ * incorporated into laws and regulations for many worldwide jurisdictions.
+ * The process requires a regulated financial entity to positively identify
+ * customers and certain other entities.
+ *
+ * This transaction enables a token administrator to track whether KYC
+ * requirements are met for a given account transacting in that token.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
 
-/*-
- * ‌
- * Hedera Network Services Protobuf
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +36,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -29,25 +45,38 @@ option java_multiple_files = true;
 import "basic_types.proto";
 
 /**
- * Revokes KYC to the account for the given token. Must be signed by the Token's kycKey.
- * If the provided account is not found, the transaction will resolve to INVALID_ACCOUNT_ID.
- * If the provided account has been deleted, the transaction will resolve to ACCOUNT_DELETED.
- * If the provided token is not found, the transaction will resolve to INVALID_TOKEN_ID.
- * If the provided token has been deleted, the transaction will resolve to TOKEN_WAS_DELETED.
- * If an Association between the provided token and account is not found, the transaction will
- * resolve to TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.
- * If no KYC Key is defined, the transaction will resolve to TOKEN_HAS_NO_KYC_KEY.
- * Once executed the Account is marked as KYC Revoked
+ * Revoke "Know Your Customer"(KYC) from one account for a single token.
+ *
+ * This transaction MUST be signed by the `kyc_key` for the token.<br/>
+ * The identified token MUST have a `kyc_key` set to a valid `Key` value.<br/>
+ * The token `kyc_key` MUST NOT be an empty `KeyList`.<br/>
+ * The identified token MUST exist and MUST NOT be deleted.<br/>
+ * The identified account MUST exist and MUST NOT be deleted.<br/>
+ * The identified account MUST have an association to the identified token.<br/>
+ * On success the association between the identified account and the identified
+ * token SHALL NOT be marked as "KYC granted".
+ *
+ * ### Block Stream Effects
+ * None
  */
 message TokenRevokeKycTransactionBody {
     /**
-     * The token for which this account will get his KYC revoked. If token does not exist,
-     * transaction results in INVALID_TOKEN_ID
+     * A token identifier.
+     * <p>
+     * The identified token SHALL revoke "KYC" for the account
+     * identified by the `account` field.<br/>
+     * The identified token MUST be associated to the account identified
+     * by the `account` field.
      */
     TokenID token = 1;
 
     /**
-     * The account to be KYC Revoked
+     * An account identifier.
+     * <p>
+     * The token identified by the `token` field SHALL revoke "KYC" for the
+     * identified account.<br/>
+     * This account MUST be associated to the token identified
+     * by the `token` field.
      */
     AccountID account = 2;
 }

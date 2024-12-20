@@ -360,7 +360,23 @@ class PrivilegesVerifierTest {
     }
 
     @Test
-    void addressBookAdminCanCreate() throws InvalidProtocolBufferException {
+    void treasuryCanCreateNode() throws InvalidProtocolBufferException {
+        // given:
+        var txn = treasuryTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void sysAdminnCanCreateNode() throws InvalidProtocolBufferException {
+        // given:
+        var txn = sysAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void addressBookAdminCanCreateNode() throws InvalidProtocolBufferException {
         // given:
         var txn = addressBookAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
         // expect:
