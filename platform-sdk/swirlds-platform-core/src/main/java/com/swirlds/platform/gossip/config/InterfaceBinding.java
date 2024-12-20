@@ -16,6 +16,13 @@
 
 package com.swirlds.platform.gossip.config;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
+import java.util.Objects;
 
-public record InterfaceBinding(Long nodeId, InetAddress hostname, int port) {}
+public record InterfaceBinding(@NonNull Long nodeId, @NonNull InetAddress hostname, int port) {
+    public InterfaceBinding {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(hostname, "hostname must not be null");
+    }
+}
