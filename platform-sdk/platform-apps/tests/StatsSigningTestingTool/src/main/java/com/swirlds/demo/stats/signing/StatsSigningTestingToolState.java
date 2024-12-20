@@ -149,21 +149,18 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         throwIfImmutable();
 
         round.forEachEventTransaction((event, transaction) -> {
-            final var transactionWithSystemBytes = handleTransaction(transaction);
-            if (transactionWithSystemBytes != null) {
-                stateSignatureTransaction.accept(new ScopedSystemTransaction(
-                        event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
+            if (areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            } else {
+                handleTransaction(transaction);
             }
         });
     }
 
-    private ConsensusTransaction handleTransaction(final ConsensusTransaction trans) {
+    private void handleTransaction(final ConsensusTransaction trans) {
         if (trans.isSystem()) {
-            return null;
-        }
-
-        if (areTransactionBytesSystemOnes(trans)) {
-            return trans;
+            return;
         }
 
         final TransactionSignature s = trans.getMetadata();
@@ -191,8 +188,6 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
-
-        return null;
     }
 
     /**
@@ -204,8 +199,8 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
         // We have maximum allocation of 100 bytes for the transaction + 10 bytes for the preamble size in
         // TransactionCodec
-        // + 64 bytes for the maximum public key + 64 bytes for the maximum signature size + 12 bytes for 3 integer
-        // bytes
+        // + 64 bytes for the maximum public key size + 64 bytes for the maximum signature size + 12 bytes for 3
+        // integers
         final var maximumSignedEncodedTransactionSize = 100 + 10 + 64 + 64 + 12;
         return transaction.getApplicationTransaction().length() > maximumSignedEncodedTransactionSize;
     }

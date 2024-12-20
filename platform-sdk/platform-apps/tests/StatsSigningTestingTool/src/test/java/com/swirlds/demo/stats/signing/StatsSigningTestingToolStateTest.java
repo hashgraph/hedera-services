@@ -171,6 +171,7 @@ class StatsSigningTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(Bytes.EMPTY);
         when(consensusTransaction.isSystem()).thenReturn(true);
 
         // When
