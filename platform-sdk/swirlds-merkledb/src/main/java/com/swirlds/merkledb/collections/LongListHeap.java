@@ -20,6 +20,7 @@ import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocateDirect;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.utilities.MemoryUtils;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -50,6 +51,9 @@ import java.util.concurrent.atomic.AtomicLongArray;
  */
 @SuppressWarnings("unused")
 public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
+
+    /** A temp buffer for reading chunk data from the file during initialization. */
+    private ByteBuffer tempReadBuffer;
 
     /** Construct a new LongListHeap with the default number of longs per chunk. */
     public LongListHeap() {
@@ -87,23 +91,32 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** {@inheritDoc} */
     @Override
-    protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
-        // read data
-        final int numOfArrays = calculateNumberOfChunks(size());
-        final ByteBuffer buffer = allocateDirect(memoryChunkSize);
-        buffer.order(ByteOrder.nativeOrder());
-        for (int i = 0; i < numOfArrays; i++) {
-            final AtomicLongArray atomicLongArray = new AtomicLongArray(numLongsPerChunk);
-            buffer.clear();
-            MerkleDbFileUtils.completelyRead(fileChannel, buffer);
-            buffer.flip();
-            int index = 0;
-            while (buffer.remaining() > 0) {
-                atomicLongArray.set(index, buffer.getLong());
-                index++;
-            }
-            chunkList.set(i, atomicLongArray);
+    protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
+            throws IOException {
+        tempReadBuffer = ByteBuffer.allocateDirect(DEFAULT_NUM_LONGS_PER_CHUNK * Long.BYTES)
+                .order(ByteOrder.nativeOrder());
+
+        super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
+
+        MemoryUtils.closeDirectByteBuffer(tempReadBuffer);
+        tempReadBuffer = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected AtomicLongArray readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex, int endIndex)
+            throws IOException {
+        AtomicLongArray chunk = createChunk();
+
+        readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, tempReadBuffer);
+        tempReadBuffer.flip();
+
+        int index = 0;
+        while (tempReadBuffer.hasRemaining()) {
+            chunk.set(index++, tempReadBuffer.getLong());
         }
+
+        return chunk;
     }
 
     /** {@inheritDoc} */

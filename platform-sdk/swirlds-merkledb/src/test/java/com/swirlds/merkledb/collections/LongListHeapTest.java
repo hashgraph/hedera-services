@@ -24,6 +24,12 @@ import java.nio.file.Path;
 
 public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
 
+    /** {@inheritDoc} */
+    @Override
+    protected LongListOffHeap createWritingLongList() {
+        return new LongListOffHeap();
+    }
+
     @Override
     protected LongListHeap createLongListWithChunkSizeInMb(final int chunkSizeInMb) {
         final int impliedLongsPerChunk = Math.toIntExact((chunkSizeInMb * (long) MEBIBYTES_TO_BYTES) / Long.BYTES);

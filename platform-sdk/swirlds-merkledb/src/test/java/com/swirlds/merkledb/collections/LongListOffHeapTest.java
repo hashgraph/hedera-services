@@ -51,6 +51,12 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         return new LongListOffHeap();
     }
 
+    /** {@inheritDoc} */
+    @Override
+    protected LongListHeap createWritingLongList() {
+        return new LongListHeap();
+    }
+
     @Override
     protected LongListOffHeap createLongListWithChunkSizeInMb(final int chunkSizeInMb) {
         final int impliedLongsPerChunk = Math.toIntExact((((long) chunkSizeInMb * MEBIBYTES_TO_BYTES) / Long.BYTES));
