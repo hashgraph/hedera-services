@@ -33,6 +33,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -50,8 +51,8 @@ class ISSTestingToolStateTest {
     private PlatformStateModifier platformStateModifier;
     private Round round;
     private ConsensusEvent event;
-    private Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> consumer;
-    private int consumerSize;
+    private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedTransactions;
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer;
     private ConsensusTransaction consensusTransaction;
     private StateSignatureTransaction stateSignatureTransaction;
 
@@ -64,7 +65,8 @@ class ISSTestingToolStateTest {
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
 
-        consumer = systemTransactions -> consumerSize = systemTransactions.size();
+        consumedTransactions = new ArrayList<>();
+        consumer = systemTransaction -> consumedTransactions.add(systemTransaction);
         consensusTransaction = mock(TransactionWrapper.class);
 
         final byte[] signature = new byte[384];
@@ -96,7 +98,7 @@ class ISSTestingToolStateTest {
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
                 .isPositive();
-        assertThat(consumerSize).isZero();
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
@@ -118,7 +120,7 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
-        assertThat(consumerSize).isEqualTo(1);
+        assertThat(consumedTransactions).hasSize(1);
     }
 
     @Test
@@ -148,7 +150,7 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
-        assertThat(consumerSize).isEqualTo(3);
+        assertThat(consumedTransactions).hasSize(3);
     }
 
     @Test
@@ -167,7 +169,7 @@ class ISSTestingToolStateTest {
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
-        assertThat(consumerSize).isEqualTo(0);
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
@@ -192,7 +194,7 @@ class ISSTestingToolStateTest {
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
                 .isZero();
-        assertThat(consumerSize).isZero();
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
@@ -217,7 +219,7 @@ class ISSTestingToolStateTest {
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
                 .isZero();
-        assertThat(consumerSize).isZero();
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
@@ -239,7 +241,7 @@ class ISSTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isEqualTo(3);
+        assertThat(consumedTransactions).hasSize(3);
     }
 
     @Test
@@ -255,7 +257,7 @@ class ISSTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isEqualTo(1);
+        assertThat(consumedTransactions).hasSize(1);
     }
 
     @Test
@@ -270,7 +272,7 @@ class ISSTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isZero();
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
@@ -287,7 +289,7 @@ class ISSTestingToolStateTest {
         state.preHandle(event, consumer);
 
         // Then
-        assertThat(consumerSize).isZero();
+        assertThat(consumedTransactions).isEmpty();
     }
 
     private void givenRoundAndEvent() {

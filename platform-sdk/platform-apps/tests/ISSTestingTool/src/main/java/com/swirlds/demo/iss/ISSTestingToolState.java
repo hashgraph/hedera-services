@@ -65,7 +65,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -241,16 +240,13 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull Event event,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
-        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         ((ConsensusEvent) event).consensusTransactionIterator().forEachRemaining(transaction -> {
             if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
-                scopedSystemTransactions.add(
+                stateSignatureTransaction.accept(
                         new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
             }
         });
-
-        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
     /**
@@ -264,14 +260,13 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
-        final var scopedSystemTransactions = new ArrayList<ScopedSystemTransaction<StateSignatureTransaction>>();
         while (eventIterator.hasNext()) {
             final ConsensusEvent event = eventIterator.next();
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
                 final var transactionWithSystemBytes = handleTransaction(transaction);
                 if (transactionWithSystemBytes != null) {
-                    scopedSystemTransactions.add(new ScopedSystemTransaction(
+                    stateSignatureTransaction.accept(new ScopedSystemTransaction(
                             event.getCreatorId(), event.getSoftwareVersion(), transactionWithSystemBytes));
                 }
             });
@@ -297,8 +292,6 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                 }
             }
         }
-
-        stateSignatureTransactions.accept(scopedSystemTransactions);
     }
 
     /**
