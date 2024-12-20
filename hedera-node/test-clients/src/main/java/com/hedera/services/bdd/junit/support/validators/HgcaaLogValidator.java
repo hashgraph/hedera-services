@@ -89,6 +89,9 @@ public class HgcaaLogValidator {
                 List.of("Properties file", "does not exist and won't be used as configuration source"),
                 // Using a 1-minute staking period in CI can lead to periods with no transactions, breaking invariants
                 List.of("StakingRewardsHelper", "Pending rewards decreased"),
+                // Some PR checks don't stake any HBAR, so after crossing a staking boundary all nodes
+                // have zero weight and the RosterStore rejects a zero-weight roster as invalid
+                List.of("Candidate roster was rejected"),
                 List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"),
                 List.of("No credentials found in", "for bucket:"));
 
