@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link Boolean} values in the
@@ -28,7 +29,7 @@ public final class BooleanConverter implements ConfigConverter<Boolean> {
      * {@inheritDoc}
      */
     @Override
-    public Boolean convert(final String value) throws IllegalArgumentException {
+    public Boolean convert(@NonNull final String value) throws IllegalArgumentException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }

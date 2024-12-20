@@ -1,13 +1,21 @@
+/**
+ * # File Create
+ * Messages to create a new file entry.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
 
-/*-
- * ‌
- * Hedera Network Services Protobuf
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +27,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -30,75 +37,103 @@ import "basic_types.proto";
 import "timestamp.proto";
 
 /**
- * Create a new file, containing the given contents.
- * After the file is created, the FileID for it can be found in the receipt, or record, or retrieved
- * with a GetByKey query.
+ * Create a new file.
  *
- * The file contains the specified contents (possibly empty). The file will automatically disappear
- * at the expirationTime, unless its expiration is extended by another transaction before that time.
- * If the file is deleted, then its contents will become empty and it will be marked as deleted
- * until it expires, and then it will cease to exist.
- * 
- * The keys field is a list of keys. All keys within the top-level key list must sign (M-M) to
- * create or modify a file. However, to delete the file, only one key (1-M) is required to sign from
- * the top-level key list.  Each of those "keys" may itself be threshold key containing other keys
- * (including other threshold keys). In other words, the behavior is an AND for create/modify, OR
- * for delete. This is useful for acting as a revocation server. If it is desired to have the
- * behavior be AND for all 3 operations (or OR for all 3), then the list should have only a single
- * Key, which is a threshold key, with N=1 for OR, N=M for AND. If the auto_renew_account field 
- * is set, the key of the referenced account must sign.
+ * If successful, the new file SHALL contain the (possibly empty) content
+ * provided in the `contents` field.<br/>
+ * When the current consensus time exceeds the `expirationTime` value, the
+ * network SHALL expire the file, and MAY archive the state entry.
  *
- * If a file is created without ANY keys in the keys field, the file is immutable and ONLY the
- * expirationTime of the file can be changed with a FileUpdate transaction. The file contents or its
- * keys cannot be changed.
+ * #### Signature Requirements
+ * The HFS manages file authorization in a manner that can be confusing.
+ * The core element of file authorization is the `keys` field,
+ * which is a `KeyList`; a list of individual `Key` messages, each of which
+ * may represent a simple or complex key.<br/>
+ * The file service transactions treat this list differently.<br/>
+ * A `fileCreate`, `fileAppend`, or `fileUpdate` MUST have a valid signature
+ * from _each_ key in the list.<br/>
+ * A `fileDelete` MUST have a valid signature from _at least one_ key in
+ * the list. This is different, and allows a file "owned" by many entities
+ * to be deleted by any one of those entities. A deleted file cannot be
+ * restored, so it is important to consider this when assigning keys for
+ * a file.<br/>
+ * If any of the keys in a `KeyList` are complex, the full requirements of
+ * each complex key must be met to count as a "valid signature" for that key.
+ * A complex key structure (i.e. a `ThresholdKey`, or `KeyList`, possibly
+ * including additional `ThresholdKey` or `KeyList` descendants) may be
+ * assigned as the sole entry in a file `keys` field to ensure all transactions
+ * have the same signature requirements.
  *
- * An entity (account, file, or smart contract instance) must be created in a particular realm. If
- * the realmID is left null, then a new realm will be created with the given admin key. If a new
- * realm has a null adminKey, then anyone can create/modify/delete entities in that realm. But if an
- * admin key is given, then any transaction to create/modify/delete an entity in that realm must be
- * signed by that key, though anyone can still call functions on smart contract instances that exist
- * in that realm. A realm ceases to exist when everything within it has expired and no longer
- * exists.
+ * If the `keys` field is an empty `KeyList`, then the file SHALL be immutable
+ * and the only transaction permitted to modify that file SHALL be a
+ * `fileUpdate` transaction with _only_ the `expirationTime` set.
  *
- * The current API ignores shardID, realmID, and newRealmAdminKey, and creates everything in shard 0
- * and realm 0, with a null key. Future versions of the API will support multiple realms and
- * multiple shards.
+ * #### Shard and Realm
+ * The current API ignores shardID and realmID. All files are created in
+ * shard 0 and realm 0. Future versions of the API may support multiple
+ * realms and multiple shards.
+ *
+ * ### Block Stream Effects
+ * After the file is created, the FileID for it SHALL be returned in the
+ * transaction receipt, and SHALL be recorded in the transaction record.
  */
 message FileCreateTransactionBody {
     /**
-     * The time at which this file should expire (unless FileUpdateTransaction is used before then
-     * to extend its life)
+     * An expiration timestamp.
+     * <p>
+     * When the network consensus time exceeds this value, the network
+     * SHALL expire the file.
      */
     Timestamp expirationTime = 2;
 
     /**
-     * All keys at the top level of a key list must sign to create or modify the file. Any one of
-     * the keys at the top level key list can sign to delete the file.
+     * A list of keys that represent file "owners".
+     * <p>
+     * Every `Key` in this list MUST sign this `fileCreate` transaction, as
+     * well as any `fileUpdate` or `fileAppend` that modifies this file.<br/>
+     * At least one `Key` in this list MUST sign any `fileDelete` transaction
+     * to delete this file.<br/>
+     * If this `KeyList` is empty, the file SHALL be created immutable and the
+     * only field that may be changed subsequently is the `expirationTime`.
+     * An immutable file cannot be deleted except with a `systemDelete`
+     * transaction, or by expiration.
      */
     KeyList keys = 3;
 
     /**
-     * The bytes that are the contents of the file
+     * A byte array of file content.
+     * <p>
+     * The file SHALL be created with initial content equal to this field.
      */
     bytes contents = 4;
 
     /**
-     * Shard in which this file is created
+     * A shard in which this file is created
      */
     ShardID shardID = 5;
 
     /**
-     * The Realm in which to the file is created (leave this null to create a new realm)
+     * A realm in which this file is created.
+     * <p>
+     * The shard number for this realm MUST match the value in `shardID`.<br/>
+     * Currently, this MUST be `0` for both fields.<br/>
+     * If the desired realm is `0.0`, this SHOULD NOT be set.
      */
     RealmID realmID = 6;
 
     /**
-     * If realmID is null, then this the admin key for the new realm that will be created
+     * The "create realm" was never enabled, and
+     * should not be possible on file creation.<br/>
+     * An admin key for a new realm, if one is created.
+     * Added deprecated tag 2024-05.
      */
-    Key newRealmAdminKey = 7;
+    Key newRealmAdminKey = 7 [deprecated = true];
 
     /**
-     * The memo associated with the file (UTF-8 encoding max 100 bytes)
+     * A short description of this file.
+     * <p>
+     * This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+     * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 8;
 }
