@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
@@ -56,7 +56,9 @@ public class SimpleFreezeOnly extends HapiSuite {
     }
 
     final Stream<DynamicTest> simpleFreezeWithTimestamp() {
-        return hapiTest(
-                freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)), sleepFor(40000));
+        return defaultHapiSpec("SimpleFreezeWithTimeStamp")
+                .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
+                .when(sleepFor(40000))
+                .then();
     }
 }
