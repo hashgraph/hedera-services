@@ -52,6 +52,13 @@ public interface Configuration {
     boolean exists(@NonNull String propertyName);
 
     /**
+     * Checks if the property with the given name is a list property.
+     * @param propertyName the name of the property that should be checked
+     * @return true if the property is a list property, false otherwise
+     */
+    boolean isListValue(@NonNull String propertyName);
+
+    /**
      * Returns the {@link String} value of the property with the given name.
      *
      * @param propertyName the name of the property

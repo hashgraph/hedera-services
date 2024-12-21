@@ -1,13 +1,22 @@
+/**
+ * # Schedule Sign
+ * Transaction body for a `scheduleSign` transaction to add signatures
+ * to an existing scheduled transaction.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
 
-/*-
- * ‌
- * Hedera Network Services Protobuf
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,7 +28,6 @@ package proto;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
@@ -29,27 +37,36 @@ option java_multiple_files = true;
 import "basic_types.proto";
 
 /**
- * Adds zero or more signing keys to a schedule.
+ * Add signatures to an existing scheduled transaction.
  *
- * If Long Term Scheduled Transactions are enabled and <tt>wait_for_expiry</tt> was set to <tt>true</tt> on the
- * <tt>ScheduleCreate</tt> then the transaction will always wait till it's `expiration_time` to execute.
+ * When a schedule _executes_ successfully, the receipt SHALL include a
+ * `scheduledTransactionID` with the `TransactionID` of the transaction that
+ * executed.<br/>
+ * When a scheduled transaction is executed the network SHALL charge the
+ * regular _service_ fee for the transaction to the `payerAccountID` for
+ * that schedule, but SHALL NOT charge node or network fees.<br/>
+ * If the `payerAccountID` field is not set, the effective `payerAccountID`
+ * SHALL be the `payer` for this create transaction.<br/>
+ * Each signature on this transaction SHALL "activate" the corresponding
+ * cryptographic("primitive") key for the schedule identified.<br/>
+ * Signature requirements SHALL be met when the set of active keys includes
+ * all keys required by the scheduled transaction.<br/>
+ * A scheduled transaction for a "long term" schedule SHALL NOT execute if
+ * the signature requirements for that transaction are not met when the
+ * network consensus time reaches the schedule `expiration_time`.<br/>
+ * A "short term" schedule SHALL execute immediately once signature
+ * requirements are met. This MAY be immediately when created.<br/>
  *
- * Otherwise, if the resulting set of signing keys satisfy the
- * scheduled transaction's signing requirements, it will be executed immediately after the
- * triggering <tt>ScheduleSign</tt>.
- * 
- * Upon <tt>SUCCESS</tt>, the receipt includes the <tt>scheduledTransactionID</tt> to use to query
- * for the record of the scheduled transaction's execution (if it occurs). 
- * 
- * Other notable response codes include <tt>INVALID_SCHEDULE_ID</tt>, <tt>SCHEDULE_ALREADY_DELETED</tt>,
- * <tt>SCHEDULE_PENDING_EXPIRATION</tt>, <tt>SCHEDULE_ALREADY_EXPIRED</tt>,
- * <tt>INVALID_ACCOUNT_ID</tt>, <tt>UNRESOLVABLE_REQUIRED_SIGNERS</tt>,
- * <tt>SOME_SIGNATURES_WERE_INVALID</tt>, and <tt>NO_NEW_VALID_SIGNATURES</tt>. For more information
- * please see the section of this documentation on the <tt>ResponseCode</tt> enum.
+ * ### Block Stream Effects
+ * If the scheduled transaction is executed immediately following this
+ * `scheduleSign` transaction, the transaction record SHALL include a
+ * `scheduleRef` with the schedule identifier `scheduleID`.
  */
 message ScheduleSignTransactionBody {
   /**
-   * The id of the schedule to add signing keys to
+   * A schedule identifier.
+   * <p>
+   * This MUST identify the schedule to which signatures SHALL be added.
    */
   ScheduleID scheduleID = 1;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
@@ -349,7 +348,7 @@ class DefaultSignedStateValidatorTests {
 
         return new RandomSignedStateGenerator()
                 .setRound(ROUND)
-                .setAddressBook(RosterUtils.buildAddressBook(roster))
+                .setRoster(roster)
                 .setStateHash(stateHash)
                 .setSignatures(nodeSigs(signingNodes))
                 .setSignatureVerifier(signatureVerifier)

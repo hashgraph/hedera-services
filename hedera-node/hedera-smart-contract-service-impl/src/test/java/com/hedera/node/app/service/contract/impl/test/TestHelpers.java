@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -499,6 +499,8 @@ public class TestHelpers {
             .key(AN_ED25519_KEY)
             .alias(tuweniToPbjBytes(EIP_1014_ADDRESS))
             .build();
+    public static final Account B_CONTRACT =
+            Account.newBuilder().accountId(B_NEW_ACCOUNT_ID).smartContract(true).build();
     public static final TokenRelation A_FUNGIBLE_RELATION = TokenRelation.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
             .accountId(A_NEW_ACCOUNT_ID)

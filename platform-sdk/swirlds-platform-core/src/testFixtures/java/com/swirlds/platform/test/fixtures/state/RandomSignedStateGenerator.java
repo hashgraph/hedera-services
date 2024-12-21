@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
@@ -37,17 +38,15 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -77,10 +76,10 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private MerkleRoot state;
+    private PlatformMerkleStateRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
-    private AddressBook addressBook;
+    private Roster roster;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
     private SoftwareVersion softwareVersion;
@@ -122,15 +121,14 @@ public class RandomSignedStateGenerator {
      * @return a new signed state
      */
     public SignedState build() {
-        final AddressBook addressBookInstance;
-        if (addressBook == null) {
-            addressBookInstance = RandomAddressBookBuilder.create(random)
-                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+        final Roster rosterInstance;
+        if (roster == null) {
+            rosterInstance = RandomRosterBuilder.create(random)
+                    .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                     .build();
         } else {
-            addressBookInstance = addressBook;
+            rosterInstance = roster;
         }
-        final Roster rosterInstance = RosterRetriever.buildRoster(addressBookInstance);
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
@@ -139,7 +137,7 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
-        final MerkleRoot stateInstance;
+        final PlatformMerkleStateRoot stateInstance;
         registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
@@ -148,7 +146,7 @@ public class RandomSignedStateGenerator {
                 stateInstance = new PlatformMerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
+            stateInstance.setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }
@@ -246,9 +244,10 @@ public class RandomSignedStateGenerator {
             final List<NodeId> signingNodeIdsInstance;
             if (signingNodeIds == null) {
                 signingNodeIdsInstance = new LinkedList<>();
-                if (addressBookInstance.getSize() > 0) {
-                    for (int i = 0; i < addressBookInstance.getSize() / 3 + 1; i++) {
-                        signingNodeIdsInstance.add(addressBookInstance.getNodeId(i));
+                if (!rosterInstance.rosterEntries().isEmpty()) {
+                    for (int i = 0; i < rosterInstance.rosterEntries().size() / 3 + 1; i++) {
+                        final RosterEntry node = rosterInstance.rosterEntries().get(i);
+                        signingNodeIdsInstance.add(NodeId.of(node.nodeId()));
                     }
                 }
             } else {
@@ -331,12 +330,12 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the address book.
+     * Set the roster.
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setAddressBook(final AddressBook addressBook) {
-        this.addressBook = addressBook;
+    public RandomSignedStateGenerator setRoster(final Roster roster) {
+        this.roster = roster;
         return this;
     }
 
