@@ -32,7 +32,7 @@
   ],
   "branches":[
     {
-      "name": "semantic-release-workflow-update"
+      "name": "main"
     },
     {
       "name": "release/([0-9]+).([0-9]+)",
