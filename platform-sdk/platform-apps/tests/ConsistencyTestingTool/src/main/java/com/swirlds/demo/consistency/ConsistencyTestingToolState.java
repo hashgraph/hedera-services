@@ -34,8 +34,10 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -221,11 +223,22 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * Sets the new {@link #stateLong} to the non-cryptographic hash of the existing state, and the contents of the
      * transaction being handled
      *
+     * @param consensusEvent the consensus event
      * @param transaction the transaction to apply to the state
+     * @param scopedSystemTransaction a consumer to handle scoped system transactions
      */
-    private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
+    private void applyTransactionToState(
+            final @NonNull ConsensusEvent consensusEvent,
+            final @NonNull ConsensusTransaction transaction,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransaction) {
         Objects.requireNonNull(transaction);
         if (transaction.isSystem()) {
+            return;
+        }
+
+        if (isSystemTransaction(transaction)) {
+            scopedSystemTransaction.accept(new ScopedSystemTransaction(
+                    consensusEvent.getCreatorId(), consensusEvent.getSoftwareVersion(), transaction));
             return;
         }
 
@@ -248,6 +261,12 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         event.forEachTransaction(transaction -> {
             if (transaction.isSystem()) {
+                return;
+            }
+
+            if (isSystemTransaction(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
                 return;
             }
             final long transactionContents =
@@ -284,12 +303,24 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
         roundsHandled++;
 
-        round.forEachTransaction(this::applyTransactionToState);
+        round.forEachEventTransaction((ev, tx) -> {
+            applyTransactionToState(ev, tx, stateSignatureTransaction);
+        });
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
 
         setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
         setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
+    }
+
+    /**
+     * Determines if the given transaction is a system transaction for this app.
+     *
+     * @param transaction the transaction to check
+     * @return true if the transaction is a system transaction, false otherwise
+     */
+    private boolean isSystemTransaction(final Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 8;
     }
 }
