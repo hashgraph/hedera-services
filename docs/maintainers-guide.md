@@ -92,11 +92,11 @@ with 0.30 milestone on it.
 
 ### DevOps-CI Responsibilities
 
-The release engineering team will handle the following:
+The DevOps-CI team will handle the following:
 
-- Create a release branch from `main` branch at the end of first sprint in the release cycle
 - Will provide automated release processes and coordinate release schedules
 - Will handle production releases
+- Note: no release branch will be created
 
 ### User Stories
 
