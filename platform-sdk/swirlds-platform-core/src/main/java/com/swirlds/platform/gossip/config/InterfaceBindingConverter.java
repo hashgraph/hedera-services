@@ -24,16 +24,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.util.Objects;
 
-public class InterfaceBindingConverter implements ConfigConverter<InterfaceBinding> {
+public class InterfaceBindingConverter implements ConfigConverter<NetworkEndpoint> {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Nullable
     @Override
-    public InterfaceBinding convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
+    public NetworkEndpoint convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
         Objects.requireNonNull(value, "value must not be null");
         try {
             final JsonNode jsonNode = OBJECT_MAPPER.readTree(value);
-            return new InterfaceBinding(
+            return new NetworkEndpoint(
                     jsonNode.get("nodeId").asLong(),
                     InetAddress.getByName(jsonNode.get("hostname").asText()),
                     jsonNode.get("port").asInt());

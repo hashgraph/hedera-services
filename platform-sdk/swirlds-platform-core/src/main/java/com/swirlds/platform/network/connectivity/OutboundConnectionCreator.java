@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.config.GossipConfig;
-import com.swirlds.platform.gossip.config.InterfaceBinding;
+import com.swirlds.platform.gossip.config.NetworkEndpoint;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.Connection;
@@ -92,12 +92,12 @@ public class OutboundConnectionCreator {
         // and it would be complex and error-prone to build logic to guess which one is which.
         // Ideally, this code should use a randomized and/or round-robin approach to choose an appropriate endpoint.
         // For now, we default to the very first one at all times.
-        final InterfaceBinding binding = gossipConfig
+        final NetworkEndpoint networkEndpoint = gossipConfig
                 .getEndpointOverride(otherId.id())
                 .orElseGet(() -> {
                     final String host = RosterUtils.fetchHostname(other, 0);
                     try {
-                        return new InterfaceBinding(
+                        return new NetworkEndpoint(
                                 otherId.id(), InetAddress.getByName(host), RosterUtils.fetchPort(other, 0));
                     } catch (UnknownHostException e) {
                         throw new RuntimeException("Host '" + host + "' not found", e);
@@ -109,7 +109,8 @@ public class OutboundConnectionCreator {
         SyncInputStream dis = null;
 
         try {
-            clientSocket = socketFactory.createClientSocket(binding.hostname().getHostAddress(), binding.port());
+            clientSocket = socketFactory.createClientSocket(
+                    networkEndpoint.hostname().getHostAddress(), networkEndpoint.port());
 
             dos = SyncOutputStream.createSyncOutputStream(
                     platformContext, clientSocket.getOutputStream(), socketConfig.bufferSize());

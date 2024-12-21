@@ -24,11 +24,11 @@ import java.util.Optional;
 
 @ConfigData("gossip")
 public record GossipConfig(
-        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<InterfaceBinding> interfaceBindings,
-        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<InterfaceBinding> endpointOverrides) {
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> networkEndpoints,
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> endpointOverrides) {
 
     /**
-     * Returns the interface binding for the given node ID.
+     * Returns the network endpoint for the given node ID.
      * <p>
      *     <b>Note:</b> If there are multiple interface bindings for the same node ID, only the first one will be
      *     returned.
@@ -37,8 +37,8 @@ public record GossipConfig(
      * @param nodeId the node ID
      * @return optional of the interface binding, empty if not found
      */
-    public Optional<InterfaceBinding> getInterfaceBinding(long nodeId) {
-        return interfaceBindings.stream()
+    public Optional<NetworkEndpoint> getNetworkEndpoint(long nodeId) {
+        return networkEndpoints.stream()
                 .filter(binding -> binding.nodeId().equals(nodeId))
                 .findFirst();
     }
@@ -53,7 +53,7 @@ public record GossipConfig(
      * @param nodeId the node ID
      * @return optional of the endpoint override, empty if not found
      */
-    public Optional<InterfaceBinding> getEndpointOverride(long nodeId) {
+    public Optional<NetworkEndpoint> getEndpointOverride(long nodeId) {
         return endpointOverrides.stream()
                 .filter(binding -> binding.nodeId().equals(nodeId))
                 .findFirst();

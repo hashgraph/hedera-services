@@ -1,5 +1,0 @@
-gossip:
-  interfaceBindings:
-    - { "nodeId": 2, "hostname": "localhost", "port": 1234 }
-  endpointOverrides:
-    - { "nodeId": 2, "hostname": "10.10.10.11", "port": 1238 }

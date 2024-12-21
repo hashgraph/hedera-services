@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.config.api.Configuration;
@@ -26,11 +27,17 @@ import org.junit.jupiter.api.Test;
 public class GossipConfigTest {
 
     @Test
-    void test() {
+    void testReadingFile() {
         final Configuration configuration = new TestConfigBuilder()
-                .withSource(new YamlConfigSource("gossip-config.yaml"))
+                .withSource(new YamlConfigSource("overwrites.yaml"))
                 .getOrCreateConfig();
-
         assertNotNull(configuration);
+
+        final GossipConfig gossipConfig = configuration.getConfigData(GossipConfig.class);
+        assertNotNull(gossipConfig);
+
+        assertNotNull(gossipConfig.networkEndpoints());
+        assertEquals(4, gossipConfig.networkEndpoints().size());
+        assertEquals(4, gossipConfig.endpointOverrides().size());
     }
 }

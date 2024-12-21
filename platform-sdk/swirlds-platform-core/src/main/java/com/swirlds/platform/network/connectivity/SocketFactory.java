@@ -18,7 +18,7 @@ package com.swirlds.platform.network.connectivity;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.config.GossipConfig;
-import com.swirlds.platform.gossip.config.InterfaceBinding;
+import com.swirlds.platform.gossip.config.NetworkEndpoint;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,11 +71,11 @@ public interface SocketFactory {
         Objects.requireNonNull(socketConfig);
         Objects.requireNonNull(gossipConfig);
 
-        final InterfaceBinding interfaceBinding = gossipConfig
-                .getInterfaceBinding(selfId.id())
+        final NetworkEndpoint networkEndpoint = gossipConfig
+                .getNetworkEndpoint(selfId.id())
                 .orElseGet(() -> {
                     try {
-                        return new InterfaceBinding(selfId.id(), InetAddress.getByAddress(ALL_INTERFACES), port);
+                        return new NetworkEndpoint(selfId.id(), InetAddress.getByAddress(ALL_INTERFACES), port);
                     } catch (UnknownHostException e) {
                         throw new RuntimeException("Host 'ALL_INTERFACES' not found", e);
                     }
@@ -85,11 +85,13 @@ public interface SocketFactory {
             // set the IP_TOS option
             serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
-        final InetSocketAddress endpoint = new InetSocketAddress(interfaceBinding.hostname(), interfaceBinding.port());
+        final InetSocketAddress endpoint = new InetSocketAddress(networkEndpoint.hostname(), networkEndpoint.port());
         serverSocket.setReuseAddress(true);
         serverSocket.bind(endpoint); // try to grab a port on this computer
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
         // because it causes a major bug in certain situations
+
+        serverSocket.setSoTimeout(socketConfig.timeoutServerAcceptConnect());
     }
 
     /**
