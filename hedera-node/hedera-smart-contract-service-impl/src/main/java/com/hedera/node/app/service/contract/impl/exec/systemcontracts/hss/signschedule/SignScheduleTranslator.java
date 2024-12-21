@@ -190,6 +190,14 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         requireNonNull(attempt);
         final Set<Key> keys = new HashSet<>();
         final var call = SIGN_SCHEDULE.decodeCall(attempt.inputBytes());
+        final var scheduleId = requireNonNull(getScheduleIDFromCall(attempt, call));
+
+        // compute the message as the concatenation of the realm, shard, and schedule numbers
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
+        buffer.putLong(scheduleId.shardNum());
+        buffer.putLong(scheduleId.realmNum());
+        buffer.putLong(scheduleId.scheduleNum());
+        final Bytes message = Bytes.wrap(buffer.array());
 
         final var signatureBlob = (byte[]) call.get(SIGNATURE_MAP_INDEX);
         SignatureMap sigMap;

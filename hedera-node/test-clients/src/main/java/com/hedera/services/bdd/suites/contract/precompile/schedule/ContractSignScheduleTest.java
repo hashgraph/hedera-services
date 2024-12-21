@@ -26,22 +26,36 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.SENDER;
 
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,6 +71,7 @@ import org.junit.jupiter.api.Tag;
 public class ContractSignScheduleTest {
     private static final String CONTRACT = "HRC755Contract";
     private static final String AUTHORIZE_SCHEDULE_CALL = "authorizeScheduleCall";
+    private static final String SIGN_SCHEDULE_CALL = "signScheduleCall";
 
     @Nested
     @DisplayName("Authorize schedule from EOA controlled by contract")
@@ -64,8 +79,8 @@ public class ContractSignScheduleTest {
         private static final String SCHEDULE_A = "testScheduleA";
         private static final String SCHEDULE_B = "testScheduleB";
         private static final String CONTRACT_CONTROLLED = "contractControlled";
-        private static final AtomicReference<ScheduleID> scheduleIDA = new AtomicReference<>();
-        private static final AtomicReference<ScheduleID> scheduleIDB = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_A = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_B = new AtomicReference<>();
 
         @BeforeAll
         static void beforeAll(final TestLifecycle testLifecycle) {
@@ -79,9 +94,9 @@ public class ContractSignScheduleTest {
                     cryptoCreate(CONTRACT_CONTROLLED).keyShape(KeyShape.CONTRACT.signedWith(CONTRACT)),
                     cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, CONTRACT_CONTROLLED)),
                     scheduleCreate(SCHEDULE_A, cryptoTransfer(tinyBarsFromTo(CONTRACT_CONTROLLED, RECEIVER, 1)))
-                            .exposingCreatedIdTo(scheduleIDA::set),
+                            .exposingCreatedIdTo(scheduleID_A::set),
                     scheduleCreate(SCHEDULE_B, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                            .exposingCreatedIdTo(scheduleIDB::set));
+                            .exposingCreatedIdTo(scheduleID_B::set));
         }
 
         @HapiTest
@@ -90,9 +105,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_A).isNotExecuted(),
                     contractCall(
-                                    CONTRACT,
-                                    AUTHORIZE_SCHEDULE_CALL,
-                                    mirrorAddrWith(scheduleIDA.get().getScheduleNum()))
+                            CONTRACT,
+                            AUTHORIZE_SCHEDULE_CALL,
+                            mirrorAddrWith(scheduleID_A.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_A).isExecuted());
         }
@@ -103,9 +118,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_B).isNotExecuted(),
                     contractCall(
-                                    CONTRACT,
-                                    AUTHORIZE_SCHEDULE_CALL,
-                                    mirrorAddrWith(scheduleIDB.get().getScheduleNum()))
+                            CONTRACT,
+                            AUTHORIZE_SCHEDULE_CALL,
+                            mirrorAddrWith(scheduleID_B.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_B).isNotExecuted());
         }
@@ -116,8 +131,8 @@ public class ContractSignScheduleTest {
     class AuthorizeScheduleFromContractTest {
         private static final String SCHEDULE_C = "testScheduleC";
         private static final String SCHEDULE_D = "testScheduleD";
-        private static final AtomicReference<ScheduleID> scheduleIDC = new AtomicReference<>();
-        private static final AtomicReference<ScheduleID> scheduleIDD = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_C = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_D = new AtomicReference<>();
 
         @BeforeAll
         static void beforeAll(final TestLifecycle testLifecycle) {
@@ -131,9 +146,9 @@ public class ContractSignScheduleTest {
                     contractCreate(CONTRACT).omitAdminKey(),
                     cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, CONTRACT)),
                     scheduleCreate(SCHEDULE_C, cryptoTransfer(tinyBarsFromTo(CONTRACT, RECEIVER, 1)))
-                            .exposingCreatedIdTo(scheduleIDC::set),
+                            .exposingCreatedIdTo(scheduleID_C::set),
                     scheduleCreate(SCHEDULE_D, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                            .exposingCreatedIdTo(scheduleIDD::set));
+                            .exposingCreatedIdTo(scheduleID_D::set));
         }
 
         @HapiTest
@@ -142,9 +157,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_C).isNotExecuted(),
                     contractCall(
-                                    CONTRACT,
-                                    AUTHORIZE_SCHEDULE_CALL,
-                                    mirrorAddrWith(scheduleIDC.get().getScheduleNum()))
+                            CONTRACT,
+                            AUTHORIZE_SCHEDULE_CALL,
+                            mirrorAddrWith(scheduleID_C.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_C).isExecuted());
         }
@@ -155,9 +170,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_D).isNotExecuted(),
                     contractCall(
-                                    CONTRACT,
-                                    AUTHORIZE_SCHEDULE_CALL,
-                                    mirrorAddrWith(scheduleIDD.get().getScheduleNum()))
+                            CONTRACT,
+                            AUTHORIZE_SCHEDULE_CALL,
+                            mirrorAddrWith(scheduleID_D.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_D).isNotExecuted());
         }
@@ -166,8 +181,8 @@ public class ContractSignScheduleTest {
     @Nested
     @DisplayName("Sign Schedule From EOA")
     class SignScheduleFromEOATest {
-        private static final AtomicReference<ScheduleID> scheduleIDE = new AtomicReference<>();
-        private static final AtomicReference<ScheduleID> scheduleIDF = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_E = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_F = new AtomicReference<>();
         private static final String OTHER_SENDER = "otherSender";
         private static final String SIGN_SCHEDULE = "signSchedule";
         private static final String IHRC755 = "IHRC755";
@@ -183,23 +198,23 @@ public class ContractSignScheduleTest {
                     cryptoCreate(OTHER_SENDER).balance(ONE_HUNDRED_HBARS),
                     cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
                     scheduleCreate(SCHEDULE_E, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                            .exposingCreatedIdTo(scheduleIDE::set),
+                            .exposingCreatedIdTo(scheduleID_E::set),
                     scheduleCreate(SCHEDULE_F, cryptoTransfer(tinyBarsFromTo(OTHER_SENDER, RECEIVER, 1)))
-                            .exposingCreatedIdTo(scheduleIDF::set));
+                            .exposingCreatedIdTo(scheduleID_F::set));
         }
 
         @HapiTest
         @DisplayName("Signature executes schedule transaction")
         final Stream<DynamicTest> authorizeScheduleWithContract() {
-            var scheduleAddress = "0.0." + scheduleIDE.get().getScheduleNum();
+            var scheduleAddress = "0.0." + scheduleID_E.get().getScheduleNum();
             return hapiTest(
                     getScheduleInfo(SCHEDULE_E).isNotExecuted(),
                     contractCallWithFunctionAbi(
-                                    scheduleAddress,
-                                    getABIFor(
-                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                            SIGN_SCHEDULE,
-                                            IHRC755))
+                            scheduleAddress,
+                            getABIFor(
+                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                    SIGN_SCHEDULE,
+                                    IHRC755))
                             .payingWith(SENDER)
                             .gas(1_000_000),
                     getScheduleInfo(SCHEDULE_E).isExecuted());
@@ -208,18 +223,83 @@ public class ContractSignScheduleTest {
         @HapiTest
         @DisplayName("Signature does not executes schedule transaction")
         final Stream<DynamicTest> authorizeScheduleWithContractNoExec() {
-            var scheduleAddress = "0.0." + scheduleIDF.get().getScheduleNum();
+            var scheduleAddress = "0.0." + scheduleID_F.get().getScheduleNum();
             return hapiTest(
                     getScheduleInfo(SCHEDULE_F).isNotExecuted(),
                     contractCallWithFunctionAbi(
-                                    scheduleAddress,
-                                    getABIFor(
-                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                            SIGN_SCHEDULE,
-                                            IHRC755))
+                            scheduleAddress,
+                            getABIFor(
+                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                    SIGN_SCHEDULE,
+                                    IHRC755))
                             .payingWith(SENDER)
                             .gas(1_000_000),
                     getScheduleInfo(SCHEDULE_F).isNotExecuted());
+        }
+    }
+
+    @Nested
+    @DisplayName("Sign Schedule From Contract")
+    class SignScheduleFromContractTest {
+        private static final AtomicReference<ScheduleID> scheduleID_G = new AtomicReference<>();
+        private static final AtomicReference<ScheduleID> scheduleID_H = new AtomicReference<>();
+        private static final String CONTRACT_CONTROLLED = "contractControlled";
+        private static final String SIGN_SCHEDULE = "signSchedule";
+        private static final String IHRC755 = "IHRC755";
+        private static final String SCHEDULE_G = "testScheduleG";
+        private static final String SCHEDULE_H = "testScheduleH";
+
+        @BeforeAll
+        static void beforeAll(final TestLifecycle testLifecycle) {
+            String ECDSA_RECEIVER_KEY = "EcDsaReceiverKey";
+            testLifecycle.doAdhoc(
+                    overriding("contracts.systemContract.scheduleService.enabled", "true"),
+                    overriding("contracts.systemContract.scheduleService.signSchedule.enabled", "true"),
+                    newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    newKeyNamed(ECDSA_RECEIVER_KEY).shape(SECP_256K1_SHAPE),
+                    uploadInitCode(CONTRACT),
+                    contractCreate(CONTRACT),
+                    cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                    scheduleCreate(SCHEDULE_G,
+                            cryptoTransfer(tinyBarsFromToWithAlias(ECDSA_KEY, ECDSA_RECEIVER_KEY, 1)))
+                            .exposingCreatedIdTo(scheduleID_G::set));
+        }
+
+        @HapiTest
+        @DisplayName("Signature executes schedule transaction")
+        final Stream<DynamicTest> signScheduleWithContract() {
+            return hapiTest(
+                    getScheduleInfo(SCHEDULE_G).isNotExecuted(),
+                    withOpContext((spec, opLog) -> {
+                        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
+                        buffer.putLong(scheduleID_G.get().getShardNum());
+                        buffer.putLong(scheduleID_G.get().getRealmNum());
+                        buffer.putLong(scheduleID_G.get().getScheduleNum());
+                        final Bytes message = Bytes.wrap(buffer.array());
+
+                        final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                        final var publicKey = spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
+                        final var signedBytes = Signing.signMessage(message.toByteArray(), privateKey);
+
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(SignaturePair.newBuilder()
+                                        .ecdsaSecp256k1(Bytes.wrap(signedBytes))
+                                        .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
+                                        .build())
+                                .build();
+
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                CONTRACT,
+                                SIGN_SCHEDULE_CALL,
+                                mirrorAddrWith(scheduleID_G.get().getScheduleNum()),
+                                signatureMapBytes)
+                                 .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getScheduleInfo(SCHEDULE_G).isExecuted());
         }
     }
 }
