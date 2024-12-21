@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -30,7 +31,7 @@ public final class UrlConverter implements ConfigConverter<URL> {
      * {@inheritDoc}
      */
     @Override
-    public URL convert(final String value) throws IllegalArgumentException {
+    public URL convert(@NonNull final String value) throws IllegalArgumentException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }
