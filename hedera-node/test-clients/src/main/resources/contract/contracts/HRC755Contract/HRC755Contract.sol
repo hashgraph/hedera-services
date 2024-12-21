@@ -12,7 +12,7 @@ contract HRC755Contract is HederaScheduleService {
     }
 
     function signScheduleCall(address schedule, bytes memory signatureMap) external returns (int64 responseCode) {
-        (responseCode) = HederaScheduleService.signSignature(schedule, signatureMap);
+        (responseCode) = HederaScheduleService.signSchedule(schedule, signatureMap);
         require(responseCode == HederaResponseCodes.SUCCESS, "Authorize schedule failed");
     }
 }

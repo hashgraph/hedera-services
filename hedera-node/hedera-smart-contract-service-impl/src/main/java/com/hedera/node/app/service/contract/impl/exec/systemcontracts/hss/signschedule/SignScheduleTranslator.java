@@ -205,8 +205,8 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
 
         // compute the message as the concatenation of the realm, shard, and schedule numbers
         final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
-        buffer.putLong(scheduleId.realmNum());
         buffer.putLong(scheduleId.shardNum());
+        buffer.putLong(scheduleId.realmNum());
         buffer.putLong(scheduleId.scheduleNum());
         final Bytes message = Bytes.wrap(buffer.array());
 
