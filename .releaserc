@@ -1,0 +1,43 @@
+{
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
+    "@semantic-release/git",
+    "@semantic-release/github"
+  ],
+  "verifyRelease": [
+    [
+      "@semantic-release/exec",
+      { "cmd": "echo ${nextRelease.version} > VERSION" }
+    ]
+  ],
+  "prepare": [
+    [
+      "@semantic-release/exec",
+      { "cmd": "./gradlew versionAsSpecified --scan -PnewVersion=${nextRelease.version}" }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "version.txt"
+        ]
+      }
+    ]
+  ],
+  "branches":[
+    {
+      "name": "main"
+    },
+    {
+      "name": "release/([0-9]+).([0-9]+)",
+      "channel": "${name.replace(/release\\//g, '').split('.')[0]}.${name.replace(/release\\//g, '').split('.')[1]}.x",
+      "range": "${name.replace(/release\\//g, '').split('.')[0]}.${name.replace(/release\\//g, '').split('.')[1]}.x"
+    }
+  ]
+}
