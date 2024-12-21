@@ -41,6 +41,10 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   prepare-tag-release:
     name: Prepare Release [Tag]
@@ -156,6 +160,8 @@ jobs:
       - name: Check Prep XTS Job State
         id: check-xts-job
         if: ${{ needs.release-branch.result == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           JOB_ENABLED="true"
           JOB_STATE=$(gh workflow list --all --json name,state | jq -r '.[]|select(.name=="ZXF: Prepare Extended Test Suite")|.state')
@@ -177,6 +183,8 @@ jobs:
         if: ${{ needs.release-branch.result == 'success' &&
             (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
             !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           JOB_ENABLED="true"
           JOB_STATE=$(gh workflow list --all --json name,state | jq -r '.[]|select(.name=="ZXF: [Node] Deploy Integration Network Release")|.state')
