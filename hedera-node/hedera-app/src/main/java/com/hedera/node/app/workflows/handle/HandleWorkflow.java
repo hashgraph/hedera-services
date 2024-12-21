@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -225,7 +210,7 @@ public class HandleWorkflow {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
-            tssBaseService.generateParticipantDirectory(state);
+            tssBaseService.ensureParticipantDirectoryKnown(state);
         }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
@@ -253,6 +238,7 @@ public class HandleWorkflow {
     /**
      * Applies all effects of the events in the given round to the given state, writing stream items
      * that capture these effects in the process.
+     *
      * @param state the state to apply the effects to
      * @param round the round to apply the effects of
      */
@@ -319,9 +305,9 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state the writable {@link State} that this transaction will work on
-     * @param creator the {@link NodeInfo} of the creator of the transaction
-     * @param txn the {@link ConsensusTransaction} to be handled
+     * @param state      the writable {@link State} that this transaction will work on
+     * @param creator    the {@link NodeInfo} of the creator of the transaction
+     * @param txn        the {@link ConsensusTransaction} to be handled
      * @param txnVersion the software version for the event containing the transaction
      */
     private void handlePlatformTransaction(
@@ -396,11 +382,12 @@ public class HandleWorkflow {
      * As a side effect on the workflow internal state, updates the {@link BlockStreamManager}'s last interval process
      * time to the latest time known to have been processed; and the {@link #lastExecutedSecond} value to the last
      * second of the interval for which all scheduled transactions were executed.
-     * @param state the state to execute scheduled transactions from
+     *
+     * @param state          the state to execute scheduled transactions from
      * @param executionStart the start of the interval to execute transactions in
-     * @param consensusNow the consensus time at which the user transaction triggering this execution was processed
-     * @param creatorInfo the node info of the user transaction creator
-     * @param type the type of the user transaction triggering this execution
+     * @param consensusNow   the consensus time at which the user transaction triggering this execution was processed
+     * @param creatorInfo    the node info of the user transaction creator
+     * @param type           the type of the user transaction triggering this execution
      */
     private void executeAsManyScheduled(
             @NonNull final State state,
@@ -481,9 +468,9 @@ public class HandleWorkflow {
      * Type inference helper to compute the base builder for a {@link UserTxn} derived from a
      * {@link ExecutableTxn}.
      *
-     * @param <T> the type of the stream builder
+     * @param <T>           the type of the stream builder
      * @param executableTxn the executable transaction to compute the base builder for
-     * @param userTxn the user transaction derived from the executable transaction
+     * @param userTxn       the user transaction derived from the executable transaction
      * @return the base builder for the user transaction
      */
     private <T extends StreamBuilder> T baseBuilderFor(
@@ -496,9 +483,10 @@ public class HandleWorkflow {
      * Purges all service state used for scheduling work that was expired by the last time the purge
      * was triggered; but is not expired at the current time. Returns true if the last purge time
      * should be set to the current time.
+     *
      * @param state the state to purge
-     * @param then the last time the purge was triggered
-     * @param now the current time
+     * @param then  the last time the purge was triggered
+     * @param now   the current time
      */
     private void purgeScheduling(@NonNull final State state, final Instant then, final Instant now) {
         if (!Instant.EPOCH.equals(then) && then.getEpochSecond() < now.getEpochSecond()) {
@@ -519,7 +507,8 @@ public class HandleWorkflow {
      * there is an internal error when executing the transaction, returns stream output of
      * just the transaction with a {@link ResponseCodeEnum#FAIL_INVALID} transaction result,
      * and no other side effects.
-     * @param userTxn the user transaction to execute
+     *
+     * @param userTxn    the user transaction to execute
      * @param txnVersion the software version for the event containing the transaction
      * @return the stream output from executing the transaction
      */
@@ -615,7 +604,8 @@ public class HandleWorkflow {
      * there is an internal error when executing the transaction, returns stream output of just the
      * scheduled transaction with a {@link ResponseCodeEnum#FAIL_INVALID} transaction result, and
      * no other side effects.
-     * @param state the state to execute the transaction against
+     *
+     * @param state        the state to execute the transaction against
      * @param consensusNow the time to execute the transaction at
      * @return the stream output from executing the transaction
      */
@@ -649,16 +639,19 @@ public class HandleWorkflow {
 
     /**
      * Manages time-based side effects for the given user transaction and dispatch.
-     * @param userTxn the user transaction to manage time for
+     *
+     * @param userTxn  the user transaction to manage time for
      * @param dispatch the dispatch to manage time for
      */
     private void advanceTimeFor(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
-        // WARNING: this relies on the BlockStreamManager's last-handled time not being updated yet to
-        // correctly detect stake period boundary, so the order of the following two lines is important
+        // WARNING: The two time-based checks below rely on the BlockStreamManager's last-handled time
+        // not being updated yet, so we must not call setLastHandleTime() until after them
         processStakePeriodChanges(userTxn, dispatch);
         if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
-            // Check if the tss encryption keys are present in the state and reached threshold
-            tssBaseService.manageTssStatus(userTxn.stack());
+            // Check the tss status and manage it if necessary
+            final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
+            tssBaseService.manageTssStatus(
+                    userTxn.stack(), isStakePeriodBoundary, userTxn.consensusNow(), storeMetricsService);
         }
         blockStreamManager.setLastHandleTime(userTxn.consensusNow());
         if (streamMode != BLOCKS) {
@@ -670,9 +663,10 @@ public class HandleWorkflow {
     /**
      * Commits an action with side effects while capturing its key/value state changes and writing them to the
      * block stream.
+     *
      * @param writableStates the writable states to commit the action to
-     * @param now the consensus timestamp of the action
-     * @param action the action to commit
+     * @param now            the consensus timestamp of the action
+     * @param action         the action to commit
      */
     private void doStreamingKVChanges(
             @NonNull final WritableStates writableStates, @NonNull final Instant now, @NonNull final Runnable action) {
@@ -794,12 +788,13 @@ public class HandleWorkflow {
 
     /**
      * Processes any side effects of crossing a stake period boundary.
-     * @param userTxn the user transaction that crossed the boundary
+     *
+     * @param userTxn  the user transaction that crossed the boundary
      * @param dispatch the dispatch for the user transaction that crossed the boundary
      */
-    private void processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+    private boolean processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-            stakePeriodChanges.process(
+            return stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),
@@ -812,6 +807,7 @@ public class HandleWorkflow {
             // get back to user transactions
             logger.error("Failed to process stake period changes", e);
         }
+        return false;
     }
 
     private static void logPreDispatch(@NonNull final UserTxn userTxn) {

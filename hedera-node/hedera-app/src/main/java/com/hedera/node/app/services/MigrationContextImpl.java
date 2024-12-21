@@ -37,7 +37,7 @@ import java.util.Map;
  *
  * @param previousStates        The previous states.
  * @param newStates             The new states, preloaded with any new state definitions.
- * @param configuration         The configuration to use
+ * @param appConfig         The configuration to use
  * @param genesisNetworkInfo    The genesis network info
  * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
  *                              migrations). Note that this is nullable only because it cannot exist
@@ -47,7 +47,8 @@ import java.util.Map;
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
-        @NonNull Configuration configuration,
+        @NonNull Configuration appConfig,
+        @NonNull Configuration platformConfig,
         @Nullable NetworkInfo genesisNetworkInfo,
         @Nullable WritableEntityIdStore writableEntityIdStore,
         @Nullable SemanticVersion previousVersion,
@@ -58,7 +59,8 @@ public record MigrationContextImpl(
     public MigrationContextImpl {
         requireNonNull(previousStates);
         requireNonNull(newStates);
-        requireNonNull(configuration);
+        requireNonNull(appConfig);
+        requireNonNull(platformConfig);
     }
 
     @Override

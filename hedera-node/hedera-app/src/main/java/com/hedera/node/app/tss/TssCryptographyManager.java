@@ -16,24 +16,21 @@
 
 package com.hedera.node.app.tss;
 
-import static com.hedera.node.app.tss.handlers.TssUtils.getThresholdForTssMessages;
 import static com.hedera.node.app.tss.handlers.TssUtils.getTssMessages;
-import static com.hedera.node.app.tss.handlers.TssUtils.validateTssMessages;
+import static com.hedera.node.app.tss.handlers.TssUtils.voteForValidMessages;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
-import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.api.TssLibrary;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Signature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.BitSet;
@@ -91,20 +88,16 @@ public class TssCryptographyManager {
      * given hash, based on incorporating all available {@link TssMessage}s, if
      * the threshold number of messages are available. The signature is with the node's RSA key used for gossip.
      *
-     * @param targetRosterHash the hash of the target roster
-     * @param directory the TSS participant directory
-     * @param context the handle context to use in setting up the computation
+     * @param directory        the TSS participant directory
+     * @param tssMessageBodies the list of TSS message bodies
+     * @param voteBody         the vote body
      * @return a future resolving to the signed vote if given message passes the threshold, or null otherwise
      */
     public CompletableFuture<Vote> getVoteFuture(
-            @NonNull final Bytes targetRosterHash,
             @NonNull final TssParticipantDirectory directory,
-            @NonNull final HandleContext context) {
-        final var tssStore = context.storeFactory().writableStore(WritableTssStore.class);
-        final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
-        final var voteKey = new TssVoteMapKey(
-                targetRosterHash, context.networkInfo().selfNodeInfo().nodeId());
-        if (tssStore.getVote(voteKey) == null) {
+            @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
+            @Nullable final TssVoteTransactionBody voteBody) {
+        if (voteBody == null) {
             return computeVote(tssMessageBodies, directory).exceptionally(e -> {
                 log.error("Error computing public keys and signing", e);
                 return null;
@@ -124,56 +117,27 @@ public class TssCryptographyManager {
     private CompletableFuture<Vote> computeVote(
             @NonNull final List<TssMessageTransactionBody> tssMessageBodies,
             @NonNull final TssParticipantDirectory tssParticipantDirectory) {
-        return CompletableFuture.supplyAsync(
-                () -> {
-                    final var tssMessages = validateTssMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
-                    if (!isThresholdMet(tssMessages, tssParticipantDirectory)) {
-                        return null;
-                    }
-                    final var aggregationStart = instantSource.instant();
-                    final var validTssMessages = getTssMessages(tssMessages, tssParticipantDirectory, tssLibrary);
-                    final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
-                    final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
-                    final var signature = gossip.sign(ledgerId.toBytes());
-                    final var thresholdMessages = asBitSet(tssMessages);
-                    final var aggregationEnd = instantSource.instant();
-                    tssMetrics.updateAggregationTime(
-                            Duration.between(aggregationStart, aggregationEnd).toMillis());
-                    return new Vote(ledgerId, signature, thresholdMessages);
-                },
-                libraryExecutor);
+        return CompletableFuture.supplyAsync(() -> getVote(tssMessageBodies, tssParticipantDirectory), libraryExecutor);
     }
 
-    /**
-     * Compute the TSS vote bit set. No need to validate the TSS messages here as they have already been validated.
-     *
-     * @param thresholdMessages the valid TSS messages
-     * @return the TSS vote bit set
-     */
-    private BitSet asBitSet(@NonNull final List<TssMessageTransactionBody> thresholdMessages) {
-        // TODO - fix this, nodes vote for TSS messages based on their position
-        //  in consensus order of messages received for a roster hash, NOT by
-        //  the message's share index
-        final var tssVoteBitSet = new BitSet();
-        for (TssMessageTransactionBody op : thresholdMessages) {
-            tssVoteBitSet.set((int) op.shareIndex());
+    @Nullable
+    public Vote getVote(
+            final @NonNull List<TssMessageTransactionBody> tssMessageBodies,
+            final @NonNull TssParticipantDirectory tssParticipantDirectory) {
+        final var result = voteForValidMessages(tssMessageBodies, tssParticipantDirectory, tssLibrary);
+        if (result.isEmpty()) {
+            return null;
         }
-        return tssVoteBitSet;
-    }
-
-    /**
-     * Check if the threshold consensus weight is met to submit a {@link TssVoteTransactionBody}.
-     * The threshold is met if more than half the consensus weight has been received.
-     *
-     * @param validTssMessages        the valid TSS messages
-     * @param tssParticipantDirectory the TSS participant directory
-     * @return true if the threshold is met, false otherwise
-     */
-    private boolean isThresholdMet(
-            @NonNull final List<TssMessageTransactionBody> validTssMessages,
-            @NonNull final TssParticipantDirectory tssParticipantDirectory) {
-        final var numShares = tssParticipantDirectory.getShareIds().size();
-        // If more than 1/2 the consensus weight has been received, then the threshold is met
-        return validTssMessages.size() >= getThresholdForTssMessages(numShares);
+        final var aggregationStart = instantSource.instant();
+        final var validTssMessages =
+                getTssMessages(result.get().validTssMessages(), tssParticipantDirectory, tssLibrary);
+        final var publicShares = tssLibrary.computePublicShares(tssParticipantDirectory, validTssMessages);
+        final var ledgerId = tssLibrary.aggregatePublicShares(publicShares);
+        final var signature = gossip.sign(ledgerId.toBytes());
+        final var vote = result.get().vote();
+        final var aggregationEnd = instantSource.instant();
+        tssMetrics.updateAggregationTime(
+                Duration.between(aggregationStart, aggregationEnd).toMillis());
+        return new Vote(ledgerId, signature, vote);
     }
 }

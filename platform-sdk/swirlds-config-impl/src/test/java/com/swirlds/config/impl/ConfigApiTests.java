@@ -446,7 +446,7 @@ class ConfigApiTests {
     void testNullList() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
-                .withSources(new SimpleConfigSource("sample.list", (String) null))
+                .withSources(new SimpleConfigSource("sample.list", (List<String>) null))
                 .build();
 
         // when

@@ -72,7 +72,7 @@ public class AddressBookHelper {
             if (node == null) {
                 final var newNode = Node.newBuilder()
                         .nodeId(nodeInfo.nodeId())
-                        .weight(nodeInfo.stake())
+                        .weight(nodeInfo.weight())
                         .accountId(nodeInfo.accountId())
                         .gossipCaCertificate(nodeInfo.sigCertBytes())
                         .gossipEndpoint(nodeInfo.gossipEndpoints())

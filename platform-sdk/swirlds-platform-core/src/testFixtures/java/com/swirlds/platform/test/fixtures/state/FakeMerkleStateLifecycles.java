@@ -35,11 +35,13 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -71,6 +73,8 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
 
     public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(AddressBookConfig.class)
+            .withConfigDataType(BasicConfig.class)
             .withConfigDataType(MerkleDbConfig.class)
             .withConfigDataType(VirtualMapConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
@@ -99,7 +103,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
                     VirtualNodeCache.class,
                     () -> new VirtualNodeCache(CONFIGURATION.getConfigData(VirtualMapConfig.class))));
             registerConstructablesForSchema(registry, new V0540PlatformStateSchema(), PlatformStateService.NAME);
-            registerConstructablesForSchema(registry, new V0540RosterSchema(), RosterStateId.NAME);
+            registerConstructablesForSchema(registry, new V0540RosterBaseSchema(), RosterStateId.NAME);
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
@@ -123,7 +127,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
-        final var schema = new V0540PlatformStateSchema();
+        final var schema = new V0540PlatformStateSchema(config -> new BasicSoftwareVersion(1));
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
@@ -153,7 +157,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
         if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
-        final var schema = new V0540RosterSchema();
+        final var schema = new V0540RosterBaseSchema();
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {

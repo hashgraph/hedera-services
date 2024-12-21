@@ -231,9 +231,11 @@ public class StakeInfoHelper {
         final var nodeStakes = new ArrayList<NodeStake>();
         postUpgradeNodeIds.stream().sorted().forEach(nodeId -> {
             final var stakingInfo = requireNonNull(infoStore.get(nodeId));
-            final var history = stakingInfo.rewardSumHistory();
-            final var rewardRate = stakingInfo.deleted() ? 0 : history.getFirst() - history.get(1);
-            nodeStakes.add(fromStakingInfo(rewardRate, stakingInfo));
+            if (!stakingInfo.deleted()) {
+                final var history = stakingInfo.rewardSumHistory();
+                final var rewardRate = history.getFirst() - history.get(1);
+                nodeStakes.add(fromStakingInfo(rewardRate, stakingInfo));
+            }
         });
         final var stakingConfig = config.getConfigData(StakingConfig.class);
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(

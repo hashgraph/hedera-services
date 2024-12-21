@@ -1047,9 +1047,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
     public synchronized void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
@@ -1653,9 +1651,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         event.forEachTransaction(this::preHandleTransaction);
     }
 }

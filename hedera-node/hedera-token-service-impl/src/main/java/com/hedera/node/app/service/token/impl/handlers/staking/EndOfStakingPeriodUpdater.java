@@ -90,7 +90,7 @@ public class EndOfStakingPeriodUpdater {
      * Updates all (relevant) staking-related values for all nodes, as well as any network reward information,
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
-     * @param context the context of the transaction used to end the staking period
+     * @param context       the context of the transaction used to end the staking period
      * @param exchangeRates the active exchange rate set
      * @param weightUpdates the callback to use to propagate weight changes
      */
@@ -209,9 +209,11 @@ public class EndOfStakingPeriodUpdater {
             // We rescale the weight range [0, sumOfConsensusWeights] back to [minStake, maxStake] before
             // externalizing the node stake metadata to stream consumers like mirror nodes
             final var rescaledWeight = rescaleWeight(newWeight, nodeInfo.minStake(), maxStake, totalStake, totalWeight);
-            nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
-                    nodeRewardRates.get(nodeId),
-                    nodeInfo.copyBuilder().stake(rescaledWeight).build()));
+            if (!nodeInfo.deleted()) {
+                nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
+                        nodeRewardRates.get(nodeId),
+                        nodeInfo.copyBuilder().stake(rescaledWeight).build()));
+            }
             // Persist the updated staking info
             stakingInfoStore.put(nodeId, newNodeInfo);
         });
@@ -253,10 +255,10 @@ public class EndOfStakingPeriodUpdater {
      * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes]
      * from the consensus weight range [0, sumOfConsensusWeights].
      *
-     * @param weight weight of the node
-     * @param newMinStake min stake of the node
-     * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
-     * @param totalStakeOfAllNodes total stake of all nodes at the start of new period
+     * @param weight                weight of the node
+     * @param newMinStake           min stake of the node
+     * @param newMaxStake           real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
+     * @param totalStakeOfAllNodes  total stake of all nodes at the start of new period
      * @param sumOfConsensusWeights sum of consensus weights of all nodes
      * @return scaled weight of the node
      */
@@ -308,8 +310,9 @@ public class EndOfStakingPeriodUpdater {
      * The result are normalized weights whose sum will be approximately the given total weight. That is, any node
      * with a non-zero amount of stake will have a weight of at least {@code 1}; any node with a stake of at least one
      * out of every 250 whole hbars staked will have weight at least {@code 2}; and so on.
-     * @param nodeStake the stake of a single node, both rewarded and non-rewarded
-     * @param totalStake the total stake of all nodes
+     *
+     * @param nodeStake   the stake of a single node, both rewarded and non-rewarded
+     * @param totalStake  the total stake of all nodes
      * @param totalWeight the desired approximate total weight of all nodes
      * @return the scaled consensus weight for the node
      */
@@ -356,7 +359,7 @@ public class EndOfStakingPeriodUpdater {
      * threshold, from 0 for empty, up to 1 at the threshold.
      *
      * @param unreservedBalance the balance in {@code 0.0.800} minus the pending rewards
-     * @param thresholdBalance the threshold balance setting
+     * @param thresholdBalance  the threshold balance setting
      * @return the ratio of the balance to the threshold, from 0 for empty, up to 1 at the threshold
      */
     private BigDecimal ratioOf(final long unreservedBalance, final long thresholdBalance) {
@@ -371,9 +374,9 @@ public class EndOfStakingPeriodUpdater {
      * start of the period that is now ending, and the maximum amount of tinybars to pay as staking rewards in the
      * period, returns the effective per-hbar reward rate for the period.
      *
-     * @param balanceRatio the ratio of the {@code 0.0.800} balance to the threshold
-     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
-     * @param maxRewardRate the maximum amount of tinybars to pay per hbar reward
+     * @param balanceRatio     the ratio of the {@code 0.0.800} balance to the threshold
+     * @param stakedToReward   the amount of hbars staked to reward at the start of the ending period
+     * @param maxRewardRate    the maximum amount of tinybars to pay per hbar reward
      * @param maxStakeRewarded the maximum amount of stake that can be rewarded
      * @return the effective per-hbar reward rate for the period
      */

@@ -686,7 +686,8 @@ class DataFileCollectionTest {
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "expected 1 db files but had ["
-                        + Arrays.toString(Files.list(dbDir).toArray()) + "]");
+                        + Arrays.toString(Files.list(dbDir).toArray())
+                        + "]");
         checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // close db
         fileCollection2.close();
