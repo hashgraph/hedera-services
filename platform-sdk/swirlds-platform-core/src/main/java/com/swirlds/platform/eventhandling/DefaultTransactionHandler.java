@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -282,7 +282,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         swirldStateManager.sealConsensusRound(consensusRound);
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        final MerkleRoot immutableStateCons = swirldStateManager.getStateForSigning();
+        final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(
