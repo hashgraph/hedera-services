@@ -42,6 +42,7 @@ defaults:
     shell: bash
 
 permissions:
+  id-token: write
   contents: read
   actions: read
 
