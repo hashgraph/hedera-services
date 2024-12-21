@@ -153,8 +153,17 @@ jobs:
           ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Trigger ZXF Prepare Extended Test Suite
+      - name: Check Prep XTS Job State
+        id: check-xts-job
         if: ${{ needs.release-branch.result == 'success' }}
+        run: |
+          JOB_ENABLED="true"
+          JOB_STATE=$(gh workflow list --all --json name,state | jq -r '.[]|select(.name=="ZXF: Prepare Extended Test Suite")|.state')
+          [[ "${JOB_STATE}" == "disabled_manually" ]] && JOB_ENABLED="false"
+          echo "enabled=${JOB_ENABLED}" >> $GITHUB_OUTPUT
+
+      - name: Trigger ZXF Prepare Extended Test Suite
+        if: ${{ needs.release-branch.result == 'success' && steps.check-xts-job.outputs.enabled == 'true' }}
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
         with:
           workflow: .github/workflows/zxf-prepare-extended-test-suite.yaml
@@ -163,8 +172,19 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-      - name: Trigger ZXF Deploy Integration
+      - name: Check Integration Job State
+        id: check-integration-job
         if: ${{ needs.release-branch.result == 'success' &&
+            (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
+            !cancelled() }}
+        run: |
+          JOB_ENABLED="true"
+          JOB_STATE=$(gh workflow list --all --json name,state | jq -r '.[]|select(.name=="ZXF: [Node] Deploy Integration Network Release")|.state')
+          [[ "${JOB_STATE}" == "disabled_manually" ]] && JOB_ENABLED="false"
+          echo "enabled=${JOB_ENABLED}" >> $GITHUB_OUTPUT
+
+      - name: Trigger ZXF Deploy Integration
+        if: ${{ needs.release-branch.result == 'success' && steps.check-integration-job.outputs.enabled == 'true' &&
           (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
           !cancelled() }}
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
