@@ -52,7 +52,7 @@ public class TokenClaimAirdropDecoder {
     }
 
     public TransactionBody decodeTokenClaimAirdrop(@NonNull final HtsCallAttempt attempt) {
-        final var call = TokenClaimAirdropTranslator.CLAIM_AIRDROP.decodeCall(attempt.inputBytes());
+        final var call = TokenClaimAirdropTranslator.CLAIM_AIRDROPS.decodeCall(attempt.inputBytes());
         final var maxPendingAirdropsToClaim =
                 attempt.configuration().getConfigData(TokensConfig.class).maxAllowedPendingAirdropsToClaim();
         final var transferList = (Tuple[]) call.get(TRANSFER_LIST);

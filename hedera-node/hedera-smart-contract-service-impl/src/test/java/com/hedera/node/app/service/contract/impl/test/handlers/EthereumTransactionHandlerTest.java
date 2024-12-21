@@ -50,6 +50,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -165,12 +166,15 @@ class EthereumTransactionHandlerTest {
     @Mock
     private ContractsConfig contractsConfig;
 
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
+
     private final Metrics metrics = new NoOpMetrics();
-    private final ContractMetrics contractMetrics = new ContractMetrics(() -> metrics, () -> contractsConfig);
+    private final ContractMetrics contractMetrics =
+            new ContractMetrics(() -> metrics, () -> contractsConfig, systemContractMethodRegistry);
 
     @BeforeEach
     void setUp() {
-        contractMetrics.createContractMetrics();
+        contractMetrics.createContractPrimaryMetrics();
         given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
         subject = new EthereumTransactionHandler(
                 ethereumSignatures, callDataHydration, () -> factory, gasCalculator, contractServiceComponent);

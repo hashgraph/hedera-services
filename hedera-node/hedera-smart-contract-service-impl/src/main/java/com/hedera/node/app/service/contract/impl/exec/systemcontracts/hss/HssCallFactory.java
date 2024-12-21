@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -45,6 +46,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
     private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
     private final List<CallTranslator<HssCallAttempt>> callTranslators;
+    private final SystemContractMethodRegistry systemContractMethodRegistry;
 
     @Inject
     public HssCallFactory(
@@ -52,11 +54,13 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull @Named("HssTranslators") final List<CallTranslator<HssCallAttempt>> callTranslators) {
+            @NonNull @Named("HssTranslators") final List<CallTranslator<HssCallAttempt>> callTranslators,
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.callTranslators = requireNonNull(callTranslators);
+        this.systemContractMethodRegistry = requireNonNull(systemContractMethodRegistry);
     }
 
     /**
@@ -85,6 +89,7 @@ public class HssCallFactory implements CallFactory<HssCallAttempt> {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
+                systemContractMethodRegistry,
                 frame.isStatic());
     }
 }

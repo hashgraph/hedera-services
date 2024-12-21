@@ -52,7 +52,7 @@ public class TokenCancelAirdropDecoder {
     }
 
     public TransactionBody decodeCancelAirdrop(@NonNull final HtsCallAttempt attempt) {
-        final var call = TokenCancelAirdropTranslator.CANCEL_AIRDROP.decodeCall(attempt.inputBytes());
+        final var call = TokenCancelAirdropTranslator.CANCEL_AIRDROPS.decodeCall(attempt.inputBytes());
         final var maxPendingAirdropsToCancel =
                 attempt.configuration().getConfigData(TokensConfig.class).maxAllowedPendingAirdropsToCancel();
         final var transferList = (Tuple[]) call.get(TRANSFER_LIST);
