@@ -37,7 +37,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
@@ -85,7 +85,7 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
+            @NonNull final Supplier<PlatformMerkleStateRoot> genesisStateBuilder,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -172,7 +172,7 @@ public final class StartupStateUtils {
         requireNonNull(configuration);
         requireNonNull(initialSignedState);
 
-        final MerkleRoot stateCopy = initialSignedState.getState().copy();
+        final PlatformMerkleStateRoot stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
@@ -266,7 +266,7 @@ public final class StartupStateUtils {
             }
         }
 
-        final MerkleRoot state =
+        final PlatformMerkleStateRoot state =
                 deserializedSignedState.reservedSignedState().get().getState();
 
         final Hash oldHash = deserializedSignedState.originalHash();
@@ -326,15 +326,10 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final MerkleRoot stateRoot) {
+            @NonNull final PlatformMerkleStateRoot stateRoot) {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            initGenesisState(
-                    configuration,
-                    (State) stateRoot.getSwirldState(),
-                    stateRoot.getWritablePlatformState(),
-                    addressBook,
-                    appVersion);
+            initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
         }
 
         final SignedState signedState = new SignedState(

@@ -39,7 +39,7 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
@@ -182,7 +182,7 @@ final class ReconnectTest {
     }
 
     private ReconnectLearner buildReceiver(
-            final MerkleRoot state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
+            final PlatformMerkleStateRoot state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
         final Roster roster =
                 RandomRosterBuilder.create(getRandomPrintSeed()).withSize(5).build();
 
