@@ -124,7 +124,7 @@ class EnhancedKeyStoreLoaderTest {
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        Set<NodeId> nodesToStart = addressBook.getNodeIdSet();
+        final Set<NodeId> nodesToStart = addressBook.getNodeIdSet();
 
         final EnhancedKeyStoreLoader loader =
                 EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), nodesToStart);

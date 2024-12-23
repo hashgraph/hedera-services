@@ -34,7 +34,6 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.config.extensions.sources.YamlConfigSource;
-import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;

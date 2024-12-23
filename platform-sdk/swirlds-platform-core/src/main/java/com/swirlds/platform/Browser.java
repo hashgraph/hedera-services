@@ -54,7 +54,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
