@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.re
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
@@ -76,6 +78,21 @@ public class TokenCancelAirdropTest extends TokenAirdropBase {
                 "entities.unlimitedAutoAssociationsEnabled",
                 "true"));
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
+    }
+
+    @HapiTest
+    @DisplayName("fails gracefully with null parameters")
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        final var account = "account";
+        return hapiTest(
+                cryptoCreate(account),
+                tokenAssociate(account, FUNGIBLE_TOKEN),
+                cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(OWNER, account)),
+                tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                        .payingWith(account),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenCancelAirdrop(
+                                pendingAirdrop(account, RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
+                        .payingWith(account)));
     }
 
     @HapiTest

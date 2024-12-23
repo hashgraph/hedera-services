@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -78,7 +78,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var op = txn.tokenCancelAirdropOrThrow();
         final var allPendingAirdrops = op.pendingAirdrops();
         for (final var airdrop : allPendingAirdrops) {
-            context.requireAliasedKeyOrThrow(airdrop.senderIdOrThrow(), INVALID_ACCOUNT_ID);
+            context.requireAliasedKeyOrThrow(airdrop.senderIdOrThrow(), INVALID_PENDING_AIRDROP_ID);
         }
     }
 
@@ -93,8 +93,8 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             if (!uniquePendingAirdrops.add(airdrop)) {
                 throw new PreCheckException(PENDING_AIRDROP_ID_REPEATED);
             }
-            validateAccountID(airdrop.receiverId(), null);
-            validateAccountID(airdrop.senderId(), null);
+            validateAccountID(airdrop.receiverId(), INVALID_PENDING_AIRDROP_ID);
+            validateAccountID(airdrop.senderId(), INVALID_PENDING_AIRDROP_ID);
 
             if (airdrop.hasFungibleTokenType()) {
                 final var tokenID = airdrop.fungibleTokenType();
