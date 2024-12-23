@@ -37,8 +37,8 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
 import com.swirlds.platform.gossip.config.GossipConfig;
-import com.swirlds.platform.gossip.config.InterfaceBindingConverter;
 import com.swirlds.platform.gossip.config.NetworkEndpoint;
+import com.swirlds.platform.gossip.config.NetworkEndpointConverter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
@@ -105,7 +105,7 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
     public Set<ConverterPair<?>> getConverters() {
         return Set.of(
                 new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse),
-                new ConverterPair<>(NetworkEndpoint.class, new InterfaceBindingConverter()),
+                new ConverterPair<>(NetworkEndpoint.class, new NetworkEndpointConverter()),
                 new ConverterPair<>(NodeId.class, new NodeIdConverter()));
     }
 }
