@@ -191,11 +191,10 @@ public class Browser {
 
         // Determine which nodes to run locally
         final AddressBook appAddressBook = appDefinition.getConfigAddressBook();
-        final List<NodeId> envNodesToRun = bootstrapConfiguration.getConfigData(BasicConfig.class).nodesToRun().stream()
-                .map(NodeId::of)
-                .toList();
+        final List<NodeId> configNodesToRun =
+                bootstrapConfiguration.getConfigData(BasicConfig.class).nodesToRun();
         final Set<NodeId> cliNodesToRun = commandLineArgs.localNodesToStart();
-        final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, envNodesToRun);
+        final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, configNodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);

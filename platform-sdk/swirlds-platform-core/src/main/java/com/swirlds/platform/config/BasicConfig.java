@@ -18,6 +18,7 @@ package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
@@ -59,7 +60,7 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
         @ConfigProperty(defaultValue = "0") long genesisFreezeTime,
-        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<Long> nodesToRun) {
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NodeId> nodesToRun) {
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

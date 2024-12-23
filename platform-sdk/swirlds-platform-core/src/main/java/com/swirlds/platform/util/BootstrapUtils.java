@@ -40,7 +40,6 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
-import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.gui.WindowConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.health.OSHealthChecker;
@@ -321,7 +320,7 @@ public final class BootstrapUtils {
      *
      * @param addressBook   the address book
      * @param cliNodesToRun nodes specified to start by the user on the command line
-     * @param envNodesToRun nodes specified to start by the user in the environment
+     * @param configNodesToRun nodes specified to start by the user in configuration
      * @return A non-empty list of nodes to run locally
      * @throws IllegalArgumentException if a node to run is not in the address book or the list of nodes to run is
      *                                  empty
@@ -329,21 +328,21 @@ public final class BootstrapUtils {
     public static @NonNull List<NodeId> getNodesToRun(
             @NonNull final AddressBook addressBook,
             @NonNull final Set<NodeId> cliNodesToRun,
-            @NonNull final List<NodeId> envNodesToRun) {
+            @NonNull final List<NodeId> configNodesToRun) {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(cliNodesToRun);
-        Objects.requireNonNull(envNodesToRun);
+        Objects.requireNonNull(configNodesToRun);
 
         final List<NodeId> nodesToRun = new ArrayList<>();
         final Set<NodeId> addressBookNodeIds = addressBook.getNodeIdSet();
 
         if (cliNodesToRun.isEmpty()) {
-            if (envNodesToRun.isEmpty()) {
-                // if no node ids are provided by cli or env, run all nodes from the address book.
+            if (configNodesToRun.isEmpty()) {
+                // if no node ids are provided by cli or config, run all nodes from the address book.
                 return new ArrayList<>(addressBookNodeIds);
             } else {
-                // CLI did not provide any nodes to run, so use the node ids from the environment
-                nodesToRun.addAll(envNodesToRun);
+                // CLI did not provide any nodes to run, so use the node ids from the config
+                nodesToRun.addAll(configNodesToRun);
             }
         } else {
             // CLI provided nodes override environment provided nodes to run
@@ -353,9 +352,10 @@ public final class BootstrapUtils {
         for (final NodeId nodeId : nodesToRun) {
             if (!addressBook.contains(nodeId)) {
                 // all nodes to start must exist in the address book
-                exitSystem(NODE_ADDRESS_MISMATCH);
-                throw new ConfigurationException(
-                        "Node " + nodeId + " is not in the address book and cannot be started.");
+                logger.error(
+                        EXCEPTION.getMarker(), "Node {} is not in the address book and cannot be started.", nodeId);
+                exitSystem(
+                        NODE_ADDRESS_MISMATCH, "Node " + nodeId + " is not in the address book and cannot be started.");
             }
         }
 

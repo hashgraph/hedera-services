@@ -25,6 +25,8 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.platform.NodeIdConverter;
 import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
@@ -97,6 +99,8 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
     @NonNull
     @Override
     public Set<ConverterPair<?>> getConverters() {
-        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
+        return Set.of(
+                new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse),
+                new ConverterPair<>(NodeId.class, new NodeIdConverter()));
     }
 }

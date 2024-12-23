@@ -230,10 +230,9 @@ public class ServicesMain implements SwirldMain {
         }
         final var platformConfig = buildPlatformConfig();
         final var cliNodesToRun = commandLineArgs.localNodesToStart();
-        final var envNodesToRun = platformConfig.getConfigData(BasicConfig.class).nodesToRun().stream()
-                .map(NodeId::of)
-                .toList();
-        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, cliNodesToRun, envNodesToRun);
+        final var configNodesToRun =
+                platformConfig.getConfigData(BasicConfig.class).nodesToRun();
+        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, cliNodesToRun, configNodesToRun);
         final var selfId = ensureSingleNode(nodesToRun);
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
         final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, Set.copyOf(nodesToRun));
@@ -387,8 +386,7 @@ public class ServicesMain implements SwirldMain {
     public static Configuration buildPlatformConfig() {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance())
-                .withConfigDataType(BasicConfig.class);
+                .withSource(SystemPropertiesConfigSource.getInstance());
 
         rethrowIO(() ->
                 BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
@@ -409,16 +407,15 @@ public class ServicesMain implements SwirldMain {
 
         logger.info(STARTUP.getMarker(), "there are {} nodes set to run locally", nodesToRun.size());
         if (nodesToRun.isEmpty()) {
-            logger.error(STARTUP.getMarker(), "No node has been configured to run.");
-            throw new ConfigurationException("No nodes have been configured to run.");
+            final String errorMessage = "No nodes are configured to run locally.";
+            logger.error(STARTUP.getMarker(), errorMessage);
+            throw new ConfigurationException(errorMessage);
         }
 
         if (nodesToRun.size() > 1) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Multiple nodes are configured to run. Exactly one node must be started per java process.");
-            throw new ConfigurationException(
-                    "Multiple nodes have been configured to run. Exactly one node must be started per java process.");
+            final String errorMessage = "Multiple nodes are configured to run locally.";
+            logger.error(EXCEPTION.getMarker(), errorMessage);
+            throw new ConfigurationException(errorMessage);
         }
         return nodesToRun.getFirst();
     }
