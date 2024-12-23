@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.util.Objects;
 
-public class InterfaceBindingConverter implements ConfigConverter<NetworkEndpoint> {
+public class NetworkEndpointConverter implements ConfigConverter<NetworkEndpoint> {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Nullable

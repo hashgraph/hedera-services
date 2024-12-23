@@ -34,8 +34,8 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.system.address.AddressBookUtils.initializeAddressBook;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.loadSwirldMains;
 import static com.swirlds.platform.util.BootstrapUtils.setupBrowserWindow;
@@ -54,9 +54,11 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -72,7 +74,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -85,6 +86,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -177,20 +179,23 @@ public class Browser {
     private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs, final boolean pcesRecovery)
             throws Exception {
         Objects.requireNonNull(commandLineArgs);
+        final ConfigurationBuilder bootstrapConfigBuilder =
+                ConfigurationBuilder.create().withSource(SystemEnvironmentConfigSource.getInstance());
+        BootstrapUtils.setupConfigBuilder(bootstrapConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
+        final Configuration bootstrapConfiguration = bootstrapConfigBuilder.build();
 
-        final PathsConfig defaultPathsConfig = ConfigurationBuilder.create()
-                .withConfigDataType(PathsConfig.class)
-                .build()
-                .getConfigData(PathsConfig.class);
+        final PathsConfig defaultPathsConfig = bootstrapConfiguration.getConfigData(PathsConfig.class);
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.loadDefault(defaultPathsConfig, getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
 
         // Determine which nodes to run locally
-        final List<NodeId> nodesToRun =
-                getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
-        checkNodesToRun(nodesToRun);
+        final AddressBook appAddressBook = appDefinition.getConfigAddressBook();
+        final List<NodeId> configNodesToRun =
+                bootstrapConfiguration.getConfigData(BasicConfig.class).nodesToRun();
+        final Set<NodeId> cliNodesToRun = commandLineArgs.localNodesToStart();
+        final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, configNodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
@@ -208,19 +213,8 @@ public class Browser {
             final InfoSwirld infoSwirld = new InfoSwirld(infoApp, new byte[CryptoConstants.HASH_SIZE_BYTES]);
             new InfoMember(infoSwirld, "Node" + nodesToRun.getFirst().id());
 
-            // Duplicating config here is ugly, but Browser is test only code now.
-            // In the future we should clean it up, but it's not urgent to do so.
-            final ConfigurationBuilder guiConfigBuilder = ConfigurationBuilder.create();
-            BootstrapUtils.setupConfigBuilder(guiConfigBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME));
-            final Configuration guiConfig = guiConfigBuilder.build();
-
-            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create();
-            rethrowIO(() ->
-                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
-            final Configuration configuration = configBuilder.build();
-
-            initNodeSecurity(appDefinition.getConfigAddressBook(), configuration);
-            guiEventStorage = new GuiEventStorage(guiConfig, appDefinition.getConfigAddressBook());
+            initNodeSecurity(appDefinition.getConfigAddressBook(), bootstrapConfiguration, Set.copyOf(nodesToRun));
+            guiEventStorage = new GuiEventStorage(bootstrapConfiguration, appDefinition.getConfigAddressBook());
 
             guiSource = new StandardGuiSource(appDefinition.getConfigAddressBook(), guiEventStorage);
         } else {
@@ -257,7 +251,8 @@ public class Browser {
                     nodeId);
             final var cryptography = CryptographyFactory.create();
             CryptographyHolder.set(cryptography);
-            final KeysAndCerts keysAndCerts = initNodeSecurity(appDefinition.getConfigAddressBook(), configuration)
+            final KeysAndCerts keysAndCerts = initNodeSecurity(
+                            appDefinition.getConfigAddressBook(), configuration, Set.copyOf(nodesToRun))
                     .get(nodeId);
 
             // the AddressBook is not changed after this point, so we calculate the hash now
@@ -336,7 +331,7 @@ public class Browser {
             // PCES recovery is only expected to be done on a single node
             // due to the structure of Browser atm, it makes more sense to enable the feature for multiple platforms
             platforms.values().forEach(SwirldsPlatform::performPcesRecovery);
-            SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
+            exitSystem(SystemExitCode.NO_ERROR, "PCES recovery done");
         }
 
         startPlatforms(new ArrayList<>(platforms.values()), appMains);
