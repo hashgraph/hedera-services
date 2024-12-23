@@ -118,9 +118,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     protected abstract Iterator<K> iterateFromDataSource();
 
     /**
-     * Records the given key and associated value were read. {@link WritableKVStateBase} will call
-     * this method in some cases when a key is read as part of a modification (for example, with
-     * {@link WritableKVStateBase#getForModify}).
+     * Records the given key and associated value were read.
      *
      * @param key The key
      * @param value The value

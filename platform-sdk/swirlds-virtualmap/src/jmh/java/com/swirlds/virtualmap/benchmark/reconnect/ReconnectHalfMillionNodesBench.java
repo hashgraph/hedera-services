@@ -16,9 +16,10 @@
 
 package com.swirlds.virtualmap.benchmark.reconnect;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,8 +36,8 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Thread)
 public class ReconnectHalfMillionNodesBench extends VirtualMapReconnectBenchBase {
 
-    private static final Map<TestKey, TestValue> testTeacherMap = new HashMap<>();
-    private static final Map<TestKey, TestValue> testLearnerMap = new HashMap<>();
+    private static final Map<Bytes, TestValue> testTeacherMap = new HashMap<>();
+    private static final Map<Bytes, TestValue> testLearnerMap = new HashMap<>();
 
     static {
         try {
@@ -56,8 +57,8 @@ public class ReconnectHalfMillionNodesBench extends VirtualMapReconnectBenchBase
     public void setupEach() {
         super.setupEach();
 
-        testTeacherMap.entrySet().forEach(e -> teacherMap.put(e.getKey(), e.getValue()));
-        testLearnerMap.entrySet().forEach(e -> learnerMap.put(e.getKey(), e.getValue()));
+        testTeacherMap.entrySet().forEach(e -> teacherMap.put(e.getKey(), e.getValue(), TestValueCodec.INSTANCE));
+        testLearnerMap.entrySet().forEach(e -> learnerMap.put(e.getKey(), e.getValue(), TestValueCodec.INSTANCE));
     }
 
     @Benchmark

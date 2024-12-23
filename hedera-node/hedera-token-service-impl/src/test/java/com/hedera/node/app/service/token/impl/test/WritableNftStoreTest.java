@@ -94,11 +94,11 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
         writableNftStore.put(nft);
 
-        final var readToken = writableNftStore.getForModify(id);
+        final var readToken = writableNftStore.get(id);
         assertThat(readToken).isNotNull();
         assertEquals(nft, readToken);
 
-        final var readToken2 = writableNftStore.getForModify(fungibleTokenId, 1);
+        final var readToken2 = writableNftStore.get(fungibleTokenId, 1);
         assertThat(readToken2).isNotNull();
         assertEquals(nft, readToken2);
     }

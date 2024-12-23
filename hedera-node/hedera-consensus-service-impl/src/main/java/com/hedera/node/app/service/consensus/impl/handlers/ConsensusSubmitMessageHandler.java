@@ -121,7 +121,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var op = txn.consensusSubmitMessageOrThrow();
 
         final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
-        final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
+        final var topic = topicStore.get(op.topicIDOrElse(TopicID.DEFAULT));
         // preHandle already checks for topic existence, so topic should never be null.
 
         /* Validate all needed fields in the transaction */

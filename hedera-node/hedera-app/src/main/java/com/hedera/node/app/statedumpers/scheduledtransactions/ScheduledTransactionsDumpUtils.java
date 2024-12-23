@@ -31,9 +31,9 @@ import com.hedera.node.app.statedumpers.legacy.RichInstant;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,9 +55,9 @@ public class ScheduledTransactionsDumpUtils {
 
     public static void dumpModScheduledTransactions(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactions,
-            @NonNull final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> byEquality,
-            @NonNull final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> byExpiry) {
+            @NonNull final VirtualMap scheduledTransactions,
+            @NonNull final VirtualMap byEquality,
+            @NonNull final VirtualMap byExpiry) {
         try (@NonNull final var writer = new Writer(path)) {
             System.out.printf("=== Dumping schedule transactions %n ======");
 
@@ -84,8 +84,7 @@ public class ScheduledTransactionsDumpUtils {
         }
     }
 
-    private static List<BBMScheduledEqualityValue> gatherModScheduledTransactionsByEquality(
-            final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> source) {
+    private static List<BBMScheduledEqualityValue> gatherModScheduledTransactionsByEquality(final VirtualMap source) {
         final List<BBMScheduledEqualityValue> r = new ArrayList<>();
         final var scheduledTransactions = new ConcurrentLinkedQueue<BBMScheduledEqualityValue>();
 
@@ -93,8 +92,7 @@ public class ScheduledTransactionsDumpUtils {
             VirtualMapMigration.extractVirtualMapDataC(
                     getStaticThreadManager(),
                     source,
-                    p -> scheduledTransactions.add(
-                            fromMod(p.key().getKey(), p.value().getValue())),
+                    p -> scheduledTransactions.add(fromModProtoBytes(p.key(), p.value())),
                     1);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of scheduledTransactions by equality virtual map interrupted!");
@@ -109,7 +107,7 @@ public class ScheduledTransactionsDumpUtils {
     }
 
     private static Map<BBMScheduledId, BBMScheduledSecondValue> gatherModScheduledTransactionsByExpiry(
-            final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> source) {
+            final VirtualMap source) {
         final var r = new HashMap<BBMScheduledId, BBMScheduledSecondValue>();
         final var scheduledTransactions = new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledSecondValue>>();
 
@@ -117,9 +115,15 @@ public class ScheduledTransactionsDumpUtils {
             VirtualMapMigration.extractVirtualMapDataC(
                     getStaticThreadManager(),
                     source,
-                    p -> scheduledTransactions.add(Pair.of(
-                            new BBMScheduledId(p.key().getKey().value()),
-                            fromMod(p.key().getKey(), p.value().getValue()))),
+                    p -> {
+                        try {
+                            final ProtoLong id = ProtoLong.PROTOBUF.parse(p.key());
+                            scheduledTransactions.add(
+                                    Pair.of(new BBMScheduledId(id.value()), fromModProtoLong(p.key(), p.value())));
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse a long", e);
+                        }
+                    },
                     8);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
@@ -133,8 +137,7 @@ public class ScheduledTransactionsDumpUtils {
     }
 
     @NonNull
-    private static Map<BBMScheduledId, BBMScheduledTransaction> gatherModScheduledTransactionsById(
-            VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> source) {
+    private static Map<BBMScheduledId, BBMScheduledTransaction> gatherModScheduledTransactionsById(VirtualMap source) {
         final var r = new HashMap<BBMScheduledId, BBMScheduledTransaction>();
         final var scheduledTransactions = new ConcurrentLinkedQueue<Pair<BBMScheduledId, BBMScheduledTransaction>>();
 
@@ -142,8 +145,7 @@ public class ScheduledTransactionsDumpUtils {
             VirtualMapMigration.extractVirtualMapDataC(
                     getStaticThreadManager(),
                     source,
-                    p -> scheduledTransactions.add(
-                            Pair.of(fromMod(p.key().getKey()), fromMod(p.value().getValue()))),
+                    p -> scheduledTransactions.add(Pair.of(fromModScheduleId(p.key()), fromModSchedule(p.value()))),
                     8);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of scheduledTransactions virtual map interrupted!");
@@ -156,7 +158,19 @@ public class ScheduledTransactionsDumpUtils {
         return r;
     }
 
-    static BBMScheduledSecondValue fromMod(final ProtoLong expiry, @NonNull final ScheduleList value) {
+    static BBMScheduledSecondValue fromModProtoLong(final Bytes expiryBytes, @NonNull final Bytes valueBytes) {
+        final ProtoLong expiry;
+        try {
+            expiry = ProtoLong.PROTOBUF.parse(expiryBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a long", e);
+        }
+        final ScheduleList value;
+        try {
+            value = ScheduleList.PROTOBUF.parse(valueBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a schedule list", e);
+        }
         final var newMap = new TreeMap<Instant, List<Long>>();
         final var longsList = value.schedules().stream()
                 .map(a -> a.scheduleId().scheduleNum())
@@ -165,7 +179,19 @@ public class ScheduledTransactionsDumpUtils {
         return new BBMScheduledSecondValue(newMap);
     }
 
-    static BBMScheduledEqualityValue fromMod(final ProtoBytes hash, @NonNull final ScheduleList value) {
+    static BBMScheduledEqualityValue fromModProtoBytes(final Bytes hashBytes, @NonNull final Bytes valueBytes) {
+        final ProtoBytes hash;
+        try {
+            hash = ProtoBytes.PROTOBUF.parse(hashBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a hash", e);
+        }
+        final ScheduleList value;
+        try {
+            value = ScheduleList.PROTOBUF.parse(valueBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a schedule list", e);
+        }
         final var newMap = new TreeMap<String, Long>();
         final var longsList = value.schedules().stream()
                 .map(a -> a.scheduleId().scheduleNum())
@@ -174,7 +200,13 @@ public class ScheduledTransactionsDumpUtils {
         return new BBMScheduledEqualityValue(newMap);
     }
 
-    static BBMScheduledTransaction fromMod(@NonNull final Schedule value) {
+    static BBMScheduledTransaction fromModSchedule(@NonNull final Bytes scheduleBytes) {
+        final Schedule value;
+        try {
+            value = Schedule.PROTOBUF.parse(scheduleBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a schedule", e);
+        }
         Optional<JKey> adminKey;
         try {
             adminKey = value.adminKey() != null ? Optional.of(JKey.mapKey(value.adminKey())) : Optional.empty();
@@ -207,7 +239,13 @@ public class ScheduledTransactionsDumpUtils {
                 value.signatories().stream().map(k -> toPrimitiveKey(k)).toList());
     }
 
-    static BBMScheduledId fromMod(@NonNull final ScheduleID scheduleID) {
+    static BBMScheduledId fromModScheduleId(@NonNull final Bytes scheduleIdBytes) {
+        final ScheduleID scheduleID;
+        try {
+            scheduleID = ScheduleID.PROTOBUF.parse(scheduleIdBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a schedule ID", e);
+        }
         return new BBMScheduledId(scheduleID.scheduleNum());
     }
 
