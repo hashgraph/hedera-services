@@ -1,4 +1,0 @@
-#! /command/with-contenv bash
-
-s6-svc -O /run/service/hedera
-/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh
