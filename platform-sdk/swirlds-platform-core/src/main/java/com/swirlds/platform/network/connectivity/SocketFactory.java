@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.network.connectivity;
 
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.gossip.config.GossipConfig;
+import com.swirlds.platform.gossip.config.NetworkEndpoint;
 import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.SocketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,6 +27,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,21 +52,40 @@ public interface SocketFactory {
      * 		the socket to configure and bind
      * @param socketConfig
      * 		the configuration for the socket
+     * @param gossipConfig
+     *    the gossip configuration
      * @param port
      * 		the TCP port to bind
      * @throws IOException
      * 		if the bind is unsuccessful
      */
     static void configureAndBind(
-            @NonNull final ServerSocket serverSocket, @NonNull final SocketConfig socketConfig, final int port)
+            @NonNull final NodeId selfId,
+            @NonNull final ServerSocket serverSocket,
+            @NonNull final SocketConfig socketConfig,
+            @NonNull final GossipConfig gossipConfig,
+            final int port)
             throws IOException {
+        Objects.requireNonNull(selfId);
         Objects.requireNonNull(serverSocket);
         Objects.requireNonNull(socketConfig);
+        Objects.requireNonNull(gossipConfig);
+
+        final NetworkEndpoint networkEndpoint = gossipConfig
+                .getNetworkEndpoint(selfId.id())
+                .orElseGet(() -> {
+                    try {
+                        return new NetworkEndpoint(selfId.id(), InetAddress.getByAddress(ALL_INTERFACES), port);
+                    } catch (UnknownHostException e) {
+                        throw new RuntimeException("Host 'ALL_INTERFACES' not found", e);
+                    }
+                });
+
         if (isIpTopInRange(socketConfig.ipTos())) {
             // set the IP_TOS option
             serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
-        final InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(ALL_INTERFACES), port);
+        final InetSocketAddress endpoint = new InetSocketAddress(networkEndpoint.hostname(), networkEndpoint.port());
         serverSocket.setReuseAddress(true);
         serverSocket.bind(endpoint); // try to grab a port on this computer
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
