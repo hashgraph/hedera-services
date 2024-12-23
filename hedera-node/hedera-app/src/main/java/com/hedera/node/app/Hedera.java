@@ -70,6 +70,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
@@ -357,6 +358,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     public interface TssBaseServiceFactory {
         @NonNull
         TssBaseService apply(@NonNull AppContext appContext);
+    }
+
+    @FunctionalInterface
+    public interface HintsServiceFactory {
+        @NonNull
+        HintsService apply(@NonNull AppContext appContext);
     }
 
     @FunctionalInterface

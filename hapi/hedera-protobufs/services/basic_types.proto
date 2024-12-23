@@ -1668,6 +1668,21 @@ enum HederaFunctionality {
      * Submit a signature of a state root hash gossiped to other nodes
      */
     StateSignatureTransaction = 100;
+
+    /**
+     * Publish a hinTS key to the network.
+     */
+    HintsKeyPublication = 101;
+
+    /**
+     * Vote for a particular aggregation of hinTS keys.
+     */
+    HintsAggregationVote = 102;
+
+    /**
+     * Sign a partial signature for the active hinTS construction.
+     */
+    HintsPartialSignature = 103;
 }
 
 /**
