@@ -27,7 +27,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,20 +43,16 @@ public final class SwirldsGui {
      * Create a new window with a text console, of the recommended size and location, including the Swirlds menu.
      *
      * @param platform the platform to create the console with
+     * @param winNum the number of the window, starting at 0
      * @param visible  should the window be initially visible? If not, call setVisible(true) later.
-     * @param localNodes the set of nodes running locally need content rendered in the gui.
      * @return the new window
      */
-    public static Console createConsole(
-            @NonNull final Platform platform,
-            final int winNum,
-            final boolean visible,
-            @NonNull final Set<NodeId> localNodes) {
+    public static Console createConsole(@NonNull final Platform platform, final int winNum, final boolean visible) {
         if (GraphicsEnvironment.isHeadless()) {
             return null;
         }
         final NodeId selfId = platform.getSelfId();
-        final int winCount = localNodes.size();
+        final int winCount = platform.getRoster().rosterEntries().size();
         final Rectangle winRect = winRect(winCount, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
         final Console console = GuiUtils.createBasicConsole(RosterUtils.formatNodeName(selfId.id()), winRect, visible);
