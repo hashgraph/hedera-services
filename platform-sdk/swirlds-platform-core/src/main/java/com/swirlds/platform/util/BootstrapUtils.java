@@ -33,6 +33,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.config.extensions.sources.YamlConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
@@ -93,7 +94,7 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
-     * Load the configuration for the platform.
+     * Load the configuration for the platform without overwrites.
      *
      * @param configurationBuilder the configuration builder to setup
      * @param settingsPath         the path to the settings.txt file
@@ -102,11 +103,31 @@ public final class BootstrapUtils {
     public static void setupConfigBuilder(
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
             throws IOException {
+        setupConfigBuilder(configurationBuilder, settingsPath, null);
+    }
+
+    /**
+     * Load the configuration for the platform.
+     *
+     * @param configurationBuilder the configuration builder to setup
+     * @param settingsPath         the path to the settings.txt file
+     * @param overwritesPath       the path to the overwrites.yaml file
+     * @throws IOException if there is a problem reading the configuration files
+     */
+    public static void setupConfigBuilder(
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Path settingsPath,
+            @Nullable final Path overwritesPath)
+            throws IOException {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
+
+        if (overwritesPath != null) {
+            final ConfigSource yamlConfigSource = new YamlConfigSource(overwritesPath);
+            configurationBuilder.withSource(yamlConfigSource);
+        }
     }
 
     /**
