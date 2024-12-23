@@ -55,6 +55,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -241,7 +242,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     public void preHandle(
             @NonNull Event event,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        ((ConsensusEvent) event).consensusTransactionIterator().forEachRemaining(transaction -> {
+        event.forEachTransaction(transaction -> {
             if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
                 stateSignatureTransaction.accept(
                         new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
@@ -328,7 +329,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the consensus transaction to check
      * @return true if the transaction bytes are system ones, false otherwise
      */
-    private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 4;
     }
 
