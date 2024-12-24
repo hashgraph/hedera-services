@@ -29,6 +29,13 @@ import java.util.Map;
  */
 public interface ReadableHintsStore {
     /**
+     * The preprocessed keys computed and votes received so far for a given construction id.
+     * @param keysByHash the preprocessed keys by hash
+     * @param votesById the votes by id
+     */
+    record Votes(@NonNull Map<Bytes, PreprocessedKeys> keysByHash, @NonNull Map<Long, Bytes> votesById) {}
+
+    /**
      * If there is a known construction with the given source and target roster hashes,
      * returns the corresponding {@link HintsConstruction}; otherwise, returns null.
      * @param sourceRosterHash the source roster hash
@@ -36,14 +43,7 @@ public interface ReadableHintsStore {
      * @return the corresponding {@link HintsConstruction}, or null
      */
     @Nullable
-    HintsConstruction constructionFrom(@Nullable Bytes sourceRosterHash, @NonNull Bytes targetRosterHash);
-
-    /**
-     * The preprocessed keys computed and votes received so far for a given construction id.
-     * @param keysByHash the preprocessed keys by hash
-     * @param votesById the votes by id
-     */
-    record Votes(@NonNull Map<Bytes, PreprocessedKeys> keysByHash, @NonNull Map<Long, Bytes> votesById) {}
+    HintsConstruction getConstructionFor(@Nullable Bytes sourceRosterHash, @NonNull Bytes targetRosterHash);
 
     /**
      * Returns the preprocessed keys and votes for the given construction id, if they exist.

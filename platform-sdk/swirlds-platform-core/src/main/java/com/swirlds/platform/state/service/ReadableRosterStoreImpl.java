@@ -29,6 +29,7 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -127,5 +128,13 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return requireNonNull(rosterState.get()).roundRosterPairs().stream()
                 .filter(pair -> rosterMap.contains(new ProtoBytes(pair.activeRosterHash())))
                 .toList();
+    }
+
+    @Override
+    public @Nullable Bytes getCandidateRosterHash() {
+        return Optional.ofNullable(rosterState.get())
+                .map(RosterState::candidateRosterHash)
+                .filter(bytes -> bytes.length() > 0)
+                .orElse(null);
     }
 }

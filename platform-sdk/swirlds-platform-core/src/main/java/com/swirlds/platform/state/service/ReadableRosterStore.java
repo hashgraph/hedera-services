@@ -85,4 +85,10 @@ public interface ReadableRosterStore {
      */
     @Nullable
     Bytes getPreviousRosterHash();
+
+    /**
+     * Gets the candidate roster hash, if present. If none is set, returns null;
+     */
+    @Nullable
+    Bytes getCandidateRosterHash();
 }

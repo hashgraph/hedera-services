@@ -34,12 +34,13 @@ public interface HintsOperations {
 
     /**
      * Validates the hints for the given public key and number of parties.
-     * @param hints the hints
+     *
      * @param publicKey the public key
+     * @param hints the hints
      * @param n the number of parties
      * @return true if the hints are valid; false otherwise
      */
-    boolean validateHints(@NonNull Bytes hints, @NonNull BlsPublicKey publicKey, int n);
+    boolean validateHints(@NonNull BlsPublicKey publicKey, @NonNull Bytes hints, int n);
 
     /**
      * Aggregates the given validated hint keys and party weights into a {@link PreprocessedKeys}.

@@ -16,14 +16,10 @@
 
 package com.hedera.node.app.tss.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssShareSignatureTransactionBody;
@@ -38,7 +34,6 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -49,9 +44,6 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class TssSubmissions {
     private static final Logger log = LogManager.getLogger(TssSubmissions.class);
-
-    private static final int NANOS_TO_SKIP_ON_DUPLICATE = 13;
-    private static final String DUPLICATE_TRANSACTION_REASON = "" + DUPLICATE_TRANSACTION;
 
     /**
      * The executor to use for scheduling the work of submitting transactions.
@@ -162,48 +154,18 @@ public class TssSubmissions {
             @NonNull final Instant consensusNow) {
         final var tssConfig = config.getConfigData(TssConfig.class);
         final var hederaConfig = config.getConfigData(HederaConfig.class);
-        final var validDuration = new Duration(hederaConfig.transactionMaxValidDuration());
-        final var validStartTime = new AtomicReference<>(consensusNow);
-        final var attemptsLeft = new AtomicInteger(tssConfig.timesToTrySubmission());
-        return CompletableFuture.runAsync(
-                () -> {
-                    var fatalFailure = false;
-                    var failureReason = "<N/A>";
-                    TransactionBody body;
-                    do {
-                        int txnIdsLeft = tssConfig.distinctTxnIdsToTry();
-                        do {
-                            final var builder = builderWith(validStartTime.get(), selfId, validDuration);
-                            spec.accept(builder);
-                            body = builder.build();
-                            try {
-                                appContext.gossip().submit(body);
-                                return;
-                            } catch (IllegalArgumentException iae) {
-                                failureReason = iae.getMessage();
-                                if (DUPLICATE_TRANSACTION_REASON.equals(failureReason)) {
-                                    validStartTime.set(validStartTime.get().plusNanos(NANOS_TO_SKIP_ON_DUPLICATE));
-                                } else {
-                                    fatalFailure = true;
-                                    break;
-                                }
-                            } catch (IllegalStateException ise) {
-                                failureReason = ise.getMessage();
-                                // There is no point to retry immediately except on a duplicate id
-                                break;
-                            }
-                        } while (txnIdsLeft-- > 1);
-                        log.warn("Failed to submit {} ({})", body, failureReason);
-                        try {
-                            MILLISECONDS.sleep(tssConfig.retryDelay().toMillis());
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw new IllegalStateException("Interrupted while waiting to retry " + body, e);
-                        }
-                    } while (!fatalFailure && attemptsLeft.decrementAndGet() > 0);
-                    throw new IllegalStateException(failureReason);
-                },
-                submissionExecutor);
+        return appContext
+                .gossip()
+                .submitFuture(
+                        selfId,
+                        consensusNow,
+                        java.time.Duration.of(hederaConfig.transactionMaxValidDuration(), SECONDS),
+                        spec,
+                        submissionExecutor,
+                        tssConfig.timesToTrySubmission(),
+                        tssConfig.distinctTxnIdsToTry(),
+                        tssConfig.retryDelay(),
+                        (body, reason) -> log.warn("Failed to submit {} ({})", body, reason));
     }
 
     private Instant nextValidStartFor(@NonNull final HandleContext context) {
@@ -214,15 +176,5 @@ public class TssSubmissions {
             nextOffset.incrementAndGet();
         }
         return context.consensusNow().plusNanos(nextOffset.get());
-    }
-
-    private TransactionBody.Builder builderWith(
-            @NonNull final Instant validStartTime,
-            @NonNull final AccountID selfAccountId,
-            @NonNull final Duration validDuration) {
-        return TransactionBody.newBuilder()
-                .nodeAccountID(selfAccountId)
-                .transactionValidDuration(validDuration)
-                .transactionID(new TransactionID(asTimestamp(validStartTime), selfAccountId, false, 0));
     }
 }

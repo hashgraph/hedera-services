@@ -78,7 +78,7 @@ public class HintAggregator {
                 CompletableFuture.supplyAsync(
                         () -> {
                             final var publicKey = keyParser.apply(hintsKey.publicKey());
-                            final var isValid = hintsOperations.validateHints(hintsKey.hint(), publicKey, n);
+                            final var isValid = hintsOperations.validateHints(publicKey, hintsKey.hint(), n);
                             return new Validation(hintsKey, isValid);
                         },
                         executor));
