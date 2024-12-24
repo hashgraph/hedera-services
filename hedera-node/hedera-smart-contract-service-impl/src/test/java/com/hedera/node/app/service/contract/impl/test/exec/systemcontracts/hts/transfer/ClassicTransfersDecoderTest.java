@@ -131,8 +131,7 @@ class ClassicTransfersDecoderTest {
                         .build(),
                 EMPTY_TUPLE_ARRAY);
         Assertions.assertThatThrownBy(() -> subject.decodeCryptoTransferV2(encodedInput.array(), converter))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Amount overflow when merging account amounts");
+                .isInstanceOf(ArithmeticException.class);
     }
 
     @Test
@@ -153,8 +152,7 @@ class ClassicTransfersDecoderTest {
                                         .build())
                         .build());
         Assertions.assertThatThrownBy(() -> subject.decodeCryptoTransferV2(encodedInput.array(), converter))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Amount overflow when merging account amounts");
+                .isInstanceOf(ArithmeticException.class);
     }
 
     private static List<AccountAmount> unwrapTokenAmounts(final TransactionBody body) {
