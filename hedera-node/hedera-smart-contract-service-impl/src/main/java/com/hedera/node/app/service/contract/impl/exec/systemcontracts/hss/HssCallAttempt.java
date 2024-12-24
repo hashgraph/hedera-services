@@ -16,11 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -36,6 +41,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -148,5 +154,48 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
             return enhancement.nativeOperations().getSchedule(numberOfLongZero(evmAddress));
         }
         return null;
+    }
+
+    /**
+     * Extracts the key set for scheduled calls.
+     *
+     * @return the key set
+     */
+    public Set<Key> keySetFor() {
+        final var sender = nativeOperations().getAccount(senderId());
+        requireNonNull(sender);
+        if (sender.smartContract()) {
+            return getKeysForContractSender();
+        } else {
+            return getKeysForEOASender();
+        }
+    }
+
+    @NonNull
+    private Set<Key> getKeysForEOASender() {
+        // If an Eth sender key is present, use it. Otherwise, use the account key if present.
+        Key key = enhancement.systemOperations().maybeEthSenderKey();
+        if (key != null) {
+            return Set.of(key);
+        }
+        return nativeOperations().authorizingSimpleKeys();
+    }
+
+    @NonNull
+    public Set<Key> getKeysForContractSender() {
+        final var contractNum = maybeMissingNumberOf(senderAddress(), nativeOperations());
+        if (contractNum == MISSING_ENTITY_NUMBER) {
+            return emptySet();
+        }
+        if (isOnlyDelegatableContractKeysActive()) {
+            return Set.of(Key.newBuilder()
+                    .delegatableContractId(
+                            ContractID.newBuilder().contractNum(contractNum).build())
+                    .build());
+        } else {
+            return Set.of(Key.newBuilder()
+                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
+                    .build());
+        }
     }
 }

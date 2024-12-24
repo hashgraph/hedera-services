@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -183,5 +184,10 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @NonNull
     public SortedSet<Key> authorizingSimpleKeys() {
         return context.keyVerifier().authorizingSimpleKeys();
+    }
+
+    @Override
+    public TransactionID getTransactionID() {
+        return context.body().transactionIDOrElse(TransactionID.DEFAULT);
     }
 }

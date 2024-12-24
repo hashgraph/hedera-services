@@ -388,14 +388,6 @@ class ValidationReporterTest {
     }
 
     @Test
-    void smartContractScheduledPayerIsFailInvalid() {
-        givenScheduledDispatch();
-        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
-        givenPayer(payer -> payer.tinybarBalance(1L).smartContract(true));
-        assertThrows(IllegalStateException.class, () -> subject.validationReportFor(dispatch));
-    }
-
-    @Test
     void contractUserPayerIsFailInvalid() {
         givenUserDispatch();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);

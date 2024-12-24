@@ -174,7 +174,11 @@ public enum DispatchType {
     /**
      * Dispatch for Hedera schedule sign functionality with default resource prices.
      */
-    SCHEDULE_SIGN(HederaFunctionality.SCHEDULE_SIGN, DEFAULT);
+    SCHEDULE_SIGN(HederaFunctionality.SCHEDULE_SIGN, DEFAULT),
+    /**
+     * Dispatch for Hedera schedule create functionality with default resource prices.
+     */
+    SCHEDULE_CREATE(HederaFunctionality.SCHEDULE_CREATE, DEFAULT);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;

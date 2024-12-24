@@ -49,6 +49,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
@@ -240,6 +241,18 @@ public class TestHelpers {
             .accountId(AccountID.newBuilder()
                     .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
                     .build())
+            .build();
+
+    public static final Account CONTRACT_ACCOUNT = Account.newBuilder()
+            .smartContract(true)
+            .accountId(AccountID.newBuilder()
+                    .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
+                    .build())
+            .build();
+
+    public static final TransactionID TRANSACTION_ID = TransactionID.newBuilder()
+            .accountID(SENDER_ID)
+            .transactionValidStart(Timestamp.newBuilder().seconds(1_234_567L).build())
             .build();
 
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()

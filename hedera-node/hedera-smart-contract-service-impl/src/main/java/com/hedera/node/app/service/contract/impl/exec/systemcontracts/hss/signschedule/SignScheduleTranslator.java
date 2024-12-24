@@ -17,19 +17,14 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -43,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -76,7 +70,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     public Call callFrom(@NonNull HssCallAttempt attempt) {
         final var body = bodyFor(scheduleIdFor(attempt));
         return new DispatchForResponseCodeHssCall(
-                attempt, body, SignScheduleTranslator::gasRequirement, keySetFor(attempt));
+                attempt, body, SignScheduleTranslator::gasRequirement, attempt.keySetFor());
     }
 
     /**
@@ -141,50 +135,5 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         final var schedule = attempt.enhancement().nativeOperations().getSchedule(number);
         validateTrue(schedule != null, INVALID_SCHEDULE_ID);
         return schedule.scheduleId();
-    }
-
-    /**
-     * Extracts the key set for a {@code signSchedule()} call.
-     *
-     * @param attempt the call attempt
-     * @return the key set
-     */
-    private Set<Key> keySetFor(@NonNull HssCallAttempt attempt) {
-        requireNonNull(attempt);
-        final var sender = attempt.enhancement().nativeOperations().getAccount(attempt.senderId());
-        requireNonNull(sender);
-        if (sender.smartContract()) {
-            return getKeysForContractSender(attempt);
-        } else {
-            return getKeysForEOASender(attempt);
-        }
-    }
-
-    @NonNull
-    private static Set<Key> getKeysForEOASender(@NonNull HssCallAttempt attempt) {
-        // If an Eth sender key is present, use it. Otherwise, use the account key if present.
-        Key key = attempt.enhancement().systemOperations().maybeEthSenderKey();
-        if (key != null) {
-            return Set.of(key);
-        }
-        return attempt.enhancement().nativeOperations().authorizingSimpleKeys();
-    }
-
-    @NonNull
-    private static Set<Key> getKeysForContractSender(@NonNull HssCallAttempt attempt) {
-        final var contractNum = maybeMissingNumberOf(attempt.senderAddress(), attempt.nativeOperations());
-        if (contractNum == MISSING_ENTITY_NUMBER) {
-            return emptySet();
-        }
-        if (attempt.isOnlyDelegatableContractKeysActive()) {
-            return Set.of(Key.newBuilder()
-                    .delegatableContractId(
-                            ContractID.newBuilder().contractNum(contractNum).build())
-                    .build());
-        } else {
-            return Set.of(Key.newBuilder()
-                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
-                    .build());
-        }
     }
 }
