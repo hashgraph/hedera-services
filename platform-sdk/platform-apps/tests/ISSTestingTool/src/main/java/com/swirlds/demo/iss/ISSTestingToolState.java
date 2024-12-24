@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,9 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -236,6 +238,18 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
+    @Override
+    public void preHandle(
+            @NonNull Event event,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+        event.forEachTransaction(transaction -> {
+            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            }
+        });
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -250,7 +264,14 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         while (eventIterator.hasNext()) {
             final ConsensusEvent event = eventIterator.next();
             captureTimestamp(event);
-            event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                } else {
+                    handleTransaction(transaction);
+                }
+            });
             if (!eventIterator.hasNext()) {
                 final Instant currentTimestamp = event.getConsensusTimestamp();
                 final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
@@ -294,10 +315,22 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         if (transaction.isSystem()) {
             return;
         }
+
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4.
+     * System transactions will be always bigger than that.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 4;
     }
 
     /**
