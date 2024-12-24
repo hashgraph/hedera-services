@@ -70,6 +70,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.block.stream.protoc;
     exports com.hedera.hapi.block;
     exports com.hedera.hapi.services.auxiliary.tss.legacy;
+    exports com.hedera.hapi.services.auxiliary.hints;
 
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.google.common;

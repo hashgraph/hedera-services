@@ -17,15 +17,42 @@
 package com.hedera.node.app.hints;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 
 /**
  * Provides write access to the {@link HintsConstruction} instances in state.
  */
 public interface WritableHintsStore extends ReadableHintsStore {
+    /**
+     * Completes the aggregation for the construction with the given ID and returns the
+     * updated construction.
+     * @return the updated construction
+     */
+    HintsConstruction completeAggregation(long constructionId, @NonNull PreprocessedKeys keys);
+
+    /**
+     * Sets the aggregation time for the construction with the given ID and returns the
+     * updated construction.
+     * @param constructionId the construction ID
+     * @param now the aggregation time
+     * @return the updated construction
+     */
+    HintsConstruction setAggregationTime(long constructionId, @NonNull Instant now);
+
+    /**
+     * Reschedules the next aggregation checkpoint for the construction with the given ID and returns the
+     * updated construction.
+     * @param constructionId the construction ID
+     * @param then the next aggregation checkpoint
+     * @return the updated construction
+     */
+    HintsConstruction rescheduleAggregationCheckpoint(long constructionId, @NonNull Instant then);
+
     /**
      * Ensures the only construction in state is for the given target roster hash.
      */

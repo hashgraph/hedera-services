@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints.handlers;
+package com.hedera.node.app.hints.impl;
 
-public class HintsSubmissions {}
+import dagger.Module;
+
+@Module
+public interface ControllerModule {}

@@ -16,15 +16,13 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.node.app.hints.impl.HintsConstructionController;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
-import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -74,22 +72,36 @@ public interface HintsService extends Service {
     void start();
 
     /**
-     * Signals the service to orchestrate any activity needed at the current consensus
-     * time to ensure existence of a complete hinTS construction for the given current
-     * roster hash approved by the given prior roster hash. The service is allowed to
-     * mutate its state as needed to track the progress of the orchestration.
+     * Takes any actions needed to advance the state of the {@link HintsService} toward
+     * having completed the most up-to-date hinTS construction for the roster store.
+     * <p>
+     * The basic flow examines the roster store to determine what combination of source/target
+     * roster hashes would represent the most up-to-date hinTS construction. Given these source/target
+     * hashes, it takes one of three courses of action:
+     * <ol>
+     *     <Li> If a completed construction already exists in {@link HintsService} state with the given
+     *     source/target hashes, returns as a no-op.</Li>
+     *     <Li> If there is already an active {@link HintsConstructionController} driving completion
+     *     for the given source/target hashes, this call will invoke its
+     *     {@link HintsConstructionController#advanceConstruction(Instant, WritableHintsStore)} method.</li>
+     *     <Li>If there is no active {@link HintsConstructionController} for the given source/target
+     *     hashes, this will create one based on the given consensus time and {@link HintsService} states;
+     *     and will record the creation event in network state if this is the first time the network ever
+     *     began reconciling a hinTS construction for these source/target hashes.</Li>
+     * </ol>
+     * <p>
+     * <b>IMPORTANT:</b> Note that whether a new {@link HintsConstructionController} object is created, or an
+     * appropriate one already exists, its subsequent behavior will be a deterministic function of the given
+     * consensus time and {@link HintsService} states. That is, controllers are persistent objects <i>only</i>
+     * due to performance considerations, but are <i>logically</i> driven deterministically by nothing but
+     * network state and consensus time.
+     *
      * @param now the current consensus time
-     * @param writableStates the service's own states
-     * @param priorRosterHash the hash of the roster that was active before the current one
-     * @param currentRosterHash the hash of the current active roster
      * @param rosterStore the roster store, for obtaining rosters if needed
+     * @param hintsStore the hints store, for recording progress if needed
      */
-    void orchestrateConstruction(
-            @NonNull Instant now,
-            @NonNull WritableStates writableStates,
-            @Nullable Bytes priorRosterHash,
-            @NonNull Bytes currentRosterHash,
-            @NonNull ReadableRosterStore rosterStore);
+    void reconcile(
+            @NonNull Instant now, @NonNull ReadableRosterStore rosterStore, @NonNull WritableHintsStore hintsStore);
 
     /**
      * Stops the hinTS service, causing it to abandon any in-progress work.

@@ -28,6 +28,8 @@ package com.hedera.hapi.services.auxiliary.hints;
  * limitations under the License.
  */
 
+import "state/hints/hints_types.proto";
+
 option java_package = "com.hedera.hapi.services.auxiliary.hints.legacy";
 // <<<pbj.java_package = "com.hedera.hapi.services.auxiliary.hints">>> This comment is special code for setting PBJ Compiler java package
 
@@ -56,24 +58,12 @@ message HintsKeyPublicationTransactionBody {
   uint32 max_size_log_2 = 1;
 
   /**
-   * The creating node's BLS public key to use in subsequent hinTS
-   * constructions targeting rosters with node counts in the range
-   * [2^(k-1), 2^k).
+   * The creating node's hinTS key to use in subsequent constructions
+   * targeting rosters with node counts in the range [2^(k-1), 2^k).
    * <p>
    * This value MUST be set.<br/>
    * This value MUST NOT be empty.<br/>
-   * This value MUST contain a valid BLS public key.
+   * This value MUST contain a valid hinTS key.
    */
-  bytes bls_public_key = 2;
-
-  /**
-   * The secret key hints that "extend" the BLS public key for use
-   * in hinTS constructions targeting rosters with node counts in
-   * the range [2^(k-1), 2^k).
-   * <p>
-   * This value MUST be set.<br/>
-   * This value MUST NOT be empty.<br/>
-   * This value MUST contain a valid hash.
-   */
-  bytes hints = 3;
+  com.hedera.hapi.node.state.hints.HintsKey hints_key = 2;
 }

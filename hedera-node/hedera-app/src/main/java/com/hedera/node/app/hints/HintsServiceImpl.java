@@ -18,39 +18,39 @@ package com.hedera.node.app.hints;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.schemas.V058HintsSchema;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
-import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.concurrent.Executor;
 
+/**
+ * Default implementation of the {@link HintsService}.
+ */
 public class HintsServiceImpl implements HintsService {
-    private final AppContext appContext;
+    private final HintsServiceComponent component;
 
-    public HintsServiceImpl(@NonNull final AppContext appContext) {
-        this.appContext = requireNonNull(appContext);
+    public HintsServiceImpl(
+            @NonNull final Metrics metrics,
+            @NonNull final Executor executor,
+            @NonNull final AppContext appContext,
+            @NonNull final HintsOperations operations) {
+        this.component = DaggerHintsServiceComponent.factory().create(operations, appContext, executor, metrics);
+    }
+
+    @VisibleForTesting
+    public HintsServiceImpl(@NonNull final HintsServiceComponent component) {
+        this.component = requireNonNull(component);
     }
 
     @Override
     public void start() {
         // No-op
-    }
-
-    @Override
-    public void orchestrateConstruction(
-            @NonNull final Instant now,
-            @NonNull final WritableStates writableStates,
-            @Nullable final Bytes priorRosterHash,
-            @NonNull final Bytes currentRosterHash,
-            @NonNull final ReadableRosterStore rosterStore) {
-        requireNonNull(now);
-        requireNonNull(writableStates);
-        requireNonNull(currentRosterHash);
-        requireNonNull(rosterStore);
     }
 
     @Override
@@ -62,5 +62,33 @@ public class HintsServiceImpl implements HintsService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V058HintsSchema());
+    }
+
+    @Override
+    public void reconcile(
+            @NonNull final Instant now,
+            @NonNull final ReadableRosterStore rosterStore,
+            @NonNull final WritableHintsStore hintsStore) {
+        final var currentRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
+        final var candidateRosterHash = rosterStore.getCandidateRosterHash();
+        final Bytes sourceRosterHash;
+        final Bytes targetRosterHash;
+        if (candidateRosterHash == null) {
+            sourceRosterHash = rosterStore.getPreviousRosterHash();
+            targetRosterHash = currentRosterHash;
+        } else {
+            sourceRosterHash = currentRosterHash;
+            targetRosterHash = candidateRosterHash;
+        }
+        var construction = hintsStore.getConstructionFor(sourceRosterHash, targetRosterHash);
+        if (construction == null) {
+            construction = hintsStore.newConstructionFor(sourceRosterHash, targetRosterHash, rosterStore);
+        }
+        if (!construction.hasPreprocessedKeys()) {
+            final var controller = component.controllers().getOrCreateControllerFor(construction, rosterStore);
+            controller.advanceConstruction(now, hintsStore);
+        } else if (candidateRosterHash == null) {
+            hintsStore.purgeConstructionsNotFor(currentRosterHash);
+        }
     }
 }

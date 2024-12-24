@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.hints.impl;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.node.app.hints.HintsService;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

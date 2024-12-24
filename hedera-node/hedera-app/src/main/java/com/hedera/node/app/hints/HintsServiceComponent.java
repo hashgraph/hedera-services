@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.node.app.hints.impl.HintsConstructionControllers;
 import com.hedera.node.app.spi.AppContext;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
@@ -34,4 +35,6 @@ public interface HintsServiceComponent {
                 @BindsInstance Executor executor,
                 @BindsInstance Metrics metrics);
     }
+
+    HintsConstructionControllers controllers();
 }

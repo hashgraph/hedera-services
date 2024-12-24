@@ -120,6 +120,11 @@ public class HapiUtils {
     }
 
     /** Converts the given {@link Timestamp} into an {@link Instant}. */
+    public static Instant asNullableInstant(@Nullable final Timestamp timestamp) {
+        return timestamp == null ? null : Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
+    }
+
+    /** Converts the given {@link Timestamp} into an {@link Instant}. */
     public static Instant asInstant(@NonNull final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }
@@ -237,6 +242,9 @@ public class HapiUtils {
             case TSS_SHARE_SIGNATURE -> HederaFunctionality.TSS_SHARE_SIGNATURE;
             case TSS_ENCRYPTION_KEY -> HederaFunctionality.TSS_ENCRYPTION_KEY;
             case STATE_SIGNATURE_TRANSACTION -> HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
+            case HINTS_AGGREGATION_VOTE -> HederaFunctionality.HINTS_AGGREGATION_VOTE;
+            case HINTS_KEY_PUBLICATION -> HederaFunctionality.HINTS_KEY_PUBLICATION;
+            case HINTS_PARTIAL_SIGNATURE -> HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

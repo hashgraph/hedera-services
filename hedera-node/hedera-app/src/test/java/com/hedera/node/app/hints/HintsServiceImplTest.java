@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.node.app.hints.impl.HintsConstructionController;
+import com.hedera.node.app.hints.impl.HintsConstructionControllers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import java.time.Instant;
@@ -33,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HintsReconciliationLoopTest {
+class HintsServiceImplTest {
     private static final Bytes A_MOCK_HASH = Bytes.wrap("A");
     private static final Bytes B_MOCK_HASH = Bytes.wrap("B");
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
@@ -53,11 +55,14 @@ class HintsReconciliationLoopTest {
     @Mock
     private HintsConstructionControllers controllers;
 
-    private HintsReconciliationLoop subject;
+    @Mock
+    private HintsServiceComponent component;
+
+    private HintsServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HintsReconciliationLoop(controllers);
+        subject = new HintsServiceImpl(component);
     }
 
     @Test
@@ -68,10 +73,11 @@ class HintsReconciliationLoopTest {
         given(hintsStore.getConstructionFor(B_MOCK_HASH, A_MOCK_HASH)).willReturn(null);
         given(hintsStore.newConstructionFor(B_MOCK_HASH, A_MOCK_HASH, rosterStore))
                 .willReturn(HintsConstruction.DEFAULT);
+        given(component.controllers()).willReturn(controllers);
         given(controllers.getOrCreateControllerFor(HintsConstruction.DEFAULT, rosterStore))
                 .willReturn(controller);
 
-        subject.reconcileConstruction(CONSENSUS_NOW, rosterStore, hintsStore);
+        subject.reconcile(CONSENSUS_NOW, rosterStore, hintsStore);
 
         verify(controller).advanceConstruction(CONSENSUS_NOW, hintsStore);
     }
@@ -81,10 +87,11 @@ class HintsReconciliationLoopTest {
         given(rosterStore.getCandidateRosterHash()).willReturn(B_MOCK_HASH);
         given(rosterStore.getCurrentRosterHash()).willReturn(A_MOCK_HASH);
         given(hintsStore.getConstructionFor(A_MOCK_HASH, B_MOCK_HASH)).willReturn(HintsConstruction.DEFAULT);
+        given(component.controllers()).willReturn(controllers);
         given(controllers.getOrCreateControllerFor(HintsConstruction.DEFAULT, rosterStore))
                 .willReturn(controller);
 
-        subject.reconcileConstruction(CONSENSUS_NOW, rosterStore, hintsStore);
+        subject.reconcile(CONSENSUS_NOW, rosterStore, hintsStore);
 
         verify(controller).advanceConstruction(CONSENSUS_NOW, hintsStore);
     }
@@ -95,8 +102,18 @@ class HintsReconciliationLoopTest {
         given(rosterStore.getCurrentRosterHash()).willReturn(A_MOCK_HASH);
         given(hintsStore.getConstructionFor(A_MOCK_HASH, B_MOCK_HASH)).willReturn(FAKE_COMPLETE_CONSTRUCTION);
 
-        subject.reconcileConstruction(CONSENSUS_NOW, rosterStore, hintsStore);
+        subject.reconcile(CONSENSUS_NOW, rosterStore, hintsStore);
 
         verify(hintsStore, never()).newConstructionFor(any(), any(), any());
+    }
+
+    @Test
+    void purgesOtherConstructionsOnCompletionWithNoCandidateRoster() {
+        given(rosterStore.getCurrentRosterHash()).willReturn(A_MOCK_HASH);
+        given(hintsStore.getConstructionFor(null, A_MOCK_HASH)).willReturn(FAKE_COMPLETE_CONSTRUCTION);
+
+        subject.reconcile(CONSENSUS_NOW, rosterStore, hintsStore);
+
+        verify(hintsStore).purgeConstructionsNotFor(A_MOCK_HASH);
     }
 }

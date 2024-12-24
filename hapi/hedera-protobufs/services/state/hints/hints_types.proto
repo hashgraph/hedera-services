@@ -180,29 +180,31 @@ message HintsConstruction {
    */
   uint64 construction_id = 1;
   /**
-   * The time at which preprocessing started for this hinTS
-   * construction. Nodes will deterministically stop waiting for any
-   * further hints when consensus time moves a configured duration
-   * past this point, and approve whatever aggregation and
-   * verification keys they can derived as soon as the weight of the
-   * available hints exceeds 1/3 the stake held by the roster for the
-   * ongoing construction.
-   */
-  proto.Timestamp start_time = 2;
-  /**
    * The hash of the roster whose weights are used to determine when
    * certain thresholds are during construction.
    */
-  bytes source_roster_hash = 3;
+  bytes source_roster_hash = 2;
   /**
    * The hash of the roster whose weights are used to assess progress
    * toward achieving hints for parties that hold at least a strong
    * minority of the stake in that roster.
    */
-  bytes target_roster_hash = 4;
+  bytes target_roster_hash = 3;
+  /**
+   * If relevant, the next time at which nodes should evaluate the
+   * published hints keys for sufficient valid weight to begin
+   * aggregation into the final preprocessed keys.
+   */
+  proto.Timestamp next_aggregation_checkpoint = 4;
+  /**
+   * If relevant, the next time at which nodes should evaluate the
+   * published hints keys for sufficient valid weight to begin
+   * aggregation into the final preprocessed keys.
+   */
+  proto.Timestamp aggregation_time = 5;
   /**
    * If set, the preprocessed hinTS keys that were approved by nodes
    * holding strictly more than 1/3 of the weight in the source roster.
    */
-  PreprocessedKeys preprocessed_keys = 5;
+  PreprocessedKeys preprocessed_keys = 6;
 }
