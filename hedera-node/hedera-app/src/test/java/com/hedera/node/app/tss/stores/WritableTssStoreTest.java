@@ -19,6 +19,7 @@ package com.hedera.node.app.tss.stores;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -29,7 +30,9 @@ import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,6 +109,29 @@ class WritableTssStoreTest {
     void testRemoveEncryptionKey() {
         EntityNumber entityNumber = new EntityNumber(1);
         tssStore.remove(entityNumber);
+        verify(tssEncryptionKeyState).remove(entityNumber);
+    }
+
+    @Test
+    void testRemoveEncryptionKeyIfPresent() {
+        EntityNumber entityNumber = new EntityNumber(1);
+        tssEncryptionKeyState.put(entityNumber, TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssEncryptionKeyState.keys()).willReturn(List.of(entityNumber).iterator());
+
+        final var rosterEntries = new HashSet<>(List.of(new EntityNumber(1), new EntityNumber(3)));
+        tssStore.removeIfNotPresent(rosterEntries);
+
+        verify(tssEncryptionKeyState, times(0)).remove(entityNumber);
+    }
+
+    @Test
+    void testRemoveEncryptionKeyIfNotPresent() {
+        EntityNumber entityNumber = new EntityNumber(1);
+        tssEncryptionKeyState.put(entityNumber, TssEncryptionKeyTransactionBody.DEFAULT);
+        given(tssEncryptionKeyState.keys()).willReturn(List.of(entityNumber).iterator());
+
+        final var rosterEntries = new HashSet<>(List.of(new EntityNumber(2), new EntityNumber(3)));
+        tssStore.removeIfNotPresent(rosterEntries);
         verify(tssEncryptionKeyState).remove(entityNumber);
     }
 

@@ -18,8 +18,10 @@ package com.swirlds.platform.state.service;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -28,7 +30,11 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -86,6 +92,21 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
     }
 
     /**
+     * Gets the previous roster from RosterHistory.
+     * Returns the previous roster, if present
+     * returns null, if the current roster is from genesis
+     * @return the active roster
+     */
+    @Nullable
+    private Roster getPreviousRoster() {
+        final var previousRosterHash = getPreviousRosterHash();
+        if (previousRosterHash == null) {
+            return null;
+        }
+        return rosterMap.get(ProtoBytes.newBuilder().value(previousRosterHash).build());
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Nullable
@@ -127,5 +148,30 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return requireNonNull(rosterState.get()).roundRosterPairs().stream()
                 .filter(pair -> rosterMap.contains(new ProtoBytes(pair.activeRosterHash())))
                 .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Set<EntityNumber> getCombinedRosterEntriesNodeIds() {
+        final var previousRoster = getPreviousRoster();
+        final var activeRoster = getActiveRoster();
+        final var candidateRoster = getCandidateRoster();
+
+        final Stream<Long> previousRosterEntries = previousRoster == null
+                ? Stream.empty()
+                : previousRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+        final Stream<Long> activeRosterEntries = activeRoster == null
+                ? Stream.empty()
+                : activeRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+        final Stream<Long> candidateRosterEntries = candidateRoster == null
+                ? Stream.empty()
+                : candidateRoster.rosterEntries().stream().map(RosterEntry::nodeId);
+
+        return Stream.concat(Stream.concat(previousRosterEntries, activeRosterEntries), candidateRosterEntries)
+                .map(EntityNumber::new)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 }

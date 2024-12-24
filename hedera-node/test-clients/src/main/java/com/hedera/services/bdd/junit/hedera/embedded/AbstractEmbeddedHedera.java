@@ -149,8 +149,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                appContext -> {
-                    this.tssBaseService = new FakeTssBaseService(appContext);
+                (appContext, readableRosterStoreSupplier) -> {
+                    this.tssBaseService = new FakeTssBaseService(appContext, readableRosterStoreSupplier);
                     return this.tssBaseService;
                 },
                 DiskStartupNetworks::new);

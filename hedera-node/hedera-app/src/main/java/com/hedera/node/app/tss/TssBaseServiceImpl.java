@@ -60,6 +60,7 @@ import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
 import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
 import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -88,6 +89,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,6 +114,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     private final TssKeysAccessor tssKeysAccessor;
     private final TssDirectoryAccessor tssDirectoryAccessor;
     private final AppContext appContext;
+    private final Supplier<ReadableRosterStore> readableRosterStoreSupplier;
     private final TssCryptographyManager tssCryptographyManager;
     // Indicates whether the current node has already submitted a tss message for the target roster.
     // This is false by default and will be set to true when the node submits a message for the target roster.
@@ -133,12 +136,15 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final Executor submissionExecutor,
             @NonNull final TssLibrary tssLibrary,
             @NonNull final Executor tssLibraryExecutor,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @NonNull final Supplier<ReadableRosterStore> readableRosterStoreSupplier) {
         requireNonNull(appContext);
         this.tssLibrary = requireNonNull(tssLibrary);
         this.signingExecutor = requireNonNull(signingExecutor);
         this.tssLibraryExecutor = requireNonNull(tssLibraryExecutor);
         this.appContext = requireNonNull(appContext);
+        this.readableRosterStoreSupplier = requireNonNull(readableRosterStoreSupplier);
+
         final var component = DaggerTssBaseServiceComponent.factory()
                 .create(
                         tssLibrary,
@@ -161,7 +167,7 @@ public class TssBaseServiceImpl implements TssBaseService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560TssBaseSchema());
-        registry.register(new V0580TssBaseSchema());
+        registry.register(new V0580TssBaseSchema(WritableTssStore::new, readableRosterStoreSupplier));
     }
 
     @Override
