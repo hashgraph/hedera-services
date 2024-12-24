@@ -47,7 +47,8 @@ public interface BlockStreamModule {
         return switch (blockStreamConfig.writerMode()) {
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
             case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
+            case BUCKET -> throw new IllegalArgumentException(
+                    "file block writer with bucket uploader not yet implemented");
         };
     }
-    ;
 }
