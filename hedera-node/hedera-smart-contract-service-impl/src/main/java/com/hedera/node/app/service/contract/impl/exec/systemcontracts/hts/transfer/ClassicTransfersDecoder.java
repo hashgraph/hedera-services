@@ -317,14 +317,10 @@ public class ClassicTransfersDecoder {
     }
 
     private AccountAmount mergeAdjusts(@NonNull final AccountAmount from, @NonNull final AccountAmount to) {
-        try {
-            return from.copyBuilder()
-                    .amount(Math.addExact(from.amount(), to.amount()))
-                    .isApproval(from.isApproval() || to.isApproval())
-                    .build();
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("Amount overflow when merging account amounts");
-        }
+        return from.copyBuilder()
+                .amount(Math.addExact(from.amount(), to.amount()))
+                .isApproval(from.isApproval() || to.isApproval())
+                .build();
     }
 
     private List<NftTransfer> mergeNftTransfers(
