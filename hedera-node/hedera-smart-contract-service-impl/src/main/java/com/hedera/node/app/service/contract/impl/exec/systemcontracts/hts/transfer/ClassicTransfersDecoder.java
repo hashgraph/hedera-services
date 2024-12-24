@@ -103,7 +103,8 @@ public class ClassicTransfersDecoder {
     public TransactionBody decodeCryptoTransferV2(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
         final var call = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.decodeCall(encoded);
-        final var transferList = convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter);
+        final var transferList = consolidatedTransferList(
+                convertingMaybeApprovedAdjustments(((Tuple) call.get(0)).get(0), addressIdConverter));
 
         final var cryptoTransfersBody = tokenTransfers(convertTokenTransfers(
                 call.get(1),
@@ -282,6 +283,14 @@ public class ClassicTransfersDecoder {
         return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferLists);
     }
 
+    private TransferList consolidatedTransferList(@NonNull final TransferList fromTransferList) {
+        final Map<AccountID, AccountAmount> consolidatedTransfers = new LinkedHashMap<>();
+        for (final var accountAmount : fromTransferList.accountAmounts()) {
+            consolidatedTransfers.merge(accountAmount.accountIDOrThrow(), accountAmount, this::mergeAdjusts);
+        }
+        return new TransferList(consolidatedTransfers.values().stream().toList());
+    }
+
     private TokenTransferList mergeTokenTransferLists(
             @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
         return from.copyBuilder()
@@ -309,7 +318,7 @@ public class ClassicTransfersDecoder {
 
     private AccountAmount mergeAdjusts(@NonNull final AccountAmount from, @NonNull final AccountAmount to) {
         return from.copyBuilder()
-                .amount(from.amount() + to.amount())
+                .amount(Math.addExact(from.amount(), to.amount()))
                 .isApproval(from.isApproval() || to.isApproval())
                 .build();
     }
