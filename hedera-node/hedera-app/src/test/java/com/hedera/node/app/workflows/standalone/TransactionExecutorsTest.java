@@ -21,8 +21,10 @@ import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -185,6 +187,20 @@ public class TransactionExecutorsTest {
         assertThat(luckyNumber).isEqualTo(EXPECTED_LUCKY_NUMBER);
         printWriter.flush();
         assertThat(stringWriter.toString()).startsWith(EXPECTED_TRACE_START);
+    }
+
+    @Test
+    void respectsOverrideMaxSignedTxnSize() {
+        final var overrides = Map.of(MAX_SIGNED_TXN_SIZE_PROPERTY, "42");
+        // Construct a full implementation of the consensus node State API with all genesis accounts and files
+        final var state = genesisState(overrides);
+
+        // Get a standalone executor based on this state, with an override to allow slightly longer memos
+        final var executor = TRANSACTION_EXECUTORS.newExecutor(state, overrides, null);
+
+        // With just 42 bytes allowed for signed transactions, the executor will not be able to construct
+        // a dispatch for the transaction and throw an exception
+        assertThrows(NullPointerException.class, () -> executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH));
     }
 
     private TransactionBody contractCallMultipurposePickFunction() {

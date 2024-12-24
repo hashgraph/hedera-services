@@ -17,8 +17,6 @@
 package com.hedera.node.app.workflows.standalone.impl;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.Hedera;
-import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -61,13 +59,6 @@ public interface StandaloneModule {
     @Singleton
     static InstantSource provideInstantSource() {
         return InstantSource.system();
-    }
-
-    @Provides
-    @Singleton
-    @MaxSignedTxnSize
-    static int maxSignedTxnSize() {
-        return Hedera.MAX_SIGNED_TXN_SIZE;
     }
 
     @Provides
