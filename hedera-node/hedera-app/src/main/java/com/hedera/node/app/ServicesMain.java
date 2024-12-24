@@ -320,6 +320,7 @@ public class ServicesMain implements SwirldMain {
                 .withPlatformContext(platformContext)
                 .withConfiguration(platformConfig)
                 .withKeysAndCerts(keysAndCerts);
+
         final var platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
