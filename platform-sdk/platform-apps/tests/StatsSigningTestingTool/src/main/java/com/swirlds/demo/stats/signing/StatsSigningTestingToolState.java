@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,6 +122,13 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                 if (transaction.isSystem()) {
                     return;
                 }
+
+                if (areTransactionBytesSystemOnes((ConsensusTransaction) transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                    return;
+                }
+
                 final TransactionSignature transactionSignature =
                         sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
                 if (transactionSignature != null) {
@@ -141,13 +148,22 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final PlatformStateModifier platformState,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
-        round.forEachTransaction(this::handleTransaction);
+
+        round.forEachEventTransaction((event, transaction) -> {
+            if (areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            } else {
+                handleTransaction(transaction);
+            }
+        });
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
         if (trans.isSystem()) {
             return;
         }
+
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -173,6 +189,21 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
+        // We have maximum allocation of 100 bytes for the transaction + 10 bytes for the preamble size in
+        // TransactionCodec
+        // + 64 bytes for the maximum public key size + 64 bytes for the maximum signature size + 12 bytes for 3
+        // integers
+        final var maximumSignedEncodedTransactionSize = 100 + 10 + 64 + 64 + 12;
+        return transaction.getApplicationTransaction().length() > maximumSignedEncodedTransactionSize;
     }
 
     private void maybeDelay() {
