@@ -20,11 +20,8 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsId;
 import com.hedera.hapi.node.state.hints.HintsKey;
-import com.hedera.hapi.node.state.hints.NodeSchemeId;
 import com.hedera.hapi.node.state.hints.PreprocessVoteId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
-import com.hedera.hapi.node.state.primitives.ProtoInteger;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.node.app.hints.HintsService;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -50,35 +47,27 @@ import java.util.Set;
  *     vote for the keys aggregated by preprocessing that construction.</li>
  * </ul>
  */
-public class V058HintsSchema extends Schema {
+public class V059HintsSchema extends Schema {
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().minor(58).build();
+            SemanticVersion.newBuilder().minor(59).build();
 
     private static final long MAX_HINTS = 1L << 31;
-    private static final long MAX_SIZE_LOG_2 = 32;
-    private static final long MAX_PREPROCESSING_VOTES = 1L << 30;
+    private static final long MAX_PREPROCESSING_VOTES = 1L << 31;
 
-    public static final String NEXT_CONSTRUCTION_ID_KEY = "NEXT_CONSTRUCTION_ID";
+    public static final String HINTS_KEY = "HINTS";
     public static final String ACTIVE_CONSTRUCTION_KEY = "ACTIVE_CONSTRUCTION";
     public static final String NEXT_CONSTRUCTION_KEY = "NEXT_CONSTRUCTION";
-    public static final String HIGHEST_PARTY_IDS_KEY = "HIGHEST_PARTY_IDS";
-    public static final String PARTY_IDS_KEY = "PARTY_IDS";
-    public static final String HINTS_KEY = "HINTS";
     public static final String PREPROCESSING_VOTES_KEY = "PREPROCESSING_VOTES";
 
-    public V058HintsSchema() {
+    public V059HintsSchema() {
         super(VERSION);
     }
 
     @Override
     public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.singleton(NEXT_CONSTRUCTION_ID_KEY, ProtoLong.PROTOBUF),
                 StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, HintsConstruction.PROTOBUF),
                 StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, HintsConstruction.PROTOBUF),
-                StateDefinition.onDisk(
-                        HIGHEST_PARTY_IDS_KEY, ProtoInteger.PROTOBUF, ProtoLong.PROTOBUF, MAX_SIZE_LOG_2),
-                StateDefinition.onDisk(PARTY_IDS_KEY, NodeSchemeId.PROTOBUF, ProtoLong.PROTOBUF, MAX_HINTS),
                 StateDefinition.onDisk(HINTS_KEY, HintsId.PROTOBUF, HintsKey.PROTOBUF, MAX_HINTS),
                 StateDefinition.onDisk(
                         PREPROCESSING_VOTES_KEY,

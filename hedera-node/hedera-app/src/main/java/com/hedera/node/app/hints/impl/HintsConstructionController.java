@@ -30,7 +30,9 @@ import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
 import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.HintsSubmissions;
+import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,32 +89,6 @@ public class HintsConstructionController {
     private CompletableFuture<Void> publicationFuture;
 
     /**
-     * A party's validated hinTS key, including the key itself and whether it is valid.
-     *
-     * @param partyId the party ID
-     * @param hintsKey the hinTS key
-     * @param isValid whether the key is valid
-     */
-    private record Validation(long partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
-
-    /**
-     * The full record of a hinTS key publication, including the key, the submitting node id, and (importantly)
-     * the party id for that node id in this construction.
-     *
-     * @param hintsKey the hinTS key itself
-     * @param nodeId the node ID submitting the key
-     * @param partyId the party ID for the node in this construction
-     * @param adoptionTime the time at which the key was adopted
-     */
-    public record HintsKeyPublication(
-            @NonNull HintsKey hintsKey, long nodeId, long partyId, @NonNull Instant adoptionTime) {
-        public HintsKeyPublication {
-            requireNonNull(hintsKey);
-            requireNonNull(adoptionTime);
-        }
-    }
-
-    /**
      * Whether this construction must succeed as quickly as possible, even at the cost of some overhead on
      * the {@code handleTransaction} thread when nodes fail to publish their hints in a reasonable time.
      */
@@ -129,6 +105,15 @@ public class HintsConstructionController {
         LOW,
     }
 
+    /**
+     * A party's validated hinTS key, including the key itself and whether it is valid.
+     *
+     * @param partyId the party ID
+     * @param hintsKey the hinTS key
+     * @param isValid whether the key is valid
+     */
+    private record Validation(long partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
+
     public HintsConstructionController(
             final long selfId,
             @NonNull final Urgency urgency,
@@ -140,6 +125,7 @@ public class HintsConstructionController {
             @NonNull final Map<Long, Long> targetNodeWeights,
             @NonNull final HintsConstruction construction,
             @NonNull final List<HintsKeyPublication> publications,
+            @NonNull final Map<Long, PreprocessedKeysVote> votes,
             @NonNull final HintsSubmissions submissions,
             @NonNull final Function<Bytes, BlsPublicKey> keyParser) {
         this.selfId = selfId;
@@ -155,9 +141,17 @@ public class HintsConstructionController {
         this.sourceWeightThreshold = strongMinorityWeightFor(sourceNodeWeights);
         this.targetNodeWeights = requireNonNull(targetNodeWeights);
         this.targetWeightThreshold = strongMinorityWeightFor(targetNodeWeights);
-        this.M = ceilingPartySize(targetNodeWeights.size());
+        this.M = HintsService.partySizeForRosterNodeCount(targetNodeWeights.size());
         this.k = Integer.numberOfTrailingZeros(M);
+        this.votes.putAll(votes);
         publications.forEach(this::incorporateHintsKey);
+    }
+
+    /**
+     * Returns whether the construction is still in progress.
+     */
+    public boolean isStillInProgress() {
+        return !construction.hasPreprocessedKeys();
     }
 
     /**
@@ -409,20 +403,5 @@ public class HintsConstructionController {
         // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
         // ensures it the conclusion overlaps with the weight held by at least one honest node
         return (weight + 2) / 3;
-    }
-
-    /**
-     * Returns the party size {@code M=2^k} such that the given roster node count will fall inside the
-     * range {@code [2*(k-1), 2^k)}.
-     *
-     * @param n the roster node count
-     * @return the party size
-     */
-    private static int ceilingPartySize(int n) {
-        n++;
-        if ((n & (n - 1)) == 0) {
-            return n;
-        }
-        return Integer.highestOneBit(n) << 1;
     }
 }

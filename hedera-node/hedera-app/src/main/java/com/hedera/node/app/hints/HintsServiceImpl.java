@@ -19,7 +19,8 @@ package com.hedera.node.app.hints;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.hints.schemas.V058HintsSchema;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
+import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
@@ -49,6 +50,11 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
+    public HintsHandlers handlers() {
+        return component.handlers();
+    }
+
+    @Override
     public void start() {
         // No-op
     }
@@ -61,7 +67,7 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V058HintsSchema());
+        registry.register(new V059HintsSchema());
     }
 
     @Override
@@ -85,7 +91,8 @@ public class HintsServiceImpl implements HintsService {
             construction = hintsStore.newConstructionFor(sourceRosterHash, targetRosterHash, rosterStore);
         }
         if (!construction.hasPreprocessedKeys()) {
-            final var controller = component.controllers().getOrCreateControllerFor(construction, rosterStore);
+            final var controller =
+                    component.controllers().getOrCreateControllerFor(construction, hintsStore, rosterStore);
             controller.advanceConstruction(now, hintsStore);
         } else if (candidateRosterHash == null) {
             hintsStore.purgeConstructionsNotFor(currentRosterHash);

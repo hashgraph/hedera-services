@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -8,6 +23,10 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
+import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
+import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
@@ -260,6 +279,15 @@ class HandleWorkflowModuleTest {
     @Mock
     private TssShareSignatureHandler tssShareSignatureHandler;
 
+    @Mock
+    private HintsKeyPublicationHandler keyPublicationHandler;
+
+    @Mock
+    private HintsAggregationVoteHandler aggregationVoteHandler;
+
+    @Mock
+    private HintsPartialSignatureHandler partialSignatureHandler;
+
     @TempDir
     java.nio.file.Path tempDir;
 
@@ -335,7 +363,8 @@ class HandleWorkflowModuleTest {
                 scheduleHandlers,
                 tokenHandlers,
                 utilHandlers,
-                addressBookHandlers);
+                addressBookHandlers,
+                new HintsHandlers(keyPublicationHandler, aggregationVoteHandler, partialSignatureHandler));
         assertInstanceOf(TransactionHandlers.class, handlers);
     }
 }

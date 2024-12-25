@@ -23,6 +23,8 @@ import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStra
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.hints.HintsServiceImpl;
+import com.hedera.node.app.hints.impl.HintsOperationsImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -128,6 +130,8 @@ public enum TransactionExecutors {
                 new TssLibraryImpl(appContext),
                 ForkJoinPool.commonPool(),
                 NO_OP_METRICS);
+        final var hintsService =
+                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();
@@ -135,6 +139,7 @@ public enum TransactionExecutors {
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .tssBaseService(tssBaseService)
+                .hintsService(hintsService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .scheduleServiceImpl(scheduleService)

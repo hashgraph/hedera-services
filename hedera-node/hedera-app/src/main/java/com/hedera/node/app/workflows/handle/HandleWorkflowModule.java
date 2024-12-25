@@ -1,9 +1,26 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -48,6 +65,12 @@ public interface HandleWorkflowModule {
     @Singleton
     static Supplier<TssHandlers> provideTssHandlers(@NonNull final TssBaseService tssBaseService) {
         return tssBaseService::tssHandlers;
+    }
+
+    @Provides
+    @Singleton
+    static HintsHandlers provideHintsHandlers(@NonNull final HintsService hintsService) {
+        return hintsService.handlers();
     }
 
     @Provides
@@ -104,7 +127,8 @@ public interface HandleWorkflowModule {
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilHandlers utilHandlers,
-            @NonNull final AddressBookHandlers addressBookHandlers) {
+            @NonNull final AddressBookHandlers addressBookHandlers,
+            @NonNull final HintsHandlers hintsHandlers) {
         return new TransactionHandlers(
                 consensusHandlers.consensusCreateTopicHandler(),
                 consensusHandlers.consensusUpdateTopicHandler(),
@@ -162,6 +186,9 @@ public interface HandleWorkflowModule {
                 utilHandlers.prngHandler(),
                 tssHandlers.get().tssMessageHandler(),
                 tssHandlers.get().tssVoteHandler(),
-                tssHandlers.get().tssShareSignatureHandler());
+                tssHandlers.get().tssShareSignatureHandler(),
+                hintsHandlers.keyPublicationHandler(),
+                hintsHandlers.aggregationVoteHandler(),
+                hintsHandlers.partialSignatureHandler());
     }
 }

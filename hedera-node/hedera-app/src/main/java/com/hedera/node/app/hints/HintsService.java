@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsConstructionController;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -56,6 +60,8 @@ import java.time.Instant;
 public interface HintsService extends Service {
     String NAME = "HintsService";
 
+    SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
+
     /**
      * Since the roster service has to decide to adopt the candidate roster
      * at an upgrade boundary based on availability of hinTS preprocessed
@@ -65,6 +71,11 @@ public interface HintsService extends Service {
      * on the roster service to know how to set up preprocessing work.)
      */
     int MIGRATION_ORDER = RosterService.MIGRATION_ORDER - 1;
+
+    /**
+     * Returns the handlers for the {@link HintsService}.
+     */
+    HintsHandlers handlers();
 
     /**
      * Starts the hinTS service in the node's setup phase.
@@ -93,7 +104,7 @@ public interface HintsService extends Service {
      * <b>IMPORTANT:</b> Note that whether a new {@link HintsConstructionController} object is created, or an
      * appropriate one already exists, its subsequent behavior will be a deterministic function of the given
      * consensus time and {@link HintsService} states. That is, controllers are persistent objects <i>only</i>
-     * due to performance considerations, but are <i>logically</i> driven deterministically by nothing but
+     * due to performance considerations, but are <i>logically</i> driven deterministically by just the current
      * network state and consensus time.
      *
      * @param now the current consensus time
@@ -121,4 +132,19 @@ public interface HintsService extends Service {
 
     @Override
     void registerSchemas(@NonNull SchemaRegistry registry);
+
+    /**
+     * Returns the party size {@code M=2^k} such that the given roster node count
+     * will fall inside the range {@code [2*(k-1), 2^k)}.
+     *
+     * @param n the roster node count
+     * @return the party size
+     */
+    static int partySizeForRosterNodeCount(int n) {
+        n++;
+        if ((n & (n - 1)) == 0) {
+            return n;
+        }
+        return Integer.highestOneBit(n) << 1;
+    }
 }

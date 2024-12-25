@@ -81,10 +81,15 @@ message HintsKey {
 }
 
 /**
- * A set of hints keys for a party, including the key the party is
-  * currently using and the key the party wishes to use in the future.
+ * A set of hints keys for a party, including the node that had this
+ * party id at the time of publication, the key party is currently
+ * using and the key the party wishes to use in the future.
  */
 message HintsKeySet {
+  /**
+   * The id of the node had this party id at the time of publication.
+   */
+  uint64 node_id = 1;
   /**
    * The consensus time at which the network adopted the current
    * hints key in this set. An adoption time that is sufficiently
@@ -92,11 +97,11 @@ message HintsKeySet {
    * in the party being given zero weight in that construction's
    * aggregation key.
    */
-  proto.Timestamp adoption_time = 1;
+  proto.Timestamp adoption_time = 2;
   /**
    * The hints key a party is using.
    */
-  HintsKey key = 2;
+  HintsKey key = 3;
   /**
    * If not null, the hints key a party wishes to use in all future
    * hinTS constructions. Will be adopted at the beginning of the
@@ -105,7 +110,7 @@ message HintsKeySet {
    * hints in this key, the party must continue signing with their
    * current secret key if they want to contribute to signing.
    */
-  HintsKey next_key = 3;
+  HintsKey next_key = 4;
 }
 
 /**

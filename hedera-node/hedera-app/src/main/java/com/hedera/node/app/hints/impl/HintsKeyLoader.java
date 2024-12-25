@@ -16,7 +16,13 @@
 
 package com.hedera.node.app.hints.impl;
 
-import dagger.Module;
+import com.hedera.cryptography.bls.BlsPublicKey;
 
-@Module
-public interface ControllerModule {}
+@FunctionalInterface
+public interface HintsKeyLoader {
+    /**
+     * Returns the hinTS BLS key, creating it if necessary.
+     * @return the hinTS key
+     */
+    BlsPublicKey getOrCreateHintsKey();
+}

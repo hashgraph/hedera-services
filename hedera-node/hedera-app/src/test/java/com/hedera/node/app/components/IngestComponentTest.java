@@ -36,6 +36,8 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.HintsServiceImpl;
+import com.hedera.node.app.hints.impl.HintsOperationsImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -69,6 +71,7 @@ import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -131,6 +134,8 @@ class IngestComponentTest {
                 throttleFactory);
         given(tssBaseService.tssHandlers())
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
+        final var hintsService =
+                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl());
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
@@ -151,6 +156,7 @@ class IngestComponentTest {
                 .boundaryStateChangeListener(new BoundaryStateChangeListener())
                 .migrationStateChanges(List.of())
                 .tssBaseService(tssBaseService)
+                .hintsService(hintsService)
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
                 .startupNetworks(startupNetworks)

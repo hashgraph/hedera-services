@@ -22,7 +22,9 @@ import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -88,6 +90,9 @@ class TssSubmissionsTest {
     @BeforeEach
     void setUp() {
         given(appContext.gossip()).willReturn(gossip);
+        doCallRealMethod()
+                .when(gossip)
+                .submitFuture(any(), any(), any(), any(), any(), anyInt(), anyInt(), any(), any());
         subject = new TssSubmissions(appContext, ForkJoinPool.commonPool());
         given(context.consensusNow()).willReturn(CONSENSUS_NOW);
         given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);

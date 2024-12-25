@@ -258,6 +258,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final TssBaseService tssBaseService;
 
     /**
+     * The hinTS service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final HintsService hintsService;
+
+    /**
      * The file service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
@@ -390,6 +396,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param migrator the migrator to use with the services
      * @param tssBaseServiceFactory the factory for the TSS base service
      * @param startupNetworksFactory the factory for the startup networks
+     * @param hintsServiceFactory the factory for the hinTS service
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -397,7 +404,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
-            @NonNull final StartupNetworksFactory startupNetworksFactory) {
+            @NonNull final StartupNetworksFactory startupNetworksFactory,
+            @NonNull final HintsServiceFactory hintsServiceFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.serviceMigrator = requireNonNull(migrator);
@@ -441,6 +449,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
         tssBaseService = tssBaseServiceFactory.apply(appContext);
+        hintsService = hintsServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
@@ -1022,6 +1031,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .contractServiceImpl(contractServiceImpl)
                 .scheduleService(scheduleServiceImpl)
                 .tssBaseService(tssBaseService)
+                .hintsService(hintsService)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
                 .self(networkInfo.selfNodeInfo())

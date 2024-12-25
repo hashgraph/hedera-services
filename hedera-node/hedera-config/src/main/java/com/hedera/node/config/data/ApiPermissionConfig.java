@@ -48,6 +48,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_AGGREGATION_VOTE;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_KEY_PUBLICATION;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
@@ -269,7 +272,10 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsKeyPublication,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsAggregationVote,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsPartialSignature) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -352,6 +358,9 @@ public record ApiPermissionConfig(
         permissionKeys.put(TSS_SHARE_SIGNATURE, c -> c.tssShareSignature);
         permissionKeys.put(TSS_ENCRYPTION_KEY, c -> c.tssEncryptionKey);
         permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
+        permissionKeys.put(HINTS_KEY_PUBLICATION, c -> c.hintsKeyPublication);
+        permissionKeys.put(HINTS_AGGREGATION_VOTE, c -> c.hintsAggregationVote);
+        permissionKeys.put(HINTS_PARTIAL_SIGNATURE, c -> c.hintsPartialSignature);
     }
 
     /**

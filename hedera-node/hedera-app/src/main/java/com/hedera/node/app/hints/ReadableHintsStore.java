@@ -16,24 +16,40 @@
 
 package com.hedera.node.app.hints;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.hapi.node.state.hints.HintsKey;
+import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Encapsulates information about the hints in state that are not directly scoped to
  * a particular maximum universe size.
  */
 public interface ReadableHintsStore {
+
     /**
-     * The preprocessed keys computed and votes received so far for a given construction id.
-     * @param keysByHash the preprocessed keys by hash
-     * @param votesById the votes by id
+     * The full record of a hinTS key publication, including the key, the submitting node id, and (importantly)
+     * the party id for that node id in this construction.
+     *
+     * @param hintsKey the hinTS key itself
+     * @param nodeId the node ID submitting the key
+     * @param partyId the party ID for the node in this construction
+     * @param adoptionTime the time at which the key was adopted
      */
-    record Votes(@NonNull Map<Bytes, PreprocessedKeys> keysByHash, @NonNull Map<Long, Bytes> votesById) {}
+    record HintsKeyPublication(@NonNull HintsKey hintsKey, long nodeId, long partyId, @NonNull Instant adoptionTime) {
+        public HintsKeyPublication {
+            requireNonNull(hintsKey);
+            requireNonNull(adoptionTime);
+        }
+    }
 
     /**
      * If there is a known construction with the given source and target roster hashes,
@@ -48,8 +64,17 @@ public interface ReadableHintsStore {
     /**
      * Returns the preprocessed keys and votes for the given construction id, if they exist.
      * @param constructionId the construction id
+     * @param nodeIds the node ids
      * @return the preprocessed keys and votes, or null
      */
-    @Nullable
-    Votes votesFor(long constructionId);
+    @NonNull
+    Map<Long, PreprocessedKeysVote> votesFor(long constructionId, @NonNull Set<Long> nodeIds);
+
+    /**
+     * Returns all the {@link HintsKeyPublication}s for the given maximum universe size.
+     * @param k the maximum universe size
+     * @return the {@link HintsKeyPublication}s
+     */
+    @NonNull
+    List<HintsKeyPublication> publicationsForMaxSizeLog2(int k);
 }

@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsConstructionControllers;
+import com.hedera.node.app.hints.impl.HintsModule;
 import com.hedera.node.app.spi.AppContext;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
@@ -25,7 +27,7 @@ import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component
+@Component(modules = HintsModule.class)
 public interface HintsServiceComponent {
     @Component.Factory
     interface Factory {
@@ -35,6 +37,8 @@ public interface HintsServiceComponent {
                 @BindsInstance Executor executor,
                 @BindsInstance Metrics metrics);
     }
+
+    HintsHandlers handlers();
 
     HintsConstructionControllers controllers();
 }
