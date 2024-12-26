@@ -20,8 +20,8 @@ import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
 import static com.hedera.node.app.hints.impl.HintsModule.FAKE_BLS_PUBLIC_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.node.app.tss.api.FakeFieldElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -33,8 +33,9 @@ import javax.inject.Singleton;
 
 @Singleton
 public class HintsKeyAccessorImpl implements HintsKeyAccessor {
-    BlsPrivateKey FAKE_BLS_PRIVATE_KEY =
+    private static final BlsPrivateKey FAKE_BLS_PRIVATE_KEY =
             new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
+    private static final BlsKeyPair FAKE_BLS_KEY_PAIR = new BlsKeyPair(FAKE_BLS_PRIVATE_KEY, FAKE_BLS_PUBLIC_KEY);
 
     private final HintsOperations operations;
 
@@ -50,7 +51,7 @@ public class HintsKeyAccessorImpl implements HintsKeyAccessor {
     }
 
     @Override
-    public BlsPublicKey getOrCreateBlsPublicKey() {
-        return FAKE_BLS_PUBLIC_KEY;
+    public BlsKeyPair getOrCreateBlsKeyPair(final long constructionId) {
+        return FAKE_BLS_KEY_PAIR;
     }
 }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
-import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
@@ -31,8 +31,9 @@ public interface HintsKeyAccessor {
     Optional<Bytes> signWithBlsPrivateKey(long constructionId, @NonNull Bytes message);
 
     /**
-     * Returns the public part of the hinTS BLS key, creating it if necessary.
-     * @return the hinTS key
+     * Returns the BLS key pair this node should use to for the given construction id, creating it if necessary.
+     * @param constructionId the active construction ID
+     * @return the hinTS key pair
      */
-    BlsPublicKey getOrCreateBlsPublicKey();
+    BlsKeyPair getOrCreateBlsKeyPair(long constructionId);
 }

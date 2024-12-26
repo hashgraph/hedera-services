@@ -51,7 +51,8 @@ public class FakeHintsOperations implements HintsOperations {
     }
 
     @Override
-    public Bytes aggregateSignatures(@NonNull final Bytes aggregationKey, @NonNull final Map<Long, Bytes> signatures) {
+    public Bytes aggregateSignatures(
+            @NonNull final Bytes aggregationKey, @NonNull final Map<Long, BlsSignature> signatures) {
         requireNonNull(aggregationKey);
         requireNonNull(signatures);
         throw new AssertionError("Not implemented");
@@ -64,20 +65,19 @@ public class FakeHintsOperations implements HintsOperations {
     }
 
     @Override
-    public Bytes computeHints(@NonNull final BlsPublicKey publicKey, final int n) {
-        requireNonNull(publicKey);
+    public Bytes computeHints(@NonNull final BlsPrivateKey privateKey, final int n) {
+        requireNonNull(privateKey);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public boolean validateHints(@NonNull final BlsPublicKey publicKey, @NonNull final Bytes hints, final int n) {
-        requireNonNull(publicKey);
-        requireNonNull(hints);
+    public boolean validate(@NonNull final HintsKey hintsKey, final int n) {
+        requireNonNull(hintsKey);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public PreprocessedKeys aggregate(@NonNull Map<Long, HintsKey> hintKeys, @NonNull Map<Long, Long> weights, int n) {
+    public PreprocessedKeys preprocess(@NonNull Map<Long, HintsKey> hintKeys, @NonNull Map<Long, Long> weights, int n) {
         requireNonNull(hintKeys);
         requireNonNull(weights);
         throw new AssertionError("Not implemented");

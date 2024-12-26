@@ -115,7 +115,7 @@ public class HintsServiceImpl implements HintsService {
         } else if (candidateRosterHash == null) {
             hintsStore.purgeConstructionsNotFor(currentRosterHash, rosterStore);
             final var signingContext = component.signingContext();
-            signingContext.setActiveConstructionId(hintsStore.currentConstructionId());
+            signingContext.setActiveConstruction(construction);
             if (signingContext.needsActiveNodeWeights()) {
                 final var activeRoster = requireNonNull(rosterStore.get(currentRosterHash));
                 signingContext.setActiveNodeWeights(weightsFrom(activeRoster));

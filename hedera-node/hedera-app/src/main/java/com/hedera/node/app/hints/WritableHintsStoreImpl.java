@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsId;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
+import com.hedera.hapi.node.state.hints.PartyAssignment;
 import com.hedera.hapi.node.state.hints.PreprocessVoteId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
@@ -37,6 +38,8 @@ import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -131,9 +134,14 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public HintsConstruction completeAggregation(final long constructionId, @NonNull final PreprocessedKeys keys) {
+    public HintsConstruction completeAggregation(
+            final long constructionId,
+            @NonNull final PreprocessedKeys keys,
+            @NonNull final Map<Long, Long> nodePartyIds) {
         requireNonNull(keys);
-        return updateOrThrow(constructionId, b -> b.preprocessedKeys(keys));
+        requireNonNull(nodePartyIds);
+        return updateOrThrow(
+                constructionId, b -> b.preprocessedKeys(keys).partyAssignments(asPartyAssignments(nodePartyIds)));
     }
 
     @Override
@@ -194,5 +202,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         sourceRoster
                 .rosterEntries()
                 .forEach(entry -> votes.remove(new PreprocessVoteId(construction.constructionId(), entry.nodeId())));
+    }
+
+    private List<PartyAssignment> asPartyAssignments(@NonNull final Map<Long, Long> nodePartyIds) {
+        return nodePartyIds.entrySet().stream()
+                .map(entry -> new PartyAssignment(entry.getKey(), entry.getValue()))
+                .toList();
     }
 }

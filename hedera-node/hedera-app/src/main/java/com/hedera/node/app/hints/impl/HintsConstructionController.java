@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
@@ -61,7 +62,7 @@ public class HintsConstructionController {
     private final long targetWeightThreshold;
     private final Urgency urgency;
     private final Executor executor;
-    private final BlsPublicKey blsPublicKey;
+    private final BlsKeyPair blsKeyPair;
     private final Duration hintKeysWaitTime;
     private final HintsOperations operations;
     private final Map<Long, Long> sourceNodeWeights;
@@ -121,7 +122,7 @@ public class HintsConstructionController {
             final long selfId,
             @NonNull final Urgency urgency,
             @NonNull final Executor executor,
-            @NonNull final BlsPublicKey blsPublicKey,
+            @NonNull final BlsKeyPair blsKeyPair,
             @NonNull final Duration hintKeysWaitTime,
             @NonNull final HintsOperations operations,
             @NonNull final Map<Long, Long> sourceNodeWeights,
@@ -135,9 +136,9 @@ public class HintsConstructionController {
         this.selfId = selfId;
         this.urgency = requireNonNull(urgency);
         this.executor = requireNonNull(executor);
+        this.blsKeyPair = requireNonNull(blsKeyPair);
         this.signingContext = requireNonNull(signingContext);
         this.keyParser = requireNonNull(keyParser);
-        this.blsPublicKey = requireNonNull(blsPublicKey);
         this.submissions = requireNonNull(submissions);
         this.operations = requireNonNull(operations);
         this.construction = requireNonNull(construction);
@@ -202,8 +203,9 @@ public class HintsConstructionController {
                     && !nodePartyIds.containsKey(selfId)) {
                 publicationFuture = CompletableFuture.runAsync(
                         () -> {
-                            final var hints = operations.computeHints(blsPublicKey, M);
-                            final var hintsKey = new HintsKey(Bytes.wrap(blsPublicKey.toBytes()), hints);
+                            final var hints = operations.computeHints(blsKeyPair.privateKey(), M);
+                            final var hintsKey = new HintsKey(
+                                    Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
                             final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);
                             submissions.submitHintsKey(body).join();
                         },
@@ -250,7 +252,7 @@ public class HintsConstructionController {
                     .findFirst();
             maybeWinningAggregation.ifPresent(keys -> {
                 final var id = constructionId();
-                construction = hintsStore.completeAggregation(id, keys);
+                construction = hintsStore.completeAggregation(id, keys, nodePartyIds);
                 if (hintsStore.currentConstructionId() == id) {
                     signingContext.setActiveConstruction(construction);
                 }
@@ -384,7 +386,7 @@ public class HintsConstructionController {
                     final var weights = nodePartyIds.entrySet().stream()
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
                             .collect(toMap(Map.Entry::getValue, entry -> targetNodeWeights.get(entry.getKey())));
-                    final var keys = operations.aggregate(hintKeys, weights, M);
+                    final var keys = operations.preprocess(hintKeys, weights, M);
                     final var body = HintsAggregationVoteTransactionBody.newBuilder()
                             .constructionId(constructionId())
                             .vote(PreprocessedKeysVote.newBuilder()
@@ -423,8 +425,7 @@ public class HintsConstructionController {
     private CompletableFuture<Validation> validationFuture(final long partyId, @NonNull final HintsKey hintsKey) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var isValid =
-                            operations.validateHints(keyParser.apply(hintsKey.publicKey()), hintsKey.hint(), M);
+                    final var isValid = operations.validate(hintsKey, M);
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);

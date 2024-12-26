@@ -18,13 +18,18 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
+import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.PartyAssignment;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -34,13 +39,14 @@ import javax.inject.Singleton;
 
 @Singleton
 public class HintsSigningContext {
-    private long activeConstructionId = 0L;
-
     @Nullable
-    private Bytes activeAggregationKey = null;
+    private HintsConstruction activeConstruction;
 
     @Nullable
     private Map<Long, Long> activeNodeWeights;
+
+    @Nullable
+    private Map<Long, Long> activeNodePartyIds;
 
     private final HintsOperations operations;
 
@@ -52,24 +58,35 @@ public class HintsSigningContext {
     public class Signing {
         private final long constructionId;
         private final Bytes message;
+        private final Bytes aggregationKey;
         private final Map<Long, Long> weights;
+        private final Map<Long, Long> partyIds;
         private final CompletableFuture<Bytes> future = new CompletableFuture<>();
         private final ConcurrentMap<Long, Bytes> signatures = new ConcurrentHashMap<>();
 
         public Signing(
-                final long constructionId, @NonNull final Bytes message, @NonNull final Map<Long, Long> weights) {
+                final long constructionId,
+                @NonNull final Bytes message,
+                @NonNull final Bytes aggregationKey,
+                @NonNull final Map<Long, Long> weights,
+                @NonNull final Map<Long, Long> partyIds) {
             this.constructionId = constructionId;
             this.message = requireNonNull(message);
+            this.aggregationKey = requireNonNull(aggregationKey);
             this.weights = requireNonNull(weights);
+            this.partyIds = requireNonNull(partyIds);
         }
 
         public Future<Bytes> future() {
             return future;
         }
 
-        public void incorporate(final long constructionId, final long nodeId, @NonNull final Bytes signature) {
+        public void incorporate(final long constructionId, final long nodeId, @NonNull final BlsSignature signature) {
             requireNonNull(signature);
-            if (this.constructionId == constructionId) {}
+            if (this.constructionId == constructionId) {
+                final var publicKey = operations.extractPublicKey(aggregationKey, partyIds.get(nodeId));
+                if (operations.verifyPartial(message, signature, publicKey)) {}
+            }
         }
     }
 
@@ -77,28 +94,40 @@ public class HintsSigningContext {
         requireNonNull(construction);
     }
 
-    public void setActiveConstructionId(final long activeConstructionId) {
-        this.activeConstructionId = activeConstructionId;
-    }
-
     public void setActiveNodeWeights(@NonNull final Map<Long, Long> activeNodeWeights) {
         this.activeNodeWeights = requireNonNull(unmodifiableMap(activeNodeWeights));
     }
 
     public boolean needsActiveNodeWeights() {
-        return activeConstructionId > 0 && activeNodeWeights == null;
+        return activeConstruction != null && activeNodeWeights == null;
     }
 
     public boolean isReady() {
-        return activeConstructionId > 0 && activeNodeWeights != null;
+        return activeConstruction != null && activeNodeWeights != null;
     }
 
     public @NonNull Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        requireNonNull(blockHash);
         if (!isReady()) {
             throw new IllegalStateException("Signing context not ready with activeConstructionId="
-                    + activeConstructionId + " and activeNodeWeights=" + activeNodeWeights);
+                    + Optional.ofNullable(activeConstruction)
+                            .map(HintsConstruction::constructionId)
+                            .map(Object::toString)
+                            .orElse("<N/A>")
+                    + " and activeNodeWeights=" + (activeNodeWeights == null ? "<N/A>" : "<SET>"));
         }
+        requireNonNull(activeConstruction);
         requireNonNull(activeNodeWeights);
-        return new Signing(activeConstructionId, blockHash, activeNodeWeights).future();
+        final var signing = new Signing(
+                activeConstruction.constructionId(),
+                blockHash,
+                activeConstruction.preprocessedKeysOrThrow().aggregationKey(),
+                activeNodeWeights,
+                asNodePartyIds(activeConstruction.partyAssignments()));
+        return signing.future();
+    }
+
+    private Map<Long, Long> asNodePartyIds(@NonNull final List<PartyAssignment> partyAssignments) {
+        return partyAssignments.stream().collect(toMap(PartyAssignment::nodeId, PartyAssignment::partyId));
     }
 }

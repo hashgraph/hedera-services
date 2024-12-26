@@ -46,10 +46,9 @@ public interface HintsOperations {
     /**
      * Aggregates the signatures for the given party ids with the given aggregation key.
      * @param aggregationKey the aggregation key
-     * @param signatures the signatures by party id
      * @return the aggregated signature
      */
-    Bytes aggregateSignatures(@NonNull Bytes aggregationKey, @NonNull Map<Long, Bytes> signatures);
+    Bytes aggregateSignatures(@NonNull Bytes aggregationKey, @NonNull Map<Long, BlsSignature> partialSignatures);
 
     /**
      * Extracts the public key for the given party id from the given aggregation key.
@@ -61,21 +60,19 @@ public interface HintsOperations {
 
     /**
      * Computes the hints for the given public key and number of parties.
-     * @param publicKey the public key
+     * @param privateKey the private key
      * @param n the number of parties
      * @return the hints
      */
-    Bytes computeHints(@NonNull BlsPublicKey publicKey, int n);
+    Bytes computeHints(@NonNull BlsPrivateKey privateKey, int n);
 
     /**
-     * Validates the hints for the given public key and number of parties.
+     * Validates the hinTS public key for the given number of parties.
      *
-     * @param publicKey the public key
-     * @param hints the hints
      * @param n the number of parties
      * @return true if the hints are valid; false otherwise
      */
-    boolean validateHints(@NonNull BlsPublicKey publicKey, @NonNull Bytes hints, int n);
+    boolean validate(@NonNull HintsKey hintsKey, int n);
 
     /**
      * Aggregates the given validated hint keys and party weights into a {@link PreprocessedKeys}.
@@ -84,5 +81,5 @@ public interface HintsOperations {
      * @param n the number of parties
      * @return the aggregated keys
      */
-    PreprocessedKeys aggregate(@NonNull Map<Long, HintsKey> hintKeys, @NonNull Map<Long, Long> weights, int n);
+    PreprocessedKeys preprocess(@NonNull Map<Long, HintsKey> hintKeys, @NonNull Map<Long, Long> weights, int n);
 }

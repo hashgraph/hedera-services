@@ -152,14 +152,14 @@ public class HintsConstructionControllers {
                 ? sourceNodeWeights
                 : weightsFrom(requireNonNull(rosterStore.get(construction.targetRosterHash())));
         final int k = Integer.numberOfTrailingZeros(partySizeForRosterNodeCount(targetNodeWeights.size()));
-        final var blsPublicKey = keyLoader.getOrCreateBlsPublicKey();
+        final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
         final var publications = hintsStore.publicationsForMaxSizeLog2(k, targetNodeWeights.keySet());
         final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
         return new HintsConstructionController(
                 selfNodeInfoSupplier.get().nodeId(),
                 urgency,
                 executor,
-                blsPublicKey,
+                blsKeyPair,
                 hintKeysWaitTime,
                 operations,
                 sourceNodeWeights,

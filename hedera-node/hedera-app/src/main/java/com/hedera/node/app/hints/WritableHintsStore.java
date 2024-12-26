@@ -23,6 +23,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Provides write access to the {@link HintsConstruction} instances in state.
@@ -57,7 +58,8 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * updated construction.
      * @return the updated construction
      */
-    HintsConstruction completeAggregation(long constructionId, @NonNull PreprocessedKeys keys);
+    HintsConstruction completeAggregation(
+            long constructionId, @NonNull PreprocessedKeys keys, @NonNull Map<Long, Long> nodePartyIds);
 
     /**
      * Sets the aggregation time for the construction with the given ID and returns the
