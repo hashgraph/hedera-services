@@ -34,7 +34,7 @@ class YamlConfigSourceTest {
     }
 
     @Test
-    void testLoadProperties() throws Exception {
+    void testLoadProperties() {
         // given
         final String existingFile = "test.yaml";
 

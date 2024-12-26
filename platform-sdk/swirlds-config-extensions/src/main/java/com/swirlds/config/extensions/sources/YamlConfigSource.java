@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,7 +39,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  * A config source that reads properties from a YAML file.
@@ -68,6 +68,7 @@ public class YamlConfigSource implements ConfigSource {
      * The {@link ObjectMapper} used to convert maps to JSON.
      */
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
     /**
      * The map that contains all not-list properties.
@@ -151,25 +152,20 @@ public class YamlConfigSource implements ConfigSource {
         }
     }
 
-    private void convertYamlToMaps(@NonNull final InputStream resource) {
+    @SuppressWarnings("unchecked")
+    private void convertYamlToMaps(@NonNull final InputStream resource) throws IOException {
         Objects.requireNonNull(resource, "resource must not be null");
-        final Yaml yaml = new Yaml();
-        final Object rawData = yaml.load(resource);
-        processYamlNode("", rawData, properties, listProperties);
+        final Map<String, Object> map = YAML_MAPPER.readValue(resource, Map.class);
+        processYamlNode("", map, properties, listProperties);
     }
 
     @SuppressWarnings("unchecked")
     private void processYamlNode(
             @NonNull final String prefix,
-            @NonNull final Object node,
+            @NonNull final Map<String, Object> map,
             @NonNull final Map<String, String> simpleProps,
             @NonNull final Map<String, List<String>> listProps) {
 
-        if (!(node instanceof Map)) {
-            return;
-        }
-
-        final Map<String, Object> map = (Map<String, Object>) node;
         for (final Map.Entry<String, Object> entry : map.entrySet()) {
             final String newPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
             final Object value = entry.getValue();
@@ -177,7 +173,7 @@ public class YamlConfigSource implements ConfigSource {
             try {
                 switch (value) {
                     case final List<?> list -> handleList(listProps, list, newPrefix);
-                    case final Map<?, ?> mapValue -> handleMap(simpleProps, listProps, mapValue, newPrefix);
+                    case final Map<?, ?> mapValue -> handleMap(simpleProps, listProps, (Map<String, Object>)mapValue, newPrefix);
                     case null -> simpleProps.put(newPrefix, null);
                     default -> simpleProps.put(newPrefix, value.toString());
                 }
@@ -190,7 +186,7 @@ public class YamlConfigSource implements ConfigSource {
     private void handleMap(
             final @NonNull Map<String, String> simpleProps,
             final @NonNull Map<String, List<String>> listProps,
-            final Map<?, ?> mapValue,
+            final Map<String, Object> mapValue,
             final String newPrefix)
             throws JsonProcessingException {
         if (mapValue.values().stream().noneMatch(v -> v instanceof Map || v instanceof List)) {
