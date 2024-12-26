@@ -138,6 +138,7 @@ public class BlockStreamManagerBenchmark {
             ForkJoinPool.commonPool(),
             new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
+            new MockBlockHashSigner(),
             NoopBlockItemWriter::new,
             //            BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),

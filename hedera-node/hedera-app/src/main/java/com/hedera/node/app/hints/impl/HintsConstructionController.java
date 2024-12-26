@@ -67,6 +67,7 @@ public class HintsConstructionController {
     private final Map<Long, Long> sourceNodeWeights;
     private final Map<Long, Long> targetNodeWeights;
     private final HintsSubmissions submissions;
+    private final HintsSigningContext signingContext;
     private final Map<Long, Long> nodePartyIds = new HashMap<>();
     private final Map<Long, Long> partyNodeIds = new HashMap<>();
     private final Map<Long, PreprocessedKeysVote> votes = new HashMap<>();
@@ -129,10 +130,12 @@ public class HintsConstructionController {
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final Map<Long, PreprocessedKeysVote> votes,
             @NonNull final HintsSubmissions submissions,
+            @NonNull final HintsSigningContext signingContext,
             @NonNull final Function<Bytes, BlsPublicKey> keyParser) {
         this.selfId = selfId;
         this.urgency = requireNonNull(urgency);
         this.executor = requireNonNull(executor);
+        this.signingContext = requireNonNull(signingContext);
         this.keyParser = requireNonNull(keyParser);
         this.blsPublicKey = requireNonNull(blsPublicKey);
         this.submissions = requireNonNull(submissions);
@@ -245,8 +248,13 @@ public class HintsConstructionController {
                     .filter(entry -> entry.getValue() >= sourceWeightThreshold)
                     .map(Map.Entry::getKey)
                     .findFirst();
-            maybeWinningAggregation.ifPresent(
-                    keys -> construction = hintsStore.completeAggregation(constructionId(), keys));
+            maybeWinningAggregation.ifPresent(keys -> {
+                final var id = constructionId();
+                construction = hintsStore.completeAggregation(id, keys);
+                if (hintsStore.currentConstructionId() == id) {
+                    signingContext.setActiveConstruction(construction);
+                }
+            });
         }
     }
 

@@ -54,7 +54,7 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().hintsKeyPublicationOrThrow();
-        controllers.getInProgressById(op.maxSizeLog2()).ifPresent(controller -> {
+        controllers.getInProgressByUniverseSizeLog2(op.maxSizeLog2()).ifPresent(controller -> {
             final long nodeId = context.creatorInfo().nodeId();
             final var partyId = controller.partyIdOf(nodeId).orElseGet(controller::nextPartyId);
             final var hintsKey = op.hintsKeyOrThrow();

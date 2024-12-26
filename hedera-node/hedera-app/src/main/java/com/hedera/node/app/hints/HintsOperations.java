@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -24,6 +26,39 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 public interface HintsOperations {
+    /**
+     * Signs the given message with the given private key.
+     * @param message the message
+     * @param key the private key
+     * @return the signature
+     */
+    BlsSignature signPartial(@NonNull Bytes message, @NonNull BlsPrivateKey key);
+
+    /**
+     * Verifies the given signature for the given message and public key.
+     * @param message the message
+     * @param signature the signature
+     * @param publicKey the public key
+     * @return true if the signature is valid; false otherwise
+     */
+    boolean verifyPartial(@NonNull Bytes message, @NonNull BlsSignature signature, @NonNull BlsPublicKey publicKey);
+
+    /**
+     * Aggregates the signatures for the given party ids with the given aggregation key.
+     * @param aggregationKey the aggregation key
+     * @param signatures the signatures by party id
+     * @return the aggregated signature
+     */
+    Bytes aggregateSignatures(@NonNull Bytes aggregationKey, @NonNull Map<Long, Bytes> signatures);
+
+    /**
+     * Extracts the public key for the given party id from the given aggregation key.
+     * @param aggregationKey the aggregation key
+     * @param partyId the party id
+     * @return the public key
+     */
+    BlsPublicKey extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
+
     /**
      * Computes the hints for the given public key and number of parties.
      * @param publicKey the public key

@@ -18,7 +18,9 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes.hints;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.hints.HintsOperations;
@@ -31,7 +33,39 @@ import java.util.Map;
  */
 public class FakeHintsOperations implements HintsOperations {
     @Override
+    public BlsSignature signPartial(@NonNull final Bytes message, @NonNull final BlsPrivateKey key) {
+        requireNonNull(message);
+        requireNonNull(key);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public boolean verifyPartial(
+            @NonNull final Bytes message,
+            @NonNull final BlsSignature signature,
+            @NonNull final BlsPublicKey publicKey) {
+        requireNonNull(message);
+        requireNonNull(signature);
+        requireNonNull(publicKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public Bytes aggregateSignatures(@NonNull final Bytes aggregationKey, @NonNull final Map<Long, Bytes> signatures) {
+        requireNonNull(aggregationKey);
+        requireNonNull(signatures);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public BlsPublicKey extractPublicKey(@NonNull final Bytes aggregationKey, final long partyId) {
+        requireNonNull(aggregationKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
     public Bytes computeHints(@NonNull final BlsPublicKey publicKey, final int n) {
+        requireNonNull(publicKey);
         throw new AssertionError("Not implemented");
     }
 

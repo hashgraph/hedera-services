@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.blocks.BlockHashSigner;
+import com.hedera.node.app.blocks.MockBlockHashSigner;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
@@ -37,6 +39,7 @@ import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -55,6 +58,15 @@ import javax.inject.Singleton;
 
 @Module
 public interface HandleWorkflowModule {
+    @Provides
+    @Singleton
+    static BlockHashSigner provideBlockHashSigner(
+            @NonNull final HintsService hintsService, @NonNull final ConfigProvider configProvider) {
+        return configProvider.getConfiguration().getConfigData(TssConfig.class).hintsEnabled()
+                ? hintsService
+                : new MockBlockHashSigner();
+    }
+
     @Provides
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {

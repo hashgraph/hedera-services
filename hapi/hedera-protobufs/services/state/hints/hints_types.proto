@@ -171,6 +171,20 @@ message PreprocessedKeysVote {
 }
 
 /**
+ * The assignment of a node to a party in a hinTS construction.
+ */
+message PartyAssignment {
+  /**
+   * The id of the node.
+   */
+  uint64 node_id = 1;
+  /**
+   * The party id.
+   */
+  uint64 party_id = 2;
+}
+
+/**
  * A summary of progress on a hinTS construction, including a unique
  * id, the time at which construction started, the hashes of the
  * rosters used to determine when certain thresholds are met, and the
@@ -212,4 +226,9 @@ message HintsConstruction {
    * holding strictly more than 1/3 of the weight in the source roster.
    */
   PreprocessedKeys preprocessed_keys = 6;
+
+  /**
+   * The assignments of nodes to parties in the construction.
+   */
+  repeated PartyAssignment party_assignments = 7;
 }

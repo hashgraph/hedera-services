@@ -23,15 +23,17 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
+import com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody;
+import com.hedera.node.app.hints.impl.HintsKeyAccessor;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,12 +46,30 @@ public class HintsSubmissions {
 
     private final Executor executor;
     private final AppContext appContext;
-    private final AtomicInteger nextOffset = new AtomicInteger(0);
+    private final HintsKeyAccessor keyLoader;
 
     @Inject
-    public HintsSubmissions(@NonNull final Executor executor, @NonNull final AppContext appContext) {
+    public HintsSubmissions(
+            @NonNull final Executor executor,
+            @NonNull final AppContext appContext,
+            @NonNull final HintsKeyAccessor keyLoader) {
         this.executor = requireNonNull(executor);
+        this.keyLoader = requireNonNull(keyLoader);
         this.appContext = requireNonNull(appContext);
+    }
+
+    /**
+     * Attempts to submit a hinTS key aggregation vote to the network.
+     * @param body the vote to submit
+     * @return a future that completes when the vote has been submitted
+     */
+    public CompletableFuture<Void> submitHintsKey(@NonNull final HintsKeyPublicationTransactionBody body) {
+        requireNonNull(body);
+        return submit(
+                b -> b.hintsKeyPublication(body),
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                appContext.instantSource().instant());
     }
 
     /**
@@ -67,14 +87,14 @@ public class HintsSubmissions {
     }
 
     /**
-     * Attempts to submit a hinTS key aggregation vote to the network.
-     * @param body the vote to submit
+     * Attempts to submit a hinTS partial signature.
+     * @param message the message to sign
      * @return a future that completes when the vote has been submitted
      */
-    public CompletableFuture<Void> submitHintsKey(@NonNull final HintsKeyPublicationTransactionBody body) {
-        requireNonNull(body);
+    public CompletableFuture<Void> submitPartialSignature(@NonNull final Bytes message) {
+        requireNonNull(message);
         return submit(
-                b -> b.hintsKeyPublication(body),
+                b -> b.hintsPartialSignature(HintsPartialSignatureTransactionBody.DEFAULT),
                 appContext.configSupplier().get(),
                 appContext.selfNodeInfoSupplier().get().accountId(),
                 appContext.instantSource().instant());

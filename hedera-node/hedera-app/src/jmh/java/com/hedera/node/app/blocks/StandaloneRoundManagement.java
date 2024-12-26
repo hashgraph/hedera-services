@@ -115,6 +115,7 @@ public class StandaloneRoundManagement {
             ForkJoinPool.commonPool(),
             new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
+            new MockBlockHashSigner(),
             NoopBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,

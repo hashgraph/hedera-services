@@ -19,13 +19,11 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.HIGH;
 import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.LOW;
+import static com.hedera.node.app.hints.impl.HintsModule.weightsFrom;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.HintsSubmissions;
@@ -37,7 +35,6 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -58,15 +55,16 @@ public class HintsConstructionControllers {
     private static final long NO_CONSTRUCTION_ID = -1L;
 
     private final Executor executor;
-    private final HintsKeyLoader keyLoader;
+    private final HintsKeyAccessor keyLoader;
     private final HintsOperations operations;
     private final HintsSubmissions submissions;
+    private final HintsSigningContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
     private final Supplier<Configuration> configSupplier;
     private final Function<Bytes, BlsPublicKey> keyParser;
 
     /**
-     * May be null if the node has just started, or if the network has complete the most up-to-date
+     * May be null if the node has just started, or if the network has completed the most up-to-date
      * construction implied by its roster store.
      */
     @Nullable
@@ -75,14 +73,16 @@ public class HintsConstructionControllers {
     @Inject
     public HintsConstructionControllers(
             @NonNull final Executor executor,
-            @NonNull final HintsKeyLoader keyLoader,
+            @NonNull final HintsKeyAccessor keyLoader,
             @NonNull final HintsOperations operations,
             @NonNull final HintsSubmissions submissions,
+            @NonNull final HintsSigningContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier,
             @NonNull final Supplier<Configuration> configSupplier,
             @NonNull final Function<Bytes, BlsPublicKey> keyParser) {
         this.executor = requireNonNull(executor);
         this.keyLoader = requireNonNull(keyLoader);
+        this.signingContext = signingContext;
         this.keyParser = requireNonNull(keyParser);
         this.operations = requireNonNull(operations);
         this.submissions = requireNonNull(submissions);
@@ -130,7 +130,7 @@ public class HintsConstructionControllers {
      * @param k the log2 of the universe size
      * @return the controller, if it exists
      */
-    public Optional<HintsConstructionController> getInProgressByLog2UniverseSize(final int k) {
+    public Optional<HintsConstructionController> getInProgressByUniverseSizeLog2(final int k) {
         return Optional.ofNullable(controller).filter(c -> c.hasLog2UniverseSize(k));
     }
 
@@ -152,7 +152,7 @@ public class HintsConstructionControllers {
                 ? sourceNodeWeights
                 : weightsFrom(requireNonNull(rosterStore.get(construction.targetRosterHash())));
         final int k = Integer.numberOfTrailingZeros(partySizeForRosterNodeCount(targetNodeWeights.size()));
-        final var blsPublicKey = keyLoader.getOrCreateHintsKey();
+        final var blsPublicKey = keyLoader.getOrCreateBlsPublicKey();
         final var publications = hintsStore.publicationsForMaxSizeLog2(k, targetNodeWeights.keySet());
         final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
         return new HintsConstructionController(
@@ -168,14 +168,11 @@ public class HintsConstructionControllers {
                 publications,
                 votes,
                 submissions,
+                signingContext,
                 keyParser);
     }
 
     private long currentConstructionId() {
         return controller != null ? controller.constructionId() : NO_CONSTRUCTION_ID;
-    }
-
-    private @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {
-        return roster.rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
     }
 }

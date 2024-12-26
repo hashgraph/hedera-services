@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints;
 
+import static com.hedera.node.app.hints.impl.HintsModule.weightsFrom;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -28,7 +29,9 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 /**
  * Default implementation of the {@link HintsService}.
@@ -50,6 +53,20 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
+    public boolean isReady() {
+        return component.signingContext().isReady();
+    }
+
+    @Override
+    public Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        if (!isReady()) {
+            throw new IllegalStateException("hinTS service has no aggregation key yet");
+        }
+        final var pendingSignature = component.pendingSignatures().putIfAbsent(blockHash, new CompletableFuture<>());
+        return pendingSignature;
+    }
+
+    @Override
     public HintsHandlers handlers() {
         return component.handlers();
     }
@@ -67,7 +84,7 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V059HintsSchema());
+        registry.register(new V059HintsSchema(component.signingContext()));
     }
 
     @Override
@@ -97,6 +114,12 @@ public class HintsServiceImpl implements HintsService {
             controller.advanceConstruction(now, hintsStore);
         } else if (candidateRosterHash == null) {
             hintsStore.purgeConstructionsNotFor(currentRosterHash, rosterStore);
+            final var signingContext = component.signingContext();
+            signingContext.setActiveConstructionId(hintsStore.currentConstructionId());
+            if (signingContext.needsActiveNodeWeights()) {
+                final var activeRoster = requireNonNull(rosterStore.get(currentRosterHash));
+                signingContext.setActiveNodeWeights(weightsFrom(activeRoster));
+            }
         }
     }
 }

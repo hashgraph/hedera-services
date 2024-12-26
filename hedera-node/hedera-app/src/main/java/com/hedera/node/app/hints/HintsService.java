@@ -19,6 +19,7 @@ package com.hedera.node.app.hints;
 import com.hedera.cryptography.bls.GroupAssignment;
 import com.hedera.cryptography.bls.SignatureSchema;
 import com.hedera.cryptography.pairings.api.Curve;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsConstructionController;
 import com.hedera.node.app.roster.RosterService;
@@ -57,7 +58,7 @@ import java.time.Instant;
  * and if requested to orchestrate a different construction, will abandon all in-progress
  * work.
  */
-public interface HintsService extends Service {
+public interface HintsService extends Service, BlockHashSigner {
     String NAME = "HintsService";
 
     SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);

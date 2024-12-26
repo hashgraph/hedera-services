@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
-import com.hedera.node.app.hints.HintsService;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
@@ -29,10 +32,15 @@ import com.hedera.node.app.tss.api.FakeGroupElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
@@ -40,7 +48,12 @@ import javax.inject.Singleton;
 @Module
 public interface HintsModule {
     BlsPublicKey FAKE_BLS_PUBLIC_KEY =
-            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(666L)), HintsService.SIGNATURE_SCHEMA);
+            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(666L)), SIGNATURE_SCHEMA);
+
+    static @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        return roster.rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
+    }
 
     @Provides
     @Singleton
@@ -62,9 +75,13 @@ public interface HintsModule {
 
     @Provides
     @Singleton
-    static HintsKeyLoader provideHintsKeyLoader() {
-        return () -> FAKE_BLS_PUBLIC_KEY;
+    static ConcurrentMap<Bytes, CompletableFuture<Bytes>> providePendingSignatures() {
+        return new ConcurrentHashMap<>();
     }
+
+    @Binds
+    @Singleton
+    HintsKeyAccessor bindHintsKeyAccessor(@NonNull HintsKeyAccessorImpl hintsKeyAccessorImpl);
 
     @Provides
     @Singleton

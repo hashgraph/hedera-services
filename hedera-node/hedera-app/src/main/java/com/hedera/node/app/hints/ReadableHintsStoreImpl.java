@@ -59,6 +59,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
+    public long currentConstructionId() {
+        return requireNonNull(activeConstruction.get()).constructionId();
+    }
+
+    @Override
     public @Nullable HintsConstruction getConstructionFor(
             @Nullable final Bytes sourceRosterHash, @NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash);

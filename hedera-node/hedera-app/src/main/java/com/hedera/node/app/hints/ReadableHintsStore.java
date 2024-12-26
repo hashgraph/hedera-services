@@ -52,6 +52,11 @@ public interface ReadableHintsStore {
     }
 
     /**
+     * Returns the id of the active construction.
+     */
+    long currentConstructionId();
+
+    /**
      * If there is a known construction with the given source and target roster hashes,
      * returns the corresponding {@link HintsConstruction}; otherwise, returns null.
      * @param sourceRosterHash the source roster hash

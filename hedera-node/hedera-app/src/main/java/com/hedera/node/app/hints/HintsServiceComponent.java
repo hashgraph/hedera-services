@@ -19,10 +19,14 @@ package com.hedera.node.app.hints;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsConstructionControllers;
 import com.hedera.node.app.hints.impl.HintsModule;
+import com.hedera.node.app.hints.impl.HintsSigningContext;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
@@ -40,5 +44,11 @@ public interface HintsServiceComponent {
 
     HintsHandlers handlers();
 
+    HintsSubmissions submissions();
+
+    HintsSigningContext signingContext();
+
     HintsConstructionControllers controllers();
+
+    ConcurrentMap<Bytes, CompletableFuture<Bytes>> pendingSignatures();
 }

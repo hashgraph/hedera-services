@@ -21,6 +21,7 @@ import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -28,6 +29,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 public class FakeHintsService implements HintsService {
     private final HintsService delegate;
@@ -36,6 +39,16 @@ public class FakeHintsService implements HintsService {
 
     public FakeHintsService(@NonNull final AppContext appContext) {
         delegate = new HintsServiceImpl(new NoOpMetrics(), pendingHintsSubmissions::offer, appContext, operations);
+    }
+
+    @Override
+    public boolean isReady() {
+        return true;
+    }
+
+    @Override
+    public Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        return CompletableFuture.completedFuture(Bytes.EMPTY);
     }
 
     @Override

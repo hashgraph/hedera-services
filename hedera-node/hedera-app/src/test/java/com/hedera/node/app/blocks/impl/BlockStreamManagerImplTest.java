@@ -54,6 +54,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
@@ -114,6 +115,9 @@ class BlockStreamManagerImplTest {
 
     @Mock
     private TssBaseService tssBaseService;
+
+    @Mock
+    private BlockHashSigner blockHashSigner;
 
     @Mock
     private StateHashedNotification notification;
@@ -204,6 +208,7 @@ class BlockStreamManagerImplTest {
     void canUpdateDistinguishedTimes() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         subject = new BlockStreamManagerImpl(
+                blockHashSigner,
                 () -> aWriter,
                 ForkJoinPool.commonPool(),
                 configProvider,
@@ -224,6 +229,7 @@ class BlockStreamManagerImplTest {
     void requiresLastHashToBeInitialized() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
         subject = new BlockStreamManagerImpl(
+                blockHashSigner,
                 () -> aWriter,
                 ForkJoinPool.commonPool(),
                 configProvider,
@@ -500,6 +506,7 @@ class BlockStreamManagerImplTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new BlockStreamManagerImpl(
+                blockHashSigner,
                 () -> writers[nextWriter.getAndIncrement()],
                 ForkJoinPool.commonPool(),
                 configProvider,

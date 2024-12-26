@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints.impl;
+package com.hedera.node.app.blocks;
 
-import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.Future;
 
-@FunctionalInterface
-public interface HintsKeyLoader {
+/**
+ * Provides the ability to asynchronously sign a block hash.
+ */
+public interface BlockHashSigner {
     /**
-     * Returns the hinTS BLS key, creating it if necessary.
-     * @return the hinTS key
+     * Whether the signer is ready.
      */
-    BlsPublicKey getOrCreateHintsKey();
+    boolean isReady();
+
+    /**
+     * Returns a future that resolves to the signature of the given block hash.
+     * @param blockHash the block hash
+     * @return the future
+     */
+    Future<Bytes> signFuture(@NonNull Bytes blockHash);
 }
