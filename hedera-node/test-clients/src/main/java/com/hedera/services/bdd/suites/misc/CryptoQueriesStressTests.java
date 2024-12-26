@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -51,44 +51,35 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(NOT_REPEATABLE)
 public class CryptoQueriesStressTests {
-    private AtomicLong duration = new AtomicLong(10);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
+    private final AtomicLong duration = new AtomicLong(10);
+    private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     @HapiTest
     final Stream<DynamicTest> getAccountBalanceStress() {
-        return defaultHapiSpec("getAccountBalanceStress")
-                .given()
-                .when()
-                .then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(getAccountBalanceFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(
+                withOpContext((spec, opLog) -> configureFromCi(spec)),
+                runWithProvider(getAccountBalanceFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     @HapiTest
     final Stream<DynamicTest> getAccountInfoStress() {
-        return defaultHapiSpec("getAccountInfoStress")
-                .given()
-                .when()
-                .then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(getAccountInfoFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(
+                withOpContext((spec, opLog) -> configureFromCi(spec)),
+                runWithProvider(getAccountInfoFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     @HapiTest
     final Stream<DynamicTest> getAccountRecordsStress() {
-        return defaultHapiSpec("getAccountRecordsStress")
-                .given()
-                .when()
-                .then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(getAccountRecordsFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(
+                withOpContext((spec, opLog) -> configureFromCi(spec)),
+                runWithProvider(getAccountRecordsFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> getAccountRecordsFactory() {
