@@ -160,14 +160,14 @@ public class YamlConfigSource implements ConfigSource {
 
     private void processNode(@NonNull final JsonNode node, @NonNull final String prefix) {
         // if it's a simple field we parse the value
-        if(node.isValueNode()){
+        if (node.isValueNode()) {
             properties.put(prefix, toValueString(node));
             return;
         }
         // if it's an array we parse the values and put them in a list
-        if(node.isArray()){
-            final List<String> list = StreamSupport.stream(Spliterators.spliteratorUnknownSize(node.elements(), 0),
-                            false)
+        if (node.isArray()) {
+            final List<String> list = StreamSupport.stream(
+                            Spliterators.spliteratorUnknownSize(node.elements(), 0), false)
                     .map(this::toValueString)
                     .toList();
             listProperties.put(prefix, list);
@@ -176,9 +176,9 @@ public class YamlConfigSource implements ConfigSource {
 
         // if it's an object we iterate over the fields to check if they are all value nodes
         final boolean allValueNodes = StreamSupport.stream(Spliterators.spliteratorUnknownSize(node.fields(), 0), false)
-                .allMatch(e->e.getValue().isValueNode());
+                .allMatch(e -> e.getValue().isValueNode());
         // if all the fields are value nodes we store the raw string representation
-        if(allValueNodes){
+        if (allValueNodes) {
             properties.put(prefix, node.toString());
             return;
         }

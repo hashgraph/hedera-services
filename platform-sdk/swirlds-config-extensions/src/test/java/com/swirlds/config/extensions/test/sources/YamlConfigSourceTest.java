@@ -71,9 +71,9 @@ class YamlConfigSourceTest {
     }
 
     @Test
-//    @Disabled("""
-//            This test is disabled because the parser has a defect, it determines the depth of parsing based on the
-//            presence of lists. if not lists are present, it will change the way it interprets the values""")
+        @Disabled("""
+                This test is disabled because the parser has a defect, it determines the depth of parsing based on the
+                presence of lists. if not lists are present, it will change the way it interprets the values""")
     void testYamlFileWithNoList() {
         // given
         final String ymlFile = "withNoList.yaml";
