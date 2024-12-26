@@ -113,13 +113,25 @@ public class HintsConstructionControllers {
     }
 
     /**
-     * Returns the controller for the hinTS construction with the given ID, if it exists.
+     * Returns the in-progress controller for the hinTS construction with the given ID, if it exists.
      *
      * @param constructionId the ID of the hinTS construction
      * @return the controller, if it exists
      */
-    public Optional<HintsConstructionController> getControllerById(final long constructionId) {
-        return currentConstructionId() == constructionId ? Optional.ofNullable(controller) : Optional.empty();
+    public Optional<HintsConstructionController> getInProgressById(final long constructionId) {
+        return currentConstructionId() == constructionId
+                ? Optional.ofNullable(controller).filter(HintsConstructionController::isStillInProgress)
+                : Optional.empty();
+    }
+
+    /**
+     * Returns the in-progress controller for the hinTS construction with the given universe size, if it exists.
+     *
+     * @param k the log2 of the universe size
+     * @return the controller, if it exists
+     */
+    public Optional<HintsConstructionController> getInProgressByLog2UniverseSize(final int k) {
+        return Optional.ofNullable(controller).filter(c -> c.hasLog2UniverseSize(k));
     }
 
     private HintsConstructionController newControllerFor(
@@ -141,7 +153,7 @@ public class HintsConstructionControllers {
                 : weightsFrom(requireNonNull(rosterStore.get(construction.targetRosterHash())));
         final int k = Integer.numberOfTrailingZeros(partySizeForRosterNodeCount(targetNodeWeights.size()));
         final var blsPublicKey = keyLoader.getOrCreateHintsKey();
-        final var publications = hintsStore.publicationsForMaxSizeLog2(k);
+        final var publications = hintsStore.publicationsForMaxSizeLog2(k, targetNodeWeights.keySet());
         final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
         return new HintsConstructionController(
                 selfNodeInfoSupplier.get().nodeId(),

@@ -71,10 +71,12 @@ public interface ReadableHintsStore {
     Map<Long, PreprocessedKeysVote> votesFor(long constructionId, @NonNull Set<Long> nodeIds);
 
     /**
-     * Returns all the {@link HintsKeyPublication}s for the given maximum universe size.
+     * Returns all the {@link HintsKeyPublication}s by nodes in the given set for the given maximum universe size.
+     *
      * @param k the maximum universe size
+     * @param nodeIds the node ids
      * @return the {@link HintsKeyPublication}s
      */
     @NonNull
-    List<HintsKeyPublication> publicationsForMaxSizeLog2(int k);
+    List<HintsKeyPublication> publicationsForMaxSizeLog2(int k, @NonNull Set<Long> nodeIds);
 }

@@ -80,7 +80,8 @@ public class HintsServiceImpl implements HintsService {
         final Bytes sourceRosterHash;
         final Bytes targetRosterHash;
         if (candidateRosterHash == null) {
-            sourceRosterHash = rosterStore.getPreviousRosterHash();
+            final var previousRosterHash = rosterStore.getPreviousRosterHash();
+            sourceRosterHash = previousRosterHash != null ? previousRosterHash : currentRosterHash;
             targetRosterHash = currentRosterHash;
         } else {
             sourceRosterHash = currentRosterHash;
@@ -95,7 +96,7 @@ public class HintsServiceImpl implements HintsService {
                     component.controllers().getOrCreateControllerFor(construction, hintsStore, rosterStore);
             controller.advanceConstruction(now, hintsStore);
         } else if (candidateRosterHash == null) {
-            hintsStore.purgeConstructionsNotFor(currentRosterHash);
+            hintsStore.purgeConstructionsNotFor(currentRosterHash, rosterStore);
         }
     }
 }

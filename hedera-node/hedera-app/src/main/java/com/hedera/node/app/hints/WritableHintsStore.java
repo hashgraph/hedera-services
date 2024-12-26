@@ -17,17 +17,41 @@
 package com.hedera.node.app.hints;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
  * Provides write access to the {@link HintsConstruction} instances in state.
  */
 public interface WritableHintsStore extends ReadableHintsStore {
+    /**
+     * Creates a new {@link HintsConstruction} for the given source and target roster hashes.
+     * <p>
+     * Note that only two constructions can exist at a time, so this may have the side effect
+     * of purging a previous construction for a candidate roster.
+     * @param sourceRosterHash the source roster hash
+     * @param targetRosterHash the target roster hash
+     * @param rosterStore the roster store
+     */
+    HintsConstruction newConstructionFor(
+            @NonNull Bytes sourceRosterHash, @NonNull Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore);
+
+    /**
+     * Includes the given hints key for the given node and party IDs relative to a max universe size, assigning
+     * the given adoption time if the key is immediately in use.
+     * @param k the base-2 log of the number of parties
+     * @param partyId the party ID
+     * @param hintsKey the hints key to include
+     * @param nodeId the node ID
+     * @param now the adoption time
+     * @return whether the key was immediately in use
+     */
+    boolean includeHintsKey(int k, long partyId, long nodeId, @NonNull HintsKey hintsKey, @NonNull final Instant now);
+
     /**
      * Completes the aggregation for the construction with the given ID and returns the
      * updated construction.
@@ -56,19 +80,5 @@ public interface WritableHintsStore extends ReadableHintsStore {
     /**
      * Ensures the only construction in state is for the given target roster hash.
      */
-    void purgeConstructionsNotFor(@NonNull Bytes targetRosterHash);
-
-    /**
-     * Creates a new {@link HintsConstruction} for the given source and target roster hashes.
-     * <p>
-     * Note that only two constructions can exist at a time, so this may have the side effect
-     * of purging a previous construction for a candidate roster.
-     * @param sourceRosterHash the source roster hash
-     * @param targetRosterHash the target roster hash
-     * @param rosterStore the roster store
-     */
-    HintsConstruction newConstructionFor(
-            @Nullable Bytes sourceRosterHash,
-            @NonNull Bytes targetRosterHash,
-            @NonNull ReadableRosterStore rosterStore);
+    void purgeConstructionsNotFor(@NonNull Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore);
 }

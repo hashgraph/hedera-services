@@ -460,6 +460,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         contractServiceImpl,
                         fileServiceImpl,
                         tssBaseService,
+                        hintsService,
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
                         new TokenServiceImpl(),

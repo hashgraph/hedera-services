@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessVoteId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
 import com.hedera.node.app.hints.HintsService;
+import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,5 +75,12 @@ public class V059HintsSchema extends Schema {
                         PreprocessVoteId.PROTOBUF,
                         PreprocessedKeysVote.PROTOBUF,
                         MAX_PREPROCESSING_VOTES));
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        final var states = ctx.newStates();
+        states.<HintsConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY).put(HintsConstruction.DEFAULT);
+        states.<HintsConstruction>getSingleton(NEXT_CONSTRUCTION_KEY).put(HintsConstruction.DEFAULT);
     }
 }

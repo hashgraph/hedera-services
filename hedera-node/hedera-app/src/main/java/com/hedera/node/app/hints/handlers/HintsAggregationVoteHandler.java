@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hints.WritableHintsStore;
-import com.hedera.node.app.hints.impl.HintsConstructionController;
 import com.hedera.node.app.hints.impl.HintsConstructionControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -55,12 +54,9 @@ public class HintsAggregationVoteHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().hintsAggregationVoteOrThrow();
-        controllers
-                .getControllerById(op.constructionId())
-                .filter(HintsConstructionController::isStillInProgress)
-                .ifPresent(controller -> {
-                    final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
-                    controller.incorporateAggregationVote(context.creatorInfo().nodeId(), op.voteOrThrow(), hintsStore);
-                });
+        controllers.getInProgressById(op.constructionId()).ifPresent(controller -> {
+            final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
+            controller.incorporateAggregationVote(context.creatorInfo().nodeId(), op.voteOrThrow(), hintsStore);
+        });
     }
 }

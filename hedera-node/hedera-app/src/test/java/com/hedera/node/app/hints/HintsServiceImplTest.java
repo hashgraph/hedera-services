@@ -110,10 +110,10 @@ class HintsServiceImplTest {
     @Test
     void purgesOtherConstructionsOnCompletionWithNoCandidateRoster() {
         given(rosterStore.getCurrentRosterHash()).willReturn(A_MOCK_HASH);
-        given(hintsStore.getConstructionFor(null, A_MOCK_HASH)).willReturn(FAKE_COMPLETE_CONSTRUCTION);
+        given(hintsStore.getConstructionFor(A_MOCK_HASH, A_MOCK_HASH)).willReturn(FAKE_COMPLETE_CONSTRUCTION);
 
         subject.reconcile(CONSENSUS_NOW, rosterStore, hintsStore);
 
-        verify(hintsStore).purgeConstructionsNotFor(A_MOCK_HASH);
+        verify(hintsStore).purgeConstructionsNotFor(A_MOCK_HASH, rosterStore);
     }
 }

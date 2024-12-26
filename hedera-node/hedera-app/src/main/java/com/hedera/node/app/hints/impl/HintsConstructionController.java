@@ -43,10 +43,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.stream.LongStream;
 
 /**
  * Manages the process objects and work needed to advance toward completion of a hinTS construction.
@@ -155,6 +157,15 @@ public class HintsConstructionController {
     }
 
     /**
+     * Returns whether the construction has the given maximum universe size log base-2.
+     * @param k a log base-2 maximum universe size
+     * @return whether the construction has the given maximum universe size
+     */
+    public boolean hasLog2UniverseSize(final int k) {
+        return this.k == k;
+    }
+
+    /**
      * Acts relative to the given state to let this node help advance the ongoing hinTS construction toward a
      * deterministic completion.
      *
@@ -257,6 +268,25 @@ public class HintsConstructionController {
      */
     public long constructionId() {
         return construction.constructionId();
+    }
+
+    /**
+     * Returns the party id for the given node id, if available.
+     * @param nodeId the node ID
+     * @return the party ID, if available
+     */
+    public OptionalLong partyIdOf(final long nodeId) {
+        return nodePartyIds.containsKey(nodeId) ? OptionalLong.of(nodePartyIds.get(nodeId)) : OptionalLong.empty();
+    }
+
+    /**
+     * Returns the next available party id.
+     */
+    public long nextPartyId() {
+        return LongStream.range(0, M)
+                .filter(partyId -> !partyNodeIds.containsKey(partyId))
+                .findFirst()
+                .orElseThrow();
     }
 
     /**

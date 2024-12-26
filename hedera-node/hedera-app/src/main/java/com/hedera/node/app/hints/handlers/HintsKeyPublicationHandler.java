@@ -19,6 +19,9 @@ package com.hedera.node.app.hints.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
+import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.hints.impl.HintsConstructionControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -30,9 +33,11 @@ import javax.inject.Singleton;
 
 @Singleton
 public class HintsKeyPublicationHandler implements TransactionHandler {
+    private final HintsConstructionControllers controllers;
+
     @Inject
-    public HintsKeyPublicationHandler() {
-        // Dagger2
+    public HintsKeyPublicationHandler(@NonNull final HintsConstructionControllers controllers) {
+        this.controllers = requireNonNull(controllers);
     }
 
     @Override
@@ -48,5 +53,16 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
+        final var op = context.body().hintsKeyPublicationOrThrow();
+        controllers.getInProgressById(op.maxSizeLog2()).ifPresent(controller -> {
+            final long nodeId = context.creatorInfo().nodeId();
+            final var partyId = controller.partyIdOf(nodeId).orElseGet(controller::nextPartyId);
+            final var hintsKey = op.hintsKeyOrThrow();
+            final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
+            final var adoptionTime = context.consensusNow();
+            if (hintsStore.includeHintsKey(op.maxSizeLog2(), partyId, nodeId, hintsKey, adoptionTime)) {
+                controller.incorporateHintsKey(new HintsKeyPublication(hintsKey, nodeId, partyId, adoptionTime));
+            }
+        });
     }
 }

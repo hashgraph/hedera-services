@@ -62,13 +62,15 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     public @Nullable HintsConstruction getConstructionFor(
             @Nullable final Bytes sourceRosterHash, @NonNull final Bytes targetRosterHash) {
         requireNonNull(targetRosterHash);
-        if (constructionIsFor(requireNonNull(activeConstruction.get()), sourceRosterHash, targetRosterHash)) {
-            return activeConstruction.get();
-        } else if (constructionIsFor(requireNonNull(nextConstruction.get()), sourceRosterHash, targetRosterHash)) {
-            return nextConstruction.get();
-        } else {
-            return null;
+        HintsConstruction construction;
+        if (constructionIsFor(
+                construction = requireNonNull(activeConstruction.get()), sourceRosterHash, targetRosterHash)) {
+            return construction;
+        } else if (constructionIsFor(
+                construction = requireNonNull(nextConstruction.get()), sourceRosterHash, targetRosterHash)) {
+            return construction;
         }
+        return null;
     }
 
     @Override
@@ -86,14 +88,18 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public @NonNull List<HintsKeyPublication> publicationsForMaxSizeLog2(final int k) {
+    public @NonNull List<HintsKeyPublication> publicationsForMaxSizeLog2(
+            final int k, @NonNull final Set<Long> nodeIds) {
+        requireNonNull(nodeIds);
         final int M = 1 << k;
         final List<HintsKeyPublication> publications = new ArrayList<>();
         for (long partyId = 0; partyId < M; partyId++) {
             final var keySet = hintsKeys.get(new HintsId(partyId, k));
             if (keySet != null) {
-                publications.add(new HintsKeyPublication(
-                        keySet.keyOrThrow(), keySet.nodeId(), partyId, asInstant(keySet.adoptionTimeOrThrow())));
+                if (nodeIds.contains(keySet.nodeId())) {
+                    publications.add(new HintsKeyPublication(
+                            keySet.keyOrThrow(), keySet.nodeId(), partyId, asInstant(keySet.adoptionTimeOrThrow())));
+                }
             }
         }
         return publications;
