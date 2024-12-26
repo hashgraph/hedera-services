@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ public class SwirldStateManagerUtilsTests {
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
-        final MerkleRoot result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
+        final PlatformMerkleStateRoot result =
+                SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
 
         assertFalse(result.isImmutable(), "The copy state should be mutable.");
         assertEquals(

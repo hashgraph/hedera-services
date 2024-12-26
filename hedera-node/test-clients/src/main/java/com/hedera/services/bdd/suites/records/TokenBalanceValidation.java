@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -166,10 +166,9 @@ public class TokenBalanceValidation extends HapiSuite {
      * @return HAPI queries to execute
      */
     final Stream<DynamicTest> validateTokenBalances() {
-        return defaultHapiSpec("ValidateTokenBalances")
-                .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
-                .when()
-                .then(inParallel(expectedTokenBalances.entrySet().stream()
+        return hapiTest(flattened(
+                getHapiSpecsForTransferTxs(), // set up transfers if needed
+                inParallel(expectedTokenBalances.entrySet().stream()
                                 .map(
                                         entry -> { // for each expectedTokenBalance
                                             final var accountNum =
@@ -177,7 +176,8 @@ public class TokenBalanceValidation extends HapiSuite {
                                             final var tokenNum = entry.getKey().tokenNum();
                                             final var tokenAmt = entry.getValue();
 
-                                            // validate that the transfer worked and the receiver account has the tokens
+                                            // validate that the transfer worked and the receiver account
+                                            // has the tokens
                                             return QueryVerbs.getAccountBalance(
                                                             "0.0." + accountNum,
                                                             accountClassifier.isContract(accountNum))
@@ -191,7 +191,7 @@ public class TokenBalanceValidation extends HapiSuite {
                                                     .includeTokenMemoOnError();
                                         })
                                 .toArray(HapiSpecOperation[]::new))
-                        .failOnErrors());
+                        .failOnErrors()));
     }
 
     @Override
