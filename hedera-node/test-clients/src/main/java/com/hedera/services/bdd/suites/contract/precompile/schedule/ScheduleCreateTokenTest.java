@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -66,6 +67,7 @@ public class ScheduleCreateTokenTest {
     @BeforeAll
     public static void setup(TestLifecycle lifecycle) {
         lifecycle.doAdhoc(
+                overriding("contracts.systemContract.scheduleService.scheduleNative.enabled", "true"),
                 contract.getInfo(),
                 newKeyNamed(CONTRACT_KEY).shape(CONTRACT.signedWith(contract.name())),
                 designatedPayer.authorizeContract(contract));
