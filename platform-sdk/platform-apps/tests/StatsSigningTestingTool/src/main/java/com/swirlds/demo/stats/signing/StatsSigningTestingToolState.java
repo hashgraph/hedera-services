@@ -205,21 +205,55 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             return false;
         }
 
-        final var transactionPool = transactionPoolSupplier.get();
+        final ByteBuffer wrapper = ByteBuffer.wrap(transactionBytes.toByteArray());
+        // Advance wrapper for TransactionID
+        wrapper.getLong();
 
-        // Check the data length size is the expected size based on the transactionSize property.
-        // If it is not, then the transaction is a system one.
-        if (TransactionCodec.txIsSigned(transactionBytes)) {
-            // Data length can be read directly from the extracted signature
-            final var signature = TransactionCodec.extractSignature(transactionBytes);
-            return signature.getMessageLength() != transactionPool.getTransactionSize();
-        } else {
-            // Data length value can be read from the transaction bytes using an offset
-            final ByteBuffer wrapper =
-                    ByteBuffer.wrap(transactionBytes.toByteArray()).position(21);
-            final byte dataLength = wrapper.get();
-            return dataLength != transactionPool.getTransactionSize();
+        // Get flag for determining signed or unsigned transaction
+        final var signed = wrapper.get();
+
+        if (signed != 0 && signed != 1) {
+            return true;
         }
+
+        final var signatureAlgorithmId = wrapper.get();
+
+        // Currently we support 1 for ED25519 and 2 for ECSecP256K1 and -1 for no signature
+        if (signatureAlgorithmId != -1 && signatureAlgorithmId != 1 && signatureAlgorithmId != 2) {
+            return true;
+        }
+
+        final var pkLength = wrapper.getInt();
+
+        int sigLength;
+        int dataLength;
+        if (TransactionCodec.txIsSigned(transactionBytes)) {
+            if (pkLength == 0) {
+                return true;
+            }
+            final var pkBytes = new byte[pkLength];
+            wrapper.get(pkBytes);
+
+            sigLength = wrapper.getInt();
+
+            if (sigLength == 0) {
+                return true;
+            }
+
+            final var sigBytes = new byte[sigLength];
+            wrapper.get(sigBytes);
+        } else {
+            // Advance wrapper for sigLength
+            wrapper.getInt();
+            // Skipping pkBytes and sigBytes loading since they are not present
+        }
+
+        dataLength = wrapper.getInt();
+        final var data = new byte[dataLength];
+        wrapper.get(data);
+
+        final var transactionPool = transactionPoolSupplier.get();
+        return wrapper.hasRemaining() && dataLength != transactionPool.getTransactionSize();
     }
 
     private void maybeDelay() {

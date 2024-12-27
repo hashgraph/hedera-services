@@ -61,7 +61,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class StatsSigningTestingToolStateTest {
 
-    private static int transactionSize = 100;
+    private static final int transactionSize = 100;
     private Random random;
     private StatsSigningTestingToolState state;
     private PlatformStateModifier platformStateModifier;
