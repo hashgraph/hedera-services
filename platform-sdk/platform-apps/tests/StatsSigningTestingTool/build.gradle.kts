@@ -26,4 +26,5 @@ testModuleInfo {
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
+    requires("org.junit.jupiter.params")
 }
