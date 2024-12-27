@@ -47,6 +47,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,6 +88,12 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
     @Mock
     private CreateDecoder decoder;
 
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
     private CreateTranslator createTranslator;
 
     private ScheduleNativeTranslator subject;
@@ -99,6 +107,8 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
     @Test
     void matchesScheduleCreate() {
         // given
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.systemContractScheduleNativeEnabled()).willReturn(true);
         final var attempt = prepareHssAttemptWithBytesAndCustomConfig(
                 Bytes.wrapByteBuffer(SCHEDULED_NATIVE_CALL.encodeCallWithArgs(
                         asHeadlongAddress(HTS_SYSTEM_CONTRACT_ADDRESS),
@@ -111,7 +121,7 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 addressIdConverter,
                 verificationStrategies,
                 gasCalculator,
-                DEFAULT_CONFIG);
+                configuration);
         // when/then
         assertTrue(subject.matches(attempt));
     }
