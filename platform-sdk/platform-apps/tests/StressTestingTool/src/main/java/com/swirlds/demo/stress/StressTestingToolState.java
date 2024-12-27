@@ -43,7 +43,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -103,9 +102,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         busyWait(config.preHandleTime());
     }
 
@@ -116,9 +113,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

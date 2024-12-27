@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
@@ -7,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERWRITE_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
@@ -60,7 +76,6 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStore;
@@ -130,7 +145,7 @@ public class ServicesMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull MerkleRoot newMerkleStateRoot() {
+    public @NonNull PlatformMerkleStateRoot newMerkleStateRoot() {
         return hederaOrThrow().newMerkleStateRoot();
     }
 
@@ -254,7 +269,7 @@ public class ServicesMain implements SwirldMain {
                 version,
                 () -> {
                     isGenesis.set(true);
-                    final var genesisState = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
+                    final var genesisState = hedera.newMerkleStateRoot();
                     final var genesisNetwork = DiskStartupNetworks.fromLegacyAddressBook(diskAddressBook);
                     hedera.initializeStatesApi(
                             genesisState,
@@ -271,17 +286,12 @@ public class ServicesMain implements SwirldMain {
         final var initialState = reservedState.state();
         if (!isGenesis.get()) {
             hedera.initializeStatesApi(
-                    (PlatformMerkleStateRoot) initialState.get().getState().getSwirldState(),
-                    metrics,
-                    InitTrigger.RESTART,
-                    null,
-                    platformConfig,
-                    diskAddressBook);
+                    initialState.get().getState(), metrics, InitTrigger.RESTART, null, platformConfig, diskAddressBook);
         }
         hedera.setInitialStateHash(reservedState.hash());
 
         // --- Now build the platform and start it ---
-        final var stateRoot = (PlatformMerkleStateRoot) initialState.get().getState();
+        final var stateRoot = initialState.get().getState();
         final RosterHistory rosterHistory;
         if (hedera.isRosterLifecycleEnabled()) {
             final var rosterStore = new ReadableStoreFactory(stateRoot).getStore(ReadableRosterStore.class);
@@ -376,8 +386,10 @@ public class ServicesMain implements SwirldMain {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
-        rethrowIO(() ->
-                BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
+                configurationBuilder,
+                getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME),
+                getAbsolutePath(DEFAULT_OVERWRITE_YAML_FILE_NAME)));
         final Configuration configuration = configurationBuilder.build();
         checkConfiguration(configuration);
         return configuration;
@@ -461,7 +473,7 @@ public class ServicesMain implements SwirldMain {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<MerkleRoot> stateRootSupplier,
+            @NonNull final Supplier<PlatformMerkleStateRoot> stateRootSupplier,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId) {

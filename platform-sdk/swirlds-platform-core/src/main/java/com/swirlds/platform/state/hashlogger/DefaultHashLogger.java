@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -107,7 +107,7 @@ public class DefaultHashLogger implements HashLogger {
      */
     @NonNull
     private Message generateLogMessage(@NonNull final SignedState signedState) {
-        final MerkleRoot state = signedState.getState();
+        final PlatformMerkleStateRoot state = signedState.getState();
         final String platformInfo = state.getInfoString(depth);
 
         return MESSAGE_FACTORY.newMessage(
