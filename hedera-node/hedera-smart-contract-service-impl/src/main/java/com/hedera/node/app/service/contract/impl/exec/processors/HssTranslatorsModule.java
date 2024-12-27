@@ -55,7 +55,7 @@ public interface HssTranslatorsModule {
     @Singleton
     @IntoSet
     @Named("HssTranslators")
-    static CallTranslator<HssCallAttempt> provideScheduledCreateTranslator(
+    static CallTranslator<HssCallAttempt> provideScheduleNativeTranslator(
             @NonNull final ScheduleNativeTranslator translator) {
         return translator;
     }

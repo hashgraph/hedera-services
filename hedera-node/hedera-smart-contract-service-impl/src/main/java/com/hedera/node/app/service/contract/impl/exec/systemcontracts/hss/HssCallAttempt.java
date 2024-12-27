@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss;
 
-import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -173,7 +171,9 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
 
     @NonNull
     private Set<Key> getKeysForEOASender() {
-        // If an Eth sender key is present, use it. Otherwise, use the account key if present.
+        // For a top-level EthereumTransaction, use the Ethereum sender key; otherwise,
+        // use the full set of simple keys authorizing the ContractCall dispatching this
+        // HSS call attempt
         Key key = enhancement.systemOperations().maybeEthSenderKey();
         if (key != null) {
             return Set.of(key);
@@ -184,9 +184,6 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
     @NonNull
     public Set<Key> getKeysForContractSender() {
         final var contractNum = maybeMissingNumberOf(senderAddress(), nativeOperations());
-        if (contractNum == MISSING_ENTITY_NUMBER) {
-            return emptySet();
-        }
         if (isOnlyDelegatableContractKeysActive()) {
             return Set.of(Key.newBuilder()
                     .delegatableContractId(

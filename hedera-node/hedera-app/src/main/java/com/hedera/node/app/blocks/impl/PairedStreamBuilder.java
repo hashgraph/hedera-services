@@ -162,7 +162,7 @@ public class PairedStreamBuilder
 
     @Override
     public ScheduleID scheduleID() {
-        return recordStreamBuilder.scheduleID();
+        return blockStreamBuilder.scheduleID();
     }
 
     @Override

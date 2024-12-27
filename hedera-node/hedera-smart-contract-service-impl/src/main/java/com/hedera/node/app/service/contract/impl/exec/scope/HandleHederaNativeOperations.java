@@ -188,6 +188,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
 
     @Override
     public TransactionID getTransactionID() {
-        return context.body().transactionIDOrElse(TransactionID.DEFAULT);
+        return context.body().transactionIDOrThrow();
     }
 }
