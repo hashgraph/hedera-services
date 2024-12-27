@@ -46,6 +46,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -123,7 +124,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                     return;
                 }
 
-                if (areTransactionBytesSystemOnes((ConsensusTransaction) transaction)) {
+                if (areTransactionBytesSystemOnes(transaction)) {
                     stateSignatureTransaction.accept(
                             new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
                     return;
@@ -194,16 +195,31 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Checks if the transaction bytes are system ones.
      *
-     * @param transaction the consensus transaction to check
+     * @param transaction the transaction to check
      * @return true if the transaction bytes are system ones, false otherwise
      */
-    private boolean areTransactionBytesSystemOnes(final ConsensusTransaction transaction) {
-        // We have maximum allocation of 100 bytes for the transaction + 10 bytes for the preamble size in
-        // TransactionCodec
-        // + 64 bytes for the maximum public key size + 64 bytes for the maximum signature size + 12 bytes for 3
-        // integers
-        final var maximumSignedEncodedTransactionSize = 100 + 10 + 64 + 64 + 12;
-        return transaction.getApplicationTransaction().length() > maximumSignedEncodedTransactionSize;
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        final var transactionBytes = transaction.getApplicationTransaction();
+
+        if (transactionBytes.length() == 0) {
+            return false;
+        }
+
+        final var transactionPool = transactionPoolSupplier.get();
+
+        // Check the data length size is the expected size based on the transactionSize property.
+        // If it is not, then the transaction is a system one.
+        if (TransactionCodec.txIsSigned(transactionBytes)) {
+            // Data length can be read directly from the extracted signature
+            final var signature = TransactionCodec.extractSignature(transactionBytes);
+            return signature.getMessageLength() != transactionPool.getTransactionSize();
+        } else {
+            // Data length value can be read from the transaction bytes using an offset
+            final ByteBuffer wrapper =
+                    ByteBuffer.wrap(transactionBytes.toByteArray()).position(21);
+            final byte dataLength = wrapper.get();
+            return dataLength != transactionPool.getTransactionSize();
+        }
     }
 
     private void maybeDelay() {

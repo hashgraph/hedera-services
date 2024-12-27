@@ -212,4 +212,8 @@ final class SttTransactionPool {
             }
         }
     }
+
+    public int getTransactionSize() {
+        return transactionSize;
+    }
 }

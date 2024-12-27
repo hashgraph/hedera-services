@@ -18,7 +18,6 @@ package com.swirlds.demo.stats.signing;
 
 import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
 import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
-import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,6 +32,7 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
@@ -45,6 +45,7 @@ import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
+import java.security.SignatureException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,9 +56,12 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class StatsSigningTestingToolStateTest {
 
+    private static int transactionSize = 100;
     private Random random;
     private StatsSigningTestingToolState state;
     private PlatformStateModifier platformStateModifier;
@@ -108,17 +112,19 @@ class StatsSigningTestingToolStateTest {
                 .build();
 
         when(transactionPoolSupplier.get()).thenReturn(transactionPool);
+        when(transactionPool.getTransactionSize()).thenReturn(transactionSize);
     }
 
-    @Test
-    void handleConsensusRoundWithApplicationTransaction() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void handleConsensusRoundWithApplicationTransaction(final boolean signedTransaction) throws SignatureException {
         // Given
         givenRoundAndEvent();
 
-        // We need to pass a transaction bigger than 10 bytes because of {@link TransactionCodec#PREAMBLE_SIZE}
-        final var bytes =
-                Bytes.wrap(longToByteArray(random.nextLong())).append(Bytes.wrap(longToByteArray(random.nextLong())));
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(bytes);
+        final var transactionBytes =
+                signedTransaction ? getSignedApplicationTransaction() : getUnsignedApplicationTransaction();
+
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(transactionBytes);
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);
@@ -181,14 +187,13 @@ class StatsSigningTestingToolStateTest {
         assertThat(consumedSystemTransactions.size()).isZero();
     }
 
-    @Test
-    void preHandleConsensusRoundWithApplicationTransaction() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void preHandleConsensusRoundWithApplicationTransaction(final boolean signedTransaction) throws SignatureException {
         // Given
         givenRoundAndEvent();
 
-        // We need to pass a transaction bigger than 10 bytes because of {@link TransactionCodec#PREAMBLE_SIZE}
-        final var bytes =
-                Bytes.wrap(longToByteArray(random.nextLong())).append(Bytes.wrap(longToByteArray(random.nextLong())));
+        final var bytes = signedTransaction ? getSignedApplicationTransaction() : getUnsignedApplicationTransaction();
 
         final var eventTransaction = new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, bytes));
         final var eventCore = mock(EventCore.class);
@@ -281,5 +286,25 @@ class StatsSigningTestingToolStateTest {
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());
         when(event.consensusTransactionIterator())
                 .thenReturn(Collections.singletonList(consensusTransaction).iterator());
+    }
+
+    private Bytes getSignedApplicationTransaction() throws SignatureException {
+        final byte[] data = new byte[transactionSize];
+        random.nextBytes(data);
+
+        final var alg = new X25519SigningAlgorithm();
+        alg.tryAcquirePrimitives();
+        final var exSig = alg.signEx(data, 0, data.length);
+        final var sig = exSig.getSignature();
+        final var transactionId = 80_000L;
+        return Bytes.wrap(TransactionCodec.encode(alg, transactionId, sig, data));
+    }
+
+    private Bytes getUnsignedApplicationTransaction() {
+        final byte[] data = new byte[transactionSize];
+        random.nextBytes(data);
+
+        final var transactionId = 80_000L;
+        return Bytes.wrap(TransactionCodec.encode(null, transactionId, null, data));
     }
 }
