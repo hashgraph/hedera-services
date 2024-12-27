@@ -43,6 +43,9 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Handle a call to schedule a native function call.
+ */
 public class ScheduleNativeCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
@@ -102,6 +105,12 @@ public class ScheduleNativeCall extends AbstractCall {
         }
     }
 
+    /**
+     * Create a {@link TransactionBody} for a {@link ScheduleCreateTransactionBody} with the given
+     * the result is used to dispatch a {@code SCHEDULE_CREATE} transaction to the schedule service.
+     * @param scheduleTransactionBody
+     * @return
+     */
     private @NonNull TransactionBody bodyForScheduleCreate(SchedulableTransactionBody scheduleTransactionBody) {
         return TransactionBody.newBuilder()
                 .transactionID(nativeOperations().getTransactionID())

@@ -62,9 +62,9 @@ public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAtte
 
     @Override
     public boolean matches(@NonNull final HssCallAttempt attempt) {
-        final var schedulingEnabled =
-                attempt.configuration().getConfigData(ContractsConfig.class).systemContractScheduleServiceEnabled();
-        return attempt.isSelectorIfConfigEnabled(schedulingEnabled, SCHEDULED_NATIVE_CALL)
+        final var scheduleNativeEnabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).systemContractScheduleNativeEnabled();
+        return attempt.isSelectorIfConfigEnabled(scheduleNativeEnabled, SCHEDULED_NATIVE_CALL)
                 && innerCallValidation(attempt);
     }
 

@@ -86,9 +86,8 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     @Override
     public Call callFrom(@NonNull HtsCallAttempt attempt) {
-        final var transactionBody = nominalBodyFor(attempt);
         return new DispatchForResponseCodeHtsCall(
-                attempt, transactionBody, UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
+                attempt, nominalBodyFor(attempt), UpdateTranslator::gasRequirement, UpdateDecoder.FAILURE_CUSTOMIZER);
     }
 
     /**
