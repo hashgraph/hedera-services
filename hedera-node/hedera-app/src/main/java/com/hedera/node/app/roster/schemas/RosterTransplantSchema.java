@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toMap;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -62,8 +63,11 @@ public interface RosterTransplantSchema {
                 final long activeRoundNumber = roundNumber + 1;
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
-                final var roster =
-                        withExtantNodeWeights(RosterUtils.rosterFrom(network), rosterStore.getActiveRoster());
+                final var overrideRoster = RosterUtils.rosterFrom(network);
+                final var networkAdminConfig = ctx.appConfig().getConfigData(NetworkAdminConfig.class);
+                final var roster = networkAdminConfig.preserveStateWeightsDuringOverride()
+                        ? withExtantNodeWeights(overrideRoster, rosterStore.getActiveRoster())
+                        : overrideRoster;
                 rosterStore.putActiveRoster(roster, activeRoundNumber);
                 startupNetworks.setOverrideRound(roundNumber);
             });
