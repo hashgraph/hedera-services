@@ -34,12 +34,17 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * <p>
      * Note that only two constructions can exist at a time, so this may have the side effect
      * of purging a previous construction for a candidate roster.
+     *
      * @param sourceRosterHash the source roster hash
      * @param targetRosterHash the target roster hash
      * @param rosterStore the roster store
+     * @param now the construction time
      */
     HintsConstruction newConstructionFor(
-            @NonNull Bytes sourceRosterHash, @NonNull Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore);
+            @NonNull Bytes sourceRosterHash,
+            @NonNull Bytes targetRosterHash,
+            @NonNull ReadableRosterStore rosterStore,
+            @NonNull Instant now);
 
     /**
      * Includes the given hints key for the given node and party IDs relative to a max universe size, assigning
@@ -81,6 +86,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
 
     /**
      * Ensures the only construction in state is for the given target roster hash.
+     * @return whether any construction was purged
      */
-    void purgeConstructionsNotFor(@NonNull Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore);
+    boolean purgeConstructionsNotFor(@NonNull Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore);
 }

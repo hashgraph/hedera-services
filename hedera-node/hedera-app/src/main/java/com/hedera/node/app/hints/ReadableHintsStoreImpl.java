@@ -59,8 +59,20 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public long currentConstructionId() {
-        return requireNonNull(activeConstruction.get()).constructionId();
+    public @Nullable Bytes getVerificationKeyFor(@NonNull final Bytes targetRosterHash) {
+        requireNonNull(targetRosterHash);
+        HintsConstruction construction;
+        if ((construction = requireNonNull(activeConstruction.get())).hasPreprocessedKeys()) {
+            return construction.preprocessedKeysOrThrow().verificationKey();
+        } else if ((construction = requireNonNull(nextConstruction.get())).hasPreprocessedKeys()) {
+            return construction.preprocessedKeysOrThrow().verificationKey();
+        }
+        return null;
+    }
+
+    @Override
+    public HintsConstruction getActiveConstruction() {
+        return requireNonNull(activeConstruction.get());
     }
 
     @Override

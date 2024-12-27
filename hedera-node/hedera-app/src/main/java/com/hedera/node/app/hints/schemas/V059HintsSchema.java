@@ -96,7 +96,7 @@ public class V059HintsSchema extends Schema {
         final var activeConstruction = requireNonNull(
                 states.<HintsConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY).get());
         if (activeConstruction.hasPreprocessedKeys()) {
-            signingContext.setActiveConstruction(activeConstruction);
+            signingContext.setConstruction(activeConstruction);
         }
     }
 }

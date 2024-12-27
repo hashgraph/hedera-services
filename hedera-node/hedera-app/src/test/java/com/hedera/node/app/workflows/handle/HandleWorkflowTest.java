@@ -34,6 +34,8 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -72,6 +74,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HandleWorkflowTest {
     private static final Timestamp BLOCK_TIME = new Timestamp(1_234_567L, 890);
+
+    @Mock
+    private HintsService hintsService;
+
+    @Mock
+    private HistoryService historyService;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -225,6 +233,8 @@ class HandleWorkflowTest {
                 userTxnFactory,
                 new AddressBookHelper(),
                 tssBaseService,
+                hintsService,
+                historyService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 scheduleService);

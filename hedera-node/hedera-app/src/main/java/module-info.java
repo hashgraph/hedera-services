@@ -103,6 +103,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.hints;
     exports com.hedera.node.app.hints.handlers;
+    exports com.hedera.node.app.history;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.tss.api;
     exports com.hedera.node.app.tss.handlers;

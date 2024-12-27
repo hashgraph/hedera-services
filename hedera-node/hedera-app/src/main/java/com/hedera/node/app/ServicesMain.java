@@ -41,6 +41,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.impl.HintsOperationsImpl;
+import com.hedera.node.app.history.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -381,8 +382,9 @@ public class ServicesMain implements SwirldMain {
                         ForkJoinPool.commonPool(),
                         metrics),
                 DiskStartupNetworks::new,
-                appContext -> new HintsServiceImpl(
-                        metrics, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl()));
+                appContext ->
+                        new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl()),
+                appContext -> new HistoryServiceImpl());
     }
 
     /**

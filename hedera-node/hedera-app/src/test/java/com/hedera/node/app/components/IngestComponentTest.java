@@ -38,6 +38,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.impl.HintsOperationsImpl;
+import com.hedera.node.app.history.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -136,6 +137,7 @@ class IngestComponentTest {
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         final var hintsService =
                 new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl());
+        final var historyService = new HistoryServiceImpl();
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
@@ -157,6 +159,7 @@ class IngestComponentTest {
                 .migrationStateChanges(List.of())
                 .tssBaseService(tssBaseService)
                 .hintsService(hintsService)
+                .historyService(historyService)
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
                 .startupNetworks(startupNetworks)

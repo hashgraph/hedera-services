@@ -48,6 +48,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.hints.FakeHintsService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.history.FakeHistoryService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -133,6 +134,13 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
      */
     protected FakeHintsService hintsService;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HistoryServiceFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's
+     * {@link com.hedera.node.app.history.HistoryServiceImpl} delegate needs to be constructed from the Hedera
+     * instance's {@link com.hedera.node.app.spi.AppContext}).
+     */
+    protected FakeHistoryService historyService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -161,10 +169,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                     return this.tssBaseService;
                 },
                 DiskStartupNetworks::new,
-                appContext -> {
-                    this.hintsService = new FakeHintsService(appContext);
-                    return this.hintsService;
-                });
+                appContext -> this.hintsService = new FakeHintsService(appContext),
+                appContext -> this.historyService = new FakeHistoryService());
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));

@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static java.util.Collections.unmodifiableMap;
+import static com.hedera.node.app.hints.HintsService.strongMinorityWeightFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PartyAssignment;
 import com.hedera.node.app.hints.HintsOperations;
@@ -29,105 +28,94 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * The current hinTS signing context.
+ */
 @Singleton
 public class HintsSigningContext {
-    @Nullable
-    private HintsConstruction activeConstruction;
-
-    @Nullable
-    private Map<Long, Long> activeNodeWeights;
-
-    @Nullable
-    private Map<Long, Long> activeNodePartyIds;
-
     private final HintsOperations operations;
+
+    @Nullable
+    private HintsConstruction construction;
+
+    @Nullable
+    private Map<Long, Long> nodePartyIds;
 
     @Inject
     public HintsSigningContext(@NonNull final HintsOperations operations) {
         this.operations = requireNonNull(operations);
     }
 
-    public class Signing {
-        private final long constructionId;
-        private final Bytes message;
-        private final Bytes aggregationKey;
-        private final Map<Long, Long> weights;
-        private final Map<Long, Long> partyIds;
-        private final CompletableFuture<Bytes> future = new CompletableFuture<>();
-        private final ConcurrentMap<Long, Bytes> signatures = new ConcurrentHashMap<>();
-
-        public Signing(
-                final long constructionId,
-                @NonNull final Bytes message,
-                @NonNull final Bytes aggregationKey,
-                @NonNull final Map<Long, Long> weights,
-                @NonNull final Map<Long, Long> partyIds) {
-            this.constructionId = constructionId;
-            this.message = requireNonNull(message);
-            this.aggregationKey = requireNonNull(aggregationKey);
-            this.weights = requireNonNull(weights);
-            this.partyIds = requireNonNull(partyIds);
-        }
-
-        public Future<Bytes> future() {
-            return future;
-        }
-
-        public void incorporate(final long constructionId, final long nodeId, @NonNull final BlsSignature signature) {
-            requireNonNull(signature);
-            if (this.constructionId == constructionId) {
-                final var publicKey = operations.extractPublicKey(aggregationKey, partyIds.get(nodeId));
-                if (operations.verifyPartial(message, signature, publicKey)) {}
-            }
-        }
+    /**
+     * Sets the active hinTS construction as the signing context. Called in three places,
+     * <ol>
+     *     <li>In the startup phase, when initializing from a state whose active hinTS
+     *     construction had already finished its preprocessing work.</li>
+     *     <li>In the bootstrap runtime phase, on finishing the preprocessing work for
+     *     the genesis hinTS construction.</li>
+     *     <li>In the normal runtime phase, in the first round after an upgrade, when
+     *     swapping in a newly adopted roster's hinTS construction and purging votes for
+     *     the previous construction.</li>
+     * </ol>
+     * @param construction the construction
+     */
+    public void setConstruction(@NonNull final HintsConstruction construction) {
+        this.construction = requireNonNull(construction);
+        this.nodePartyIds = asNodePartyIds(construction.partyAssignments());
     }
 
-    public void setActiveConstruction(@NonNull final HintsConstruction construction) {
-        requireNonNull(construction);
-    }
-
-    public void setActiveNodeWeights(@NonNull final Map<Long, Long> activeNodeWeights) {
-        this.activeNodeWeights = requireNonNull(unmodifiableMap(activeNodeWeights));
-    }
-
-    public boolean needsActiveNodeWeights() {
-        return activeConstruction != null && activeNodeWeights == null;
-    }
-
+    /**
+     * Returns true if the signing context is ready.
+     */
     public boolean isReady() {
-        return activeConstruction != null && activeNodeWeights != null;
+        return construction != null;
     }
 
-    public @NonNull Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
+    /**
+     * Returns the active verification key, or throws if the context is not ready.
+     */
+    public Bytes activeVerificationKeyOrThrow() {
+        throwIfNotReady();
+        return requireNonNull(construction).preprocessedKeysOrThrow().verificationKey();
+    }
+
+    /**
+     * Creates a new asynchronous signing process for the given block hash.
+     * @param blockHash the block hash
+     * @return the signing process
+     */
+    public @NonNull HintsSigning newSigning(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
-        if (!isReady()) {
-            throw new IllegalStateException("Signing context not ready with activeConstructionId="
-                    + Optional.ofNullable(activeConstruction)
-                            .map(HintsConstruction::constructionId)
-                            .map(Object::toString)
-                            .orElse("<N/A>")
-                    + " and activeNodeWeights=" + (activeNodeWeights == null ? "<N/A>" : "<SET>"));
-        }
-        requireNonNull(activeConstruction);
-        requireNonNull(activeNodeWeights);
-        final var signing = new Signing(
-                activeConstruction.constructionId(),
+        throwIfNotReady();
+        final var aggregationKey =
+                requireNonNull(construction).preprocessedKeysOrThrow().aggregationKey();
+        return new HintsSigning(
+                strongMinorityWeightFor(operations.extractTotalWeight(aggregationKey)),
+                construction.constructionId(),
                 blockHash,
-                activeConstruction.preprocessedKeysOrThrow().aggregationKey(),
-                activeNodeWeights,
-                asNodePartyIds(activeConstruction.partyAssignments()));
-        return signing.future();
+                aggregationKey,
+                requireNonNull(nodePartyIds),
+                operations);
     }
 
-    private Map<Long, Long> asNodePartyIds(@NonNull final List<PartyAssignment> partyAssignments) {
+    /**
+     * Returns the party assignments as a map of node IDs to party IDs.
+     * @param partyAssignments the party assignments
+     * @return the map of node IDs to party IDs
+     */
+    private static Map<Long, Long> asNodePartyIds(@NonNull final List<PartyAssignment> partyAssignments) {
         return partyAssignments.stream().collect(toMap(PartyAssignment::nodeId, PartyAssignment::partyId));
+    }
+
+    /**
+     * Throws an exception if the context is not ready.
+     */
+    private void throwIfNotReady() {
+        if (!isReady()) {
+            throw new IllegalStateException("Signing context not ready");
+        }
     }
 }

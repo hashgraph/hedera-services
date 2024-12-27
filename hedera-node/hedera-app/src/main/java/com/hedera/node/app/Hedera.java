@@ -71,6 +71,7 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
@@ -264,6 +265,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     private final HintsService hintsService;
 
     /**
+     * The history service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final HistoryService historyService;
+
+    /**
      * The file service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
@@ -373,6 +380,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     }
 
     @FunctionalInterface
+    public interface HistoryServiceFactory {
+        @NonNull
+        HistoryService apply(@NonNull AppContext appContext);
+    }
+
+    @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
         StartupNetworks apply(@NonNull ConfigProvider configProvider, @NonNull TssBaseService tssBaseService);
@@ -397,6 +410,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param tssBaseServiceFactory the factory for the TSS base service
      * @param startupNetworksFactory the factory for the startup networks
      * @param hintsServiceFactory the factory for the hinTS service
+     * @param historyServiceFactory the factory for the history service
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -405,9 +419,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final InstantSource instantSource,
             @NonNull final TssBaseServiceFactory tssBaseServiceFactory,
             @NonNull final StartupNetworksFactory startupNetworksFactory,
-            @NonNull final HintsServiceFactory hintsServiceFactory) {
+            @NonNull final HintsServiceFactory hintsServiceFactory,
+            @NonNull final HistoryServiceFactory historyServiceFactory) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        requireNonNull(hintsServiceFactory);
+        requireNonNull(historyServiceFactory);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         logger.info(
@@ -450,6 +467,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         ThrottleAccumulator::new));
         tssBaseService = tssBaseServiceFactory.apply(appContext);
         hintsService = hintsServiceFactory.apply(appContext);
+        historyService = historyServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
@@ -461,6 +479,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         fileServiceImpl,
                         tssBaseService,
                         hintsService,
+                        historyService,
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
                         new TokenServiceImpl(),
@@ -1033,6 +1052,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 .scheduleService(scheduleServiceImpl)
                 .tssBaseService(tssBaseService)
                 .hintsService(hintsService)
+                .historyService(historyService)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
                 .self(networkInfo.selfNodeInfo())

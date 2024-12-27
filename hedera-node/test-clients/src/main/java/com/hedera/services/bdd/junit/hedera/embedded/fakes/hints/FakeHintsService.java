@@ -30,7 +30,6 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 public class FakeHintsService implements HintsService {
     private final HintsService delegate;
@@ -42,23 +41,23 @@ public class FakeHintsService implements HintsService {
     }
 
     @Override
-    public boolean isReady() {
-        return true;
+    public @NonNull Bytes activeVerificationKeyOrThrow() {
+        return delegate.activeVerificationKeyOrThrow();
     }
 
     @Override
-    public Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
-        return CompletableFuture.completedFuture(Bytes.EMPTY);
+    public boolean isReady() {
+        return delegate.isReady();
+    }
+
+    @Override
+    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        return delegate.signFuture(blockHash);
     }
 
     @Override
     public HintsHandlers handlers() {
         return delegate.handlers();
-    }
-
-    @Override
-    public void start() {
-        delegate.start();
     }
 
     @Override

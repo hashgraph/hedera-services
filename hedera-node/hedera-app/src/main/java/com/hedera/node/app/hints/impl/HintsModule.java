@@ -38,7 +38,6 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -51,8 +50,7 @@ public interface HintsModule {
             new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(666L)), SIGNATURE_SCHEMA);
 
     static @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {
-        requireNonNull(roster);
-        return roster.rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
+        return requireNonNull(roster).rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
     }
 
     @Provides
@@ -75,7 +73,7 @@ public interface HintsModule {
 
     @Provides
     @Singleton
-    static ConcurrentMap<Bytes, CompletableFuture<Bytes>> providePendingSignatures() {
+    static ConcurrentMap<Bytes, HintsSigning> providePendingSignatures() {
         return new ConcurrentHashMap<>();
     }
 

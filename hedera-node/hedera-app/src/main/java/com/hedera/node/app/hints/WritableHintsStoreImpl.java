@@ -17,6 +17,7 @@
 package com.hedera.node.app.hints;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
@@ -67,7 +68,8 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     public HintsConstruction newConstructionFor(
             @NonNull final Bytes sourceRosterHash,
             @NonNull final Bytes targetRosterHash,
-            @NonNull final ReadableRosterStore rosterStore) {
+            @NonNull final ReadableRosterStore rosterStore,
+            @NonNull final Instant now) {
         requireNonNull(sourceRosterHash);
         requireNonNull(targetRosterHash);
         requireNonNull(rosterStore);
@@ -105,6 +107,23 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                         currentConstruction.targetRosterHash());
             }
             nextConstruction.put(construction);
+        }
+        // Rotate any hint keys requested to be used in the next construction
+        final var targetRoster = requireNonNull(rosterStore.get(targetRosterHash));
+        final int M = partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
+        final int k = Integer.numberOfTrailingZeros(M);
+        final var adoptionTime = asTimestamp(now);
+        for (long partyId = 0; partyId < M; partyId++) {
+            final var hintsId = new HintsId(partyId, k);
+            final var keySet = hintsKeys.get(hintsId);
+            if (keySet != null && keySet.hasNextKey()) {
+                final var rotatedKeySet = keySet.copyBuilder()
+                        .key(keySet.nextKey())
+                        .adoptionTime(adoptionTime)
+                        .nextKey((HintsKey) null)
+                        .build();
+                hintsKeys.put(hintsId, rotatedKeySet);
+            }
         }
         return construction;
     }
@@ -157,7 +176,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public void purgeConstructionsNotFor(
+    public boolean purgeConstructionsNotFor(
             @NonNull final Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore) {
         requireNonNull(targetRosterHash);
         requireNonNull(rosterStore);
@@ -165,7 +184,9 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             purgeVotes(requireNonNull(activeConstruction.get()), rosterStore);
             activeConstruction.put(nextConstruction.get());
             nextConstruction.put(HintsConstruction.DEFAULT);
+            return true;
         }
+        return false;
     }
 
     /**

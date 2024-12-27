@@ -144,9 +144,9 @@ public class HintsConstructionController {
         this.construction = requireNonNull(construction);
         this.hintKeysWaitTime = requireNonNull(hintKeysWaitTime);
         this.sourceNodeWeights = requireNonNull(sourceNodeWeights);
-        this.sourceWeightThreshold = strongMinorityWeightFor(sourceNodeWeights);
+        this.sourceWeightThreshold = HintsService.strongMinorityWeightFor(sourceNodeWeights);
         this.targetNodeWeights = requireNonNull(targetNodeWeights);
-        this.targetWeightThreshold = strongMinorityWeightFor(targetNodeWeights);
+        this.targetWeightThreshold = HintsService.strongMinorityWeightFor(targetNodeWeights);
         this.M = HintsService.partySizeForRosterNodeCount(targetNodeWeights.size());
         this.k = Integer.numberOfTrailingZeros(M);
         this.votes.putAll(votes);
@@ -253,8 +253,8 @@ public class HintsConstructionController {
             maybeWinningAggregation.ifPresent(keys -> {
                 final var id = constructionId();
                 construction = hintsStore.completeAggregation(id, keys, nodePartyIds);
-                if (hintsStore.currentConstructionId() == id) {
-                    signingContext.setActiveConstruction(construction);
+                if (hintsStore.getActiveConstruction().constructionId() == id) {
+                    signingContext.setConstruction(construction);
                 }
             });
         }
@@ -429,18 +429,5 @@ public class HintsConstructionController {
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);
-    }
-
-    /**
-     * Returns the weight that would constitute a strong minority of the network weight for a roster.
-     *
-     * @param weights the weights of the nodes in the roster
-     * @return the weight required for a strong minority
-     */
-    private static long strongMinorityWeightFor(@NonNull final Map<Long, Long> weights) {
-        final var weight = weights.values().stream().mapToLong(Long::longValue).sum();
-        // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
-        // ensures it the conclusion overlaps with the weight held by at least one honest node
-        return (weight + 2) / 3;
     }
 }

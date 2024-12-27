@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hints;
 
-import static com.hedera.node.app.hints.impl.HintsModule.weightsFrom;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -31,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 /**
  * Default implementation of the {@link HintsService}.
@@ -53,27 +51,28 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
+    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        if (!isReady()) {
+            throw new IllegalStateException("hinTS service not ready to sign block hash " + blockHash);
+        }
+        final var signing = component.signings().computeIfAbsent(blockHash, component.signingContext()::newSigning);
+        component.submissions().submitPartialSignature(blockHash);
+        return signing.future();
+    }
+
+    @Override
     public boolean isReady() {
         return component.signingContext().isReady();
     }
 
     @Override
-    public Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
-        if (!isReady()) {
-            throw new IllegalStateException("hinTS service has no aggregation key yet");
-        }
-        final var pendingSignature = component.pendingSignatures().putIfAbsent(blockHash, new CompletableFuture<>());
-        return pendingSignature;
+    public @NonNull Bytes activeVerificationKeyOrThrow() {
+        return component.signingContext().activeVerificationKeyOrThrow();
     }
 
     @Override
     public HintsHandlers handlers() {
         return component.handlers();
-    }
-
-    @Override
-    public void start() {
-        // No-op
     }
 
     @Override
@@ -106,20 +105,14 @@ public class HintsServiceImpl implements HintsService {
         }
         var construction = hintsStore.getConstructionFor(sourceRosterHash, targetRosterHash);
         if (construction == null) {
-            construction = hintsStore.newConstructionFor(sourceRosterHash, targetRosterHash, rosterStore);
+            construction = hintsStore.newConstructionFor(sourceRosterHash, targetRosterHash, rosterStore, now);
         }
         if (!construction.hasPreprocessedKeys()) {
             final var controller =
                     component.controllers().getOrCreateControllerFor(construction, hintsStore, rosterStore);
             controller.advanceConstruction(now, hintsStore);
-        } else if (candidateRosterHash == null) {
-            hintsStore.purgeConstructionsNotFor(currentRosterHash, rosterStore);
-            final var signingContext = component.signingContext();
-            signingContext.setActiveConstruction(construction);
-            if (signingContext.needsActiveNodeWeights()) {
-                final var activeRoster = requireNonNull(rosterStore.get(currentRosterHash));
-                signingContext.setActiveNodeWeights(weightsFrom(activeRoster));
-            }
+        } else if (candidateRosterHash == null && hintsStore.purgeConstructionsNotFor(currentRosterHash, rosterStore)) {
+            component.signingContext().setConstruction(construction);
         }
     }
 }

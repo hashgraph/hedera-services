@@ -71,7 +71,7 @@ class HintsServiceImplTest {
         given(rosterStore.getCandidateRosterHash()).willReturn(null);
         given(rosterStore.getCurrentRosterHash()).willReturn(A_MOCK_HASH);
         given(hintsStore.getConstructionFor(B_MOCK_HASH, A_MOCK_HASH)).willReturn(null);
-        given(hintsStore.newConstructionFor(B_MOCK_HASH, A_MOCK_HASH, rosterStore))
+        given(hintsStore.newConstructionFor(B_MOCK_HASH, A_MOCK_HASH, rosterStore, CONSENSUS_NOW))
                 .willReturn(HintsConstruction.DEFAULT);
         given(component.controllers()).willReturn(controllers);
         given(controllers.getOrCreateControllerFor(HintsConstruction.DEFAULT, hintsStore, rosterStore))
@@ -104,7 +104,7 @@ class HintsServiceImplTest {
 
         subject.reconcile(CONSENSUS_NOW, rosterStore, hintsStore);
 
-        verify(hintsStore, never()).newConstructionFor(any(), any(), any());
+        verify(hintsStore, never()).newConstructionFor(any(), any(), any(), any());
     }
 
     @Test

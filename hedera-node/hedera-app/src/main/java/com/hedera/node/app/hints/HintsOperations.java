@@ -59,6 +59,21 @@ public interface HintsOperations {
     BlsPublicKey extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
 
     /**
+     * Extracts the weight of the given party id from the given aggregation key.
+     * @param aggregationKey the aggregation key
+     * @param partyId the party id
+     * @return the weight
+     */
+    long extractWeight(@NonNull Bytes aggregationKey, long partyId);
+
+    /**
+     * Extracts the total weight of all parties from the given aggregation key.
+     * @param aggregationKey the aggregation key
+     * @return the weight
+     */
+    long extractTotalWeight(@NonNull Bytes aggregationKey);
+
+    /**
      * Computes the hints for the given public key and number of parties.
      * @param privateKey the private key
      * @param n the number of parties

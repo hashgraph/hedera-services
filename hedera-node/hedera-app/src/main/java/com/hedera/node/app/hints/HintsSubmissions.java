@@ -46,15 +46,15 @@ public class HintsSubmissions {
 
     private final Executor executor;
     private final AppContext appContext;
-    private final HintsKeyAccessor keyLoader;
+    private final HintsKeyAccessor keyAccessor;
 
     @Inject
     public HintsSubmissions(
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsKeyAccessor keyLoader) {
+            @NonNull final HintsKeyAccessor keyAccessor) {
         this.executor = requireNonNull(executor);
-        this.keyLoader = requireNonNull(keyLoader);
+        this.keyAccessor = requireNonNull(keyAccessor);
         this.appContext = requireNonNull(appContext);
     }
 

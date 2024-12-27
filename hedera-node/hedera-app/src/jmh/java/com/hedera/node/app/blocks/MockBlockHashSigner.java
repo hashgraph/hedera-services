@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 /**
  * A mock implementation of the {@link BlockHashSigner} that "signs" block hashes by
@@ -35,7 +34,7 @@ public class MockBlockHashSigner implements BlockHashSigner {
     }
 
     @Override
-    public Future<Bytes> signFuture(@NonNull final Bytes blockHash) {
+    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         return CompletableFuture.supplyAsync(() -> noThrowSha384HashOf(blockHash));
     }

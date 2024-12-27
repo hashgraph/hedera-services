@@ -34,7 +34,6 @@ import java.util.Set;
  * a particular maximum universe size.
  */
 public interface ReadableHintsStore {
-
     /**
      * The full record of a hinTS key publication, including the key, the submitting node id, and (importantly)
      * the party id for that node id in this construction.
@@ -54,7 +53,14 @@ public interface ReadableHintsStore {
     /**
      * Returns the id of the active construction.
      */
-    long currentConstructionId();
+    HintsConstruction getActiveConstruction();
+
+    /**
+     * Returns the verification key for the given target roster hash, if it exists.
+     * @param targetRosterHash the target roster hash
+     */
+    @Nullable
+    Bytes getVerificationKeyFor(@NonNull Bytes targetRosterHash);
 
     /**
      * If there is a known construction with the given source and target roster hashes,

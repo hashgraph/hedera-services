@@ -24,6 +24,7 @@ import java.time.Duration;
 /**
  * Configuration for the TSS service.
  * @param hintsEnabled whether hinTS signatures are enabled
+ * @param historyEnabled whether address book proofs are enabled
  * @param maxSharesPerNode the maximum number of shares that can be assigned to a node.
  * @param timesToTrySubmission the number of times to retry a submission on getting an {@link IllegalStateException}
  * @param retryDelay the delay between retries
@@ -33,6 +34,7 @@ import java.time.Duration;
 @ConfigData("tss")
 public record TssConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean hintsEnabled,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean historyEnabled,
         @ConfigProperty(defaultValue = "3") @NetworkProperty int maxSharesPerNode,
         @ConfigProperty(defaultValue = "50") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,

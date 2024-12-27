@@ -56,7 +56,6 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -107,7 +106,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final int hashCombineBatchSize;
     private final int serializationBatchSize;
     private final BlockHashSigner blockHashSigner;
-    private final TssBaseService tssBaseService;
     private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
@@ -175,15 +173,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final Supplier<BlockItemWriter> writerSupplier,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final InitialStateHash initialStateHash,
             @NonNull final SemanticVersion version) {
-        this.blockHashSigner = blockHashSigner;
+        this.blockHashSigner = requireNonNull(blockHashSigner);
         this.version = requireNonNull(version);
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
-        this.tssBaseService = requireNonNull(tssBaseService);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
@@ -353,9 +349,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-            // Request the ledger signature for the block hash.
-            // The boundary timestamp plus nanos will be used for the TssShareSignature transaction's valid start
-            tssBaseService.requestLedgerSignature(blockHash.toByteArray(), asInstant(boundaryTimestamp));
+            blockHashSigner
+                    .signFuture(blockHash)
+                    .thenAccept(signature -> accept(blockHash.toByteArray(), signature.toByteArray()));
 
             final var exportNetworkToDisk =
                     switch (diskNetworkExport) {

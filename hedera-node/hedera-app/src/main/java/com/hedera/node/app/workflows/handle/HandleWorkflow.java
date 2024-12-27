@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -42,8 +57,14 @@ import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.ReadableHintsStoreImpl;
+import com.hedera.node.app.hints.WritableHintsStoreImpl;
+import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.WritableHistoryStoreImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
@@ -83,6 +104,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -132,6 +154,8 @@ public class HandleWorkflow {
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
     private final TssBaseService tssBaseService;
+    private final HintsService hintsService;
+    private final HistoryService historyService;
     private final ConfigProvider configProvider;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
@@ -166,6 +190,8 @@ public class HandleWorkflow {
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final TssBaseService tssBaseService,
+            @NonNull final HintsService hintsService,
+            @NonNull final HistoryService historyService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final ScheduleService scheduleService) {
@@ -191,6 +217,8 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider);
         this.addressBookHelper = requireNonNull(addressBookHelper);
         this.tssBaseService = requireNonNull(tssBaseService);
+        this.hintsService = requireNonNull(hintsService);
+        this.historyService = requireNonNull(historyService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.scheduleService = requireNonNull(scheduleService);
@@ -209,9 +237,8 @@ public class HandleWorkflow {
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
-        if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
-            tssBaseService.ensureParticipantDirectoryKnown(state);
-        }
+        reconcileTssState(
+                configProvider.getConfiguration().getConfigData(TssConfig.class), state, round.getConsensusTimestamp());
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -232,6 +259,37 @@ public class HandleWorkflow {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
             recordCache.commitRoundReceipts(state, round.getConsensusTimestamp());
+        }
+    }
+
+    private void reconcileTssState(
+            @NonNull final TssConfig tssConfig, @NonNull final State state, @NonNull final Instant now) {
+        if (tssConfig.keyCandidateRoster()) {
+            tssBaseService.ensureParticipantDirectoryKnown(state);
+        }
+        if (tssConfig.hintsEnabled() || tssConfig.historyEnabled()) {
+            final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
+            if (tssConfig.hintsEnabled()) {
+                final var hintsWritableStates = state.getWritableStates(HintsService.NAME);
+                doStreamingKVChanges(
+                        hintsWritableStates,
+                        now,
+                        () -> hintsService.reconcile(
+                                now, rosterStore, new WritableHintsStoreImpl(hintsWritableStates)));
+            }
+            if (tssConfig.historyEnabled()) {
+                final HistoryService.RosterMetadataSource rosterMetadataSource;
+                if (tssConfig.hintsEnabled()) {
+                    final var hintsStore = new ReadableHintsStoreImpl(state.getReadableStates(HintsService.NAME));
+                    rosterMetadataSource = hintsStore::getVerificationKeyFor;
+                } else {
+                    rosterMetadataSource = rosterHash -> Bytes.EMPTY;
+                }
+                doStreamingKVChanges(state.getWritableStates(HistoryService.NAME), now, () -> {
+                    final var historyStore = new WritableHistoryStoreImpl();
+                    historyService.reconcile(now, rosterStore, rosterMetadataSource, historyStore);
+                });
+            }
         }
     }
 

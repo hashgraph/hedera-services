@@ -65,6 +65,18 @@ public class HintsOperationsImpl implements HintsOperations {
     }
 
     @Override
+    public long extractWeight(@NonNull final Bytes aggregationKey, final long partyId) {
+        requireNonNull(aggregationKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public long extractTotalWeight(@NonNull final Bytes aggregationKey) {
+        requireNonNull(aggregationKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
     public Bytes computeHints(@NonNull final BlsPrivateKey privateKey, final int n) {
         requireNonNull(privateKey);
         throw new AssertionError("Not implemented");

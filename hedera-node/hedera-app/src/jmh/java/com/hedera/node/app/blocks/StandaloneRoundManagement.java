@@ -119,7 +119,6 @@ public class StandaloneRoundManagement {
             NoopBlockItemWriter::new,
             ForkJoinPool.commonPool(),
             configProvider,
-            tssBaseService,
             new FakeBoundaryStateChangeListener(),
             new InitialStateHash(completedFuture(FAKE_START_OF_BLOCK_STATE_HASH), FIRST_ROUND_NO - 1),
             VERSION);

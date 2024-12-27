@@ -24,11 +24,13 @@ import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsConstructionController;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Orchestrates the hinTS algorithms for,
@@ -74,14 +76,15 @@ public interface HintsService extends Service, BlockHashSigner {
     int MIGRATION_ORDER = RosterService.MIGRATION_ORDER - 1;
 
     /**
+     * Returns the active verification key, or throws if none is active.
+     */
+    @NonNull
+    Bytes activeVerificationKeyOrThrow();
+
+    /**
      * Returns the handlers for the {@link HintsService}.
      */
     HintsHandlers handlers();
-
-    /**
-     * Starts the hinTS service in the node's setup phase.
-     */
-    void start();
 
     /**
      * Takes any actions needed to advance the state of the {@link HintsService} toward
@@ -125,9 +128,8 @@ public interface HintsService extends Service, BlockHashSigner {
         return MIGRATION_ORDER;
     }
 
-    @NonNull
     @Override
-    default String getServiceName() {
+    default @NonNull String getServiceName() {
         return NAME;
     }
 
@@ -147,5 +149,27 @@ public interface HintsService extends Service, BlockHashSigner {
             return n;
         }
         return Integer.highestOneBit(n) << 1;
+    }
+
+    /**
+     * Returns the weight that would constitute a strong minority of the network weight for a roster.
+     *
+     * @param weights the weights of the nodes in the roster
+     * @return the weight required for a strong minority
+     */
+    static long strongMinorityWeightFor(@NonNull final Map<Long, Long> weights) {
+        return strongMinorityWeightFor(
+                weights.values().stream().mapToLong(Long::longValue).sum());
+    }
+
+    /**
+     * Returns the weight that would constitute a strong minority of the network weight for a given total weight.
+     * @param totalWeight the total weight of the network
+     * @return the weight required for a strong minority
+     */
+    static long strongMinorityWeightFor(final long totalWeight) {
+        // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
+        // ensures it the conclusion overlaps with the weight held by at least one honest node
+        return (totalWeight + 2) / 3;
     }
 }
