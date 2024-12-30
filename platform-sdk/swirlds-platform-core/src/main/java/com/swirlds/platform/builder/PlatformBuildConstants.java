@@ -40,7 +40,7 @@ public final class PlatformBuildConstants {
     /**
      * The name of the default overwrites file (i.e. where interface or host overwrites can be specified).
      */
-    public static final String DEFAULT_OVERWRITE_YAML_FILE_NAME = "overwrites.yaml";
+    public static final String DEFAULT_OVERWRITE_YAML_FILE_NAME = "data/config/node-overwrites.yaml";
 
     private PlatformBuildConstants() {}
 }

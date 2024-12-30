@@ -111,21 +111,21 @@ public final class BootstrapUtils {
      *
      * @param configurationBuilder the configuration builder to setup
      * @param settingsPath         the path to the settings.txt file
-     * @param overwritesPath       the path to the overwrites.yaml file
+     * @param nodeOverwritesPath   the path to the node-overwrites.yaml file
      * @throws IOException if there is a problem reading the configuration files
      */
     public static void setupConfigBuilder(
             @NonNull final ConfigurationBuilder configurationBuilder,
             @NonNull final Path settingsPath,
-            @Nullable final Path overwritesPath)
+            @Nullable final Path nodeOverwritesPath)
             throws IOException {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
 
-        if (overwritesPath != null) {
-            final ConfigSource yamlConfigSource = new YamlConfigSource(overwritesPath);
+        if (nodeOverwritesPath != null) {
+            final ConfigSource yamlConfigSource = new YamlConfigSource(nodeOverwritesPath);
             configurationBuilder.withSource(yamlConfigSource);
         }
     }

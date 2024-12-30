@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @ConfigData("gossip")
 public record GossipConfig(
-        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> networkEndpoints,
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> interfaceBindings,
         @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> endpointOverrides) {
 
     /**
@@ -37,8 +37,8 @@ public record GossipConfig(
      * @param nodeId the node ID
      * @return optional of the interface binding, empty if not found
      */
-    public Optional<NetworkEndpoint> getNetworkEndpoint(long nodeId) {
-        return networkEndpoints.stream()
+    public Optional<NetworkEndpoint> getInterfaceBindings(long nodeId) {
+        return interfaceBindings.stream()
                 .filter(binding -> binding.nodeId().equals(nodeId))
                 .findFirst();
     }

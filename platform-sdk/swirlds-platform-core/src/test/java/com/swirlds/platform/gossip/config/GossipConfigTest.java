@@ -29,15 +29,15 @@ public class GossipConfigTest {
     @Test
     void testReadingFile() {
         final Configuration configuration = new TestConfigBuilder()
-                .withSource(new YamlConfigSource("overwrites.yaml"))
+                .withSource(new YamlConfigSource("node-overwrites.yaml"))
                 .getOrCreateConfig();
         assertNotNull(configuration);
 
         final GossipConfig gossipConfig = configuration.getConfigData(GossipConfig.class);
         assertNotNull(gossipConfig);
 
-        assertNotNull(gossipConfig.networkEndpoints());
-        assertEquals(4, gossipConfig.networkEndpoints().size());
+        assertNotNull(gossipConfig.interfaceBindings());
+        assertEquals(4, gossipConfig.interfaceBindings().size());
         assertEquals(4, gossipConfig.endpointOverrides().size());
     }
 }
