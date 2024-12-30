@@ -85,4 +85,34 @@ public class RosterHistory {
         }
         return null;
     }
+
+    /**
+     * Returns the roster history in a JSON compatible format.
+     *
+     * @return a JSON representation of the roster history
+     */
+    @Override
+    @NonNull
+    public String toString() {
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        sb.append("    \"current\": {\n");
+        sb.append("        \"round\": ")
+                .append(history.getFirst().roundNumber())
+                .append(",\n");
+        sb.append("        \"roster\": ")
+                .append(Roster.JSON.toJSON(getCurrentRoster()))
+                .append("}\n");
+        sb.append("    \"previous\": {\n");
+        sb.append("        \"round\": ")
+                .append(history.size() > 1 ? history.get(1).roundNumber() : -1)
+                .append(",\n");
+        sb.append("        \"roster\": ")
+                .append(history.size() > 1 ? Roster.JSON.toJSON(getPreviousRoster()) : "\"Current Roster Used\"")
+
+                .append("}\n");
+        sb.append("}\n");
+        return sb.toString();
+    }
 }
