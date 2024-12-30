@@ -103,7 +103,7 @@ public class RosterHistory {
                 .append(",\n");
         sb.append("        \"roster\": ")
                 .append(Roster.JSON.toJSON(getCurrentRoster()))
-                .append("}\n");
+                .append("},\n");
         sb.append("    \"previous\": {\n");
         sb.append("        \"round\": ")
                 .append(history.size() > 1 ? history.get(1).roundNumber() : -1)
