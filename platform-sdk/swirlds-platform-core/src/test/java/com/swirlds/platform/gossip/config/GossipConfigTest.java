@@ -29,7 +29,7 @@ public class GossipConfigTest {
     @Test
     void testReadingFile() {
         final Configuration configuration = new TestConfigBuilder()
-                .withSource(new YamlConfigSource("node-overwrites.yaml"))
+                .withSource(new YamlConfigSource("node-overrides.yaml"))
                 .getOrCreateConfig();
         assertNotNull(configuration);
 
