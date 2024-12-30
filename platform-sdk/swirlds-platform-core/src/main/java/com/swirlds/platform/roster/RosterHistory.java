@@ -110,7 +110,6 @@ public class RosterHistory {
                 .append(",\n");
         sb.append("        \"roster\": ")
                 .append(history.size() > 1 ? Roster.JSON.toJSON(getPreviousRoster()) : "\"Current Roster Used\"")
-
                 .append("}\n");
         sb.append("}\n");
         return sb.toString();
