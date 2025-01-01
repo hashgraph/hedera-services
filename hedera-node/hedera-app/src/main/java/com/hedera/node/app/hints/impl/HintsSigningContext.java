@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.node.app.hints.HintsService.strongMinorityWeightFor;
+import static com.hedera.node.app.tss.RosterTransitionWeights.strongMinorityWeightFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
@@ -80,6 +80,11 @@ public class HintsSigningContext {
     public Bytes activeVerificationKeyOrThrow() {
         throwIfNotReady();
         return requireNonNull(construction).preprocessedKeysOrThrow().verificationKey();
+    }
+
+    public long activeConstructionIdOrThrow() {
+        throwIfNotReady();
+        return requireNonNull(construction).constructionId();
     }
 
     /**

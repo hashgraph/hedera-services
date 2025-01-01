@@ -30,7 +30,6 @@ import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Map;
 
 /**
  * Orchestrates the hinTS algorithms for,
@@ -149,27 +148,5 @@ public interface HintsService extends Service, BlockHashSigner {
             return n;
         }
         return Integer.highestOneBit(n) << 1;
-    }
-
-    /**
-     * Returns the weight that would constitute a strong minority of the network weight for a roster.
-     *
-     * @param weights the weights of the nodes in the roster
-     * @return the weight required for a strong minority
-     */
-    static long strongMinorityWeightFor(@NonNull final Map<Long, Long> weights) {
-        return strongMinorityWeightFor(
-                weights.values().stream().mapToLong(Long::longValue).sum());
-    }
-
-    /**
-     * Returns the weight that would constitute a strong minority of the network weight for a given total weight.
-     * @param totalWeight the total weight of the network
-     * @return the weight required for a strong minority
-     */
-    static long strongMinorityWeightFor(final long totalWeight) {
-        // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
-        // ensures it the conclusion overlaps with the weight held by at least one honest node
-        return (totalWeight + 2) / 3;
     }
 }

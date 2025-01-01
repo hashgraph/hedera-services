@@ -33,7 +33,7 @@ public interface HistoryService extends Service {
      * A source of metadata to be incorporated into the roster history.
      */
     @FunctionalInterface
-    interface RosterMetadataSource {
+    interface MetadataSource {
         /**
          * Returns the metadata to be incorporated for the given roster hash, if known.
          * @param rosterHash the roster hash
@@ -58,7 +58,7 @@ public interface HistoryService extends Service {
     void reconcile(
             @NonNull Instant now,
             @NonNull ReadableRosterStore rosterStore,
-            @NonNull RosterMetadataSource metadataSource,
+            @NonNull MetadataSource metadataSource,
             @NonNull WritableHistoryStore historyStore);
 
     /**

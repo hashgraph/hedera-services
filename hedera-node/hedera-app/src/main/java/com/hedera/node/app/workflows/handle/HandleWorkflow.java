@@ -58,10 +58,10 @@ import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.ReadableHintsStoreImpl;
-import com.hedera.node.app.hints.WritableHintsStoreImpl;
+import com.hedera.node.app.hints.impl.ReadableHintsStoreImpl;
+import com.hedera.node.app.hints.impl.WritableHintsStoreImpl;
 import com.hedera.node.app.history.HistoryService;
-import com.hedera.node.app.history.WritableHistoryStoreImpl;
+import com.hedera.node.app.history.impl.WritableHistoryStoreImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
@@ -278,16 +278,16 @@ public class HandleWorkflow {
                                 now, rosterStore, new WritableHintsStoreImpl(hintsWritableStates)));
             }
             if (tssConfig.historyEnabled()) {
-                final HistoryService.RosterMetadataSource rosterMetadataSource;
+                final HistoryService.MetadataSource metadataSource;
                 if (tssConfig.hintsEnabled()) {
                     final var hintsStore = new ReadableHintsStoreImpl(state.getReadableStates(HintsService.NAME));
-                    rosterMetadataSource = hintsStore::getVerificationKeyFor;
+                    metadataSource = hintsStore::getVerificationKeyFor;
                 } else {
-                    rosterMetadataSource = rosterHash -> Bytes.EMPTY;
+                    metadataSource = rosterHash -> Bytes.EMPTY;
                 }
                 doStreamingKVChanges(state.getWritableStates(HistoryService.NAME), now, () -> {
                     final var historyStore = new WritableHistoryStoreImpl();
-                    historyService.reconcile(now, rosterStore, rosterMetadataSource, historyStore);
+                    historyService.reconcile(now, rosterStore, metadataSource, historyStore);
                 });
             }
         }

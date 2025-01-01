@@ -16,20 +16,19 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.HintsModule.weightsFrom;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.HIGH;
 import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.LOW;
-import static com.hedera.node.app.hints.impl.HintsModule.weightsFrom;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.HintsSubmissions;
 import com.hedera.node.app.hints.ReadableHintsStore;
+import com.hedera.node.app.tss.RosterTransitionWeights;
 import com.hedera.node.config.data.NetworkAdminConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -38,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,7 +59,6 @@ public class HintsConstructionControllers {
     private final HintsSigningContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
     private final Supplier<Configuration> configSupplier;
-    private final Function<Bytes, BlsPublicKey> keyParser;
 
     /**
      * May be null if the node has just started, or if the network has completed the most up-to-date
@@ -78,12 +75,10 @@ public class HintsConstructionControllers {
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsSigningContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier,
-            @NonNull final Supplier<Configuration> configSupplier,
-            @NonNull final Function<Bytes, BlsPublicKey> keyParser) {
+            @NonNull final Supplier<Configuration> configSupplier) {
         this.executor = requireNonNull(executor);
         this.keyLoader = requireNonNull(keyLoader);
         this.signingContext = signingContext;
-        this.keyParser = requireNonNull(keyParser);
         this.operations = requireNonNull(operations);
         this.submissions = requireNonNull(submissions);
         this.configSupplier = requireNonNull(configSupplier);
@@ -157,19 +152,17 @@ public class HintsConstructionControllers {
         final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
         return new HintsConstructionController(
                 selfNodeInfoSupplier.get().nodeId(),
+                construction,
+                new RosterTransitionWeights(sourceNodeWeights, targetNodeWeights),
                 urgency,
                 executor,
                 blsKeyPair,
                 hintKeysWaitTime,
                 operations,
-                sourceNodeWeights,
-                targetNodeWeights,
-                construction,
                 publications,
                 votes,
                 submissions,
-                signingContext,
-                keyParser);
+                signingContext);
     }
 
     private long currentConstructionId() {

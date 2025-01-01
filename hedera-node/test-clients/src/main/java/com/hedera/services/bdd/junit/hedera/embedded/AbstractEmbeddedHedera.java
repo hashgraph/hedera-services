@@ -40,6 +40,8 @@ import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.HintsServiceImpl;
+import com.hedera.node.app.history.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
@@ -130,14 +132,14 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected FakeTssBaseService tssBaseService;
     /**
      * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HintsServiceFactory} lambda we give the
-     * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.hints.HintsServiceImpl}
+     * {@link Hedera} constructor will always set this (the fake's {@link HintsServiceImpl}
      * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
      */
     protected FakeHintsService hintsService;
     /**
      * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HistoryServiceFactory}
      * lambda we give the {@link Hedera} constructor will always set this (the fake's
-     * {@link com.hedera.node.app.history.HistoryServiceImpl} delegate needs to be constructed from the Hedera
+     * {@link HistoryServiceImpl} delegate needs to be constructed from the Hedera
      * instance's {@link com.hedera.node.app.spi.AppContext}).
      */
     protected FakeHistoryService historyService;

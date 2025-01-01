@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
@@ -25,6 +26,8 @@ import java.time.Duration;
  * Configuration for the TSS service.
  * @param hintsEnabled whether hinTS signatures are enabled
  * @param historyEnabled whether address book proofs are enabled
+ * @param urgentProofKeysWaitPeriod the wait period for urgently collection of proof keys
+ * @param relaxedProofKeysWaitPeriod the wait period for background collection of proof keys
  * @param maxSharesPerNode the maximum number of shares that can be assigned to a node.
  * @param timesToTrySubmission the number of times to retry a submission on getting an {@link IllegalStateException}
  * @param retryDelay the delay between retries
@@ -35,6 +38,8 @@ import java.time.Duration;
 public record TssConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean hintsEnabled,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean historyEnabled,
+        @ConfigProperty(defaultValue = "60s") @NodeProperty Duration urgentProofKeysWaitPeriod,
+        @ConfigProperty(defaultValue = "300s") @NodeProperty Duration relaxedProofKeysWaitPeriod,
         @ConfigProperty(defaultValue = "3") @NetworkProperty int maxSharesPerNode,
         @ConfigProperty(defaultValue = "50") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,

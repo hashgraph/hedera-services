@@ -24,7 +24,6 @@ import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
@@ -32,9 +31,9 @@ import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionB
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.HintsSubmissions;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.tss.RosterTransitionWeights;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,7 +47,6 @@ import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 import java.util.stream.LongStream;
 
 /**
@@ -58,21 +56,17 @@ public class HintsConstructionController {
     private final int k;
     private final int M;
     private final long selfId;
-    private final long sourceWeightThreshold;
-    private final long targetWeightThreshold;
     private final Urgency urgency;
     private final Executor executor;
     private final BlsKeyPair blsKeyPair;
     private final Duration hintKeysWaitTime;
     private final HintsOperations operations;
-    private final Map<Long, Long> sourceNodeWeights;
-    private final Map<Long, Long> targetNodeWeights;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
     private final Map<Long, Long> nodePartyIds = new HashMap<>();
     private final Map<Long, Long> partyNodeIds = new HashMap<>();
+    private final RosterTransitionWeights weights;
     private final Map<Long, PreprocessedKeysVote> votes = new HashMap<>();
-    private final Function<Bytes, BlsPublicKey> keyParser;
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
 
     /**
@@ -81,7 +75,7 @@ public class HintsConstructionController {
     private HintsConstruction construction;
 
     /**
-     * If not null, the future performing the aggregation work for this construction.
+     * If not null, a future that resolves when this node completes the aggregation work for this construction.
      */
     @Nullable
     private CompletableFuture<Void> aggregationFuture;
@@ -94,7 +88,9 @@ public class HintsConstructionController {
 
     /**
      * Whether this construction must succeed as quickly as possible, even at the cost of some overhead on
-     * the {@code handleTransaction} thread when nodes fail to publish their hints in a reasonable time.
+     * the {@code handleTransaction} thread when validating hints; or even at the cost of omitting some
+     * nodes' hinTS keys from the construction if they are too slow to publish them, excluding these nodes
+     * from contributing partial signatures after the roster transition.
      */
     public enum Urgency {
         /**
@@ -120,35 +116,29 @@ public class HintsConstructionController {
 
     public HintsConstructionController(
             final long selfId,
+            @NonNull final HintsConstruction construction,
+            @NonNull final RosterTransitionWeights weights,
             @NonNull final Urgency urgency,
             @NonNull final Executor executor,
             @NonNull final BlsKeyPair blsKeyPair,
             @NonNull final Duration hintKeysWaitTime,
             @NonNull final HintsOperations operations,
-            @NonNull final Map<Long, Long> sourceNodeWeights,
-            @NonNull final Map<Long, Long> targetNodeWeights,
-            @NonNull final HintsConstruction construction,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final Map<Long, PreprocessedKeysVote> votes,
             @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsSigningContext signingContext,
-            @NonNull final Function<Bytes, BlsPublicKey> keyParser) {
+            @NonNull final HintsSigningContext signingContext) {
         this.selfId = selfId;
-        this.urgency = requireNonNull(urgency);
-        this.executor = requireNonNull(executor);
         this.blsKeyPair = requireNonNull(blsKeyPair);
+        this.urgency = requireNonNull(urgency);
+        this.hintKeysWaitTime = requireNonNull(hintKeysWaitTime);
+        this.weights = requireNonNull(weights);
+        this.M = HintsService.partySizeForRosterNodeCount(weights.targetRosterSize());
+        this.k = Integer.numberOfTrailingZeros(M);
+        this.executor = requireNonNull(executor);
         this.signingContext = requireNonNull(signingContext);
-        this.keyParser = requireNonNull(keyParser);
         this.submissions = requireNonNull(submissions);
         this.operations = requireNonNull(operations);
         this.construction = requireNonNull(construction);
-        this.hintKeysWaitTime = requireNonNull(hintKeysWaitTime);
-        this.sourceNodeWeights = requireNonNull(sourceNodeWeights);
-        this.sourceWeightThreshold = HintsService.strongMinorityWeightFor(sourceNodeWeights);
-        this.targetNodeWeights = requireNonNull(targetNodeWeights);
-        this.targetWeightThreshold = HintsService.strongMinorityWeightFor(targetNodeWeights);
-        this.M = HintsService.partySizeForRosterNodeCount(targetNodeWeights.size());
-        this.k = Integer.numberOfTrailingZeros(M);
         this.votes.putAll(votes);
         publications.forEach(this::incorporateHintsKey);
     }
@@ -180,10 +170,10 @@ public class HintsConstructionController {
         if (construction.hasPreprocessedKeys()) {
             return;
         }
-        final var startAggregationTime = aggregationTime();
-        if (startAggregationTime != null) {
+        final var cutoff = aggregationTime();
+        if (cutoff != null) {
             if (!votes.containsKey(selfId) && aggregationFuture == null) {
-                aggregationFuture = aggregateFuture(startAggregationTime);
+                aggregationFuture = aggregateFuture(cutoff);
             }
         } else {
             switch (recommendAggregationBehavior(now)) {
@@ -199,7 +189,7 @@ public class HintsConstructionController {
             }
             if (aggregationTime() != null
                     && publicationFuture != null
-                    && targetNodeWeights.containsKey(selfId)
+                    && weights.hasTargetWeightOf(selfId)
                     && !nodePartyIds.containsKey(selfId)) {
                 publicationFuture = CompletableFuture.runAsync(
                         () -> {
@@ -245,9 +235,9 @@ public class HintsConstructionController {
             final var aggregationWeights = votes.entrySet().stream()
                     .collect(groupingBy(
                             entry -> entry.getValue().preprocessedKeysOrThrow(),
-                            summingLong(entry -> sourceNodeWeights.get(entry.getKey()))));
+                            summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
             final var maybeWinningAggregation = aggregationWeights.entrySet().stream()
-                    .filter(entry -> entry.getValue() >= sourceWeightThreshold)
+                    .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
                     .map(Map.Entry::getKey)
                     .findFirst();
             maybeWinningAggregation.ifPresent(keys -> {
@@ -355,14 +345,14 @@ public class HintsConstructionController {
         // Note that if even here, a strong minority of weight _still_ has not published valid hinTS, the signatures
         // produced by this construction will never reach the weight threshold---but such a condition would imply the
         // network was already in an unusable state
-        if (validationFutures.size() == targetNodeWeights.size()) {
+        if (validationFutures.size() == weights.targetRosterSize()) {
             return Recommendation.AGGREGATE_NOW;
         }
         if (now.isBefore(nextAggregationCheckpoint())) {
             return Recommendation.COME_BACK_LATER;
         } else {
             return switch (urgency) {
-                case HIGH -> validWeightAt(now) >= targetWeightThreshold
+                case HIGH -> validWeightAt(now) >= weights.targetWeightThreshold()
                         ? Recommendation.AGGREGATE_NOW
                         : Recommendation.COME_BACK_LATER;
                 case LOW -> Recommendation.RESCHEDULE_CHECKPOINT;
@@ -383,10 +373,10 @@ public class HintsConstructionController {
                             .map(CompletableFuture::join)
                             .filter(Validation::isValid)
                             .collect(toMap(Validation::partyId, Validation::hintsKey));
-                    final var weights = nodePartyIds.entrySet().stream()
+                    final var aggregatedWeights = nodePartyIds.entrySet().stream()
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
-                            .collect(toMap(Map.Entry::getValue, entry -> targetNodeWeights.get(entry.getKey())));
-                    final var keys = operations.preprocess(hintKeys, weights, M);
+                            .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
+                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, M);
                     final var body = HintsAggregationVoteTransactionBody.newBuilder()
                             .constructionId(constructionId())
                             .vote(PreprocessedKeysVote.newBuilder()
@@ -411,7 +401,7 @@ public class HintsConstructionController {
         return validationFutures.headMap(now, true).values().stream()
                 .map(CompletableFuture::join)
                 .filter(Validation::isValid)
-                .mapToLong(validation -> targetNodeWeights.get(partyNodeIds.get(validation.partyId())))
+                .mapToLong(validation -> weights.targetWeightOf(partyNodeIds.get(validation.partyId())))
                 .sum();
     }
 

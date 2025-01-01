@@ -35,14 +35,11 @@ import java.util.Set;
 /**
  * Registers the states needed for the {@link HintsService}; these are,
  * <ul>
- *     <li>A singleton with the number of constructions attempted.</li>
  *     <li>A singleton with the active hinTS construction (must be at least
  *     ongoing once the network is active; and until complete, the hinTS service
  *     will not be able to aggregate partial signatures).</li>
  *     <li>A singleton with the next hinTS construction (may or may not be
  *     ongoing, as there may not be a candidate roster set).</li>
- *     <li>A map from universe size to the highest party id in use.</li>
- *     <li>A map from pair of universe size and node id to party id.</li>
  *     <li>A map from pair of party id and universe size to the party's
  *     timestamped key and hints; and, if applicable, the key and hints
  *     it wants to start using for all constructions of comparable size

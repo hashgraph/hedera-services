@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.hints.impl;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Objects.requireNonNull;
@@ -24,7 +24,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody;
-import com.hedera.node.app.hints.impl.HintsKeyAccessor;
+import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
@@ -47,15 +47,18 @@ public class HintsSubmissions {
     private final Executor executor;
     private final AppContext appContext;
     private final HintsKeyAccessor keyAccessor;
+    private final HintsSigningContext signingContext;
 
     @Inject
     public HintsSubmissions(
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsKeyAccessor keyAccessor) {
+            @NonNull final HintsKeyAccessor keyAccessor,
+            @NonNull final HintsSigningContext signingContext) {
         this.executor = requireNonNull(executor);
         this.keyAccessor = requireNonNull(keyAccessor);
         this.appContext = requireNonNull(appContext);
+        this.signingContext = requireNonNull(signingContext);
     }
 
     /**
@@ -93,8 +96,12 @@ public class HintsSubmissions {
      */
     public CompletableFuture<Void> submitPartialSignature(@NonNull final Bytes message) {
         requireNonNull(message);
+        final long keyId = signingContext.activeConstructionIdOrThrow();
         return submit(
-                b -> b.hintsPartialSignature(HintsPartialSignatureTransactionBody.DEFAULT),
+                b -> {
+                    final var signature = keyAccessor.signWithBlsPrivateKey(keyId, message);
+                    b.hintsPartialSignature(new HintsPartialSignatureTransactionBody(keyId, message, signature));
+                },
                 appContext.configSupplier().get(),
                 appContext.selfNodeInfoSupplier().get().accountId(),
                 appContext.instantSource().instant());

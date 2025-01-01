@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.history;
+package com.hedera.node.app.history.impl;
+
+import com.hedera.node.app.history.WritableHistoryStore;
 
 public class WritableHistoryStoreImpl implements WritableHistoryStore {}

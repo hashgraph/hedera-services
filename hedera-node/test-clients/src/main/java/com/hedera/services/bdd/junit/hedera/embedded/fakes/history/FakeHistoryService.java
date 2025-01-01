@@ -36,7 +36,7 @@ public class FakeHistoryService implements HistoryService {
     public void reconcile(
             @NonNull final Instant now,
             @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final RosterMetadataSource metadataSource,
+            @NonNull final MetadataSource metadataSource,
             @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(now);
         requireNonNull(rosterStore);

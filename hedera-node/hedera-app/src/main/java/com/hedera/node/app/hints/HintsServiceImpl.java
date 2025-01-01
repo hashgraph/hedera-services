@@ -30,11 +30,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Default implementation of the {@link HintsService}.
  */
 public class HintsServiceImpl implements HintsService {
+    private static final Logger logger = LogManager.getLogger(HintsServiceImpl.class);
+
     private final HintsServiceComponent component;
 
     public HintsServiceImpl(
@@ -56,7 +60,10 @@ public class HintsServiceImpl implements HintsService {
             throw new IllegalStateException("hinTS service not ready to sign block hash " + blockHash);
         }
         final var signing = component.signings().computeIfAbsent(blockHash, component.signingContext()::newSigning);
-        component.submissions().submitPartialSignature(blockHash);
+        component.submissions().submitPartialSignature(blockHash).exceptionally(t -> {
+            logger.warn("Failed to submit partial signature for block hash {}", blockHash, t);
+            return null;
+        });
         return signing.future();
     }
 
@@ -77,7 +84,7 @@ public class HintsServiceImpl implements HintsService {
 
     @Override
     public void stop() {
-        // No-op
+        // TODO
     }
 
     @Override

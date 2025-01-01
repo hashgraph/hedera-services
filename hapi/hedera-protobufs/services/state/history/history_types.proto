@@ -1,0 +1,223 @@
+syntax = "proto3";
+
+package com.hedera.hapi.node.state.history;
+
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import "timestamp.proto";
+
+option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.state.history">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/**
+ * A view of the network roster suitable for recursive proofs that
+ * certain metadata was derived from the ledger id in a manner that
+ * can trusted throughout any period the network's aBFT security
+ * was not compromised; no matter how nodes were added, removed, or
+ * updated during that period.
+ */
+message ProofRoster {
+  repeated ProofRosterEntry proof_roster_entries = 1;
+}
+
+/**
+ * An entry in the view of the network roster suitable for recursive
+ * proofs that certain metadata was derived from the ledger id in a
+ * manner that can trusted throughout any period the network's aBFT
+ * security was not compromised; no matter how nodes were added,
+ * removed, or updated during that period.
+ */
+message ProofRosterEntry {
+  /**
+   * The node id.
+   */
+  uint64 node_id = 1;
+  /**
+   * The weight of the node.
+   */
+  uint64 weight = 2;
+  /**
+   * A Schnorr key used to contribute to a recursive SNARK that proves
+   * certain metadata was derived from the ledger id in a manner that
+   * can trusted throughout any period the network's aBFT security
+   * was not compromised; no matter how nodes were added, removed, or
+   * updated during that period.
+   */
+  bytes proof_public_key = 3;
+}
+
+/**
+ * A set of Schnorr keys for a node; that is, the key the node is
+ * currently using and the key it party wishes to use for the next
+ * proof roster assembly.
+ */
+message ProofKeySet {
+  /**
+   * The consensus time at which the network adopted the current
+   * Schnorr key in this set. An adoption time that is sufficiently
+   * tardy relative to the latest assembly start time may result
+   * in the node's key being omitted from the proof roster.
+   */
+  proto.Timestamp adoption_time = 2;
+  /**
+   * The proof key the node is using.
+   */
+  bytes key = 3;
+  /**
+   * If not null, the proof key the node wishes to use in all future
+   * proof roster. Will be adopted at the beginning of the next
+   * roster transition phase; so the node should begin using it
+   * then.
+   */
+  bytes next_key = 4;
+}
+
+/**
+ * A proof that some metadata was derived from the ledger id in a
+ * manner that can trusted throughout any period the network's aBFT
+ * security was not compromised; no matter how nodes were added,
+ * removed, or updated during that period.
+ */
+message MetadataProof {
+  /**
+   * The hash of the source proof roster.
+   */
+  bytes source_proof_roster_hash = 1;
+  /**
+   * The hash of the target proof roster.
+   */
+  bytes target_proof_roster_hash = 2;
+  /**
+   * The metadata tagged to the target proof roster.
+   */
+  bytes metadata = 3;
+  /**
+   * The recursive SNARK that proves the metadata derivation.
+   */
+  bytes proof = 4;
+}
+
+/**
+ * Summary of the status of constructing a metadata proof, necessary to
+ * ensure deterministic construction ending in a roster with sufficient
+ * weight to enact its own constructions.
+ */
+message MetadataProofConstruction {
+  /**
+   * The construction id.
+   */
+  uint64 construction_id = 1;
+  /**
+   * The hash of the roster whose weights are used to determine when
+   * certain thresholds are during construction.
+   */
+  bytes source_roster_hash = 2;
+  /**
+   * The hash of the roster whose weights are used to assess progress
+   * toward obtaining Schnorr keys for parties that hold at least a
+   * strong minority of the stake in that roster.
+   */
+  bytes target_roster_hash = 3;
+  /**
+   * If the network is still gathering Schnorr keys for this
+   * construction, the next time at which nodes should evaluate the
+   * Schnorr keys and metadata scoped to the target roster for
+   * sufficient valid weight to assemble the proof roster.
+   */
+  proto.Timestamp next_assembly_checkpoint = 4;
+  /**
+   * If the network has gathered enough Schnorr keys for this
+   * construction to be assembled, the cutoff time at which those
+   * keys must have been adopted to be included in the final roster.
+   */
+  proto.Timestamp assembly_time = 5;
+  /**
+   * When this construction is complete, the recursive proof that
+   * certain metadata was derived from the ledger id.
+   */
+  MetadataProof metadata_proof = 6;
+}
+
+/**
+ * A construction-scoped node id.
+ */
+message ScopedNodeId {
+  /**
+   * The unique identifier for the proof roster construction that this
+   * vote is associated with.
+   */
+  uint64 construction_id = 1;
+  /**
+   * The id of the node that submitted the vote.
+   */
+  uint64 node_id = 2;
+}
+
+/**
+ * A node's vote for a particular proof roster assembly of a certain
+ * construction; either by explicitly giving the tagged proof roster, or
+ * by identifying a node that already voted the same way.
+ */
+message MetadataProofVote {
+  oneof vote {
+    /**
+     * The proof roster and metadata this node is voting for.
+     */
+    MetadataProof metadata_proof = 1;
+    /**
+     * The id of any node that already voted for the exact tagged proof roster
+     * this node is voting for.
+     */
+    uint64 congruent_node_id = 2;
+  }
+}
+
+/**
+ * A node's signature on a particular assembly of metadata and proof roster
+ * hash for a specified.
+ */
+message HistoryAssemblySignature {
+  /**
+   * The proof roster hash the node is signing the assembly of.
+   */
+  bytes proof_roster_hash = 1;
+
+  /**
+   * The metadata associated to the proof roster the the assembly is for.
+   */
+  bytes metadata = 2;
+
+  /**
+   * The node's signature on the hash of the concatenation of the proof
+   * roster hash and the metadata.
+   */
+  bytes signature = 3;
+}
+
+message RecordedHistoryAssemblySignature {
+  /**
+   * The time at which the signature was recorded.
+   */
+  proto.Timestamp signing_time = 1;
+
+  /**
+   * The signature.
+   */
+  HistoryAssemblySignature signature = 2;
+}
+

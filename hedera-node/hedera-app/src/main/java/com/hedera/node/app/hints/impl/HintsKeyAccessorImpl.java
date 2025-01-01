@@ -16,18 +16,18 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.HintsModule.FAKE_BLS_PUBLIC_KEY;
 import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
-import static com.hedera.node.app.hints.impl.HintsModule.FAKE_BLS_PUBLIC_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
+import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.node.app.tss.api.FakeFieldElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -45,9 +45,9 @@ public class HintsKeyAccessorImpl implements HintsKeyAccessor {
     }
 
     @Override
-    public Optional<Bytes> signWithBlsPrivateKey(final long constructionId, @NonNull final Bytes message) {
+    public Bytes signWithBlsPrivateKey(final long constructionId, @NonNull final Bytes message) {
         final var signature = operations.signPartial(message, FAKE_BLS_PRIVATE_KEY);
-        return Optional.of(Bytes.wrap(signature.toBytes()));
+        return Bytes.wrap(signature.toBytes());
     }
 
     @Override

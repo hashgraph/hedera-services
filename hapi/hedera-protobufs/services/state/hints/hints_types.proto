@@ -210,23 +210,23 @@ message HintsConstruction {
    */
   bytes target_roster_hash = 3;
   /**
-   * If relevant, the next time at which nodes should evaluate the
-   * published hints keys for sufficient valid weight to begin
-   * aggregation into the final preprocessed keys.
+   * If the network is still gathering hinTS keys for this construction,
+   * the next time at which nodes should evaluate the published keys for
+   * sufficient valid weight to begin aggregation into the final
+   * preprocessed keys.
    */
   proto.Timestamp next_aggregation_checkpoint = 4;
   /**
-   * If relevant, the next time at which nodes should evaluate the
-   * published hints keys for sufficient valid weight to begin
-   * aggregation into the final preprocessed keys.
+   * If the network has gathered enough hinTS keys for this construction
+   * to begin preprocessing, the cutoff time at those keys must have been
+   * adopted by to be included in the final preprocessed keys.
    */
   proto.Timestamp aggregation_time = 5;
   /**
    * If set, the preprocessed hinTS keys that were approved by nodes
-   * holding strictly more than 1/3 of the weight in the source roster.
+   * holding at least 1/3 of the weight in the source roster.
    */
   PreprocessedKeys preprocessed_keys = 6;
-
   /**
    * The assignments of nodes to parties in the construction.
    */

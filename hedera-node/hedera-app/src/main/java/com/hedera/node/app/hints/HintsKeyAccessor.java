@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints.impl;
+package com.hedera.node.app.hints;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 
+/**
+ * Provides access to the BLS key pairs generated for use in hinTS constructions.
+ */
 public interface HintsKeyAccessor {
     /**
-     * Returns the private part of the hinTS BLS key, creating it if necessary.
+     * Signs the given message with the BLS key this node should use for the given construction id.
      * @param constructionId the active construction ID
      * @param message the message to sign
-     * @return the signature, if this node contributed a BLS key for the given construction ID
+     * @return the signature, using the BLS private key for the given construction ID
      */
-    Optional<Bytes> signWithBlsPrivateKey(long constructionId, @NonNull Bytes message);
+    Bytes signWithBlsPrivateKey(long constructionId, @NonNull Bytes message);
 
     /**
-     * Returns the BLS key pair this node should use to for the given construction id, creating it if necessary.
+     * Returns the BLS key pair this node should use starting with the given construction id,
+     * creating the key pair if necessary.
      * @param constructionId the active construction ID
      * @return the hinTS key pair
      */

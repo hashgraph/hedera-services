@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.hints.PartyAssignment;
 import com.hedera.hapi.node.state.hints.PreprocessVoteId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.WritableKVState;
