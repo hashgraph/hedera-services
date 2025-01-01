@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package com.hedera.node.app.tss;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Represents the weights of the nodes in a roster transition.
@@ -41,6 +43,40 @@ public record RosterTransitionWeights(
                 requireNonNull(targetNodeWeights),
                 strongMinorityWeightFor(sourceNodeWeights),
                 strongMinorityWeightFor(targetNodeWeights));
+    }
+
+    /**
+     * Represents the weight of a node in a roster.
+     * @param nodeId the ID of the node
+     * @param weight the weight of the node
+     */
+    public record NodeWeight(long nodeId, long weight) implements Comparable<NodeWeight> {
+        private static final Comparator<NodeWeight> NODE_ID_COMPARATOR = Comparator.comparingLong(NodeWeight::nodeId);
+
+        @Override
+        public int compareTo(@NonNull final NodeWeight that) {
+            return NODE_ID_COMPARATOR.compare(this, that);
+        }
+    }
+
+    /**
+     * Returns the weights of the nodes in the source roster in ascending order of node ID.
+     * @return the weights of the nodes in the source roster
+     */
+    public Stream<NodeWeight> orderedSourceWeights() {
+        return sourceNodeWeights.entrySet().stream()
+                .map(entry -> new NodeWeight(entry.getKey(), entry.getValue()))
+                .sorted();
+    }
+
+    /**
+     * Returns the weights of the nodes in the source roster in ascending order of node ID.
+     * @return the weights of the nodes in the source roster
+     */
+    public Stream<NodeWeight> orderedTargetWeights() {
+        return targetNodeWeights.entrySet().stream()
+                .map(entry -> new NodeWeight(entry.getKey(), entry.getValue()))
+                .sorted();
     }
 
     /**

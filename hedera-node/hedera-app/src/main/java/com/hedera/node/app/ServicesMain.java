@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.impl.HintsOperationsImpl;
 import com.hedera.node.app.history.HistoryServiceImpl;
+import com.hedera.node.app.history.impl.HistoryOperationsImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -384,7 +385,8 @@ public class ServicesMain implements SwirldMain {
                 DiskStartupNetworks::new,
                 appContext ->
                         new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl()),
-                appContext -> new HistoryServiceImpl());
+                appContext -> new HistoryServiceImpl(
+                        metrics, ForkJoinPool.commonPool(), appContext, new HistoryOperationsImpl()));
     }
 
     /**

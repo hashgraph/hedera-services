@@ -114,6 +114,10 @@ import "auxiliary/hints/hints_key_publication.proto";
 import "auxiliary/hints/hints_aggregation_vote.proto";
 import "auxiliary/hints/hints_partial_signature.proto";
 
+import "auxiliary/history/history_assembly_signature.proto";
+import "auxiliary/history/history_proof_key_publication.proto";
+import "auxiliary/history/history_proof_vote.proto";
+
 /**
  * A transaction body.
  *
@@ -602,5 +606,20 @@ message TransactionBody {
          * A transaction body for broadcasting a node's hintTS partial signature on a message.
          */
         com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody hints_partial_signature = 68;
+
+        /**
+         * A transaction body for signing a particular history assembly.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryAssemblySignatureTransactionBody history_assembly_signature = 69;
+
+        /**
+         * A transaction body for publishing a node's metadata proof key.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody history_proof_key_publication = 70;
+
+        /**
+         * A transaction body for voting on a metadata proof descending from the ledger id.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.node.app.hints.HintsModule.weightsFrom;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.HIGH;
 import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.LOW;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsOperations;
 import com.hedera.node.app.hints.HintsService;
@@ -34,6 +36,7 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -167,5 +170,9 @@ public class HintsConstructionControllers {
 
     private long currentConstructionId() {
         return controller != null ? controller.constructionId() : NO_CONSTRUCTION_ID;
+    }
+
+    private static @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {
+        return requireNonNull(roster).rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
     }
 }

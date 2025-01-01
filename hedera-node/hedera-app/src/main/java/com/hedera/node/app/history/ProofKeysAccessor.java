@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.node.app.history.impl.SchnorrKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -38,5 +38,5 @@ public interface ProofKeysAccessor {
      * @param constructionId the active construction ID
      * @return the Schnorr key pair
      */
-    BlsKeyPair getOrCreateSchnorrKeyPair(long constructionId);
+    SchnorrKeyPair getOrCreateSchnorrKeyPair(long constructionId);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,41 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.history;
 
-import com.hedera.node.app.hints.handlers.HintsHandlers;
-import com.hedera.node.app.hints.impl.HintsConstructionControllers;
-import com.hedera.node.app.hints.impl.HintsSigning;
-import com.hedera.node.app.hints.impl.HintsSigningContext;
-import com.hedera.node.app.hints.impl.HintsSubmissions;
+import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import javax.inject.Singleton;
 
 @Singleton
-@Component(modules = HintsModule.class)
-public interface HintsServiceComponent {
+@Component(modules = HistoryModule.class)
+public interface HistoryServiceComponent {
     @Component.Factory
     interface Factory {
-        HintsServiceComponent create(
-                @BindsInstance HintsOperations hintsOperations,
+        HistoryServiceComponent create(
+                @BindsInstance HistoryOperations historyOperations,
                 @BindsInstance AppContext appContext,
                 @BindsInstance Executor executor,
                 @BindsInstance Metrics metrics);
     }
 
-    HintsHandlers handlers();
-
-    HintsSubmissions submissions();
-
-    HintsSigningContext signingContext();
-
-    HintsConstructionControllers controllers();
-
-    ConcurrentMap<Bytes, HintsSigning> signings();
+    HistoryHandlers handlers();
 }

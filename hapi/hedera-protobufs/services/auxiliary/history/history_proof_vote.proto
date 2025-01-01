@@ -39,7 +39,7 @@ option java_multiple_files = true;
  * A transaction body to publish a node's vote on a particular
  * metadata proof for a specified construction id.
  */
-message MetadataProofVoteTransactionBody {
+message HistoryProofVoteTransactionBody {
   /**
    * The id of the proof construction this vote is for.Because the
    * network only ever performs one construction a time, this is

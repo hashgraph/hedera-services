@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.impl.HintsOperationsImpl;
 import com.hedera.node.app.history.HistoryServiceImpl;
+import com.hedera.node.app.history.impl.HistoryOperationsImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -137,7 +138,8 @@ class IngestComponentTest {
                 .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         final var hintsService =
                 new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl());
-        final var historyService = new HistoryServiceImpl();
+        final var historyService = new HistoryServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HistoryOperationsImpl());
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())

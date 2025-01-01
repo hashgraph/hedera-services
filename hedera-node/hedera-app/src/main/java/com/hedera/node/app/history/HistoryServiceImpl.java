@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,43 @@ package com.hedera.node.app.history;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.history.MetadataProof;
+import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
+import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
  * Default implementation of the {@link HistoryService}.
  */
 public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProof> {
+    private final HistoryServiceComponent component;
+
     /**
      * If not null, the proof of the metadata scoped to the current roster.
      */
     @Nullable
-    private MetadataProof proof;
+    private MetadataProof metadataProof;
+
+    public HistoryServiceImpl(
+            @NonNull final Metrics metrics,
+            @NonNull final Executor executor,
+            @NonNull final AppContext appContext,
+            @NonNull final HistoryOperations operations) {
+        component = DaggerHistoryServiceComponent.factory().create(operations, appContext, executor, metrics);
+    }
+
+    @Override
+    public HistoryHandlers handlers() {
+        return component.handlers();
+    }
 
     @Override
     public void reconcile(
@@ -48,7 +67,6 @@ public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProo
         requireNonNull(rosterStore);
         requireNonNull(metadataSource);
         requireNonNull(historyStore);
-        // No-op
     }
 
     @Override
@@ -59,7 +77,12 @@ public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProo
     @Override
     public @NonNull Bytes getCurrentProof(@NonNull final Bytes metadata) {
         requireNonNull(metadata);
-        return Bytes.EMPTY;
+        requireNonNull(metadataProof);
+        if (!metadataProof.metadata().equals(metadata)) {
+            throw new IllegalArgumentException(
+                    "Metadata '" + metadata + "' does not match proof (for '" + metadataProof.metadata() + "')");
+        }
+        return metadataProof.proof();
     }
 
     @Override

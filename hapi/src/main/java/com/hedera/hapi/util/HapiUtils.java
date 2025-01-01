@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,6 +245,9 @@ public class HapiUtils {
             case HINTS_AGGREGATION_VOTE -> HederaFunctionality.HINTS_AGGREGATION_VOTE;
             case HINTS_KEY_PUBLICATION -> HederaFunctionality.HINTS_KEY_PUBLICATION;
             case HINTS_PARTIAL_SIGNATURE -> HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
+            case HISTORY_ASSEMBLY_SIGNATURE -> HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
+            case HISTORY_PROOF_KEY_PUBLICATION -> HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
+            case HISTORY_PROOF_VOTE -> HederaFunctionality.HISTORY_PROOF_VOTE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
-import static com.hedera.hapi.util.HapiUtils.asNullableInstant;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
@@ -170,10 +169,9 @@ public class HintsConstructionController {
         if (construction.hasPreprocessedKeys()) {
             return;
         }
-        final var cutoff = aggregationTime();
-        if (cutoff != null) {
+        if (construction.hasAggregationTime()) {
             if (!votes.containsKey(selfId) && aggregationFuture == null) {
-                aggregationFuture = aggregateFuture(cutoff);
+                aggregationFuture = aggregateFuture(asInstant(construction.aggregationTimeOrThrow()));
             }
         } else {
             switch (recommendAggregationBehavior(now)) {
@@ -187,7 +185,7 @@ public class HintsConstructionController {
                     // Nothing to do now
                 }
             }
-            if (aggregationTime() != null
+            if (construction.hasAggregationTime()
                     && publicationFuture != null
                     && weights.hasTargetWeightOf(selfId)
                     && !nodePartyIds.containsKey(selfId)) {
@@ -211,7 +209,7 @@ public class HintsConstructionController {
      */
     public void incorporateHintsKey(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
-        if (aggregationTime() == null) {
+        if (!construction.hasAggregationTime()) {
             nodePartyIds.put(publication.nodeId(), publication.partyId());
             partyNodeIds.put(publication.partyId(), publication.nodeId());
             validationFutures.put(
@@ -306,17 +304,6 @@ public class HintsConstructionController {
     }
 
     /**
-     * Returns the aggregation time of the hinTS construction this controller is managing, if available.
-     */
-    private @Nullable Instant aggregationTime() {
-        return asNullableInstant(construction.aggregationTime());
-    }
-
-    private @NonNull Instant nextAggregationCheckpoint() {
-        return asInstant(construction.nextAggregationCheckpointOrThrow());
-    }
-
-    /**
      * The possible recommendations the controller's aggregation policy may make.
      */
     private enum Recommendation {
@@ -348,7 +335,7 @@ public class HintsConstructionController {
         if (validationFutures.size() == weights.targetRosterSize()) {
             return Recommendation.AGGREGATE_NOW;
         }
-        if (now.isBefore(nextAggregationCheckpoint())) {
+        if (now.isBefore(asInstant(construction.nextAggregationCheckpointOrThrow()))) {
             return Recommendation.COME_BACK_LATER;
         } else {
             return switch (urgency) {

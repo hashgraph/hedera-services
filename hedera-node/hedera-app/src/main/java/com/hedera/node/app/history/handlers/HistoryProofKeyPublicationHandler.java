@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints.handlers;
+package com.hedera.node.app.history.handlers;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hints.WritableHintsStore;
-import com.hedera.node.app.hints.impl.HintsConstructionControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -31,13 +29,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class HintsAggregationVoteHandler implements TransactionHandler {
-    @NonNull
-    final HintsConstructionControllers controllers;
-
+public class HistoryProofKeyPublicationHandler implements TransactionHandler {
     @Inject
-    public HintsAggregationVoteHandler(@NonNull final HintsConstructionControllers controllers) {
-        this.controllers = requireNonNull(controllers);
+    public HistoryProofKeyPublicationHandler() {
+        // Dagger2
     }
 
     @Override
@@ -53,10 +48,5 @@ public class HintsAggregationVoteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        final var op = context.body().hintsAggregationVoteOrThrow();
-        controllers.getInProgressById(op.constructionId()).ifPresent(controller -> {
-            final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
-            controller.incorporateAggregationVote(context.creatorInfo().nodeId(), op.voteOrThrow(), hintsStore);
-        });
     }
 }

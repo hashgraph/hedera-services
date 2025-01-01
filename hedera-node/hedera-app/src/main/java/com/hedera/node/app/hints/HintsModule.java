@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,8 @@ package com.hedera.node.app.hints;
 
 import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
@@ -39,7 +36,6 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -50,10 +46,6 @@ import javax.inject.Singleton;
 public interface HintsModule {
     BlsPublicKey FAKE_BLS_PUBLIC_KEY =
             new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(666L)), SIGNATURE_SCHEMA);
-
-    static @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {
-        return requireNonNull(roster).rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
-    }
 
     @Provides
     @Singleton
