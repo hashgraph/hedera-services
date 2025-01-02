@@ -112,9 +112,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                     // Update the fee schedule and verify that it's updated
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                            .signedByPayerAnd(ADMIN_KEY),
+                    updateTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY2).signedByPayerAnd(ADMIN_KEY),
                     getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2));
         }
 
