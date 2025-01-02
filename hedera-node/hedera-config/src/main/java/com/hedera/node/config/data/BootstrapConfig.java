@@ -52,4 +52,6 @@ public record BootstrapConfig(
         @ConfigProperty(value = "system.entityExpiry", defaultValue = "1812637686") @NetworkProperty
                 long systemEntityExpiry,
         @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "genesis/throttles.json") @NodeProperty
-                String throttleDefsJsonResource) {}
+                String throttleDefsJsonResource,
+        @ConfigProperty(value = "throttleDefsJson.file", defaultValue = "data/config/throttles.json") @NodeProperty
+                String throttleDefsJsonFile) {}
