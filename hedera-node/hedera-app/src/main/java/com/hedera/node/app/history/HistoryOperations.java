@@ -27,19 +27,19 @@ import java.util.Map;
  */
 public interface HistoryOperations {
     /**
-     * Hashes the given proof roster.
-     * @param roster the proof roster
-     * @return the hash of the proof roster
-     */
-    Bytes hashProofRoster(@NonNull ProofRoster roster);
-
-    /**
      * Signs the given message with the given Schnorr private key.
      * @param message the message
      * @param privateKey the Schnorr private key
      * @return the signature
      */
     Bytes signSchnorr(@NonNull Bytes message, @NonNull Bytes privateKey);
+
+    /**
+     * Hashes the given proof roster.
+     * @param roster the proof roster
+     * @return the hash of the proof roster
+     */
+    Bytes hashProofRoster(@NonNull ProofRoster roster);
 
     /**
      * Returns a SNARK recursively proving the derivation of the target roster and metadata from the
