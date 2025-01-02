@@ -97,13 +97,13 @@ public class BlockRetentionManager {
      */
     public void cleanupExpiredBlocks() {
         // Collect files into a list to avoid consuming the stream multiple times
-        final List<Path> fileList = listFiles()
+        final List<Path> fileList = listFilesIgnoreErrors()
                 .filter(file -> isBlockFile(file) && isFileExpired(file))
                 .toList();
 
         // Submit deletion tasks for each file
         final List<CompletableFuture<Void>> futures = fileList.stream()
-                .map(file -> CompletableFuture.runAsync(() -> deleteFile(file), cleanupExecutor))
+                .map(file -> CompletableFuture.runAsync(() -> quietDeleteFile(file), cleanupExecutor))
                 .toList();
 
         // Wait for all deletion tasks to complete
@@ -130,7 +130,7 @@ public class BlockRetentionManager {
         }
     }
 
-    private Stream<Path> listFiles() {
+    private Stream<Path> listFilesIgnoreErrors() {
         Stream<Path> files = Stream.empty();
         try {
             files = Files.list(uploadedDir);
@@ -141,7 +141,7 @@ public class BlockRetentionManager {
         return files;
     }
 
-    private void deleteFile(@NonNull final Path file) {
+    private void quietDeleteFile(@NonNull final Path file) {
         try {
             Files.delete(file);
         } catch (IOException ex) {
