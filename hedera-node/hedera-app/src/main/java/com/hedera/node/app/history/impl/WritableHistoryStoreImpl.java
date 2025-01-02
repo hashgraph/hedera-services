@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.history.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import com.hedera.node.app.history.WritableHistoryStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link WritableHistoryStore}.
