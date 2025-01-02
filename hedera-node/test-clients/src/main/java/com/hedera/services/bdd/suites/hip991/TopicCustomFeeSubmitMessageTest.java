@@ -408,7 +408,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(SUBMITTER)
                             .via("submit"),
-                    // assert collector's tinyBars balance
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1),
                     updateTopic(TOPIC)
                             .withConsensusCustomFee(updatedFee)
@@ -419,6 +418,54 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .payingWith(SUBMITTER)
                             .via("submit2"),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 3));
+        }
+
+        @HapiTest
+        @DisplayName("Submit message to a topic after key is removed from FEKL")
+        // TOPIC_FEE_129
+        final Stream<DynamicTest> submitMessageAfterFEKLisRemoved() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee)
+                            .adminKeyName("adminKey")
+                            .feeExemptKeys(SUBMITTER),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
+                    updateTopic(TOPIC).feeExemptKeys().signedByPayerAnd("adminKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit2"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1));
+        }
+
+        @HapiTest
+        @DisplayName("Submit message to a topic after fee is added with update")
+        // TOPIC_FEE_130
+        final Stream<DynamicTest> submitMessageAfterFeeIsAdded() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    newKeyNamed("feeScheduleKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).adminKeyName("adminKey").feeScheduleKeyName("feeScheduleKey"),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
+                    updateTopic(TOPIC).withConsensusCustomFee(fee).signedByPayerAnd("adminKey", "feeScheduleKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit2"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1));
         }
 
         @HapiTest
