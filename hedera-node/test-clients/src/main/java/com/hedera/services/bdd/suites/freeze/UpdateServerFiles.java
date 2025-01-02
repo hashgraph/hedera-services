@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
@@ -75,13 +75,12 @@ public class UpdateServerFiles extends HapiSuite {
     }
 
     private List<Stream<DynamicTest>> postiveTests() {
-        return Arrays.asList(uploadGivenDirectory());
+        return Arrays.asList(performsFreezeUpgrade());
     }
 
     // Zip all files under target directory and add an unzip and launch script to it
     // then send to server to update server
-    final Stream<DynamicTest> uploadGivenDirectory() {
-
+    final Stream<DynamicTest> performsFreezeUpgrade() {
         log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist
         if (!new File(uploadPath).exists()) {
@@ -95,9 +94,7 @@ public class UpdateServerFiles extends HapiSuite {
             final File directory = new File(temp_dir);
             if (directory.exists()) {
                 // delete everything in it recursively
-
                 FileUtils.cleanDirectory(directory);
-
             } else {
                 directory.mkdir();
             }
@@ -115,18 +112,16 @@ public class UpdateServerFiles extends HapiSuite {
             Assertions.fail("Directory creation failed");
         }
         final byte[] hash = CommonUtils.noThrowSha384HashOf(data);
-        return defaultHapiSpec("uploadFileAndUpdate")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("maxFileSize", "2048000")),
-                        UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data)))
-                .when(freezeUpgrade()
+        return hapiTest(
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of("maxFileSize", "2048000")),
+                UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data)),
+                freezeUpgrade()
                         .withUpdateFile(fileIDString)
                         .havingHash(hash)
                         .payingWith(GENESIS)
                         .startingIn(60)
-                        .seconds())
-                .then();
+                        .seconds());
     }
 }

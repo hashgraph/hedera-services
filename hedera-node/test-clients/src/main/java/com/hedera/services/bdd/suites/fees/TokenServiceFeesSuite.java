@@ -136,8 +136,10 @@ public class TokenServiceFeesSuite {
     private static final double EXPECTED_FUNGIBLE_MINT_PRICE_USD = 0.001;
     private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.001;
+
     private static final double EXPECTED_ASSOCIATE_TOKEN_PRICE = 0.05;
     private static final double EXPECTED_NFT_UPDATE_PRICE = 0.001;
+
     private static final String OWNER = "owner";
 
     @HapiTest

@@ -82,6 +82,7 @@ public class V0560BlockStreamSchemaTest {
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
                 .willReturn(state);
+        given(migrationContext.isGenesis()).willReturn(true);
 
         subject.restart(migrationContext);
 
@@ -135,7 +136,6 @@ public class V0560BlockStreamSchemaTest {
     @Test
     void migrationIsNoopIfNotGenesisAndInfoIsNonNull() {
         given(migrationContext.newStates()).willReturn(writableStates);
-        given(migrationContext.previousVersion()).willReturn(SemanticVersion.DEFAULT);
         given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
                 .willReturn(state);
         given(state.get()).willReturn(BlockStreamInfo.DEFAULT);
