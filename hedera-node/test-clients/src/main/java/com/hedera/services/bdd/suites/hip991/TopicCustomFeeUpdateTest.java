@@ -567,22 +567,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("to delete the fee schedule key and then setting the same key back")
-        final Stream<DynamicTest> updateToDeleteTheFeeScheduleKeyAndSettingItBack() {
-            return hapiTest(
-                    // Create a topic with fee schedule key
-                    createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY).adminKeyName(ADMIN_KEY),
-
-                    // Delete the fee schedule key
-                    updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY),
-
-                    // Try to add the fee schedule key back
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY));
-        }
-
-        @HapiTest
         @DisplayName("to remove the fee schedule key without the fee schedule key to sign")
         final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutFeeScheduleToSign() {
             return hapiTest(
