@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -40,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +58,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     private Optional<String> initialTransactionPayer = Optional.empty();
     private Optional<TransactionID> initialTransactionID = Optional.empty();
     private boolean clearMessage = false;
+    private final List<Function<HapiSpec, ConsensusCustomFee>> maxCustomFeeList = new ArrayList<>();
+    private boolean acceptAllCustomFees = false;
 
     public HapiMessageSubmit(final String topic) {
         this.topic = Optional.ofNullable(topic);
@@ -121,6 +125,16 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return chunkInfo(totalChunks, chunkNumber);
     }
 
+    public HapiMessageSubmit maxCustomFee(Function<HapiSpec, ConsensusCustomFee> f) {
+        maxCustomFeeList.add(f);
+        return this;
+    }
+
+    public HapiMessageSubmit acceptAllCustomFees(boolean acceptAllFees) {
+        this.acceptAllCustomFees = acceptAllFees;
+        return this;
+    }
+
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final TopicID id = resolveTopicId(spec);
@@ -132,6 +146,12 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
                             if (clearMessage) {
                                 b.clearMessage();
                             }
+                            if (!maxCustomFeeList.isEmpty()) {
+                                for (final var supplier : maxCustomFeeList) {
+                                    b.addMaxCustomFees(supplier.apply(spec).getFixedFee());
+                                }
+                            }
+                            b.setAcceptAllCustomFees(acceptAllCustomFees);
                             if (totalChunks.isPresent() && chunkNumber.isPresent()) {
                                 final ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo.newBuilder()
                                         .setInitialTransactionID(initialTransactionID.orElse(asTransactionID(
