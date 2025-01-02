@@ -407,7 +407,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .via("submit"),
                     // assert collector's tinyBars balance
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1),
-                    updateTopic(TOPIC).withConsensusCustomFee(updatedFee).signedByPayerAnd("adminKey"),
+                    updateTopic(TOPIC).withConsensusCustomFee(updatedFee).signedByPayerAnd("adminKey","feeScheduleKey"),
                     submitMessageTo(TOPIC)
                             .maxCustomFee(updatedFee)
                             .message("TEST")
