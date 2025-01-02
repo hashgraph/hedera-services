@@ -235,8 +235,7 @@ public final class HandlerUtility {
         if (givenExpiration != null && longTermEnabled) {
             return givenExpiration.seconds();
         } else {
-            final var currentPlusMaxLife = consensusNow.plusSeconds(defaultLifetime);
-            return currentPlusMaxLife.getEpochSecond();
+            return consensusNow.plusSeconds(defaultLifetime).getEpochSecond();
         }
     }
 }
