@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -43,18 +43,15 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(NOT_REPEATABLE)
 public class PerpetualTransfers {
-    private AtomicLong duration = new AtomicLong(30);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(500);
+    private final AtomicLong duration = new AtomicLong(30);
+    private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
     @HapiTest
     final Stream<DynamicTest> canTransferBackAndForthForever() {
-        return defaultHapiSpec("CanTransferBackAndForthForever")
-                .given()
-                .when()
-                .then(runWithProvider(transfersFactory())
-                        .lasting(duration::get, unit::get)
-                        .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(runWithProvider(transfersFactory())
+                .lasting(duration::get, unit::get)
+                .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> transfersFactory() {
