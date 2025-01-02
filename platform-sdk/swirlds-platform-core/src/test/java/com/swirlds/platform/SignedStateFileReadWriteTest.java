@@ -47,6 +47,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
@@ -101,7 +102,7 @@ class SignedStateFileReadWriteTest {
 
     @Test
     @DisplayName("writeHashInfoFile() Test")
-    void writeHashInfoFileTest() throws IOException {
+    void writeHashInfoFileTest() throws IOException, InvalidRosterException {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final SignedState signedState = new RandomSignedStateGenerator()
@@ -130,7 +131,7 @@ class SignedStateFileReadWriteTest {
 
     @Test
     @DisplayName("Write Then Read State File Test")
-    void writeThenReadStateFileTest() throws IOException {
+    void writeThenReadStateFileTest() throws IOException, InvalidRosterException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         final Path stateFile = testDirectory.resolve(SIGNED_STATE_FILE_NAME);
         final Path signatureSetFile = testDirectory.resolve(SIGNATURE_SET_FILE_NAME);
@@ -164,7 +165,7 @@ class SignedStateFileReadWriteTest {
 
     @Test
     @DisplayName("writeSavedStateToDisk() Test")
-    void writeSavedStateToDiskTest() throws IOException {
+    void writeSavedStateToDiskTest() throws IOException, InvalidRosterException {
         final SignedState signedState = new RandomSignedStateGenerator()
                 .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
                 .build();

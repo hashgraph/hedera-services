@@ -36,6 +36,7 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -86,7 +87,7 @@ public class TurtleNode {
             @NonNull final NodeId nodeId,
             @NonNull final AddressBook addressBook,
             @NonNull final KeysAndCerts privateKeys,
-            @NonNull final SimulatedNetwork network) {
+            @NonNull final SimulatedNetwork network) throws InvalidRosterException {
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")

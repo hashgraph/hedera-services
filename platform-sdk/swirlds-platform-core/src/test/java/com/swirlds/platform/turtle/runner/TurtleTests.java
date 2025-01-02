@@ -17,6 +17,7 @@
 package com.swirlds.platform.turtle.runner;
 
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.roster.InvalidRosterException;
 import java.time.Duration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class TurtleTests {
      */
     @Disabled
     @Test
-    void turtleTest() {
+    void turtleTest() throws InvalidRosterException {
         final Randotron randotron = Randotron.create();
 
         final Turtle turtle = TurtleBuilder.create(randotron)

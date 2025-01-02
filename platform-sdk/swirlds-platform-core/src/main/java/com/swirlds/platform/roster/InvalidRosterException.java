@@ -19,12 +19,12 @@ package com.swirlds.platform.roster;
 /**
  * An exception thrown by the RosterValidator when a given Roster is invalid.
  */
-public class InvalidRosterException extends RuntimeException {
+public class InvalidRosterException extends Exception {
     /**
      * A default constructor.
      * @param message a message
      */
-    public InvalidRosterException(String message) {
+    public InvalidRosterException(final String message) {
         super(message);
     }
 }

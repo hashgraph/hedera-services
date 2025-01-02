@@ -32,6 +32,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -90,7 +91,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
      */
     @Test
     @DisplayName("Old Complete State Eventually Released")
-    void oldCompleteStateEventuallyReleased() throws InterruptedException {
+    void oldCompleteStateEventuallyReleased() throws InterruptedException, InvalidRosterException {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(buildStateConfig())

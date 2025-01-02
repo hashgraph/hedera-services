@@ -38,6 +38,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
@@ -48,7 +49,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
-import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -120,7 +120,7 @@ public class RandomSignedStateGenerator {
      *
      * @return a new signed state
      */
-    public SignedState build() {
+    public SignedState build() throws InvalidRosterException {
         final Roster rosterInstance;
         if (roster == null) {
             rosterInstance = RandomRosterBuilder.create(random)
@@ -130,12 +130,8 @@ public class RandomSignedStateGenerator {
             rosterInstance = roster;
         }
 
-        final SoftwareVersion softwareVersionInstance;
-        if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(random.nextInt(1, 100));
-        } else {
-            softwareVersionInstance = softwareVersion;
-        }
+        final SoftwareVersion softwareVersionInstance = Objects.requireNonNullElseGet(softwareVersion,
+                () -> new BasicSoftwareVersion(random.nextInt(1, 100)));
 
         final PlatformMerkleStateRoot stateInstance;
         registerMerkleStateRootClassIds();
@@ -151,40 +147,13 @@ public class RandomSignedStateGenerator {
             stateInstance = state;
         }
 
-        final long roundInstance;
-        if (round == null) {
-            roundInstance = Math.abs(random.nextLong());
-        } else {
-            roundInstance = round;
-        }
-
-        final Hash legacyRunningEventHashInstance;
-        if (legacyRunningEventHash == null) {
-            legacyRunningEventHashInstance = randomHash(random);
-        } else {
-            legacyRunningEventHashInstance = legacyRunningEventHash;
-        }
-
-        final Instant consensusTimestampInstance;
-        if (consensusTimestamp == null) {
-            consensusTimestampInstance = RandomUtils.randomInstant(random);
-        } else {
-            consensusTimestampInstance = consensusTimestamp;
-        }
-
-        final boolean freezeStateInstance;
-        if (freezeState == null) {
-            freezeStateInstance = random.nextBoolean();
-        } else {
-            freezeStateInstance = freezeState;
-        }
-
-        final int roundsNonAncientInstance;
-        if (roundsNonAncient == null) {
-            roundsNonAncientInstance = 26;
-        } else {
-            roundsNonAncientInstance = roundsNonAncient;
-        }
+        final long roundInstance = Objects.requireNonNullElseGet(round, () -> Math.abs(random.nextLong()));
+        final Hash legacyRunningEventHashInstance = Objects.requireNonNullElseGet(legacyRunningEventHash,
+                () -> randomHash(random));
+        final Instant consensusTimestampInstance = Objects.requireNonNullElseGet(consensusTimestamp,
+                () -> RandomUtils.randomInstant(random));
+        final boolean freezeStateInstance = Objects.requireNonNullElseGet(freezeState, random::nextBoolean);
+        final int roundsNonAncientInstance = Objects.requireNonNullElse(roundsNonAncient, 26);
 
         final ConsensusSnapshot consensusSnapshotInstance;
         if (consensusSnapshot == null) {
@@ -199,7 +168,7 @@ public class RandomSignedStateGenerator {
         } else {
             consensusSnapshotInstance = consensusSnapshot;
         }
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState((MerkleStateRoot) stateInstance);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateInstance);
         final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
@@ -210,8 +179,8 @@ public class RandomSignedStateGenerator {
             v.setConsensusTimestamp(consensusTimestampInstance);
         });
 
-        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
-        RosterUtils.setActiveRoster((State) stateInstance, rosterInstance, roundInstance);
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(stateInstance);
+        RosterUtils.setActiveRoster(stateInstance, rosterInstance, roundInstance);
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
@@ -276,7 +245,7 @@ public class RandomSignedStateGenerator {
      *
      * @param count the number of states to build
      */
-    public List<SignedState> build(final int count) {
+    public List<SignedState> build(final int count) throws InvalidRosterException {
         final List<SignedState> states = new ArrayList<>(count);
 
         for (int i = 0; i < count; i++) {

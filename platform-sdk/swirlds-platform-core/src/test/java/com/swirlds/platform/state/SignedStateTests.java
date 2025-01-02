@@ -32,6 +32,7 @@ import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -54,7 +55,7 @@ class SignedStateTests {
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) {
+    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) throws InvalidRosterException {
         return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
@@ -75,7 +76,7 @@ class SignedStateTests {
      * @param releaseCallback this method is called when the State is released
      */
     private PlatformMerkleStateRoot buildMockState(
-            final Random random, final Runnable reserveCallback, final Runnable releaseCallback) {
+            final Random random, final Runnable reserveCallback, final Runnable releaseCallback) throws InvalidRosterException {
         final var real = new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(real);
@@ -107,7 +108,7 @@ class SignedStateTests {
 
     @Test
     @DisplayName("Reservation Test")
-    void reservationTest() throws InterruptedException {
+    void reservationTest() throws InterruptedException, InvalidRosterException {
         final Random random = new Random();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);
@@ -166,7 +167,7 @@ class SignedStateTests {
      */
     @Test
     @DisplayName("No Garbage Collector Test")
-    void noGarbageCollectorTest() {
+    void noGarbageCollectorTest() throws InvalidRosterException {
         final Random random = new Random();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);

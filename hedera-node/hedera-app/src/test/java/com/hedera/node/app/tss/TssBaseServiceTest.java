@@ -18,7 +18,6 @@ package com.hedera.node.app.tss;
 
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PRIVATE_KEY;
 import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.PUBLIC_KEY;
-import static com.hedera.node.app.tss.handlers.TssShareSignatureHandlerTest.TSS_KEYS;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ACTIVE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.CURRENT_CANDIDATE_ROSTER;
 import static com.hedera.node.app.workflows.handle.steps.NodeStakeUpdatesTest.RosterCase.ROSTER_NODE_1;
@@ -49,6 +48,7 @@ import com.hedera.node.app.tss.stores.ReadableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -140,7 +140,7 @@ public class TssBaseServiceTest {
 
     @Test
     @DisplayName("Service won't set the current candidate roster as the new candidate roster")
-    void doesntSetSameCandidateRoster() {
+    void doesntSetSameCandidateRoster() throws InvalidRosterException {
         given(storeFactory.readableStore(ReadableTssStore.class)).willReturn(readableTssStore);
         // Simulate CURRENT_CANDIDATE_ROSTER and ACTIVE_ROSTER
         mockWritableRosterStore();

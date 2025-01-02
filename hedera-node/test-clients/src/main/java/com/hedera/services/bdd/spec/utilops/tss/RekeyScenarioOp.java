@@ -70,6 +70,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -423,7 +424,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
             final var rosterStore = new WritableRosterStore(writableStates);
 
             if (!hedera.isRosterLifecycleEnabled() && rosterStore.getActiveRoster() == null) {
-                rosterStore.putActiveRoster(embeddedHedera.roster(), 0);
+                setActiveRoster(rosterStore, embeddedHedera.roster(), 0);
                 ((CommittableWritableStates) writableStates).commit();
             }
 
@@ -434,7 +435,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                     activeEntries.getLast().copyBuilder().weight(0).build());
             activeEntries.set(
                     0, activeEntries.getFirst().copyBuilder().weight(10).build());
-            rosterStore.putActiveRoster(new Roster(activeEntries), roundNo + 1);
+            setActiveRoster(rosterStore, new Roster(activeEntries), roundNo + 1);
             ((CommittableWritableStates) writableStates).commit();
 
             // Extract all the roster metadata for the active roster
@@ -453,6 +454,15 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
                             directory -> {},
                             IntStream.range(0, activeShares.get(0L)).boxed().toList());
         });
+    }
+
+    private void setActiveRoster(final WritableRosterStore rosterStore, final Roster roster, long roundNumber) {
+        try {
+            rosterStore.putActiveRoster(roster, roundNumber);
+        } catch (final InvalidRosterException e) {
+            //
+            throw new RuntimeException("Roster is invalid", e);
+        }
     }
 
     /**

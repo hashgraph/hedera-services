@@ -47,6 +47,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.SignedStateLoadingException;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
@@ -135,7 +136,7 @@ public class StartupStateUtilsTests {
             final long round,
             @Nullable final Hash epoch,
             final boolean corrupted)
-            throws IOException {
+            throws IOException, InvalidRosterException {
         MerkleDb.resetDefaultInstancePath();
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -183,7 +184,7 @@ public class StartupStateUtilsTests {
 
     @Test
     @DisplayName("Normal Restart Test")
-    void normalRestartTest() throws IOException, SignedStateLoadingException {
+    void normalRestartTest() throws IOException, SignedStateLoadingException, InvalidRosterException {
         final Random random = getRandomPrintSeed();
         final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
@@ -217,7 +218,7 @@ public class StartupStateUtilsTests {
 
     @Test
     @DisplayName("Corrupted State No Recycling Test")
-    void corruptedStateNoRecyclingTest() throws IOException {
+    void corruptedStateNoRecyclingTest() throws IOException, InvalidRosterException {
         final Random random = getRandomPrintSeed();
         final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
 
@@ -245,7 +246,7 @@ public class StartupStateUtilsTests {
     @ValueSource(ints = {1, 2, 3, 4, 5})
     @DisplayName("Corrupted State Recycling Permitted Test")
     void corruptedStateRecyclingPermittedTest(final int invalidStateCount)
-            throws IOException, SignedStateLoadingException {
+            throws IOException, SignedStateLoadingException, InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final AtomicInteger recycleCount = new AtomicInteger(0);

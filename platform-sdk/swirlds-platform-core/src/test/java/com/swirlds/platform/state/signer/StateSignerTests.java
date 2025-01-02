@@ -30,6 +30,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
@@ -50,7 +51,7 @@ public class StateSignerTests {
     }
 
     @Test
-    void doNotSignPcesState() {
+    void doNotSignPcesState() throws InvalidRosterException {
         final Randotron randotron = Randotron.create();
 
         final Hash stateHash = randotron.nextHash();
@@ -69,7 +70,7 @@ public class StateSignerTests {
     }
 
     @Test
-    void signRegularState() {
+    void signRegularState() throws InvalidRosterException {
         final Randotron randotron = Randotron.create();
 
         final Hash stateHash = randotron.nextHash();

@@ -38,6 +38,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -80,7 +81,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Add Valid Signatures Test")
-    void addValidSignaturesTest(final boolean evenWeighting) {
+    void addValidSignaturesTest(final boolean evenWeighting) throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
@@ -180,7 +181,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Add Invalid Signatures Test")
-    void addInvalidSignaturesTest(final boolean evenWeighting) {
+    void addInvalidSignaturesTest(final boolean evenWeighting) throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
@@ -274,7 +275,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Signature Becomes Invalid Test")
-    void signatureBecomesInvalidTest(final boolean evenWeighting) {
+    void signatureBecomesInvalidTest(final boolean evenWeighting) throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
@@ -359,7 +360,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("All Signatures Become Invalid Test")
-    void allSignaturesBecomeInvalidTest(final boolean evenWeighting) {
+    void allSignaturesBecomeInvalidTest(final boolean evenWeighting) throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
@@ -403,7 +404,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Signatures Invalid With Different Roster Test")
-    void signaturesInvalidWithDifferentRosterTest(final boolean evenWeighting) throws CertificateEncodingException {
+    void signaturesInvalidWithDifferentRosterTest(final boolean evenWeighting) throws CertificateEncodingException, InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
@@ -458,7 +459,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Signatures Invalid Due To Zero Weight")
-    void signaturesInvalidDueToZeroWeightTest(final boolean evenWeighting) {
+    void signaturesInvalidDueToZeroWeightTest(final boolean evenWeighting) throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);
@@ -522,7 +523,7 @@ class StateSigningTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Recovery State Is Complete Test")
-    void recoveryStateIsCompleteTest(final boolean evenWeighting) {
+    void recoveryStateIsCompleteTest(final boolean evenWeighting) throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final int nodeCount = random.nextInt(10, 20);

@@ -31,6 +31,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.SignedState;
@@ -95,7 +96,7 @@ class AddIncompleteStateTest extends AbstractStateSignatureCollectorTest {
 
     @Test
     @DisplayName("Add Incomplete State Test")
-    void addIncompleteStateTest() {
+    void addIncompleteStateTest() throws InvalidRosterException {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(buildStateConfig())

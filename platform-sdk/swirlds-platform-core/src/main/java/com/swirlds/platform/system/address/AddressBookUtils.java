@@ -24,6 +24,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -240,13 +241,14 @@ public class AddressBookUtils {
      * @param bootstrapAddressBook the bootstrap address book
      * @param platformContext      the platform context
      * @return the initialized address book
+     * @throws InvalidRosterException when the roster is invalid
      */
     public static @NonNull AddressBook initializeAddressBook(
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook bootstrapAddressBook,
-            @NonNull final PlatformContext platformContext) {
+            @NonNull final PlatformContext platformContext) throws InvalidRosterException {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(

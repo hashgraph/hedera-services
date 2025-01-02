@@ -50,6 +50,7 @@ import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
@@ -180,7 +181,7 @@ class StateFileManagerTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Standard Operation Test")
-    void standardOperationTest(final boolean successExpected) throws IOException {
+    void standardOperationTest(final boolean successExpected) throws IOException, InvalidRosterException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         makeImmutable(signedState);
 
@@ -207,7 +208,7 @@ class StateFileManagerTests {
 
     @Test
     @DisplayName("Save Fatal Signed State")
-    void saveFatalSignedState() throws InterruptedException, IOException {
+    void saveFatalSignedState() throws InterruptedException, IOException, InvalidRosterException {
         final SignedState signedState =
                 new RandomSignedStateGenerator().setUseBlockingState(true).build();
         ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
@@ -236,7 +237,7 @@ class StateFileManagerTests {
 
     @Test
     @DisplayName("Save ISS Signed State")
-    void saveISSignedState() throws IOException {
+    void saveISSignedState() throws IOException, InvalidRosterException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
 
         final StateSnapshotManager manager =
@@ -256,7 +257,7 @@ class StateFileManagerTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Sequence Of States Test")
-    void sequenceOfStatesTest(final boolean startAtGenesis) throws IOException {
+    void sequenceOfStatesTest(final boolean startAtGenesis) throws IOException, InvalidRosterException {
 
         final Random random = getRandomPrintSeed();
 
@@ -389,7 +390,7 @@ class StateFileManagerTests {
     @SuppressWarnings("resource")
     @Test
     @DisplayName("State Deletion Test")
-    void stateDeletionTest() throws IOException {
+    void stateDeletionTest() throws IOException, InvalidRosterException {
         final Random random = getRandomPrintSeed();
         final int statesOnDisk = 3;
 

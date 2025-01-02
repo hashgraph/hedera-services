@@ -33,6 +33,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -100,7 +101,7 @@ public class SequentialSignaturesRestartTest extends AbstractStateSignatureColle
 
     @Test
     @DisplayName("Sequential Signatures After Restart Test")
-    void sequentialSignaturesAfterRestartTest() throws InterruptedException {
+    void sequentialSignaturesAfterRestartTest() throws InterruptedException, InvalidRosterException {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(buildStateConfig())

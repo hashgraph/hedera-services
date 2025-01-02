@@ -28,6 +28,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
@@ -65,7 +66,7 @@ class SignedStateNexusTest {
 
     @ParameterizedTest
     @MethodSource("allInstances")
-    void basicUsage(@NonNull final SignedStateNexus nexus) {
+    void basicUsage(@NonNull final SignedStateNexus nexus) throws InvalidRosterException {
         final int round = 123;
         final ReservedSignedState original =
                 new RandomSignedStateGenerator().setRound(round).build().reserve("test");
@@ -91,7 +92,7 @@ class SignedStateNexusTest {
 
     @ParameterizedTest
     @MethodSource("allInstances")
-    void closedStateTest(@NonNull final SignedStateNexus nexus) {
+    void closedStateTest(@NonNull final SignedStateNexus nexus) throws InvalidRosterException {
         final ReservedSignedState reservedSignedState = realState();
         nexus.setState(reservedSignedState);
         reservedSignedState.close();
@@ -105,7 +106,7 @@ class SignedStateNexusTest {
      */
     @ParameterizedTest
     @MethodSource("raceConditionInstances")
-    void raceConditionTest(@NonNull final SignedStateNexus nexus) throws InterruptedException {
+    void raceConditionTest(@NonNull final SignedStateNexus nexus) throws InterruptedException, InvalidRosterException {
         final ReservedSignedState state1 = mockState();
         final CountDownLatch unblockThread = new CountDownLatch(1);
         final CountDownLatch threadWaiting = new CountDownLatch(1);
@@ -144,7 +145,7 @@ class SignedStateNexusTest {
         assertSame(state2child, threadGetResult.get(), "The nexus should have returned the child of state2");
     }
 
-    private static ReservedSignedState mockState() {
+    private static ReservedSignedState mockState() throws InvalidRosterException {
         final ReservedSignedState state = Mockito.mock(ReservedSignedState.class);
         MerkleDb.resetDefaultInstancePath();
         final SignedState ss = new RandomSignedStateGenerator().build();
@@ -152,7 +153,7 @@ class SignedStateNexusTest {
         return state;
     }
 
-    private static ReservedSignedState realState() {
+    private static ReservedSignedState realState() throws InvalidRosterException {
         MerkleDb.resetDefaultInstancePath();
         return new RandomSignedStateGenerator().build().reserve("test");
     }

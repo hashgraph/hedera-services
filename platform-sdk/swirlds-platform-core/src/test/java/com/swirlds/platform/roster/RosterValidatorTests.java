@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.roster;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -409,6 +410,6 @@ public class RosterValidatorTests {
 
     @Test
     void validTest() {
-        RosterValidator.validate(buildValidRoster());
+        assertDoesNotThrow(() -> RosterValidator.validate(buildValidRoster()));
     }
 }

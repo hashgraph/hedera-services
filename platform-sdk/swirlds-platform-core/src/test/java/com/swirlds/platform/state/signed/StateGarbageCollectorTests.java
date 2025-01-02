@@ -25,6 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ class StateGarbageCollectorTests {
     }
 
     @Test
-    void standardBehaviorTest() {
+    void standardBehaviorTest() throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final PlatformContext platformContext =

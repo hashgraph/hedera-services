@@ -47,6 +47,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -187,7 +188,7 @@ class ReconnectProtocolTests {
     @DisplayName("Test the conditions under which the protocol should accept protocol initiation")
     @ParameterizedTest
     @MethodSource("acceptParams")
-    void testShouldAccept(final AcceptParams params) {
+    void testShouldAccept(final AcceptParams params) throws InvalidRosterException {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!params.teacherIsThrottled);
 
@@ -278,7 +279,7 @@ class ReconnectProtocolTests {
 
     @DisplayName("Tests if teacher throttle gets released")
     @Test
-    void testTeacherThrottleReleased() {
+    void testTeacherThrottleReleased() throws InvalidRosterException {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         final Configuration config = new TestConfigBuilder()
                 // we don't want the time based throttle to interfere
@@ -380,7 +381,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Aborted Teacher")
-    void abortedTeacher() {
+    void abortedTeacher() throws InvalidRosterException {
         final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
         when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
         final ValueReference<Boolean> throttleReleased = new ValueReference<>(false);
@@ -459,7 +460,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Teacher doesn't have a status of ACTIVE")
-    void teacherNotActive() {
+    void teacherNotActive() throws InvalidRosterException {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
@@ -489,7 +490,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
-    void teacherHoldsLearnerPermit() {
+    void teacherHoldsLearnerPermit() throws InvalidRosterException {
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
@@ -533,7 +534,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
-    void teacherCantAcquireLearnerPermit() {
+    void teacherCantAcquireLearnerPermit() throws InvalidRosterException {
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");

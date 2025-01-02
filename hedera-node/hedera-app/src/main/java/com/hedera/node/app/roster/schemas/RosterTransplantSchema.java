@@ -24,7 +24,9 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.internal.network.Network;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -50,17 +52,20 @@ public interface RosterTransplantSchema {
      * Restart the {@link RosterService} by copying any roster overrides from the startup assets into the state.
      * @param ctx the migration context
      * @param rosterStoreFactory the factory to use to create the writable roster store
+     * @throws InvalidRosterException when the overridden network's roster is invalid
      */
     default boolean restart(
             @NonNull final MigrationContext ctx,
-            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) {
+            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) throws InvalidRosterException {
         requireNonNull(ctx);
         if (ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             final long roundNumber = ctx.roundNumber();
             final var startupNetworks = ctx.startupNetworks();
             final var overrideNetwork = startupNetworks.overrideNetworkFor(roundNumber);
-            overrideNetwork.ifPresent(network -> {
+
+            if (overrideNetwork.isPresent()) {
                 final long activeRoundNumber = roundNumber + 1;
+                final Network network = overrideNetwork.get();
                 log.info("Adopting roster from override network in round {}", activeRoundNumber);
                 final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
                 final var overrideRoster = RosterUtils.rosterFrom(network);
@@ -70,7 +75,8 @@ public interface RosterTransplantSchema {
                         : overrideRoster;
                 rosterStore.putActiveRoster(roster, activeRoundNumber);
                 startupNetworks.setOverrideRound(roundNumber);
-            });
+            }
+
             return overrideNetwork.isPresent();
         }
         return false;

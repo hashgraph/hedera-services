@@ -82,7 +82,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    void testGetReturnsCorrectRoster() {
+    void testGetReturnsCorrectRoster() throws InvalidRosterException {
         final Roster expectedRoster = createValidTestRoster(1);
         writableRosterStore.putCandidateRoster(expectedRoster);
         final Bytes rosterHash = RosterUtils.hash(expectedRoster).getBytes();
@@ -93,7 +93,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    void testGetReturnsNullForInvalidHash() {
+    void testGetReturnsNullForInvalidHash() throws InvalidRosterException {
         final Roster expectedRoster = createValidTestRoster(1);
         writableRosterStore.putCandidateRoster(expectedRoster);
         final Bytes rosterHash = Bytes.EMPTY;
@@ -104,7 +104,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    void testSetCandidateRosterReturnsSame() {
+    void testSetCandidateRosterReturnsSame() throws InvalidRosterException {
         final Roster roster1 = createValidTestRoster(1);
         writableRosterStore.putCandidateRoster(roster1);
         assertEquals(
@@ -125,7 +125,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    void testInvalidRoundNumberThrowsException() {
+    void testInvalidRoundNumberThrowsException() throws InvalidRosterException {
         writableRosterStore.putActiveRoster(createValidTestRoster(2), 1);
         final Roster roster = createValidTestRoster(1);
         assertThrows(IllegalArgumentException.class, () -> writableRosterStore.putActiveRoster(roster, 0));
@@ -136,7 +136,7 @@ class WritableRosterStoreTest {
      * Tests that setting an active roster returns the active roster when getActiveRoster is called.
      */
     @Test
-    void testGetCandidateRosterWithValidCandidateRoster() {
+    void testGetCandidateRosterWithValidCandidateRoster() throws InvalidRosterException {
         final Roster activeRoster = createValidTestRoster(1);
         assertNull(readableRosterStore.getActiveRoster(), "Active roster should be null initially");
         writableRosterStore.putActiveRoster(activeRoster, 2);
@@ -147,7 +147,7 @@ class WritableRosterStoreTest {
     }
 
     @Test
-    void testSetActiveRosterRemovesExistingCandidateRoster() {
+    void testSetActiveRosterRemovesExistingCandidateRoster() throws InvalidRosterException {
         final Roster activeRoster = createValidTestRoster(1);
         final Roster candidateRoster = createValidTestRoster(2);
         writableRosterStore.putCandidateRoster(candidateRoster);
@@ -170,7 +170,7 @@ class WritableRosterStoreTest {
      */
     @Test
     @DisplayName("Test Oldest Active Roster Cleanup")
-    void testOldestActiveRosterRemoved() throws NoSuchFieldException, IllegalAccessException {
+    void testOldestActiveRosterRemoved() throws NoSuchFieldException, IllegalAccessException, InvalidRosterException {
         final Roster roster1 = createValidTestRoster(3);
         writableRosterStore.putActiveRoster(roster1, 1);
         assertSame(readableRosterStore.getActiveRoster(), roster1, "Returned active roster should be roster1");
@@ -228,7 +228,7 @@ class WritableRosterStoreTest {
      */
     @Test
     @DisplayName("Duplicate Roster Hash")
-    void testRosterHashCollisions() {
+    void testRosterHashCollisions() throws InvalidRosterException {
         final Roster roster1 = createValidTestRoster(3);
         writableRosterStore.putActiveRoster(roster1, 1);
         assertSame(
@@ -256,7 +256,7 @@ class WritableRosterStoreTest {
      */
     @Test
     @DisplayName("Test Roster History")
-    void testRosterHistory() {
+    void testRosterHistory() throws InvalidRosterException {
         final Roster roster1 = createValidTestRoster(3);
         writableRosterStore.putActiveRoster(roster1, 1);
         assertSame(

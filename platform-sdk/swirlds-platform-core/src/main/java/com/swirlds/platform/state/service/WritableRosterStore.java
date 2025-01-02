@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.roster.RosterState.Builder;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.roster.RosterValidator;
 import com.swirlds.state.spi.WritableKVState;
@@ -75,8 +76,9 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
     /**
      * Adopts the candidate roster as the active roster, starting in the given round.
      * @param roundNumber the round number in which the candidate roster should be adopted as the active roster
+     * @throws InvalidRosterException when the adopting candidate roster is invalid
      */
-    public void adoptCandidateRoster(final long roundNumber) {
+    public void adoptCandidateRoster(final long roundNumber) throws InvalidRosterException {
         putActiveRoster(requireNonNull(getCandidateRoster()), roundNumber);
     }
 
@@ -85,8 +87,9 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * Setting the candidate roster indicates that this roster should be adopted as the active roster when required.
      *
      * @param candidateRoster a candidate roster to set. It must be a valid roster.
+     * @throws InvalidRosterException when the candidate roster is invalid
      */
-    public void putCandidateRoster(@NonNull final Roster candidateRoster) {
+    public void putCandidateRoster(@NonNull final Roster candidateRoster) throws InvalidRosterException {
         requireNonNull(candidateRoster);
         RosterValidator.validate(candidateRoster);
 
@@ -112,8 +115,9 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param roster an active roster to set
      * @param round the round number in which the roster became active.
      *              It must be a positive number greater than the round number of the current active roster.
+     * @throws InvalidRosterException when the active roster is invalid
      */
-    public void putActiveRoster(@NonNull final Roster roster, final long round) {
+    public void putActiveRoster(@NonNull final Roster roster, final long round) throws InvalidRosterException {
         requireNonNull(roster);
         RosterValidator.validate(roster);
 

@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +75,7 @@ class ReservedSignedStateTests {
 
     @Test
     @DisplayName("Non-Null State Test")
-    void NonNullStateTest() {
+    void NonNullStateTest() throws InvalidRosterException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         assertEquals(0, signedState.getReservationCount());
 
@@ -119,7 +120,7 @@ class ReservedSignedStateTests {
 
     @Test
     @DisplayName("Non-Null Bad Lifecycle Test")
-    void nonNullBadLifecycleTest() {
+    void nonNullBadLifecycleTest() throws InvalidRosterException {
         final ReservedSignedState reservedSignedState =
                 ReservedSignedState.createAndReserve(new RandomSignedStateGenerator().build(), "reason");
         reservedSignedState.close();
@@ -134,7 +135,7 @@ class ReservedSignedStateTests {
 
     @Test
     @DisplayName("Try-reserve Paradigm Test")
-    void tryReserveTest() {
+    void tryReserveTest() throws InvalidRosterException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         assertEquals(0, signedState.getReservationCount());
 

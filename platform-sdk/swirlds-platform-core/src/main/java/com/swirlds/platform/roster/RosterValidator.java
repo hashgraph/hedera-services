@@ -19,7 +19,7 @@ package com.swirlds.platform.roster;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,7 +36,7 @@ public final class RosterValidator {
      *
      * @param roster a roster to validate
      */
-    public static void validate(@NonNull final Roster roster) {
+    public static void validate(@Nullable final Roster roster) throws InvalidRosterException {
         if (roster == null) {
             throw new InvalidRosterException("roster is null");
         }

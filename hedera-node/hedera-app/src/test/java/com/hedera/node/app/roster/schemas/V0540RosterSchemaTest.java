@@ -38,6 +38,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.service.PbjConverter;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -147,7 +148,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void usesGenesisRosterIfLifecycleEnabledAndApropros() {
+    void usesGenesisRosterIfLifecycleEnabledAndApropros() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
@@ -162,7 +163,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void usesAdaptedAddressBookAndMigrationRosterIfLifecycleEnabledIfApropos() {
+    void usesAdaptedAddressBookAndMigrationRosterIfLifecycleEnabledIfApropos() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
@@ -243,7 +244,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void adoptsCandidateRosterIfTestPasses() {
+    void adoptsCandidateRosterIfTestPasses() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
@@ -271,7 +272,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void restartSetsActiveRosterFromOverrideIfPresent() {
+    void restartSetsActiveRosterFromOverrideIfPresent() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);

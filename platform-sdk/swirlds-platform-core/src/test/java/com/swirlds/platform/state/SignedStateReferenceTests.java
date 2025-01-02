@@ -26,6 +26,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
@@ -43,7 +44,7 @@ class SignedStateReferenceTests {
     /**
      * Build a signed state.
      */
-    public static SignedState buildSignedState() {
+    public static SignedState buildSignedState() throws InvalidRosterException  {
         return new RandomSignedStateGenerator().build();
     }
 
@@ -93,7 +94,7 @@ class SignedStateReferenceTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Initial Value Constructor Test")
-    void initialValueTest(final boolean defaultValue) {
+    void initialValueTest(final boolean defaultValue) throws InvalidRosterException {
 
         final SignedState state = spy(buildSignedState());
         doReturn(1234L).when(state).getRound();
@@ -124,7 +125,7 @@ class SignedStateReferenceTests {
 
     @Test
     @DisplayName("Replacement Test")
-    void replacementTest() {
+    void replacementTest() throws InvalidRosterException {
         MerkleDb.resetDefaultInstancePath();
         final SignedState state1 = buildSignedState();
         MerkleDb.resetDefaultInstancePath();

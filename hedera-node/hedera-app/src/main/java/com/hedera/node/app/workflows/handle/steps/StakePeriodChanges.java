@@ -40,6 +40,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -137,9 +138,14 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
             }
-            if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-                tssBaseService.regenerateKeyMaterial(stack);
-                startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
+            try {
+                if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
+                    tssBaseService.regenerateKeyMaterial(stack);
+                    startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
+                }
+            } catch (final InvalidRosterException e) {
+                logger.error("CATASTROPHIC failure loading candidate roster", e);
+                stack.rollbackFullStack();
             }
         }
         return !isGenesis && isStakePeriodBoundary;
@@ -187,7 +193,7 @@ public class StakePeriodChanges {
     }
 
     private void startKeyingCandidateRoster(
-            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
+            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) throws InvalidRosterException {
         final var storeFactory = handleContext.storeFactory();
         final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final var roster = nodeStore.snapshotOfFutureRoster();

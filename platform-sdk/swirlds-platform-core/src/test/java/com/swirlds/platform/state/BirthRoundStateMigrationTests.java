@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -53,7 +54,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @NonNull
-    private SignedState generateSignedState(@NonNull final Random random) {
+    private SignedState generateSignedState(@NonNull final Random random) throws InvalidRosterException {
 
         final long round = random.nextLong(1, 1_000_000);
 
@@ -85,7 +86,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @Test
-    void generationModeTest() {
+    void generationModeTest() throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
         final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();
@@ -107,7 +108,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @Test
-    void alreadyMigratedTest() {
+    void alreadyMigratedTest() throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
 
         final SignedState signedState = generateSignedState(random);
@@ -141,7 +142,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @Test
-    void migrationTest() {
+    void migrationTest() throws InvalidRosterException {
         final Random random = getRandomPrintSeed();
         final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();

@@ -30,6 +30,7 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -94,7 +95,7 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
 
     @Test
     @DisplayName("Early Signatures Test")
-    void earlySignaturesTest() throws InterruptedException {
+    void earlySignaturesTest() throws InterruptedException, InvalidRosterException {
         final int count = 100;
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(buildStateConfig())

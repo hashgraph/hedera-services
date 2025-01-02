@@ -35,6 +35,7 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
@@ -78,6 +79,7 @@ public final class StartupStateUtils {
      * @return the initial state to be used by this node
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states
+     * @throws InvalidRosterException when the roster is invalid
      */
     @NonNull
     @Deprecated(forRemoval = true)
@@ -90,7 +92,7 @@ public final class StartupStateUtils {
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
             @NonNull final AddressBook configAddressBook)
-            throws SignedStateLoadingException {
+            throws SignedStateLoadingException, InvalidRosterException {
 
         requireNonNull(configuration);
         requireNonNull(mainClassName);
@@ -321,12 +323,13 @@ public final class StartupStateUtils {
      * @param appVersion            the software version of the app
      * @param stateRoot             the merkle root node of the state
      * @return a reserved genesis signed state
+     * @throws InvalidRosterException when the roster is invalid
      */
     private static ReservedSignedState buildGenesisState(
             @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final PlatformMerkleStateRoot stateRoot) {
+            @NonNull final PlatformMerkleStateRoot stateRoot) throws InvalidRosterException {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
@@ -344,13 +347,14 @@ public final class StartupStateUtils {
      * @param platformState the platform state to initialize
      * @param addressBook the current address book
      * @param appVersion the software version of the app
+     * @throws InvalidRosterException when the roster is invalid
      */
     private static void initGenesisState(
             final Configuration configuration,
             final State state,
             final PlatformStateModifier platformState,
             final AddressBook addressBook,
-            final SoftwareVersion appVersion) {
+            final SoftwareVersion appVersion) throws InvalidRosterException {
         final long round = 0L;
 
         platformState.bulkUpdate(v -> {
