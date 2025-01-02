@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import java.io.IOException;
@@ -70,7 +70,7 @@ class StateTests {
 
         io.startReading();
 
-        final MerkleRoot decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
+        final PlatformMerkleStateRoot decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);
 
         assertEquals(merkleStateRoot.getHash(), decodedState.getHash(), "expected trees to be equal");
