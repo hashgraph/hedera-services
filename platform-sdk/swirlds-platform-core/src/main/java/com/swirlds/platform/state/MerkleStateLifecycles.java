@@ -74,13 +74,15 @@ public interface MerkleStateLifecycles {
             @Nullable SoftwareVersion previousVersion);
 
     /**
-     * Called when the platform needs to update the weights in the network
-     * address book
+     * Called when the platform needs to update the weights in the network address book; deprecated since 0.58
+     * because the application now directly decides what weights to put in address book (or, once roster lifecycle
+     * is fully enabled, the roster).
      *
      * @param state the working state of the network
      * @param configAddressBook the address book used to configure the network
      * @param context the current platform context
      */
+    @Deprecated(forRemoval = true)
     void onUpdateWeight(
             @NonNull MerkleStateRoot state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
 

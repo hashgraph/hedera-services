@@ -21,7 +21,7 @@ import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERWRITE_YAML_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
@@ -242,7 +242,7 @@ public class Browser {
             rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
                     configBuilder,
                     getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME),
-                    getAbsolutePath(DEFAULT_OVERWRITE_YAML_FILE_NAME)));
+                    getAbsolutePath(DEFAULT_OVERRIDES_YAML_FILE_NAME)));
             final Configuration configuration = configBuilder.build();
 
             setupGlobalMetrics(configuration);
