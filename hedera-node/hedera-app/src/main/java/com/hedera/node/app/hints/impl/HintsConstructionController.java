@@ -175,10 +175,10 @@ public class HintsConstructionController {
             }
         } else {
             switch (recommendAggregationBehavior(now)) {
-                case RESCHEDULE_CHECKPOINT -> construction =
-                        hintsStore.rescheduleAggregationCheckpoint(constructionId(), now.plus(hintKeysWaitTime));
+                case RESCHEDULE_CHECKPOINT -> construction = hintsStore.rescheduleAggregationCheckpoint(
+                        construction.constructionId(), now.plus(hintKeysWaitTime));
                 case AGGREGATE_NOW -> {
-                    construction = hintsStore.setAggregationTime(constructionId(), now);
+                    construction = hintsStore.setAggregationTime(construction.constructionId(), now);
                     aggregationFuture = aggregateFuture(now);
                 }
                 case COME_BACK_LATER -> {
@@ -239,9 +239,8 @@ public class HintsConstructionController {
                     .map(Map.Entry::getKey)
                     .findFirst();
             maybeWinningAggregation.ifPresent(keys -> {
-                final var id = constructionId();
-                construction = hintsStore.completeAggregation(id, keys, nodePartyIds);
-                if (hintsStore.getActiveConstruction().constructionId() == id) {
+                construction = hintsStore.completeAggregation(construction.constructionId(), keys, nodePartyIds);
+                if (hintsStore.getActiveConstruction().constructionId() == construction.constructionId()) {
                     signingContext.setConstruction(construction);
                 }
             });
@@ -365,7 +364,7 @@ public class HintsConstructionController {
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
                     final var keys = operations.preprocess(hintKeys, aggregatedWeights, M);
                     final var body = HintsAggregationVoteTransactionBody.newBuilder()
-                            .constructionId(constructionId())
+                            .constructionId(construction.constructionId())
                             .vote(PreprocessedKeysVote.newBuilder()
                                     .preprocessedKeys(keys)
                                     .build())

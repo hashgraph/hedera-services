@@ -16,4 +16,26 @@
 
 package com.hedera.node.app.history;
 
-public interface WritableHistoryStore extends ReadableHistoryStore {}
+import com.hedera.hapi.node.state.history.MetadataProofConstruction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+
+public interface WritableHistoryStore extends ReadableHistoryStore {
+    /**
+     * Reschedules the next assembly checkpoint for the construction with the given ID and returns the
+     * updated construction.
+     * @param constructionId the construction ID
+     * @param then the next assembly checkpoint
+     * @return the updated construction
+     */
+    MetadataProofConstruction rescheduleAssemblyCheckpoint(long constructionId, @NonNull Instant then);
+
+    /**
+     * Sets the assembly time for the construction with the given ID and returns the
+     * updated construction.
+     * @param constructionId the construction ID
+     * @param now the aggregation time
+     * @return the updated construction
+     */
+    MetadataProofConstruction setAssemblyTime(long constructionId, @NonNull Instant now);
+}

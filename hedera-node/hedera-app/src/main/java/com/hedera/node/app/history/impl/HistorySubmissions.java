@@ -20,12 +20,18 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.history.HistoryAssemblySignature;
+import com.hedera.hapi.node.state.history.MetadataProof;
+import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.services.auxiliary.history.HistoryAssemblySignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody;
+import com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody;
 import com.hedera.node.app.history.ProofKeysAccessor;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -57,14 +63,45 @@ public class HistorySubmissions {
 
     /**
      * Submits a proof key publication to the network.
-     * @param body the
+     * @param proofKey the proof key to publish
      * @return a future that completes with the submission
      */
-    public CompletableFuture<Void> submitProofKeyPublication(
-            @NonNull final HistoryProofKeyPublicationTransactionBody body) {
-        requireNonNull(body);
+    public CompletableFuture<Void> submitProofKeyPublication(@NonNull final Bytes proofKey) {
+        requireNonNull(proofKey);
         return submit(
-                b -> b.historyProofKeyPublication(body),
+                b -> b.historyProofKeyPublication(new HistoryProofKeyPublicationTransactionBody(proofKey)),
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                appContext.instantSource().instant());
+    }
+
+    /**
+     * Submits a proof vote to the network.
+     * @param constructionId the construction id to vote on
+     * @param metadataProof the metadata proof to vote for
+     * @return a future that completes with the submission
+     */
+    public CompletableFuture<Void> submitProofVote(
+            final long constructionId, @NonNull final MetadataProof metadataProof) {
+        requireNonNull(metadataProof);
+        final var vote =
+                MetadataProofVote.newBuilder().metadataProof(metadataProof).build();
+        return submit(
+                b -> b.historyProofVote(new HistoryProofVoteTransactionBody(constructionId, vote)),
+                appContext.configSupplier().get(),
+                appContext.selfNodeInfoSupplier().get().accountId(),
+                appContext.instantSource().instant());
+    }
+
+    /**
+     * Submits an assembly signature to the network.
+     * @return a future that completes with the submission
+     */
+    public CompletableFuture<Void> submitAssemblySignature(
+            final long constructionId, @NonNull final HistoryAssemblySignature signature) {
+        requireNonNull(signature);
+        return submit(
+                b -> b.historyAssemblySignature(new HistoryAssemblySignatureTransactionBody(constructionId, signature)),
                 appContext.configSupplier().get(),
                 appContext.selfNodeInfoSupplier().get().accountId(),
                 appContext.instantSource().instant());

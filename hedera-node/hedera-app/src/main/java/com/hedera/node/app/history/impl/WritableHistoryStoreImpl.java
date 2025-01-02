@@ -16,6 +16,27 @@
 
 package com.hedera.node.app.history.impl;
 
+import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import com.hedera.node.app.history.WritableHistoryStore;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 
-public class WritableHistoryStoreImpl implements WritableHistoryStore {}
+import static java.util.Objects.requireNonNull;
+
+/**
+ * Default implementation of {@link WritableHistoryStore}.
+ */
+public class WritableHistoryStoreImpl implements WritableHistoryStore {
+    @Override
+    public MetadataProofConstruction rescheduleAssemblyCheckpoint(
+            final long constructionId, @NonNull final Instant then) {
+        requireNonNull(then);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public MetadataProofConstruction setAssemblyTime(final long constructionId, @NonNull final Instant now) {
+        requireNonNull(now);
+        throw new AssertionError("Not implemented");
+    }
+}
