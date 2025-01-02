@@ -42,7 +42,6 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
@@ -194,8 +193,7 @@ class SerializationTest extends MerkleTestBase {
      */
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void simpleReadAndWrite(boolean forceFlush)
-            throws IOException, ConstructableRegistryException, InvalidRosterException {
+    void simpleReadAndWrite(boolean forceFlush) throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
 
@@ -219,7 +217,7 @@ class SerializationTest extends MerkleTestBase {
     }
 
     @Test
-    void snapshot() throws IOException, InvalidRosterException {
+    void snapshot() throws IOException {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
         final var tempDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(config);
@@ -259,7 +257,7 @@ class SerializationTest extends MerkleTestBase {
      * After it gets saved to disk again, and then loaded back in, it results in ClassCastException due to incorrect classId.
      */
     @Test
-    void dualReadAndWrite() throws IOException, ConstructableRegistryException, InvalidRosterException {
+    void dualReadAndWrite() throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
 
