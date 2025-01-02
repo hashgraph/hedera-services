@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -153,7 +154,15 @@ public class PlatformConfigUtils {
         final Set<String> propertyNames =
                 configuration.getPropertyNames().collect(Collectors.toCollection(TreeSet::new));
         for (final String propertyName : propertyNames) {
-            stringBuilder.append(String.format("%s, %s%n", propertyName, configuration.getValue(propertyName)));
+            if (configuration.isListValue(propertyName)) {
+                final String value =
+                        Objects.requireNonNullElse(configuration.getValues(propertyName), List.of()).stream()
+                                .map(Object::toString)
+                                .collect(Collectors.joining(", "));
+                stringBuilder.append(String.format("%s, %s%n", propertyName, value));
+            } else {
+                stringBuilder.append(String.format("%s, %s%n", propertyName, configuration.getValue(propertyName)));
+            }
         }
     }
 }

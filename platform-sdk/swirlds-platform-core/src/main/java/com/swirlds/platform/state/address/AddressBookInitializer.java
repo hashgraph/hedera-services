@@ -29,7 +29,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookValidator;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -133,8 +132,7 @@ public class AddressBookInitializer {
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
         this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
 
-        final var book = buildAddressBook(
-                retrieveActiveOrGenesisRoster((State) initialState.getState().getSwirldState()));
+        final var book = buildAddressBook(retrieveActiveOrGenesisRoster(initialState.getState()));
         this.stateAddressBook = (book == null || book.getSize() == 0) ? null : book;
         if (stateAddressBook == null && !initialState.isGenesisState()) {
             throw new IllegalStateException("Only genesis states can have null address books.");

@@ -91,7 +91,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     public Call callFrom(@NonNull HssCallAttempt attempt) {
         final var body = bodyFor(scheduleIdFor(attempt));
         return new DispatchForResponseCodeHssCall(
-                attempt, body, SignScheduleTranslator::gasRequirement, keySetFor(attempt));
+                attempt, body, SignScheduleTranslator::gasRequirement, attempt.keySetFor());
     }
 
     /**

@@ -17,10 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -32,11 +35,11 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -52,9 +55,6 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
     @Nullable
     private final Schedule redirectScheduleTxn;
 
-    @NonNull
-    private final SignatureVerifier signatureVerifier;
-
     // too many parameters
     @SuppressWarnings("java:S107")
     public HssCallAttempt(
@@ -65,7 +65,6 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<HssCallAttempt>> callTranslators,
             final boolean isStaticCall) {
@@ -87,7 +86,6 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
         } else {
             this.redirectScheduleTxn = null;
         }
-        this.signatureVerifier = signatureVerifier;
     }
 
     @Override
@@ -157,11 +155,44 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
     }
 
     /**
-     * Returns the {@link SignatureVerifier} used for this call.
+     * Extracts the key set for scheduled calls.
      *
-     * @return the {@link SignatureVerifier} used for this call
+     * @return the key set
      */
-    public @NonNull SignatureVerifier signatureVerifier() {
-        return signatureVerifier;
+    public Set<Key> keySetFor() {
+        final var sender = nativeOperations().getAccount(senderId());
+        requireNonNull(sender);
+        if (sender.smartContract()) {
+            return getKeysForContractSender();
+        } else {
+            return getKeysForEOASender();
+        }
+    }
+
+    @NonNull
+    private Set<Key> getKeysForEOASender() {
+        // For a top-level EthereumTransaction, use the Ethereum sender key; otherwise,
+        // use the full set of simple keys authorizing the ContractCall dispatching this
+        // HSS call attempt
+        Key key = enhancement.systemOperations().maybeEthSenderKey();
+        if (key != null) {
+            return Set.of(key);
+        }
+        return nativeOperations().authorizingSimpleKeys();
+    }
+
+    @NonNull
+    public Set<Key> getKeysForContractSender() {
+        final var contractNum = maybeMissingNumberOf(senderAddress(), nativeOperations());
+        if (isOnlyDelegatableContractKeysActive()) {
+            return Set.of(Key.newBuilder()
+                    .delegatableContractId(
+                            ContractID.newBuilder().contractNum(contractNum).build())
+                    .build());
+        } else {
+            return Set.of(Key.newBuilder()
+                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
+                    .build());
+        }
     }
 }

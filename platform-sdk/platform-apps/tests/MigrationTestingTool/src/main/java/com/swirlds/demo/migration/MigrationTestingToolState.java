@@ -285,9 +285,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
             final ConsensusEvent event = eventIt.next();

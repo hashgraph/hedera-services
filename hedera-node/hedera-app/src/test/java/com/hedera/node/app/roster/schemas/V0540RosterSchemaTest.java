@@ -284,4 +284,24 @@ class V0540RosterSchemaTest {
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1L);
         verify(startupNetworks).setOverrideRound(ROUND_NO);
     }
+
+    @Test
+    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() {
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.startupNetworks()).willReturn(startupNetworks);
+        given(ctx.roundNumber()).willReturn(ROUND_NO);
+        given(ctx.newStates()).willReturn(writableStates);
+        given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
+        given(rosterStore.getActiveRoster())
+                .willReturn(new Roster(
+                        List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build())));
+        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+        final var adaptedRoster = new Roster(
+                List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build()));
+
+        subject.restart(ctx);
+
+        verify(rosterStore).putActiveRoster(adaptedRoster, ROUND_NO + 1L);
+        verify(startupNetworks).setOverrideRound(ROUND_NO);
+    }
 }

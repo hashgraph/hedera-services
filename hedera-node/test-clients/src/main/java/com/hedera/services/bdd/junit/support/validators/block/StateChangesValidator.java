@@ -206,7 +206,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var addressBook = loadLegacyBookWithGeneratedCerts(pathToAddressBook);
         final var metrics = new NoOpMetrics();
         final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics);
-        this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
+        this.state = hedera.newMerkleStateRoot();
         final var platformConfig = ServicesMain.buildPlatformConfig();
         hedera.initializeStatesApi(
                 state,

@@ -309,6 +309,17 @@ public final class RosterUtils {
     }
 
     /**
+     * Formats a human-readable Roster representation, currently using its JSON codec,
+     * or returns {@code null} if the given roster object is null.
+     * @param roster a roster to format
+     * @return roster JSON string, or null
+     */
+    @Nullable
+    public static String toString(@Nullable final Roster roster) {
+        return roster == null ? null : Roster.JSON.toJSON(roster);
+    }
+
+    /**
      * Build an Address object out of a given RosterEntry object.
      *
      * @param entry a RosterEntry
