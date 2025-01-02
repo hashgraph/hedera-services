@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
@@ -27,10 +28,13 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.function.Consumer;
 
 public interface EmbeddedHedera {
     /**
@@ -124,6 +128,21 @@ public interface EmbeddedHedera {
      */
     TransactionResponse submit(
             @NonNull Transaction transaction, @NonNull AccountID nodeAccountId, @NonNull SyntheticVersion version);
+
+    /**
+     * Submits a transaction to the embedded node.
+     *
+     * @param transaction the transaction to submit
+     * @param nodeAccountId the account ID of the node to submit the transaction to
+     * @param preHandleCallback the callback to call during preHandle when a {@link StateSignatureTransaction} is encountered
+     * @param handleCallback the callback to call during preHandle when a {@link StateSignatureTransaction} is encountered
+     * @return the response to the transaction
+     */
+    TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleCallback,
+            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleCallback);
 
     /**
      * Sends a query to the embedded node.

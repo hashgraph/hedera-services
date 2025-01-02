@@ -82,6 +82,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -179,6 +180,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -512,6 +514,25 @@ public class UtilVerbs {
                 throw new IllegalArgumentException("Expected an EmbeddedNetwork");
             }
             return embeddedNetwork.embeddedHederaOrThrow().submit(transaction, nodeAccountId, syntheticVersion);
+        };
+    }
+
+    /**
+     * Returns a submission strategy that requires an embedded network and given one submits a transaction with
+     * the given {@link StateSignatureTransaction}-callback.
+     *
+     * @param preHandleCallback the callback that is called during preHandle when a {@link StateSignatureTransaction} is encountered
+     * @param handleCallback the callback that is called when a {@link StateSignatureTransaction} is encountered
+     * @return the submission strategy
+     */
+    public static HapiTxnOp.SubmissionStrategy usingStateSignatureTransactionCallback(
+            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleCallback,
+            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleCallback) {
+        return (network, transaction, functionality, target, nodeAccountId) -> {
+            if (!(network instanceof EmbeddedNetwork embeddedNetwork)) {
+                throw new IllegalArgumentException("Expected an EmbeddedNetwork");
+            }
+            return embeddedNetwork.embeddedHederaOrThrow().submit(transaction, nodeAccountId, preHandleCallback, handleCallback);
         };
     }
 

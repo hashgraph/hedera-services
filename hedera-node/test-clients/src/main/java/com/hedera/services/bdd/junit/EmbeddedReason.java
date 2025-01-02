@@ -33,4 +33,8 @@ public enum EmbeddedReason {
      * The test manipulates the software version of the simulated consensus event for a transaction.
      */
     MANIPULATES_EVENT_VERSION,
+    /**
+     * The test uses the state signature transaction callback.
+     */
+    USES_STATE_SIGNATURE_TRANSACTION_CALLBACK,
 }
