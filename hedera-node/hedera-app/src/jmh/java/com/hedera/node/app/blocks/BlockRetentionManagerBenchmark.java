@@ -47,10 +47,12 @@ public class BlockRetentionManagerBenchmark {
     private BlockRetentionManager blockRetentionManager;
     private Path uploadedDir;
 
-    // if we produce one block per second then:
+    // if we produce one block per second then in general:
     //  - for an hour we will have 3600 blocks
     //  - for a day we will have 3600 * 24 = 86400 blocks
     //  - for a week we will have 3600 * 168 = 604800 blocks
+    //
+    // NOTE: an exception to the above might be the case for daylight savings time switches
     @Param({"3600", "86400", "604800"})
     private int blockFilesCount;
 
