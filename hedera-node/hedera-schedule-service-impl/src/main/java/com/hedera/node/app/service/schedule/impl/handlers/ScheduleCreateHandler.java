@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,11 +131,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             context.requireKey(op.adminKeyOrThrow());
         }
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-        final long maxLifetime = schedulingConfig.longTermEnabled()
-                ? schedulingConfig.maxExpirationFutureSeconds()
-                : ledgerConfig.scheduleTxExpiryTimeSecs();
+        final long defaultLifetime = ledgerConfig.scheduleTxExpiryTimeSecs();
         final var schedule = createProvisionalSchedule(
-                body, instantSource.instant(), maxLifetime, schedulingConfig.longTermEnabled());
+                body, instantSource.instant(), defaultLifetime, schedulingConfig.longTermEnabled());
         final var transactionKeys = getRequiredKeys(schedule, context::allKeysForTransaction);
         // If the schedule payer inherits from the ScheduleCreate, it is already in the required keys
         if (op.hasPayerAccountID()) {
@@ -152,15 +150,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        final var maxLifetime = isLongTermEnabled
-                ? schedulingConfig.maxExpirationFutureSeconds()
-                : ledgerConfig.scheduleTxExpiryTimeSecs();
         final var consensusNow = context.consensusNow();
+        final var defaultLifetime = ledgerConfig.scheduleTxExpiryTimeSecs();
         final var provisionalSchedule =
-                createProvisionalSchedule(context.body(), consensusNow, maxLifetime, isLongTermEnabled);
+                createProvisionalSchedule(context.body(), consensusNow, defaultLifetime, isLongTermEnabled);
         final var now = consensusNow.getEpochSecond();
         final var then = provisionalSchedule.calculatedExpirationSecond();
         validateTrue(then > now, SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME);
+        final var maxLifetime = isLongTermEnabled
+                ? schedulingConfig.maxExpirationFutureSeconds()
+                : ledgerConfig.scheduleTxExpiryTimeSecs();
         validateTrue(then <= now + maxLifetime, SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE);
         validateTrue(
                 isAllowedFunction(provisionalSchedule.scheduledTransactionOrThrow(), schedulingConfig),

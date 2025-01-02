@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,7 +179,7 @@ public final class HandlerUtility {
      *     the transaction ID via {@link TransactionBody#transactionID()} from the TransactionBody stored in
      *     the {@link Schedule#originalCreateTransaction()} attribute of the Schedule.
      * @param consensusNow The current consensus time for the network.
-     * @param maxLifetime The maximum number of seconds a schedule is permitted to exist on the ledger
+     * @param defaultLifetime The maximum number of seconds a schedule is permitted to exist on the ledger
      *     before it expires.
      * @return a newly created Schedule with a null schedule ID
      * @throws HandleException if the
@@ -188,12 +188,12 @@ public final class HandlerUtility {
     static Schedule createProvisionalSchedule(
             @NonNull final TransactionBody body,
             @NonNull final Instant consensusNow,
-            final long maxLifetime,
+            final long defaultLifetime,
             final boolean longTermEnabled) {
         final var txnId = body.transactionIDOrThrow();
         final var op = body.scheduleCreateOrThrow();
         final var payerId = txnId.accountIDOrThrow();
-        final long expiry = calculateExpiration(op.expirationTime(), consensusNow, maxLifetime, longTermEnabled);
+        final long expiry = calculateExpiration(op.expirationTime(), consensusNow, defaultLifetime, longTermEnabled);
         final var builder = Schedule.newBuilder();
         if (longTermEnabled) {
             builder.waitForExpiry(op.waitForExpiry());
@@ -243,12 +243,12 @@ public final class HandlerUtility {
     private static long calculateExpiration(
             @Nullable final Timestamp givenExpiration,
             @NonNull final Instant consensusNow,
-            final long maxLifetime,
+            final long defaultLifetime,
             final boolean longTermEnabled) {
         if (givenExpiration != null && longTermEnabled) {
             return givenExpiration.seconds();
         } else {
-            final var currentPlusMaxLife = consensusNow.plusSeconds(maxLifetime);
+            final var currentPlusMaxLife = consensusNow.plusSeconds(defaultLifetime);
             return currentPlusMaxLife.getEpochSecond();
         }
     }
