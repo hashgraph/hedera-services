@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1160,6 +1160,16 @@ public class RepeatableHip423Tests {
                 cryptoCreate("trigger"),
                 sleepForSeconds(1),
                 getAccountBalance("treasury").hasTokenBalance("token", 100));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleCreateDefaultLifetimeIs30Min() {
+        final var lastSecond = new AtomicLong();
+        return hapiTest(
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L))),
+                exposeSpecSecondTo(lastSecond::set),
+                sourcing(() -> getScheduleInfo("one").hasExpiry(lastSecond.get() + 1800)));
     }
 
     private record ScheduleStateSizes(

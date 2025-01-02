@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     Optional<String> expectedAdminKey = Optional.empty();
     Optional<String> expectedEntityMemo = Optional.empty();
     Optional<List<String>> expectedSignatories = Optional.empty();
+    private long expectedExpiry = -1;
 
     public HapiGetScheduleInfo hasScheduledTxnIdSavedBy(String creation) {
         expectedScheduledTxnId = Optional.of(creation);
@@ -118,6 +119,11 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
     public HapiGetScheduleInfo hasWaitForExpiry(boolean value) {
         expectedWaitForExpiry = Optional.of(value);
+        return this;
+    }
+
+    public HapiGetScheduleInfo hasExpiry(final long seconds) {
+        this.expectedExpiry = seconds;
         return this;
     }
 
@@ -212,11 +218,15 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
             assertEquals(expectedKeys, actualKeys, "Wrong signatories");
         });
 
-        expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> assertEquals(
-                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue())
-                        .getSeconds(),
-                actualInfo.getExpirationTime().getSeconds(),
-                "Wrong Expiration Time!"));
+        if (expectedExpiry != -1) {
+            assertEquals(expectedExpiry, actualInfo.getExpirationTime().getSeconds(), "Wrong expiration time");
+        } else {
+            expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> assertEquals(
+                    getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue())
+                            .getSeconds(),
+                    actualInfo.getExpirationTime().getSeconds(),
+                    "Wrong Expiration Time!"));
+        }
 
         expectedWaitForExpiry.ifPresent(
                 aBoolean -> assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
