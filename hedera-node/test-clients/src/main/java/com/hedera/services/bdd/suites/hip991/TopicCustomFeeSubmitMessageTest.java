@@ -399,7 +399,10 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     newKeyNamed("feeScheduleKey"),
                     cryptoCreate(collector).balance(ONE_HBAR),
                     tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC).withConsensusCustomFee(fee).adminKeyName("adminKey").feeScheduleKeyName("feeScheduleKey"),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee)
+                            .adminKeyName("adminKey")
+                            .feeScheduleKeyName("feeScheduleKey"),
                     submitMessageTo(TOPIC)
                             .maxCustomFee(fee)
                             .message("TEST")
@@ -407,7 +410,9 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .via("submit"),
                     // assert collector's tinyBars balance
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1),
-                    updateTopic(TOPIC).withConsensusCustomFee(updatedFee).signedByPayerAnd("adminKey","feeScheduleKey"),
+                    updateTopic(TOPIC)
+                            .withConsensusCustomFee(updatedFee)
+                            .signedByPayerAnd("adminKey", "feeScheduleKey"),
                     submitMessageTo(TOPIC)
                             .maxCustomFee(updatedFee)
                             .message("TEST")
