@@ -287,7 +287,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() {
+    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
