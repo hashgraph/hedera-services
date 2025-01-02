@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -384,6 +385,35 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                                 submitTxnRecord.getResponseRecord().getTransactionFee();
                         getAccountBalance(collector).hasTinyBars(ONE_HUNDRED_HBARS - transactionTxnFee);
                     }));
+        }
+
+        @HapiTest
+        @DisplayName("Submit message to a topic after fee update")
+        // TOPIC_FEE_126
+        final Stream<DynamicTest> submitMessageAfterUpdate() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var updatedFee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    newKeyNamed("feeScheduleKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee).adminKeyName("adminKey").feeScheduleKeyName("feeScheduleKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit"),
+                    // assert collector's tinyBars balance
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1),
+                    updateTopic(TOPIC).withConsensusCustomFee(updatedFee).signedByPayerAnd("adminKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(updatedFee)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit2"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 3));
         }
 
         @HapiTest
