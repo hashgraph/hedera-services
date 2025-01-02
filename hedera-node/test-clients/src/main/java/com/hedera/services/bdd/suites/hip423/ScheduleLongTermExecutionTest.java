@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
@@ -35,6 +20,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
@@ -75,7 +62,9 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.schedu
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -83,6 +72,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_EXPIRY_IS_BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -111,16 +102,19 @@ public class ScheduleLongTermExecutionTest {
     private static final String RECEIVER = "receiver";
     private static final String SENDER = "sender";
     private static final String SENDER_TXN = "senderTxn";
-    private static final String BASIC_XFER = "basicXfer";
-    private static final String CREATE_TX = "createTxn";
-    private static final String SIGN_TX = "sign_tx";
     private static final String PAYING_ACCOUNT_TXN = "payingAccountTxn";
     private static final String LUCKY_RECEIVER = "luckyReceiver";
     private static final String FAILED_XFER = "failedXfer";
     private static final String WEIRDLY_POPULAR_KEY_TXN = "weirdlyPopularKeyTxn";
     private static final String PAYER_TXN = "payerTxn";
     private static final String FILE_NAME = "misc";
+    private static final long ONE_MINUTE = 60;
+    private static final long TWO_MONTHS = 5356800;
     private static final long PAYER_INITIAL_BALANCE = 1000000000000L;
+
+    public static final String BASIC_XFER = "basicXfer";
+    public static final String CREATE_TX = "createTxn";
+    public static final String SIGN_TX = "sign_tx";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -397,95 +391,6 @@ public class ScheduleLongTermExecutionTest {
                                     asId(RECEIVER, spec),
                                     asId(PAYING_ACCOUNT, spec),
                                     1L),
-                            WRONG_TRANSFER_LIST);
-                })));
-    }
-
-    @HapiTest
-    @Order(4)
-    public Stream<DynamicTest> executionWithDefaultPayerWorks() {
-        long transferAmount = 1;
-        return hapiTest(flattened(
-                cryptoCreate(SENDER).via(SENDER_TXN),
-                cryptoCreate(RECEIVER),
-                cryptoCreate(PAYING_ACCOUNT),
-                scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .payingWith(PAYING_ACCOUNT)
-                        .recordingScheduledTxn()
-                        .via(CREATE_TX),
-                scheduleSign(BASIC_XFER).alsoSigningWith(SENDER).via(SIGN_TX),
-                getScheduleInfo(BASIC_XFER)
-                        .hasScheduleId(BASIC_XFER)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
-                        .hasRecordedScheduledTxn(),
-                sleepFor(5000),
-                cryptoCreate("foo").via(TRIGGERING_TXN),
-                getScheduleInfo(BASIC_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                withOpContext((spec, opLog) -> {
-                    var createTx = getTxnRecord(CREATE_TX);
-                    var signTx = getTxnRecord(SIGN_TX);
-                    var triggeringTx = getTxnRecord(TRIGGERING_TXN);
-                    var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
-                    allRunFor(spec, createTx, signTx, triggeredTx, triggeringTx);
-
-                    Assertions.assertEquals(
-                            SUCCESS,
-                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                            SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-
-                    Instant triggerTime = Instant.ofEpochSecond(
-                            triggeringTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getSeconds(),
-                            triggeringTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getNanos());
-
-                    Instant triggeredTime = Instant.ofEpochSecond(
-                            triggeredTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getSeconds(),
-                            triggeredTx
-                                    .getResponseRecord()
-                                    .getConsensusTimestamp()
-                                    .getNanos());
-
-                    Assertions.assertTrue(triggerTime.isBefore(triggeredTime), WRONG_CONSENSUS_TIMESTAMP);
-
-                    Assertions.assertEquals(
-                            createTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-                            triggeredTx.getResponseRecord().getTransactionID().getTransactionValidStart(),
-                            WRONG_TRANSACTION_VALID_START);
-
-                    Assertions.assertEquals(
-                            createTx.getResponseRecord().getTransactionID().getAccountID(),
-                            triggeredTx.getResponseRecord().getTransactionID().getAccountID(),
-                            WRONG_RECORD_ACCOUNT_ID);
-
-                    Assertions.assertTrue(
-                            triggeredTx.getResponseRecord().getTransactionID().getScheduled(),
-                            TRANSACTION_NOT_SCHEDULED);
-
-                    Assertions.assertEquals(
-                            createTx.getResponseRecord().getReceipt().getScheduleID(),
-                            triggeredTx.getResponseRecord().getScheduleRef(),
-                            WRONG_SCHEDULE_ID);
-
-                    Assertions.assertTrue(
-                            transferListCheck(
-                                    triggeredTx,
-                                    asId(SENDER, spec),
-                                    asId(RECEIVER, spec),
-                                    asId(PAYING_ACCOUNT, spec),
-                                    transferAmount),
                             WRONG_TRANSFER_LIST);
                 })));
     }
@@ -1102,5 +1007,68 @@ public class ScheduleLongTermExecutionTest {
                         .waitForExpiry()
                         .withRelativeExpiry(PAYER_TXN, 4)
                         .hasKnownStatus(SCHEDULE_EXPIRY_IS_BUSY));
+    }
+
+    @HapiTest
+    @Order(22)
+    final Stream<DynamicTest> scheduleCreateWithExpiringInMoreThenTwoMonths() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringIn(TWO_MONTHS + 10)
+                        .hasKnownStatus(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE));
+    }
+
+    @HapiTest
+    @Order(23)
+    final Stream<DynamicTest> scheduleCreateWithNonWhiteListedTransaction() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                tokenCreate("testToken"),
+                scheduleCreate("payerOnly", tokenAssociate("luckyYou", "testToken"))
+                        .expiringIn(ONE_MINUTE)
+                        .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST));
+    }
+
+    @HapiTest
+    @Order(24)
+    final Stream<DynamicTest> scheduleCreateWithNonExistingPayer() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .expiringIn(ONE_MINUTE)
+                        .withNonExistingDesignatingPayer()
+                        .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
+    }
+
+    @HapiTest
+    @Order(25)
+    final Stream<DynamicTest> scheduleCreateIdenticalTransactions() {
+        return hapiTest(
+                cryptoCreate("luckyYou").balance(0L).via("cryptoCreate"),
+                // Expiring the schedules relative to the cryptoCreate so the expiry time will be exactly the same
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .withRelativeExpiry("cryptoCreate", ONE_MINUTE),
+                scheduleCreate("payerOnly", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "luckyYou", 1L)))
+                        .withRelativeExpiry("cryptoCreate", ONE_MINUTE)
+                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED));
+    }
+
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
+    @Order(26)
+    final Stream<DynamicTest> scheduleCreateIdenticalContractCall() {
+        final var contract = "CallOperationsChecker";
+        return hapiTest(
+                // upload fees for SCHEDULE_CREATE_CONTRACT_CALL
+                uploadScheduledContractPrices(GENESIS),
+                cryptoCreate("luckyYou").balance(0L).via("cryptoCreate"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+
+                // Expiring the schedules relative to the cryptoCreate so the expiry time will be exactly the same
+                scheduleCreate("payerOnly", contractCall(contract)).withRelativeExpiry("cryptoCreate", ONE_MINUTE),
+                scheduleCreate("payerOnly", contractCall(contract))
+                        .withRelativeExpiry("cryptoCreate", ONE_MINUTE)
+                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED));
     }
 }

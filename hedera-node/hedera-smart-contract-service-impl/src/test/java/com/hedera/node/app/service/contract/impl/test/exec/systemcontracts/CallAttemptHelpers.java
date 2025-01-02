@@ -323,4 +323,26 @@ public final class CallAttemptHelpers {
                 List.of(translator),
                 false);
     }
+
+    public static HssCallAttempt prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys(
+            final Bytes input,
+            final CallTranslator<HssCallAttempt> translator,
+            final HederaWorldUpdater.Enhancement enhancement,
+            final AddressIdConverter addressIdConverter,
+            final VerificationStrategies verificationStrategies,
+            final SystemContractGasCalculator gasCalculator,
+            final Configuration config) {
+
+        return new HssCallAttempt(
+                input,
+                OWNER_BESU_ADDRESS,
+                true,
+                enhancement,
+                config,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                List.of(translator),
+                false);
+    }
 }

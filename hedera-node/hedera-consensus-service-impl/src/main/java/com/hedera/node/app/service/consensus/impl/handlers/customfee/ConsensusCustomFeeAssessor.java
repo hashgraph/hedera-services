@@ -50,8 +50,8 @@ public class ConsensusCustomFeeAssessor {
      * Build and return a list of synthetic crypto transfer transaction bodies, that represents custom fees payments.
      * It will return one body per topic custom fee.
      *
-     * @param topic The topic
-     * @param context The transaction handle context
+     * @param customFees List of custom fees to be charged
+     * @param payer The payer Account ID
      * @return List of synthetic crypto transfer transaction bodies
      */
     public List<CryptoTransferTransactionBody> assessCustomFee(

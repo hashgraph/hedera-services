@@ -21,11 +21,16 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.base.function.CheckedSupplier;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -107,7 +112,7 @@ import org.apache.logging.log4j.Logger;
  * 		calls that race with this one and come after will not execute.</li>
  * </ul>
  */
-public class VirtualPipeline {
+public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
 
     private static final String PIPELINE_COMPONENT = "virtual-pipeline";
     private static final String PIPELINE_THREAD_NAME = "lifecycle";
@@ -119,7 +124,7 @@ public class VirtualPipeline {
      *
      * <p>Copies are removed from this list when destroyed and (flushed or merged).
      */
-    private final PipelineList<VirtualRoot> copies;
+    private final PipelineList<VirtualRoot<K, V>> copies;
 
     private final AtomicInteger undestroyedCopies = new AtomicInteger();
 
@@ -129,13 +134,13 @@ public class VirtualPipeline {
      * {@link #registerCopy(VirtualRoot)} to establish that order). Once hashed, the
      * copy is removed from this deque.
      */
-    private final ConcurrentLinkedDeque<VirtualRoot> unhashedCopies;
+    private final ConcurrentLinkedDeque<VirtualRoot<K, V>> unhashedCopies;
 
     /**
      * A reference to the most recent copy. This is the copy that {@link VirtualRoot#onShutdown(boolean)}
      * will be called on.
      */
-    private final AtomicReference<VirtualRoot> mostRecentCopy = new AtomicReference<>();
+    private final AtomicReference<VirtualRoot<K, V>> mostRecentCopy = new AtomicReference<>();
 
     /**
      * True if the pipeline is alive and running. When set to false, any already scheduled work
@@ -196,7 +201,7 @@ public class VirtualPipeline {
      * @param copy
      * 		the copy in question
      */
-    private void validatePipelineRegistration(final VirtualRoot copy) {
+    private void validatePipelineRegistration(final VirtualRoot<K, V> copy) {
         if (!copy.isRegisteredToPipeline(this)) {
             throw new IllegalStateException("copy is not registered with this pipeline");
         }
@@ -258,7 +263,7 @@ public class VirtualPipeline {
      * @throws NullPointerException
      * 		if the copy is null
      */
-    public void registerCopy(final VirtualRoot copy) {
+    public void registerCopy(final VirtualRoot<K, V> copy) {
         Objects.requireNonNull(copy);
 
         if (copy.isImmutable()) {
@@ -300,7 +305,10 @@ public class VirtualPipeline {
             return;
         }
 
-        pausePipelineAndExecute("terminate", () -> shutdown(false));
+        pausePipelineAndExecute("terminate", () -> {
+            shutdown(false);
+            return null;
+        });
     }
 
     /**
@@ -308,7 +316,7 @@ public class VirtualPipeline {
      * at a later time (i.e. merge and flush), and so this method only gives the guarantee
      * that the resources held by the copy will be eventually destroyed.
      */
-    public synchronized void destroyCopy(final VirtualRoot copy) {
+    public synchronized void destroyCopy(final VirtualRoot<K, V> copy) {
         if (!alive) {
             // Copy destroyed after the pipeline was manually shut down.
             return;
@@ -334,11 +342,11 @@ public class VirtualPipeline {
      * @param copy
      * 		a copy of the map that needs to be hashed
      */
-    public void hashCopy(final VirtualRoot copy) {
+    public void hashCopy(final VirtualRoot<K, V> copy) {
         validatePipelineRegistration(copy);
 
         for (; ; ) {
-            final VirtualRoot unhashedCopy = unhashedCopies.peekFirst();
+            final VirtualRoot<K, V> unhashedCopy = unhashedCopies.peekFirst();
             if (unhashedCopy == null) {
                 break;
             }
@@ -364,38 +372,57 @@ public class VirtualPipeline {
         }
     }
 
+    public <T, E extends Exception> T pausePipelineAndRun(final String label, final CheckedSupplier<T, E> action)
+            throws E {
+        final T ret = pausePipelineAndExecute(label, action);
+        if (alive) {
+            scheduleWork();
+        }
+        return ret;
+    }
+
     /**
-     * Put a copy into a detached state. A detached copy will split off from the regular chain of caches. This allows
-     * for merges and flushes to continue even if this copy is long-lived.
+     * Put a copy into a detached state. A detached copy will split off from the regular chain of caches. This
+     * allows for merges and flushes to continue even if this copy is long-lived.
+     *
+     * <p>This method waits for the current pipeline job to complete, then puts the pipeline on hold, and
+     * calls copy's {@link VirtualRoot#detach()} method on the current thread. It prevents any merging of
+     * flushing while the snapshot is being taken. Then the pipeline is resumed.
      *
      * @param copy
      * 		the copy to detach
      * @return a reference to the detached state
      */
-    public <T> T detachCopy(final VirtualRoot copy) {
-        return detachCopy(copy, null);
+    public RecordAccessor<K, V> detachCopy(final VirtualRoot<K, V> copy) {
+        validatePipelineRegistration(copy);
+        final RecordAccessor<K, V> ret = pausePipelineAndExecute("detach", copy::detach);
+        if (alive) {
+            scheduleWork();
+        }
+        return ret;
     }
 
     /**
-     * Given some {@link VirtualRoot}, wait until any current merge or flush operations complete
-     * and then call the copy's {@link VirtualRoot#detach(Path)} method on the same thread this
-     * method was called on. Prevents any merging or flushing during the
-     * {@link VirtualRoot#detach(Path)} callback.
+     * Takes a snapshot of the given copy to the specified directory.
+     *
+     * <p>This method waits for the current pipeline job to complete, then puts the pipeline on hold, and
+     * calls copy's {@link VirtualRoot#detach()} method on the current thread. It prevents any merging of
+     * flushing while the snapshot is being taken. Then the pipeline is resumed.
      *
      * @param copy
      * 		The copy. Cannot be null. Should be a member of this pipeline, but technically doesn't need to be.
      * @param targetDirectory
      * 		the location where detached files are written. If null then default location is used.
-     * @return a reference to the detached state
      */
-    public <T> T detachCopy(final VirtualRoot copy, final Path targetDirectory) {
+    public void snapshot(final VirtualRoot<K, V> copy, final Path targetDirectory) throws IOException {
         validatePipelineRegistration(copy);
-        final AtomicReference<T> ret = new AtomicReference<>();
-        pausePipelineAndExecute("detach", () -> ret.set(copy.detach(targetDirectory)));
+        pausePipelineAndExecute("snapshot", () -> {
+            copy.snapshot(targetDirectory);
+            return null;
+        });
         if (alive) {
             scheduleWork();
         }
-        return ret.get();
     }
 
     /**
@@ -426,7 +453,7 @@ public class VirtualPipeline {
     /**
      * Check if this copy should be flushed.
      */
-    private boolean shouldBeFlushed(final VirtualRoot copy) {
+    private boolean shouldBeFlushed(final VirtualRoot<K, V> copy) {
         return copy.shouldBeFlushed() // either explicitly marked to flush or based on its size
                 && (copy.isDestroyed() || copy.isDetached()); // destroyed or detached
     }
@@ -438,8 +465,8 @@ public class VirtualPipeline {
      */
     private long currentTotalSize() {
         long totalEstimatedSize = 0;
-        for (PipelineListNode<VirtualRoot> node = copies.getFirst(); node != null; node = node.getNext()) {
-            final VirtualRoot copy = node.getValue();
+        for (PipelineListNode<VirtualRoot<K, V>> node = copies.getFirst(); node != null; node = node.getNext()) {
+            final VirtualRoot<K, V> copy = node.getValue();
             if (!copy.isImmutable()) {
                 break;
             }
@@ -456,7 +483,7 @@ public class VirtualPipeline {
      * @param copy the copy to flush
      * @return if the copy was flushed
      */
-    private boolean tryFlush(final VirtualRoot copy) {
+    private boolean tryFlush(final VirtualRoot<K, V> copy) {
         if (copy.isFlushed()) {
             throw new IllegalStateException("copy is already flushed");
         }
@@ -469,9 +496,9 @@ public class VirtualPipeline {
     /**
      * Copies can only be merged into younger copies that are themselves immutable. Check if that is the case.
      */
-    private boolean canBeMerged(final PipelineListNode<VirtualRoot> mergeCandidate) {
-        final VirtualRoot copy = mergeCandidate.getValue();
-        final PipelineListNode<VirtualRoot> mergeTarget = mergeCandidate.getNext();
+    private boolean canBeMerged(final PipelineListNode<VirtualRoot<K, V>> mergeCandidate) {
+        final VirtualRoot<K, V> copy = mergeCandidate.getValue();
+        final PipelineListNode<VirtualRoot<K, V>> mergeTarget = mergeCandidate.getNext();
 
         return !copy.shouldBeFlushed() // shouldn't be flushed
                 && (copy.isDestroyed() || copy.isDetached()) // copy must be destroyed or detached
@@ -486,8 +513,8 @@ public class VirtualPipeline {
      * @param node
      * 		the node containing the copy to merge
      */
-    private void merge(final PipelineListNode<VirtualRoot> node) {
-        final VirtualRoot copy = node.getValue();
+    private void merge(final PipelineListNode<VirtualRoot<K, V>> node) {
+        final VirtualRoot<K, V> copy = node.getValue();
 
         if (copy.isMerged()) {
             throw new IllegalStateException("copy is already merged");
@@ -497,7 +524,7 @@ public class VirtualPipeline {
             hashCopy(copy);
         }
 
-        final VirtualRoot next = node.getNext().getValue();
+        final VirtualRoot<K, V> next = node.getNext().getValue();
         if (!next.isHashed()) {
             hashCopy(next);
         }
@@ -509,10 +536,10 @@ public class VirtualPipeline {
      * Hash, flush, and merge all copies currently capable of these operations.
      */
     private void hashFlushMerge() {
-        PipelineListNode<VirtualRoot> next = copies.getFirst();
+        PipelineListNode<VirtualRoot<K, V>> next = copies.getFirst();
         // Iterate from the oldest copy to the newest
         while ((next != null) && !Thread.currentThread().isInterrupted()) {
-            final VirtualRoot copy = next.getValue();
+            final VirtualRoot<K, V> copy = next.getValue();
             // The newest copy. Nothing can be done to it
             if (!copy.isImmutable()) {
                 break;
@@ -573,16 +600,17 @@ public class VirtualPipeline {
 
     /**
      * Waits for any pending flushes or merges to complete and then pauses the pipeline while the
-     * given {@link Runnable} executes, and then resumes pipeline operation. Fatal errors happen
+     * given supplier provides a value, and then resumes pipeline operation. Fatal errors happen
      * if the background thread is interrupted.
      *
      * @param label
      * 		A log/error friendly label to describe the runnable
-     * @param runnable
-     * 		The runnable. Cannot be null.
+     * @param supplier
+     * 		The supplier. Cannot be null.
      */
-    void pausePipelineAndExecute(final String label, final Runnable runnable) {
-        Objects.requireNonNull(runnable);
+    <V, E extends Exception> V pausePipelineAndExecute(final String label, final CheckedSupplier<V, E> supplier)
+            throws E {
+        Objects.requireNonNull(supplier);
         final CountDownLatch waitForBackgroundThreadToStart = new CountDownLatch(1);
         final CountDownLatch waitForRunnableToFinish = new CountDownLatch(1);
         executorService.execute(() -> {
@@ -605,7 +633,7 @@ public class VirtualPipeline {
         }
 
         try {
-            runnable.run();
+            return supplier.get();
         } finally {
             waitForRunnableToFinish.countDown();
         }
@@ -650,10 +678,10 @@ public class VirtualPipeline {
         sb.append("  size = ").append(copies.getSize()).append("\n");
         sb.append("Copies listed oldest to newest:\n");
 
-        PipelineListNode<VirtualRoot> next = copies.getFirst();
+        PipelineListNode<VirtualRoot<K, V>> next = copies.getFirst();
         int index = 0;
         while (next != null) {
-            final VirtualRoot copy = next.getValue();
+            final VirtualRoot<K, V> copy = next.getValue();
 
             sb.append(index);
             sb.append(", should be flushed = ").append(uppercaseBoolean(shouldBeFlushed(copy)));
@@ -683,7 +711,7 @@ public class VirtualPipeline {
      * @return
      *        True, if this pipeline already has the copy registered, false otherwise
      */
-    private boolean isAlreadyRegistered(final VirtualRoot copy) {
+    private boolean isAlreadyRegistered(final VirtualRoot<K, V> copy) {
         return !copies.testAll(c -> !copy.equals(c));
     }
 }

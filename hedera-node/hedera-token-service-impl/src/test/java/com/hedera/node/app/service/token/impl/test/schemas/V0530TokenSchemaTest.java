@@ -109,6 +109,7 @@ class V0530TokenSchemaTest {
                 previousStates,
                 newStates,
                 config,
+                config,
                 networkInfo,
                 entityIdStore,
                 null,

@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.exp
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -60,7 +59,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
@@ -114,9 +112,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                     // Update the fee schedule and verify that it's updated
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
+                    updateTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY2).signedByPayerAnd(ADMIN_KEY),
                     getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2));
         }
 
@@ -569,66 +565,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("to update the fee schedule key with zero address key")
-        final Stream<DynamicTest> updateFeeScheduleKeyWithZeroAddressKey() {
-            final var zeroAddressKeyName = "zeroAddressKey";
-            final var zeroAddressKey = Key.newBuilder()
-                    .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000000000000000000000000000"))
-                    .build();
-
-            return hapiTest(
-                    // Create a topic with a fee schedule key
-                    createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
-
-                    // Create a zero address key
-                    withOpContext((spec, opLog) -> spec.registry().saveKey(zeroAddressKeyName, zeroAddressKey)),
-
-                    // Update the topic to use the zero address key as fee schedule key
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(zeroAddressKeyName)
-                            .signedByPayerAnd(ADMIN_KEY)
-                            .hasKnownStatus(INVALID_SIGNATURE));
-        }
-
-        @HapiTest
-        @DisplayName("to delete the fee schedule key and then setting the same key back")
-        final Stream<DynamicTest> updateToDeleteTheFeeScheduleKeyAndSettingItBack() {
-            return hapiTest(
-                    // Create a topic with fee schedule key
-                    createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY).adminKeyName(ADMIN_KEY),
-
-                    // Delete the fee schedule key
-                    updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY),
-
-                    // Try to add the fee schedule key back
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY));
-        }
-
-        @HapiTest
-        @DisplayName("to update the fee schedule key with zero address key sign with the old key")
-        final Stream<DynamicTest> updateTheFeeScheduleKeyWithZeroAddressSignWithOldKey() {
-            final var zeroAddressKeyName = "zeroAddressKey";
-            final var zeroAddressKey = Key.newBuilder()
-                    .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000000000000000000000000000"))
-                    .build();
-
-            return hapiTest(
-                    // Create a topic with a fee schedule key
-                    createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
-
-                    // Create a zero address key
-                    withOpContext((spec, opLog) -> spec.registry().saveKey(zeroAddressKeyName, zeroAddressKey)),
-
-                    // Update the topic to use the zero address key as fee schedule key
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(zeroAddressKeyName)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                            .hasKnownStatus(INVALID_SIGNATURE));
-        }
-
-        @HapiTest
         @DisplayName("to remove the fee schedule key without the fee schedule key to sign")
         final Stream<DynamicTest> updateToRemoveTheFeeScheduleKeyWithoutFeeScheduleToSign() {
             return hapiTest(
@@ -638,21 +574,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     // Update the fee schedule to remove the fee schedule key
                     updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY),
                     getTopicInfo(TOPIC).hasNoFeeScheduleKey());
-        }
-
-        @HapiTest
-        @DisplayName("fee schedule key and sign with the old one")
-        final Stream<DynamicTest> updateFeeScheduleKeySignWithOld() {
-            return hapiTest(
-                    // Create a topic and verify that the keys are correct
-                    createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeScheduleKeyName(FEE_SCHEDULE_KEY),
-                    getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
-
-                    // Update the fee schedule and sign with the old key
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
-                            .hasKnownStatus(INVALID_SIGNATURE));
         }
 
         @HapiTest

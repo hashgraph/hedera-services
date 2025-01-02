@@ -30,7 +30,6 @@ option java_multiple_files = true;
  * The roster SHALL be a list of `RosterEntry` objects.
  */
 message Roster {
-
     /**
      * List of roster entries, one per consensus node.
      * <p>
