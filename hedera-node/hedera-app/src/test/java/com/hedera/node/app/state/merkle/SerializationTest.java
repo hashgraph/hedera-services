@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,9 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
@@ -79,7 +79,6 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
@@ -87,21 +86,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SerializationTest extends MerkleTestBase {
+
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
-
-    @Mock
-    private MerkleStateLifecycles lifecycles;
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
 
     @Mock
     private StartupNetworks startupNetworks;
-
-    @TempDir
-    Path tempDir;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -226,6 +220,7 @@ class SerializationTest extends MerkleTestBase {
     void snapshot() throws IOException {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
+        final var tempDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory(config);
         final var configBuilder = new TestConfigBuilder()
                 .withValue(StateConfig_.SIGNED_STATE_DISK, 1)
                 .withValue(
@@ -248,7 +243,9 @@ class SerializationTest extends MerkleTestBase {
         originalTree.computeHash();
         originalTree.createSnapshot(tempDir);
 
-        MerkleStateRoot<?> state =
+        // Restore to a fresh MerkleDb instance
+        MerkleDb.resetDefaultInstancePath();
+        final MerkleStateRoot<?> state =
                 originalTree.loadSnapshot(tempDir.resolve(MerkleTreeSnapshotReader.SIGNED_STATE_FILE_NAME));
         initServices(schemaV1, state);
         assertTree(state);
@@ -329,7 +326,7 @@ class SerializationTest extends MerkleTestBase {
         final SignedState randomState =
                 new RandomSignedStateGenerator().setRound(1).build();
 
-        final var originalTree = (PlatformMerkleStateRoot) randomState.getState();
+        final var originalTree = randomState.getState();
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);

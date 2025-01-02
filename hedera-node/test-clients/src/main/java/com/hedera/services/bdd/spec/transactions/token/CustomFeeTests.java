@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import java.util.List;
@@ -96,6 +97,14 @@ public class CustomFeeTests {
             long amount, String collector) {
         return (spec, actual) -> {
             final var expected = CustomFeeSpecs.builtConsensusFixedHbar(amount, collector, spec);
+            failUnlessConsensusFeePresent("fixed ℏ", actual, expected);
+        };
+    }
+
+    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> expectedConsensusFixedHbarFee(
+            long amount, AccountID collector) {
+        return (spec, actual) -> {
+            final var expected = CustomFeeSpecs.builtConsensusFixedHbar(amount, collector);
             failUnlessConsensusFeePresent("fixed ℏ", actual, expected);
         };
     }

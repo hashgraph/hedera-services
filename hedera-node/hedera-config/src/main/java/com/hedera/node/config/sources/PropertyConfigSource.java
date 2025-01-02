@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
@@ -86,6 +87,17 @@ public class PropertyConfigSource implements ConfigSource {
     public String getValue(@NonNull String key) throws NoSuchElementException {
         requireNonNull(key, "key must not be null");
         return properties.getProperty(key);
+    }
+
+    @Override
+    public boolean isListProperty(@NonNull final String propertyName) throws NoSuchElementException {
+        return false;
+    }
+
+    @NonNull
+    @Override
+    public List<String> getListValue(@NonNull final String propertyName) throws NoSuchElementException {
+        return List.of();
     }
 
     @Override

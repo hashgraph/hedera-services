@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,17 +29,17 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V0540RosterSchema;
+import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
+import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
-import com.swirlds.state.merkle.SigSet;
 import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -95,26 +95,18 @@ public final class SignedStateFileReader {
 
         final DeserializedSignedState returnState;
         final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(stateFile);
-
-        final MerkleTreeSnapshotReader.StateFileData normalizedData;
-        if (data.sigSet() == null) {
-            final File sigSetFile =
-                    stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
-            normalizedData = deserializeAndDebugOnFailure(
-                    () -> new BufferedInputStream(new FileInputStream(sigSetFile)),
-                    (final MerkleDataInputStream in) -> {
-                        readAndCheckSigSetFileVersion(in);
-                        final SigSet sigSet = in.readSerializable();
-                        return new MerkleTreeSnapshotReader.StateFileData(data.stateRoot(), data.hash(), sigSet);
-                    });
-        } else {
-            normalizedData = data;
-        }
+        final File sigSetFile =
+                stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
+        final SigSet sigSet = deserializeAndDebugOnFailure(
+                () -> new BufferedInputStream(new FileInputStream(sigSetFile)), (final MerkleDataInputStream in) -> {
+                    readAndCheckSigSetFileVersion(in);
+                    return in.readSerializable();
+                });
 
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                (MerkleRoot) normalizedData.stateRoot(),
+                (PlatformMerkleStateRoot) data.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
@@ -122,10 +114,10 @@ public final class SignedStateFileReader {
 
         registerServiceStates(newSignedState);
 
-        newSignedState.setSigSet(normalizedData.sigSet());
+        newSignedState.setSigSet(sigSet);
 
         returnState = new DeserializedSignedState(
-                newSignedState.reserve("SignedStateFileReader.readStateFile()"), normalizedData.hash());
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.hash());
 
         return returnState;
     }
@@ -179,9 +171,17 @@ public final class SignedStateFileReader {
      * @param signedState a signed state to register schemas in
      */
     public static void registerServiceStates(@NonNull final SignedState signedState) {
-        registerServiceState(
-                (MerkleStateRoot) signedState.getState(), new V0540PlatformStateSchema(), PlatformStateService.NAME);
-        registerServiceState((MerkleStateRoot) signedState.getState(), new V0540RosterSchema(), RosterStateId.NAME);
+        registerServiceStates((MerkleStateRoot) signedState.getState());
+    }
+
+    /**
+     * Register stub states for PlatformStateService and RosterService so that the State knows about them per the metadata and services registry.
+     * See the doc for registerServiceStates(SignedState) above for more details.
+     * @param state a State to register schemas in
+     */
+    public static void registerServiceStates(@NonNull final State state) {
+        registerServiceState(state, new V0540PlatformStateSchema(), PlatformStateService.NAME);
+        registerServiceState(state, new V0540RosterBaseSchema(), RosterStateId.NAME);
     }
 
     private static void registerServiceState(
@@ -209,7 +209,8 @@ public final class SignedStateFileReader {
     /**
      * Unregister the PlatformStateService and RosterService so that the app
      * can initialize States API eventually. Currently, it wouldn't initialize it
-     * if it sees the PlatformStateService already present.
+     * if it sees the PlatformStateService already present. This check occurs at
+     * Hedera.onStateInitialized().
      *
      * See the doc for registerServiceStates above for more details on why
      * we initialize these stub states in the first place.

@@ -27,13 +27,16 @@ package com.swirlds.demo.stats;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -76,7 +79,10 @@ public class StatsDemoState extends PlatformMerkleStateRoot {
     }
 
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {}
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {}
 
     /**
      * {@inheritDoc}

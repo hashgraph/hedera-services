@@ -57,11 +57,8 @@ public class MigrationTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(MigrationTestingToolState.class, () -> {
                         MigrationTestingToolState migrationTestingToolState = new MigrationTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initStates(migrationTestingToolState);
                         return migrationTestingToolState;
                     }));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MigrationTestingToolStateRoot.class, MigrationTestingToolStateRoot::new));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "MigrationTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
@@ -84,7 +81,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    public static final int SOFTWARE_VERSION = 6;
+    public static final int SOFTWARE_VERSION = 7;
     public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
     private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 

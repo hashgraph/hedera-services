@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -59,8 +44,6 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.DEFERR
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.EXTRA_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.NEW_SENDER_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.PAYER;
-import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.RECEIVER;
-import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SHARED_KEY;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.THREE_SIG_XFER;
@@ -93,6 +76,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 @HapiTestLifecycle
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleLongTermSignTest {
+
+    private static final long ONE_MINUTE = 60;
+    private static final long THIRTY_MINUTES = 30 * ONE_MINUTE;
+    private static final String PAYING_ACCOUNT = "payingAccount";
+    private static final String RECEIVER = "receiver";
+    private static final String SENDER = "sender";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
@@ -348,44 +337,6 @@ public class ScheduleLongTermSignTest {
                         .hasRelativeExpiry(SENDER_TXN, 10)
                         .hasRecordedScheduledTxn(),
                 triggerSchedule(schedule, 11),
-                getAccountBalance(receiver).hasTinyBars(1L)));
-    }
-
-    @HapiTest
-    @Order(6)
-    final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
-        var senderShape = threshOf(1, 3);
-        var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
-        var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
-        String sender = "X";
-        String receiver = "Y";
-        String schedule = "Z";
-        String senderKey = "sKey";
-
-        return hapiTest(flattened(
-                newKeyNamed(senderKey).shape(senderShape),
-                cryptoCreate(sender).key(senderKey).via(SENDER_TXN),
-                cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
-                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                        .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
-                        .recordingScheduledTxn()
-                        .payingWith(DEFAULT_PAYER),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigOne)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(senderKey).sigControl(forKey(senderKey, sigTwo)),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                scheduleSign(schedule).alsoSigningWith(receiver),
-                getAccountBalance(receiver).hasTinyBars(0L),
-                getScheduleInfo(schedule)
-                        .hasScheduleId(schedule)
-                        .hasWaitForExpiry()
-                        .isNotExecuted()
-                        .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
-                        .hasRecordedScheduledTxn(),
-                triggerSchedule(schedule),
                 getAccountBalance(receiver).hasTinyBars(1L)));
     }
 
@@ -651,6 +602,116 @@ public class ScheduleLongTermSignTest {
                         .via("one"),
                 scheduleSign("schedule").signedBy(DEFAULT_PAYER, "receiver"),
                 scheduleSign("schedule").hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
+    }
+
+    @HapiTest
+    @Order(18)
+    final Stream<DynamicTest> scheduledTransactionWithWaitForExpiryFalseLessThen30Mins() {
+        final var schedule = "s";
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(false)
+                        .expiringIn(ONE_MINUTE),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @HapiTest
+    @Order(19)
+    final Stream<DynamicTest> scheduledTransactionWithWaitForExpiryFalseMoreThen30Mins() {
+        final var schedule = "s";
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(false)
+                        .expiringIn(THIRTY_MINUTES * 2),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @HapiTest
+    @Order(20)
+    final Stream<DynamicTest> scheduledTriggeredWhenAllKeysHaveSigned() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(false)
+                        .expiringIn(THIRTY_MINUTES * 2),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // only sign with one of the required keys
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+
+                // the balance is not change
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+
+                // sign with the other required key
+                scheduleSign(schedule).alsoSigningWith(RECEIVER),
+
+                // the balance is changed
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
+    }
+
+    @HapiTest
+    @Order(21)
+    final Stream<DynamicTest> scheduleSignWithNotNeededSignature() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate("dummy"),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry()
+                        .expiringIn(THIRTY_MINUTES),
+                scheduleSign(schedule).alsoSigningWith("dummy").hasKnownStatus(NO_NEW_VALID_SIGNATURES));
+    }
+
+    @HapiTest
+    @Order(22)
+    final Stream<DynamicTest> scheduleSignWithEmptyKey() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate("dummy"),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry()
+                        .expiringIn(THIRTY_MINUTES),
+                scheduleSign(schedule).alsoSigningWith().hasKnownStatus(NO_NEW_VALID_SIGNATURES));
+    }
+
+    @HapiTest
+    @Order(23)
+    final Stream<DynamicTest> scheduleSignWithTwoSignatures() {
+        final var schedule = "s";
+
+        return hapiTest(
+                cryptoCreate(SENDER),
+                cryptoCreate(PAYING_ACCOUNT),
+                cryptoCreate("dummy"),
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L)))
+                        .waitForExpiry(false)
+                        .expiringIn(THIRTY_MINUTES),
+                scheduleSign(schedule).alsoSigningWith(RECEIVER),
+                scheduleSign(schedule).alsoSigningWith(SENDER),
+                cryptoCreate("trigger"),
+                getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
     private Key lowerThirdNestedThresholdSigningReq(Key source) {

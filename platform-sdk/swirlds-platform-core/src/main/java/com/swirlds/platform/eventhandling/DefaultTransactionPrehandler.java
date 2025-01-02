@@ -18,15 +18,20 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromEvent;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +41,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class DefaultTransactionPrehandler implements TransactionPrehandler {
     private static final Logger logger = LogManager.getLogger(DefaultTransactionPrehandler.class);
+
+    public static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CONSUMER =
+            systemTransactions -> {};
 
     /**
      * A source to get the latest immutable state
@@ -74,7 +82,8 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public void prehandleApplicationTransactions(@NonNull final PlatformEvent event) {
+    public List<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
+            @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
 
         ReservedSignedState latestImmutableState = null;
@@ -85,7 +94,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                latestImmutableState.get().getSwirldState().preHandle(event);
+                latestImmutableState.get().getSwirldState().preHandle(event, NO_OP_CONSUMER);
             } catch (final Throwable t) {
                 logger.error(EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", event, t);
             }
@@ -95,5 +104,9 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
 
             preHandleTime.update(startTime, time.nanoTime());
         }
+
+        // TODO adapt this logic to read transactions directly from the callback passed in SwirldState.preHandle() when
+        // implemented
+        return extractFromEvent(event, StateSignatureTransaction.class);
     }
 }

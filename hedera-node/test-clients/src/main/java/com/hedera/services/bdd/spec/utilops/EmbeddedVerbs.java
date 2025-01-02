@@ -66,6 +66,7 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -313,6 +314,18 @@ public final class EmbeddedVerbs {
             @NonNull final String receiverName,
             @NonNull final Consumer<AccountPendingAirdrop> observer) {
         return new ViewPendingAirdropOp(tokenName, senderName, receiverName, observer);
+    }
+
+    /**
+     * Returns an operation that sleeps until the given instant when in repeatable mode.
+     * @param then the instant to sleep until
+     * @return the operation that will sleep until the given instant in repeatable mode
+     */
+    public static SpecOperation sleepToExactly(@NonNull final Instant then) {
+        return doingContextual(spec -> {
+            final var embeddedHedera = spec.repeatableEmbeddedHederaOrThrow();
+            embeddedHedera.tick(Duration.between(spec.consensusTime(), then));
+        });
     }
 
     /**

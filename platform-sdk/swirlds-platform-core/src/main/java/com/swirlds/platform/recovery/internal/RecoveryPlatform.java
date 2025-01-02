@@ -29,7 +29,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
@@ -74,8 +74,8 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         Objects.requireNonNull(initialState, "initialState must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
-        this.addressBook = initialState.getAddressBook();
-        this.roster = RosterRetriever.buildRoster(addressBook);
+        this.roster = initialState.getRoster();
+        this.addressBook = RosterUtils.buildAddressBook(this.roster);
 
         if (loadSigningKeys) {
             keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);

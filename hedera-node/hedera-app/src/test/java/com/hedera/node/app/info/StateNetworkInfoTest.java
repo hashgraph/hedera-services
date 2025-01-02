@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.info;
 
-import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.getCertBytes;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.randomX509Certificate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,9 +31,6 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.platform.state.Address;
-import com.hedera.hapi.platform.state.AddressBook;
-import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.config.ConfigProvider;
@@ -90,7 +86,7 @@ public class StateNetworkInfoTest {
         when(state.getReadableStates(AddressBookService.NAME)).thenReturn(readableStates);
         when(readableStates.<EntityNumber, Node>get("NODES")).thenReturn(nodeState);
         when(state.getReadableStates(PlatformStateService.NAME)).thenReturn(readableStates);
-        networkInfo = new StateNetworkInfo(state, activeRoster, SELF_ID, configProvider);
+        networkInfo = new StateNetworkInfo(SELF_ID, state, activeRoster, configProvider);
     }
 
     @Test
@@ -129,34 +125,6 @@ public class StateNetworkInfoTest {
     @Test
     public void testUpdateFrom() {
         when(nodeState.get(any(EntityNumber.class))).thenReturn(mock(Node.class));
-        when(readableStates.<PlatformState>getSingleton("PLATFORM_STATE")).thenReturn(platformReadableState);
-        when(platformReadableState.get()).thenReturn(platformState);
-        when(platformState.addressBook())
-                .thenReturn(AddressBook.newBuilder()
-                        .addresses(
-                                Address.newBuilder()
-                                        .id(new NodeId(2L))
-                                        .weight(111L)
-                                        .signingCertificate(getCertBytes(CERTIFICATE_2))
-                                        // The agreementCertificate is unused, but required to prevent deserialization
-                                        // failure in
-                                        // States API.
-                                        .agreementCertificate(getCertBytes(CERTIFICATE_2))
-                                        .hostnameInternal("10.0.55.66")
-                                        .portInternal(222)
-                                        .build(),
-                                Address.newBuilder()
-                                        .id(new NodeId(3L))
-                                        .weight(3L)
-                                        .signingCertificate(getCertBytes(CERTIFICATE_3))
-                                        // The agreementCertificate is unused, but required to prevent deserialization
-                                        // failure in
-                                        // States API.
-                                        .agreementCertificate(getCertBytes(CERTIFICATE_3))
-                                        .hostnameExternal("external3.com")
-                                        .portExternal(111)
-                                        .build())
-                        .build());
 
         networkInfo.updateFrom(state);
         assertEquals(2, networkInfo.addressBook().size());
@@ -166,7 +134,7 @@ public class StateNetworkInfoTest {
     public void testBuildNodeInfoMapNodeNotFound() {
         when(nodeState.get(any(EntityNumber.class))).thenReturn(null);
 
-        StateNetworkInfo networkInfo = new StateNetworkInfo(state, activeRoster, SELF_ID, configProvider);
+        StateNetworkInfo networkInfo = new StateNetworkInfo(SELF_ID, state, activeRoster, configProvider);
         final var nodeInfo = networkInfo.nodeInfo(SELF_ID);
 
         assertNotNull(nodeInfo);

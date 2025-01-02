@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -30,7 +31,7 @@ public final class ZonedDateTimeConverter implements ConfigConverter<ZonedDateTi
      * {@inheritDoc}
      */
     @Override
-    public ZonedDateTime convert(final String value) throws IllegalArgumentException {
+    public ZonedDateTime convert(@NonNull final String value) throws IllegalArgumentException {
         return ZonedDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
     }
 }

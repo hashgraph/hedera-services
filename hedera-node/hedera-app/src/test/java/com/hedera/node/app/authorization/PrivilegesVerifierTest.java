@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -361,17 +360,25 @@ class PrivilegesVerifierTest {
     }
 
     @Test
-    void addressBookAdminCanCreate() throws InvalidProtocolBufferException {
+    void treasuryCanCreateNode() throws InvalidProtocolBufferException {
         // given:
-        var txn = addressBookAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        var txn = treasuryTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
         // expect:
         assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
 
     @Test
-    void addressBookAdminCanDelete() throws InvalidProtocolBufferException {
+    void sysAdminnCanCreateNode() throws InvalidProtocolBufferException {
         // given:
-        var txn = addressBookAdminTxn().setNodeDelete(NodeDeleteTransactionBody.getDefaultInstance());
+        var txn = sysAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void addressBookAdminCanCreateNode() throws InvalidProtocolBufferException {
+        // given:
+        var txn = addressBookAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
         // expect:
         assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
     }
