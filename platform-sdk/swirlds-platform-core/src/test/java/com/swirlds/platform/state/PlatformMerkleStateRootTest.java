@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -57,12 +57,11 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StateDefinition;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
@@ -101,7 +100,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
 
-    private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
+    private final SwirldsStateLifecycles lifecycles = new SwirldsStateLifecycles() {
 
         @Override
         public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
@@ -114,7 +113,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
+        public void onNewRecoveredState(@NonNull State recoveredState) {
             // No-op
         }
 
@@ -132,9 +131,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
 
         @Override
         public void onUpdateWeight(
-                @NonNull MerkleStateRoot state,
-                @NonNull AddressBook configAddressBook,
-                @NonNull PlatformContext context) {
+                @NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
             onUpdateWeightCalled.set(true);
         }
     };
@@ -146,7 +143,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupConstructableRegistry();
-        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds();
         setupFruitMerkleMap();
         stateRoot = new PlatformMerkleStateRoot(lifecycles, softwareVersionSupplier);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateRoot);

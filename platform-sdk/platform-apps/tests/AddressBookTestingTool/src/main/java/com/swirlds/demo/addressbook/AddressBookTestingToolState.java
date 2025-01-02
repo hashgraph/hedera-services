@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ import com.swirlds.platform.components.transaction.system.ScopedSystemTransactio
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.SwirldsStateLifecycles;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -139,7 +139,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     private Duration freezeAfterGenesis = null;
 
     public AddressBookTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final SwirldsStateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
         logger.info(STARTUP.getMarker(), "New State Constructed.");
@@ -206,7 +206,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         }
 
         // Since this demo State doesn't call Hedera.onStateInitialized() to init States API for all services
-        // (because it doesn't call super.init(), and the FakeMerkleStateLifecycles doesn't do that anyway),
+        // (because it doesn't call super.init(), and the FakeSwirldsStateLifecycles doesn't do that anyway),
         // we need to register PlatformService and RosterService states for the rest of the code to operate
         // when an instance of this state is received via reconnect. In any other cases, this call
         // should be idempotent.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.io.IOException;
 import java.time.Duration;
@@ -85,7 +85,7 @@ final class ReconnectTest {
         registry.registerConstructables("com.swirlds.platform.state.signed");
         registry.registerConstructables("com.swirlds.platform.system");
         registry.registerConstructables("com.swirlds.state.merkle");
-        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @AfterAll
