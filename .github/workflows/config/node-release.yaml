@@ -1,9 +1,9 @@
 release:
   branching:
     execution:
-      time: "18:00:00"
+      time: "20:00:00"
     schedule:
-      - on: "2024-12-13"
+      - on: "2024-12-20"
         name: release/0.58
         initial-tag:
           create: true

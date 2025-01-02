@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: develop
+          ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Get run logs
@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload log as artifact
         id: upload-log
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
         with:
           path: workflow-run.log
 

@@ -60,7 +60,7 @@ public class UpdateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function TOKEN_UPDATE_INFO_FUNCTION_WITH_METADATA =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_WITH_METADATA + ")", ReturnTypes.INT);
 
-    private static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
+    public static final Map<Function, UpdateDecoderFunction> updateSelectorsMap = new HashMap<>();
 
     /**
      * @param decoder the decoder to use for token update info calls
