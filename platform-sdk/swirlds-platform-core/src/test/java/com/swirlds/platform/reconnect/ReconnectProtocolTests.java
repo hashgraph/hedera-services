@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -188,7 +187,7 @@ class ReconnectProtocolTests {
     @DisplayName("Test the conditions under which the protocol should accept protocol initiation")
     @ParameterizedTest
     @MethodSource("acceptParams")
-    void testShouldAccept(final AcceptParams params) throws InvalidRosterException {
+    void testShouldAccept(final AcceptParams params) {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(!params.teacherIsThrottled);
 
@@ -279,7 +278,7 @@ class ReconnectProtocolTests {
 
     @DisplayName("Tests if teacher throttle gets released")
     @Test
-    void testTeacherThrottleReleased() throws InvalidRosterException {
+    void testTeacherThrottleReleased() {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         final Configuration config = new TestConfigBuilder()
                 // we don't want the time based throttle to interfere
@@ -381,7 +380,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Aborted Teacher")
-    void abortedTeacher() throws InvalidRosterException {
+    void abortedTeacher() {
         final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
         when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
         final ValueReference<Boolean> throttleReleased = new ValueReference<>(false);
@@ -460,7 +459,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Teacher doesn't have a status of ACTIVE")
-    void teacherNotActive() throws InvalidRosterException {
+    void teacherNotActive() {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
@@ -490,7 +489,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
-    void teacherHoldsLearnerPermit() throws InvalidRosterException {
+    void teacherHoldsLearnerPermit() {
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
@@ -534,7 +533,7 @@ class ReconnectProtocolTests {
 
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
-    void teacherCantAcquireLearnerPermit() throws InvalidRosterException {
+    void teacherCantAcquireLearnerPermit() {
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");

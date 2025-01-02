@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ public class RandomSignedStateGenerator {
      *
      * @return a new signed state
      */
-    public SignedState build() throws InvalidRosterException {
+    public SignedState build() {
         final Roster rosterInstance;
         if (roster == null) {
             rosterInstance = RandomRosterBuilder.create(random)
@@ -130,8 +130,8 @@ public class RandomSignedStateGenerator {
             rosterInstance = roster;
         }
 
-        final SoftwareVersion softwareVersionInstance = Objects.requireNonNullElseGet(softwareVersion,
-                () -> new BasicSoftwareVersion(random.nextInt(1, 100)));
+        final SoftwareVersion softwareVersionInstance =
+                Objects.requireNonNullElseGet(softwareVersion, () -> new BasicSoftwareVersion(random.nextInt(1, 100)));
 
         final PlatformMerkleStateRoot stateInstance;
         registerMerkleStateRootClassIds();
@@ -148,10 +148,10 @@ public class RandomSignedStateGenerator {
         }
 
         final long roundInstance = Objects.requireNonNullElseGet(round, () -> Math.abs(random.nextLong()));
-        final Hash legacyRunningEventHashInstance = Objects.requireNonNullElseGet(legacyRunningEventHash,
-                () -> randomHash(random));
-        final Instant consensusTimestampInstance = Objects.requireNonNullElseGet(consensusTimestamp,
-                () -> RandomUtils.randomInstant(random));
+        final Hash legacyRunningEventHashInstance =
+                Objects.requireNonNullElseGet(legacyRunningEventHash, () -> randomHash(random));
+        final Instant consensusTimestampInstance =
+                Objects.requireNonNullElseGet(consensusTimestamp, () -> RandomUtils.randomInstant(random));
         final boolean freezeStateInstance = Objects.requireNonNullElseGet(freezeState, random::nextBoolean);
         final int roundsNonAncientInstance = Objects.requireNonNullElse(roundsNonAncient, 26);
 
@@ -180,7 +180,12 @@ public class RandomSignedStateGenerator {
         });
 
         FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(stateInstance);
-        RosterUtils.setActiveRoster(stateInstance, rosterInstance, roundInstance);
+
+        try {
+            RosterUtils.setActiveRoster(stateInstance, rosterInstance, roundInstance);
+        } catch (final InvalidRosterException e) {
+            throw new IllegalArgumentException("Invalid roster", e);
+        }
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
@@ -245,7 +250,7 @@ public class RandomSignedStateGenerator {
      *
      * @param count the number of states to build
      */
-    public List<SignedState> build(final int count) throws InvalidRosterException {
+    public List<SignedState> build(final int count) {
         final List<SignedState> states = new ArrayList<>(count);
 
         for (int i = 0; i < count; i++) {

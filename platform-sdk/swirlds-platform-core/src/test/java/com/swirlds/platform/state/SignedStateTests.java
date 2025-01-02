@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class SignedStateTests {
     /**
      * Generate a signed state.
      */
-    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) throws InvalidRosterException {
+    private SignedState generateSignedState(final Random random, final PlatformMerkleStateRoot state) {
         return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
@@ -76,11 +76,15 @@ class SignedStateTests {
      * @param releaseCallback this method is called when the State is released
      */
     private PlatformMerkleStateRoot buildMockState(
-            final Random random, final Runnable reserveCallback, final Runnable releaseCallback) throws InvalidRosterException {
+            final Random random, final Runnable reserveCallback, final Runnable releaseCallback) {
         final var real = new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(real);
-        RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
+        try {
+            RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
+        } catch (final InvalidRosterException e) {
+            throw new IllegalArgumentException("Invalid roster", e);
+        }
         final PlatformMerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
@@ -108,7 +112,7 @@ class SignedStateTests {
 
     @Test
     @DisplayName("Reservation Test")
-    void reservationTest() throws InterruptedException, InvalidRosterException {
+    void reservationTest() throws InterruptedException {
         final Random random = new Random();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);
@@ -167,7 +171,7 @@ class SignedStateTests {
      */
     @Test
     @DisplayName("No Garbage Collector Test")
-    void noGarbageCollectorTest() throws InvalidRosterException {
+    void noGarbageCollectorTest() {
         final Random random = new Random();
 
         final AtomicBoolean reserved = new AtomicBoolean(false);

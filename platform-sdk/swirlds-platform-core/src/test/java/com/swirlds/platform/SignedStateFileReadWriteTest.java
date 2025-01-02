@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
@@ -102,7 +101,7 @@ class SignedStateFileReadWriteTest {
 
     @Test
     @DisplayName("writeHashInfoFile() Test")
-    void writeHashInfoFileTest() throws IOException, InvalidRosterException {
+    void writeHashInfoFileTest() throws IOException {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         final SignedState signedState = new RandomSignedStateGenerator()
@@ -131,7 +130,7 @@ class SignedStateFileReadWriteTest {
 
     @Test
     @DisplayName("Write Then Read State File Test")
-    void writeThenReadStateFileTest() throws IOException, InvalidRosterException {
+    void writeThenReadStateFileTest() throws IOException {
         final SignedState signedState = new RandomSignedStateGenerator().build();
         final Path stateFile = testDirectory.resolve(SIGNED_STATE_FILE_NAME);
         final Path signatureSetFile = testDirectory.resolve(SIGNATURE_SET_FILE_NAME);
@@ -165,7 +164,7 @@ class SignedStateFileReadWriteTest {
 
     @Test
     @DisplayName("writeSavedStateToDisk() Test")
-    void writeSavedStateToDiskTest() throws IOException, InvalidRosterException {
+    void writeSavedStateToDiskTest() throws IOException {
         final SignedState signedState = new RandomSignedStateGenerator()
                 .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
                 .build();

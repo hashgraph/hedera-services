@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,7 +193,8 @@ public class StakePeriodChanges {
     }
 
     private void startKeyingCandidateRoster(
-            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) throws InvalidRosterException {
+            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore)
+            throws InvalidRosterException {
         final var storeFactory = handleContext.storeFactory();
         final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final var roster = nodeStore.snapshotOfFutureRoster();

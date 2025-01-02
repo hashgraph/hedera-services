@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,8 @@ public interface RosterTransplantSchema {
      */
     default boolean restart(
             @NonNull final MigrationContext ctx,
-            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) throws InvalidRosterException {
+            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory)
+            throws InvalidRosterException {
         requireNonNull(ctx);
         if (ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             final long roundNumber = ctx.roundNumber();

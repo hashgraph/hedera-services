@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 import com.swirlds.merkledb.MerkleDb;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
@@ -44,7 +43,7 @@ class SignedStateReferenceTests {
     /**
      * Build a signed state.
      */
-    public static SignedState buildSignedState() throws InvalidRosterException  {
+    public static SignedState buildSignedState() {
         return new RandomSignedStateGenerator().build();
     }
 
@@ -94,7 +93,7 @@ class SignedStateReferenceTests {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Initial Value Constructor Test")
-    void initialValueTest(final boolean defaultValue) throws InvalidRosterException {
+    void initialValueTest(final boolean defaultValue) {
 
         final SignedState state = spy(buildSignedState());
         doReturn(1234L).when(state).getRound();
@@ -125,7 +124,7 @@ class SignedStateReferenceTests {
 
     @Test
     @DisplayName("Replacement Test")
-    void replacementTest() throws InvalidRosterException {
+    void replacementTest() {
         MerkleDb.resetDefaultInstancePath();
         final SignedState state1 = buildSignedState();
         MerkleDb.resetDefaultInstancePath();

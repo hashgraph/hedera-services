@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,8 @@ class SerializationTest extends MerkleTestBase {
      */
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void simpleReadAndWrite(boolean forceFlush) throws IOException, ConstructableRegistryException, InvalidRosterException {
+    void simpleReadAndWrite(boolean forceFlush)
+            throws IOException, ConstructableRegistryException, InvalidRosterException {
         final var schemaV1 = createV1Schema();
         final var originalTree = createMerkleHederaState(schemaV1);
 
@@ -323,7 +324,7 @@ class SerializationTest extends MerkleTestBase {
         loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
     }
 
-    private PlatformMerkleStateRoot createMerkleHederaState(Schema schemaV1) throws InvalidRosterException {
+    private PlatformMerkleStateRoot createMerkleHederaState(Schema schemaV1) {
         final SignedState randomState =
                 new RandomSignedStateGenerator().setRound(1).build();
 

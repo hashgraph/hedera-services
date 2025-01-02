@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
@@ -66,7 +65,7 @@ class SignedStateNexusTest {
 
     @ParameterizedTest
     @MethodSource("allInstances")
-    void basicUsage(@NonNull final SignedStateNexus nexus) throws InvalidRosterException {
+    void basicUsage(@NonNull final SignedStateNexus nexus) {
         final int round = 123;
         final ReservedSignedState original =
                 new RandomSignedStateGenerator().setRound(round).build().reserve("test");
@@ -92,7 +91,7 @@ class SignedStateNexusTest {
 
     @ParameterizedTest
     @MethodSource("allInstances")
-    void closedStateTest(@NonNull final SignedStateNexus nexus) throws InvalidRosterException {
+    void closedStateTest(@NonNull final SignedStateNexus nexus) {
         final ReservedSignedState reservedSignedState = realState();
         nexus.setState(reservedSignedState);
         reservedSignedState.close();
@@ -106,7 +105,7 @@ class SignedStateNexusTest {
      */
     @ParameterizedTest
     @MethodSource("raceConditionInstances")
-    void raceConditionTest(@NonNull final SignedStateNexus nexus) throws InterruptedException, InvalidRosterException {
+    void raceConditionTest(@NonNull final SignedStateNexus nexus) throws InterruptedException {
         final ReservedSignedState state1 = mockState();
         final CountDownLatch unblockThread = new CountDownLatch(1);
         final CountDownLatch threadWaiting = new CountDownLatch(1);
@@ -145,7 +144,7 @@ class SignedStateNexusTest {
         assertSame(state2child, threadGetResult.get(), "The nexus should have returned the child of state2");
     }
 
-    private static ReservedSignedState mockState() throws InvalidRosterException {
+    private static ReservedSignedState mockState() {
         final ReservedSignedState state = Mockito.mock(ReservedSignedState.class);
         MerkleDb.resetDefaultInstancePath();
         final SignedState ss = new RandomSignedStateGenerator().build();
@@ -153,7 +152,7 @@ class SignedStateNexusTest {
         return state;
     }
 
-    private static ReservedSignedState realState() throws InvalidRosterException {
+    private static ReservedSignedState realState() {
         MerkleDb.resetDefaultInstancePath();
         return new RandomSignedStateGenerator().build().reserve("test");
     }

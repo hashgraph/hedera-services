@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -54,7 +53,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @NonNull
-    private SignedState generateSignedState(@NonNull final Random random) throws InvalidRosterException {
+    private SignedState generateSignedState(@NonNull final Random random) {
 
         final long round = random.nextLong(1, 1_000_000);
 
@@ -86,7 +85,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @Test
-    void generationModeTest() throws InvalidRosterException {
+    void generationModeTest() {
         final Random random = getRandomPrintSeed();
         final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();
@@ -108,7 +107,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @Test
-    void alreadyMigratedTest() throws InvalidRosterException {
+    void alreadyMigratedTest() {
         final Random random = getRandomPrintSeed();
 
         final SignedState signedState = generateSignedState(random);
@@ -142,7 +141,7 @@ class BirthRoundStateMigrationTests {
     }
 
     @Test
-    void migrationTest() throws InvalidRosterException {
+    void migrationTest() {
         final Random random = getRandomPrintSeed();
         final SignedState signedState = generateSignedState(random);
         final Hash originalHash = signedState.getState().getHash();

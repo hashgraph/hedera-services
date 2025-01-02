@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
@@ -42,7 +41,7 @@ public class LatestCompleteStateNotifierTests {
 
     @Test
     @DisplayName("NewLatestCompleteStateEventNotification")
-    void testNewLatestCompleteStateEventNotification() throws InterruptedException, InvalidRosterException {
+    void testNewLatestCompleteStateEventNotification() throws InterruptedException {
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final SignedState signedState = new RandomSignedStateGenerator().build();
 

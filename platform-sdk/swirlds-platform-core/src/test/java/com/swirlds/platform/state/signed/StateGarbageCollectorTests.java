@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.util.ArrayList;
@@ -50,7 +49,7 @@ class StateGarbageCollectorTests {
     }
 
     @Test
-    void standardBehaviorTest() throws InvalidRosterException {
+    void standardBehaviorTest() {
         final Random random = getRandomPrintSeed();
 
         final PlatformContext platformContext =

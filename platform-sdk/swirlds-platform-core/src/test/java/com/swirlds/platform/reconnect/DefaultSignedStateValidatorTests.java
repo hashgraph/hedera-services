@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
@@ -267,7 +266,7 @@ class DefaultSignedStateValidatorTests {
     @ParameterizedTest
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
-    void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) throws InvalidRosterException {
+    void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
         final Randotron randotron = Randotron.create();
         roster = createRoster(randotron, nodes);
 
@@ -332,7 +331,7 @@ class DefaultSignedStateValidatorTests {
      * @param signingNodes the node ids signing the state
      * @return the signed state
      */
-    private SignedState stateSignedByNodes(final List<Node> signingNodes) throws InvalidRosterException {
+    private SignedState stateSignedByNodes(final List<Node> signingNodes) {
 
         final Hash stateHash = randomHash();
 

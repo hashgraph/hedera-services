@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
@@ -96,7 +95,7 @@ final class ReconnectTest {
 
     @Test
     @DisplayName("Successfully reconnects multiple times and stats are updated")
-    void statsTrackSuccessfulReconnect() throws IOException, InterruptedException, InvalidRosterException {
+    void statsTrackSuccessfulReconnect() throws IOException, InterruptedException {
         final int numberOfReconnects = 11;
 
         final ReconnectMetrics reconnectMetrics = mock(ReconnectMetrics.class);
@@ -112,7 +111,7 @@ final class ReconnectTest {
         }
     }
 
-    private void executeReconnect(final ReconnectMetrics reconnectMetrics) throws InterruptedException, IOException, InvalidRosterException {
+    private void executeReconnect(final ReconnectMetrics reconnectMetrics) throws InterruptedException, IOException {
 
         final long weightPerNode = 100L;
         final int numNodes = 4;

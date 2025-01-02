@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -241,14 +241,13 @@ public class AddressBookUtils {
      * @param bootstrapAddressBook the bootstrap address book
      * @param platformContext      the platform context
      * @return the initialized address book
-     * @throws InvalidRosterException when the roster is invalid
      */
     public static @NonNull AddressBook initializeAddressBook(
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook bootstrapAddressBook,
-            @NonNull final PlatformContext platformContext) throws InvalidRosterException {
+            @NonNull final PlatformContext platformContext) {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
@@ -276,10 +275,14 @@ public class AddressBookUtils {
                 }
             }
 
-            RosterUtils.setActiveRoster(
-                    state,
-                    RosterRetriever.buildRoster(addressBookInitializer.getCurrentAddressBook()),
-                    RosterRetriever.getRound(state));
+            try {
+                RosterUtils.setActiveRoster(
+                        state,
+                        RosterRetriever.buildRoster(addressBookInitializer.getCurrentAddressBook()),
+                        RosterRetriever.getRound(state));
+            } catch (final InvalidRosterException e) {
+                throw new IllegalArgumentException("Invalid roster", e);
+            }
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.

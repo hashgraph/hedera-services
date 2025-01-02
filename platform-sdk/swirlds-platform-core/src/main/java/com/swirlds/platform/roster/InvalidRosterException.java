@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.roster;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * An exception thrown by the RosterValidator when a given Roster is invalid.
  */
@@ -24,7 +26,7 @@ public class InvalidRosterException extends Exception {
      * A default constructor.
      * @param message a message
      */
-    public InvalidRosterException(final String message) {
+    public InvalidRosterException(@Nullable final String message) {
         super(message);
     }
 }

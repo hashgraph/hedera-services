@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
@@ -90,7 +89,7 @@ class SwirldStateManagerTests {
 
     @Test
     @DisplayName("Load From Signed State - state reference counts")
-    void loadFromSignedStateRefCount() throws InvalidRosterException {
+    void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
         MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss1);
@@ -140,7 +139,7 @@ class SwirldStateManagerTests {
         return state;
     }
 
-    private static SignedState newSignedState() throws InvalidRosterException {
+    private static SignedState newSignedState() {
         final SignedState ss = new RandomSignedStateGenerator().build();
         assertEquals(
                 1,

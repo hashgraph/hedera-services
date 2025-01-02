@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,6 @@ public final class StartupStateUtils {
      * @return the initial state to be used by this node
      * @throws SignedStateLoadingException if there was a problem parsing states on disk and we are not configured to
      *                                     delete malformed states
-     * @throws InvalidRosterException when the roster is invalid
      */
     @NonNull
     @Deprecated(forRemoval = true)
@@ -92,7 +91,7 @@ public final class StartupStateUtils {
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
             @NonNull final AddressBook configAddressBook)
-            throws SignedStateLoadingException, InvalidRosterException {
+            throws SignedStateLoadingException {
 
         requireNonNull(configuration);
         requireNonNull(mainClassName);
@@ -114,8 +113,14 @@ public final class StartupStateUtils {
             }
         }
 
-        final ReservedSignedState genesisState =
-                buildGenesisState(configuration, configAddressBook, softwareVersion, genesisStateBuilder.get());
+        final ReservedSignedState genesisState;
+
+        try {
+            genesisState =
+                    buildGenesisState(configuration, configAddressBook, softwareVersion, genesisStateBuilder.get());
+        } catch (final InvalidRosterException e) {
+            throw new IllegalArgumentException("Invalid roster", e);
+        }
 
         try (genesisState) {
             return copyInitialSignedState(configuration, genesisState.get());
@@ -329,7 +334,8 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final PlatformMerkleStateRoot stateRoot) throws InvalidRosterException {
+            @NonNull final PlatformMerkleStateRoot stateRoot)
+            throws InvalidRosterException {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
@@ -354,7 +360,8 @@ public final class StartupStateUtils {
             final State state,
             final PlatformStateModifier platformState,
             final AddressBook addressBook,
-            final SoftwareVersion appVersion) throws InvalidRosterException {
+            final SoftwareVersion appVersion)
+            throws InvalidRosterException {
         final long round = 0L;
 
         platformState.bulkUpdate(v -> {
