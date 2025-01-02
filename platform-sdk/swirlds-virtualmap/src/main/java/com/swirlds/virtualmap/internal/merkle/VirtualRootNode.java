@@ -1704,9 +1704,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             originalMap = null;
             logger.info(RECONNECT.getMarker(), "call postInit()");
             postInit(fullyReconnectedState);
-            // Start up data source compaction now
-            logger.info(RECONNECT.getMarker(), "call dataSource.enableBackgroundCompaction()");
-            dataSource.enableBackgroundCompaction();
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during learner reconnect";
             throw new MerkleSynchronizationException(message, e);

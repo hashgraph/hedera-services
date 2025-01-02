@@ -39,6 +39,7 @@ public interface TransactionExecutor {
      * @param consensusNow the consensus time at which the transaction is to be executed
      * @param operationTracers the Besu {@link OperationTracer} instances to use for contract operations
      * @return one or more {@link SingleTransactionRecord}s for the executed transaction
+     * @throws RuntimeException if the executor cannot build a dispatch from the given transaction
      */
     List<SingleTransactionRecord> execute(
             @NonNull TransactionBody transactionBody,
