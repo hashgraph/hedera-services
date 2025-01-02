@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     // Update the fee schedule and verify that it's updated
                     updateTopic(TOPIC)
                             .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
+                            .signedByPayerAnd(ADMIN_KEY),
                     getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2));
         }
 
