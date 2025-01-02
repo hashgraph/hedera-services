@@ -106,6 +106,12 @@ public class V0490FileSchema extends Schema {
     public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
 
     /**
+     * The default throttle definitions resource. Used as the ultimate fallback if the configured file and resource is
+     * not found.
+     */
+    private static final String DEFAULT_THROTTLES_RESOURCE = "genesis/throttles.json";
+
+    /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
      * changed, then the database has to be rebuilt.
      */
@@ -611,9 +617,11 @@ public class V0490FileSchema extends Schema {
      * @return the throttle definitions proto as a byte array
      */
     private static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
-        // Get the path to the throttles permissions file
+        // Get the path to the throttles resource
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
-        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);
+        // Get the path to the throttles file
+        final var throttleDefinitionsFile = bootstrapConfig.throttleDefsJsonFile();
+        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsFile);
 
         // If the file exists, load from there
         String throttleDefinitionsContent = null;
@@ -635,8 +643,26 @@ public class V0490FileSchema extends Schema {
                 throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
                 logger.info("Throttle definitions loaded from classpath resource {}", throttleDefinitionsResource);
             } catch (IOException | NullPointerException e) {
-                logger.fatal("Throttle definitions could not be loaded from disk or from classpath");
-                throw new IllegalStateException("Throttle definitions could not be loaded from classpath", e);
+                logger.warn(
+                        "Throttle definitions could not be loaded from classpath resource {}, using default fallback resource",
+                        throttleDefinitionsResource);
+            }
+        }
+
+        if (throttleDefinitionsContent == null) {
+            // Load the default throttle definitions resource
+            try (final var in =
+                    Thread.currentThread().getContextClassLoader().getResourceAsStream(DEFAULT_THROTTLES_RESOURCE)) {
+                throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
+                logger.info(
+                        "Throttle definitions loaded from default fallback classpath resource {}",
+                        DEFAULT_THROTTLES_RESOURCE);
+            } catch (IOException | NullPointerException e) {
+                logger.fatal(
+                        "Throttle definitions could not be loaded from default fallback classpath resource {}",
+                        DEFAULT_THROTTLES_RESOURCE);
+                throw new IllegalArgumentException(
+                        "Throttle definitions could not be loaded from default fallback classpath resource", e);
             }
         }
 

@@ -165,7 +165,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         final Configuration config = new TestConfigBuilder()
                 .withValues(
-                        GossipConfig_.NETWORK_ENDPOINTS,
+                        GossipConfig_.INTERFACE_BINDINGS,
                         List.of("{ \"nodeId\": 0, \"hostname\": \"localhost\", \"port\": 1234 }"))
                 .getOrCreateConfig();
         testInterfaceBinding(node0, roster, keysAndCerts, config);
@@ -207,7 +207,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         final Configuration config = new TestConfigBuilder()
                 .withValues(
-                        GossipConfig_.NETWORK_ENDPOINTS,
+                        GossipConfig_.INTERFACE_BINDINGS,
                         List.of("{ \"nodeId\": 0, \"hostname\": \"10.123.123.123\", \"port\": 1234 }"))
                 .getOrCreateConfig();
 
@@ -234,7 +234,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts.get(selfId), configuration);
         final GossipConfig gossipConfig = configuration.getConfigData(GossipConfig.class);
-        final var endpoint = gossipConfig.getNetworkEndpoint(selfId.id()).orElse(DEFAULT_ENDPOINT);
+        final var endpoint = gossipConfig.getInterfaceBindings(selfId.id()).orElse(DEFAULT_ENDPOINT);
 
         try (final ServerSocket serverSocket = socketFactory.createServerSocket(endpoint.port())) {
 
