@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.swirlds.base.utility.FileSystemUtils;
+import com.hedera.node.config.types.CloudBucketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
@@ -71,37 +72,25 @@ public class BucketConfigurationManager {
      */
     public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
         // update local BlockStreamConfig if there was a network properties change
-        if (this.blockStreamConfig != blockStreamConfig) {
+        if (!blockStreamConfig.equals(this.blockStreamConfig)) {
             this.blockStreamConfig = blockStreamConfig;
         }
         final Path credentialsPath = Path.of(this.blockStreamConfig.credentialsPath());
-        try {
-            if (FileSystemUtils.waitForPathPresence(credentialsPath)) {
-                credentials = mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
-            }
-        } catch (IOException e) {
-            logger.error("Failed to load bucket credentials from {}", credentialsPath, e);
+        this.credentials = loadCredentials(credentialsPath);
+
+        if (this.credentials == null) {
+            logger.error("Credentials could not be loaded. Skipping bucket configuration update.");
+            return;
         }
 
-        currentConfig.set(this.blockStreamConfig.buckets().stream()
-                .map(bucket -> {
-                    if (credentials == null || credentials.credentials().get(bucket.name()) == null) {
-                        logger.error("No credentials found in {} for bucket: {}", credentialsPath, bucket.name());
-                        return null;
-                    }
-                    final var bucketCredentials = credentials.credentials().get(bucket.name());
-                    return new CompleteBucketConfig(
-                            bucket.name(),
-                            bucket.provider(),
-                            bucket.endpoint(),
-                            bucket.region(),
-                            bucket.bucketName(),
-                            bucket.enabled(),
-                            bucketCredentials);
-                })
+        final var newConfig = blockStreamConfig.buckets().stream()
+                .map(bucket -> createCompleteBucketConfig(bucket, credentialsPath))
                 .filter(Objects::nonNull)
                 .filter(CompleteBucketConfig::enabled)
-                .toList());
+                .toList();
+
+        currentConfig.set(newConfig);
+        logger.info("Bucket configurations updated successfully.");
     }
 
     /**
@@ -118,8 +107,10 @@ public class BucketConfigurationManager {
                 while (true) {
                     WatchKey key = watchService.take();
                     for (WatchEvent<?> event : key.pollEvents()) {
-                        if (event.context().toString().equals(bucketCredentialsPath)) {
-                            logger.info("Configuration file changed. Reloading...");
+                        if (event.context()
+                                .toString()
+                                .equals(credentialsPath.getFileName().toString())) {
+                            logger.info("Credentials file changed. Reloading...");
                             loadCompleteBucketConfigs(blockStreamConfig);
                         }
                     }
@@ -129,6 +120,38 @@ public class BucketConfigurationManager {
                 logger.error("Error watching configuration file: {}", e.getMessage());
             }
         });
+    }
+
+    private OnDiskBucketConfig loadCredentials(@NonNull Path credentialsPath) {
+        if (!Files.exists(credentialsPath)) {
+            logger.error("Credentials file not found at {}", credentialsPath);
+            return null;
+        }
+
+        try {
+            return mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
+        } catch (IOException e) {
+            logger.error("Failed to load credentials from {}", credentialsPath, e);
+            return null;
+        }
+    }
+
+    private CompleteBucketConfig createCompleteBucketConfig(
+            @NonNull final CloudBucketConfig bucket, @NonNull final Path credentialsPath) {
+        final var bucketCredentials = credentials.credentials().get(bucket.name());
+        if (bucketCredentials == null) {
+            logger.error("No credentials found in {} for bucket: {}", credentialsPath, bucket.name());
+            return null;
+        }
+
+        return new CompleteBucketConfig(
+                bucket.name(),
+                bucket.provider(),
+                bucket.endpoint(),
+                bucket.region(),
+                bucket.bucketName(),
+                bucket.enabled(),
+                bucketCredentials);
     }
 
     /**
