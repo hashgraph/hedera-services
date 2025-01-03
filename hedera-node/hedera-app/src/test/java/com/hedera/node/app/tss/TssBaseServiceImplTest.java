@@ -189,7 +189,8 @@ class TssBaseServiceImplTest {
                 ForkJoinPool.commonPool(),
                 tssLibrary,
                 ForkJoinPool.commonPool(),
-                metrics);
+                metrics,
+                () -> rosterStore);
     }
 
     @Test

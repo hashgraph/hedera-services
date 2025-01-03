@@ -24,6 +24,7 @@ import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
@@ -41,6 +42,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -127,7 +129,8 @@ public enum TransactionExecutors {
                 ForkJoinPool.commonPool(),
                 new TssLibraryImpl(appContext),
                 ForkJoinPool.commonPool(),
-                NO_OP_METRICS);
+                NO_OP_METRICS,
+                () -> new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME)));
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();

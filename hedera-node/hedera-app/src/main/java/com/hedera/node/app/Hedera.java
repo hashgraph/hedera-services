@@ -136,6 +136,8 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -305,6 +307,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     /**
      * When applying and migrating schemas to a target state, it is set here to support
      * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
+     * and {@link TssBaseService} schemas access to a {@link ReadableRosterStore}
      * before the roster lifecycle is adopted.
      */
     @Nullable
@@ -355,7 +358,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @FunctionalInterface
     public interface TssBaseServiceFactory {
         @NonNull
-        TssBaseService apply(@NonNull AppContext appContext);
+        TssBaseService apply(
+                @NonNull AppContext appContext,
+                @NonNull final Supplier<ReadableRosterStore> readableRosterStoreSupplier);
     }
 
     @FunctionalInterface
@@ -432,7 +437,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        tssBaseService = tssBaseServiceFactory.apply(appContext);
+        tssBaseService = tssBaseServiceFactory.apply(
+                appContext,
+                () -> new ReadableRosterStoreImpl(requireNonNull(initState).getReadableStates(RosterService.NAME)));
         contractServiceImpl = new ContractServiceImpl(appContext);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();

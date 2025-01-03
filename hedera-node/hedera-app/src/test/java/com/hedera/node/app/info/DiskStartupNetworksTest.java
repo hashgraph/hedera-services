@@ -62,6 +62,7 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -129,6 +130,9 @@ class DiskStartupNetworksTest {
 
     @Mock
     private AppContext appContext;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ReadableRosterStore readableRosterStore;
 
     @Mock
     private TssLibrary tssLibrary;
@@ -322,7 +326,8 @@ class DiskStartupNetworksTest {
                 ForkJoinPool.commonPool(),
                 tssLibrary,
                 ForkJoinPool.commonPool(),
-                NO_OP_METRICS);
+                NO_OP_METRICS,
+                () -> readableRosterStore);
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
         PLATFORM_STATE_SERVICE.setDiskAddressBook(new AddressBook());
         Set.of(

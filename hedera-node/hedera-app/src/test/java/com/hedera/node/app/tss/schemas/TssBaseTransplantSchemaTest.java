@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.tss.schemas;
 
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_MESSAGE_MAP_KEY;
+import static com.hedera.node.app.tss.schemas.V0560TssBaseSchema.TSS_VOTE_MAP_KEY;
 import static com.hedera.node.app.tss.schemas.V0580TssBaseSchema.TSS_ENCRYPTION_KEYS_KEY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -31,15 +34,18 @@ import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -96,7 +102,11 @@ class TssBaseTransplantSchemaTest {
     @Mock
     private WritableKVState<TssMessageMapKey, TssMessageTransactionBody> writableMessages;
 
-    private final TssBaseTransplantSchema subject = new V0580TssBaseSchema();
+    @Mock
+    private ReadableRosterStore readableRosterStore;
+
+    private final TssBaseTransplantSchema subject =
+            new V0580TssBaseSchema(WritableTssStore::new, () -> readableRosterStore);
 
     @Test
     void noOpWithoutTssEnabled() {
@@ -110,6 +120,14 @@ class TssBaseTransplantSchemaTest {
         givenConfig(true);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
+        given(ctx.newStates()).willReturn(writableStates);
+        given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
+                .willReturn(writableEncryptionKeys);
+        given(writableStates.<TssVoteMapKey, TssVoteTransactionBody>get(TSS_VOTE_MAP_KEY))
+                .willReturn(writableVotes);
+        given(writableStates.<TssMessageMapKey, TssMessageTransactionBody>get(TSS_MESSAGE_MAP_KEY))
+                .willReturn(writableMessages);
+        given(writableEncryptionKeys.keys()).willReturn(mock(Iterator.class));
 
         subject.restart(ctx);
 
@@ -118,6 +136,9 @@ class TssBaseTransplantSchemaTest {
 
     @Test
     void withOverrideSetsEncryptionKeysFromNetwork() {
+        final EntityNumber entityNumber1 = new EntityNumber(1);
+        final EntityNumber entityNumber2 = new EntityNumber(2);
+
         givenConfig(true);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
@@ -125,13 +146,13 @@ class TssBaseTransplantSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .willReturn(writableEncryptionKeys);
+        given(writableEncryptionKeys.keys())
+                .willReturn(List.of(entityNumber1, entityNumber2).iterator());
 
         subject.restart(ctx);
 
-        verify(writableEncryptionKeys)
-                .put(new EntityNumber(1L), new TssEncryptionKeys(NODE1_ENCRYPTION_KEY, Bytes.EMPTY));
-        verify(writableEncryptionKeys)
-                .put(new EntityNumber(2L), new TssEncryptionKeys(NODE2_ENCRYPTION_KEY, Bytes.EMPTY));
+        verify(writableEncryptionKeys).put(entityNumber1, new TssEncryptionKeys(NODE1_ENCRYPTION_KEY, Bytes.EMPTY));
+        verify(writableEncryptionKeys).put(entityNumber2, new TssEncryptionKeys(NODE2_ENCRYPTION_KEY, Bytes.EMPTY));
     }
 
     @Test
@@ -143,6 +164,7 @@ class TssBaseTransplantSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(writableStates.<EntityNumber, TssEncryptionKeys>get(TSS_ENCRYPTION_KEYS_KEY))
                 .willReturn(writableEncryptionKeys);
+        given(writableEncryptionKeys.keys()).willReturn(mock(Iterator.class));
 
         subject.restart(ctx);
 
