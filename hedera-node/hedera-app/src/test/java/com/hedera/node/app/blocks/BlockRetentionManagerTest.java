@@ -111,7 +111,7 @@ class BlockRetentionManagerTest {
         blockRetentionManager = new BlockRetentionManager(
                 uploadedDir, Duration.ofMillis(retentionPeriodMs), Duration.ofMillis(cleanupPeriodMs), 4);
 
-        blockRetentionManager.shutdown();
+        blockRetentionManager.shutdown(60);
 
         assertThrows(RejectedExecutionException.class, () -> blockRetentionManager.scheduleRepeating(() -> {}));
         assertThrows(RejectedExecutionException.class, () -> blockRetentionManager.startCleanup());

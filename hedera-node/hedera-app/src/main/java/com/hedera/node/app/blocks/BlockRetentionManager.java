@@ -111,15 +111,17 @@ public class BlockRetentionManager {
 
     /**
      * Shuts down the underlying scheduler and cleanup executor services.
+     *
+     * @param timeout the maximum time in seconds to wait for the executor services to shut down; if the timeout is exceeded, the services will be forcibly shut down
      */
-    public void shutdown() {
+    public void shutdown(long timeout) {
         scheduler.shutdown();
         cleanupExecutor.shutdown();
         try {
-            if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+            if (!scheduler.awaitTermination(timeout, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }
-            if (!cleanupExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+            if (!cleanupExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
                 cleanupExecutor.shutdownNow();
             }
         } catch (InterruptedException e) {

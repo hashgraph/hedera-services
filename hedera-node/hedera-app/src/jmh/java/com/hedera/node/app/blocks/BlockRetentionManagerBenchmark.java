@@ -87,7 +87,7 @@ public class BlockRetentionManagerBenchmark {
 
     @TearDown(Level.Invocation)
     public void tearDownInvocation() throws IOException {
-        blockRetentionManager.shutdown();
+        blockRetentionManager.shutdown(60);
         try (Stream<Path> files = Files.walk(uploadedDir)) {
             files.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
         }
