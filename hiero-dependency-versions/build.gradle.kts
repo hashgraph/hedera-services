@@ -43,7 +43,7 @@ val junit5 = "5.10.2"
 val log4j = "2.21.1"
 val mockito = "5.8.0"
 val protobuf = "4.28.2"
-val testContainers = "1.17.2"
+val testContainers = "1.20.4"
 val tuweni = "2.4.2"
 val webcompare = "2.1.5"
 
