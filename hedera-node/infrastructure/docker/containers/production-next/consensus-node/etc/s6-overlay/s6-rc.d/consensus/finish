@@ -3,5 +3,5 @@
 if [ "${1}" != 256 ]; then
   echo ${1} > /run/s6-linux-init-container-results/exitcode
 else
-  echo "Hedera service killed by uncaught signal: $(kill -l ${2})(${2})"
+  echo "Consensus service killed by uncaught signal: $(kill -l ${2})(${2})"
 fi

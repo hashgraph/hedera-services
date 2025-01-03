@@ -205,6 +205,7 @@ public class RecordStreamBuilder
     private final TransactionCustomizer customizer;
 
     private TokenID tokenID;
+    private ScheduleID scheduleID;
     private TokenType tokenType;
 
     public RecordStreamBuilder(
@@ -973,6 +974,7 @@ public class RecordStreamBuilder
     public RecordStreamBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
         requireNonNull(scheduleID, "scheduleID must not be null");
         transactionReceiptBuilder.scheduleID(scheduleID);
+        this.scheduleID = requireNonNull(scheduleID);
         return this;
     }
 
@@ -1175,5 +1177,10 @@ public class RecordStreamBuilder
     public StreamBuilder functionality(@NonNull final HederaFunctionality functionality) {
         // No-op
         return this;
+    }
+
+    @Override
+    public ScheduleID scheduleID() {
+        return scheduleID;
     }
 }
