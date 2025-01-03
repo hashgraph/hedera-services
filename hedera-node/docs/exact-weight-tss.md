@@ -82,14 +82,14 @@ same time it is doing tasks scoped to the current roster.
 ### The `HintsService` as a `RosterCompanionService`
 
 We first map the `HintsService` to the `RosterCompanionService` abstraction. At a high level,
-- The **primary state** of the `HintsService` consists of roster-scoped hinTS construction. Each includes a source
+- The **primary state** of the `HintsService` consists of a roster-scoped hinTS construction. Each includes a source
 roster hash; a target roster hash; the target roster mapping from node ids to hinTS party ids; a consensus time for
 the next aggregation attempt (if the construction is waiting on hinTS keys); the consensus time of the final
 aggregation time (if the construction is waiting for votes on preprocessing outputs); and finally, if the construction
 is complete, the hinTS aggregation and verification keys for the construction. To simplify connecting secondary state
 with primary state, each construction may also have a unique numeric id.
 - The **secondary state** of the `HintsService` is everything needed to facilitate deterministic progress on a
-construction; and in particular, for nodes that reconnect during the construction. This likely includes,
+construction; in particular, for nodes that reconnect during the construction. This likely includes,
 1. _Per construction size $M = 2^k$_ : For as many parties as possible, for party with id $i \in [0, M)$, the party's
 hinTS key; the node id that submitted that hinTS key; the consensus time the hinTS key was adopted in the ongoing
 construction; and, if applicable, a revised hinTS key the same node wishes to use in subsequent constructions of
@@ -113,6 +113,46 @@ a `HintsPartialSignature` node transaction so the node can run the hinTS aggrega
 signature for a set of partial signatures whose parties are nodes with at least 1/3 weight in the current roster.
 
 ### The `HistoryService` as a `RosterCompanionService`
+
+Next we map the `HistoryService` to the `RosterCompanionService` abstraction. At a high level,
+- The **primary state** of the `HistoryService` includes both the ledger id, and a roster-scoped construction of a
+proof that certain metadata and roster were derived from the ledger id. Each construction includes a source roster hash;
+a target roster hash; a proof that the source roster derived from the ledger id; a consensus time for the next attempt
+to assemble the Schnorr keys for the target roster (if the construction is waiting on Schnorr keys); the consensus final
+assembly time for the Schnorr keys; and finally, if the construction is complete, the proof that the target roster and
+metadata are derived from the ledger id.
+- The **secondary state** of the `HistoryService` is everything needed to facilitate deterministic progress on a
+construction; in particular, for nodes that reconnect during the construction. This likely includes,
+1. _Per node id $i$_ : The node's Schnorr key; the node's consensus time for the Schnorr key; and, if applicable, a
+revised Schnorr key the same node wishes to use in subsequent constructions.
+2. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
+$c$ accounting for at least 1/3 of its weight, their signatures on a particular metadata and roster derivation for
+construction $c$.
+3. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
+$c$ accounting for at least 1/3 of its weight, their consensus vote for a particular proof output for construction $c$.
+- The **reconciliation loop** of the `HistoryService` evolves this secondary state by a combination of scheduling
+expensive cryptographic operations to run off the `handleTransaction` thread, and gossiping the results of these
+operations (or votes on those results) to other nodes. These node operations likely include,
+1. `HistoryProofKeyPublication` - a transaction publishing the node's Schnorr key for use in the next construction.
+2. `HistoryAssemblySignature` - a transaction publishing the node's signature on a particular metadata and roster
+assembly for a certain construction id.
+3. `HistoryProofVote` - a transaction publishing the node's vote for a particular proof output for a certain
+construction id.
+- The `HistoryService` is **ready** when it has completed a proof that the current roster and metadata were derived from
+the ledger id.
+- The **roster-scoped work** of the `HistoryService` is to accept a byte string which must match the metadata of the
+current roster, and return the proof that this metadata and the current roster were derived from the ledger id.
+
+### Integration with protocol components
+
+The TSS system is then just the combination of the `HintsService` and `HistoryService` with the `RosterService`, with
+the `HistoryService` metadata always set to the verification key of the `HintsService` for the current roster.
+
+There are only a few other details; namely,
+- The `HandleWorkflow` is responsible for driving the reconciliation loops of both companion services.
+- The `IngestWorkflow` must reject user transactions during the bootstrap phase.
+- The `BlockStreamManager` must include every round in the genesis block until the TSS system is ready. (And thus it
+must be possible to tell the platform not to use any of these rounds for state saving or reconnect.)
 
 ## References
 
