@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative.ScheduleNativeTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.Set;
@@ -84,23 +84,19 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
     @Mock
     private HtsCallFactory htsCallFactory;
 
-    // Mock to populate the selectors map
-    @Mock
-    private CreateDecoder decoder;
-
     @Mock
     private Configuration configuration;
 
     @Mock
     private ContractsConfig contractsConfig;
 
-    private CreateTranslator createTranslator;
+    @Mock
+    private SignatureVerifier signatureVerifier;
 
     private ScheduleNativeTranslator subject;
 
     @BeforeEach
     void setUp() {
-        createTranslator = new CreateTranslator(decoder);
         subject = new ScheduleNativeTranslator(htsCallFactory);
     }
 
@@ -120,6 +116,7 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
         // when/then
@@ -135,6 +132,7 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 DEFAULT_CONFIG);
 

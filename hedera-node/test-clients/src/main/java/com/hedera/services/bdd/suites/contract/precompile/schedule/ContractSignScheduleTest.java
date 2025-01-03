@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,9 +105,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_A).isNotExecuted(),
                     contractCall(
-                            CONTRACT,
-                            AUTHORIZE_SCHEDULE_CALL,
-                            mirrorAddrWith(scheduleID_A.get().getScheduleNum()))
+                                    CONTRACT,
+                                    AUTHORIZE_SCHEDULE_CALL,
+                                    mirrorAddrWith(scheduleID_A.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_A).isExecuted());
         }
@@ -118,9 +118,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_B).isNotExecuted(),
                     contractCall(
-                            CONTRACT,
-                            AUTHORIZE_SCHEDULE_CALL,
-                            mirrorAddrWith(scheduleID_B.get().getScheduleNum()))
+                                    CONTRACT,
+                                    AUTHORIZE_SCHEDULE_CALL,
+                                    mirrorAddrWith(scheduleID_B.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_B).isNotExecuted());
         }
@@ -157,9 +157,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_C).isNotExecuted(),
                     contractCall(
-                            CONTRACT,
-                            AUTHORIZE_SCHEDULE_CALL,
-                            mirrorAddrWith(scheduleID_C.get().getScheduleNum()))
+                                    CONTRACT,
+                                    AUTHORIZE_SCHEDULE_CALL,
+                                    mirrorAddrWith(scheduleID_C.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_C).isExecuted());
         }
@@ -170,9 +170,9 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_D).isNotExecuted(),
                     contractCall(
-                            CONTRACT,
-                            AUTHORIZE_SCHEDULE_CALL,
-                            mirrorAddrWith(scheduleID_D.get().getScheduleNum()))
+                                    CONTRACT,
+                                    AUTHORIZE_SCHEDULE_CALL,
+                                    mirrorAddrWith(scheduleID_D.get().getScheduleNum()))
                             .gas(1_000_000L),
                     getScheduleInfo(SCHEDULE_D).isNotExecuted());
         }
@@ -210,11 +210,11 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_E).isNotExecuted(),
                     contractCallWithFunctionAbi(
-                            scheduleAddress,
-                            getABIFor(
-                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                    SIGN_SCHEDULE,
-                                    IHRC755))
+                                    scheduleAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            SIGN_SCHEDULE,
+                                            IHRC755))
                             .payingWith(SENDER)
                             .gas(1_000_000),
                     getScheduleInfo(SCHEDULE_E).isExecuted());
@@ -227,11 +227,11 @@ public class ContractSignScheduleTest {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_F).isNotExecuted(),
                     contractCallWithFunctionAbi(
-                            scheduleAddress,
-                            getABIFor(
-                                    com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
-                                    SIGN_SCHEDULE,
-                                    IHRC755))
+                                    scheduleAddress,
+                                    getABIFor(
+                                            com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION,
+                                            SIGN_SCHEDULE,
+                                            IHRC755))
                             .payingWith(SENDER)
                             .gas(1_000_000),
                     getScheduleInfo(SCHEDULE_F).isNotExecuted());
@@ -260,8 +260,9 @@ public class ContractSignScheduleTest {
                     uploadInitCode(CONTRACT),
                     contractCreate(CONTRACT),
                     cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
-                    scheduleCreate(SCHEDULE_G,
-                            cryptoTransfer(tinyBarsFromToWithAlias(ECDSA_KEY, ECDSA_RECEIVER_KEY, 1)))
+                    scheduleCreate(
+                                    SCHEDULE_G,
+                                    cryptoTransfer(tinyBarsFromToWithAlias(ECDSA_KEY, ECDSA_RECEIVER_KEY, 1)))
                             .exposingCreatedIdTo(scheduleID_G::set));
         }
 
@@ -292,11 +293,11 @@ public class ContractSignScheduleTest {
                                 SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
 
                         final var call = contractCall(
-                                CONTRACT,
-                                SIGN_SCHEDULE_CALL,
-                                mirrorAddrWith(scheduleID_G.get().getScheduleNum()),
-                                signatureMapBytes)
-                                 .gas(2_000_000L);
+                                        CONTRACT,
+                                        SIGN_SCHEDULE_CALL,
+                                        mirrorAddrWith(scheduleID_G.get().getScheduleNum()),
+                                        signatureMapBytes)
+                                .gas(2_000_000L);
                         allRunFor(spec, call);
                     }),
                     getScheduleInfo(SCHEDULE_G).isExecuted());
