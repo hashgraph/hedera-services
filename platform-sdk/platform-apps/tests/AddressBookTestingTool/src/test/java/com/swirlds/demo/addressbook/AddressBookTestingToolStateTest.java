@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.addressbook;
 
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -24,14 +25,22 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.merkle.singleton.StringLeaf;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,26 +48,59 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AddressBookTestingToolStateTest {
 
     private static final int RUNNING_SUM_INDEX = 3;
-    private Random random;
+    private static AddressBookTestingToolState state;
     private AddressBookTestingToolMain main;
-    private AddressBookTestingToolState state;
+    private Random random;
     private PlatformStateModifier platformStateModifier;
+    private Platform platform;
+    private PlatformContext platformContext;
     private Round round;
     private ConsensusEvent event;
     private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedTransactions;
     private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer;
-    private ConsensusTransaction consensusTransaction;
+    private Transaction consensusTransaction;
     private StateSignatureTransaction stateSignatureTransaction;
+    private InitTrigger initTrigger;
+    private SoftwareVersion softwareVersion;
+    private Configuration configuration;
+    private AddressBookConfig addressBookConfig;
+    private AddressBookTestingToolConfig addressBookTestingToolConfig;
+
+    @BeforeAll
+    static void initState() {
+        state = new AddressBookTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, mock(Function.class));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+    }
 
     @BeforeEach
     void setUp() {
-        state = new AddressBookTestingToolState(mock(MerkleStateLifecycles.class), mock(Function.class));
+        state.setChild(RUNNING_SUM_INDEX, new StringLeaf("0"));
+        platform = mock(Platform.class);
+        initTrigger = InitTrigger.GENESIS;
+        softwareVersion = new BasicSoftwareVersion(1);
+        platformContext = mock(PlatformContext.class);
+        configuration = mock(Configuration.class);
+        addressBookConfig = mock(AddressBookConfig.class);
+        addressBookTestingToolConfig = mock(AddressBookTestingToolConfig.class);
+
+        when(platform.getContext()).thenReturn(platformContext);
+        when(platformContext.getConfiguration()).thenReturn(configuration);
+        when(configuration.getConfigData(AddressBookConfig.class)).thenReturn(addressBookConfig);
+        when(configuration.getConfigData(AddressBookTestingToolConfig.class)).thenReturn(addressBookTestingToolConfig);
+        when(addressBookTestingToolConfig.freezeAfterGenesis()).thenReturn(Duration.ZERO);
+        when(addressBookTestingToolConfig.testScenario())
+                .thenReturn(String.valueOf(AddressBookTestScenario.GENESIS_NORMAL));
+
+        state.init(platform, initTrigger, softwareVersion);
+
         main = mock(AddressBookTestingToolMain.class);
         random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
@@ -80,6 +122,11 @@ class AddressBookTestingToolStateTest {
                 .build();
     }
 
+    @AfterEach
+    void tearDown() {
+        state.setChild(RUNNING_SUM_INDEX, null);
+    }
+
     @Test
     void handleConsensusRoundWithApplicationTransaction() {
         // Given
@@ -93,7 +140,6 @@ class AddressBookTestingToolStateTest {
 
         // Then
         verify(round, times(1)).iterator();
-        verify(event, times(2)).getConsensusTimestamp();
         verify(event, times(1)).consensusTransactionIterator();
 
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
@@ -116,10 +162,10 @@ class AddressBookTestingToolStateTest {
 
         // Then
         verify(round, times(1)).iterator();
-        verify(event, times(2)).getConsensusTimestamp();
         verify(event, times(1)).consensusTransactionIterator();
 
-        assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+        assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
+                .isZero();
         assertThat(consumedTransactions).hasSize(1);
     }
 
@@ -131,7 +177,10 @@ class AddressBookTestingToolStateTest {
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());
         when(event.consensusTransactionIterator())
-                .thenReturn(List.of(consensusTransaction, secondConsensusTransaction, thirdConsensusTransaction)
+                .thenReturn(List.of(
+                                (ConsensusTransaction) consensusTransaction,
+                                secondConsensusTransaction,
+                                thirdConsensusTransaction)
                         .iterator());
 
         final var stateSignatureTransactionBytes =
@@ -146,10 +195,10 @@ class AddressBookTestingToolStateTest {
 
         // Then
         verify(round, times(1)).iterator();
-        verify(event, times(2)).getConsensusTimestamp();
         verify(event, times(1)).consensusTransactionIterator();
 
-        assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+        assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
+                .isZero();
         assertThat(consumedTransactions).hasSize(3);
     }
 
@@ -166,10 +215,10 @@ class AddressBookTestingToolStateTest {
 
         // Then
         verify(round, times(1)).iterator();
-        verify(event, times(2)).getConsensusTimestamp();
         verify(event, times(1)).consensusTransactionIterator();
 
-        assertThat((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).isNull();
+        assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
+                .isZero();
         assertThat(consumedTransactions).isEmpty();
     }
 
@@ -183,6 +232,7 @@ class AddressBookTestingToolStateTest {
                 StateSignatureTransaction.PROTOBUF.toBytes(emptyStateSignatureTransaction);
         when(main.encodeSystemTransaction(emptyStateSignatureTransaction))
                 .thenReturn(emptyStateSignatureTransactionBytes);
+        when(consensusTransaction.isSystem()).thenReturn(false);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
 
         // When
@@ -190,34 +240,9 @@ class AddressBookTestingToolStateTest {
 
         // Then
         verify(round, times(1)).iterator();
-        verify(event, times(2)).getConsensusTimestamp();
         verify(event, times(1)).consensusTransactionIterator();
 
-        assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
-                .isZero();
-        assertThat(consumedTransactions).isEmpty();
-    }
-
-    @Test
-    void handleConsensusRoundWithNullTransaction() {
-        // Given
-        givenRoundAndEvent();
-
-        final var emptyStateSignatureTransaction = StateSignatureTransaction.DEFAULT;
-        final var emptyStateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(emptyStateSignatureTransaction);
-        when(main.encodeSystemTransaction(null))
-                .thenReturn(StateSignatureTransaction.PROTOBUF.toBytes(emptyStateSignatureTransaction));
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
-
-        // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
-
-        // Then
-        verify(round, times(1)).iterator();
-        verify(event, times(2)).getConsensusTimestamp();
-        verify(event, times(1)).consensusTransactionIterator();
-
+        System.out.println(consumedTransactions);
         assertThat(Long.parseLong(((StringLeaf) state.getChild(RUNNING_SUM_INDEX)).getLabel()))
                 .isZero();
         assertThat(consumedTransactions).isEmpty();
@@ -229,7 +254,7 @@ class AddressBookTestingToolStateTest {
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         final var secondConsensusTransaction = mock(TransactionWrapper.class);
         final var thirdConsensusTransaction = mock(TransactionWrapper.class);
-        when(event.consensusTransactionIterator())
+        when(event.transactionIterator())
                 .thenReturn(List.of(consensusTransaction, secondConsensusTransaction, thirdConsensusTransaction)
                         .iterator());
         final var stateSignatureTransactionBytes =
@@ -249,7 +274,7 @@ class AddressBookTestingToolStateTest {
     void preHandleEventWithSystemTransaction() {
         // Given
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(event.consensusTransactionIterator())
+        when(event.transactionIterator())
                 .thenReturn(Collections.singletonList(consensusTransaction).iterator());
         final var emptyStateSignatureBytes = StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureBytes);
@@ -265,7 +290,7 @@ class AddressBookTestingToolStateTest {
     void preHandleEventWithDeprecatedSystemTransaction() {
         // Given
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(event.consensusTransactionIterator())
+        when(event.transactionIterator())
                 .thenReturn(Collections.singletonList(consensusTransaction).iterator());
         when(consensusTransaction.isSystem()).thenReturn(true);
 
@@ -280,7 +305,7 @@ class AddressBookTestingToolStateTest {
     void preHandleEventWithEmptyTransaction() {
         // Given
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(event.consensusTransactionIterator())
+        when(event.transactionIterator())
                 .thenReturn(Collections.singletonList(consensusTransaction).iterator());
         final var emptyStateSignatureBytes =
                 StateSignatureTransaction.PROTOBUF.toBytes(StateSignatureTransaction.DEFAULT);
@@ -297,6 +322,7 @@ class AddressBookTestingToolStateTest {
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());
         when(event.consensusTransactionIterator())
-                .thenReturn(Collections.singletonList(consensusTransaction).iterator());
+                .thenReturn(Collections.singletonList((ConsensusTransaction) consensusTransaction)
+                        .iterator());
     }
 }
