@@ -38,9 +38,9 @@ public final class PlatformBuildConstants {
     public static final String DEFAULT_SETTINGS_FILE_NAME = "settings.txt";
 
     /**
-     * The name of the default overwrites file (i.e. where interface or host overwrites can be specified).
+     * The name of the default overrides file (i.e. where interface or host overrides can be specified).
      */
-    public static final String DEFAULT_OVERWRITE_YAML_FILE_NAME = "overwrites.yaml";
+    public static final String DEFAULT_OVERRIDES_YAML_FILE_NAME = "data/config/node-overrides.yaml";
 
     private PlatformBuildConstants() {}
 }

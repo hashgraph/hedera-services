@@ -161,6 +161,11 @@ public class PairedStreamBuilder
     }
 
     @Override
+    public ScheduleID scheduleID() {
+        return blockStreamBuilder.scheduleID();
+    }
+
+    @Override
     public Transaction transaction() {
         return recordStreamBuilder.transaction();
     }

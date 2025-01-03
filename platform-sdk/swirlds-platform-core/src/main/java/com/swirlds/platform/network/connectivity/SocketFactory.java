@@ -72,7 +72,7 @@ public interface SocketFactory {
         Objects.requireNonNull(gossipConfig);
 
         final NetworkEndpoint networkEndpoint = gossipConfig
-                .getNetworkEndpoint(selfId.id())
+                .getInterfaceBindings(selfId.id())
                 .orElseGet(() -> {
                     try {
                         return new NetworkEndpoint(selfId.id(), InetAddress.getByAddress(ALL_INTERFACES), port);
