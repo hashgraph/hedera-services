@@ -95,18 +95,16 @@ public class BlockRetentionManager {
      * Deletes all block files that have expired.
      */
     public void cleanupExpiredBlocks() {
+        // Wait for previous deletion tasks to complete
+        CompletableFuture.runAsync(() -> {}, cleanupExecutor).join();
+
         // Collect files into a list to avoid consuming the stream multiple times
         final List<Path> fileList = listFilesIgnoreErrors()
                 .filter(file -> isBlockFile(file) && isFileExpired(file))
                 .toList();
 
         // Submit deletion tasks for each file
-        final List<CompletableFuture<Void>> futures = fileList.stream()
-                .map(file -> CompletableFuture.runAsync(() -> quietDeleteFile(file), cleanupExecutor))
-                .toList();
-
-        // Wait for all deletion tasks to complete
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        fileList.forEach(file -> CompletableFuture.runAsync(() -> quietDeleteFile(file), cleanupExecutor));
     }
 
     /**
