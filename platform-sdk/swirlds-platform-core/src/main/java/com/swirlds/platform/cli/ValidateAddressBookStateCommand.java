@@ -31,7 +31,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.address.AddressBookValidator;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.State;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,7 +80,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.printf("Extracting the state address book for comparison %n");
             stateAddressBook = RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
-                    (State) reservedSignedState.get().getState().getSwirldState()));
+                    reservedSignedState.get().getState()));
         }
 
         System.out.printf("Validating address book %n");

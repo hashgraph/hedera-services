@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
@@ -152,5 +153,15 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     public void trackSelfDestructBeneficiary(
             final AccountID deletedId, final AccountID beneficiaryId, @NonNull final MessageFrame frame) {
         throw new UnsupportedOperationException("Cannot track deletion in query context");
+    }
+
+    /**
+     * Refuses to get the transactionID of the top level call in this context.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public TransactionID getTransactionID() {
+        throw new UnsupportedOperationException("Cannot get top level transaction ID in query context");
     }
 }

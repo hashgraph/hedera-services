@@ -49,6 +49,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
@@ -240,6 +241,18 @@ public class TestHelpers {
             .accountId(AccountID.newBuilder()
                     .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
                     .build())
+            .build();
+
+    public static final Account CONTRACT_ACCOUNT = Account.newBuilder()
+            .smartContract(true)
+            .accountId(AccountID.newBuilder()
+                    .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
+                    .build())
+            .build();
+
+    public static final TransactionID TRANSACTION_ID = TransactionID.newBuilder()
+            .accountID(SENDER_ID)
+            .transactionValidStart(Timestamp.newBuilder().seconds(1_234_567L).build())
             .build();
 
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
@@ -945,8 +958,9 @@ public class TestHelpers {
         given(frame.getMessageFrameStack()).willReturn(stack);
     }
 
-    /** Returns the test (mock) processor for all current EVM modules.
-     *
+    /**
+     * Returns the test (mock) processor for all current EVM modules.
+     * <p>
      * Needs to be updated when a new EVM module is created.
      */
     public static Map<HederaEvmVersion, TransactionProcessor> processorsForAllCurrentEvmVersions(
@@ -958,5 +972,70 @@ public class TestHelpers {
                 processor,
                 HederaEvmVersion.VERSION_051,
                 processor);
+    }
+
+    /**
+     * Helpful builder for creating a hbar transfer list
+     */
+    public static class TransferListBuilder {
+        private Tuple transferList;
+
+        public TransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.transferList = Tuple.singleton(accountAmounts);
+            return this;
+        }
+
+        public Tuple build() {
+            return transferList;
+        }
+    }
+
+    public static TransferListBuilder transferList() {
+        return new TransferListBuilder();
+    }
+
+    public static class TokenTransferListsBuilder {
+        private Tuple[] tokenTransferLists;
+
+        public TokenTransferListsBuilder withTokenTransferList(final Tuple... tokenTransferLists) {
+            this.tokenTransferLists = tokenTransferLists;
+            return this;
+        }
+
+        public Object build() {
+            return tokenTransferLists;
+        }
+    }
+
+    public static TokenTransferListsBuilder tokenTransferLists() {
+        return new TokenTransferListsBuilder();
+    }
+
+    public static class TokenTransferListBuilder {
+        private Tuple tokenTransferList;
+        private com.esaulpaugh.headlong.abi.Address token;
+
+        public TokenTransferListBuilder forToken(final com.esaulpaugh.headlong.abi.Address token) {
+            this.token = token;
+            return this;
+        }
+
+        public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
+            return this;
+        }
+
+        public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
+            this.tokenTransferList = Tuple.of(token, new Tuple[] {}, nftTransfers);
+            return this;
+        }
+
+        public Tuple build() {
+            return tokenTransferList;
+        }
+    }
+
+    public static TokenTransferListBuilder tokenTransferList() {
+        return new TokenTransferListBuilder();
     }
 }

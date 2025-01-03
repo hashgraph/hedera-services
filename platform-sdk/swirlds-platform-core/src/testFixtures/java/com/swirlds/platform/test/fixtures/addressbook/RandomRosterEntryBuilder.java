@@ -79,7 +79,7 @@ public class RandomRosterEntryBuilder {
         }
 
         if (port == null) {
-            port = random.nextInt(0, 65535);
+            port = random.nextInt(1, 65535);
         }
 
         if (hostname == null) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
@@ -94,7 +94,7 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
-     * Load the configuration for the platform without overwrites.
+     * Load the configuration for the platform without overrides.
      *
      * @param configurationBuilder the configuration builder to setup
      * @param settingsPath         the path to the settings.txt file
@@ -111,21 +111,21 @@ public final class BootstrapUtils {
      *
      * @param configurationBuilder the configuration builder to setup
      * @param settingsPath         the path to the settings.txt file
-     * @param overwritesPath       the path to the overwrites.yaml file
+     * @param nodeOverridesPath    the path to the node-overrides.yaml file
      * @throws IOException if there is a problem reading the configuration files
      */
     public static void setupConfigBuilder(
             @NonNull final ConfigurationBuilder configurationBuilder,
             @NonNull final Path settingsPath,
-            @Nullable final Path overwritesPath)
+            @Nullable final Path nodeOverridesPath)
             throws IOException {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
 
-        if (overwritesPath != null) {
-            final ConfigSource yamlConfigSource = new YamlConfigSource(overwritesPath);
+        if (nodeOverridesPath != null) {
+            final ConfigSource yamlConfigSource = new YamlConfigSource(nodeOverridesPath);
             configurationBuilder.withSource(yamlConfigSource);
         }
     }
@@ -234,7 +234,7 @@ public final class BootstrapUtils {
         if (loadedSignedState == null) {
             loadedSoftwareVersion = null;
         } else {
-            MerkleRoot state = loadedSignedState.getState();
+            PlatformMerkleStateRoot state = loadedSignedState.getState();
             loadedSoftwareVersion = state.getReadablePlatformState().getCreationSoftwareVersion();
         }
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);

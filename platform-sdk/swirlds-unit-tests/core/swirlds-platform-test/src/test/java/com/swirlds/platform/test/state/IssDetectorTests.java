@@ -30,6 +30,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -41,18 +43,17 @@ import com.swirlds.platform.components.transaction.system.SystemTransactionExtra
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.test.PlatformTest;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -62,6 +63,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -108,20 +110,21 @@ class IssDetectorTests extends PlatformTest {
      * consistent hash.
      *
      * @param random      a source of randomness
-     * @param addressBook the address book to use to generate the signature transactions
+     * @param roster      the roster to use to generate the signature transactions
      * @param roundNumber the round that signature transactions will be for
      * @param roundHash   the hash that all signature transactions will be made on
      * @return a list of events, each containing a signature transaction from a node for the given round
      */
     private static List<EventImpl> generateEventsWithConsistentSignatures(
             @NonNull final Randotron random,
-            @NonNull final AddressBook addressBook,
+            @NonNull final Roster roster,
             final long roundNumber,
             @NonNull final Hash roundHash) {
         final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
 
-        addressBook.forEach(address -> nodeHashInfos.add(
-                new RoundHashValidatorTests.NodeHashInfo(address.getNodeId(), roundHash, roundNumber)));
+        roster.rosterEntries()
+                .forEach(node -> nodeHashInfos.add(
+                        new RoundHashValidatorTests.NodeHashInfo(NodeId.of(node.nodeId()), roundHash, roundNumber)));
 
         // create signature transactions for this round
         return generateEventsContainingSignatures(
@@ -172,7 +175,7 @@ class IssDetectorTests extends PlatformTest {
     @DisplayName("No ISSes Test")
     void noIss() {
         final Randotron random = Randotron.create();
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -180,8 +183,8 @@ class IssDetectorTests extends PlatformTest {
 
         final PlatformContext platformContext = createDefaultPlatformContext();
 
-        final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new DefaultIssDetector(platformContext, roster, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         // signature events are generated for each round when that round is handled, and then are included randomly
@@ -196,8 +199,7 @@ class IssDetectorTests extends PlatformTest {
             final Hash roundHash = randomHash(random);
 
             // create signature transactions for this round
-            signatureEvents.addAll(
-                    generateEventsWithConsistentSignatures(random, addressBook, currentRound, roundHash));
+            signatureEvents.addAll(generateEventsWithConsistentSignatures(random, roster, currentRound, roundHash));
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
@@ -238,7 +240,7 @@ class IssDetectorTests extends PlatformTest {
     void mixedOrderTest() {
         final Randotron random = Randotron.create();
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(Math.max(10, random.nextInt(1000)))
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -246,7 +248,7 @@ class IssDetectorTests extends PlatformTest {
 
         final PlatformContext platformContext = createDefaultPlatformContext();
 
-        final NodeId selfId = addressBook.getNodeId(0);
+        final NodeId selfId = NodeId.of(roster.rosterEntries().getFirst().nodeId());
         final int roundsNonAncient = platformContext
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
@@ -264,7 +266,7 @@ class IssDetectorTests extends PlatformTest {
 
             if (random.nextDouble() < 2.0 / 3) {
                 // Choose hashes so that there is a valid consensus hash
-                data = generateRegularNodeHashes(random, addressBook, round);
+                data = generateRegularNodeHashes(random, roster, round);
 
                 HashValidityStatus expectedStatus = null;
 
@@ -288,7 +290,7 @@ class IssDetectorTests extends PlatformTest {
                 expectedRoundStatus.add(expectedStatus);
             } else {
                 // Choose hashes that will result in a catastrophic ISS
-                data = generateCatastrophicNodeHashes(random, addressBook, round);
+                data = generateCatastrophicNodeHashes(random, roster, round);
                 roundData.add(data);
                 expectedRoundStatus.add(HashValidityStatus.CATASTROPHIC_ISS);
                 expectedCatastrophicIssCount++;
@@ -304,8 +306,8 @@ class IssDetectorTests extends PlatformTest {
             }
         }
 
-        final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new DefaultIssDetector(platformContext, roster, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -387,15 +389,15 @@ class IssDetectorTests extends PlatformTest {
         final Randotron random = Randotron.create();
         final PlatformContext platformContext = createDefaultPlatformContext();
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
                 .build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final NodeId selfId = NodeId.of(roster.rosterEntries().getFirst().nodeId());
 
-        final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new DefaultIssDetector(platformContext, roster, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -406,7 +408,7 @@ class IssDetectorTests extends PlatformTest {
 
         // the round after the initial state will have a catastrophic iss
         final RoundHashValidatorTests.HashGenerationData catastrophicHashData =
-                generateCatastrophicNodeHashes(random, addressBook, currentRound);
+                generateCatastrophicNodeHashes(random, roster, currentRound);
         final Hash selfHashForCatastrophicRound = catastrophicHashData.nodeList().stream()
                 .filter(info -> info.nodeId() == selfId)
                 .findFirst()
@@ -434,13 +436,15 @@ class IssDetectorTests extends PlatformTest {
                     mockState(currentRound, randomHash()), anotherRound, systemTransactionsForRoundWithoutSignatures));
         }
 
+        final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
+
         // submit signatures on the ISS round that represent a minority of the weight
         long submittedWeight = 0;
         final List<EventImpl> signaturesToSubmit = new ArrayList<>();
         for (final EventImpl signatureEvent : signaturesOnCatastrophicRound) {
             final long weight =
-                    addressBook.getAddress(signatureEvent.getCreatorId()).getWeight();
-            if (MAJORITY.isSatisfiedBy(submittedWeight + weight, addressBook.getTotalWeight())) {
+                    nodesById.get(signatureEvent.getCreatorId().id()).weight();
+            if (MAJORITY.isSatisfiedBy(submittedWeight + weight, RosterUtils.computeTotalWeight(roster))) {
                 // If we add less than a majority then we won't be able to detect the ISS no matter what
                 break;
             }
@@ -482,7 +486,7 @@ class IssDetectorTests extends PlatformTest {
      * signatures being on an incorrect hash.
      */
     private static List<RoundHashValidatorTests.NodeHashInfo> generateCatastrophicTimeoutIss(
-            final Random random, final AddressBook addressBook, final long targetRound) {
+            final Random random, final Roster roster, final long targetRound) {
 
         final List<RoundHashValidatorTests.NodeHashInfo> data = new LinkedList<>();
 
@@ -493,13 +497,13 @@ class IssDetectorTests extends PlatformTest {
 
         final Hash almostConsensusHash = randomHash(random);
         long almostConsensusWeight = 0;
-        for (final Address address : addressBook) {
-            if (MAJORITY.isSatisfiedBy(almostConsensusWeight + address.getWeight(), addressBook.getTotalWeight())) {
-                data.add(new RoundHashValidatorTests.NodeHashInfo(address.getNodeId(), randomHash(), targetRound));
+        for (final RosterEntry node : roster.rosterEntries()) {
+            final NodeId nodeId = NodeId.of(node.nodeId());
+            if (MAJORITY.isSatisfiedBy(almostConsensusWeight + node.weight(), RosterUtils.computeTotalWeight(roster))) {
+                data.add(new RoundHashValidatorTests.NodeHashInfo(nodeId, randomHash(), targetRound));
             } else {
-                almostConsensusWeight += address.getWeight();
-                data.add(new RoundHashValidatorTests.NodeHashInfo(
-                        address.getNodeId(), almostConsensusHash, targetRound));
+                almostConsensusWeight += node.weight();
+                data.add(new RoundHashValidatorTests.NodeHashInfo(nodeId, almostConsensusHash, targetRound));
             }
         }
 
@@ -521,21 +525,21 @@ class IssDetectorTests extends PlatformTest {
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
                 .build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final NodeId selfId = NodeId.of(roster.rosterEntries().getFirst().nodeId());
 
-        final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new DefaultIssDetector(platformContext, roster, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
 
         final List<RoundHashValidatorTests.NodeHashInfo> catastrophicData =
-                generateCatastrophicTimeoutIss(random, addressBook, currentRound);
+                generateCatastrophicTimeoutIss(random, roster, currentRound);
         final Hash selfHashForCatastrophicRound = catastrophicData.stream()
                 .filter(info -> info.nodeId() == selfId)
                 .findFirst()
@@ -544,18 +548,19 @@ class IssDetectorTests extends PlatformTest {
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
                 random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
 
+        final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
         long submittedWeight = 0;
         final List<EventImpl> signaturesToSubmit = new ArrayList<>();
         for (final EventImpl signatureEvent : signaturesOnCatastrophicRound) {
             final long weight =
-                    addressBook.getAddress(signatureEvent.getCreatorId()).getWeight();
+                    nodesById.get(signatureEvent.getCreatorId().id()).weight();
 
             signaturesToSubmit.add(signatureEvent);
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
             submittedWeight += weight;
-            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight, addressBook.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight, RosterUtils.computeTotalWeight(roster))) {
                 break;
             }
         }
@@ -619,15 +624,15 @@ class IssDetectorTests extends PlatformTest {
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
                 .build();
-        final NodeId selfId = addressBook.getNodeId(0);
+        final NodeId selfId = NodeId.of(roster.rosterEntries().getFirst().nodeId());
 
-        final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
+        final IssDetector issDetector =
+                new DefaultIssDetector(platformContext, roster, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -637,7 +642,7 @@ class IssDetectorTests extends PlatformTest {
         currentRound++;
 
         final List<RoundHashValidatorTests.NodeHashInfo> catastrophicData =
-                generateCatastrophicTimeoutIss(random, addressBook, currentRound);
+                generateCatastrophicTimeoutIss(random, roster, currentRound);
         final Hash selfHashForCatastrophicRound = catastrophicData.stream()
                 .filter(info -> info.nodeId() == selfId)
                 .findFirst()
@@ -656,17 +661,18 @@ class IssDetectorTests extends PlatformTest {
                 catastrophicRound,
                 systemTransactionsForCatastrophicRound));
 
+        final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
         long submittedWeight = 0;
         final List<EventImpl> signaturesToSubmit = new ArrayList<>();
         for (final EventImpl signatureEvent : signaturesOnCatastrophicRound) {
             final long weight =
-                    addressBook.getAddress(signatureEvent.getCreatorId()).getWeight();
+                    nodesById.get(signatureEvent.getCreatorId().id()).weight();
 
             // Stop once we have added >2/3. We should not have decided yet, but will have gathered enough to declare a
             // catastrophic ISS
             submittedWeight += weight;
             signaturesToSubmit.add(signatureEvent);
-            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight + weight, addressBook.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight + weight, RosterUtils.computeTotalWeight(roster))) {
                 break;
             }
         }
@@ -702,7 +708,7 @@ class IssDetectorTests extends PlatformTest {
     void ignoredRoundTest() {
         final Randotron random = Randotron.create();
 
-        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+        final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(100)
                 .withAverageWeight(100)
                 .withWeightStandardDeviation(50)
@@ -715,7 +721,7 @@ class IssDetectorTests extends PlatformTest {
                 .roundsNonAncient();
 
         final IssDetector issDetector =
-                new DefaultIssDetector(platformContext, addressBook, SemanticVersion.DEFAULT, false, 1);
+                new DefaultIssDetector(platformContext, roster, SemanticVersion.DEFAULT, false, 1);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -724,7 +730,7 @@ class IssDetectorTests extends PlatformTest {
         currentRound++;
 
         final List<RoundHashValidatorTests.NodeHashInfo> catastrophicData =
-                generateCatastrophicTimeoutIss(random, addressBook, currentRound);
+                generateCatastrophicTimeoutIss(random, roster, currentRound);
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
                 random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
 
@@ -758,7 +764,7 @@ class IssDetectorTests extends PlatformTest {
     private static ReservedSignedState mockState(final long round, final Hash hash) {
         final ReservedSignedState rs = mock(ReservedSignedState.class);
         final SignedState ss = mock(SignedState.class);
-        final MerkleRoot s = mock(MerkleRoot.class);
+        final PlatformMerkleStateRoot s = mock(PlatformMerkleStateRoot.class);
         when(rs.get()).thenReturn(ss);
         when(ss.getState()).thenReturn(s);
         when(ss.getRound()).thenReturn(round);
