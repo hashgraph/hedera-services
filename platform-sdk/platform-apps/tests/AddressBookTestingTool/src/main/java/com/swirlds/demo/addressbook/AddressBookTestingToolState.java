@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,9 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -70,7 +72,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -214,6 +215,18 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         logger.info(STARTUP.getMarker(), "Registered PlatformService and RosterService states.");
     }
 
+    @Override
+    public void preHandle(
+            @NonNull Event event,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+        event.transactionIterator().forEachRemaining(transaction -> {
+            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            }
+        });
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -238,11 +251,15 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         roundsHandled++;
         setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
 
-        final Iterator<ConsensusEvent> eventIterator = round.iterator();
-
-        while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
-            event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
+        for (ConsensusEvent event : round) {
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                } else {
+                    handleTransaction(transaction);
+                }
+            });
         }
 
         if (!validationPerformed.getAndSet(true)) {
@@ -253,6 +270,17 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
                 logger.error(EXCEPTION.getMarker(), "Test scenario {}: validation failed with errors.", testScenario);
             }
         }
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4.
+     * System transactions will be always bigger than that.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 4;
     }
 
     /**
