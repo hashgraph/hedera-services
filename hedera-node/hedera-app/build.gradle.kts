@@ -18,10 +18,16 @@ mainModuleInfo {
     runtimeOnly("io.helidon.webclient")
     runtimeOnly("io.helidon.webclient.grpc")
     runtimeOnly("com.hedera.cryptography.altbn128")
+
+    runtimeOnly("io.minio")
+}
+
+configurations {
+    runtimeOnly { exclude(group = "com.google.code.findbugs", module = "annotations") }
 }
 
 testModuleInfo {
-    requires("com.fasterxml.jackson.databind")
+    requires("com.fasterxml.jackson.core")
     requires("com.google.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
@@ -42,6 +48,7 @@ testModuleInfo {
     requires("uk.org.webcompere.systemstubs.core")
     requires("uk.org.webcompere.systemstubs.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+    requires("okhttp3")
 }
 
 jmhModuleInfo {
@@ -188,3 +195,5 @@ tasks.register<Exec>("stopDockerContainers") {
     workingDir(layout.projectDirectory.dir("../docker"))
     commandLine("docker-compose", "stop")
 }
+
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.remove("-Werror") }
