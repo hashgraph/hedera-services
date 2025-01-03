@@ -21,7 +21,7 @@ public class DirectFromParentBufferedOutputStream3 extends BufferedOutputStream 
      * @throws NullPointerException     in case {@code outputStream} is null
      */
     public DirectFromParentBufferedOutputStream3(@NonNull final OutputStream outputStream, @NonNull final byte[] buf) {
-        super(outputStream, 0);
+        super(outputStream, 1);
         this.buf = buf;
     }
 }
