@@ -30,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.Charset;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
@@ -53,12 +52,6 @@ public interface PlatformModule {
     @Singleton
     static Supplier<Charset> provideNativeCharset() {
         return Charset::defaultCharset;
-    }
-
-    @Provides
-    @Singleton
-    static IntSupplier provideFrontendThrottleSplit(@NonNull final Platform platform) {
-        return () -> platform.getRoster().rosterEntries().size();
     }
 
     @Binds
