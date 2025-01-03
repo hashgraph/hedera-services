@@ -2,7 +2,7 @@
 
 ## WIP
 
-The address book management pipeline is currently a work in progress. 
+The address book management pipeline is currently a work in progress.
 This document reflects the address book pipeline as we want it to be, not necessarily as it is in `main` today.
 
 ## Summary
@@ -124,7 +124,7 @@ If an `AddressBook` is mutable, it can be updated via the following methods:
 
 ## AddressBookStore
 
-An `AddressBookStore` is a collection of `AddressBook` instances from a sequence of recent rounds. 
+An `AddressBookStore` is a collection of `AddressBook` instances from a sequence of recent rounds.
 
 `AddressBookStore` is a merkle node and is stored as a part of the platform's state.
 
@@ -231,8 +231,8 @@ At the end of the round, the platform does basic validation on the mutated addre
 address book is valid then it is accepted, if it is not valid then it is replaced by a copy of the previous
 address book. (Note: nothing changes if the address book does not change, it is still ingested in the same way.)
 
-The resulting address book for the round is then inserted into the state's address book store for the next round. 
-It is also inserted into the address book manager. This may cause an old version of the address book to be 
+The resulting address book for the round is then inserted into the state's address book store for the next round.
+It is also inserted into the address book manager. This may cause an old version of the address book to be
 removed from both the address book manager and from address book store of the next round.
 
 When the dual state for the next round is created, a mutable copy of the address book is made so that the application
