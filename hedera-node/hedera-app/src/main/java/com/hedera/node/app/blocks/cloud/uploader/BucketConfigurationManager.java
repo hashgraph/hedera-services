@@ -79,7 +79,9 @@ public class BucketConfigurationManager {
         this.credentials = loadCredentials(credentialsPath);
 
         if (this.credentials == null) {
-            logger.error("Credentials could not be loaded. Skipping bucket configuration update.");
+            logger.info(
+                    "Credentials could not be loaded from path {}. Skipping bucket configuration update.",
+                    credentialsPath);
             return;
         }
 
@@ -124,7 +126,8 @@ public class BucketConfigurationManager {
 
     private OnDiskBucketConfig loadCredentials(@NonNull Path credentialsPath) {
         if (!Files.exists(credentialsPath)) {
-            logger.error("Credentials file not found at {}", credentialsPath);
+            logger.info(
+                    "Credentials file {} does not exist and won't be used as configuration source", credentialsPath);
             return null;
         }
 
