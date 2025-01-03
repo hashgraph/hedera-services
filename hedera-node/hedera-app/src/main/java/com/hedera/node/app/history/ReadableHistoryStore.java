@@ -16,7 +16,27 @@
 
 package com.hedera.node.app.history;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.state.history.HistoryAssemblySignature;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+
 /**
  * Provides write access to the history of rosters.
  */
-public interface ReadableHistoryStore {}
+public interface ReadableHistoryStore {
+    /**
+     * The full record of a assembly signature publication, include the time the signature was published.
+     *
+     * @param nodeId the node ID submitting the signature
+     * @param signature the assembly signature
+     * @param at the time at which the signature was published
+     */
+    record AssemblySignaturePublication(long nodeId, @NonNull HistoryAssemblySignature signature, @NonNull Instant at) {
+        public AssemblySignaturePublication {
+            requireNonNull(signature);
+            requireNonNull(at);
+        }
+    }
+}

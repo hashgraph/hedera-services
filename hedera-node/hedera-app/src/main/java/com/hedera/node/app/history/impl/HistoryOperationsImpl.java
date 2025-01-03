@@ -42,6 +42,11 @@ public class HistoryOperationsImpl implements HistoryOperations {
         return Bytes.EMPTY;
     }
 
+    @Override
+    public boolean verifySchnorr(@NonNull final Bytes publicKey, @NonNull final Bytes message) {
+        return true;
+    }
+
     @NonNull
     @Override
     public Bytes proveTransition(

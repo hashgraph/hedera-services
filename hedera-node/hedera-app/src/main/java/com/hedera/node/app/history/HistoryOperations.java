@@ -35,6 +35,14 @@ public interface HistoryOperations {
     Bytes signSchnorr(@NonNull Bytes message, @NonNull Bytes privateKey);
 
     /**
+     * Validates the Schnorr signature for the given message and public key.
+     * @param publicKey the public key
+     * @param message the message
+     * @return true if the hints are valid; false otherwise
+     */
+    boolean verifySchnorr(@NonNull Bytes publicKey, @NonNull Bytes message);
+
+    /**
      * Hashes the given proof roster.
      * @param roster the proof roster
      * @return the hash of the proof roster

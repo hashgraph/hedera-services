@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.hapi.node.state.history.ProofRoster;
 import com.hedera.hapi.node.state.history.ProofRosterEntry;
 import com.hedera.node.app.history.HistoryOperations;
+import com.hedera.node.app.history.ReadableHistoryStore.AssemblySignaturePublication;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.tss.RosterTransitionWeights;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -175,7 +176,9 @@ public class ProofConstructionController {
         if (construction.hasMetadataProof()) {
             return;
         }
-        if (construction.hasAssemblyTime()) {
+        if (metadata == null) {
+            ensureProofKeyPublished();
+        } else if (construction.hasAssemblyTime()) {
             if (!votes.containsKey(selfId) && proofFuture == null) {
                 if (hasSufficientSignatures()) {
                     proofFuture = startProofFuture();
@@ -185,14 +188,43 @@ public class ProofConstructionController {
             }
         } else {
             switch (recommendAssemblyBehavior(now)) {
-                case RESCHEDULE_CHECKPOINT -> construction = historyStore.rescheduleAssemblyCheckpoint(
-                        construction.constructionId(), now.plus(proofKeysWaitTime));
+                case RESCHEDULE_CHECKPOINT -> {
+                    construction = historyStore.rescheduleAssemblyCheckpoint(
+                            construction.constructionId(), now.plus(proofKeysWaitTime));
+                    ensureProofKeyPublished();
+                }
                 case ASSEMBLE_NOW -> {
                     construction = historyStore.setAssemblyTime(construction.constructionId(), now);
-                    ensureProofKeyPublished();
+                    signingFuture = startSigningFuture();
                 }
                 case COME_BACK_LATER -> ensureProofKeyPublished();
             }
+        }
+    }
+
+    /**
+     * Incorporates the proof key published by the given node, if this construction has not already "locked in"
+     * its assembled target roster.
+     * @param nodeId the node ID
+     * @param proofKey the proof key
+     */
+    public void incorporateProofKey(final long nodeId, @NonNull final Bytes proofKey) {
+        requireNonNull(proofKey);
+        if (!construction.hasAssemblyTime()) {
+            targetProofKeys.put(nodeId, proofKey);
+        }
+    }
+
+    /**
+     * Incorporates the assembly signature published by the given node, if this construction still needs a
+     * proof and the
+     * @param publication the proof key publication
+     */
+    public void incorporateAssemblySignature(@NonNull final AssemblySignaturePublication publication) {
+        requireNonNull(publication);
+        if (!construction.hasMetadataProof() && targetProofKeys.containsKey(publication.nodeId())) {
+            verificationFutures.put(
+                    publication.at(), verificationFuture(publication.nodeId(), publication.signature()));
         }
     }
 
@@ -244,20 +276,13 @@ public class ProofConstructionController {
      * Ensures this node has published its proof key.
      */
     private void ensureProofKeyPublished() {
-        if (!targetProofKeys.containsKey(selfId) && publicationFuture == null) {
-            publicationFuture = startPublicationFuture();
+        if (publicationFuture == null && weights.hasTargetWeightOf(selfId) && !targetProofKeys.containsKey(selfId)) {
+            publicationFuture = CompletableFuture.runAsync(
+                    () -> submissions
+                            .submitProofKeyPublication(schnorrKeyPair.publicKey())
+                            .join(),
+                    executor);
         }
-    }
-
-    /**
-     * Returns a future that completes when the node has published its proof key.
-     */
-    private CompletableFuture<Void> startPublicationFuture() {
-        return CompletableFuture.runAsync(
-                () -> submissions
-                        .submitProofKeyPublication(schnorrKeyPair.publicKey())
-                        .join(),
-                executor);
     }
 
     /**
@@ -393,5 +418,41 @@ public class ProofConstructionController {
                 .map(entry -> new ProofKey(entry.getKey(), entry.getValue()))
                 .sorted(PROOF_KEY_COMPARATOR)
                 .toList();
+    }
+
+    /**
+     * Returns a future that completes to a verification of the given assembly signature.
+     *
+     * @param nodeId the node ID
+     *
+     * @return the future
+     */
+    private CompletableFuture<Verification> verificationFuture(
+            final long nodeId, @NonNull final HistoryAssemblySignature signature) {
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    final var message = messageFor(signature.assemblyOrThrow());
+                    final var proofKey = requireNonNull(targetProofKeys.get(nodeId));
+                    final var isValid = operations.verifySchnorr(proofKey, message);
+                    return new Verification(nodeId, signature, isValid);
+                },
+                executor);
+    }
+
+    private Bytes messageFor(@NonNull final HistoryAssembly assembly) {
+        return messageFor(assembly.proofRosterHash(), assembly.metadata());
+    }
+
+    /**
+     * Returns the message to be signed for the given proof roster hash and metadata.
+     * @param proofRosterHash the proof roster hash
+     * @param metadata the metadata
+     * @return the message
+     */
+    private Bytes messageFor(@NonNull final Bytes proofRosterHash, @NonNull final Bytes metadata) {
+        final var buffer = ByteBuffer.allocate((int) (proofRosterHash.length() + metadata.length()));
+        proofRosterHash.writeTo(buffer);
+        metadata.writeTo(buffer);
+        return noThrowSha384HashOf(Bytes.wrap(buffer.array()));
     }
 }

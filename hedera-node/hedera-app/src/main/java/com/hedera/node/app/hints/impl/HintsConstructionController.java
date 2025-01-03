@@ -171,7 +171,7 @@ public class HintsConstructionController {
         }
         if (construction.hasAggregationTime()) {
             if (!votes.containsKey(selfId) && aggregationFuture == null) {
-                aggregationFuture = aggregateFuture(asInstant(construction.aggregationTimeOrThrow()));
+                aggregationFuture = startAggregateFuture(asInstant(construction.aggregationTimeOrThrow()));
             }
         } else {
             switch (recommendAggregationBehavior(now)) {
@@ -179,26 +179,24 @@ public class HintsConstructionController {
                         construction.constructionId(), now.plus(hintKeysWaitTime));
                 case AGGREGATE_NOW -> {
                     construction = hintsStore.setAggregationTime(construction.constructionId(), now);
-                    aggregationFuture = aggregateFuture(now);
+                    aggregationFuture = startAggregateFuture(now);
                 }
-                case COME_BACK_LATER -> {
-                    // Nothing to do now
-                }
+                case COME_BACK_LATER -> ensureHintsKeyPublished();
             }
-            if (construction.hasAggregationTime()
-                    && publicationFuture != null
-                    && weights.hasTargetWeightOf(selfId)
-                    && !nodePartyIds.containsKey(selfId)) {
-                publicationFuture = CompletableFuture.runAsync(
-                        () -> {
-                            final var hints = operations.computeHints(blsKeyPair.privateKey(), M);
-                            final var hintsKey = new HintsKey(
-                                    Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
-                            final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);
-                            submissions.submitHintsKey(body).join();
-                        },
-                        executor);
-            }
+        }
+    }
+
+    private void ensureHintsKeyPublished() {
+        if (publicationFuture != null && weights.hasTargetWeightOf(selfId) && !nodePartyIds.containsKey(selfId)) {
+            publicationFuture = CompletableFuture.runAsync(
+                    () -> {
+                        final var hints = operations.computeHints(blsKeyPair.privateKey(), M);
+                        final var hintsKey =
+                                new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
+                        final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);
+                        submissions.submitHintsKey(body).join();
+                    },
+                    executor);
         }
     }
 
@@ -352,7 +350,7 @@ public class HintsConstructionController {
      *
      * @return the future
      */
-    private CompletableFuture<Void> aggregateFuture(@NonNull final Instant cutoff) {
+    private CompletableFuture<Void> startAggregateFuture(@NonNull final Instant cutoff) {
         return CompletableFuture.runAsync(
                 () -> {
                     final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
