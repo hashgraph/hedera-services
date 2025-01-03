@@ -25,7 +25,6 @@ import com.swirlds.platform.state.*;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -84,9 +83,7 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         state = NonCryptographicHashing.hash64(
                 state,
                 round.getRoundNum(),
@@ -110,7 +107,7 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
      * @return merkle tree root
      */
     @NonNull
-    public static MerkleRoot getStateRootNode() {
+    public static PlatformMerkleStateRoot getStateRootNode() {
         final PlatformMerkleStateRoot state = new TurtleTestingToolState();
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
