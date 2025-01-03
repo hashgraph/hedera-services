@@ -126,15 +126,15 @@ public class FileBlockItemWriter implements BlockItemWriter {
         OutputStream out = null;
         try {
             out = Files.newOutputStream(blockFilePath);
-            out = new BypassParentBufferedOutputStream2(out, manualBuffer1);
+            out = new DirectFromParentBufferedOutputStream3(out, manualBuffer1);
             if (compressFiles) {
-                out = new BypassParentGZIPOutputStream2(out, manualBuffer2);
+                out = new DirectFromParentGZIPOutputStream3(out, manualBuffer2);
                 // By wrapping the GZIPOutputStream in a BufferedOutputStream, the code reduces the number of write
                 // operations to the GZIPOutputStream, and therefore the number of synchronized calls. Instead of
                 // writing each small piece of data immediately to the GZIPOutputStream, it writes the data to the
                 // buffer, and only when the buffer is full, it writes all the data to the GZIPOutputStream in one go.
                 // This can significantly improve the performance when writing many small amounts of data.
-                out = new BypassParentBufferedOutputStream2(out, manualBuffer3);
+                out = new DirectFromParentBufferedOutputStream3(out, manualBuffer3);
             }
 
             this.writableStreamingData = new WritableStreamingData(out);
