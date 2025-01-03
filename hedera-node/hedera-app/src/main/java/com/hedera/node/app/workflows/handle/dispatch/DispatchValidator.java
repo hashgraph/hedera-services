@@ -230,15 +230,8 @@ public class DispatchValidator {
                 }
                 yield account;
             }
-            case CHILD, PRECEDING -> {
+            case CHILD, PRECEDING, SCHEDULED -> {
                 if (account == null) {
-                    throw new IllegalStateException(
-                            "Category " + category + " payer account should have been rejected " + account);
-                }
-                yield account;
-            }
-            case SCHEDULED -> {
-                if (account == null || account.smartContract()) {
                     throw new IllegalStateException(
                             "Category " + category + " payer account should have been rejected " + account);
                 }

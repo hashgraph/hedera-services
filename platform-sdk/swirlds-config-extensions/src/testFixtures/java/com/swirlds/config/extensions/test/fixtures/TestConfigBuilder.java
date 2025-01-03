@@ -28,6 +28,7 @@ import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -76,6 +77,18 @@ public class TestConfigBuilder {
         } else {
             this.builder = ConfigurationBuilder.create();
         }
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param values       list of values
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public TestConfigBuilder withValues(@NonNull final String propertyName, @Nullable final List<?> values) {
+        return withSource(new SimpleConfigSource(propertyName, values));
     }
 
     /**

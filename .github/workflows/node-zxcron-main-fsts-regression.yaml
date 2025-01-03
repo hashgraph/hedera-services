@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZXCron: [Node] Develop JRS Tests"
+name: "ZXCron: [Node] Main JRS Tests"
 on:
   workflow_dispatch:
 

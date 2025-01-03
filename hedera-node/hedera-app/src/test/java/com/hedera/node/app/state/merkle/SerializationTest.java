@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,7 +326,7 @@ class SerializationTest extends MerkleTestBase {
         final SignedState randomState =
                 new RandomSignedStateGenerator().setRound(1).build();
 
-        final var originalTree = (PlatformMerkleStateRoot) randomState.getState();
+        final var originalTree = randomState.getState();
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);
