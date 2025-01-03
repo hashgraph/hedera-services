@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ spotless {
     isEnforceCheck = false
 
     // optional: limit format enforcement to just the files changed by this feature branch
-    ratchetFrom("origin/develop")
+    ratchetFrom("origin/main")
 
     format("misc") {
         // define the files to apply `misc` to
