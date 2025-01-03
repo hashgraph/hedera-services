@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.util.Objects;
  * A transaction that may or may not reach consensus.
  */
 public non-sealed class TransactionWrapper implements ConsensusTransaction {
+
     /**
      * The consensus timestamp of this transaction, or null if consensus has not yet been reached.
      * NOT serialized and not part of object equality or hash code
@@ -63,6 +64,19 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     public TransactionWrapper(@NonNull final EventTransaction transaction) {
         this.payload = Objects.requireNonNull(transaction, "transaction should not be null");
+    }
+
+    /**
+     * Constructs a new transaction wrapper
+     *
+     * @param payloadBytes the serialized bytes of the transaction
+     *
+     * @throws NullPointerException if payloadBytes is null
+     */
+    public TransactionWrapper(@NonNull final Bytes payloadBytes) {
+        this.payload = EventTransaction.newBuilder()
+                .applicationTransaction(payloadBytes)
+                .build();
     }
 
     /**
