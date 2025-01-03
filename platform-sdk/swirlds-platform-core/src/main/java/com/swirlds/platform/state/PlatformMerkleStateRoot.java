@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     /**
      * The callbacks for Hedera lifecycle events.
      */
-    private final MerkleStateLifecycles lifecycles;
+    private final SwirldsStateLifecycles lifecycles;
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
@@ -87,7 +87,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * @param versionFactory a factory for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
      */
     public PlatformMerkleStateRoot(
-            @NonNull MerkleStateLifecycles lifecycles,
+            @NonNull SwirldsStateLifecycles lifecycles,
             @NonNull Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.lifecycles = requireNonNull(lifecycles);
         this.versionFactory = requireNonNull(versionFactory);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.SwirldsStateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
@@ -206,7 +207,7 @@ public class ServicesMain implements SwirldMain {
      * </ol>
      *  Now, note that {@link Hedera#newMerkleStateRoot()} returns {@link PlatformMerkleStateRoot}
      *  instances that delegate their lifecycle methods to an injected instance of
-     *  {@link com.swirlds.platform.state.MerkleStateLifecycles}---and the implementation of that
+     *  {@link SwirldsStateLifecycles}---and the implementation of that
      *  injected by {@link Hedera#newMerkleStateRoot()} delegates these calls back to the Hedera
      *  instance itself.
      *  <p>
