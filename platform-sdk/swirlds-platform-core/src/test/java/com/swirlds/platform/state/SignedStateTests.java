@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -79,7 +80,11 @@ class SignedStateTests {
         final var real = new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(real);
-        RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
+        try {
+            RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
+        } catch (final InvalidRosterException e) {
+            throw new IllegalArgumentException("Invalid roster", e);
+        }
         final PlatformMerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();

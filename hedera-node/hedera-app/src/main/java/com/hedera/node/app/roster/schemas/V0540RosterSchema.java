@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.roster.schemas;
 
 import static java.util.Objects.requireNonNull;
@@ -8,6 +23,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -88,32 +104,36 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
-        if (!RosterTransplantSchema.super.restart(ctx, rosterStoreFactory)
-                && ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            final var startupNetworks = ctx.startupNetworks();
-            final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
-            final var activeRoundNumber = ctx.roundNumber() + 1;
-            if (ctx.isGenesis()) {
-                rosterStore.putActiveRoster(
-                        RosterUtils.rosterFrom(startupNetworks.genesisNetworkOrThrow(ctx.platformConfig())), 0L);
-            } else if (rosterStore.getActiveRoster() == null) {
-                // (FUTURE) Once the roster lifecycle is active by default, remove this code building an initial
-                // roster history  from the last address book and the first roster at the upgrade boundary
-                final var previousRoster = RosterRetriever.retrieveActiveOrGenesisRoster(stateSupplier.get());
-                rosterStore.putActiveRoster(previousRoster, 0);
-                final var currentRoster = RosterUtils.rosterFrom(startupNetworks.migrationNetworkOrThrow());
-                rosterStore.putActiveRoster(currentRoster, activeRoundNumber);
-            } else if (ctx.isUpgrade(ServicesSoftwareVersion::from, ServicesSoftwareVersion::new)) {
-                final var candidateRoster = rosterStore.getCandidateRoster();
-                if (candidateRoster == null) {
-                    log.info("No candidate roster to adopt in round {}", activeRoundNumber);
-                } else if (canAdopt.test(candidateRoster)) {
-                    log.info("Adopting candidate roster in round {}", activeRoundNumber);
-                    rosterStore.adoptCandidateRoster(activeRoundNumber);
-                } else {
-                    log.info("Rejecting candidate roster in round {}", activeRoundNumber);
+        try {
+            if (!RosterTransplantSchema.super.restart(ctx, rosterStoreFactory)
+                    && ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
+                final var startupNetworks = ctx.startupNetworks();
+                final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
+                final var activeRoundNumber = ctx.roundNumber() + 1;
+                if (ctx.isGenesis()) {
+                    rosterStore.putActiveRoster(
+                            RosterUtils.rosterFrom(startupNetworks.genesisNetworkOrThrow(ctx.platformConfig())), 0L);
+                } else if (rosterStore.getActiveRoster() == null) {
+                    // (FUTURE) Once the roster lifecycle is active by default, remove this code building an initial
+                    // roster history  from the last address book and the first roster at the upgrade boundary
+                    final var previousRoster = RosterRetriever.retrieveActiveOrGenesisRoster(stateSupplier.get());
+                    rosterStore.putActiveRoster(previousRoster, 0);
+                    final var currentRoster = RosterUtils.rosterFrom(startupNetworks.migrationNetworkOrThrow());
+                    rosterStore.putActiveRoster(currentRoster, activeRoundNumber);
+                } else if (ctx.isUpgrade(ServicesSoftwareVersion::from, ServicesSoftwareVersion::new)) {
+                    final var candidateRoster = rosterStore.getCandidateRoster();
+                    if (candidateRoster == null) {
+                        log.info("No candidate roster to adopt in round {}", activeRoundNumber);
+                    } else if (canAdopt.test(candidateRoster)) {
+                        log.info("Adopting candidate roster in round {}", activeRoundNumber);
+                        rosterStore.adoptCandidateRoster(activeRoundNumber);
+                    } else {
+                        log.info("Rejecting candidate roster in round {}", activeRoundNumber);
+                    }
                 }
             }
+        } catch (final InvalidRosterException e) {
+            throw new IllegalArgumentException("Invalid roster", e);
         }
     }
 }

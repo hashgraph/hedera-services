@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -96,7 +97,7 @@ public class Turtle {
      *
      * @param builder the turtle builder
      */
-    Turtle(@NonNull final TurtleBuilder builder) {
+    Turtle(@NonNull final TurtleBuilder builder) throws InvalidRosterException {
         final Randotron randotron = builder.getRandotron();
         simulationGranularity = builder.getSimulationGranularity();
         timeReportingEnabled = builder.isTimeReportingEnabled();

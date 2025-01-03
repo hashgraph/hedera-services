@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.platform.turtle.runner;
 
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.roster.InvalidRosterException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -63,7 +64,7 @@ public class TurtleBuilder {
     }
 
     @NonNull
-    public Turtle build() {
+    public Turtle build() throws InvalidRosterException {
         return new Turtle(this);
     }
 

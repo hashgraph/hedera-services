@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -274,10 +275,14 @@ public class AddressBookUtils {
                 }
             }
 
-            RosterUtils.setActiveRoster(
-                    state,
-                    RosterRetriever.buildRoster(addressBookInitializer.getCurrentAddressBook()),
-                    RosterRetriever.getRound(state));
+            try {
+                RosterUtils.setActiveRoster(
+                        state,
+                        RosterRetriever.buildRoster(addressBookInitializer.getCurrentAddressBook()),
+                        RosterRetriever.getRound(state));
+            } catch (final InvalidRosterException e) {
+                throw new IllegalArgumentException("Invalid roster", e);
+            }
         }
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.

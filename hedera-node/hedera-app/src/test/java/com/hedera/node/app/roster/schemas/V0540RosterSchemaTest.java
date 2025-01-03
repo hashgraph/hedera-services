@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.state.service.PbjConverter;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -147,7 +148,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void usesGenesisRosterIfLifecycleEnabledAndApropros() {
+    void usesGenesisRosterIfLifecycleEnabledAndApropros() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
@@ -162,7 +163,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void usesAdaptedAddressBookAndMigrationRosterIfLifecycleEnabledIfApropos() {
+    void usesAdaptedAddressBookAndMigrationRosterIfLifecycleEnabledIfApropos() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
@@ -243,7 +244,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void adoptsCandidateRosterIfTestPasses() {
+    void adoptsCandidateRosterIfTestPasses() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
@@ -271,7 +272,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void restartSetsActiveRosterFromOverrideIfPresent() {
+    void restartSetsActiveRosterFromOverrideIfPresent() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
@@ -286,7 +287,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() {
+    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() throws InvalidRosterException {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
