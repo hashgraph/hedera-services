@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -122,6 +123,13 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                 if (transaction.isSystem()) {
                     return;
                 }
+
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                    return;
+                }
+
                 final TransactionSignature transactionSignature =
                         sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
                 if (transactionSignature != null) {
@@ -141,13 +149,22 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final PlatformStateModifier platformState,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
-        round.forEachTransaction(this::handleTransaction);
+
+        round.forEachEventTransaction((event, transaction) -> {
+            if (areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            } else {
+                handleTransaction(transaction);
+            }
+        });
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
         if (trans.isSystem()) {
             return;
         }
+
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -173,6 +190,70 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
 
         maybeDelay();
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones.
+     *
+     * @param transaction the transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        final var transactionBytes = transaction.getApplicationTransaction();
+
+        if (transactionBytes.length() == 0) {
+            return false;
+        }
+
+        final ByteBuffer wrapper = ByteBuffer.wrap(transactionBytes.toByteArray());
+        // Advance wrapper for TransactionID
+        wrapper.getLong();
+
+        // Get flag for determining signed or unsigned transaction
+        final var signed = wrapper.get();
+
+        if (signed != 0 && signed != 1) {
+            return true;
+        }
+
+        final var signatureAlgorithmId = wrapper.get();
+
+        // Currently we support 1 for ED25519 and 2 for ECSecP256K1 and -1 for no signature
+        if (signatureAlgorithmId != -1 && signatureAlgorithmId != 1 && signatureAlgorithmId != 2) {
+            return true;
+        }
+
+        final var pkLength = wrapper.getInt();
+
+        int sigLength;
+        int dataLength;
+        if (TransactionCodec.txIsSigned(transactionBytes)) {
+            if (pkLength == 0) {
+                return true;
+            }
+            final var pkBytes = new byte[pkLength];
+            wrapper.get(pkBytes);
+
+            sigLength = wrapper.getInt();
+
+            if (sigLength == 0) {
+                return true;
+            }
+
+            final var sigBytes = new byte[sigLength];
+            wrapper.get(sigBytes);
+        } else {
+            // Advance wrapper for sigLength
+            wrapper.getInt();
+            // Skipping pkBytes and sigBytes loading since they are not present
+        }
+
+        dataLength = wrapper.getInt();
+        final var data = new byte[dataLength];
+        wrapper.get(data);
+
+        final var transactionPool = transactionPoolSupplier.get();
+        return wrapper.hasRemaining() && dataLength != transactionPool.getTransactionSize();
     }
 
     private void maybeDelay() {
