@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +51,7 @@ class BlockRetentionManagerTest {
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
         blockRetentionManager.scheduleRepeating(cleanupTask);
 
-        final var blockFileName = "file1" + BlockRetentionManager.BLOCK_FILE_EXTENSION;
+        final var blockFileName = "file1" + "." + FileBlockItemWriter.RECORD_EXTENSION;
 
         createTestFile(blockFileName);
 
@@ -71,9 +72,10 @@ class BlockRetentionManagerTest {
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
         blockRetentionManager.scheduleRepeating(cleanupTask);
 
-        final var blockFileName = "file1" + BlockRetentionManager.BLOCK_FILE_EXTENSION;
+        final var blockFileName = "file1" + "." + FileBlockItemWriter.RECORD_EXTENSION;
         final var nonBlockFileName = "file2";
-        final var compressedBlockFileName = "file3" + BlockRetentionManager.BLOCK_FILE_EXTENSION_GZ;
+        final var compressedBlockFileName = "file3" + "." + FileBlockItemWriter.RECORD_EXTENSION
+                + FileBlockItemWriter.COMPRESSION_ALGORITHM_EXTENSION;
 
         createTestFile(blockFileName);
         createTestFile(nonBlockFileName);
@@ -91,7 +93,7 @@ class BlockRetentionManagerTest {
                 Files.exists(uploadedDir.resolve(compressedBlockFileName)),
                 compressedBlockFileName + " should have been deleted");
 
-        final var anotherBlockFileName = "file4" + BlockRetentionManager.BLOCK_FILE_EXTENSION;
+        final var anotherBlockFileName = "file4" + "." + FileBlockItemWriter.RECORD_EXTENSION;
         createTestFile(anotherBlockFileName);
 
         await().atMost(AWAIT_SECONDS_TIMEOUT, TimeUnit.SECONDS)

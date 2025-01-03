@@ -18,6 +18,7 @@ package com.hedera.node.app.blocks;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,8 +48,6 @@ public class BlockRetentionManager {
     private final Duration cleanupInterval;
     private final ScheduledExecutorService scheduler;
     private final ExecutorService cleanupExecutor;
-    public static final String BLOCK_FILE_EXTENSION = ".blk";
-    public static final String BLOCK_FILE_EXTENSION_GZ = ".blk.gz";
 
     /**
      * Creates a new BlockRetentionManager instance.
@@ -151,7 +150,9 @@ public class BlockRetentionManager {
 
     private boolean isBlockFile(@NonNull final Path file) {
         final String fileName = file.getFileName().toString();
-        return fileName.endsWith(BLOCK_FILE_EXTENSION) || fileName.endsWith(BLOCK_FILE_EXTENSION_GZ);
+        final String blockFileExtensionGz =
+                FileBlockItemWriter.RECORD_EXTENSION + FileBlockItemWriter.COMPRESSION_ALGORITHM_EXTENSION;
+        return fileName.endsWith(FileBlockItemWriter.RECORD_EXTENSION) || fileName.endsWith(blockFileExtensionGz);
     }
 
     private boolean isFileExpired(@NonNull final Path file) {

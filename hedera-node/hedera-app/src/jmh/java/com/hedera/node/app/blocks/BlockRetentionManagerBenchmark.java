@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks;
 
+import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,7 +74,7 @@ public class BlockRetentionManagerBenchmark {
 
         // Create a number of block files for the benchmark
         for (int i = 0; i < blockFilesCount; i++) {
-            Files.createFile(uploadedDir.resolve("block" + i + BlockRetentionManager.BLOCK_FILE_EXTENSION));
+            Files.createFile(uploadedDir.resolve("block" + i + "." + FileBlockItemWriter.RECORD_EXTENSION));
         }
     }
 
