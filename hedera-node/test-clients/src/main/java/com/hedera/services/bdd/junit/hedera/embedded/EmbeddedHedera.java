@@ -33,7 +33,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.function.Consumer;
 
 public interface EmbeddedHedera {
@@ -141,8 +140,8 @@ public interface EmbeddedHedera {
     TransactionResponse submit(
             @NonNull Transaction transaction,
             @NonNull AccountID nodeAccountId,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleCallback,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleCallback);
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback);
 
     /**
      * Sends a query to the embedded node.

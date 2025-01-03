@@ -113,7 +113,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
 
         @Override
         public void onPreHandle(@NonNull Event event, @NonNull State state,
-                @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
+                @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onPreHandleCalled.set(true);
         }
 
@@ -124,7 +124,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
 
         @Override
         public void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
-                @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
+                @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onHandleCalled.set(true);
         }
 

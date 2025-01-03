@@ -60,9 +60,9 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
 
-    private static final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> NO_OP_CALLBACK = ignore -> {};
-    private Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleStateSignatureCallback = NO_OP_CALLBACK;
-    private Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleStateSignatureCallback = NO_OP_CALLBACK;
+    private static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CALLBACK = ignore -> {};
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleStateSignatureCallback = NO_OP_CALLBACK;
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleStateSignatureCallback = NO_OP_CALLBACK;
 
     // The amount of consensus time that will be simulated to elapse before the next transaction---note
     // that in repeatable mode, every transaction gets its own event, and each event gets its own round
@@ -90,8 +90,8 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
 
     @Override
     public TransactionResponse submit(@NonNull Transaction transaction, @NonNull AccountID nodeAccountId,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleCallback,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleCallback) {
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
         this.preHandleStateSignatureCallback = preHandleCallback;
         this.handleStateSignatureCallback = handleCallback;
         final var response = submit(transaction, nodeAccountId);

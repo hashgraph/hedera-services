@@ -526,8 +526,8 @@ public class UtilVerbs {
      * @return the submission strategy
      */
     public static HapiTxnOp.SubmissionStrategy usingStateSignatureTransactionCallback(
-            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleCallback,
-            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleCallback) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
         return (network, transaction, functionality, target, nodeAccountId) -> {
             if (!(network instanceof EmbeddedNetwork embeddedNetwork)) {
                 throw new IllegalArgumentException("Expected an EmbeddedNetwork");

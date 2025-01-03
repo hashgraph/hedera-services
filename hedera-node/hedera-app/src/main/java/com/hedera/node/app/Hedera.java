@@ -825,7 +825,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
     public void onPreHandle(@NonNull final Event event, @NonNull final State state,
-            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
@@ -843,7 +843,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
 
         final Consumer<StateSignatureTransaction> simplifiedStateSignatureTxnCallback = txn -> {
             final var scopedTxn = new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), txn);
-            stateSignatureTxnCallback.accept(List.of(scopedTxn));
+            stateSignatureTxnCallback.accept(scopedTxn);
         };
 
         final var transactions = new ArrayList<Transaction>(1000);
@@ -872,7 +872,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * called.
      */
     public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state,
-            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         daggerApp.workingStateAccessor().setState(state);
         daggerApp.handleWorkflow().handleRound(state, round, stateSignatureTxnCallback);
     }

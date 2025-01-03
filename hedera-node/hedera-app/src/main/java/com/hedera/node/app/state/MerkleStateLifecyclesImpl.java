@@ -33,7 +33,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -48,13 +47,13 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
 
     @Override
     public void onPreHandle(@NonNull final Event event, @NonNull final State state,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
-        hedera.onPreHandle(event, state, stateSignatureTxnCallback);
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        hedera.onPreHandle(event, state, stateSignatureTransactionCallback);
     }
 
     @Override
     public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         hedera.onHandleConsensusRound(round, state, stateSignatureTxnCallback);
     }
 

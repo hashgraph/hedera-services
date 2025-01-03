@@ -79,8 +79,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
     @Override
     public TransactionResponse submit(@NonNull Transaction transaction, @NonNull AccountID nodeAccountId,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> preHandleCallback,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> handleCallback) {
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
         throw new UnsupportedOperationException("ConcurrentEmbeddedHedera does not support state signature callbacks");
     }
 

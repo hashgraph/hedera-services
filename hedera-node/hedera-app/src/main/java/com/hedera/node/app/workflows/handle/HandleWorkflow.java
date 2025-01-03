@@ -215,7 +215,7 @@ public class HandleWorkflow {
      * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      */
     public void handleRound(@NonNull final State state, @NonNull final Round round,
-            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
         if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
@@ -253,7 +253,7 @@ public class HandleWorkflow {
      * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      */
     private void handleEvents(@NonNull final State state, @NonNull final Round round,
-            @NonNull final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTxnCallback) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         boolean userTransactionsHandled = false;
         for (final var event : round) {
             if (streamMode != RECORDS) {
@@ -282,7 +282,7 @@ public class HandleWorkflow {
 
             final Consumer<StateSignatureTransaction> simplifiedStateSignatureTxnCallback = txn -> {
                 final var scopedTxn = new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), txn);
-                stateSignatureTxnCallback.accept(List.of(scopedTxn));
+                stateSignatureTxnCallback.accept(scopedTxn);
             };
 
             // log start of event to transaction state log

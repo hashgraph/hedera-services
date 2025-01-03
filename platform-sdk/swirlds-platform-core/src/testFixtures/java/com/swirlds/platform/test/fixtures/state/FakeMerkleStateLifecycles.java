@@ -209,13 +209,13 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
 
     @Override
     public void onPreHandle(@NonNull Event event, @NonNull State state,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
     }
 
     @Override
     public void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions) {
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
     }
 

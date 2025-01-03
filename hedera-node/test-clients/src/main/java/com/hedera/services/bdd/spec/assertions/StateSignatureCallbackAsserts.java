@@ -41,12 +41,12 @@ public class StateSignatureCallbackAsserts implements ErroringAssertsProvider<St
     }
 
     public static class StateSignatureTransactionCallbackMock implements
-            Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> {
+            Consumer<ScopedSystemTransaction<StateSignatureTransaction>> {
 
         private final AtomicInteger counter = new AtomicInteger();
 
         @Override
-        public void accept(List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions) {
+        public void accept(ScopedSystemTransaction<StateSignatureTransaction> scopedSystemTransactions) {
             counter.incrementAndGet();
         }
     }

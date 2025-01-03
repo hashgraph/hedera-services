@@ -195,7 +195,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             } else {
                 txInfo = previousResult.txInfo();
                 if (txInfo != null && txInfo.functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
-                    throw new IllegalStateException("Encountered StateSignatureTransaction while re-processing preHandle");
+                    return previousResult;
                 }
             }
 

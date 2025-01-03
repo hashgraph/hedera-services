@@ -17,6 +17,7 @@
 package com.hedera.node.app.state;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -26,10 +27,10 @@ import com.swirlds.platform.components.transaction.system.ScopedSystemTransactio
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.merkle.MerkleStateRoot;
-import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnPreHandle() {
-        final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> callback = txns -> {};
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> callback = txns -> {};
         subject.onPreHandle(event, merkleStateRoot, callback);
 
         verify(hedera).onPreHandle(event, merkleStateRoot, callback);
@@ -74,7 +75,7 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnHandleConsensusRound() {
-        final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> callback = txns -> {};
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> callback = txns -> {};
         subject.onHandleConsensusRound(round, merkleStateRoot, callback);
 
         verify(hedera).onHandleConsensusRound(round, merkleStateRoot, callback);

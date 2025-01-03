@@ -29,7 +29,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -45,22 +44,20 @@ public interface MerkleStateLifecycles {
      *
      * @param event the event that was added
      * @param state the latest immutable state at the time of the event
-     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
-     *                                   will be used for callbacks
+     * @param stateSignatureTransactionCallback a consumer that will be used for callbacks
      */
     void onPreHandle(@NonNull Event event, @NonNull State state,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions);
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
 
     /**
      * Called when a round of events have reached consensus, and are ready to be handled by the network.
      *
      * @param round the round that has just reached consensus
      * @param state the working state of the network
-     * @param stateSignatureTransactions a consumer that accepts a list of {@link ScopedSystemTransaction}s that
-     *                                   will be used for callbacks
+     * @param stateSignatureTransactionCallback a consumer that will be used for callbacks
      */
     void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
-            @NonNull Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> stateSignatureTransactions);
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.
