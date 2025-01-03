@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.util.Objects;
 
-public class InterfaceBindingConverter implements ConfigConverter<NetworkEndpoint> {
+public class NetworkEndpointConverter implements ConfigConverter<NetworkEndpoint> {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Nullable

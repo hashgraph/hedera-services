@@ -100,6 +100,10 @@ if [[ "${JCP_OVERRIDDEN}" != true && "${JAVA_MAIN_CLASS}" == "com.swirlds.platfo
   JAVA_CLASS_PATH="data/lib/*"
 fi
 
+# Setup Consensus Node Arguments
+CONSENSUS_NODE_ARGS=""
+[[ -n "${CONSENSUS_NODE_ID}" && "${CONSENSUS_NODE_ID}" -ge 0 ]] && CONSENSUS_NODE_ARGS="-local ${CONSENSUS_NODE_ID}"
+
 # Override Log Directory Name (if provided)
 LOG_DIR_NAME="${LOG_DIR_NAME:-output}"
 
@@ -170,7 +174,7 @@ echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEGIN NODE OUTPUT >>>>>>>>>>>>>>
 ## starting the platform software if the exit code is 205 which indicates a config.txt/address book loading issue.
 ATTEMPTS=0
 while true; do
-  /usr/bin/env java ${JAVA_HEAP_OPTS} ${JAVA_OPTS} -cp "${JAVA_CLASS_PATH}" "${JAVA_MAIN_CLASS}"
+  /usr/bin/env java ${JAVA_HEAP_OPTS} ${JAVA_OPTS} -cp "${JAVA_CLASS_PATH}" "${JAVA_MAIN_CLASS}" ${CONSENSUS_NODE_ARGS}
   EC="${?}"
   if [[ "${EC}" -eq 205 && "${ATTEMPTS}" -lt 20 ]]; then
     printf "\n\n############# Retrying system initialization - DNS or Address Book Failure (Exit Code: %s) #############\n\n" "${EC}"
