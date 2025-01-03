@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,9 +185,9 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
 
     @Override
     public Integer call() {
-        // if no targets were specified, then default to the develop branch
+        // if no targets were specified, then default to the main branch
         if (targets == null) {
-            targets = List.of("develop");
+            targets = List.of("main");
         }
 
         final Map<JrsTestIdentifier, JrsTestMetadata> metadata = JtrUtils.getTestMetadata(metadataFile);
