@@ -60,7 +60,7 @@ dependencies.constraints {
     api("com.fasterxml.jackson.core:jackson-databind:$jackson") {
         because("com.fasterxml.jackson.databind")
     }
-    api("com.github.ben-manes.caffeine:caffeine:3.1.1") { because("com.github.benmanes.caffeine") }
+    api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
     api("com.github.spotbugs:spotbugs-annotations:4.8.6") {
         because("com.github.spotbugs.annotations")
