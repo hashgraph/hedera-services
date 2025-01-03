@@ -35,7 +35,7 @@ on:
         default: "21.0.4"
   push:
     branches:
-      - develop
+      - main
       - 'release/**'
     tags:
       - 'v*.*.*'

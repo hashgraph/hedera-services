@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -32,21 +34,28 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
+import com.swirlds.common.RosterStateId;
+import com.swirlds.platform.state.service.PbjConverter;
+import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,6 +82,9 @@ class V0540RosterSchemaTest {
     private MigrationContext ctx;
 
     @Mock
+    private ReadableStates readableStates;
+
+    @Mock
     private WritableStates writableStates;
 
     @Mock
@@ -88,10 +100,20 @@ class V0540RosterSchemaTest {
     private Predicate<Roster> canAdopt;
 
     @Mock
-    private Supplier<ReadablePlatformStateStore> platformStateStoreFactory;
+    private State state;
+
+    private State getState() {
+        return state;
+    }
 
     @Mock
     private ReadablePlatformStateStore platformStateStore;
+
+    @Mock
+    private ReadableSingletonState<PlatformState> platformStateSingleton;
+
+    @Mock
+    private PlatformState platformState;
 
     @Mock
     private WritableSingletonState<RosterState> rosterState;
@@ -100,7 +122,7 @@ class V0540RosterSchemaTest {
 
     @BeforeEach
     void setUp() {
-        subject = new V0540RosterSchema(canAdopt, rosterStoreFactory, platformStateStoreFactory);
+        subject = new V0540RosterSchema(canAdopt, rosterStoreFactory, this::getState);
     }
 
     @Test
@@ -130,7 +152,8 @@ class V0540RosterSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
-        given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
+        given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
+        given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(NETWORK);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
 
         subject.restart(ctx);
@@ -145,8 +168,24 @@ class V0540RosterSchemaTest {
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(startupNetworks.migrationNetworkOrThrow()).willReturn(NETWORK);
-        given(platformStateStoreFactory.get()).willReturn(platformStateStore);
-        given(platformStateStore.getAddressBook()).willReturn(ADDRESS_BOOK);
+
+        // Setup PlatformService states to return a given ADDRESS_BOOK,
+        // and the readable RosterService states to be empty:
+        doReturn(readableStates).when(state).getReadableStates(PlatformStateService.NAME);
+        doReturn(platformStateSingleton).when(readableStates).getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+        doReturn(platformState).when(platformStateSingleton).get();
+        doReturn(PbjConverter.toPbjAddressBook(ADDRESS_BOOK))
+                .when(platformState)
+                .addressBook();
+        final ReadableStates rosterReadableStates = mock(ReadableStates.class);
+        doReturn(rosterReadableStates).when(state).getReadableStates(RosterStateId.NAME);
+        final ReadableSingletonState<RosterState> rosterStateSingleton = mock(ReadableSingletonState.class);
+        doReturn(rosterStateSingleton).when(rosterReadableStates).getSingleton(RosterStateId.ROSTER_STATES_KEY);
+        final RosterState rosterState = mock(RosterState.class);
+        doReturn(rosterState).when(rosterStateSingleton).get();
+        doReturn(List.of()).when(rosterState).roundRosterPairs();
+
+        // This is the rosterStore for when the code updates it and writes to it upon the migration:
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
 
         subject.restart(ctx);
@@ -243,6 +282,26 @@ class V0540RosterSchemaTest {
         subject.restart(ctx);
 
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1L);
+        verify(startupNetworks).setOverrideRound(ROUND_NO);
+    }
+
+    @Test
+    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() {
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.startupNetworks()).willReturn(startupNetworks);
+        given(ctx.roundNumber()).willReturn(ROUND_NO);
+        given(ctx.newStates()).willReturn(writableStates);
+        given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
+        given(rosterStore.getActiveRoster())
+                .willReturn(new Roster(
+                        List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build())));
+        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+        final var adaptedRoster = new Roster(
+                List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build()));
+
+        subject.restart(ctx);
+
+        verify(rosterStore).putActiveRoster(adaptedRoster, ROUND_NO + 1L);
         verify(startupNetworks).setOverrideRound(ROUND_NO);
     }
 }

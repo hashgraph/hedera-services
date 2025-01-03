@@ -22,6 +22,7 @@ import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSig
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.config.api.Configuration;
@@ -30,10 +31,14 @@ import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableStates;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
@@ -81,10 +86,21 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
                 System.out.printf("Replacing platform data %n");
                 v.setRound(PlatformStateAccessor.GENESIS_ROUND);
                 v.setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+
+                // FUTURE WORK: remove once the AddressBook setters are deprecated and the fields are nullified.
+                // For now, we have to keep these calls to ensure RosterRetriever won't fall back to using these values.
                 System.out.printf("Nullifying Address Books %n");
                 v.setAddressBook(null);
                 v.setPreviousAddressBook(null);
             });
+            {
+                System.out.printf("Resetting the RosterService state %n");
+                final State state = reservedSignedState.get().getState();
+                final WritableStates writableStates = state.getWritableStates(RosterStateId.NAME);
+                final WritableRosterStore writableRosterStore = new WritableRosterStore(writableStates);
+                writableRosterStore.resetRosters();
+                ((CommittableWritableStates) writableStates).commit();
+            }
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())

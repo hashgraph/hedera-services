@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,7 +133,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -458,10 +457,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         // FUTURE: a lambda that tests if a ReadableTssStore
                         // constructed from the migration state returns a
                         // RosterKeys with the ledger id for the given roster
-                        new RosterService(
-                                roster -> true,
-                                () -> new ReadablePlatformStateStore(
-                                        requireNonNull(initState).getReadableStates(PlatformStateService.NAME))),
+                        new RosterService(roster -> true, () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -508,7 +504,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      */
     @Override
     @NonNull
-    public MerkleRoot newMerkleStateRoot() {
+    public PlatformMerkleStateRoot newMerkleStateRoot() {
         return stateRootSupplier.get();
     }
 

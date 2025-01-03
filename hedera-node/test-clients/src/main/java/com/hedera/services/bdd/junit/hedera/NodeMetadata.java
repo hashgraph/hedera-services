@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.hedera;
 
 import static java.util.Objects.requireNonNull;
@@ -30,9 +15,8 @@ public record NodeMetadata(
         String host,
         int grpcPort,
         int grpcNodeOperatorPort,
-        boolean grpcNodeOperatorPortEnabled,
-        int gossipPort,
-        int gossipTlsPort,
+        int internalGossipPort,
+        int externalGossipPort,
         int prometheusPort,
         @Nullable Path workingDir) {
     public static final int UNKNOWN_PORT = -1;
@@ -42,16 +26,16 @@ public record NodeMetadata(
      *
      * @param grpcPort the new grpc port
      * @param grpcNodeOperatorPort the new grpc node operator port
-     * @param gossipPort the new gossip port
-     * @param tlsGossipPort the new tls gossip port
+     * @param internalGossipPort the new internal gossip port
+     * @param externalGossipPort the new external gossip port
      * @param prometheusPort the new prometheus port
      * @return a new instance with the same values as this instance, but different ports
      */
     public NodeMetadata withNewPorts(
             final int grpcPort,
             final int grpcNodeOperatorPort,
-            final int gossipPort,
-            final int tlsGossipPort,
+            final int internalGossipPort,
+            final int externalGossipPort,
             final int prometheusPort) {
         return new NodeMetadata(
                 nodeId,
@@ -60,9 +44,8 @@ public record NodeMetadata(
                 host,
                 grpcPort,
                 grpcNodeOperatorPort,
-                grpcNodeOperatorPortEnabled,
-                gossipPort,
-                tlsGossipPort,
+                internalGossipPort,
+                externalGossipPort,
                 prometheusPort,
                 workingDir);
     }
@@ -81,28 +64,8 @@ public record NodeMetadata(
                 host,
                 grpcPort,
                 grpcNodeOperatorPort,
-                grpcNodeOperatorPortEnabled,
-                gossipPort,
-                gossipTlsPort,
-                prometheusPort,
-                workingDir);
-    }
-
-    /**
-     * @return a new instance with the same values as this instance, but with disabled node operator port
-     */
-    public NodeMetadata withNewNodeOperatorPortDisabled() {
-        requireNonNull(accountId);
-        return new NodeMetadata(
-                nodeId,
-                name,
-                accountId,
-                host,
-                grpcPort,
-                grpcNodeOperatorPort,
-                false,
-                gossipPort,
-                gossipTlsPort,
+                internalGossipPort,
+                externalGossipPort,
                 prometheusPort,
                 workingDir);
     }

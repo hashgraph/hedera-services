@@ -62,6 +62,11 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return propertiesService.containsKey(propertyName);
     }
 
+    @Override
+    public boolean isListValue(@NonNull final String propertyName) {
+        return propertiesService.isListProperty(propertyName);
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
@@ -91,6 +96,9 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public String getValue(@NonNull final String propertyName) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        if (propertiesService.isListProperty(propertyName)) {
+            throw new NoSuchElementException("Property '" + propertyName + "' is a list property");
+        }
         if (!exists(propertyName)) {
             throw new NoSuchElementException("Property '" + propertyName + "' not defined in configuration");
         }
@@ -101,6 +109,9 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public String getValue(@NonNull final String propertyName, @Nullable final String defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        if (propertiesService.isListProperty(propertyName)) {
+            throw new NoSuchElementException("Property '" + propertyName + "' is a list property");
+        }
         if (!exists(propertyName)) {
             return defaultValue;
         }
@@ -111,21 +122,26 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public List<String> getValues(@NonNull final String propertyName) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        final String rawValue = getValue(propertyName);
-        if (rawValue == null) {
-            return null;
+        if (!propertiesService.isListProperty(propertyName)) {
+            throw new NoSuchElementException("Property '" + propertyName + "' is not a list property");
         }
-        return ConfigListUtils.createList(rawValue);
+        if (!exists(propertyName)) {
+            throw new NoSuchElementException("Property '" + propertyName + "' not defined in configuration");
+        }
+        return propertiesService.getListProperty(propertyName);
     }
 
     @Nullable
     @Override
     public List<String> getValues(@NonNull final String propertyName, @Nullable final List<String> defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        if (!propertiesService.isListProperty(propertyName)) {
+            throw new NoSuchElementException("Property '" + propertyName + "' is not a list property");
+        }
         if (!exists(propertyName)) {
             return defaultValue;
         }
-        return getValues(propertyName);
+        return propertiesService.getListProperty(propertyName);
     }
 
     @Nullable
@@ -133,7 +149,13 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     public <T> List<T> getValues(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         Objects.requireNonNull(propertyType, "propertyType must not be null");
-        final List<String> values = getValues(propertyName);
+        final List<String> values;
+        if (!propertiesService.isListProperty(propertyName)) {
+            final String value = getValue(propertyName);
+            values = ConfigListUtils.createList(value);
+        } else {
+            values = getValues(propertyName);
+        }
         if (values == null) {
             return null;
         }

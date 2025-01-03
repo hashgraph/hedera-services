@@ -17,6 +17,7 @@
 package com.swirlds.config.impl.converters;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -30,7 +31,7 @@ public final class UriConverter implements ConfigConverter<URI> {
      * {@inheritDoc}
      */
     @Override
-    public URI convert(final String value) throws IllegalArgumentException {
+    public URI convert(@NonNull final String value) throws IllegalArgumentException {
         try {
             return new URI(value);
         } catch (URISyntaxException e) {
