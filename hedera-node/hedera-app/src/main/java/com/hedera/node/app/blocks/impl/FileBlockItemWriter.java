@@ -29,17 +29,15 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.zip.GZIPOutputStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -113,14 +111,9 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
-//    private static OutputStream out = null;
-    private static final byte[] manualBuffer = new byte[1024*1024]; // 1 MB
-    private static final byte[] manualBuffer2 = new byte[1024*256]; //256 KB
-    private static final byte[] manualBuffer3 = new byte[1024*1024*4]; //256 KB
-
-//    private static BufferedOutputStream bos = new BufferedOutputStream(out, 1024*1024);
-//    private static GZIPOutputStream gos = null;
-//    private static com.hedera.pbj.runtime.io.buffer.BufferedData bd = com.hedera.node.app.blocks.impl.BufferedData.wrap(ByteBuffer.wrap(new byte[1024*1024]));
+    private static final byte[] manualBuffer1 = new byte[1024 * 1024]; // 1 MB
+    private static final byte[] manualBuffer2 = new byte[1024 * 256]; // 256 KB
+    private static final byte[] manualBuffer3 = new byte[1024 * 1024 * 4]; // 4 MB
 
     @Override
     public void openBlock(long blockNumber) {
@@ -133,15 +126,15 @@ public class FileBlockItemWriter implements BlockItemWriter {
         OutputStream out = null;
         try {
             out = Files.newOutputStream(blockFilePath);
-            out = new UnsafeBufferedOutputStream(out, manualBuffer);
+            out = new BypassParentBufferedOutputStream2(out, manualBuffer1);
             if (compressFiles) {
-                out = new UnsafeGZIPOutputStream(out, manualBuffer2, false);
+                out = new BypassParentGZIPOutputStream2(out, manualBuffer2);
                 // By wrapping the GZIPOutputStream in a BufferedOutputStream, the code reduces the number of write
                 // operations to the GZIPOutputStream, and therefore the number of synchronized calls. Instead of
                 // writing each small piece of data immediately to the GZIPOutputStream, it writes the data to the
                 // buffer, and only when the buffer is full, it writes all the data to the GZIPOutputStream in one go.
                 // This can significantly improve the performance when writing many small amounts of data.
-                out = new UnsafeBufferedOutputStream(out, manualBuffer3);
+                out = new BypassParentBufferedOutputStream2(out, manualBuffer3);
             }
 
             this.writableStreamingData = new WritableStreamingData(out);
