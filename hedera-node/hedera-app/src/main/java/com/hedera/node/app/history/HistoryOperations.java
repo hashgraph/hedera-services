@@ -53,6 +53,7 @@ public interface HistoryOperations {
      * Returns a SNARK recursively proving the derivation of the target roster and metadata from the
      * ledger id (unless the source roster hash <i>is</i> the ledger id, which is the base case of
      * the recursion).
+     * @param ledgerId the ledger id
      * @param sourceProof if not null, the proof the source roster was derived from the ledger id
      * @param sourceProofRoster the source roster
      * @param targetProofRosterHash the hash of the target roster
@@ -62,9 +63,24 @@ public interface HistoryOperations {
      */
     @NonNull
     Bytes proveTransition(
+            @NonNull Bytes ledgerId,
             @Nullable Bytes sourceProof,
             @NonNull ProofRoster sourceProofRoster,
             @NonNull Bytes targetProofRosterHash,
             @NonNull Bytes targetMetadata,
             @NonNull Map<Long, Bytes> sourceSignatures);
+
+    /**
+     * Verifies the given SNARK proves a set of roster transitions from the ledger id to the target roster and metadata.
+     * @param ledgerId the ledger id
+     * @param targetProofRosterHash the hash of the target roster
+     * @param targetMetadata the metadata of the target roster
+     * @param proof the SNARK
+     * @return true if the proof is valid; false otherwise
+     */
+    boolean verifyTransitionProof(
+            @NonNull Bytes ledgerId,
+            @NonNull Bytes targetProofRosterHash,
+            @NonNull Bytes targetMetadata,
+            @NonNull Bytes proof);
 }

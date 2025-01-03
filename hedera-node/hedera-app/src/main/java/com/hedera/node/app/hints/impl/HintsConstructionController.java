@@ -186,20 +186,6 @@ public class HintsConstructionController {
         }
     }
 
-    private void ensureHintsKeyPublished() {
-        if (publicationFuture != null && weights.hasTargetWeightOf(selfId) && !nodePartyIds.containsKey(selfId)) {
-            publicationFuture = CompletableFuture.runAsync(
-                    () -> {
-                        final var hints = operations.computeHints(blsKeyPair.privateKey(), M);
-                        final var hintsKey =
-                                new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
-                        final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);
-                        submissions.submitHintsKey(body).join();
-                    },
-                    executor);
-        }
-    }
-
     /**
      * Incorporates a new hint key publication into the controller's state.
      *
@@ -403,5 +389,23 @@ public class HintsConstructionController {
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);
+    }
+
+    /**
+     * If this node is part of the target construction and has not yet published (and is not currently publishing) its
+     * hinTS key, then starts publishing it.
+     */
+    private void ensureHintsKeyPublished() {
+        if (publicationFuture != null && weights.hasTargetWeightOf(selfId) && !nodePartyIds.containsKey(selfId)) {
+            publicationFuture = CompletableFuture.runAsync(
+                    () -> {
+                        final var hints = operations.computeHints(blsKeyPair.privateKey(), M);
+                        final var hintsKey =
+                                new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
+                        final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);
+                        submissions.submitHintsKey(body).join();
+                    },
+                    executor);
+        }
     }
 }

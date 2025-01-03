@@ -19,6 +19,8 @@ package com.hedera.node.app.history.impl;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.history.HistoryAssembly;
@@ -45,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -58,6 +61,10 @@ public class ProofConstructionController {
     private static final Comparator<ProofKey> PROOF_KEY_COMPARATOR = Comparator.comparingLong(ProofKey::nodeId);
 
     private final long selfId;
+
+    @Nullable
+    private final Bytes ledgerId;
+
     private final Urgency urgency;
     private final Duration proofKeysWaitTime;
     private final Executor executor;
@@ -142,6 +149,7 @@ public class ProofConstructionController {
 
     public ProofConstructionController(
             final long selfId,
+            @Nullable final Bytes ledgerId,
             @NonNull final Urgency urgency,
             @NonNull final Executor executor,
             @Nullable final Bytes metadata,
@@ -153,6 +161,7 @@ public class ProofConstructionController {
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Consumer<MetadataProof> proofConsumer) {
         this.selfId = selfId;
+        this.ledgerId = ledgerId;
         this.metadata = metadata;
         this.urgency = requireNonNull(urgency);
         this.executor = requireNonNull(executor);
@@ -225,6 +234,39 @@ public class ProofConstructionController {
         if (!construction.hasMetadataProof() && targetProofKeys.containsKey(publication.nodeId())) {
             verificationFutures.put(
                     publication.at(), verificationFuture(publication.nodeId(), publication.signature()));
+        }
+    }
+
+    /**
+     * Incorporates the metadata proof vote published by the given node, if this construction still needs a proof.
+     * @param nodeId the node ID
+     * @param vote the vote
+     * @param historyStore the history store
+     */
+    public void incorporateProofVote(
+            final long nodeId,
+            @NonNull final MetadataProofVote vote,
+            @NonNull final WritableHistoryStore historyStore) {
+        requireNonNull(vote);
+        if (!construction.hasMetadataProof() && !votes.containsKey(nodeId)) {
+            votes.put(nodeId, vote);
+            final var proofWeights = votes.entrySet().stream()
+                    .collect(groupingBy(
+                            entry -> entry.getValue().metadataProofOrThrow(),
+                            summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
+            final var maybeWinningProof = proofWeights.entrySet().stream()
+                    .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
+                    .map(Map.Entry::getKey)
+                    .findFirst();
+            maybeWinningProof.ifPresent(proof -> {
+                construction = historyStore.completeProof(construction.constructionId(), proof);
+                if (historyStore.getActiveConstruction().constructionId() == construction.constructionId()) {
+                    proofConsumer.accept(proof);
+                    if (ledgerId == null) {
+                        historyStore.setLedgerId(proof.sourceProofRosterHash());
+                    }
+                }
+            });
         }
     }
 
@@ -342,6 +384,7 @@ public class ProofConstructionController {
                                     node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
                             .toList());
                     final var proof = operations.proveTransition(
+                            Optional.ofNullable(ledgerId).orElseGet(() -> operations.hashProofRoster(sourceRoster)),
                             sourceProof,
                             sourceRoster,
                             operations.hashProofRoster(targetRoster),

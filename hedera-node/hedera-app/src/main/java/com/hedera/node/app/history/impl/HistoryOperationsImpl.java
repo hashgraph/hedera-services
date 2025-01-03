@@ -50,16 +50,30 @@ public class HistoryOperationsImpl implements HistoryOperations {
     @NonNull
     @Override
     public Bytes proveTransition(
+            @NonNull Bytes ledgerId,
             @Nullable final Bytes sourceProof,
             @NonNull final ProofRoster sourceProofRoster,
             @NonNull final Bytes targetProofRosterHash,
             @NonNull final Bytes targetMetadata,
             @NonNull final Map<Long, Bytes> sourceSignatures) {
+        requireNonNull(ledgerId);
         requireNonNull(sourceProofRoster);
         requireNonNull(targetProofRosterHash);
         requireNonNull(targetMetadata);
         requireNonNull(sourceSignatures);
-
         return Bytes.EMPTY;
+    }
+
+    @Override
+    public boolean verifyTransitionProof(
+            @NonNull final Bytes ledgerId,
+            @NonNull final Bytes targetProofRosterHash,
+            @NonNull final Bytes targetMetadata,
+            @NonNull final Bytes proof) {
+        requireNonNull(ledgerId);
+        requireNonNull(targetProofRosterHash);
+        requireNonNull(targetMetadata);
+        requireNonNull(proof);
+        return false;
     }
 }

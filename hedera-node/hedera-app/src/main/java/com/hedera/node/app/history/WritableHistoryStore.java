@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.history;
 
+import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.hapi.node.state.history.MetadataProofConstruction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -38,4 +40,18 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
      * @return the updated construction
      */
     MetadataProofConstruction setAssemblyTime(long constructionId, @NonNull Instant now);
+
+    /**
+     * Completes the proof for the construction with the given ID and returns the updated construction.
+     * @param constructionId the construction ID
+     * @param proof the proof
+     * @return the updated construction
+     */
+    MetadataProofConstruction completeProof(long constructionId, @NonNull MetadataProof proof);
+
+    /**
+     * Sets the ledger ID to the given bytes.
+     * @param bytes the bytes
+     */
+    void setLedgerId(@NonNull Bytes bytes);
 }
