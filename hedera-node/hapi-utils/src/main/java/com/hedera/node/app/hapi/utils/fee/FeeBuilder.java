@@ -213,7 +213,7 @@ public class FeeBuilder {
         if (key == null) {
             return 0;
         }
-        if (key == Key.getDefaultInstance()) {
+        if (Key.getDefaultInstance().equals(key)) {
             return 0;
         }
 

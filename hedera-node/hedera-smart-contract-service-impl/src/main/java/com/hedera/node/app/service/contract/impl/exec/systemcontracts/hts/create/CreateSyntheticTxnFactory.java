@@ -89,7 +89,7 @@ public class CreateSyntheticTxnFactory {
             @NonNull final TokenCreateWrapper tokenCreateWrapper, final Builder txnBodyBuilder) {
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
-            if (key == Key.DEFAULT) {
+            if (Key.DEFAULT.equals(key)) {
                 throw new IllegalArgumentException();
             }
             if (tokenKeyWrapper.isUsedForAdminKey()) {

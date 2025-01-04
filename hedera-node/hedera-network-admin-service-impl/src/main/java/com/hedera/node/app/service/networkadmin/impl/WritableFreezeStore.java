@@ -66,7 +66,7 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
      * Gets the scheduled freeze time. If no freeze has been scheduled, returns null.
      */
     public Timestamp freezeTime() {
-        return freezeTimeState.get() == Timestamp.DEFAULT ? null : freezeTimeState.get();
+        return Timestamp.DEFAULT.equals(freezeTimeState.get()) ? null : freezeTimeState.get();
     }
 
     /**
@@ -89,6 +89,6 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
         if (fileHash == null) {
             return null;
         }
-        return fileHash.value() == Bytes.EMPTY ? null : fileHash.value();
+        return Bytes.EMPTY.equals(fileHash.value()) ? null : fileHash.value();
     }
 }

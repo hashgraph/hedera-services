@@ -113,7 +113,7 @@ public final class ByteStringUtils {
         @VisibleForTesting
         static boolean supports(final ByteString byteString) {
             return byteString.size() > UnsafeByteOutput.SIZE
-                    && byteString.getClass() == UnsafeByteOutput.SUPPORTED_CLASS;
+                    && UnsafeByteOutput.SUPPORTED_CLASS.equals(byteString.getClass());
         }
     }
 
