@@ -63,8 +63,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.utils;
     exports com.hedera.services.bdd.junit.restart;
 
-    requires com.hedera.cryptography.bls;
-    requires com.hedera.cryptography.pairings.api;
     requires com.hedera.cryptography.tss;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
