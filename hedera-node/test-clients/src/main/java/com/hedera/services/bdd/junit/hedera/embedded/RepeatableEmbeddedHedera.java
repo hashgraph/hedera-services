@@ -16,12 +16,10 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_SHARE_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -106,13 +104,13 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
                     new FakeEvent(nodeId, time.now(), semanticVersion, createAppPayloadWrapper(payload));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
-            handleNextRound(false);
-            // If handling this transaction scheduled TSS work, do it synchronously as well
+            handleNextRound();
+            // If handling this transaction scheduled node transactions, handle them now
             while (!pendingNodeSubmissions.isEmpty()) {
                 platform.lastCreatedEvent = null;
                 pendingNodeSubmissions.poll().run();
                 if (platform.lastCreatedEvent != null) {
-                    handleNextRound(true);
+                    handleNextRound();
                 }
             }
         }
@@ -151,16 +149,10 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     }
 
     /**
-     * Executes the transaction in the last-created event within its own round, unless that transaction
-     * is a {@link HederaFunctionality#TSS_SHARE_SIGNATURE} transaction and we are instructed to skip
-     * signatures.
-     * @param skipsSignatureTxn whether to skip handling the last-created event if it is a signature txn
+     * Executes the transaction in the last-created event within its own round.
      */
-    private void handleNextRound(final boolean skipsSignatureTxn) {
+    private void handleNextRound() {
         hedera.onPreHandle(platform.lastCreatedEvent, state);
-        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == TSS_SHARE_SIGNATURE) {
-            return;
-        }
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
         hedera.handleWorkflow().handleRound(state, round);
