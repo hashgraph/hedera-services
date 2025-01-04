@@ -14,26 +14,30 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss;
+package com.hedera.node.app.blocks;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.tss.schemas.V0560TssBaseSchema;
-import com.hedera.node.app.tss.schemas.V0580TssBaseSchema;
-import com.hedera.node.app.tss.schemas.V059TssBaseSchema;
-import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Default implementation of the {@link TssBaseService}.
+ * A mock implementation of the {@link BlockHashSigner} that "signs" block hashes by
+ * scheduling their SHA-384 hash.
  */
-@Deprecated(forRemoval = true, since = "0.59.0")
-public class TssBaseServiceImpl implements TssBaseService {
+public enum MockBlockHashSigner implements BlockHashSigner {
+    MOCK_BLOCK_HASH_SIGNER;
+
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        requireNonNull(registry);
-        registry.register(new V0560TssBaseSchema());
-        registry.register(new V0580TssBaseSchema());
-        registry.register(new V059TssBaseSchema());
+    public boolean isReady() {
+        return true;
+    }
+
+    @Override
+    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        requireNonNull(blockHash);
+        return CompletableFuture.supplyAsync(() -> noThrowSha384HashOf(blockHash));
     }
 }

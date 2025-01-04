@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,9 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -56,6 +58,7 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
 
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
+    private final Queue<Runnable> pendingNodeSubmissions = new ArrayDeque<>();
 
     // The amount of consensus time that will be simulated to elapse before the next transaction---note
     // that in repeatable mode, every transaction gets its own event, and each event gets its own round
@@ -104,9 +107,9 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         if (response.getNodeTransactionPrecheckCode() == OK) {
             handleNextRound(false);
             // If handling this transaction scheduled TSS work, do it synchronously as well
-            while (tssBaseService.hasTssSubmission()) {
+            while (!pendingNodeSubmissions.isEmpty()) {
                 platform.lastCreatedEvent = null;
-                tssBaseService.executeNextTssSubmission();
+                pendingNodeSubmissions.poll().run();
                 if (platform.lastCreatedEvent != null) {
                     handleNextRound(true);
                 }

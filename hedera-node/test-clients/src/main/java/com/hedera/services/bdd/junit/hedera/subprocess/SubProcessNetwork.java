@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
@@ -24,7 +39,6 @@ import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
@@ -50,7 +64,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -413,8 +426,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            final var overrideNetwork = WorkingDirUtils.networkFrom(
-                    configTxt, i -> Bytes.EMPTY, rosterEntries -> Optional.empty(), OnlyRoster.YES);
+            final var overrideNetwork = WorkingDirUtils.networkFrom(configTxt, OnlyRoster.YES);
             final var genesisNetworkPath = node.getExternalPath(DATA_CONFIG_DIR).resolve(GENESIS_NETWORK_JSON);
             final var isGenesis = genesisNetworkPath.toFile().exists();
             // Only write override-network.json if a node is not starting from genesis; otherwise it will adopt

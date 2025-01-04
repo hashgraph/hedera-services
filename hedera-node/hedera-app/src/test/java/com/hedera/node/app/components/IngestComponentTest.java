@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFA
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
@@ -47,11 +46,6 @@ import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.handlers.TssHandlers;
-import com.hedera.node.app.tss.handlers.TssMessageHandler;
-import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
-import com.hedera.node.app.tss.handlers.TssVoteHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -80,18 +74,6 @@ class IngestComponentTest {
 
     @Mock
     private Platform platform;
-
-    @Mock
-    private TssBaseService tssBaseService;
-
-    @Mock
-    private TssMessageHandler tssMessageHandler;
-
-    @Mock
-    private TssVoteHandler tssVoteHandler;
-
-    @Mock
-    private TssShareSignatureHandler tssShareSignatureHandler;
 
     @Mock
     private Throttle.Factory throttleFactory;
@@ -129,8 +111,6 @@ class IngestComponentTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 throttleFactory);
-        given(tssBaseService.tssHandlers())
-                .willReturn(new TssHandlers(tssMessageHandler, tssVoteHandler, tssShareSignatureHandler));
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
@@ -150,7 +130,6 @@ class IngestComponentTest {
                 .kvStateChangeListener(new KVStateChangeListener())
                 .boundaryStateChangeListener(new BoundaryStateChangeListener())
                 .migrationStateChanges(List.of())
-                .tssBaseService(tssBaseService)
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))
                 .startupNetworks(startupNetworks)

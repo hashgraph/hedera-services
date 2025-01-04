@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
@@ -15,8 +30,6 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
@@ -42,12 +55,6 @@ public interface HandleWorkflowModule {
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {
         return contractService::handlers;
-    }
-
-    @Provides
-    @Singleton
-    static Supplier<TssHandlers> provideTssHandlers(@NonNull final TssBaseService tssBaseService) {
-        return tssBaseService::tssHandlers;
     }
 
     @Provides
@@ -100,7 +107,6 @@ public interface HandleWorkflowModule {
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
             @NonNull final Supplier<ContractHandlers> contractHandlers,
-            @NonNull final Supplier<TssHandlers> tssHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilHandlers utilHandlers,
@@ -159,9 +165,6 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
-                utilHandlers.prngHandler(),
-                tssHandlers.get().tssMessageHandler(),
-                tssHandlers.get().tssVoteHandler(),
-                tssHandlers.get().tssShareSignatureHandler());
+                utilHandlers.prngHandler());
     }
 }

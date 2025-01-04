@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.BlockItem.ItemOneOfType.TRANSACTION_RESULT;
@@ -31,6 +46,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
@@ -40,7 +56,6 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -90,7 +105,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
     private final int serializationBatchSize;
-    private final TssBaseService tssBaseService;
+    private final BlockHashSigner blockHashSigner;
     private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
@@ -154,17 +169,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Inject
     public BlockStreamManagerImpl(
+            @NonNull final BlockHashSigner blockHashSigner,
             @NonNull final Supplier<BlockItemWriter> writerSupplier,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final InitialStateHash initialStateHash,
             @NonNull final SemanticVersion version) {
+        this.blockHashSigner = requireNonNull(blockHashSigner);
         this.version = requireNonNull(version);
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
-        this.tssBaseService = requireNonNull(tssBaseService);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
@@ -334,9 +349,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-            // Request the ledger signature for the block hash.
-            // The boundary timestamp plus nanos will be used for the TssShareSignature transaction's valid start
-            tssBaseService.requestLedgerSignature(blockHash.toByteArray(), asInstant(boundaryTimestamp));
+            blockHashSigner
+                    .signFuture(blockHash)
+                    .thenAccept(signature -> accept(blockHash.toByteArray(), signature.toByteArray()));
 
             final var exportNetworkToDisk =
                     switch (diskNetworkExport) {

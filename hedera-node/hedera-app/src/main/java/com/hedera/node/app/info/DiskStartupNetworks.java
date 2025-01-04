@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.info;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
@@ -8,19 +23,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.handlers.TssUtils;
-import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -62,7 +69,6 @@ public class DiskStartupNetworks implements StartupNetworks {
     public static final Pattern ROUND_DIR_PATTERN = Pattern.compile("\\d+");
 
     private final ConfigProvider configProvider;
-    private final TssBaseService tssBaseService;
 
     private boolean isArchived = false;
 
@@ -71,7 +77,6 @@ public class DiskStartupNetworks implements StartupNetworks {
      */
     public enum InfoType {
         ROSTER,
-        TSS_KEYS,
         NODE_DETAILS,
     }
 
@@ -84,10 +89,8 @@ public class DiskStartupNetworks implements StartupNetworks {
         MIGRATION,
     }
 
-    public DiskStartupNetworks(
-            @NonNull final ConfigProvider configProvider, @NonNull final TssBaseService tssBaseService) {
+    public DiskStartupNetworks(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider);
-        this.tssBaseService = tssBaseService;
     }
 
     @Override
@@ -177,7 +180,6 @@ public class DiskStartupNetworks implements StartupNetworks {
     public static void writeNetworkInfo(
             @NonNull final State state, @NonNull final Path path, @NonNull final Set<InfoType> infoTypes) {
         requireNonNull(state);
-        final var tssStore = new ReadableTssStoreImpl(state.getReadableStates(TssBaseService.NAME));
         final var nodeStore = new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
         final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
         Optional.ofNullable(RosterRetriever.retrieveActiveOrGenesisRoster(state))
@@ -186,25 +188,12 @@ public class DiskStartupNetworks implements StartupNetworks {
                     final List<NodeMetadata> nodeMetadata = new ArrayList<>();
                     activeRoster.rosterEntries().forEach(entry -> {
                         final var node = requireNonNull(nodeStore.get(entry.nodeId()));
-                        final var encryptionKey = Optional.ofNullable(tssStore.getTssEncryptionKeys(node.nodeId()))
-                                .map(TssEncryptionKeys::currentEncryptionKey)
-                                .orElse(Bytes.EMPTY);
                         nodeMetadata.add(new NodeMetadata(
                                 infoTypes.contains(InfoType.ROSTER) ? entry : null,
                                 infoTypes.contains(InfoType.NODE_DETAILS) ? node : null,
-                                infoTypes.contains(InfoType.TSS_KEYS) ? encryptionKey : Bytes.EMPTY));
+                                Bytes.EMPTY));
                     });
                     network.nodeMetadata(nodeMetadata);
-                    if (infoTypes.contains(InfoType.TSS_KEYS)) {
-                        final var currentRosterHash = rosterStore.getCurrentRosterHash();
-                        if (currentRosterHash != null) {
-                            final var sourceRosterHash = Optional.ofNullable(rosterStore.getPreviousRosterHash())
-                                    .orElse(Bytes.EMPTY);
-                            tssStore.consensusRosterKeys(sourceRosterHash, currentRosterHash, rosterStore)
-                                    .ifPresent(rosterKeys -> network.ledgerId(rosterKeys.ledgerId())
-                                            .tssMessages(rosterKeys.tssMessages()));
-                        }
-                    }
                     tryToExport(network.build(), path);
                 });
     }
@@ -279,14 +268,11 @@ public class DiskStartupNetworks implements StartupNetworks {
         log.info("Checking for {} network info at {}", use, path.toAbsolutePath());
         final var maybeNetwork = loadNetworkFrom(path);
         maybeNetwork.ifPresentOrElse(
-                network -> {
-                    log.info(
-                            "  -> Parsed {} network info for N={} nodes from {}",
-                            use,
-                            network.nodeMetadata().size(),
-                            path.toAbsolutePath());
-                    assertValidTssKeys(network);
-                },
+                network -> log.info(
+                        "  -> Parsed {} network info for N={} nodes from {}",
+                        use,
+                        network.nodeMetadata().size(),
+                        path.toAbsolutePath()),
                 () -> log.info("  -> N/A"));
         return maybeNetwork;
     }
@@ -329,43 +315,6 @@ public class DiskStartupNetworks implements StartupNetworks {
         } catch (Exception e) {
             log.warn("Fallback loading genesis network from config.txt also failed", e);
             throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * If the given network has a ledger id, then it asserts that the TSS keys in the network are valid. This includes
-     * the encryption keys within the {@link NodeMetadata} messages, since without these specified the TSS messages
-     * would be unusable.
-     *
-     * @param network the network to assert the TSS keys of
-     * @throws IllegalArgumentException if the TSS keys are invalid
-     */
-    private void assertValidTssKeys(@NonNull final Network network) {
-        final var expectedLedgerId = network.ledgerId();
-        if (!Bytes.EMPTY.equals(expectedLedgerId)) {
-            final var roster = new Roster(network.nodeMetadata().stream()
-                    .map(metadata -> new RosterEntry(
-                            metadata.nodeOrThrow().nodeId(),
-                            metadata.nodeOrThrow().weight(),
-                            metadata.nodeOrThrow().gossipCaCertificate(),
-                            metadata.nodeOrThrow().gossipEndpoint()))
-                    .toList());
-            final var maxSharesPerNode = configProvider
-                    .getConfiguration()
-                    .getConfigData(TssConfig.class)
-                    .maxSharesPerNode();
-            final var encryptionKeysFn = TssUtils.encryptionKeysFnFor(network);
-            final var directory = TssUtils.computeParticipantDirectory(roster, maxSharesPerNode, encryptionKeysFn);
-            final var tssMessages = network.tssMessages().stream()
-                    .map(TssMessageTransactionBody::tssMessage)
-                    .map(Bytes::toByteArray)
-                    .map(msg -> tssBaseService.getTssMessageFromBytes(Bytes.wrap(msg), directory))
-                    .toList();
-            final var actualLedgerId = tssBaseService.ledgerIdFrom(directory, tssMessages);
-            if (!expectedLedgerId.equals(actualLedgerId)) {
-                throw new IllegalArgumentException("Ledger id '" + actualLedgerId.toHex()
-                        + "' does not match expected '" + expectedLedgerId.toHex() + "'");
-            }
         }
     }
 
