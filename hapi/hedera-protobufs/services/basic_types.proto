@@ -1193,7 +1193,9 @@ message SignatureMap {
  * The transactions and queries supported by Hedera Hashgraph.
  */
 enum HederaFunctionality {
-    reserved 96, 97, 98, 99;
+    // FUTURE - Uncomment when https://github.com/hashgraph/pbj/issues/339 is fixed;
+    // currently the PBJ-generated unit tests fail when using reserved ordinals
+    // reserved 96, 97, 98, 99;
 
     /**
      * Unused - The first value is unused because this default value is
