@@ -33,7 +33,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class FakeHintsService implements HintsService {
     private final HintsService delegate;
-    private final FakeHintsOperations operations = new FakeHintsOperations();
+    private final FakeHintsLibrary operations = new FakeHintsLibrary();
     private final Queue<Runnable> pendingHintsSubmissions = new ArrayDeque<>();
 
     public FakeHintsService(@NonNull final AppContext appContext) {

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
@@ -28,7 +29,13 @@ import java.util.Map;
 /**
  * The cryptographic operations required by the {@link HintsService}.
  */
-public interface HintsOperations {
+public interface HintsLibrary {
+    /**
+     * Generates a new BLS key pair.
+     * @return the key pair
+     */
+    BlsKeyPair newBlsKeyPair();
+
     /**
      * Signs the given message with the given private key.
      * @param message the message

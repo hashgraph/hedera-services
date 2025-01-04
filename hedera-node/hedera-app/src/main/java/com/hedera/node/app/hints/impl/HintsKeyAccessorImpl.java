@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.node.app.hints.HintsKeyAccessor;
-import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.tss.fakes.FakeFieldElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,10 +37,10 @@ public class HintsKeyAccessorImpl implements HintsKeyAccessor {
             new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
     private static final BlsKeyPair FAKE_BLS_KEY_PAIR = new BlsKeyPair(FAKE_BLS_PRIVATE_KEY, FAKE_BLS_PUBLIC_KEY);
 
-    private final HintsOperations operations;
+    private final HintsLibrary operations;
 
     @Inject
-    public HintsKeyAccessorImpl(@NonNull final HintsOperations operations) {
+    public HintsKeyAccessorImpl(@NonNull final HintsLibrary operations) {
         this.operations = requireNonNull(operations);
     }
 

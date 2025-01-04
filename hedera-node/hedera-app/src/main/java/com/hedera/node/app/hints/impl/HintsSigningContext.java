@@ -22,7 +22,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PartyAssignment;
-import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,7 +36,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class HintsSigningContext {
-    private final HintsOperations operations;
+    private final HintsLibrary operations;
 
     @Nullable
     private HintsConstruction construction;
@@ -45,7 +45,7 @@ public class HintsSigningContext {
     private Map<Long, Long> nodePartyIds;
 
     @Inject
-    public HintsSigningContext(@NonNull final HintsOperations operations) {
+    public HintsSigningContext(@NonNull final HintsLibrary operations) {
         this.operations = requireNonNull(operations);
     }
 

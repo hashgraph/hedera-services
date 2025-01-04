@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.hints.HintsKeyAccessor;
-import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.tss.RosterTransitionWeights;
@@ -57,7 +57,7 @@ public class HintsConstructionControllers {
 
     private final Executor executor;
     private final HintsKeyAccessor keyLoader;
-    private final HintsOperations operations;
+    private final HintsLibrary operations;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
@@ -74,7 +74,7 @@ public class HintsConstructionControllers {
     public HintsConstructionControllers(
             @NonNull final Executor executor,
             @NonNull final HintsKeyAccessor keyLoader,
-            @NonNull final HintsOperations operations,
+            @NonNull final HintsLibrary operations,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsSigningContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier,

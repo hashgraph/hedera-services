@@ -47,9 +47,9 @@ import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.hints.FakeHintsService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.history.FakeHistoryService;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -169,7 +169,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 DiskStartupNetworks::new,
                 appContext -> this.hintsService = new FakeHintsService(appContext),
                 appContext -> this.historyService = new FakeHistoryService(),
-                (hints, history, configProvider) -> this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider));
+                (hints, history, configProvider) ->
+                        this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));

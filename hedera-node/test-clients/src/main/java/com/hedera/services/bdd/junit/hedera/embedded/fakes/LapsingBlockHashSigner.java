@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.history.HistoryService;
@@ -23,11 +25,7 @@ import com.hedera.node.app.tss.TssBlockHashSigner;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link BlockHashSigner} that can start ignoring requests for ledger signatures when requested.

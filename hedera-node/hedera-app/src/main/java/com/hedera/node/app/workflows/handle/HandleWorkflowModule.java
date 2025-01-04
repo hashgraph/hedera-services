@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
@@ -41,7 +40,6 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.State;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;

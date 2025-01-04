@@ -19,7 +19,7 @@ package com.hedera.node.app.hints.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsSignature;
-import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class HintsSigning {
     private final CompletableFuture<Bytes> future = new CompletableFuture<>();
     private final ConcurrentMap<Long, BlsSignature> signatures = new ConcurrentHashMap<>();
     private final AtomicLong weightOfSignatures = new AtomicLong();
-    private final HintsOperations operations;
+    private final HintsLibrary operations;
 
     public HintsSigning(
             final long constructionId,
@@ -48,7 +48,7 @@ public class HintsSigning {
             @NonNull final Bytes message,
             @NonNull final Bytes aggregationKey,
             @NonNull final Map<Long, Long> partyIds,
-            @NonNull final HintsOperations operations) {
+            @NonNull final HintsLibrary operations) {
         this.constructionId = constructionId;
         this.thresholdWeight = thresholdWeight;
         this.message = requireNonNull(message);

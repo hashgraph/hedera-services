@@ -18,20 +18,26 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes.hints;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
-import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * A fake implementation of the {@link HintsOperations} for use with embedded tests.
+ * A fake implementation of the {@link HintsLibrary} for use with embedded tests.
  */
-public class FakeHintsOperations implements HintsOperations {
+public class FakeHintsLibrary implements HintsLibrary {
+    @Override
+    public BlsKeyPair newBlsKeyPair() {
+        throw new AssertionError("Not implemented");
+    }
+
     @Override
     public BlsSignature signPartial(@NonNull final Bytes message, @NonNull final BlsPrivateKey key) {
         requireNonNull(message);

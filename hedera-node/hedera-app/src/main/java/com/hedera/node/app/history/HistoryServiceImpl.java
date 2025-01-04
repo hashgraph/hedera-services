@@ -48,7 +48,7 @@ public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProo
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HistoryOperations operations) {
+            @NonNull final HistoryLibrary operations) {
         component = DaggerHistoryServiceComponent.factory().create(operations, appContext, executor, metrics);
     }
 

@@ -36,7 +36,7 @@ public interface HintsServiceComponent {
     @Component.Factory
     interface Factory {
         HintsServiceComponent create(
-                @BindsInstance HintsOperations hintsOperations,
+                @BindsInstance HintsLibrary hintsLibrary,
                 @BindsInstance AppContext appContext,
                 @BindsInstance Executor executor,
                 @BindsInstance Metrics metrics);

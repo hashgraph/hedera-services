@@ -18,7 +18,7 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.history.HistoryOperations;
+import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ProofKeysAccessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,10 +32,10 @@ public class ProofKeysAccessorImpl implements ProofKeysAccessor {
     private static final SchnorrKeyPair FAKE_SCHNORR_KEY_PAIR =
             new SchnorrKeyPair(FAKE_SCHNORR_PRIVATE_KEY, FAKE_SCHNORR_PUBLIC_KEY);
 
-    private final HistoryOperations operations;
+    private final HistoryLibrary operations;
 
     @Inject
-    public ProofKeysAccessorImpl(@NonNull final HistoryOperations operations) {
+    public ProofKeysAccessorImpl(@NonNull final HistoryLibrary operations) {
         this.operations = requireNonNull(operations);
     }
 

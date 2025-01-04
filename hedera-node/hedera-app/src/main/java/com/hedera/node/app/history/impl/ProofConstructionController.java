@@ -31,7 +31,7 @@ import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.hapi.node.state.history.ProofRoster;
 import com.hedera.hapi.node.state.history.ProofRosterEntry;
-import com.hedera.node.app.history.HistoryOperations;
+import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ReadableHistoryStore.AssemblySignaturePublication;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.tss.RosterTransitionWeights;
@@ -69,7 +69,7 @@ public class ProofConstructionController {
     private final Duration proofKeysWaitTime;
     private final Executor executor;
     private final SchnorrKeyPair schnorrKeyPair;
-    private final HistoryOperations operations;
+    private final HistoryLibrary operations;
     private final HistorySubmissions submissions;
     private final RosterTransitionWeights weights;
     private final Consumer<MetadataProof> proofConsumer;
@@ -156,7 +156,7 @@ public class ProofConstructionController {
             @NonNull final MetadataProofConstruction construction,
             @NonNull final Duration proofKeysWaitTime,
             @NonNull final SchnorrKeyPair schnorrKeyPair,
-            @NonNull final HistoryOperations operations,
+            @NonNull final HistoryLibrary operations,
             @NonNull final HistorySubmissions submissions,
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Consumer<MetadataProof> proofConsumer) {

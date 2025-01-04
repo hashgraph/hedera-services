@@ -45,7 +45,7 @@ public class HintsServiceImpl implements HintsService {
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsOperations operations) {
+            @NonNull final HintsLibrary operations) {
         this.component = DaggerHintsServiceComponent.factory().create(operations, appContext, executor, metrics);
     }
 

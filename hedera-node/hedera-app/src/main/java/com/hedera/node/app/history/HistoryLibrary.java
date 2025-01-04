@@ -17,6 +17,7 @@
 package com.hedera.node.app.history;
 
 import com.hedera.hapi.node.state.history.ProofRoster;
+import com.hedera.node.app.history.impl.SchnorrKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -25,7 +26,13 @@ import java.util.Map;
 /**
  * The cryptographic operations required by the {@link HistoryService}.
  */
-public interface HistoryOperations {
+public interface HistoryLibrary {
+    /**
+     * Generates a new Schnorr key pair.
+     * @return the key pair
+     */
+    SchnorrKeyPair newSchnorrKeyPair();
+
     /**
      * Signs the given message with the given Schnorr private key.
      * @param message the message

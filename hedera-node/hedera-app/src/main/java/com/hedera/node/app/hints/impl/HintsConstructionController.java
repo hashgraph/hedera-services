@@ -28,7 +28,7 @@ import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
 import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
-import com.hedera.node.app.hints.HintsOperations;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -59,7 +59,7 @@ public class HintsConstructionController {
     private final Executor executor;
     private final BlsKeyPair blsKeyPair;
     private final Duration hintKeysWaitTime;
-    private final HintsOperations operations;
+    private final HintsLibrary operations;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
     private final Map<Long, Long> nodePartyIds = new HashMap<>();
@@ -121,7 +121,7 @@ public class HintsConstructionController {
             @NonNull final Executor executor,
             @NonNull final BlsKeyPair blsKeyPair,
             @NonNull final Duration hintKeysWaitTime,
-            @NonNull final HintsOperations operations,
+            @NonNull final HintsLibrary operations,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final Map<Long, PreprocessedKeysVote> votes,
             @NonNull final HintsSubmissions submissions,

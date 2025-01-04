@@ -30,7 +30,7 @@ public interface HistoryServiceComponent {
     @Component.Factory
     interface Factory {
         HistoryServiceComponent create(
-                @BindsInstance HistoryOperations historyOperations,
+                @BindsInstance HistoryLibrary historyLibrary,
                 @BindsInstance AppContext appContext,
                 @BindsInstance Executor executor,
                 @BindsInstance Metrics metrics);

@@ -19,16 +19,21 @@ package com.hedera.node.app.history.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.history.ProofRoster;
-import com.hedera.node.app.history.HistoryOperations;
+import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 
 /**
- * Default implementation of the {@link HistoryOperations}.
+ * Default implementation of the {@link HistoryLibrary}.
  */
-public class HistoryOperationsImpl implements HistoryOperations {
+public class HistoryLibraryImpl implements HistoryLibrary {
+    @Override
+    public SchnorrKeyPair newSchnorrKeyPair() {
+        return new SchnorrKeyPair(Bytes.EMPTY, Bytes.EMPTY);
+    }
+
     @Override
     public Bytes hashProofRoster(@NonNull final ProofRoster roster) {
         requireNonNull(roster);
