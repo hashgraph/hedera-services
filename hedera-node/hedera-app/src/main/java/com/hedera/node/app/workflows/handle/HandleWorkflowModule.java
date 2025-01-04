@@ -37,7 +37,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.State;
 import dagger.Module;
@@ -78,7 +77,7 @@ public interface HandleWorkflowModule {
         return (roster, path) -> {
             final var network = Network.newBuilder()
                     .nodeMetadata(roster.rosterEntries().stream()
-                            .map(entry -> new NodeMetadata(entry, null, Bytes.EMPTY))
+                            .map(entry -> new NodeMetadata(entry, null))
                             .toList())
                     .build();
             tryToExport(network, path);
