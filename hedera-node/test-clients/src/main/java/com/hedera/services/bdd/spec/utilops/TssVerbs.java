@@ -18,8 +18,11 @@ package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 
+import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -38,6 +41,26 @@ import java.util.function.Consumer;
 public class TssVerbs {
     private TssVerbs() {
         throw new UnsupportedOperationException("Utility class");
+    }
+
+    /**
+     * Returns an operation that instructs the embedded {@link TssBaseService} to ignoring TSS signature requests.
+     *
+     * @return the operation that will ignore TSS signature requests
+     */
+    public static SpecOperation startIgnoringTssSignatureRequests() {
+        return doingContextual(
+                spec -> spec.repeatableEmbeddedHederaOrThrow().blockHashSigner().startIgnoringRequests());
+    }
+
+    /**
+     * Returns an operation that instructs the embedded {@link TssBaseService} to stop ignoring TSS signature requests.
+     *
+     * @return the operation that will stop ignoring TSS signature requests
+     */
+    public static SpecOperation stopIgnoringTssSignatureRequests() {
+        return doingContextual(
+                spec -> spec.repeatableEmbeddedHederaOrThrow().blockHashSigner().stopIgnoringRequests());
     }
 
     /**

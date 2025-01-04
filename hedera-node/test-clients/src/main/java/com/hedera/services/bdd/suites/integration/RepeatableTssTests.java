@@ -23,6 +23,8 @@ import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATA
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
+import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -70,12 +72,12 @@ public class RepeatableTssTests {
             if (spec.startupProperties().getStreamMode("blockStream.streamMode") != RECORDS) {
                 allRunFor(
                         spec,
-                        // startIgnoringTssSignatureRequests(),
+                        startIgnoringTssSignatureRequests(),
                         blockStreamMustIncludePassFrom(ignore -> indirectProofsAssertion),
                         // Each transaction is placed into its own round and hence block with default config
                         cryptoCreate("firstIndirectProof"),
                         cryptoCreate("secondIndirectProof"),
-                        // stopIgnoringTssSignatureRequests(),
+                        stopIgnoringTssSignatureRequests(),
                         doAdhoc(indirectProofsAssertion::startExpectingBlocks),
                         cryptoCreate("directProof"));
             }

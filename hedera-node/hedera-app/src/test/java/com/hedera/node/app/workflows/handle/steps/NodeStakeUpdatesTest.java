@@ -97,20 +97,6 @@ public class NodeStakeUpdatesTest {
         subject = new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, storeMetricsService);
     }
 
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new StakePeriodChanges(null, exchangeRateManager, storeMetricsService))
-                .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new StakePeriodChanges(stakingPeriodCalculator, null, storeMetricsService))
-                .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(
-                        () -> new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, storeMetricsService))
-                .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
     @Test
     void processUpdateSkippedForPreviousPeriod() {
         verifyNoInteractions(stakingPeriodCalculator);

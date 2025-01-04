@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -80,6 +81,9 @@ class IngestComponentTest {
 
     @Mock
     private StartupNetworks startupNetworks;
+
+    @Mock
+    private BlockHashSigner blockHashSigner;
 
     private HederaInjectionComponent app;
 
@@ -134,6 +138,7 @@ class IngestComponentTest {
                 .networkInfo(mock(NetworkInfo.class))
                 .startupNetworks(startupNetworks)
                 .throttleFactory(throttleFactory)
+                .blockHashSigner(blockHashSigner)
                 .build();
 
         final var state = new FakeState();

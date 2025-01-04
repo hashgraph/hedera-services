@@ -24,7 +24,6 @@ import static com.hedera.node.app.info.DiskStartupNetworks.fromLegacyAddressBook
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
-import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.FAKE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.NO_OP_METRICS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
@@ -75,7 +74,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.InstantSource;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -137,7 +135,7 @@ class DiskStartupNetworksTest {
     @Test
     void findsAvailableGenesisNetwork() throws IOException {
         givenConfig();
-        putJsonAt(GENESIS_NETWORK_JSON, WithTssKeys.NO);
+        putJsonAt(GENESIS_NETWORK_JSON, WithTssState.NO);
         final var network = subject.genesisNetworkOrThrow(DEFAULT_CONFIG);
         assertThat(network).isEqualTo(NETWORK);
     }
@@ -145,7 +143,7 @@ class DiskStartupNetworksTest {
     @Test
     void findsAvailableMigrationNetwork() throws IOException {
         givenConfig();
-        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssKeys.YES);
+        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
         final var network = subject.migrationNetworkOrThrow();
         assertThat(network).isEqualTo(NETWORK);
     }
@@ -180,7 +178,7 @@ class DiskStartupNetworksTest {
     @Test
     void archivesGenesisNetworks() throws IOException {
         givenConfig();
-        putJsonAt(GENESIS_NETWORK_JSON, WithTssKeys.NO);
+        putJsonAt(GENESIS_NETWORK_JSON, WithTssState.NO);
         final var genesisJson = tempDir.resolve(GENESIS_NETWORK_JSON);
 
         assertThat(Files.exists(genesisJson)).isTrue();
@@ -196,7 +194,7 @@ class DiskStartupNetworksTest {
     @Test
     void archivesUnscopedOverrideNetwork() throws IOException {
         givenConfig();
-        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssKeys.YES);
+        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
         final var overrideJson = tempDir.resolve(OVERRIDE_NETWORK_JSON);
 
         assertThat(Files.exists(overrideJson)).isTrue();
@@ -212,7 +210,7 @@ class DiskStartupNetworksTest {
     void archivesScopedOverrideNetwork() throws IOException {
         givenConfig();
         Files.createDirectory(tempDir.resolve("" + ROUND_NO));
-        putJsonAt(ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON, WithTssKeys.YES);
+        putJsonAt(ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON, WithTssState.YES);
         final var overrideJson = tempDir.resolve(ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON);
 
         assertThat(Files.exists(overrideJson)).isTrue();
@@ -228,7 +226,7 @@ class DiskStartupNetworksTest {
     @Test
     void overrideNetworkOnlyStillAvailableAtSameRound() throws IOException {
         givenConfig();
-        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssKeys.YES);
+        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
 
         final var maybeOverrideNetwork = subject.overrideNetworkFor(ROUND_NO);
         assertThat(maybeOverrideNetwork).isPresent();
@@ -261,12 +259,13 @@ class DiskStartupNetworksTest {
         }
     }
 
-    private enum WithTssKeys {
+    private enum WithTssState {
         YES,
         NO
     }
 
-    private void putJsonAt(@NonNull final String fileName, @NonNull final WithTssKeys withTssKeys) throws IOException {
+    private void putJsonAt(@NonNull final String fileName, @NonNull final WithTssState withTssState)
+            throws IOException {
         final var loc = tempDir.resolve(fileName);
         try (final var fout = Files.newOutputStream(loc)) {
             Network.JSON.write(NETWORK, new WritableStreamingData(fout));
@@ -276,8 +275,6 @@ class DiskStartupNetworksTest {
     private State stateContainingInfoFrom(@NonNull final Network network) {
         final var state = new FakeState();
         final var servicesRegistry = new FakeServicesRegistry();
-        given(appContext.gossip()).willReturn(UNAVAILABLE_GOSSIP);
-        given(appContext.instantSource()).willReturn(InstantSource.system());
         final var tssBaseService = new TssBaseServiceImpl();
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
         PLATFORM_STATE_SERVICE.setDiskAddressBook(new AddressBook());

@@ -29,6 +29,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeConsensusEvent;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeEvent;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -123,6 +124,14 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         // We handle each transaction in a round starting in the next second of fake consensus time, so
         // we don't need any offset here; this simplifies tests that validate purging expired receipts
         return 0L;
+    }
+
+    /**
+     * Returns the block hash signer for this embedded node that can be told to lapse into an unresponsive state
+     * and start ignoring signature requests.
+     */
+    public LapsingBlockHashSigner blockHashSigner() {
+        return blockHashSigner;
     }
 
     /**

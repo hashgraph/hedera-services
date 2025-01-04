@@ -119,6 +119,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * Non-final because a "saved state" may be provided via {@link EmbeddedHedera#restart(FakeState)}.
      */
     protected FakeState state;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
+     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
+     */
+    protected LapsingBlockHashSigner blockHashSigner;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -143,7 +149,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 new FakeServiceMigrator(),
                 this::now,
                 DiskStartupNetworks::new,
-                LapsingBlockHashSigner::new);
+                () -> this.blockHashSigner = new LapsingBlockHashSigner());
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
