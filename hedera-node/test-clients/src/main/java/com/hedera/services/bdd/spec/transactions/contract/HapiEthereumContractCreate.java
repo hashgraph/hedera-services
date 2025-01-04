@@ -294,6 +294,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 weibarsToTinybars(balance).orElse(BigInteger.ZERO),
                 callData,
                 new byte[] {},
+                null,
                 0,
                 null,
                 null,
