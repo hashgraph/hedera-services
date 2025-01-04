@@ -475,8 +475,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 metadata.nodeOrThrow()
                         .copyBuilder()
                         .gossipEndpoint(endpoints.getLast(), endpoints.getFirst())
-                        .build(),
-                metadata.tssEncryptionKey());
+                        .build());
     }
 
     private void reinitializePorts() {

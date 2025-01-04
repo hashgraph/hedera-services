@@ -23,7 +23,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -38,7 +37,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -181,7 +179,6 @@ public class DiskStartupNetworks implements StartupNetworks {
             @NonNull final State state, @NonNull final Path path, @NonNull final Set<InfoType> infoTypes) {
         requireNonNull(state);
         final var nodeStore = new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
-        final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
         Optional.ofNullable(RosterRetriever.retrieveActiveOrGenesisRoster(state))
                 .ifPresent(activeRoster -> {
                     final var network = Network.newBuilder();
@@ -190,8 +187,7 @@ public class DiskStartupNetworks implements StartupNetworks {
                         final var node = requireNonNull(nodeStore.get(entry.nodeId()));
                         nodeMetadata.add(new NodeMetadata(
                                 infoTypes.contains(InfoType.ROSTER) ? entry : null,
-                                infoTypes.contains(InfoType.NODE_DETAILS) ? node : null,
-                                Bytes.EMPTY));
+                                infoTypes.contains(InfoType.NODE_DETAILS) ? node : null));
                     });
                     network.nodeMetadata(nodeMetadata);
                     tryToExport(network.build(), path);
@@ -246,7 +242,6 @@ public class DiskStartupNetworks implements StartupNetworks {
                                             .deleted(false)
                                             .adminKey(Key.DEFAULT)
                                             .build())
-                                    .tssEncryptionKey(Bytes.EMPTY)
                                     .build();
                         })
                         .toList())
