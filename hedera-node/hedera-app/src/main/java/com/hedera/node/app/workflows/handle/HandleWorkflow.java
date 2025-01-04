@@ -87,7 +87,6 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -153,7 +152,6 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
-    private final TssBaseService tssBaseService;
     private final HintsService hintsService;
     private final HistoryService historyService;
     private final ConfigProvider configProvider;
@@ -189,7 +187,6 @@ public class HandleWorkflow {
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final AddressBookHelper addressBookHelper,
-            @NonNull final TssBaseService tssBaseService,
             @NonNull final HintsService hintsService,
             @NonNull final HistoryService historyService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
@@ -216,7 +213,6 @@ public class HandleWorkflow {
         this.userTxnFactory = requireNonNull(userTxnFactory);
         this.configProvider = requireNonNull(configProvider);
         this.addressBookHelper = requireNonNull(addressBookHelper);
-        this.tssBaseService = requireNonNull(tssBaseService);
         this.hintsService = requireNonNull(hintsService);
         this.historyService = requireNonNull(historyService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
@@ -264,9 +260,6 @@ public class HandleWorkflow {
 
     private void reconcileTssState(
             @NonNull final TssConfig tssConfig, @NonNull final State state, @NonNull final Instant now) {
-        if (tssConfig.keyCandidateRoster()) {
-            tssBaseService.ensureParticipantDirectoryKnown(state);
-        }
         if (tssConfig.hintsEnabled() || tssConfig.historyEnabled()) {
             final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
             if (tssConfig.hintsEnabled()) {
@@ -702,14 +695,11 @@ public class HandleWorkflow {
      * @param dispatch the dispatch to manage time for
      */
     private void advanceTimeFor(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
-        // WARNING: The two time-based checks below rely on the BlockStreamManager's last-handled time
-        // not being updated yet, so we must not call setLastHandleTime() until after them
+        // WARNING: The check below relies on the BlockStreamManager's last-handled time not being updated yet,
+        // so we must not call setLastHandleTime() until after them
         processStakePeriodChanges(userTxn, dispatch);
         if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
-            // Check the tss status and manage it if necessary
-            final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
-            tssBaseService.manageTssStatus(
-                    userTxn.stack(), isStakePeriodBoundary, userTxn.consensusNow(), storeMetricsService);
+            processStakePeriodChanges(userTxn, dispatch);
         }
         blockStreamManager.setLastHandleTime(userTxn.consensusNow());
         if (streamMode != BLOCKS) {
@@ -847,12 +837,12 @@ public class HandleWorkflow {
     /**
      * Processes any side effects of crossing a stake period boundary.
      *
-     * @param userTxn  the user transaction that crossed the boundary
+     * @param userTxn the user transaction that crossed the boundary
      * @param dispatch the dispatch for the user transaction that crossed the boundary
      */
-    private boolean processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+    private void processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-            return stakePeriodChanges.process(
+            stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),
@@ -865,7 +855,6 @@ public class HandleWorkflow {
             // get back to user transactions
             logger.error("Failed to process stake period changes", e);
         }
-        return false;
     }
 
     private static void logPreDispatch(@NonNull final UserTxn userTxn) {

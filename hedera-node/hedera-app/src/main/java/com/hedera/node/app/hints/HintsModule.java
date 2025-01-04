@@ -27,7 +27,7 @@ import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
 import com.hedera.node.app.hints.impl.HintsKeyAccessorImpl;
 import com.hedera.node.app.hints.impl.HintsSigning;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.api.FakeGroupElement;
+import com.hedera.node.app.tss.fakes.FakeGroupElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;

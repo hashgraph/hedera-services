@@ -48,7 +48,7 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "node-admin-keys.json") String upgradeNodeAdminKeysFile,
         @ConfigProperty(
                         defaultValue =
-                                "TssMessage,TssVote,TssShareSignature,HintsKeyPublication,HintsAggregationVote,HintsPartialSignature")
+                                "HintsKeyPublication,HintsAggregationVote,HintsPartialSignature")
                 @NetworkProperty
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
@@ -59,4 +59,5 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int distinctTxnIdsToTry,
         @ConfigProperty(defaultValue = "60s") @NodeProperty Duration urgentHintsKeysWaitPeriod,
-        @ConfigProperty(defaultValue = "300s") @NodeProperty Duration relaxedHintsKeysWaitPeriod) {}
+        @ConfigProperty(defaultValue = "300s") @NodeProperty Duration relaxedHintsKeysWaitPeriod,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean preserveStateWeightsDuringOverride) {}

@@ -36,8 +36,6 @@ import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -123,13 +121,6 @@ public enum TransactionExecutors {
                         () -> state,
                         () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        final var tssBaseService = new TssBaseServiceImpl(
-                appContext,
-                ForkJoinPool.commonPool(),
-                ForkJoinPool.commonPool(),
-                new TssLibraryImpl(appContext),
-                ForkJoinPool.commonPool(),
-                NO_OP_METRICS);
         final var hintsService =
                 new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsOperationsImpl());
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
@@ -138,7 +129,6 @@ public enum TransactionExecutors {
         final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
-                .tssBaseService(tssBaseService)
                 .hintsService(hintsService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)

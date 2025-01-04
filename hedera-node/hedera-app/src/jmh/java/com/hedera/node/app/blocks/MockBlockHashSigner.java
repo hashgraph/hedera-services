@@ -27,7 +27,9 @@ import java.util.concurrent.CompletableFuture;
  * A mock implementation of the {@link BlockHashSigner} that "signs" block hashes by
  * scheduling their SHA-384 hash.
  */
-public class MockBlockHashSigner implements BlockHashSigner {
+public enum MockBlockHashSigner implements BlockHashSigner {
+    MOCK_BLOCK_HASH_SIGNER;
+
     @Override
     public boolean isReady() {
         return true;

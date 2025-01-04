@@ -47,8 +47,6 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
@@ -114,10 +112,6 @@ public class WritableStoreFactory {
         newMap.put(
                 WritableRosterStore.class,
                 new StoreEntry(RosterService.NAME, (states, config, metrics) -> new WritableRosterStore(states)));
-        // TSSBase Service
-        newMap.put(
-                WritableTssStore.class,
-                new StoreEntry(TssBaseService.NAME, (states, config, metrics) -> new WritableTssStore(states)));
         // HintsService
         newMap.put(
                 WritableHintsStore.class,

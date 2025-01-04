@@ -237,10 +237,6 @@ public class HapiUtils {
             case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
             case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
             case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
-            case TSS_MESSAGE -> HederaFunctionality.TSS_MESSAGE;
-            case TSS_VOTE -> HederaFunctionality.TSS_VOTE;
-            case TSS_SHARE_SIGNATURE -> HederaFunctionality.TSS_SHARE_SIGNATURE;
-            case TSS_ENCRYPTION_KEY -> HederaFunctionality.TSS_ENCRYPTION_KEY;
             case STATE_SIGNATURE_TRANSACTION -> HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
             case HINTS_AGGREGATION_VOTE -> HederaFunctionality.HINTS_AGGREGATION_VOTE;
             case HINTS_KEY_PUBLICATION -> HederaFunctionality.HINTS_KEY_PUBLICATION;

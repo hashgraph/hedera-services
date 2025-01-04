@@ -20,9 +20,8 @@ import static com.hedera.hapi.block.stream.output.SingletonUpdateChange.NewValue
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
+import static com.hedera.node.app.blocks.MockBlockHashSigner.MOCK_BLOCK_HASH_SIGNER;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
-import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
-import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -43,19 +42,13 @@ import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.app.services.AppContextImpl;
-import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
@@ -105,7 +98,6 @@ public class BlockStreamManagerBenchmark {
     private static final String SAMPLE_BLOCK = "sample.blk.gz";
     private static final Instant FAKE_CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Timestamp FAKE_CONSENSUS_TIME = new Timestamp(1_234_567L, 890);
-    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final SemanticVersion VERSION = new SemanticVersion(0, 56, 0, "", "");
 
     public static void main(String... args) throws Exception {
@@ -120,25 +112,8 @@ public class BlockStreamManagerBenchmark {
                     "blockStream.hashCombineBatchSize", "64",
                     "blockStream.serializationBatchSize", "32"));
     private final List<BlockItem> roundItems = new ArrayList<>();
-    final AppContext appContext = new AppContextImpl(
-            Instant::now,
-            fakeSignatureVerifier(),
-            UNAVAILABLE_GOSSIP,
-            configProvider::getConfiguration,
-            () -> DEFAULT_NODE_INFO,
-            () -> NO_OP_METRICS,
-            (split, snapshots) -> {
-                throw new UnsupportedOperationException();
-            });
-    private final TssBaseServiceImpl tssBaseService = new TssBaseServiceImpl(
-            appContext,
-            ForkJoinPool.commonPool(),
-            ForkJoinPool.commonPool(),
-            new TssLibraryImpl(appContext),
-            ForkJoinPool.commonPool(),
-            new NoOpMetrics());
     private final BlockStreamManagerImpl subject = new BlockStreamManagerImpl(
-            new MockBlockHashSigner(),
+            MOCK_BLOCK_HASH_SIGNER,
             NoopBlockItemWriter::new,
             //            BaosBlockItemWriter::new,
             ForkJoinPool.commonPool(),
@@ -165,7 +140,6 @@ public class BlockStreamManagerBenchmark {
         addServiceSingleton(new V0560BlockStreamSchema(ignore -> {}), BlockStreamService.NAME, BlockStreamInfo.DEFAULT);
         addServiceSingleton(new V0540PlatformStateSchema(), PlatformStateService.NAME, platformState);
         subject.initLastBlockHash(ZERO_BLOCK_HASH);
-        tssBaseService.registerLedgerSignatureConsumer(subject);
     }
 
     @Benchmark

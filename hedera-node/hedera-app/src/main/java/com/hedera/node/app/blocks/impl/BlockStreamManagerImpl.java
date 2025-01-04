@@ -351,7 +351,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             writer = null;
             blockHashSigner
                     .signFuture(blockHash)
-                    .thenAccept(signature -> accept(blockHash.toByteArray(), signature.toByteArray()));
+                    .thenAccept(signature -> finishProofWithSignature(blockHash, signature));
 
             final var exportNetworkToDisk =
                     switch (diskNetworkExport) {
@@ -404,20 +404,21 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     /**
+     * If still pending, finishes the block proof for the block with the given hash using the given direct signature.
+     * <p>
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
      *
-     * @param message   the block hash to finish the block proof for
-     * @param signature the signature to use in the block proof
+     * @param blockHash   the block hash to finish the block proof for
+     * @param blockSignature the signature to use in the block proof
      */
-    @Override
-    public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
+    private synchronized void finishProofWithSignature(
+            @NonNull final Bytes blockHash, @NonNull final Bytes blockSignature) {
         // Find the block whose hash is the signed message, tracking any sibling hashes
         // needed for indirect proofs of earlier blocks along the way
         long blockNumber = Long.MIN_VALUE;
         boolean impliesIndirectProof = false;
         final List<List<MerkleSiblingHash>> siblingHashes = new ArrayList<>();
-        final var blockHash = Bytes.wrap(message);
         for (final var block : pendingBlocks) {
             if (impliesIndirectProof) {
                 siblingHashes.add(List.of(block.siblingHashes()));
@@ -433,7 +434,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             return;
         }
         // Write proofs for all pending blocks up to and including the signed block number
-        final var blockSignature = Bytes.wrap(signature);
         while (!pendingBlocks.isEmpty() && pendingBlocks.peek().number() <= blockNumber) {
             final var block = pendingBlocks.poll();
             final var proof = block.proofBuilder()

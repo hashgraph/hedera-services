@@ -24,7 +24,7 @@ import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsOperations;
-import com.hedera.node.app.tss.api.FakeFieldElement;
+import com.hedera.node.app.tss.fakes.FakeFieldElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;

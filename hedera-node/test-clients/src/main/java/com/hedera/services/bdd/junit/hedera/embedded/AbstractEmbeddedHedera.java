@@ -35,7 +35,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.Hedera.TssBaseServiceFactory;
 import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
@@ -48,9 +47,9 @@ import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.hints.FakeHintsService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.history.FakeHistoryService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -124,12 +123,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * Non-final because a "saved state" may be provided via {@link EmbeddedHedera#restart(FakeState)}.
      */
     protected FakeState state;
-    /**
-     * Non-final because the compiler can't tell that the {@link TssBaseServiceFactory} lambda we give the
-     * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.tss.TssBaseServiceImpl}
-     * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
-     */
-    protected FakeTssBaseService tssBaseService;
+
     /**
      * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HintsServiceFactory} lambda we give the
      * {@link Hedera} constructor will always set this (the fake's {@link HintsServiceImpl}
@@ -143,6 +137,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * instance's {@link com.hedera.node.app.spi.AppContext}).
      */
     protected FakeHistoryService historyService;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
+     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
+     */
+    protected LapsingBlockHashSigner blockHashSigner;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -166,13 +166,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                appContext -> {
-                    this.tssBaseService = new FakeTssBaseService(appContext);
-                    return this.tssBaseService;
-                },
                 DiskStartupNetworks::new,
                 appContext -> this.hintsService = new FakeHintsService(appContext),
-                appContext -> this.historyService = new FakeHistoryService());
+                appContext -> this.historyService = new FakeHistoryService(),
+                (hints, history, configProvider) -> this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
@@ -239,11 +236,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public FakeState state() {
         return state;
-    }
-
-    @Override
-    public FakeTssBaseService tssBaseService() {
-        return tssBaseService;
     }
 
     @Override

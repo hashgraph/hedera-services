@@ -173,7 +173,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(true, true));
+        subject.handleTxBody(state, txBody.build(), configWith(true, false));
 
         // then
         final var platformState = platformStateBackingStore.get();
@@ -190,7 +190,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(true, false));
+        subject.handleTxBody(state, txBody.build(), configWith(false, false));
 
         // then
         final var platformState = platformStateBackingStore.get();
@@ -214,7 +214,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         .build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(false, true));
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
 
         // then
         final var captor = ArgumentCaptor.forClass(Path.class);
@@ -237,7 +237,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
                         .build());
 
-        subject.handleTxBody(state, txBody.build(), configWith(false, true));
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
 
         verify(rosterExportHelper, never()).accept(any(), any());
     }
@@ -258,7 +258,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         .build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(false, false));
+        subject.handleTxBody(state, txBody.build(), configWith(false, true));
 
         // then
         final var captor = ArgumentCaptor.forClass(Path.class);
@@ -267,9 +267,9 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
-    private Configuration configWith(final boolean keyCandidateRoster, final boolean useRosterLifecycle) {
+    private Configuration configWith(final boolean useRosterLifecycle, final boolean createCandidateRoster) {
         return HederaTestConfigBuilder.create()
-                .withValue("tss.keyCandidateRoster", "" + keyCandidateRoster)
+                .withValue("addressBook.createCandidateRosterOnPrepareUpgrade", "" + createCandidateRoster)
                 .withValue("addressBook.useRosterLifecycle", "" + useRosterLifecycle)
                 .withValue("networkAdmin.exportCandidateRoster", "true")
                 .withValue("networkAdmin.candidateRosterExportFile", "candidate-network.json")

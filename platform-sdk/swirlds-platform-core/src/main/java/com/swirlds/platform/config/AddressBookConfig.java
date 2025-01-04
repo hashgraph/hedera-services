@@ -47,4 +47,5 @@ public record AddressBookConfig(
         @ConfigProperty(defaultValue = "false") boolean forceUseOfConfigAddressBook,
         @ConfigProperty(defaultValue = "data/saved/address_book") String addressBookDirectory,
         @ConfigProperty(defaultValue = "50") int maxRecordedAddressBookFiles,
-        @ConfigProperty(defaultValue = "false") boolean useRosterLifecycle) {}
+        @ConfigProperty(defaultValue = "false") boolean useRosterLifecycle,
+        @ConfigProperty(defaultValue = "true") boolean createCandidateRosterOnPrepareUpgrade) {}
