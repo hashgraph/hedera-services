@@ -19,6 +19,7 @@ package com.hedera.node.app.hints;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,6 +46,12 @@ public interface WritableHintsStore extends ReadableHintsStore {
             @NonNull Bytes targetRosterHash,
             @NonNull ReadableRosterStore rosterStore,
             @NonNull Instant now);
+
+    /**
+     * If there is a known construction matching the active rosters, returns it; otherwise, null.
+     */
+    @NonNull
+    HintsConstruction getOrCreateConstructionFor(@NonNull ActiveRosters activeRosters, @NonNull Instant now);
 
     /**
      * Includes the given hints key for the given node and party IDs relative to a max universe size, assigning
@@ -83,6 +90,12 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @return the updated construction
      */
     HintsConstruction rescheduleAggregationCheckpoint(long constructionId, @NonNull Instant then);
+
+    /**
+     * Purges any state no longer needed after a given handoff.
+     * @return whether any state was purged
+     */
+    boolean purgeStateAfterHandoff(@NonNull ActiveRosters activeRosters);
 
     /**
      * Ensures the only construction in state is for the given target roster hash.

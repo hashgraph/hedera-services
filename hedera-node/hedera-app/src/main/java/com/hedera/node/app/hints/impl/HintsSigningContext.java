@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.node.app.tss.RosterTransitionWeights.strongMinorityWeightFor;
+import static com.hedera.node.app.roster.RosterTransitionWeights.strongMinorityWeightFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 

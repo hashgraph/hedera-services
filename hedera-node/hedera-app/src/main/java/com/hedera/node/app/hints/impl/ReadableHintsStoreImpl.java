@@ -29,6 +29,7 @@ import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.PreprocessVoteId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
 import com.hedera.node.app.hints.ReadableHintsStore;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -74,6 +75,24 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     @Override
     public HintsConstruction getActiveConstruction() {
         return requireNonNull(activeConstruction.get());
+    }
+
+    @Nullable
+    @Override
+    public HintsConstruction getConstructionFor(@NonNull final ActiveRosters activeRosters) {
+        requireNonNull(activeRosters);
+        return switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                HintsConstruction construction;
+                if (constructionIsFor(construction = requireNonNull(activeConstruction.get()), activeRosters)) {
+                    yield construction;
+                } else if (constructionIsFor(construction = requireNonNull(nextConstruction.get()), activeRosters)) {
+                    yield construction;
+                }
+                yield null;
+            }
+            case HANDOFF -> null;
+        };
     }
 
     @Override
@@ -129,5 +148,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
             @NonNull final Bytes targetRosterHash) {
         return Optional.ofNullable(sourceRosterHash).orElse(Bytes.EMPTY).equals(construction.sourceRosterHash())
                 && targetRosterHash.equals(construction.targetRosterHash());
+    }
+
+    private boolean constructionIsFor(
+            @NonNull final HintsConstruction construction, @NonNull final ActiveRosters activeRosters) {
+        return activeRosters.sourceRosterHash().equals(construction.sourceRosterHash())
+                && activeRosters.targetRosterHash().equals(construction.targetRosterHash());
     }
 }

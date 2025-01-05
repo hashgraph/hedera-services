@@ -64,6 +64,7 @@ import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.impl.WritableHistoryStoreImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -262,13 +263,12 @@ public class HandleWorkflow {
             @NonNull final TssConfig tssConfig, @NonNull final State state, @NonNull final Instant now) {
         if (tssConfig.hintsEnabled() || tssConfig.historyEnabled()) {
             final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
+            final var activeRosters = ActiveRosters.from(rosterStore);
             if (tssConfig.hintsEnabled()) {
                 final var hintsWritableStates = state.getWritableStates(HintsService.NAME);
+                final var hintsStore = new WritableHintsStoreImpl(hintsWritableStates);
                 doStreamingKVChanges(
-                        hintsWritableStates,
-                        now,
-                        () -> hintsService.reconcile(
-                                now, rosterStore, new WritableHintsStoreImpl(hintsWritableStates)));
+                        hintsWritableStates, now, () -> hintsService.reconcile(activeRosters, hintsStore, now));
             }
             if (tssConfig.historyEnabled()) {
                 final HistoryService.MetadataSource metadataSource;

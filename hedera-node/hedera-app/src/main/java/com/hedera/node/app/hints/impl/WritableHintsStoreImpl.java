@@ -22,6 +22,7 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCT
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
+import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -32,7 +33,9 @@ import com.hedera.hapi.node.state.hints.PartyAssignment;
 import com.hedera.hapi.node.state.hints.PreprocessVoteId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.WritableKVState;
@@ -42,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,6 +69,23 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
     }
 
+    @NonNull
+    @Override
+    public HintsConstruction getOrCreateConstructionFor(
+            @NonNull final ActiveRosters activeRosters, @NonNull final Instant now) {
+        requireNonNull(activeRosters);
+        requireNonNull(now);
+        var construction = getConstructionFor(activeRosters);
+        if (construction == null) {
+            construction = newConstruction(
+                    activeRosters.sourceRosterHash(),
+                    activeRosters.targetRosterHash(),
+                    activeRosters::findRelatedRoster,
+                    now);
+        }
+        return construction;
+    }
+
     @Override
     public HintsConstruction newConstructionFor(
             @NonNull final Bytes sourceRosterHash,
@@ -74,59 +95,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         requireNonNull(sourceRosterHash);
         requireNonNull(targetRosterHash);
         requireNonNull(rosterStore);
-        final var currentConstruction = requireNonNull(activeConstruction.get());
-        final var candidateConstruction = requireNonNull(nextConstruction.get());
-        final long nextConstructionId =
-                Math.max(currentConstruction.constructionId(), candidateConstruction.constructionId()) + 1;
-        final var construction = HintsConstruction.newBuilder()
-                .constructionId(nextConstructionId)
-                .sourceRosterHash(sourceRosterHash)
-                .targetRosterHash(targetRosterHash)
-                .build();
-        if (currentConstruction.equals(HintsConstruction.DEFAULT)) {
-            if (!sourceRosterHash.equals(targetRosterHash)) {
-                log.warn(
-                        "Setting genesis construction with different source/target roster hashes ({} to {})",
-                        sourceRosterHash,
-                        targetRosterHash);
-            }
-            if (!candidateConstruction.equals(HintsConstruction.DEFAULT)) {
-                log.warn(
-                        "Purging next construction {} before setting active construction ({} to {})",
-                        candidateConstruction,
-                        sourceRosterHash,
-                        targetRosterHash);
-                purgeVotes(candidateConstruction, rosterStore);
-            }
-            activeConstruction.put(construction);
-        } else {
-            if (!currentConstruction.targetRosterHash().equals(construction.sourceRosterHash())) {
-                log.warn(
-                        "Setting next construction ({} to {}) with with active target {}",
-                        sourceRosterHash,
-                        targetRosterHash,
-                        currentConstruction.targetRosterHash());
-            }
-            nextConstruction.put(construction);
-        }
-        // Rotate any hint keys requested to be used in the next construction
-        final var targetRoster = requireNonNull(rosterStore.get(targetRosterHash));
-        final int M = partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
-        final int k = Integer.numberOfTrailingZeros(M);
-        final var adoptionTime = asTimestamp(now);
-        for (long partyId = 0; partyId < M; partyId++) {
-            final var hintsId = new HintsId(partyId, k);
-            final var keySet = hintsKeys.get(hintsId);
-            if (keySet != null && keySet.hasNextKey()) {
-                final var rotatedKeySet = keySet.copyBuilder()
-                        .key(keySet.nextKey())
-                        .adoptionTime(adoptionTime)
-                        .nextKey((HintsKey) null)
-                        .build();
-                hintsKeys.put(hintsId, rotatedKeySet);
-            }
-        }
-        return construction;
+        return newConstruction(sourceRosterHash, targetRosterHash, rosterStore::get, now);
     }
 
     @Override
@@ -177,12 +146,26 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
+    public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
+        if (activeRosters.phase() != HANDOFF) {
+            throw new IllegalArgumentException("Not in handoff phase");
+        }
+        if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(activeRosters.currentRosterHash())) {
+            purgeVotes(requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
+            activeConstruction.put(nextConstruction.get());
+            nextConstruction.put(HintsConstruction.DEFAULT);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public boolean purgeConstructionsNotFor(
             @NonNull final Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore) {
         requireNonNull(targetRosterHash);
         requireNonNull(rosterStore);
         if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(targetRosterHash)) {
-            purgeVotes(requireNonNull(activeConstruction.get()), rosterStore);
+            purgeVotes(requireNonNull(activeConstruction.get()), rosterStore::get);
             activeConstruction.put(nextConstruction.get());
             nextConstruction.put(HintsConstruction.DEFAULT);
             return true;
@@ -212,15 +195,75 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         return construction;
     }
 
+    private HintsConstruction newConstruction(
+            @NonNull final Bytes sourceRosterHash,
+            @NonNull final Bytes targetRosterHash,
+            @NonNull final Function<Bytes, Roster> lookup,
+            @NonNull final Instant now) {
+        final var currentConstruction = requireNonNull(activeConstruction.get());
+        final var candidateConstruction = requireNonNull(nextConstruction.get());
+        final long nextConstructionId =
+                Math.max(currentConstruction.constructionId(), candidateConstruction.constructionId()) + 1;
+        final var construction = HintsConstruction.newBuilder()
+                .constructionId(nextConstructionId)
+                .sourceRosterHash(sourceRosterHash)
+                .targetRosterHash(targetRosterHash)
+                .build();
+        if (currentConstruction.equals(HintsConstruction.DEFAULT)) {
+            if (!sourceRosterHash.equals(targetRosterHash)) {
+                log.warn(
+                        "Setting genesis construction with different source/target roster hashes ({} to {})",
+                        sourceRosterHash,
+                        targetRosterHash);
+            }
+            if (!candidateConstruction.equals(HintsConstruction.DEFAULT)) {
+                log.warn(
+                        "Purging next construction {} before setting active construction ({} to {})",
+                        candidateConstruction,
+                        sourceRosterHash,
+                        targetRosterHash);
+                purgeVotes(candidateConstruction, lookup);
+            }
+            activeConstruction.put(construction);
+        } else {
+            if (!currentConstruction.targetRosterHash().equals(construction.sourceRosterHash())) {
+                log.warn(
+                        "Setting next construction ({} to {}) with with active target {}",
+                        sourceRosterHash,
+                        targetRosterHash,
+                        currentConstruction.targetRosterHash());
+            }
+            nextConstruction.put(construction);
+        }
+        // Rotate any hint keys requested to be used in the next construction
+        final var targetRoster = requireNonNull(lookup.apply(targetRosterHash));
+        final int M = partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
+        final int k = Integer.numberOfTrailingZeros(M);
+        final var adoptionTime = asTimestamp(now);
+        for (long partyId = 0; partyId < M; partyId++) {
+            final var hintsId = new HintsId(partyId, k);
+            final var keySet = hintsKeys.get(hintsId);
+            if (keySet != null && keySet.hasNextKey()) {
+                final var rotatedKeySet = keySet.copyBuilder()
+                        .key(keySet.nextKey())
+                        .adoptionTime(adoptionTime)
+                        .nextKey((HintsKey) null)
+                        .build();
+                hintsKeys.put(hintsId, rotatedKeySet);
+            }
+        }
+        return construction;
+    }
+
     /**
      * Purges the votes for the given construction relative to the given roster store.
      *
      * @param construction the construction
-     * @param rosterStore the roster store
+     * @param lookup the roster lookup
      */
     private void purgeVotes(
-            @NonNull final HintsConstruction construction, @NonNull final ReadableRosterStore rosterStore) {
-        final var sourceRoster = requireNonNull(rosterStore.get(construction.sourceRosterHash()));
+            @NonNull final HintsConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
+        final var sourceRoster = requireNonNull(lookup.apply(construction.sourceRosterHash()));
         sourceRoster
                 .rosterEntries()
                 .forEach(entry -> votes.remove(new PreprocessVoteId(construction.constructionId(), entry.nodeId())));

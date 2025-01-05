@@ -21,10 +21,10 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -95,31 +95,28 @@ public class HintsServiceImpl implements HintsService {
 
     @Override
     public void reconcile(
-            @NonNull final Instant now,
-            @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final WritableHintsStore hintsStore) {
-        final var currentRosterHash = requireNonNull(rosterStore.getCurrentRosterHash());
-        final var candidateRosterHash = rosterStore.getCandidateRosterHash();
-        final Bytes sourceRosterHash;
-        final Bytes targetRosterHash;
-        if (candidateRosterHash == null) {
-            final var previousRosterHash = rosterStore.getPreviousRosterHash();
-            sourceRosterHash = previousRosterHash != null ? previousRosterHash : currentRosterHash;
-            targetRosterHash = currentRosterHash;
-        } else {
-            sourceRosterHash = currentRosterHash;
-            targetRosterHash = candidateRosterHash;
-        }
-        var construction = hintsStore.getConstructionFor(sourceRosterHash, targetRosterHash);
-        if (construction == null) {
-            construction = hintsStore.newConstructionFor(sourceRosterHash, targetRosterHash, rosterStore, now);
-        }
-        if (!construction.hasPreprocessedKeys()) {
-            final var controller =
-                    component.controllers().getOrCreateControllerFor(construction, hintsStore, rosterStore);
-            controller.advanceConstruction(now, hintsStore);
-        } else if (candidateRosterHash == null && hintsStore.purgeConstructionsNotFor(currentRosterHash, rosterStore)) {
-            component.signingContext().setConstruction(construction);
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final WritableHintsStore hintsStore,
+            @NonNull final Instant now) {
+        requireNonNull(now);
+        requireNonNull(activeRosters);
+        requireNonNull(hintsStore);
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = hintsStore.getOrCreateConstructionFor(activeRosters, now);
+                if (!construction.hasPreprocessedKeys()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
+                    controller.advanceConstruction(now, hintsStore);
+                }
+            }
+            case HANDOFF -> {
+                if (hintsStore.purgeStateAfterHandoff(activeRosters)) {
+                    component
+                            .signingContext()
+                            .setConstruction(requireNonNull(hintsStore.getConstructionFor(activeRosters)));
+                }
+            }
         }
     }
 }

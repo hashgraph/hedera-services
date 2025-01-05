@@ -20,10 +20,10 @@ import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -62,10 +62,10 @@ public class FakeHintsService implements HintsService {
 
     @Override
     public void reconcile(
-            @NonNull final Instant now,
-            @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final WritableHintsStore hintsStore) {
-        delegate.reconcile(now, rosterStore, hintsStore);
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final WritableHintsStore hintsStore,
+            @NonNull final Instant now) {
+        delegate.reconcile(activeRosters, hintsStore, now);
     }
 
     @Override

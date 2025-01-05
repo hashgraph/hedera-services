@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -61,6 +62,12 @@ public interface ReadableHintsStore {
      */
     @Nullable
     Bytes getVerificationKeyFor(@NonNull Bytes targetRosterHash);
+
+    /**
+     * If there is a known construction matching the active rosters, returns it; otherwise, null.
+     */
+    @Nullable
+    HintsConstruction getConstructionFor(@NonNull ActiveRosters activeRosters);
 
     /**
      * If there is a known construction with the given source and target roster hashes,

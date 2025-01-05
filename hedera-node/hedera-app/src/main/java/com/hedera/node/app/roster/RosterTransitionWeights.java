@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss;
+package com.hedera.node.app.roster;
 
 import static java.util.Objects.requireNonNull;
 

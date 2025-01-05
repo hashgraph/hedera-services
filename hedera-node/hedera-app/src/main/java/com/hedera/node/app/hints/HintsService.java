@@ -22,10 +22,10 @@ import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsConstructionController;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,35 +87,30 @@ public interface HintsService extends Service, BlockHashSigner {
 
     /**
      * Takes any actions needed to advance the state of the {@link HintsService} toward
-     * having completed the most up-to-date hinTS construction for the roster store.
+     * having completed the most up-to-date hinTS construction for the given {@link ActiveRosters}.
      * <p>
-     * The basic flow examines the roster store to determine what combination of source/target
-     * roster hashes would represent the most up-to-date hinTS construction. Given these source/target
-     * hashes, it takes one of three courses of action:
+     * Given active rosters with a source/target transition, this method will,
      * <ol>
-     *     <Li> If a completed construction already exists in {@link HintsService} state with the given
-     *     source/target hashes, returns as a no-op.</Li>
-     *     <Li> If there is already an active {@link HintsConstructionController} driving completion
-     *     for the given source/target hashes, this call will invoke its
+     *     <Li>Do nothing if a completed construction for the transition already exists in {@link HintsService}.</Li>
+     *     <Li>If there is no active {@link HintsConstructionController} for the transition, create one based
+     *     on the given consensus time and {@link HintsService} states; and save the created construction in
+     *     network state if this is the first time the network ever began reconciling a hinTS construction for
+     *     the transition.</Li>
+     *     <Li>For the resolved {@link HintsConstructionController} for the transition, invoke its
      *     {@link HintsConstructionController#advanceConstruction(Instant, WritableHintsStore)} method.</li>
-     *     <Li>If there is no active {@link HintsConstructionController} for the given source/target
-     *     hashes, this will create one based on the given consensus time and {@link HintsService} states;
-     *     and will record the creation event in network state if this is the first time the network ever
-     *     began reconciling a hinTS construction for these source/target hashes.</Li>
      * </ol>
      * <p>
      * <b>IMPORTANT:</b> Note that whether a new {@link HintsConstructionController} object is created, or an
      * appropriate one already exists, its subsequent behavior will be a deterministic function of the given
      * consensus time and {@link HintsService} states. That is, controllers are persistent objects <i>only</i>
-     * due to performance considerations, but are <i>logically</i> driven deterministically by just the current
-     * network state and consensus time.
+     * due to performance considerations, but are <i>logically</i> functions of just the network state and
+     * consensus time.
      *
-     * @param now the current consensus time
-     * @param rosterStore the roster store, for obtaining rosters if needed
+     * @param activeRosters the active rosters
      * @param hintsStore the hints store, for recording progress if needed
+     * @param now the current consensus time
      */
-    void reconcile(
-            @NonNull Instant now, @NonNull ReadableRosterStore rosterStore, @NonNull WritableHintsStore hintsStore);
+    void reconcile(@NonNull ActiveRosters activeRosters, @NonNull WritableHintsStore hintsStore, @NonNull Instant now);
 
     /**
      * Stops the hinTS service, causing it to abandon any in-progress work.
