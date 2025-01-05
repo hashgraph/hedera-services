@@ -40,8 +40,8 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.HistoryServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;

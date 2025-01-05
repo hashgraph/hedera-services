@@ -21,10 +21,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 public class FakeHistoryService implements HistoryService {
@@ -46,14 +47,13 @@ public class FakeHistoryService implements HistoryService {
 
     @Override
     public void reconcile(
-            @NonNull final Instant now,
-            @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final MetadataSource metadataSource,
-            @NonNull final WritableHistoryStore historyStore) {
-        requireNonNull(now);
-        requireNonNull(rosterStore);
-        requireNonNull(metadataSource);
+            @NonNull final ActiveRosters activeRosters,
+            @Nullable final Bytes currentMetadata,
+            @NonNull final WritableHistoryStore historyStore,
+            @NonNull final Instant now) {
+        requireNonNull(activeRosters);
         requireNonNull(historyStore);
+        requireNonNull(now);
         // No-op
     }
 

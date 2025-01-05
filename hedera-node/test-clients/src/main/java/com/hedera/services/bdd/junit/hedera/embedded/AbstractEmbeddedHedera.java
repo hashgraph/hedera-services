@@ -39,7 +39,7 @@ import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.node.app.hints.HintsServiceImpl;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.version.ServicesSoftwareVersion;

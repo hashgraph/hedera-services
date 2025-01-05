@@ -271,16 +271,16 @@ public class HandleWorkflow {
                         hintsWritableStates, now, () -> hintsService.reconcile(activeRosters, hintsStore, now));
             }
             if (tssConfig.historyEnabled()) {
-                final HistoryService.MetadataSource metadataSource;
+                final Bytes currentMetadata;
                 if (tssConfig.hintsEnabled()) {
                     final var hintsStore = new ReadableHintsStoreImpl(state.getReadableStates(HintsService.NAME));
-                    metadataSource = hintsStore::getVerificationKeyFor;
+                    currentMetadata = hintsStore.getVerificationKeyFor(activeRosters.currentRosterHash());
                 } else {
-                    metadataSource = rosterHash -> Bytes.EMPTY;
+                    currentMetadata = null;
                 }
                 doStreamingKVChanges(state.getWritableStates(HistoryService.NAME), now, () -> {
                     final var historyStore = new WritableHistoryStoreImpl();
-                    historyService.reconcile(now, rosterStore, metadataSource, historyStore);
+                    historyService.reconcile(activeRosters, currentMetadata, historyStore, now);
                 });
             }
         }

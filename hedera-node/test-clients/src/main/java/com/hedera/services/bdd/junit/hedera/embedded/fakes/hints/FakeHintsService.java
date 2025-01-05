@@ -17,9 +17,9 @@
 package com.hedera.services.bdd.junit.hedera.embedded.fakes.hints;
 
 import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.HintsServiceImpl;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

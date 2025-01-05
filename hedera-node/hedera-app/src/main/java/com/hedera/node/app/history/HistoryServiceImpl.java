@@ -21,10 +21,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
+import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -59,14 +59,14 @@ public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProo
 
     @Override
     public void reconcile(
-            @NonNull final Instant now,
-            @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final MetadataSource metadataSource,
-            @NonNull final WritableHistoryStore historyStore) {
-        requireNonNull(now);
-        requireNonNull(rosterStore);
-        requireNonNull(metadataSource);
+            @NonNull final ActiveRosters activeRosters,
+            @Nullable final Bytes currentMetadata,
+            @NonNull final WritableHistoryStore historyStore,
+            @NonNull final Instant now) {
+        requireNonNull(activeRosters);
         requireNonNull(historyStore);
+        requireNonNull(now);
+        // No-op
     }
 
     @Override

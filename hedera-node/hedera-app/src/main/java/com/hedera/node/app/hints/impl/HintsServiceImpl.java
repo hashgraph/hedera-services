@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hints.HintsLibrary;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -46,7 +49,9 @@ public class HintsServiceImpl implements HintsService {
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
             @NonNull final HintsLibrary operations) {
-        this.component = DaggerHintsServiceComponent.factory().create(operations, appContext, executor, metrics);
+        // Fully qualified for benefit of javadoc
+        this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
+                .create(operations, appContext, executor, metrics);
     }
 
     @VisibleForTesting

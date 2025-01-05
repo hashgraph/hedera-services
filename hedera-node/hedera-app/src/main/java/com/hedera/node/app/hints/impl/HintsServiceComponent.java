@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.hints.impl;
 
+import com.hedera.node.app.hints.HintsLibrary;
+import com.hedera.node.app.hints.HintsModule;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
-import com.hedera.node.app.hints.impl.HintsConstructionControllers;
-import com.hedera.node.app.hints.impl.HintsSigning;
-import com.hedera.node.app.hints.impl.HintsSigningContext;
-import com.hedera.node.app.hints.impl.HintsSubmissions;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
