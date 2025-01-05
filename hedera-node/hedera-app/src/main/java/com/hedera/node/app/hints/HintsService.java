@@ -23,7 +23,6 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 
 /**

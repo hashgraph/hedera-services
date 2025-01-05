@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.roster;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import static java.util.Objects.requireNonNull;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Represents the weights of the nodes in a roster transition.
