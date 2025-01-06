@@ -53,6 +53,7 @@ dependencies.constraints {
     api("io.helidon.webclient:helidon-webclient-grpc:$helidon") {
         because("io.helidon.webclient.grpc")
     }
+    api("io.minio:minio:8.5.14") { because("io.minio") }
     api("org.awaitility:awaitility:4.2.0") { because("awaitility") }
     api("com.fasterxml.jackson.core:jackson-core:$jackson") {
         because("com.fasterxml.jackson.core")
