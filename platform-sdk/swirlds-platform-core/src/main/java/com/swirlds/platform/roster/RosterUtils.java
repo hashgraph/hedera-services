@@ -193,7 +193,7 @@ public final class RosterUtils {
     /**
      * Returns a RosterEntry with a given nodeId by simply iterating all entries,
      * w/o building a temporary map.
-     *
+     * <p>
      * Useful for one-off look-ups. If code needs to look up multiple entries by NodeId,
      * then the code should use the RosterUtils.toMap() method and keep the map instance
      * for the look-ups.
@@ -236,6 +236,7 @@ public final class RosterUtils {
 
     /**
      * Count the number of RosterEntries with non-zero weight.
+     *
      * @param roster a roster
      * @return the number of RosterEntries with non-zero weight
      */
@@ -248,13 +249,13 @@ public final class RosterUtils {
 
     /**
      * Build an instance of RosterHistory from the current/previous rosters as reported by the RosterRetriever.
-     *
+     * <p>
      * The RosterRetriever implementation fetches the rosters from the RosterState/RosterMap,
      * and automatically falls back to fetching them from the PlatformState if the RosterState is empty.
      *
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param state a State object to fetch data from
      * @return a RosterHistory
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -286,18 +287,11 @@ public final class RosterUtils {
     @NonNull
     public static RosterHistory createRosterHistory(@NonNull final ReadableRosterStore rosterStore) {
         final var roundRosterPairs = rosterStore.getRosterHistory();
-        // If there exists active rosters in the roster state.
-        if (roundRosterPairs != null) {
-            final var rosterMap = roundRosterPairs.stream()
-                    .collect(Collectors.toMap(
-                            RoundRosterPair::activeRosterHash, pair -> rosterStore.get(pair.activeRosterHash())));
-
-            return new RosterHistory(roundRosterPairs, rosterMap);
-        } else {
-            // If there is no roster state content, this is a fatal error: The migration did not happen on software
-            // upgrade.
-            throw new IllegalStateException("No active rosters found in the roster state");
-        }
+        final var rosterMap = roundRosterPairs.stream()
+                .collect(Collectors.toMap(
+                        RoundRosterPair::activeRosterHash,
+                        pair -> Objects.requireNonNull(rosterStore.get(pair.activeRosterHash()))));
+        return new RosterHistory(roundRosterPairs, rosterMap);
     }
 
     /**
@@ -315,10 +309,22 @@ public final class RosterUtils {
     }
 
     /**
+     * Formats a human-readable Roster representation, currently using its JSON codec,
+     * or returns {@code null} if the given roster object is null.
+     * @param roster a roster to format
+     * @return roster JSON string, or null
+     */
+    @Nullable
+    public static String toString(@Nullable final Roster roster) {
+        return roster == null ? null : Roster.JSON.toJSON(roster);
+    }
+
+    /**
      * Build an Address object out of a given RosterEntry object.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
+     *
      * @param entry a RosterEntry
      * @return an Address
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @NonNull
@@ -367,9 +373,9 @@ public final class RosterUtils {
     /**
      * Build an AddressBook object out of a given Roster object.
      * Returns null if the input roster is null.
-     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      * @param roster a Roster
      * @return an AddressBook
+     * @deprecated To be removed once AddressBook to Roster refactoring is complete.
      */
     @Deprecated(forRemoval = true)
     @Nullable

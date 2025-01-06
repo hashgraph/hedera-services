@@ -24,11 +24,15 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -36,6 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.workflows.HandleException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -141,5 +146,66 @@ class DispatchForResponseCodeHtsCallTest extends CallTestBase {
         final var contractResult = pricedResult.fullResult().result().getOutput();
         assertArrayEquals(
                 ReturnTypes.encodedRc(INVALID_TREASURY_ACCOUNT_FOR_TOKEN).array(), contractResult.toArray());
+    }
+
+    @Test
+    void isSchedulableDispatchInFailsWithDefaultTxnBody() {
+        // given
+        subject = new DispatchForResponseCodeHtsCall(
+                mockEnhancement(),
+                gasCalculator,
+                AccountID.DEFAULT,
+                TransactionBody.DEFAULT,
+                verificationStrategy,
+                dispatchGasCalculator,
+                failureCustomizer,
+                STANDARD_OUTPUT_FN);
+
+        // when/then
+        assertThatExceptionOfType(HandleException.class)
+                .isThrownBy(() -> subject.asSchedulableDispatchIn())
+                .withMessage(INVALID_TRANSACTION.toString());
+    }
+
+    @Test
+    void isSchedulableDispatchInFailsWithNullBody() {
+        // given
+        subject = new DispatchForResponseCodeHtsCall(
+                mockEnhancement(),
+                gasCalculator,
+                AccountID.DEFAULT,
+                null,
+                verificationStrategy,
+                dispatchGasCalculator,
+                failureCustomizer,
+                STANDARD_OUTPUT_FN);
+
+        // when/then
+        assertThatExceptionOfType(UnsupportedOperationException.class)
+                .isThrownBy(() -> subject.asSchedulableDispatchIn())
+                .withMessage("Needs scheduleNative() support");
+    }
+
+    @Test
+    void isSchedulableDispatchInHappyPath() {
+        // given
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+                .build();
+        final var expectedBody = SchedulableTransactionBody.newBuilder()
+                .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+                .build();
+        subject = new DispatchForResponseCodeHtsCall(
+                mockEnhancement(),
+                gasCalculator,
+                AccountID.DEFAULT,
+                txnBody,
+                verificationStrategy,
+                dispatchGasCalculator,
+                failureCustomizer,
+                STANDARD_OUTPUT_FN);
+        // when/then
+        final var response = subject.asSchedulableDispatchIn();
+        assertEquals(expectedBody, response);
     }
 }

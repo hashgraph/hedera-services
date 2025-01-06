@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -30,13 +32,13 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -52,8 +54,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
     // the class file with other tests.
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
-    private final AddressBook addressBook =
-            RandomAddressBookBuilder.create(random).withSize(4).build();
+    private final Roster roster = RandomRosterBuilder.create(random).withSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -101,13 +102,15 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
 
         final Hash stateHash = randomHash(random);
         final Map<NodeId, Signature> signatures = new HashMap<>();
-        for (final Address address : addressBook) {
-            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
+        for (final RosterEntry node : roster.rosterEntries()) {
+            final PublicKey publicKey =
+                    RosterUtils.fetchGossipCaCertificate(node).getPublicKey();
+            signatures.put(NodeId.of(node.nodeId()), buildFakeSignature(publicKey, stateHash));
         }
 
         // Add a complete signed state. Eventually this will get released.
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
-                .setAddressBook(addressBook)
+                .setRoster(roster)
                 .setRound(0)
                 .setSignatures(signatures)
                 .build();
@@ -127,7 +130,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractStateSignatureColle
         for (int round = 1; round < count; round++) {
             MerkleDb.resetDefaultInstancePath();
             final SignedState signedState = new RandomSignedStateGenerator(random)
-                    .setAddressBook(addressBook)
+                    .setRoster(roster)
                     .setRound(round)
                     .setSignatures(new HashMap<>())
                     .build();

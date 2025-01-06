@@ -32,10 +32,11 @@ import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -73,14 +74,15 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private PlatformMerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+    private PlatformMerkleStateRoot buildMockState(
+            final Random random, final Runnable reserveCallback, final Runnable releaseCallback) {
         final var real = new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(real);
+        RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
         final PlatformMerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
-        platformState.setAddressBook(mock(AddressBook.class));
         when(state.getWritablePlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
@@ -112,6 +114,7 @@ class SignedStateTests {
         final AtomicBoolean released = new AtomicBoolean(false);
 
         final PlatformMerkleStateRoot state = buildMockState(
+                random,
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -173,6 +176,7 @@ class SignedStateTests {
         final Thread mainThread = Thread.currentThread();
 
         final PlatformMerkleStateRoot state = buildMockState(
+                random,
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);

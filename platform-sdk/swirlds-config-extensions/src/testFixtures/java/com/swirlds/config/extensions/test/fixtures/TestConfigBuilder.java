@@ -16,7 +16,6 @@
 
 package com.swirlds.config.extensions.test.fixtures;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -29,6 +28,7 @@ import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -77,6 +77,18 @@ public class TestConfigBuilder {
         } else {
             this.builder = ConfigurationBuilder.create();
         }
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName name of the property
+     * @param values       list of values
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    @NonNull
+    public TestConfigBuilder withValues(@NonNull final String propertyName, @Nullable final List<?> values) {
+        return withSource(new SimpleConfigSource(propertyName, values));
     }
 
     /**
@@ -165,7 +177,6 @@ public class TestConfigBuilder {
         try (final Locked ignore = configLock.lock()) {
             if (configuration == null) {
                 configuration = builder.build();
-                ConfigurationHolder.getInstance().setConfiguration(configuration);
             }
             return configuration;
         }
