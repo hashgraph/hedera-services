@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
+import static com.swirlds.demo.migration.TransactionUtils.isSystemTransaction;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
@@ -47,6 +48,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
@@ -278,6 +280,18 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
+    @Override
+    public void preHandle(
+            @NonNull Event event,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+        event.forEachTransaction(transaction -> {
+            if (!transaction.isSystem() && isSystemTransaction(transaction.getApplicationTransaction())) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            }
+        });
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -295,6 +309,12 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
                 if (trans.isSystem()) {
                     continue;
                 }
+                if (isSystemTransaction(trans.getApplicationTransaction())) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), event));
+                    return;
+                }
+
                 final MigrationTestingToolTransaction mTrans =
                         TransactionUtils.parseTransaction(trans.getApplicationTransaction());
                 mTrans.applyTo(this);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,18 @@ public class TransactionUtils {
             return in.readSerializable(false, MigrationTestingToolTransaction::new);
         } catch (final IOException e) {
             throw new UncheckedIOException("Could not parse transaction kind:%s".formatted(bytes.toHex()), e);
+        }
+    }
+
+    public static boolean isSystemTransaction(@NonNull final Bytes bytes) {
+        final SerializableDataInputStream in = new SerializableDataInputStream(bytes.toInputStream());
+
+        try {
+            MigrationTestingToolTransaction transaction =
+                    in.readSerializable(false, MigrationTestingToolTransaction::new);
+            return false;
+        } catch (final IOException e) {
+            return true;
         }
     }
 }
