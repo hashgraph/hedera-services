@@ -2,6 +2,7 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
+    requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
@@ -72,6 +73,10 @@ module com.hedera.node.app {
     exports com.hedera.node.app.signature;
     exports com.hedera.node.app.info;
     exports com.hedera.node.app.grpc;
+    exports com.hedera.node.app.hints;
+    exports com.hedera.node.app.hints.impl;
+    exports com.hedera.node.app.history;
+    exports com.hedera.node.app.history.impl;
     exports com.hedera.node.app.metrics;
     exports com.hedera.node.app.authorization;
     exports com.hedera.node.app.platform;

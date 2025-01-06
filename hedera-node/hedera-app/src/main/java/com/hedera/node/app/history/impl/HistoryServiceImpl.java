@@ -14,48 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints.impl;
+package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 
 /**
- * Placeholder implementation of the {@link HintsService}.
+ * Placeholder implementation of the {@link HistoryService}.
  */
-public class HintsServiceImpl implements HintsService {
-    public HintsServiceImpl(@NonNull final AppContext appContext) {
+public class HistoryServiceImpl implements HistoryService {
+    public HistoryServiceImpl(@NonNull final AppContext appContext) {
         requireNonNull(appContext);
-    }
-
-    @Override
-    public void reconcile(
-            @NonNull final ActiveRosters activeRosters,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now) {
-        requireNonNull(activeRosters);
-        requireNonNull(hintsStore);
-        requireNonNull(now);
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public @NonNull Bytes currentVerificationKeyOrThrow() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        requireNonNull(registry);
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -64,8 +42,27 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
-    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
-        requireNonNull(blockHash);
+    public void reconcile(
+            @NonNull ActiveRosters activeRosters,
+            @Nullable Bytes currentMetadata,
+            @NonNull WritableHistoryStore historyStore,
+            @NonNull Instant now) {
+        requireNonNull(activeRosters);
+        requireNonNull(historyStore);
+        requireNonNull(now);
+        throw new UnsupportedOperationException();
+    }
+
+    @NonNull
+    @Override
+    public Bytes getCurrentProof(@NonNull final Bytes metadata) {
+        requireNonNull(metadata);
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        requireNonNull(registry);
         throw new UnsupportedOperationException();
     }
 }

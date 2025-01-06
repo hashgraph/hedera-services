@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints.impl;
+package com.hedera.node.app.history.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -33,7 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HintsServiceImplTest {
+class HistoryServiceImplTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
@@ -43,31 +43,31 @@ class HintsServiceImplTest {
     private ActiveRosters activeRosters;
 
     @Mock
-    private WritableHintsStore hintsStore;
+    private WritableHistoryStore historyStore;
 
     @Mock
     private SchemaRegistry schemaRegistry;
 
-    private HintsServiceImpl subject;
+    private HistoryServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HintsServiceImpl(appContext);
+        subject = new HistoryServiceImpl(appContext);
     }
 
     @Test
     void metadataAsExpected() {
-        assertEquals(HintsService.NAME, subject.getServiceName());
-        assertEquals(HintsService.MIGRATION_ORDER, subject.migrationOrder());
+        assertEquals(HistoryService.NAME, subject.getServiceName());
+        assertEquals(HistoryService.MIGRATION_ORDER, subject.migrationOrder());
     }
 
     @Test
     void nothingSupportedYet() {
         assertThrows(
-                UnsupportedOperationException.class, () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW));
+                UnsupportedOperationException.class,
+                () -> subject.reconcile(activeRosters, null, historyStore, CONSENSUS_NOW));
         assertThrows(UnsupportedOperationException.class, () -> subject.registerSchemas(schemaRegistry));
         assertThrows(UnsupportedOperationException.class, subject::isReady);
-        assertThrows(UnsupportedOperationException.class, subject::currentVerificationKeyOrThrow);
-        assertThrows(UnsupportedOperationException.class, () -> subject.signFuture(Bytes.EMPTY));
+        assertThrows(UnsupportedOperationException.class, () -> subject.getCurrentProof(Bytes.EMPTY));
     }
 }

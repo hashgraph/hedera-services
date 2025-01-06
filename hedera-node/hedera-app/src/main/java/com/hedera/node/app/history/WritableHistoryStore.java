@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
-
-import com.hedera.node.config.NetworkProperty;
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+package com.hedera.node.app.history;
 
 /**
- * Configuration for the TSS subsystem.
+ * Provides write access to the {@link HistoryService} state.
  */
-@ConfigData("tss")
-public record TssConfig(
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean hintsEnabled,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean historyEnabled) {}
+public interface WritableHistoryStore extends ReadableHistoryStore {}

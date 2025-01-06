@@ -20,6 +20,7 @@ import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -89,6 +90,13 @@ public interface HintsService extends Service, BlockHashSigner {
      * @param now the current consensus time
      */
     void reconcile(@NonNull ActiveRosters activeRosters, @NonNull WritableHintsStore hintsStore, @NonNull Instant now);
+
+    /**
+     * Returns the current verification key for the active hinTS construction, or throws if it is incomplete.
+     * @throws IllegalStateException if the active hinTS construction is incomplete
+     */
+    @NonNull
+    Bytes currentVerificationKeyOrThrow();
 
     @Override
     default int migrationOrder() {
