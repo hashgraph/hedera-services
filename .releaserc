@@ -1,4 +1,7 @@
 {
+  "releaseRules": [
+    { "breaking": "true", "release": "minor"}
+  ],
   "plugins": [
     "@semantic-release/commit-analyzer",
     [
