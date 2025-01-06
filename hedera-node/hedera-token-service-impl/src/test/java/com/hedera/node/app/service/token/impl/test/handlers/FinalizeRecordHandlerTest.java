@@ -377,9 +377,6 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleFungibleTokenTransfersAndHbarTransfersToAccountDeductsFromChildRecordsSuccess() {
-        // This case handles a successful fungible token transfer to an auto-created account
-        // does not deduct all child record transfers from parent transfer list
-
         final var senderAcct = ACCOUNT_1212;
         final var senderTokenRel = givenFungibleTokenRelation()
                 .copyBuilder()
@@ -455,9 +452,6 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleNonFungibleTokenTransfersDeductsFromChildRecordsSuccess() {
-        // This case handles a successful fungible token transfer to an auto-created account
-        // does not deduct all child record transfers from parent transfer list
-
         final var senderAcct = ACCOUNT_1212;
         final var senderTokenRel = givenFungibleTokenRelation()
                 .copyBuilder()
