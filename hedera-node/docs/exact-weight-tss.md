@@ -24,13 +24,12 @@ This document provides the high-level design of how Hiero TSS is implemented.
 
 Since the very identity of the ledger in Hiero TSS depends on the ids, weights, and Schnorr keys of the nodes in
 the network roster at the time of adoption, the TSS implementation is naturally guided by the lifecycle of the
-
-`RosterService`. From the TSS perspective, this lifecycle has three distinct phases:
+`RosterService`. This lifecycle has three phases:
 1. **Bootstrap**: Only a genesis roster exists, and although the nodes have secure communication channels,
 there is no consensus state with the Schnorr or hinTS public keys of the nodes. In this phase, the TSS system must
-derive this state from gossip, complete preprocessing for the hinTS scheme, and prove the initial hinTS verification
-key and fully active roster were derived from the ledger id using Schnorr signatures from nodes with at least 1/3 of
-the weight in the genesis roster.
+derive this state from gossip; finish preprocessing for the hinTS scheme; and prove the initial hinTS verification
+key is embedded as metadata at the start of the chain of rosters blessed by Schnorr signatures from nodes in the
+previous roster with at least 1/3 of the weight.
 2. **Transition**: The current roster is fully active; the TSS state includes a consensus proof that its hinTS
 verification key was derived from the ledger id. There is also a candidate roster that reflects the latest dynamic
 address book changes and HBAR stake adjustments. In this phase, the TSS system must repeat hinTS preprocessing for
@@ -66,63 +65,103 @@ the prime objective of any `RosterCompanionService` during the bootstrap phase.
 
 ![RCS bootstrap schematic](assets/rcs-bootstrap-schematic.png)
 
-Completing bootstrap is equivalent to starting in a handoff phase, where a `RosterCompanionService` has no primary
-state to derive. Its only required function is to do **roster-scoped work** for the current roster on behalf of other
-protocol infrastructure components; though it may also use the reconciliation loop to purge obsolete state.
+Completing bootstrap is equivalent to starting in a handoff phase, where a `RosterCompanionService` (`RCS`) has no
+primary state to derive. Its only required function is to do **roster-scoped work** for the current roster on behalf of
+other protocol infrastructure components; though it may also use the reconciliation loop to purge obsolete state.
 
 ![RCS handoff schematic](assets/rcs-handoff-schematic.png)
 
 At distinguished points (e.g., at a stake period boundary), the Hiero protocol creates a candidate roster that reflects
-dynamic address book changes and HBAR stake adjustments. This initiates a transition phase, where the
-`RosterCompanionService` must use the reconciliation loop to derive its primary state for the candidate roster, at the
-same time it is doing tasks scoped to the current roster.
+dynamic address book changes and HBAR stake adjustments. This initiates a transition phase, where the `RCS` must use the
+reconciliation loop to derive its primary state for the candidate roster, at the same time it is doing tasks scoped to
+the current roster.
+
+#### A note on performance
+
+In the first release of Hiero TSS, revisions to the candidate roster only happened at consensus midnight; and handoffs
+in the chain of trust only happened at upgrade boundaries scheduled 12 or more hours after UTC midnight. So new nodes
+after a handoff had an entire release to successfully gossip their hinTS and Schnorr keys; and there were many hours
+between the latest revision to the candidate roster and the next handoff to complete the work for each transition.
+
+If Hiero networks move to a much more compressed schedule for roster revisions and transitions, `RCS` implementations
+may want to do some transition phase work preemptively, even before the next revision to the candidate roster.For
+example,
+- A node new to the network could estimate the size of the next candidate roster and preemptively publish its hinTS
+key for that size.
+- A node new to the network could immediately publish its Schnorr key when going `ACTIVE`.
+
+But these optimizations were not necessary in the first release of Hiero TSS.
 
 ![RCS transition schematic](assets/rcs-transition-schematic.png)
 
 ### The `HintsService` as a `RosterCompanionService`
 
-We first map the `HintsService` to the `RosterCompanionService` abstraction. At a high level,
-- The **primary state** of the `HintsService` consists of a roster-scoped hinTS construction. Each includes a source
-roster hash; a target roster hash; the target roster mapping from node ids to hinTS party ids; a consensus time for
-the next aggregation attempt (if the construction is waiting on hinTS keys); the consensus time of the final
-aggregation time (if the construction is waiting for votes on preprocessing outputs); and finally, if the construction
-is complete, the hinTS aggregation and verification keys for the construction. To simplify connecting secondary state
-with primary state, each construction may also have a unique numeric id.
-- The **secondary state** of the `HintsService` is everything needed to facilitate deterministic progress on a
-construction; in particular, for nodes that reconnect during the construction. This likely includes,
-1. _Per construction size $M = 2^k$_ : For as many parties as possible, for party with id $i \in [0, M)$, the party's
-hinTS key; the node id that submitted that hinTS key; the consensus time the hinTS key was adopted in the ongoing
-construction; and, if applicable, a revised hinTS key the same node wishes to use in subsequent constructions of
-size $M$. (Note that a node's assigned party id for a particular construction size never changes; so this implies
+We first map the `HintsService` to the `RCS` abstraction. Its **primary state** for each roster is a
+**hinTS construction** with everything needed for deterministic progress toward the hinTS scheme for that roster.
+The main features of a hinTS construction are items such as,
+1. A unique numeric id $c$ for the construction to help connect related hinTS state like votes to the construction.
+2. The source roster hash.
+3. The target roster hash (needed by a reconnecting node to recover weight information for nodes, and hence parties,
+in the ongoing construction).
+4. If the construction is complete, the hinTS aggregation and verification keys for the scheme.
+5. If the construction is complete, the final mapping of node ids to hinTS party ids in the target roster.
+6. If the construction is still collecting hinTS keys, the consensus time for the next aggregation attempt.
+7. If the construction has stopped accepting hinTS keys, the adoption time of the last accepted hinTS key.
+
+Note that despite the strong functional analogy between the constructions that make up the roster-scoped primary state
+for the `HintsService` and `HistoryService`, they have quite distinct goal states and need not have a one-to-one
+correspondence. In particular, even if the Hiero signing mechanism were to change from hinTS to something else, this
+would not require any change to the structure of a `HistoryService` proof construction.
+
+The `HintsService` **secondary state** is everything else needed to facilitate deterministic progress on a
+construction; in particular, for nodes that reconnect during the construction. Main types of secondary state are
+items such as,
+1. _Per construction size $M = 2^k$_ : For as many parties as possible, for a party with id $i \in [0, M)$, the
+party's hinTS key; the node id that submitted that hinTS key; the consensus time the hinTS key was adopted in the
+ongoing construction; and, if applicable, a revised hinTS key the same node wishes to use in subsequent constructions
+of size $M$. (Note that a node's assigned party id for a particular construction size never changes; so this implies
 such secondary state is fully purged before reusing a party id for a new node id.)
 2. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of
 construction $c$ accounting for at least 1/3 of its weight, their consensus vote for a particular preprocessing
 output with aggregation and verification keys for construction $c$.
-- The **reconciliation loop** of the `HintsService` evolves this secondary state by a combination of scheduling
+
+The **reconciliation loop** of the `HintsService` evolves this secondary state by a combination of scheduling
 expensive cryptographic operations to run off the `handleTransaction` thread, and gossiping the results of these
 operations (or votes on those results) to other nodes. These node operations likely include,
 1. `HintsKeyPublication` - a transaction publishing the node's hinTS key for a particular construction size for
 use in the next construction of that size (or an ongoing construction of that size, if this is the first such
-publication for the node).
+publication for the node). In general, storing node's hinTS keys for multiple party sizes may lead to some mild
+duplication of information about the node's public BLS key; but this will be rounding error compared to the size of
+the hints, which are proportional to the number of parties.
 2. `HintsAggregationVote` - a transaction publishing the node's vote for a particular preprocessing output for
-a certain construction id.
-- The `HintsService` is **ready** when it has completed a hinTS construction for the current roster.
-- The **roster-scoped work** of the `HintsService` is to accept a message (generally a block hash) and return a
+a certain construction id; that is, the `(aggregation key, verification key)` output of the hinTS preprocessing
+algorithm.
+
+The `HintsService` is **ready** when it has completed a hinTS construction for the current roster.
+
+The **roster-scoped work** of the `HintsService` is to accept a message (generally a block hash) and return a
 future that resolves to the hinTS signature on the message. This will require gossiping partial signatures via
 a `HintsPartialSignature` node transaction so the node can run the hinTS aggregation algorithm to produce a succinct
 signature for a set of partial signatures whose parties are nodes with at least 1/3 weight in the current roster.
 
 ### The `HistoryService` as a `RosterCompanionService`
 
-Next we map the `HistoryService` to the `RosterCompanionService` abstraction. At a high level,
-- The **primary state** of the `HistoryService` includes both the ledger id, and a roster-scoped construction of a
-proof that certain metadata and roster were derived from the ledger id. Each construction includes a source roster hash;
-a target roster hash; a proof that the source roster derived from the ledger id; a consensus time for the next attempt
-to assemble the Schnorr keys for the target roster (if the construction is waiting on Schnorr keys); the consensus final
-assembly time for the Schnorr keys; and finally, if the construction is complete, the proof that the target roster and
-metadata are derived from the ledger id.
-- The **secondary state** of the `HistoryService` is everything needed to facilitate deterministic progress on a
-construction; in particular, for nodes that reconnect during the construction. This likely includes,
+Next we map the `HistoryService` to the `RosterCompanionService` abstraction. Its **primary state** has one global
+entry, the ledger id. Its roster-scoped primary state is a **proof construction** with everything needed for
+deterministic progress toward the proof that this roster extends the chain of trust, incorporating any requested
+metadata for the roster. The main features of a proof construction are items such as,
+1. An id $c$ for the construction to help connect related proof state like votes to the construction.
+2. The source roster hash.
+3. The target roster hash.
+4. If the construction is complete, the proof that the target roster and metadata belong to the chain of trust.
+5. If the construction is waiting on Schnorr keys, the consensus time for the next attempt to assemble the next
+`(roster, metadata)` pair in the chain of trust.
+6. If the construction is no longer accepting Schnorr keys, the consensus final assembly time for the next
+`(roster, metadata)` pair in the chain of trust.
+7. If the construction is complete, the proof extending the chain of trust to the target roster and metadata.
+
+The **secondary state** of the `HistoryService` is everything needed to facilitate deterministic progress on a
+construction; in particular, for nodes that reconnect during the construction. This includes items such as,
 1. _Per node id $i$_ : The node's Schnorr key; the node's consensus time for the Schnorr key; and, if applicable, a
 revised Schnorr key the same node wishes to use in subsequent constructions.
 2. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
@@ -130,7 +169,8 @@ $c$ accounting for at least 1/3 of its weight, their signatures on a particular 
 construction $c$.
 3. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
 $c$ accounting for at least 1/3 of its weight, their consensus vote for a particular proof output for construction $c$.
-- The **reconciliation loop** of the `HistoryService` evolves this secondary state by a combination of scheduling
+
+The **reconciliation loop** of the `HistoryService` evolves this secondary state by a combination of scheduling
 expensive cryptographic operations to run off the `handleTransaction` thread, and gossiping the results of these
 operations (or votes on those results) to other nodes. These node operations likely include,
 1. `HistoryProofKeyPublication` - a transaction publishing the node's Schnorr key for use in the next construction.
@@ -138,15 +178,30 @@ operations (or votes on those results) to other nodes. These node operations lik
 assembly for a certain construction id.
 3. `HistoryProofVote` - a transaction publishing the node's vote for a particular proof output for a certain
 construction id.
-- The `HistoryService` is **ready** when it has completed a proof that the current roster and metadata were derived from
+
+The `HistoryService` is **ready** when it has completed a proof that the current roster and metadata were derived from
 the ledger id.
-- The **roster-scoped work** of the `HistoryService` is to accept a byte string which must match the metadata of the
-current roster, and return the proof that this metadata and the current roster were derived from the ledger id.
+
+The **roster-scoped work** of the `HistoryService` is to accept a byte string which must match the metadata of the
+current roster, and return the proof that this `(roster, metadata)` pair belongs to the chain of trust starting with
+the ledger id.
 
 ### Integration with protocol components
 
 The TSS system is then just the combination of the `HintsService` and `HistoryService` with the `RosterService`, with
-the `HistoryService` metadata always set to the verification key of the `HintsService` for the current roster.
+the `HistoryService` metadata always set to the verification key of the `HintsService` for the current roster. The
+complete ledger signature $S_L$ on a message $\textrm{msg}$ thus combines a hinTS signature $S_h$ on $\textrm{msg}$ with
+a proof $P_{\textrm{vk}}$ that the verification key $\textrm{vk}$ in $S_h$ is exactly the metadata in a chain of trusted
+`(roster, metadata)` pairs extending from a well-known ledger id `I`. That is,
+
+$$ S_L[\textrm{msg}] = (S_h[\textrm{msg}], P_{\textrm{vk}})$$
+
+An entity interested in verifying the signatures of a Hiero network will then,
+- Validate out-of-band through some means that `I` is, in fact, the ledger id of the Hiero network in question.
+- Deploy a generic hinTS verifier, *extended with* the ability to verify proofs asserting a chain-of-trust from `I`.
+- Given a signature $S_L$ on $\textrm{msg}$ message $\textrm{msg}$, first check that $P_{\textrm{vk}}$ is valid, and
+hence the hinTS scheme producing $S_h$ was in fact produced by nodes inheriting a chain of trust from the nodes that
+constituted `I`. Second, verify that $S_h$ is a valid hinTS signature on $\textrm{msg}$.
 
 There are only a few other details; namely,
 - The `HandleWorkflow` is responsible for driving the reconciliation loops of both companion services.
