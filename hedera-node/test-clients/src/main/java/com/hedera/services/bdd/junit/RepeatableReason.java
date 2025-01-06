@@ -46,4 +46,8 @@ public enum RepeatableReason {
      * other tests if they expect the default throttles.
      */
     THROTTLE_OVERRIDES,
+    /**
+     * The test uses the state signature transaction callback.
+     */
+    USES_STATE_SIGNATURE_TRANSACTION_CALLBACK,
 }

@@ -49,6 +49,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -186,10 +187,17 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Temporary solution until we can deprecate StateSignatureTransaction
             if (previousResult == null) {
                 final var txn = transactionChecker.parse(platformTx.getApplicationTransaction());
-                final var stateSignatureTransaction = txn.bodyOrElse(TransactionBody.DEFAULT).stateSignatureTransaction();
-                if (stateSignatureTransaction != null) {
-                    stateSignatureTransactionCallback.accept(stateSignatureTransaction);
-                    return PreHandleResult.stateSignatureTransactionEncountered(txn);
+                if (txn.bodyBytes().length() > 0) {
+                    try {
+                        final var txBody = TransactionBody.PROTOBUF.parse(txn.bodyBytes());
+                        final var stateSignatureTransaction = txBody.stateSignatureTransaction();
+                        if (stateSignatureTransaction != null) {
+                            stateSignatureTransactionCallback.accept(stateSignatureTransaction);
+                            return PreHandleResult.stateSignatureTransactionEncountered(txn, txBody);
+                        }
+                    } catch (ParseException ex) {
+                        // Ignore the exception, we deal with it below
+                    }
                 }
                 txInfo = transactionChecker.check(txn, platformTx.getApplicationTransaction());
             } else {

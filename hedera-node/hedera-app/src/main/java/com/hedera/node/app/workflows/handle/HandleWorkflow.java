@@ -406,10 +406,13 @@ public class HandleWorkflow {
             // This should not happen, but to be sure, we deserialize the transaction and check anyway
             try {
                 final Transaction parsedTxn = Transaction.PROTOBUF.parse(txn.getApplicationTransaction());
-                final var stateSignatureTxn = parsedTxn.bodyOrElse(TransactionBody.DEFAULT).stateSignatureTransaction();
-                if (stateSignatureTxn != null) {
-                    stateSignatureTxnCallback.accept(stateSignatureTxn);
-                    return true;
+                if (parsedTxn.bodyBytes().length() > 0) {
+                    final var txBody = TransactionBody.PROTOBUF.parseStrict(parsedTxn.bodyBytes());
+                    final var stateSignatureTxn = txBody.stateSignatureTransaction();
+                    if (stateSignatureTxn != null) {
+                        stateSignatureTxnCallback.accept(stateSignatureTxn);
+                        return true;
+                    }
                 }
             } catch (ParseException e) {
                 // Ignore, this will be handled as part of the regular workflow

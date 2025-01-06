@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -245,8 +246,9 @@ public record PreHandleResult(
      * Creates a new {@link PreHandleResult} when encountering a {@link com.hedera.hapi.platform.event.StateSignatureTransaction}.
      */
     @NonNull
-    public static PreHandleResult stateSignatureTransactionEncountered(@NonNull final Transaction txn) {
-        final var txInfo = new TransactionInfo(txn, txn.bodyOrThrow(), SignatureMap.DEFAULT, Bytes.EMPTY, HederaFunctionality.STATE_SIGNATURE_TRANSACTION, Bytes.EMPTY);
+    public static PreHandleResult stateSignatureTransactionEncountered(@NonNull final Transaction txn, @NonNull final
+            TransactionBody txBody) {
+        final var txInfo = new TransactionInfo(txn, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, HederaFunctionality.STATE_SIGNATURE_TRANSACTION, Bytes.EMPTY);
         return new PreHandleResult(
                 null,
                 null,

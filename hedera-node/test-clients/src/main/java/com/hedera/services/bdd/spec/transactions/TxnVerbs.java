@@ -75,6 +75,7 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
+import com.hedera.services.bdd.spec.transactions.system.HapiStateSignature;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
@@ -755,6 +756,10 @@ public class TxnVerbs {
     /* SYSTEM */
     public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
         return new HapiFreeze().startingAt(freezeStartTime);
+    }
+
+    public static HapiStateSignature hapiStateSignature() {
+        return new HapiStateSignature();
     }
 
     /* UTIL */
