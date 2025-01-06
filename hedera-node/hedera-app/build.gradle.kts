@@ -37,13 +37,9 @@ mainModuleInfo {
     runtimeOnly("io.minio")
 }
 
-configurations {
-    runtimeOnly { exclude(group = "com.google.code.findbugs", module = "annotations") }
-}
-
 testModuleInfo {
     requires("com.fasterxml.jackson.core")
-    requires("com.google.jimfs")
+    requires("com.google.common.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
