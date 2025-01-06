@@ -43,8 +43,5 @@ tasks.register("installGitHooks") {
     }
 }
 
-
 // Ensure installGitHooks runs before the build task
-tasks.named("build") {
-    dependsOn("installGitHooks")
-}
+tasks.named("build") { dependsOn("installGitHooks") }
