@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,9 @@ public interface MerkleStateLifecycles {
      * @param state the latest immutable state at the time of the event
      * @param stateSignatureTransactionCallback a consumer that will be used for callbacks
      */
-    void onPreHandle(@NonNull Event event, @NonNull State state,
+    void onPreHandle(
+            @NonNull Event event,
+            @NonNull State state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
 
     /**
@@ -56,7 +58,9 @@ public interface MerkleStateLifecycles {
      * @param state the working state of the network
      * @param stateSignatureTransactionCallback a consumer that will be used for callbacks
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
+    void onHandleConsensusRound(
+            @NonNull Round round,
+            @NonNull State state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
 
     /**

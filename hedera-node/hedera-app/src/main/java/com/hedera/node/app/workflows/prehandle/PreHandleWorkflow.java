@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public interface PreHandleWorkflow {
      * @param storeFactory The {@link ReadableStoreFactory} based on the current state
      * @param accountStore The {@link ReadableAccountStore} based on the current state
      * @param platformTx The {@link Transaction} to pre-handle
+     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      * @return The {@link PreHandleResult} of running pre-handle
      */
     default @NonNull PreHandleResult preHandleTransaction(

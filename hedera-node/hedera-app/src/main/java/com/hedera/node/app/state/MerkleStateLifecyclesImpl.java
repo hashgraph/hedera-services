@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,17 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
-    public void onPreHandle(@NonNull final Event event, @NonNull final State state,
+    public void onPreHandle(
+            @NonNull final Event event,
+            @NonNull final State state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         hedera.onPreHandle(event, state, stateSignatureTransactionCallback);
     }
 
     @Override
-    public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state,
+    public void onHandleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final State state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         hedera.onHandleConsensusRound(round, state, stateSignatureTxnCallback);
     }

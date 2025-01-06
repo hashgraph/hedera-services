@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,9 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onPreHandle(@NonNull Event event, @NonNull State state,
+        public void onPreHandle(
+                @NonNull Event event,
+                @NonNull State state,
                 @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onPreHandleCalled.set(true);
         }
@@ -123,7 +125,9 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onHandleConsensusRound(@NonNull Round round, @NonNull State state,
+        public void onHandleConsensusRound(
+                @NonNull Round round,
+                @NonNull State state,
                 @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onHandleCalled.set(true);
         }

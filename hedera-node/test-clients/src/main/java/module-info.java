@@ -99,6 +99,7 @@ module com.hedera.node.test.clients {
     requires com.github.dockerjava.api;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;
     requires io.grpc;
@@ -127,5 +128,4 @@ module com.hedera.node.test.clients {
     requires static com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
     requires static org.junit.platform.engine;
-    requires net.bytebuddy;
 }

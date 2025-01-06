@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -212,7 +227,9 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      */
-    public void handleRound(@NonNull final State state, @NonNull final Round round,
+    public void handleRound(
+            @NonNull final State state,
+            @NonNull final Round round,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
@@ -250,7 +267,9 @@ public class HandleWorkflow {
      * @param round the round to apply the effects of
      * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      */
-    private void handleEvents(@NonNull final State state, @NonNull final Round round,
+    private void handleEvents(
+            @NonNull final State state,
+            @NonNull final Round round,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         boolean userTransactionsHandled = false;
         for (final var event : round) {
@@ -279,7 +298,8 @@ public class HandleWorkflow {
             }
 
             final Consumer<StateSignatureTransaction> simplifiedStateSignatureTxnCallback = txn -> {
-                final var scopedTxn = new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), txn);
+                final var scopedTxn =
+                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), txn);
                 stateSignatureTxnCallback.accept(scopedTxn);
             };
 
@@ -289,7 +309,12 @@ public class HandleWorkflow {
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
                 try {
-                    userTransactionsHandled |= handlePlatformTransaction(state, creator, platformTxn, event.getSoftwareVersion(), simplifiedStateSignatureTxnCallback);
+                    userTransactionsHandled |= handlePlatformTransaction(
+                            state,
+                            creator,
+                            platformTxn,
+                            event.getSoftwareVersion(),
+                            simplifiedStateSignatureTxnCallback);
                 } catch (final Exception e) {
                     logger.fatal(
                             "Possibly CATASTROPHIC failure while running the handle workflow. "
@@ -320,6 +345,7 @@ public class HandleWorkflow {
      * @param creator    the {@link NodeInfo} of the creator of the transaction
      * @param txn        the {@link ConsensusTransaction} to be handled
      * @param txnVersion the software version for the event containing the transaction
+     * @return {@code true} if the transaction was a user transaction, {@code false} if a system transaction
      */
     private boolean handlePlatformTransaction(
             @NonNull final State state,
@@ -396,7 +422,8 @@ public class HandleWorkflow {
     private boolean stateSignatureTransactionEncountered(
             @NonNull final ConsensusTransaction txn,
             @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
-        if (txn.getMetadata() instanceof PreHandleResult preHandleResult && preHandleResult.txInfo() != null
+        if (txn.getMetadata() instanceof PreHandleResult preHandleResult
+                && preHandleResult.txInfo() != null
                 && preHandleResult.txInfo().functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
             stateSignatureTxnCallback.accept(preHandleResult.txInfo().txBody().stateSignatureTransactionOrThrow());
             return true;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,13 +144,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {
             try {
-                tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx, stateSignatureTxnCallback));
+                tx.setMetadata(preHandleTransaction(
+                        creator, readableStoreFactory, accountStore, tx, stateSignatureTxnCallback));
             } catch (final Exception unexpectedException) {
                 // If some random exception happened, then we should not charge the node for it. Instead,
                 // we will just record the exception and try again during handle. Then if we fail again
                 // at handle, then we will throw away the transaction (hopefully, deterministically!)
-                logger.error(
-                        "Unexpected Exception while running the pre-handle workflow", unexpectedException);
+                logger.error("Unexpected Exception while running the pre-handle workflow", unexpectedException);
                 tx.setMetadata(unknownFailure());
             }
         });
@@ -181,7 +181,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             txInfo = previousResult == null
                     ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
                     : previousResult.txInfo();
-
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status
                 return previousResult;
