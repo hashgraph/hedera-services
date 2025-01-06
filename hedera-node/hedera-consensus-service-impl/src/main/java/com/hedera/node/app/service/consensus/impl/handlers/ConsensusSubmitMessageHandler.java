@@ -131,12 +131,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic.hasSubmitKey()) {
             context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
         }
-        //        // add optional fee exempt keys in to the key verifieer
-        //        // later it will be used to validate if transaction was signed by
-        //        // any of these keys and based on that, custom fees will be charged or not
-        //        if (!topic.feeExemptKeyList().isEmpty()) {
-        //            context.optionalKeys(new HashSet<>(topic.feeExemptKeyList()));
-        //        }
     }
 
     /**
