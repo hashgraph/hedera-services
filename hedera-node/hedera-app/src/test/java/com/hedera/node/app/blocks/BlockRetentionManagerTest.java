@@ -51,9 +51,9 @@ class BlockRetentionManagerTest {
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
         blockRetentionManager.scheduleRepeating(cleanupTask);
 
-        final var blockFileName = "file1" + "." + FileBlockItemWriter.RECORD_EXTENSION;
-
-        createTestFile(blockFileName);
+        // Using `RECORD_EXTENSION` as the `suffix` argument should ensure the file has the
+        // right extension
+        final var blockFileName = Files.createTempFile(uploadedDir, "test", FileBlockItemWriter.RECORD_EXTENSION);
 
         await().atLeast(2 * retentionPeriodMs, TimeUnit.MILLISECONDS);
         assertTrue(Files.exists(uploadedDir.resolve(blockFileName)), blockFileName + " should not have been deleted");
@@ -72,14 +72,12 @@ class BlockRetentionManagerTest {
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
         blockRetentionManager.scheduleRepeating(cleanupTask);
 
-        final var blockFileName = "file1" + "." + FileBlockItemWriter.RECORD_EXTENSION;
-        final var nonBlockFileName = "file2";
-        final var compressedBlockFileName = "file3" + "." + FileBlockItemWriter.RECORD_EXTENSION
-                + FileBlockItemWriter.COMPRESSION_ALGORITHM_EXTENSION;
-
-        createTestFile(blockFileName);
-        createTestFile(nonBlockFileName);
-        createTestFile(compressedBlockFileName);
+        final var blockFileName = Files.createTempFile(uploadedDir, "test", FileBlockItemWriter.RECORD_EXTENSION);
+        final var nonBlockFileName = Files.createTempFile(uploadedDir, "test", "");
+        final var compressedBlockFileName = Files.createTempFile(
+                uploadedDir,
+                "test",
+                FileBlockItemWriter.RECORD_EXTENSION + FileBlockItemWriter.COMPRESSION_ALGORITHM_EXTENSION);
 
         await().atMost(AWAIT_SECONDS_TIMEOUT, TimeUnit.SECONDS)
                 .until(() -> !Files.exists(uploadedDir.resolve(blockFileName))
@@ -93,8 +91,8 @@ class BlockRetentionManagerTest {
                 Files.exists(uploadedDir.resolve(compressedBlockFileName)),
                 compressedBlockFileName + " should have been deleted");
 
-        final var anotherBlockFileName = "file4" + "." + FileBlockItemWriter.RECORD_EXTENSION;
-        createTestFile(anotherBlockFileName);
+        final var anotherBlockFileName =
+                Files.createTempFile(uploadedDir, "test", FileBlockItemWriter.RECORD_EXTENSION);
 
         await().atMost(AWAIT_SECONDS_TIMEOUT, TimeUnit.SECONDS)
                 .until(() -> !Files.exists(uploadedDir.resolve(anotherBlockFileName)));
@@ -115,9 +113,5 @@ class BlockRetentionManagerTest {
 
         assertThrows(RejectedExecutionException.class, () -> blockRetentionManager.scheduleRepeating(() -> {}));
         assertThrows(RejectedExecutionException.class, () -> blockRetentionManager.startCleanup());
-    }
-
-    private void createTestFile(final String fileName) throws IOException {
-        uploadedDir.resolve(fileName).toFile().createNewFile();
     }
 }
