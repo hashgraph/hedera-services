@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 public class DefaultTransactionPrehandler implements TransactionPrehandler {
     private static final Logger logger = LogManager.getLogger(DefaultTransactionPrehandler.class);
 
-    public static final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>> NO_OP_CONSUMER =
+    public static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CONSUMER =
             systemTransactions -> {};
 
     /**

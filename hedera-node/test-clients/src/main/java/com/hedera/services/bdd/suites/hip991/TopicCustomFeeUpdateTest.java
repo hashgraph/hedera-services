@@ -112,9 +112,7 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                     getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeScheduleKey(FEE_SCHEDULE_KEY),
 
                     // Update the fee schedule and verify that it's updated
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY2)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY2),
+                    updateTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY2).signedByPayerAnd(ADMIN_KEY),
                     getTopicInfo(TOPIC).hasFeeScheduleKey(FEE_SCHEDULE_KEY2));
         }
 
@@ -564,22 +562,6 @@ public class TopicCustomFeeUpdateTest extends TopicCustomFeeBase {
                             .feeScheduleKeyName(FEE_SCHEDULE_KEY)
                             .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY)
                             .hasKnownStatus(FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED));
-        }
-
-        @HapiTest
-        @DisplayName("to delete the fee schedule key and then setting the same key back")
-        final Stream<DynamicTest> updateToDeleteTheFeeScheduleKeyAndSettingItBack() {
-            return hapiTest(
-                    // Create a topic with fee schedule key
-                    createTopic(TOPIC).feeScheduleKeyName(FEE_SCHEDULE_KEY).adminKeyName(ADMIN_KEY),
-
-                    // Delete the fee schedule key
-                    updateTopic(TOPIC).withEmptyFeeScheduleKey().signedByPayerAnd(ADMIN_KEY),
-
-                    // Try to add the fee schedule key back
-                    updateTopic(TOPIC)
-                            .feeScheduleKeyName(FEE_SCHEDULE_KEY)
-                            .signedByPayerAnd(ADMIN_KEY, FEE_SCHEDULE_KEY));
         }
 
         @HapiTest
