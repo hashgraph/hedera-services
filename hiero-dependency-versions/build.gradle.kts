@@ -45,7 +45,7 @@ val mockito = "5.8.0"
 val protobuf = "4.28.2"
 val testContainers = "1.20.4"
 val tuweni = "2.4.2"
-val webcompare = "2.1.5"
+val webcompare = "2.1.7"
 
 dependencies.constraints {
     api("io.helidon.common:helidon-common:$helidon") { because("io.helidon.common") }
