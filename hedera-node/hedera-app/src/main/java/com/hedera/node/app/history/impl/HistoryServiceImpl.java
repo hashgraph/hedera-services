@@ -63,6 +63,5 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        throw new UnsupportedOperationException();
     }
 }

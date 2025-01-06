@@ -55,7 +55,6 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        throw new UnsupportedOperationException();
     }
 
     @Override

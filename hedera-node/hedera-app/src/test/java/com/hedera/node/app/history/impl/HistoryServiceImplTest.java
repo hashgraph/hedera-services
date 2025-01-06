@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.history.impl;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -62,12 +63,12 @@ class HistoryServiceImplTest {
     }
 
     @Test
-    void nothingSupportedYet() {
+    void nothingSupportedExceptRegisteringSchemas() {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.reconcile(activeRosters, null, historyStore, CONSENSUS_NOW));
-        assertThrows(UnsupportedOperationException.class, () -> subject.registerSchemas(schemaRegistry));
         assertThrows(UnsupportedOperationException.class, subject::isReady);
         assertThrows(UnsupportedOperationException.class, () -> subject.getCurrentProof(Bytes.EMPTY));
+        assertDoesNotThrow(() -> subject.registerSchemas(schemaRegistry));
     }
 }

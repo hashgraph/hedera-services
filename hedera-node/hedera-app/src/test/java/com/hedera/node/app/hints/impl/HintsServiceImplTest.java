@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -62,12 +63,12 @@ class HintsServiceImplTest {
     }
 
     @Test
-    void nothingSupportedYet() {
+    void nothingSupportedExceptRegisteringSchemas() {
         assertThrows(
                 UnsupportedOperationException.class, () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW));
-        assertThrows(UnsupportedOperationException.class, () -> subject.registerSchemas(schemaRegistry));
         assertThrows(UnsupportedOperationException.class, subject::isReady);
         assertThrows(UnsupportedOperationException.class, subject::currentVerificationKeyOrThrow);
         assertThrows(UnsupportedOperationException.class, () -> subject.signFuture(Bytes.EMPTY));
+        assertDoesNotThrow(() -> subject.registerSchemas(schemaRegistry));
     }
 }
