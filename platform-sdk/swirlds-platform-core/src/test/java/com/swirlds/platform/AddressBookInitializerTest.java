@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
@@ -30,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
@@ -41,19 +41,16 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.AddressBookConfig_;
 import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -91,7 +88,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 getPlatformContext(true));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
@@ -121,7 +118,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
@@ -148,7 +145,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
@@ -164,7 +161,7 @@ class AddressBookInitializerTest {
         final Randotron randotron = Randotron.create();
         clearTestDirectory();
         final Roster roster = getRandomRoster(randotron);
-        final AddressBook configAddressBook = RosterUtils.buildAddressBook(roster);
+        final AddressBook configAddressBook = buildAddressBook(roster);
         final SignedState signedState = getMockSignedState(7, roster, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 NodeId.of(0),
@@ -175,7 +172,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
@@ -195,8 +192,7 @@ class AddressBookInitializerTest {
         // start state with previous address book
         final SignedState signedState =
                 getMockSignedState(2, getRandomRoster(randotron), getRandomAddressBook(randotron), false);
-        final AddressBook configAddressBook =
-                copyWithWeightChanges(RosterUtils.buildAddressBook(signedState.getRoster()), 10);
+        final AddressBook configAddressBook = copyWithWeightChanges(buildAddressBook(signedState.getRoster()), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 NodeId.of(0),
                 getMockSoftwareVersion(2),
@@ -206,7 +202,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
                 signedStateAddressBook,
                 inititializedAddressBook,
@@ -241,7 +237,7 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final Roster roster = getRandomRoster(randotron);
         final SignedState signedState = getMockSignedState(0, roster, getRandomAddressBook(randotron), false);
-        final AddressBook configAddressBook = copyWithWeightChanges(RosterUtils.buildAddressBook(roster), 10);
+        final AddressBook configAddressBook = copyWithWeightChanges(buildAddressBook(roster), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 NodeId.of(0),
                 getMockSoftwareVersion(3),
@@ -251,7 +247,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 getPlatformContext(false));
         final AddressBook inititializedAddressBook = initializer.getCurrentAddressBook();
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         assertEquals(
                 configAddressBook,
                 inititializedAddressBook,
@@ -271,7 +267,7 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final Roster roster = getRandomRoster(randotron);
         final SignedState signedState = getMockSignedState(2, roster, getRandomAddressBook(randotron), false);
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(roster);
+        final AddressBook signedStateAddressBook = buildAddressBook(roster);
         final AddressBook configAddressBook = copyWithWeightChanges(signedStateAddressBook, 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 NodeId.of(0),
@@ -300,7 +296,7 @@ class AddressBookInitializerTest {
         final Randotron randotron = Randotron.create();
         clearTestDirectory();
         final SignedState signedState = getMockSignedState7WeightRandomAddressBook(randotron);
-        final AddressBook signedStateAddressBook = RosterUtils.buildAddressBook(signedState.getRoster());
+        final AddressBook signedStateAddressBook = buildAddressBook(signedState.getRoster());
         final AddressBook configAddressBook = copyWithWeightChanges(signedStateAddressBook, 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 NodeId.of(0),
@@ -395,15 +391,14 @@ class AddressBookInitializerTest {
             boolean fromGenesis) {
         final SignedState signedState = mock(SignedState.class);
         final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
-        final SwirldState swirldState = getMockSwirldStateSupplier(weightValue).get();
-        when(signedState.getSwirldState()).thenReturn(swirldState);
+        final PlatformMerkleStateRoot state =
+                getMockSwirldStateSupplier(weightValue).get();
+        when(signedState.getSwirldState()).thenReturn(state);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
-        RosterServiceStateMock.setup(
-                (State) swirldState, currentRoster, 1L, RosterRetriever.buildRoster(previousAddressBook));
-        final MerkleRoot state = mock(MerkleRoot.class);
+        RosterServiceStateMock.setup(state, currentRoster, 1L, RosterRetriever.buildRoster(previousAddressBook));
+
         when(state.getReadablePlatformState()).thenReturn(platformState);
-        when(state.getSwirldState()).thenReturn(swirldState);
         when(signedState.getState()).thenReturn(state);
         when(signedState.isGenesisState()).thenReturn(fromGenesis);
         when(signedState.getRoster()).thenReturn(currentRoster);
@@ -416,10 +411,10 @@ class AddressBookInitializerTest {
      * @param scenario The scenario to load.
      * @return A SwirldState which behaves according to the input scenario.
      */
-    private Supplier<SwirldState> getMockSwirldStateSupplier(int scenario) {
+    private Supplier<PlatformMerkleStateRoot> getMockSwirldStateSupplier(int scenario) {
 
         final AtomicReference<AddressBook> configAddressBook = new AtomicReference<>();
-        final SwirldState swirldState = mock(SwirldState.class, withSettings().extraInterfaces(State.class));
+        final PlatformMerkleStateRoot swirldState = mock(PlatformMerkleStateRoot.class);
 
         final OngoingStubbing<AddressBook> stub = when(swirldState.updateWeight(
                 argThat(confAB -> {

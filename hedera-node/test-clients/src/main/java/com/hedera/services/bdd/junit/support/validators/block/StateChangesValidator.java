@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUtils.hashesByName;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
@@ -65,8 +64,11 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -201,10 +203,10 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
-        final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
+        final var addressBook = loadLegacyBookWithGeneratedCerts(pathToAddressBook);
         final var metrics = new NoOpMetrics();
         final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics);
-        this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
+        this.state = hedera.newMerkleStateRoot();
         final var platformConfig = ServicesMain.buildPlatformConfig();
         hedera.initializeStatesApi(
                 state,
@@ -660,5 +662,23 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
         return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
+    }
+
+    /**
+     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
+     * to set its gossip certificates to the same certificates used by nodes in a test network.
+     * @param path the path to the address book file
+     * @return the loaded address book
+     */
+    private static AddressBook loadLegacyBookWithGeneratedCerts(@NonNull final Path path) {
+        requireNonNull(path);
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
+        try {
+            final var addressBook = configFile.getAddressBook();
+            CryptoStatic.generateKeysAndCerts(addressBook);
+            return addressBook;
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating keys and certs", e);
+        }
     }
 }

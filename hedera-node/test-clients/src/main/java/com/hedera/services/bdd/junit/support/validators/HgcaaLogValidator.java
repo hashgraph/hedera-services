@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.support.validators;
 
 import static java.util.Objects.requireNonNull;
@@ -89,6 +74,9 @@ public class HgcaaLogValidator {
                 List.of("Properties file", "does not exist and won't be used as configuration source"),
                 // Using a 1-minute staking period in CI can lead to periods with no transactions, breaking invariants
                 List.of("StakingRewardsHelper", "Pending rewards decreased"),
+                // Some PR checks don't stake any HBAR, so after crossing a staking boundary all nodes
+                // have zero weight and the RosterStore rejects a zero-weight roster as invalid
+                List.of("Candidate roster was rejected"),
                 List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"));
 
         private int numProblems = 0;

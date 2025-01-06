@@ -17,15 +17,18 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.signschedule;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.APPROVED_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_CONTRACT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_BESU_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesForRedirectScheduleTxn;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfig;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -33,6 +36,7 @@ import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -101,6 +105,9 @@ class SignScheduleTranslatorTest {
 
     @Mock
     private ScheduleID scheduleID;
+
+    @Mock
+    private Key key;
 
     private SignScheduleTranslator subject;
 
@@ -243,11 +250,59 @@ class SignScheduleTranslatorTest {
     }
 
     @Test
-    void testScheduleIdForAuthorizeScheduleProxy() {
+    void testScheduleIdForSignScheduleProxyEthSender() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(enhancement.systemOperations()).willReturn(systemContractOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
         given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
+        given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
+        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
+                .willReturn(verificationStrategy);
+        given(systemContractOperations.maybeEthSenderKey()).willReturn(key);
+
+        // when:
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                bytesForRedirectScheduleTxn(
+                        SignScheduleTranslator.SIGN_SCHEDULE_PROXY.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+
+        // then:
+        final var call = subject.callFrom(attempt);
+
+        assertThat(call).isInstanceOf(DispatchForResponseCodeHssCall.class);
+    }
+
+    @Test
+    void testScheduleIdForWrongSelectorThrows() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
+
+        // when:
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                bytesForRedirectScheduleTxn(MintTranslator.MINT.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                configuration);
+
+        // then:
+        assertThrows(IllegalStateException.class, () -> subject.callFrom(attempt));
+    }
+
+    @Test
+    void testScheduleIdForAuthorizeSchedule() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
         given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
@@ -257,6 +312,28 @@ class SignScheduleTranslatorTest {
         final var input = Bytes.wrapByteBuffer(
                 SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
+
+        // then:
+        final var call = subject.callFrom(attempt);
+
+        assertThat(call).isInstanceOf(DispatchForResponseCodeHssCall.class);
+    }
+
+    @Test
+    void testScheduleIdForAuthorizeScheduleDelegatableContractKeys() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
+        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, true, nativeOperations))
+                .willReturn(verificationStrategy);
+
+        // when:
+        final var input = Bytes.wrapByteBuffer(
+                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+        attempt = prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys(
                 input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
 
         // then:

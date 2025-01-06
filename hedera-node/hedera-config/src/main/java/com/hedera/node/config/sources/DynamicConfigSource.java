@@ -19,6 +19,7 @@ package com.hedera.node.config.sources;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Properties;
@@ -52,6 +53,17 @@ public class DynamicConfigSource implements ConfigSource {
     @Override
     public String getValue(@NonNull final String s) throws NoSuchElementException {
         return properties.getProperty(s);
+    }
+
+    @Override
+    public boolean isListProperty(@NonNull final String propertyName) throws NoSuchElementException {
+        return false;
+    }
+
+    @NonNull
+    @Override
+    public List<String> getListValue(@NonNull final String propertyName) throws NoSuchElementException {
+        return List.of();
     }
 
     @Override
