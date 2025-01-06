@@ -27,8 +27,10 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -76,6 +78,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -106,6 +110,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private ConsensusCustomFeeAssessor customFeeAssessor;
 
     private ConsensusSubmitMessageHandler subject;
+
+    private static final Key ED25519KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
+
+    private static final Key ECDSAKEY = Key.newBuilder()
+            .ecdsaSecp256k1((Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101")))
+            .build();
 
     @BeforeEach
     void setUp() {
@@ -393,6 +405,43 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         assertNotEquals(
                 initialTopic.runningHash().toString(),
                 expectedTopic.runningHash().toString());
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithEd25519Key() {
+        List<Key> signatories = List.of(ED25519KEY);
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertTrue(verifier.test(ED25519KEY));
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithEcdsaSecp256k1Key() {
+
+        List<Key> signatories = List.of(ECDSAKEY);
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertTrue(verifier.test(ECDSAKEY));
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithNonSignatoryKey() {
+        List<Key> signatories = List.of(ED25519KEY);
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertFalse(verifier.test(ECDSAKEY));
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithEmptySignatories() {
+        List<Key> signatories = List.of();
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertFalse(verifier.test(ED25519KEY));
     }
 
     /* ----------------- Helper Methods ------------------- */
