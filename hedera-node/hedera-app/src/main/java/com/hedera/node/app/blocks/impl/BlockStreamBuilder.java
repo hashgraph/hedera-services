@@ -557,6 +557,11 @@ public class BlockStreamBuilder
     }
 
     @Override
+    public ScheduleID scheduleID() {
+        return scheduleId;
+    }
+
+    @Override
     @NonNull
     public BlockStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
         transactionResultBuilder.parentConsensusTimestamp(Timestamp.newBuilder()

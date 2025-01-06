@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,7 +242,10 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
             assertFalse(info.hasSubmitKey(), "Should have no submit key!");
         }
         if (hasNoFeeScheduleKey) {
-            assertFalse(info.hasFeeScheduleKey(), "Should have no fee schedule key!");
+            assertFalse(
+                    info.hasFeeScheduleKey()
+                            && info.getFeeScheduleKey().getKeyList().getKeysCount() > 0,
+                    "Should have no fee schedule key!");
         }
         final var actualFees = info.getCustomFeesList();
         if (expectNoFees) {

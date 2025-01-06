@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     private Optional<List<Key>> freeMessageKeyList = Optional.empty();
     private boolean emptyCustomFee = false;
     private boolean emptyFeeExemptKeyList = false;
+    private boolean emptyFeeScheduleKey = false;
 
     public HapiTopicUpdate(final String topic) {
         this.topic = topic;
@@ -140,6 +141,11 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
         return this;
     }
 
+    public HapiTopicUpdate withEmptyFeeScheduleKey() {
+        emptyFeeScheduleKey = true;
+        return this;
+    }
+
     @Override
     public HederaFunctionality type() {
         return ConsensusUpdateTopic;
@@ -190,7 +196,11 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                             newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
                             newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
                             newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
-                            feeScheduleKey.ifPresent(b::setFeeScheduleKey);
+                            if (emptyFeeScheduleKey) {
+                                b.setFeeScheduleKey(EMPTY_KEY);
+                            } else {
+                                feeScheduleKey.ifPresent(b::setFeeScheduleKey);
+                            }
                             freeMessageKeyList.ifPresent(keys -> b.setFeeExemptKeyList(
                                     FeeExemptKeyList.newBuilder().addAllKeys(keys)));
                             if (emptyFeeExemptKeyList) {

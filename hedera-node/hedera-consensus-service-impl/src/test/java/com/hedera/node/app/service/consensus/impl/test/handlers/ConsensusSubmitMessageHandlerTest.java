@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -477,7 +477,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private void mockPayerKeyIsFeeExempt() {
         // mock signature is in FEKL
         given(handleContext.keyVerifier()).willReturn(keyVerifier);
-        given(keyVerifier.verificationFor(any(Key.class))).willReturn(signatureVerification);
+        given(keyVerifier.verificationFor(any(Key.class), any())).willReturn(signatureVerification);
         given(signatureVerification.passed()).willReturn(true);
     }
 
@@ -490,7 +490,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         given(streamBuilder.status()).willReturn(SUCCESS);
         // mock signature is not in FEKL
         given(handleContext.keyVerifier()).willReturn(keyVerifier);
-        given(keyVerifier.verificationFor(any(Key.class))).willReturn(signatureVerification);
+        given(keyVerifier.verificationFor(any(Key.class), any())).willReturn(signatureVerification);
         given(signatureVerification.passed()).willReturn(false);
     }
 }

@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDnsServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiPropertySource.invalidServiceEndpoint;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
@@ -278,25 +277,21 @@ public class NodeUpdateTest {
     @HapiTest
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("ntb")
-                                .adminKey("adminKey")
-                                .description(description)
-                                .fee(ONE_HBAR)
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded())
-                                .via("nodeCreation"),
-                        nodeUpdate("ntb")
-                                .payingWith("payer")
-                                .accountId("0.0.1000")
-                                .hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED)
-                                .fee(ONE_HBAR)
-                                .via("updateNode"))
-                .when()
-                .then();
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                nodeCreate("ntb")
+                        .adminKey("adminKey")
+                        .description(description)
+                        .fee(ONE_HBAR)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
+                        .via("nodeCreation"),
+                nodeUpdate("ntb")
+                        .payingWith("payer")
+                        .accountId("0.0.1000")
+                        .hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED)
+                        .fee(ONE_HBAR)
+                        .via("updateNode"));
     }
 
     @LeakyHapiTest(overrides = {"nodes.maxServiceEndpoint"})

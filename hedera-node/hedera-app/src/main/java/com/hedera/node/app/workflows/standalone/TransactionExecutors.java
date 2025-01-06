@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
@@ -47,6 +48,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -59,6 +61,7 @@ public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
 
     public static final NodeInfo DEFAULT_NODE_INFO = new NodeInfoImpl(0, asAccount(3L), 10, List.of(), Bytes.EMPTY);
+    public static final String MAX_SIGNED_TXN_SIZE_PROPERTY = "executor.maxSignedTxnSize";
 
     /**
      * A strategy to bind and retrieve {@link OperationTracer} scoped to a thread.
@@ -137,6 +140,9 @@ public enum TransactionExecutors {
                 .scheduleServiceImpl(scheduleService)
                 .metrics(NO_OP_METRICS)
                 .throttleFactory(appContext.throttleFactory())
+                .maxSignedTxnSize(Optional.ofNullable(properties.get(MAX_SIGNED_TXN_SIZE_PROPERTY))
+                        .map(Integer::parseInt)
+                        .orElse(Hedera.MAX_SIGNED_TXN_SIZE))
                 .build();
         componentRef.set(component);
         return component;

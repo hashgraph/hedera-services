@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
+import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -84,18 +85,22 @@ public class HandleSystemContractOperations implements SystemContractOperations 
             @NonNull final VerificationStrategy strategy,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final Class<T> streamBuilderType,
-            @NonNull final Set<Key> authorizingKeys) {
+            @NonNull final Set<Key> authorizingKeys,
+            @NonNull final UsePresetTxnId usePresetTxnId) {
         requireNonNull(syntheticBody);
         requireNonNull(strategy);
         requireNonNull(syntheticPayerId);
         requireNonNull(streamBuilderType);
+        requireNonNull(authorizingKeys);
+        requireNonNull(usePresetTxnId);
         return context.dispatch(subDispatch(
                 syntheticPayerId,
                 syntheticBody,
                 primitiveSignatureTestWith(strategy),
                 authorizingKeys,
                 streamBuilderType,
-                StakingRewards.OFF));
+                StakingRewards.OFF,
+                usePresetTxnId));
     }
 
     @Override

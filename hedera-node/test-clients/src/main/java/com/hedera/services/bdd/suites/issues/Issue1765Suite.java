@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.issues;
 import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
@@ -55,21 +55,17 @@ public class Issue1765Suite {
         final String INVALID_CONTRACT = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
 
-        return defaultHapiSpec("RecordOfInvalidContractUpdateSanityChecks")
-                .given(flattened(
-                        withOpContext((spec, ctxLog) ->
-                                spec.registry().saveContractId(INVALID_CONTRACT, asContract(ACCOUNT))),
-                        newKeyNamed(INVALID_CONTRACT),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
-                .when(contractUpdate(INVALID_CONTRACT)
+        return hapiTest(flattened(
+                withOpContext((spec, ctxLog) -> spec.registry().saveContractId(INVALID_CONTRACT, asContract(ACCOUNT))),
+                newKeyNamed(INVALID_CONTRACT),
+                takeBalanceSnapshots(FUNDING, GENESIS, NODE),
+                contractUpdate(INVALID_CONTRACT)
                         .memo(THE_MEMO_IS)
                         .fee(ADEQUATE_FEE)
                         .via(INVALID_UPDATE_TXN)
-                        .hasKnownStatus(ResponseCodeEnum.INVALID_CONTRACT_ID))
-                .then(
-                        validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, NODE)),
-                        getTxnRecord(INVALID_UPDATE_TXN)
-                                .hasPriority(recordWith().memo(THE_MEMO_IS)));
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_CONTRACT_ID),
+                validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, NODE)),
+                getTxnRecord(INVALID_UPDATE_TXN).hasPriority(recordWith().memo(THE_MEMO_IS))));
     }
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
@@ -78,21 +74,17 @@ public class Issue1765Suite {
         final String INVALID_FILE = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
 
-        return defaultHapiSpec("RecordOfInvalidFileUpdateSanityChecks")
-                .given(flattened(
-                        withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
-                        newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                        takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE)))
-                .when(fileUpdate(INVALID_FILE)
+        return hapiTest(flattened(
+                withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
+                newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
+                takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE),
+                fileUpdate(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .fee(ADEQUATE_FEE)
                         .via(INVALID_UPDATE_TXN)
-                        .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
-                .then(
-                        validateTransferListForBalances(
-                                INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
-                        getTxnRecord(INVALID_UPDATE_TXN)
-                                .hasPriority(recordWith().memo(THE_MEMO_IS)));
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID),
+                validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
+                getTxnRecord(INVALID_UPDATE_TXN).hasPriority(recordWith().memo(THE_MEMO_IS))));
     }
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
@@ -101,21 +93,17 @@ public class Issue1765Suite {
         final String INVALID_FILE = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
 
-        return defaultHapiSpec("RecordOfInvalidFileAppendSanityChecks")
-                .given(flattened(
-                        withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
-                        newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                        takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE)))
-                .when(fileAppend(INVALID_FILE)
+        return hapiTest(flattened(
+                withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
+                newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
+                takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE),
+                fileAppend(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .content("Some more content.")
                         .fee(ADEQUATE_FEE)
                         .via(INVALID_APPEND_TXN)
-                        .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
-                .then(
-                        validateTransferListForBalances(
-                                INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
-                        getTxnRecord(INVALID_APPEND_TXN)
-                                .hasPriority(recordWith().memo(THE_MEMO_IS)));
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID),
+                validateTransferListForBalances(INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
+                getTxnRecord(INVALID_APPEND_TXN).hasPriority(recordWith().memo(THE_MEMO_IS))));
     }
 }

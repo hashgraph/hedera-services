@@ -57,6 +57,11 @@ public class VersionedConfigImpl implements VersionedConfiguration {
     }
 
     @Override
+    public boolean isListValue(@NonNull final String propertyName) {
+        return wrappedConfig.isListValue(propertyName);
+    }
+
+    @Override
     public String getValue(@NonNull final String s) throws NoSuchElementException {
         return wrappedConfig.getValue(s);
     }

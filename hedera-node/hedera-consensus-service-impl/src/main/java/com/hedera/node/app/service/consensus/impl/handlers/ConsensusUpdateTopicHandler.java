@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_KEY_NOT_SET;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -102,7 +102,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final ConsensusUpdateTopicTransactionBody op = txn.consensusUpdateTopicOrThrow();
         validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
 
-        if (op.feeExemptKeyList() != null) {
+        if (op.hasFeeExemptKeyList()) {
             final var uniqueKeysCount =
                     op.feeExemptKeyList().keys().stream().distinct().count();
             validateTruePreCheck(
@@ -145,9 +145,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             }
         }
 
-        // If the fee schedule key is changed then the transaction must also be signed by the new fee schedule key
-        if (op.hasFeeScheduleKey()) {
-            context.requireKeyOrThrow(op.feeScheduleKey(), INVALID_FEE_SCHEDULE_KEY);
+        // If we change the custom fees the topic needs to have a fee schedule key, and it needs to sign the transaction
+        if (op.hasCustomFees()) {
+            validateTruePreCheck(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_NOT_SET);
+            context.requireKey(topic.feeScheduleKey());
         }
     }
 
@@ -246,7 +247,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
         }
         if (op.hasFeeScheduleKey()) {
-            builder.feeScheduleKey(op.feeScheduleKey());
+            final var newFeeScheduleKey = op.feeScheduleKey();
+            if (isKeyRemoval(newFeeScheduleKey)) {
+                builder.feeScheduleKey((Key) null);
+            } else {
+                builder.feeScheduleKey(newFeeScheduleKey);
+            }
         }
         if (op.hasFeeExemptKeyList()) {
             builder.feeExemptKeyList(op.feeExemptKeyList().keys());
@@ -338,7 +344,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic topic) {
         if (op.hasFeeScheduleKey()) {
             validateTrue(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED);
-            attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            if (!isEmpty(op.feeScheduleKey())) {
+                attributeValidator.validateKey(op.feeScheduleKey(), INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+            }
         }
     }
 

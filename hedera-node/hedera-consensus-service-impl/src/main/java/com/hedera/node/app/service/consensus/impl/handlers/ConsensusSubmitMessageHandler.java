@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -83,7 +84,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -131,12 +134,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic.hasSubmitKey()) {
             context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
         }
-        // add optional fee exempt keys in to the key verifieer
-        // later it will be used to validate if transaction was signed by
-        // any of these keys and based on that, custom fees will be charged or not
-        if (!topic.feeExemptKeyList().isEmpty()) {
-            context.optionalKeys(new HashSet<>(topic.feeExemptKeyList()));
-        }
     }
 
     /**
@@ -165,12 +162,16 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         /* handle custom fees */
         if (!topic.customFees().isEmpty() && !isFeeExempted(topic.feeExemptKeyList(), handleContext.keyVerifier())) {
+            // filter fee list
+            final var feesToBeCharged = extractFeesToBeCharged(topic.customFees(), handleContext);
+
             // check payer limits or throw
             if (!op.acceptAllCustomFees()) {
-                validateFeeLimits(topic.customFees(), op.maxCustomFees(), handleContext);
+                validateFeeLimits(feesToBeCharged, op.maxCustomFees());
             }
+
             // create synthetic body and dispatch crypto transfer
-            final var syntheticBodies = customFeeAssessor.assessCustomFee(topic, handleContext);
+            final var syntheticBodies = customFeeAssessor.assessCustomFee(feesToBeCharged, handleContext.payer());
             // build a list with the top level custom fees
             final var assessedCustomFees =
                     new ArrayList<>(buildTopLevelAssessedCustomFees(handleContext.payer(), syntheticBodies));
@@ -357,14 +358,34 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     private boolean isFeeExempted(@NonNull final List<Key> feeExemptKeyList, @NonNull final KeyVerifier keyVerifier) {
         if (!feeExemptKeyList.isEmpty()) {
-            for (final var key : feeExemptKeyList) {
-                final var keyVerificationResult = keyVerifier.verificationFor(key);
-                if (keyVerificationResult.passed()) {
+            final var authorizingKeys =
+                    keyVerifier.authorizingSimpleKeys().stream().toList();
+            final VerificationAssistant callback =
+                    (k, ignore) -> simpleKeyVerifierFrom(authorizingKeys).test(k);
+            // check if authorizing keys are satisfying any of the fee exempt keys
+            for (final var feeExemptKey : feeExemptKeyList) {
+                if (keyVerifier.verificationFor(feeExemptKey, callback).passed()) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    public static Predicate<Key> simpleKeyVerifierFrom(@NonNull final List<Key> signatories) {
+        final Set<Key> cryptoSigs = new HashSet<>();
+        signatories.forEach(k -> {
+            switch (k.key().kind()) {
+                case ED25519, ECDSA_SECP256K1 -> cryptoSigs.add(k);
+                default -> {
+                    // No other key type can be a signatory
+                }
+            }
+        });
+        return key -> switch (key.key().kind()) {
+            case ED25519, ECDSA_SECP256K1 -> cryptoSigs.contains(key);
+            default -> false;
+        };
     }
 
     /**
@@ -375,15 +396,14 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     private void validateFeeLimits(
             @NonNull final List<ConsensusCustomFee> topicCustomFees,
-            @NonNull final List<FixedFee> payerCustomFeeLimits,
-            @NonNull final HandleContext context) {
+            @NonNull final List<FixedFee> payerCustomFeeLimits) {
         // Validate the duplication of payer custom fee limits
         validateDuplicationFeeLimits(payerCustomFeeLimits);
 
         // Extract the token fees and hbar fees from the topic custom fees
         Map<TokenID, Long> tokenFees = new HashMap<>();
         AtomicReference<Long> hbarFee = new AtomicReference<>(0L);
-        extractFees(topicCustomFees, context, hbarFee, tokenFees);
+        totalAmountToBeCharged(topicCustomFees, hbarFee, tokenFees);
         // Validate payer token limits
         tokenFees.forEach((token, feeAmount) -> {
             final boolean isValid = payerCustomFeeLimits.stream()
@@ -404,25 +424,52 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
     }
 
-    private void extractFees(
-            @NonNull List<ConsensusCustomFee> topicCustomFees,
-            HandleContext context,
-            AtomicReference<Long> hbarFee,
-            Map<TokenID, Long> tokenFees) {
+    /**
+     * Extracts only the fees that are going to be charged.
+     * The payer will not be charged in case he is a fee collector or token treasury.
+     *
+     * @param topicCustomFees All topic custom fees
+     * @param context The handle context
+     * @return List containing only the fees concerning given payer
+     */
+    private List<ConsensusCustomFee> extractFeesToBeCharged(
+            @NonNull final List<ConsensusCustomFee> topicCustomFees, @NonNull final HandleContext context) {
         final var payer = context.payer();
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
-        for (final var fee : topicCustomFees) {
-            if (!payer.equals(fee.feeCollectorAccountId())) {
-                var fixedFee = fee.fixedFeeOrThrow();
-                if (!fixedFee.hasDenominatingTokenId()) {
-                    hbarFee.updateAndGet(v -> v + fixedFee.amount());
-                } else {
-                    final var denomTokenId = fixedFee.denominatingTokenId();
-                    final var treasury = customFeeAssessor.getTokenTreasury(denomTokenId, tokenStore);
-                    if (!context.payer().equals(treasury)) {
-                        tokenFees.put(denomTokenId, tokenFees.getOrDefault(denomTokenId, 0L) + fixedFee.amount());
+        return topicCustomFees.stream()
+                .filter(fee -> {
+                    var fixedFee = fee.fixedFeeOrThrow();
+                    if (payer.equals(fee.feeCollectorAccountId())) {
+                        return false;
                     }
-                }
+                    if (fixedFee.hasDenominatingTokenId()) {
+                        final var denomTokenId = fixedFee.denominatingTokenId();
+                        final var treasury = customFeeAssessor.getTokenTreasury(denomTokenId, tokenStore);
+                        return !payer.equals(treasury);
+                    }
+                    return true;
+                })
+                .toList();
+    }
+
+    /**
+     * Calculate the total amount of fees to be charge per denomination token and hbar fees.
+     *
+     * @param topicCustomFees All fees to be charged
+     * @param hbarFee The total hbar amount.
+     * @param tokenFees Map with total amount per token.
+     */
+    private void totalAmountToBeCharged(
+            @NonNull List<ConsensusCustomFee> topicCustomFees,
+            AtomicReference<Long> hbarFee,
+            Map<TokenID, Long> tokenFees) {
+        for (final var fee : topicCustomFees) {
+            var fixedFee = fee.fixedFeeOrThrow();
+            if (!fixedFee.hasDenominatingTokenId()) {
+                hbarFee.updateAndGet(v -> v + fixedFee.amount());
+            } else {
+                final var denomTokenId = fixedFee.denominatingTokenId();
+                tokenFees.put(denomTokenId, tokenFees.getOrDefault(denomTokenId, 0L) + fixedFee.amount());
             }
         }
     }

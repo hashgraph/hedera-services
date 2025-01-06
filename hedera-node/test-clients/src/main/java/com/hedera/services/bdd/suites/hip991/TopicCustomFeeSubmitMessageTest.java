@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -344,7 +345,12 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .feeScheduleKeyName(feeScheduleKey)
                             .feeExemptKeys(feeScheduleKey)
                             .withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST").signedByPayerAnd(feeScheduleKey),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .signedByPayerAnd(feeScheduleKey)
+                            // any non payer key in FEKL, should sign with full prefixes keys
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(feeScheduleKey)),
                     getAccountBalance(collector).hasTinyBars(0L));
         }
 
@@ -414,26 +420,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("Just some tests")
-        final Stream<DynamicTest> test() {
-            final var collector = "collector";
-            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
-            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
-            final var hbarFee = fixedConsensusHbarFee(1, collector);
-            final var hbarFee2 = fixedConsensusHbarFee(2, collector);
-            return hapiTest(
-                    cryptoCreate(collector).balance(ONE_HBAR),
-                    tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(hbarFee2),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
-                            .maxCustomFee(fee1)
-                            .message("TEST")
-                            .payingWith(SUBMITTER)
-                            .hasKnownStatus(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));
-        }
-
-        @HapiTest
         @DisplayName("Test multiple fees with same denomination")
         final Stream<DynamicTest> multipleFeesSameDenom() {
             final var collector = "collector";
@@ -476,9 +462,5 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(SUBMITTER));
         }
-
-        // questions:
-        // topic with 2 fees with same denomination!
-        // topic with multiple denomination fees
     }
 }

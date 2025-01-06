@@ -19,6 +19,7 @@ package com.hedera.node.app.tss.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
+import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
@@ -83,11 +84,15 @@ public class TssMessageHandler implements TransactionHandler {
         tssStore.put(key, op);
 
         // Obtain the directory of participants for the target roster
-        final var directory = tssDirectoryAccessor.activeParticipantDirectory();
+        final var directory = tssDirectoryAccessor.activeParticipantDirectoryOrThrow();
         // Schedule work to potentially compute a signed vote for the new key material of the target
         // roster, if this message was valid and passed the threshold number of messages required
+        final var selfNodeId = context.networkInfo().selfNodeInfo().nodeId();
+        final var tssMessageBodies = tssStore.getMessagesForTarget(targetRosterHash);
+        final var voteKey = new TssVoteMapKey(targetRosterHash, selfNodeId);
+        final var voteBody = tssStore.getVote(voteKey);
         tssCryptographyManager
-                .getVoteFuture(op.targetRosterHash(), directory, context)
+                .getVoteFuture(directory, tssMessageBodies, voteBody)
                 .thenAccept(vote -> {
                     if (vote != null) {
                         // FUTURE: Validate the ledgerId computed is same as the current ledgerId
