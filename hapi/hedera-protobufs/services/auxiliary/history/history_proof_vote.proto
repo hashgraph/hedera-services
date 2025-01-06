@@ -13,7 +13,7 @@ syntax = "proto3";
 package com.hedera.hapi.services.auxiliary.history;
 
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,16 +41,21 @@ option java_multiple_files = true;
  */
 message HistoryProofVoteTransactionBody {
   /**
-   * The id of the proof construction this vote is for.Because the
-   * network only ever performs one construction a time, this is
-   * somewhat redundant, but included to detect any strange edge
+   * The id of the proof construction this vote is for.
+   * Because the network only ever performs one construction a time,
+   * this is somewhat redundant, but included to detect any strange edge
    * cases where a node is so far behind it signs for the wrong
    * construction.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be greater than zero.<br/>
    */
   uint64 construction_id = 1;
 
   /**
    * This node's vote on the metadata proof.
+   * <p>
+   * This value MUST be set.
    */
   com.hedera.hapi.node.state.history.MetadataProofVote vote = 2;
 }

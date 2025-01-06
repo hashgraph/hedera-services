@@ -57,6 +57,9 @@ message ProofRosterEntry {
    * can trusted throughout any period the network's aBFT security
    * was not compromised; no matter how nodes were added, removed, or
    * updated during that period.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes proof_public_key = 3;
 }
@@ -72,10 +75,16 @@ message ProofKeySet {
    * Schnorr key in this set. An adoption time that is sufficiently
    * tardy relative to the latest assembly start time may result
    * in the node's key being omitted from the proof roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be a valid timestamp.
    */
   proto.Timestamp adoption_time = 2;
   /**
    * The proof key the node is using.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes key = 3;
   /**
@@ -101,6 +110,9 @@ message ProofKey {
   uint64 node_id = 1;
   /**
    * The key.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes key = 2;
 }
@@ -114,22 +126,37 @@ message ProofKey {
 message MetadataProof {
   /**
    * The hash of the source proof roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes source_proof_roster_hash = 1;
   /**
    * The hash of the target proof roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes target_proof_roster_hash = 2;
   /**
    * The metadata tagged to the target proof roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes metadata = 3;
   /**
    * The proof keys for the source roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   repeated ProofKey proof_keys = 4;
   /**
    * The recursive SNARK that proves the metadata derivation.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes proof = 5;
 }
@@ -147,17 +174,25 @@ message MetadataProofConstruction {
   /**
    * The hash of the roster whose weights are used to determine when
    * certain thresholds are during construction.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes source_roster_hash = 2;
   /**
    * If not null, the proof that the source proof roster was derived from
    * the ledger id (if empty, the source roster *is* the ledger id).
+   * <p>
+   * This value MUST be set.
    */
   MetadataProof source_proof = 3;
   /**
    * The hash of the roster whose weights are used to assess progress
    * toward obtaining Schnorr keys for parties that hold at least a
    * strong minority of the stake in that roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes target_roster_hash = 4;
   /**
@@ -165,17 +200,24 @@ message MetadataProofConstruction {
    * construction, the next time at which nodes should evaluate the
    * Schnorr keys and metadata scoped to the target roster for
    * sufficient valid weight to assemble the proof roster.
+   * <p>
+   * This value IF set MUSt be a valid timestamp.
    */
   proto.Timestamp next_assembly_checkpoint = 5;
   /**
    * If the network has gathered enough Schnorr keys for this
    * construction to be assembled, the cutoff time at which those
    * keys must have been adopted to be included in the final roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be a valid timestamp.
    */
   proto.Timestamp assembly_time = 6;
   /**
    * When this construction is complete, the recursive proof that
    * certain metadata was derived from the ledger id.
+   * <p>
+   * This value MUST be set.<br/>
    */
   MetadataProof metadata_proof = 7;
 }
@@ -204,6 +246,8 @@ message MetadataProofVote {
   oneof vote {
     /**
      * The proof roster and metadata this node is voting for.
+     * <p>
+     * This value if set MUST be a valid metadata proof.
      */
     MetadataProof metadata_proof = 1;
     /**
@@ -220,38 +264,57 @@ message MetadataProofVote {
 message HistoryAssembly {
   /**
    * The proof roster hash the node is signing the assembly of.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes proof_roster_hash = 1;
   /**
    * The metadata associated to the proof roster the the assembly is for.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes metadata = 2;
 }
 
 /**
  * A node's signature on a particular assembly of metadata and proof roster
- * hash for a specified.
+ * hash.
  */
 message HistoryAssemblySignature {
   /**
    * The assembly the node is signing.
+   * <p>
+   * This value MUST be set.
    */
   HistoryAssembly assembly = 1;
   /**
    * The node's signature on the hash of the concatenation of the proof
    * roster hash and the metadata.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes signature = 2;
 }
-
+/**
+ * A recorded history assembly signature.
+ */
 message RecordedHistoryAssemblySignature {
   /**
    * The time at which the signature was recorded.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be a valid timestamp.
    */
   proto.Timestamp signing_time = 1;
 
   /**
-   * The signature.
+   * A node's signature on a particular assembly of metadata and proof roster
+   * hash.
+   * <p>
+   * This value MUST be set.
    */
   HistoryAssemblySignature signature = 2;
 }

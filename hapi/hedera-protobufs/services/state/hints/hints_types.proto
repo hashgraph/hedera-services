@@ -33,10 +33,14 @@ option java_multiple_files = true;
 message NodeSchemeId {
   /**
    * The node id.
+   * <p>
+   * This value MUST be set.
    */
   uint64 node_id = 1;
   /**
    * The base-2 logarithm of the maximum number of parties.
+   * <p>
+   * This value MUST be set.
    */
   uint32 max_size_log_2 = 2;
 }
@@ -54,10 +58,14 @@ message HintsId {
    * The unique identifier for a party in a hinTS scheme with a
    * certain maximum size M = 2^k; so that party ids are in the
    * range [0, M).
+   * <p>
+   * This value MUST be set.
    */
   uint64 party_id = 1;
   /**
    * The base-2 logarithm of the maximum number of parties.
+   * <p>
+   * This value MUST be set.
    */
   uint32 max_size_log_2 = 2;
 }
@@ -72,10 +80,16 @@ message HintsId {
 message HintsKey {
   /**
    * The party's BLS public key.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes public_key = 1;
   /**
    * Hints of the party's contribution to a secret statement.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes hint = 2;
 }
@@ -96,10 +110,15 @@ message HintsKeySet {
    * tardy relative to the latest preprocessing start time may result
    * in the party being given zero weight in that construction's
    * aggregation key.
+   * <p>
+   * This value MUST be set.<br/>
+   * This must be a valid timestamp.
    */
   proto.Timestamp adoption_time = 2;
   /**
    * The hints key a party is using.
+   * <p>
+   * This value MUST be set.
    */
   HintsKey key = 3;
   /**
@@ -126,10 +145,16 @@ message PreprocessedKeys {
   /**
    * The aggregation key for the parties in the scheme; specifies the
    * set of parties with missing or invalid hints.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes aggregation_key = 1;
   /**
    * The succinct verification key for the parties in the scheme.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes verification_key = 2;
 }
@@ -142,6 +167,9 @@ message PreprocessVoteId {
   /**
    * The unique identifier for the hinTS construction that this vote
    * is associated with.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be greater than zero.
    */
   uint64 construction_id = 1;
   /**
@@ -160,6 +188,8 @@ message PreprocessedKeysVote {
   oneof vote {
     /**
      * The preprocessed keys aggregated by this node.
+     * <p>
+     * When this value is set it must be valid <br/>
      */
     PreprocessedKeys preprocessed_keys = 1;
     /**
@@ -196,17 +226,26 @@ message HintsConstruction {
    * The unique identifier for this hinTS construction; useful for
    * purging associated votes when the construction is completed or
    * cancelled.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be greater than zero.
    */
   uint64 construction_id = 1;
   /**
    * The hash of the roster whose weights are used to determine when
    * certain thresholds are during construction.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes source_roster_hash = 2;
   /**
    * The hash of the roster whose weights are used to assess progress
    * toward achieving hints for parties that hold at least a strong
    * minority of the stake in that roster.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes target_roster_hash = 3;
   /**
@@ -214,12 +253,17 @@ message HintsConstruction {
    * the next time at which nodes should evaluate the published keys for
    * sufficient valid weight to begin aggregation into the final
    * preprocessed keys.
+   * <p>
+   * This value CAN be null, when the network has already gathered enough keys.
    */
   proto.Timestamp next_aggregation_checkpoint = 4;
   /**
    * If the network has gathered enough hinTS keys for this construction
    * to begin preprocessing, the cutoff time at those keys must have been
    * adopted by to be included in the final preprocessed keys.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be a valid timestamp.
    */
   proto.Timestamp aggregation_time = 5;
   /**
@@ -229,6 +273,9 @@ message HintsConstruction {
   PreprocessedKeys preprocessed_keys = 6;
   /**
    * The assignments of nodes to parties in the construction.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   repeated PartyAssignment party_assignments = 7;
 }

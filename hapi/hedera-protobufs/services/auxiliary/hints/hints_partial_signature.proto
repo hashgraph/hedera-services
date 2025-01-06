@@ -13,7 +13,7 @@ syntax = "proto3";
 package com.hedera.hapi.services.auxiliary.hints;
 
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,20 +39,29 @@ option java_multiple_files = true;
  */
 message HintsPartialSignatureTransactionBody {
   /**
-   * The id of the hinTS construction this partial signature applies to.
+   * The id of the hinTS construction this partial signature applies to.<br/>
    * (The size of the target roster for this construction implies what
    * hinTS party id the submitting node has in the construction; and
    * hence also what weight the node's signature has.)
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be greater than zero.<br/>
    */
   uint64 construction_id = 1;
 
   /**
    * The message being signed.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes message = 2;
 
   /**
    * The node's partial signature on the message.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST NOT be empty.
    */
   bytes partial_signature = 3;
 }

@@ -13,7 +13,7 @@ syntax = "proto3";
 package com.hedera.hapi.services.auxiliary.hints;
 
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,17 +43,22 @@ option java_multiple_files = true;
  */
 message HintsAggregationVoteTransactionBody {
   /**
-   * The id of the hinTS construction this vote is for. Because
-   * the network only ever performs one construction a time, this
+   * The id of the hinTS construction this vote is for.<br/>
+   * Because the network only ever performs one construction a time, this
    * is somewhat redundant, but included to detect any strange
    * edge cases where a node is so far behind it votes on the wrong
-    * construction.
+   * construction.
+   * <p>
+   * This value MUST be set.<br/>
+   * This value MUST be greater than zero.<br/>
    */
   uint64 construction_id = 1;
 
   /**
    * The vote the node is casting for the aggregation of the hints
    * in the given construction (which should be ongoing).
+   * <p>
+   * This value MUST be set.<br/>
    */
   com.hedera.hapi.node.state.hints.PreprocessedKeysVote vote = 2;
 }
