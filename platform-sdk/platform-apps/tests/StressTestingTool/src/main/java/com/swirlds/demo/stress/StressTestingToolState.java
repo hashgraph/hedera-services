@@ -60,9 +60,16 @@ import java.util.function.Function;
 public class StressTestingToolState extends PlatformMerkleStateRoot {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
 
-    // The length of a system transaction -> round number (5-15 bytes depending on size) + signature (384 bytes) + hash
-    // (48 bytes)
-    private static final int[] SYSTEM_TRANSACTION_LENGTH_RANGE = new int[] {437, 447};
+    // The length of a system transaction:
+    // 1 byte - encoded field position +
+    // (varying length up to 10 bytes) round number long +
+    // 1 byte - encoded field position +
+    // 2 bytes - encoded size +
+    // 384 bytes - signature
+    // 1 byte - encoded field position +
+    // 1 byte - encoded size +
+    // 48 bytes - hash
+    private static final int[] SYSTEM_TRANSACTION_LENGTH_RANGE = new int[] {437, 448};
 
     /** A running sum of transaction contents */
     private long runningSum = 0;
