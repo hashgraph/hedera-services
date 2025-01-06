@@ -35,7 +35,7 @@ val besu = "24.3.3"
 val bouncycastle = "1.79"
 val dagger = "2.42"
 val eclipseCollections = "11.1.0"
-val grpc = "1.64.0"
+val grpc = "1.69.0"
 val hederaCryptography = "0.1.1-SNAPSHOT"
 val helidon = "4.1.6"
 val jackson = "2.16.0"
@@ -61,7 +61,7 @@ dependencies.constraints {
     api("com.fasterxml.jackson.core:jackson-databind:$jackson") {
         because("com.fasterxml.jackson.databind")
     }
-    api("com.github.ben-manes.caffeine:caffeine:3.1.1") { because("com.github.benmanes.caffeine") }
+    api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
     api("com.github.spotbugs:spotbugs-annotations:4.8.6") {
         because("com.github.spotbugs.annotations")
@@ -88,7 +88,7 @@ dependencies.constraints {
     api("io.grpc:grpc-stub:$grpc") { because("io.grpc.stub") }
     api("com.esaulpaugh:headlong:6.1.1") { because("com.esaulpaugh.headlong") }
     api("info.picocli:picocli:4.6.3") { because("info.picocli") }
-    api("io.github.classgraph:classgraph:4.8.65") { because("io.github.classgraph") }
+    api("io.github.classgraph:classgraph:4.8.179") { because("io.github.classgraph") }
     api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }
     api("io.prometheus:simpleclient:0.16.0") { because("io.prometheus.simpleclient") }
     api("io.prometheus:simpleclient_httpserver:0.16.0") {
