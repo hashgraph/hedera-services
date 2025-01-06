@@ -28,7 +28,6 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFai
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
@@ -49,7 +48,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -180,37 +178,20 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         try {
             // Transaction info is a pure function of the transaction, so we can
             // always reuse it from a prior result
-//            txInfo = previousResult == null
-//                    ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
-//                    : previousResult.txInfo();
-
-            // Temporary solution until we can deprecate StateSignatureTransaction
-            if (previousResult == null) {
-                final var txn = transactionChecker.parse(platformTx.getApplicationTransaction());
-                if (txn.bodyBytes().length() > 0) {
-                    try {
-                        final var txBody = TransactionBody.PROTOBUF.parse(txn.bodyBytes());
-                        final var stateSignatureTransaction = txBody.stateSignatureTransaction();
-                        if (stateSignatureTransaction != null) {
-                            stateSignatureTransactionCallback.accept(stateSignatureTransaction);
-                            return PreHandleResult.stateSignatureTransactionEncountered(txn, txBody);
-                        }
-                    } catch (ParseException ex) {
-                        // Ignore the exception, we deal with it below
-                    }
-                }
-                txInfo = transactionChecker.check(txn, platformTx.getApplicationTransaction());
-            } else {
-                txInfo = previousResult.txInfo();
-                if (txInfo != null && txInfo.functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
-                    return previousResult;
-                }
-            }
+            txInfo = previousResult == null
+                    ? transactionChecker.parseAndCheck(platformTx.getApplicationTransaction())
+                    : previousResult.txInfo();
 
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status
                 return previousResult;
             }
+
+            if (txInfo.txBody().hasStateSignatureTransaction()) {
+                stateSignatureTransactionCallback.accept(txInfo.txBody().stateSignatureTransaction());
+                return PreHandleResult.stateSignatureTransactionEncountered(txInfo);
+            }
+
             // But we still re-check for node diligence failures
             transactionChecker.checkParsed(txInfo);
             // The transaction account ID MUST have matched the creator!

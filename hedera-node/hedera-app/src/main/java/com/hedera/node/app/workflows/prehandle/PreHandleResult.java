@@ -22,18 +22,13 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -246,9 +241,7 @@ public record PreHandleResult(
      * Creates a new {@link PreHandleResult} when encountering a {@link com.hedera.hapi.platform.event.StateSignatureTransaction}.
      */
     @NonNull
-    public static PreHandleResult stateSignatureTransactionEncountered(@NonNull final Transaction txn, @NonNull final
-            TransactionBody txBody) {
-        final var txInfo = new TransactionInfo(txn, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, HederaFunctionality.STATE_SIGNATURE_TRANSACTION, Bytes.EMPTY);
+    public static PreHandleResult stateSignatureTransactionEncountered(@NonNull final TransactionInfo txInfo) {
         return new PreHandleResult(
                 null,
                 null,

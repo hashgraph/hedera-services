@@ -37,7 +37,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -86,7 +85,6 @@ import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
-import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.InitTrigger;
@@ -402,21 +400,6 @@ public class HandleWorkflow {
                 && preHandleResult.txInfo().functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
             stateSignatureTxnCallback.accept(preHandleResult.txInfo().txBody().stateSignatureTransactionOrThrow());
             return true;
-        } else if (txn.getMetadata() == null) {
-            // This should not happen, but to be sure, we deserialize the transaction and check anyway
-            try {
-                final Transaction parsedTxn = Transaction.PROTOBUF.parse(txn.getApplicationTransaction());
-                if (parsedTxn.bodyBytes().length() > 0) {
-                    final var txBody = TransactionBody.PROTOBUF.parseStrict(parsedTxn.bodyBytes());
-                    final var stateSignatureTxn = txBody.stateSignatureTransaction();
-                    if (stateSignatureTxn != null) {
-                        stateSignatureTxnCallback.accept(stateSignatureTxn);
-                        return true;
-                    }
-                }
-            } catch (ParseException e) {
-                // Ignore, this will be handled as part of the regular workflow
-            }
         }
         return false;
     }

@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usingStateSignature
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup.TxnProtoStructure;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -57,9 +56,8 @@ public class StateSignatureCallbackSuite {
         return hapiTest(
                 hapiStateSignature()
                         .withSubmissionStrategy(usingStateSignatureTransactionCallback(preHandleCallback, handleCallback))
-                        .withProtoStructure(TxnProtoStructure.OLD)
-                        .fireAndForget()
                         .setNode("0.0.4")
+                        .fireAndForget()
                         .satisfies(() -> preHandleCallback.counter.get() == 1, () -> "Pre-handle StateSignatureTxnCallback should have been called once, but was called was called " + preHandleCallback.counter.get() + " times")
                         .satisfies(() -> handleCallback.counter.get() == 1, () -> "Handle StateSignatureTxnCallback should have been called once, but was called was called " + handleCallback.counter.get() + " times"));
     }
