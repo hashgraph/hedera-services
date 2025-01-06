@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.history.impl;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.history.WritableHistoryStore;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
-/**
- * Encapsulates information about the hints in state that are not directly scoped to a particular maximum party size.
- */
-public interface ReadableHintsStore {
-    /**
-     * Returns the verification key for the given roster hash, if it exists.
-     * @param rosterHash the hash of the roster for which the verification key is requested
-     */
-    @Nullable
-    Bytes getVerificationKeyFor(@NonNull Bytes rosterHash);
+public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implements WritableHistoryStore {
+    public WritableHistoryStoreImpl(@NonNull final WritableStates states) {
+        super(states);
+    }
 }

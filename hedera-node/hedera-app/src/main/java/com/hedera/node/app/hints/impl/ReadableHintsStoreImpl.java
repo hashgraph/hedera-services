@@ -19,8 +19,10 @@ package com.hedera.node.app.hints.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hints.ReadableHintsStore;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Placeholder implementation of the {@link ReadableHintsStore}.
@@ -28,5 +30,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class ReadableHintsStoreImpl implements ReadableHintsStore {
     public ReadableHintsStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
+    }
+
+    @Override
+    public @Nullable Bytes getVerificationKeyFor(@NonNull final Bytes rosterHash) {
+        requireNonNull(rosterHash);
+        throw new UnsupportedOperationException();
     }
 }

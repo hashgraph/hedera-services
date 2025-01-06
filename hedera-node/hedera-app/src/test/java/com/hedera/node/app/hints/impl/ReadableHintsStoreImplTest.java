@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableStates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ class ReadableHintsStoreImplTest {
     }
 
     @Test
-    void constructorWorks() {
-        assertNotNull(subject);
+    void everythingUnsupportedForNow() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.getVerificationKeyFor(Bytes.EMPTY));
     }
 }
