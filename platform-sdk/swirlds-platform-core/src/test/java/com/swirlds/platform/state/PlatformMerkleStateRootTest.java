@@ -18,7 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -57,7 +57,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
@@ -100,7 +100,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
 
-    private final SwirldsStateLifecycles lifecycles = new SwirldsStateLifecycles() {
+    private final StateLifecycles lifecycles = new StateLifecycles() {
 
         @Override
         public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
@@ -143,7 +143,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupConstructableRegistry();
-        FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds();
+        FakeStateLifecycles.registerMerkleStateRootClassIds();
         setupFruitMerkleMap();
         stateRoot = new PlatformMerkleStateRoot(lifecycles, softwareVersionSupplier);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateRoot);

@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -97,7 +97,7 @@ public class HelloSwirldDemoState extends PlatformMerkleStateRoot {
     // ///////////////////////////////////////////////////////////////////
 
     public HelloSwirldDemoState(
-            @NonNull final SwirldsStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
     }

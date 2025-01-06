@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.turtle.runner;
 
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ClassConstructorPair;

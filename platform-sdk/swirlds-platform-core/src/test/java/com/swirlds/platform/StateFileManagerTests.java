@@ -63,7 +63,7 @@ import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
-import com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
@@ -102,14 +102,14 @@ class StateFileManagerTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds();
+        FakeStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @BeforeEach
     void beforeEach() throws IOException {
         // Don't use JUnit @TempDir as it runs into a thread race with Merkle DB DataSource release...
         testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile(
-                "SignedStateFileReadWriteTest", FakeSwirldsStateLifecycles.CONFIGURATION);
+                "SignedStateFileReadWriteTest", FakeStateLifecycles.CONFIGURATION);
         LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         MerkleDb.resetDefaultInstancePath();
         final TestConfigBuilder configBuilder = new TestConfigBuilder()

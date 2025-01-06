@@ -18,8 +18,8 @@ package com.swirlds.demo.addressbook;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;

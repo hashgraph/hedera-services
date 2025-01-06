@@ -27,8 +27,8 @@ package com.swirlds.demo.hello;
  */
 
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.constructable.ClassConstructorPair;

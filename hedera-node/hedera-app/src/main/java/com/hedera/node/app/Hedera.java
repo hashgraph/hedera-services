@@ -93,7 +93,7 @@ import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.SwirldsStateLifecyclesImpl;
+import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
@@ -461,8 +461,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
-            final Supplier<PlatformMerkleStateRoot> baseSupplier = () ->
-                    new PlatformMerkleStateRoot(new SwirldsStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+            final Supplier<PlatformMerkleStateRoot> baseSupplier =
+                    () -> new PlatformMerkleStateRoot(new StateLifecyclesImpl(this), ServicesSoftwareVersion::new);
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};

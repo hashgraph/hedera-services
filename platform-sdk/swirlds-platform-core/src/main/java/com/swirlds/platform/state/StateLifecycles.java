@@ -33,7 +33,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * <p>Currently these are implied by the {@link com.swirlds.platform.system.SwirldState}
  * interface; but in the future will be callbacks registered with a platform builder.
  */
-public interface SwirldsStateLifecycles {
+public interface StateLifecycles {
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this node.

@@ -77,7 +77,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
@@ -207,7 +207,7 @@ public class ServicesMain implements SwirldMain {
      * </ol>
      *  Now, note that {@link Hedera#newMerkleStateRoot()} returns {@link PlatformMerkleStateRoot}
      *  instances that delegate their lifecycle methods to an injected instance of
-     *  {@link SwirldsStateLifecycles}---and the implementation of that
+     *  {@link StateLifecycles}---and the implementation of that
      *  injected by {@link Hedera#newMerkleStateRoot()} delegates these calls back to the Hedera
      *  instance itself.
      *  <p>

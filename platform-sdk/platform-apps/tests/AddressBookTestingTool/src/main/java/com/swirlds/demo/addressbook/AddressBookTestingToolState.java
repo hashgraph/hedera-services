@@ -50,7 +50,7 @@ import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -139,7 +139,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     private Duration freezeAfterGenesis = null;
 
     public AddressBookTestingToolState(
-            @NonNull final SwirldsStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
         logger.info(STARTUP.getMarker(), "New State Constructed.");
@@ -206,7 +206,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         }
 
         // Since this demo State doesn't call Hedera.onStateInitialized() to init States API for all services
-        // (because it doesn't call super.init(), and the FakeSwirldsStateLifecycles doesn't do that anyway),
+        // (because it doesn't call super.init(), and the FakeStateLifecycles doesn't do that anyway),
         // we need to register PlatformService and RosterService states for the rest of the code to operate
         // when an instance of this state is received via reconnect. In any other cases, this call
         // should be idempotent.

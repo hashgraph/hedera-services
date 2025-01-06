@@ -18,7 +18,7 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -40,7 +40,7 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -113,7 +113,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     public NodeId selfId;
 
     public MigrationTestingToolState(
-            @NonNull final SwirldsStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
         allocateSpaceForChild(ChildIndices.CHILD_COUNT);

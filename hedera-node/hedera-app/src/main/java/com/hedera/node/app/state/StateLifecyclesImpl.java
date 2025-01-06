@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -34,10 +34,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Implements the major lifecycle events for Hedera Services by delegating to a Hedera instance.
  */
-public class SwirldsStateLifecyclesImpl implements SwirldsStateLifecycles {
+public class StateLifecyclesImpl implements StateLifecycles {
     private final Hedera hedera;
 
-    public SwirldsStateLifecyclesImpl(@NonNull final Hedera hedera) {
+    public StateLifecyclesImpl(@NonNull final Hedera hedera) {
         this.hedera = requireNonNull(hedera);
     }
 

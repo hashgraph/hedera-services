@@ -18,8 +18,8 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.constructable.ClassConstructorPair;

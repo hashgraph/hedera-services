@@ -37,7 +37,7 @@ import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHand
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_2;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.lang.System.exit;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -94,7 +94,7 @@ import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -160,7 +160,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                             .getConstructor(PlatformTestingToolState.CLASS_ID)
                             .get()
                             .getClassId());
-            FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds();
+            FakeStateLifecycles.registerMerkleStateRootClassIds();
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
             throw new RuntimeException(e);

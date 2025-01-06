@@ -32,7 +32,7 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,7 +69,7 @@ public class StatsDemoState extends PlatformMerkleStateRoot {
     private static final long CLASS_ID = 0xc550a1cd94e91ca3L;
 
     public StatsDemoState(
-            @NonNull final SwirldsStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
     }

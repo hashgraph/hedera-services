@@ -37,7 +37,7 @@ import com.swirlds.platform.components.transaction.system.ScopedSystemTransactio
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -138,7 +138,7 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
     ////////////////////////////////////////////////////
 
     public CryptocurrencyDemoState(
-            @NonNull final SwirldsStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
     }

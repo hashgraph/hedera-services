@@ -22,7 +22,7 @@ import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Cre
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Delete;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

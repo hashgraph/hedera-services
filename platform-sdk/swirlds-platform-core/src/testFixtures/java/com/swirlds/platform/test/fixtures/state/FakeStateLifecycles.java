@@ -38,7 +38,7 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
@@ -71,7 +71,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public enum FakeSwirldsStateLifecycles implements SwirldsStateLifecycles {
+public enum FakeStateLifecycles implements StateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
 
     public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
@@ -98,7 +98,7 @@ public enum FakeSwirldsStateLifecycles implements SwirldsStateLifecycles {
             registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
             registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             registry.registerConstructable(new ClassConstructorPair(
-                    VirtualMap.class, () -> new VirtualMap(FakeSwirldsStateLifecycles.CONFIGURATION)));
+                    VirtualMap.class, () -> new VirtualMap(FakeStateLifecycles.CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
                     MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(

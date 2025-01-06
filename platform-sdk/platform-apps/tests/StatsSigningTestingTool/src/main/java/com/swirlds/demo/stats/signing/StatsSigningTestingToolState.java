@@ -39,7 +39,7 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.SwirldsStateLifecycles;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
@@ -85,7 +85,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     private static final int HANDLE_MICROS = 100;
 
     public StatsSigningTestingToolState(
-            @NonNull final SwirldsStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory,
             @NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
         super(lifecycles, versionFactory);

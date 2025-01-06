@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ClassConstructorPair;

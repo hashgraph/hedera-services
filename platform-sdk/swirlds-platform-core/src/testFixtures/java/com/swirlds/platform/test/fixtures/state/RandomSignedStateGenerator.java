@@ -19,8 +19,8 @@ package com.swirlds.platform.test.fixtures.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeSwirldsStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
