@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.roster.schemas;
 
 import static java.util.Objects.requireNonNull;
@@ -7,6 +22,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.internal.network.Network;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
@@ -94,8 +110,10 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
             final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
             final var activeRoundNumber = ctx.roundNumber() + 1;
             if (ctx.isGenesis()) {
-                rosterStore.putActiveRoster(
-                        RosterUtils.rosterFrom(startupNetworks.genesisNetworkOrThrow(ctx.platformConfig())), 0L);
+                final var genesisNetwork = startupNetworks.genesisNetworkOrThrow(ctx.platformConfig());
+                final var json = Network.JSON.toJSON(genesisNetwork);
+                log.info("Genesis network is\n\n {}", json);
+                rosterStore.putActiveRoster(RosterUtils.rosterFrom(genesisNetwork), 0L);
             } else if (rosterStore.getActiveRoster() == null) {
                 // (FUTURE) Once the roster lifecycle is active by default, remove this code building an initial
                 // roster history  from the last address book and the first roster at the upgrade boundary
