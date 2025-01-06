@@ -43,6 +43,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class FileBlockItemWriterTest {
+    byte[] blockFileBuffer = new byte[1024];
+    byte[] gzipBuffer = new byte[1024];
 
     @TempDir
     Path tempDir;
@@ -70,7 +72,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
@@ -85,7 +88,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
@@ -106,7 +110,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
@@ -126,7 +131,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
@@ -144,7 +150,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Open a block
         fileBlockItemWriter.openBlock(1);
@@ -178,7 +185,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Create a Bytes object and write it
         final var bytes = new byte[] {1, 2, 3, 4, 5};
@@ -195,7 +203,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Open a block
         fileBlockItemWriter.openBlock(1);
@@ -217,7 +226,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         assertThatThrownBy(fileBlockItemWriter::closeBlock, "Cannot close a FileBlockItemWriter that is not open")
                 .isInstanceOf(IllegalStateException.class);
@@ -231,7 +241,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem,
+                blockFileBuffer, gzipBuffer);
 
         // Open a block
         fileBlockItemWriter.openBlock(1);

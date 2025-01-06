@@ -85,14 +85,16 @@ public class FileBlockItemWriter implements BlockItemWriter {
     /**
      * Construct a new FileBlockItemWriter.
      *
-     * @param configProvider configuration provider
-     * @param nodeInfo information about the current node
-     * @param fileSystem the file system to use for writing block files
+     * @param configProvider  configuration provider
+     * @param nodeInfo        information about the current node
+     * @param fileSystem      the file system to use for writing block files
+     * @param blockFileBuffer
+     * @param gzipBuffer
      */
     public FileBlockItemWriter(
             @NonNull final ConfigProvider configProvider,
             @NonNull final NodeInfo nodeInfo,
-            @NonNull final FileSystem fileSystem) {
+            @NonNull final FileSystem fileSystem, byte[] blockFileBuffer, byte[] gzipBuffer) {
         requireNonNull(configProvider, "The supplied argument 'configProvider' cannot be null!");
         requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' cannot be null!");
         requireNonNull(fileSystem, "The supplied argument 'fileSystem' cannot be null!");
