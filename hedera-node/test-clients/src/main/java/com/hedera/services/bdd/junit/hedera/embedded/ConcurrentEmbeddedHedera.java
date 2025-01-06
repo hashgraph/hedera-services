@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,9 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
     }
 
     @Override
-    public TransactionResponse submit(@NonNull Transaction transaction, @NonNull AccountID nodeAccountId,
+    public TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
         throw new UnsupportedOperationException("ConcurrentEmbeddedHedera does not support state signature callbacks");

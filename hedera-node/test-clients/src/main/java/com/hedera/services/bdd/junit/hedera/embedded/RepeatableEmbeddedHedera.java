@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,8 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     private final SynchronousFakePlatform platform;
 
     private static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CALLBACK = ignore -> {};
-    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleStateSignatureCallback = NO_OP_CALLBACK;
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleStateSignatureCallback =
+            NO_OP_CALLBACK;
     private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleStateSignatureCallback = NO_OP_CALLBACK;
 
     // The amount of consensus time that will be simulated to elapse before the next transaction---note
@@ -89,7 +90,9 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     }
 
     @Override
-    public TransactionResponse submit(@NonNull Transaction transaction, @NonNull AccountID nodeAccountId,
+    public TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
         this.preHandleStateSignatureCallback = preHandleCallback;
