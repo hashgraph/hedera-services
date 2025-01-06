@@ -30,6 +30,7 @@ import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.RestartException;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
@@ -102,7 +103,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
     }
 
     @Override
-    public void restart(@NonNull final MigrationContext ctx) {
+    public void restart(@NonNull final MigrationContext ctx) throws RestartException {
         requireNonNull(ctx);
         try {
             if (!RosterTransplantSchema.super.restart(ctx, rosterStoreFactory)
@@ -133,7 +134,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
                 }
             }
         } catch (final InvalidRosterException e) {
-            throw new IllegalArgumentException("Invalid roster", e);
+            throw new RestartException("Invalid roster", e);
         }
     }
 }

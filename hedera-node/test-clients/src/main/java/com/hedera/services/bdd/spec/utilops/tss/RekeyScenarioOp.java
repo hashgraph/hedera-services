@@ -460,7 +460,7 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
         try {
             rosterStore.putActiveRoster(roster, roundNumber);
         } catch (final InvalidRosterException e) {
-            throw new IllegalArgumentException("Invalid roster", e);
+            throw new IllegalStateException("Invalid roster", e);
         }
     }
 

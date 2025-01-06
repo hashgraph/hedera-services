@@ -144,8 +144,8 @@ public class StakePeriodChanges {
                     startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
                 }
             } catch (final InvalidRosterException e) {
-                logger.error("CATASTROPHIC failure loading candidate roster", e);
-                stack.rollbackFullStack();
+                // Do not rollback
+                logger.error("Failure loading candidate roster", e);
             }
         }
         return !isGenesis && isStakePeriodBoundary;
