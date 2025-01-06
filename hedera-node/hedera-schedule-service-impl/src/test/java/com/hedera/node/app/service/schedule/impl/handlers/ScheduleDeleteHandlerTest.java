@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -89,19 +90,6 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void verifyPureChecks() throws PreCheckException {
-        final TransactionBody originalDelete = scheduleDeleteTransaction(testScheduleID);
-        final TransactionBody.Builder failures = originalDelete.copyBuilder();
-        Assertions.assertThrowsPreCheck(() -> subject.pureChecks(null), ResponseCodeEnum.INVALID_TRANSACTION);
-        final var deleteBuilder = originalDelete.scheduleDelete().copyBuilder().scheduleID(nullScheduleId);
-        failures.scheduleDelete(deleteBuilder);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(failures.build()), ResponseCodeEnum.INVALID_SCHEDULE_ID);
-        Assertions.assertThrowsPreCheck(
-                () -> subject.pureChecks(originalCreateTransaction), ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-    }
-
-    @Test
     void verifySimpleDelete() throws PreCheckException {
         final Schedule beforeDelete = scheduleStore.get(testScheduleID);
         assertThat(beforeDelete.deleted()).isFalse();
@@ -132,7 +120,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final TransactionBody.Builder nextFailure = baseDelete.copyBuilder();
         failures.scheduleID(nullScheduleId);
         prepareContext(nextFailure.scheduleDelete(failures).build());
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
+        assertThatThrownBy(() -> subject.handle(mockContext)).isInstanceOf(NullPointerException.class);
         final Schedule failBase = listOfScheduledOptions.get(3);
 
         final Schedule noAdmin = failBase.copyBuilder().adminKey(nullKey).build();
@@ -164,7 +152,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private void prepareContext(final TransactionBody deleteTransaction) throws PreCheckException {
         given(mockContext.body()).willReturn(deleteTransaction);
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
-        // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
+        // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
         given(keyVerifier.verificationFor(adminKey)).willReturn(new SignatureVerificationImpl(adminKey, null, true));

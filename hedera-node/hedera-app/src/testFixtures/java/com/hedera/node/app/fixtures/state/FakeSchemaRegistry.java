@@ -16,26 +16,27 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
-import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.FilteredReadableStates;
-import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.spi.FilteredReadableStates;
+import com.swirlds.state.spi.FilteredWritableStates;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -68,15 +69,20 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
     @SuppressWarnings("rawtypes")
     public void migrate(
-            @NonNull final String serviceName, @NonNull final FakeState state, @NonNull final NetworkInfo networkInfo) {
+            @NonNull final String serviceName,
+            @NonNull final FakeState state,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final StartupNetworks startupNetworks) {
         migrate(
                 serviceName,
                 state,
                 CURRENT_VERSION,
                 networkInfo,
-                ConfigurationBuilder.create().build(),
+                DEFAULT_CONFIG,
+                DEFAULT_CONFIG,
                 new HashMap<>(),
-                new AtomicLong());
+                new AtomicLong(),
+                startupNetworks);
     }
 
     public void migrate(
@@ -84,9 +90,19 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @NonNull final FakeState state,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final Configuration config,
+            @NonNull final Configuration appConfig,
+            @NonNull final Configuration platformConfig,
             @NonNull final Map<String, Object> sharedValues,
-            @NonNull final AtomicLong nextEntityNum) {
+            @NonNull final AtomicLong nextEntityNum,
+            @NonNull final StartupNetworks startupNetworks) {
+        requireNonNull(serviceName);
+        requireNonNull(state);
+        requireNonNull(networkInfo);
+        requireNonNull(appConfig);
+        requireNonNull(platformConfig);
+        requireNonNull(sharedValues);
+        requireNonNull(nextEntityNum);
+        requireNonNull(startupNetworks);
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
             return;
@@ -102,21 +118,29 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
             final var applications =
-                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, appConfig);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             final var readableStates = state.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, config, state);
+                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, appConfig, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
                 newStates = writableStates = state.getWritableStates(serviceName);
             }
             final var context = newMigrationContext(
-                    previousVersion, previousStates, newStates, config, networkInfo, nextEntityNum, sharedValues);
+                    previousVersion,
+                    previousStates,
+                    newStates,
+                    appConfig,
+                    platformConfig,
+                    networkInfo,
+                    nextEntityNum,
+                    sharedValues,
+                    startupNetworks);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(context);
             }
@@ -170,14 +194,27 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @NonNull final ReadableStates previousStates,
             @NonNull final WritableStates writableStates,
-            @NonNull final Configuration config,
+            @NonNull final Configuration appConfig,
+            @NonNull final Configuration platformConfig,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final AtomicLong nextEntityNum,
-            @NonNull final Map<String, Object> sharedValues) {
+            @NonNull final Map<String, Object> sharedValues,
+            @NonNull final StartupNetworks startupNetworks) {
         return new MigrationContext() {
             @Override
             public void copyAndReleaseOnDiskState(String stateKey) {
                 // No-op
+            }
+
+            @Override
+            public long roundNumber() {
+                return 0;
+            }
+
+            @NonNull
+            @Override
+            public StartupNetworks startupNetworks() {
+                return startupNetworks;
             }
 
             @Override
@@ -199,12 +236,18 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
             @NonNull
             @Override
-            public Configuration configuration() {
-                return config;
+            public Configuration appConfig() {
+                return appConfig;
+            }
+
+            @NonNull
+            @Override
+            public Configuration platformConfig() {
+                return platformConfig;
             }
 
             @Override
-            public NetworkInfo networkInfo() {
+            public NetworkInfo genesisNetworkInfo() {
                 return networkInfo;
             }
 

@@ -26,22 +26,27 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.message
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.signature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawCall.SignatureType;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
 class IsAuthorizedRawCallTest extends CallTestBase {
@@ -50,12 +55,16 @@ class IsAuthorizedRawCallTest extends CallTestBase {
     @Mock
     private HasCallAttempt attempt;
 
-    private CustomGasCalculator customGasCalculator = new CustomGasCalculator();
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
+    private final CustomGasCalculator customGasCalculator = new CustomGasCalculator();
 
     @BeforeEach
     void setup() {
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
         given(attempt.enhancement()).willReturn(mockEnhancement());
+        given(attempt.signatureVerifier()).willReturn(signatureVerifier);
         lenient().when(frame.getRemainingGas()).thenReturn(10_000_000L);
     }
 
@@ -81,6 +90,19 @@ class IsAuthorizedRawCallTest extends CallTestBase {
 
         assertEquals(State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
+    }
+
+    @Test
+    void notValidAccountIfNegative() {
+        final var result = getSubject(mock(Address.class)).isValidAccount(-25L, mock(SignatureType.class));
+        assertFalse(result);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0L, 1L, 10L, 100L, 1_000_000_000_000L, Long.MAX_VALUE})
+    void anyNonNegativeAccountValidIfED(final long account) {
+        final var result = getSubject(mock(Address.class)).isValidAccount(account, SignatureType.ED);
+        assertTrue(result);
     }
 
     @ParameterizedTest

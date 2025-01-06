@@ -29,7 +29,11 @@ public abstract class ObjectCounter {
     /**
      * Signal that an object is entering the part of the system that this object is being used to monitor.
      */
-    public abstract void onRamp();
+    public abstract void onRamp(long delta);
+
+    public final void onRamp() {
+        onRamp(1L);
+    }
 
     /**
      * Signal that an object is entering the part of the system that this object is being used to monitor. Object is not
@@ -37,18 +41,30 @@ public abstract class ObjectCounter {
      *
      * @return true if there was available capacity to on ramp the object, false otherwise
      */
-    public abstract boolean attemptOnRamp();
+    public abstract boolean attemptOnRamp(long delta);
+
+    public final boolean attemptOnRamp() {
+        return attemptOnRamp(1L);
+    }
 
     /**
      * Signal that an object is entering the part of the system that this object is being used to monitor. If there is
      * not enough capacity to on ramp the object, on ramp it anyway and ignore all capacity restrictions.
      */
-    public abstract void forceOnRamp();
+    public abstract void forceOnRamp(long delta);
+
+    public final void forceOnRamp() {
+        forceOnRamp(1L);
+    }
 
     /**
      * Signal that an object is leaving the part of the system that this object is being used to monitor.
      */
-    public abstract void offRamp();
+    public abstract void offRamp(long delta);
+
+    public final void offRamp() {
+        offRamp(1L);
+    }
 
     /**
      * Get the number of objects in the part of the system that this object is being used to monitor. If this object

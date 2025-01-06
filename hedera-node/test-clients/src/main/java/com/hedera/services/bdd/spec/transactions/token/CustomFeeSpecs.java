@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -127,10 +128,6 @@ public class CustomFeeSpecs {
         return baseFixedBuilder(amount, collector, allCollectorsExempt, spec).build();
     }
 
-    static ConsensusCustomFee builtFixedTopicHbar(long amount, String collector, HapiSpec spec) {
-        return baseFixedTopicBuilder(amount, collector, spec).build();
-    }
-
     static FixedFee builtFixedHbarSansCollector(long amount) {
         return FixedFee.newBuilder().setAmount(amount).build();
     }
@@ -219,10 +216,59 @@ public class CustomFeeSpecs {
                 .setFeeCollectorAccountId(collectorId);
     }
 
-    static ConsensusCustomFee.Builder baseFixedTopicBuilder(long amount, String collector, HapiSpec spec) {
+    static ConsensusCustomFee.Builder baseConsensusFixedBuilder(long amount, String collector, HapiSpec spec) {
         final var collectorId =
                 isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
         final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
         return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collectorId);
+    }
+
+    static ConsensusCustomFee.Builder baseConsensusFixedBuilderNoCollector(long amount) {
+        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
+        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder);
+    }
+
+    static ConsensusCustomFee.Builder baseConsensusFixedBuilder(long amount, AccountID collector) {
+        final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
+        return ConsensusCustomFee.newBuilder().setFixedFee(fixedBuilder).setFeeCollectorAccountId(collector);
+    }
+
+    // consensus custom fee suppliers
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, String collector) {
+        return spec -> builtConsensusFixedHbar(amount, collector, spec);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFeeNoCollector(long amount) {
+        return spec -> builtConsensusFixedHbarNoCollector(amount);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHbarFee(long amount, AccountID collector) {
+        return spec -> builtConsensusFixedHbar(amount, collector);
+    }
+
+    public static Function<HapiSpec, ConsensusCustomFee> fixedConsensusHtsFee(
+            long amount, String denom, String collector) {
+        return spec -> builtConsensusFixedHts(amount, denom, collector, spec);
+    }
+
+    // builders
+    static ConsensusCustomFee builtConsensusFixedHbar(long amount, String collector, HapiSpec spec) {
+        return baseConsensusFixedBuilder(amount, collector, spec).build();
+    }
+
+    static ConsensusCustomFee builtConsensusFixedHbarNoCollector(long amount) {
+        return baseConsensusFixedBuilderNoCollector(amount).build();
+    }
+
+    static ConsensusCustomFee builtConsensusFixedHbar(long amount, AccountID collector) {
+        return baseConsensusFixedBuilder(amount, collector).build();
+    }
+
+    static ConsensusCustomFee builtConsensusFixedHts(long amount, String denom, String collector, HapiSpec spec) {
+        final var builder = baseConsensusFixedBuilder(amount, collector, spec);
+        final var denomId =
+                isIdLiteral(denom) ? asToken(denom) : spec.registry().getTokenID(denom);
+        builder.getFixedFeeBuilder().setDenominatingTokenId(denomId);
+        return builder.build();
     }
 }

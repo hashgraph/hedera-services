@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,6 +101,10 @@ class BlockImplUtilsTest {
             case STATE_ID_SCHEDULES_BY_EQUALITY -> "ScheduleService.SCHEDULES_BY_EQUALITY";
             case STATE_ID_SCHEDULES_BY_EXPIRY -> "ScheduleService.SCHEDULES_BY_EXPIRY_SEC";
             case STATE_ID_SCHEDULES_BY_ID -> "ScheduleService.SCHEDULES_BY_ID";
+            case STATE_ID_SCHEDULE_ID_BY_EQUALITY -> "ScheduleService.SCHEDULE_ID_BY_EQUALITY";
+            case STATE_ID_SCHEDULED_COUNTS -> "ScheduleService.SCHEDULED_COUNTS";
+            case STATE_ID_SCHEDULED_ORDERS -> "ScheduleService.SCHEDULED_ORDERS";
+            case STATE_ID_SCHEDULED_USAGES -> "ScheduleService.SCHEDULED_USAGES";
             case STATE_ID_ACCOUNTS -> "TokenService.ACCOUNTS";
             case STATE_ID_ALIASES -> "TokenService.ALIASES";
             case STATE_ID_NFTS -> "TokenService.NFTS";
@@ -124,6 +113,10 @@ class BlockImplUtilsTest {
             case STATE_ID_NETWORK_REWARDS -> "TokenService.STAKING_NETWORK_REWARDS";
             case STATE_ID_TOKEN_RELATIONS -> "TokenService.TOKEN_RELS";
             case STATE_ID_TOKENS -> "TokenService.TOKENS";
+            case STATE_ID_TSS_MESSAGES -> "TssBaseService.TSS_MESSAGES";
+            case STATE_ID_TSS_VOTES -> "TssBaseService.TSS_VOTES";
+            case STATE_ID_TSS_ENCRYPTION_KEYS -> "TssBaseService.TSS_ENCRYPTION_KEYS";
+            case STATE_ID_TSS_STATUS -> "TssBaseService.TSS_STATUS";
         };
     }
 }

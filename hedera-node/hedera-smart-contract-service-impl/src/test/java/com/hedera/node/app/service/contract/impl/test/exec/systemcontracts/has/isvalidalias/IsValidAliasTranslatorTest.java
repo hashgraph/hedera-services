@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isvali
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isvalidalias.IsValidAliasTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,9 @@ public class IsValidAliasTranslatorTest {
     private VerificationStrategies verificationStrategies;
 
     @Mock
+    private SignatureVerifier signatureVerifier;
+
+    @Mock
     private HederaNativeOperations nativeOperations;
 
     private IsValidAliasTranslator subject;
@@ -74,7 +78,13 @@ public class IsValidAliasTranslatorTest {
     void matchesIsValidAliasSelector() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                IS_VALID_ALIAS, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                IS_VALID_ALIAS,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertTrue(subject.matches(attempt));
         assertEquals("0x308ef301" /*copied from HIP-632*/, "0x" + IS_VALID_ALIAS.selectorHex());
     }
@@ -83,7 +93,13 @@ public class IsValidAliasTranslatorTest {
     void failsOnInvalidSelector() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         attempt = prepareHasAttemptWithSelector(
-                HBAR_APPROVE, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator);
+                HBAR_APPROVE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator);
         assertFalse(subject.matches(attempt));
     }
 

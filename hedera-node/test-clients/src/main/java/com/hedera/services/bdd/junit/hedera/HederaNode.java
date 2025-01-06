@@ -17,14 +17,21 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.internal.network.Network;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongFunction;
 
 public interface HederaNode {
     /**
@@ -40,6 +47,13 @@ public interface HederaNode {
      * @return the port number of the gRPC service
      */
     int getGrpcPort();
+
+    /**
+     * Gets the port number of the node operator gRPC service.
+     *
+     * @return the port number of the node operator gRPC service
+     */
+    int getGrpcNodeOperatorPort();
 
     /**
      * Gets the node ID, such as 0, 1, 2, or 3.
@@ -73,7 +87,21 @@ public interface HederaNode {
      * @param configTxt the address book the node should start with
      * @return this
      */
-    HederaNode initWorkingDir(String configTxt);
+    default HederaNode initWorkingDir(@NonNull final String configTxt) {
+        return initWorkingDir(configTxt, nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
+    }
+
+    /**
+     * Initializes the working directory for the node. Must be called before the node is started.
+     *
+     * @param configTxt the address book the node should start with
+     * @return this
+     */
+    @NonNull
+    HederaNode initWorkingDir(
+            @NonNull String configTxt,
+            @NonNull LongFunction<Bytes> tssEncryptionKeyFn,
+            @NonNull Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn);
 
     /**
      * Starts the node software.
@@ -129,4 +157,19 @@ public interface HederaNode {
      * @return the metadata for this node
      */
     NodeMetadata metadata();
+
+    /**
+     * Dumps the threads of the node, if applicable. Returns whether threads were dumped.
+     */
+    default boolean dumpThreads() {
+        return false;
+    }
+
+    /**
+     * If this node's startup assets included a genesis or override address book, returns it.
+     * @return the node's startup address book, if available
+     */
+    default Optional<Network> startupNetwork() {
+        return Optional.empty();
+    }
 }

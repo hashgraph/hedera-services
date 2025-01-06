@@ -175,6 +175,7 @@ RUN mkdir -p "/opt/hgcapp" && \
     mkdir -p "/opt/hgcapp/accountBalances" && \
     mkdir -p "/opt/hgcapp/eventsStreams" && \
     mkdir -p "/opt/hgcapp/recordStreams" && \
+    mkdir -p "/opt/hgcapp/blockStreams" && \
     mkdir -p "/opt/hgcapp/services-hedera" && \
     mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0" && \
     mkdir -p "/opt/hgcapp/services-hedera/HapiApp2.0/data" && \
@@ -232,13 +233,22 @@ COPY --from=java-builder ${JAVA_HOME}/ ${JAVA_HOME}/
 # Add SDK components
 COPY sdk/data/apps/* /opt/hgcapp/services-hedera/HapiApp2.0/data/apps/
 COPY sdk/data/lib/* /opt/hgcapp/services-hedera/HapiApp2.0/data/lib/
+COPY sdk/VERSION /opt/hgcapp/services-hedera/HapiApp2.0/
 
 # Add the entrypoint script
 ADD entrypoint.sh /opt/hgcapp/services-hedera/HapiApp2.0/
 
+# Add s6-rc configuration
+COPY etc/s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d/
+
 # Ensure proper file permissions
 RUN chmod -R +x /opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh && \
     chown -R 2000:2000 /opt/hgcapp/services-hedera/HapiApp2.0
+
+# Patch the Java DNS Cache settings
+RUN sed -e '/networkaddress.cache.ttl/c networkaddress.cache.ttl=10' -i "${JAVA_HOME}/conf/security/java.security" && \
+    sed -e '/networkaddress.cache.stale.ttl/c networkaddress.cache.stale.ttl=0' -i "${JAVA_HOME}/conf/security/java.security" && \
+    sed -e '/networkaddress.cache.negative.ttl/c networkaddress.cache.negative.ttl=0' -i "${JAVA_HOME}/conf/security/java.security"
 
 ########################################
 ####    Deterministic Build Hack    ####
@@ -273,10 +283,15 @@ ENV MALLOC_ARENA_MAX 4
 # Log Folder Name Override
 ENV LOG_DIR_NAME ""
 
+# If "true" or an integer between 1 & 2^63-1 after running consensus entrypoint.sh will block indefinitely.
+# Otherwise entrypoint.sh will return the exit code from consensus.
+ENV CONTAINER_TSR_ENABLED "false"
+
 # Define Volume Bindpoints
 VOLUME "/opt/hgcapp/accountBalances"
 VOLUME "/opt/hgcapp/eventsStreams"
 VOLUME "/opt/hgcapp/recordStreams"
+VOLUME "/opt/hgcapp/blockStreams"
 VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/config"
 VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/diskFs"
 VOLUME "/opt/hgcapp/services-hedera/HapiApp2.0/data/keys"
@@ -292,4 +307,3 @@ EXPOSE 50111/tcp 50211/tcp 50212/tcp
 USER 2000
 WORKDIR "/opt/hgcapp"
 ENTRYPOINT ["/init"]
-CMD ["/opt/hgcapp/services-hedera/HapiApp2.0/entrypoint.sh"]

@@ -28,11 +28,13 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
+import com.hedera.node.app.service.contract.impl.exec.utils.SchedulingUtility;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -130,6 +132,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
+     * @param failureCustomizer the status customizer to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
@@ -153,6 +156,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * @param attempt the attempt to translate to a dispatching
      * @param syntheticBody the synthetic body to dispatch
      * @param dispatchGasCalculator the dispatch gas calculator to use
+     * @param outputFn the output function to use
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
@@ -174,6 +178,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
      * More general constructor, for cases where perhaps a custom {@link VerificationStrategy} is needed.
      *
      * @param enhancement the enhancement to use
+     * @param gasCalculator the gas calculator for the system contract
      * @param senderId the id of the spender
      * @param syntheticBody the synthetic body to dispatch
      * @param verificationStrategy the verification strategy to use
@@ -221,5 +226,14 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
             recordBuilder.status(status);
         }
         return completionWith(gasRequirement, recordBuilder, outputFn.apply(recordBuilder));
+    }
+
+    @NonNull
+    @Override
+    public SchedulableTransactionBody asSchedulableDispatchIn() {
+        if (syntheticBody == null) {
+            return super.asSchedulableDispatchIn();
+        }
+        return SchedulingUtility.ordinaryChildAsSchedulable(syntheticBody);
     }
 }

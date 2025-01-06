@@ -16,27 +16,29 @@
 
 package com.swirlds.virtualmap.internal.pipeline;
 
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.VIRTUAL_MAP_CONFIG;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
-class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleLeaf {
+class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends PartialMerkleLeaf
+        implements VirtualRoot<K, V>, MerkleLeaf {
 
     private static final long CLASS_ID = 0x37cc269627e18eb6L;
-
-    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     private boolean shouldBeFlushed;
     private boolean merged;
@@ -46,8 +48,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     private final CountDownLatch mergeLatch;
     private boolean hashed;
 
-    private DummyVirtualRoot previous;
-    private DummyVirtualRoot next;
+    private DummyVirtualRoot<K, V> previous;
+    private DummyVirtualRoot<K, V> next;
 
     private int copyIndex;
 
@@ -59,7 +61,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      */
     private Predicate<Integer /* copy index */> shouldFlushPredicate;
 
-    private final VirtualPipeline pipeline;
+    private final VirtualPipeline<K, V> pipeline;
 
     private boolean detached = false;
 
@@ -74,8 +76,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     private final VirtualMapStatistics statistics;
 
-    public DummyVirtualRoot(final String label, VirtualMapConfig config) {
-        pipeline = new VirtualPipeline(config, label);
+    public DummyVirtualRoot(final String label, VirtualMapConfig virtualMapConfig) {
+        pipeline = new VirtualPipeline<>(virtualMapConfig, label);
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
         statistics = new VirtualMapStatistics(label);
@@ -98,7 +100,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         this.crashOnFlush = b;
     }
 
-    protected DummyVirtualRoot(final DummyVirtualRoot that) {
+    protected DummyVirtualRoot(final DummyVirtualRoot<K, V> that) {
         this.pipeline = that.pipeline;
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
@@ -117,7 +119,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     /**
      * Get a reference to the pipeline.
      */
-    public VirtualPipeline getPipeline() {
+    public VirtualPipeline<K, V> getPipeline() {
         return pipeline;
     }
 
@@ -168,9 +170,9 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public DummyVirtualRoot copy() {
+    public DummyVirtualRoot<K, V> copy() {
         setImmutable(true);
-        final DummyVirtualRoot copy = new DummyVirtualRoot(this);
+        final DummyVirtualRoot<K, V> copy = new DummyVirtualRoot<>(this);
         pipeline.registerCopy(copy);
         return copy;
     }
@@ -195,7 +197,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         if (shouldBeFlushed) {
             return true;
         }
-        final long flushThreshold = config.copyFlushThreshold();
+        final long flushThreshold = VIRTUAL_MAP_CONFIG.copyFlushThreshold();
         return (flushThreshold > 0) && (estimatedSize() >= flushThreshold);
     }
 
@@ -214,18 +216,18 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
+    public boolean flush() {
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
-        if (!shouldBeFlushed && (estimatedSize < config.copyFlushThreshold())) {
+        if (!shouldBeFlushed && (estimatedSize < VIRTUAL_MAP_CONFIG.copyFlushThreshold())) {
             throw new IllegalStateException("copy should not be flushed");
         }
         if (!hashed) {
             throw new IllegalStateException("should be hashed before a flush");
         }
 
-        DummyVirtualRoot target = this.previous;
+        DummyVirtualRoot<K, V> target = this.previous;
         while (target != null) {
             if (!(target.isDestroyed() || target.isDetached())) {
                 throw new IllegalStateException("all older copies should have been destroyed or detached");
@@ -263,10 +265,12 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         flushLatch.countDown();
 
         statistics.recordFlush(copyIndex); // Use copyIndex as flush duration
+
+        return true;
     }
 
-    private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
-        final long copyFlushThreshold = config.copyFlushThreshold();
+    private static boolean shouldBeFlushed(DummyVirtualRoot<?, ?> copy) {
+        final long copyFlushThreshold = VIRTUAL_MAP_CONFIG.copyFlushThreshold();
         return (copy.shouldBeFlushed()) || ((copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold));
     }
 
@@ -399,9 +403,17 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      * {@inheritDoc}
      */
     @Override
-    public <T> T detach(final Path destination) {
+    public RecordAccessor<K, V> detach() {
         this.detached = true;
         return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void snapshot(final Path destination) {
+        this.detached = true;
     }
 
     /**

@@ -16,10 +16,15 @@
 
 package com.swirlds.platform.turtle.runner;
 
-import static com.swirlds.platform.system.address.AddressBookUtils.createRoster;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -31,16 +36,19 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -81,10 +89,11 @@ public class TurtleNode {
             @NonNull final SimulatedNetwork network) {
 
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(EventConfig_.USE_OLD_STYLE_INTAKE_QUEUE, false)
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .getOrCreateConfig();
+
+        setupGlobalMetrics(configuration);
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
@@ -94,25 +103,31 @@ public class TurtleNode {
         model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
+        final Supplier<PlatformMerkleStateRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
+        final var version = new BasicSoftwareVersion(1);
 
+        final var metrics = getMetricsProvider().createPlatformMetrics(nodeId);
+        final var fileSystemManager = FileSystemManager.create(configuration);
+        final var recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, nodeId);
+
+        final var reservedState = getInitialState(
+                configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
+        final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo",
                         "bar",
                         new BasicSoftwareVersion(1),
-                        TurtleTestingToolState::getStateRootNode,
-                        SignedStateFileUtils::readState,
-                        nodeId)
+                        initialState,
+                        nodeId,
+                        AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
+                        RosterUtils.buildRosterHistory(
+                                (State) initialState.get().getState()))
                 .withModel(model)
-                .withCryptography(platformContext.getCryptography())
-                .withMetrics(platformContext.getMetrics())
-                .withTime(platformContext.getTime())
-                .withFileSystemManager(platformContext.getFileSystemManager())
-                .withRecycleBin(platformContext.getRecycleBin())
-                .withExecutorFactory(platformContext.getExecutorFactory())
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
-                .withBootstrapAddressBook(addressBook)
-                .withRoster(createRoster(addressBook))
-                .withKeysAndCerts(privateKeys);
+                .withKeysAndCerts(privateKeys)
+                .withPlatformContext(platformContext)
+                .withConfiguration(configuration);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
 

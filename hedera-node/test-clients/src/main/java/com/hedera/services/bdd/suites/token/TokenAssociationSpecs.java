@@ -71,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotAppl
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -78,7 +79,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -165,10 +165,7 @@ public class TokenAssociationSpecs {
 
     @HapiTest
     final Stream<DynamicTest> handlesUseOfDefaultTokenId() {
-        return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
-                .given()
-                .when()
-                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
+        return hapiTest(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
     }
 
     @HapiTest
@@ -582,5 +579,23 @@ public class TokenAssociationSpecs {
             tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> deletedAccountCannotBeAssociatedToToken() {
+        final var accountToDelete = "accountToDelete";
+        final var token = "anyToken";
+        final var supplyKey = "supplyKey";
+        return hapiTest(
+                newKeyNamed(supplyKey),
+                cryptoCreate(accountToDelete),
+                cryptoDelete(accountToDelete),
+                tokenCreate(token)
+                        .treasury(DEFAULT_PAYER)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000L)
+                        .supplyKey(supplyKey)
+                        .hasKnownStatus(SUCCESS),
+                tokenAssociate(accountToDelete, token).hasKnownStatus(ACCOUNT_DELETED));
     }
 }

@@ -36,6 +36,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for get approved calls.
+ */
 public class GetApprovedCallTest extends CallTestBase {
 
     private GetApprovedCall subject;

@@ -19,16 +19,18 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.selfDestructBeneficiariesFor;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -40,6 +42,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.SortedSet;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -95,6 +98,14 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
+    public @NonNull ReadableScheduleStore readableScheduleStore() {
+        return context.storeFactory().readableStore(ReadableScheduleStore.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setNonce(final long contractNumber, final long nonce) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.setNonce(
@@ -108,22 +119,12 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
-                .memo(LAZY_CREATION_MEMO)
                 .build();
 
-        // Note the use of the null "verification assistant" callback; we don't want any
-        // signing requirements enforced for this synthetic transaction
         try {
-            final var childRecordBuilder = context.dispatchRemovablePrecedingTransaction(
-                    synthTxn,
-                    CryptoCreateStreamBuilder.class,
-                    null,
-                    context.payer(),
-                    HandleContext.ConsensusThrottling.ON);
-            childRecordBuilder.memo(LAZY_CREATION_MEMO);
-
-            return childRecordBuilder.status();
-        } catch (final HandleException e) {
+            return context.dispatch(setupDispatch(context.payer(), synthTxn, CryptoCreateStreamBuilder.class))
+                    .status();
+        } catch (HandleException e) {
             // It is critically important we don't let HandleExceptions propagate to the workflow because
             // it doesn't rollback for contract operations so we can commit gas charges; that is, the
             // EVM transaction should always either run to completion or (if it must) throw an internal
@@ -177,5 +178,16 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
+    }
+
+    @Override
+    @NonNull
+    public SortedSet<Key> authorizingSimpleKeys() {
+        return context.keyVerifier().authorizingSimpleKeys();
+    }
+
+    @Override
+    public TransactionID getTransactionID() {
+        return context.body().transactionIDOrThrow();
     }
 }

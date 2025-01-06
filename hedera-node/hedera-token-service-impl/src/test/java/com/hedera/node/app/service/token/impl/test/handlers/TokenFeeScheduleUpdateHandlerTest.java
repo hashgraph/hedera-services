@@ -68,6 +68,7 @@ import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -307,6 +308,48 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var calculateFees = subject.calculateFees(feeContext);
         assertEquals(calculateFees, Fees.FREE);
+    }
+
+    @Test
+    @DisplayName("If the requested token ID does not exist, the fee calculation should not throw an exception")
+    void calculateFeesTokenDoesNotExist() {
+        TransactionInfo txnInfo = mock(TransactionInfo.class);
+        FeeManager feeManager = mock(FeeManager.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        ReadableStoreFactory storeFactory = mock(ReadableStoreFactory.class);
+        TransactionBody transactionBody = mock(TransactionBody.class);
+        TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTransactionBody =
+                mock(TokenFeeScheduleUpdateTransactionBody.class);
+        TransactionID transactionID = mock(TransactionID.class);
+
+        when(feeManager.createFeeCalculator(any(), any(), any(), anyInt(), anyInt(), any(), any(), anyBoolean(), any()))
+                .thenReturn(feeCalculator);
+        when(txnInfo.txBody()).thenReturn(transactionBody);
+        when(transactionBody.tokenFeeScheduleUpdateOrThrow()).thenReturn(tokenFeeScheduleUpdateTransactionBody);
+        // Any token ID that doesn't exist:
+        when(tokenFeeScheduleUpdateTransactionBody.tokenIdOrThrow())
+                .thenReturn(TokenID.newBuilder().tokenNum(1500).build());
+        when(storeFactory.getStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(transactionBody.transactionIDOrThrow()).thenReturn(transactionID);
+        when(transactionID.transactionValidStartOrThrow()).thenReturn(consensusTimestamp);
+        when(txnInfo.signatureMap()).thenReturn(SignatureMap.DEFAULT);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+
+        final var feeContext = new FeeContextImpl(
+                consensusInstant,
+                txnInfo,
+                payerKey,
+                payerId,
+                feeManager,
+                storeFactory,
+                configuration,
+                null,
+                -1,
+                transactionDispatcher);
+
+        Assertions.assertThatNoException().isThrownBy(() -> subject.calculateFees(feeContext));
     }
 
     private void givenTxn() {

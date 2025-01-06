@@ -17,21 +17,23 @@
 package com.hedera.node.app.spi.workflows.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
  * Defines API for constructing stream items of a single transaction dispatch.
@@ -136,8 +139,8 @@ public interface StreamBuilder {
     StreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
-     * @return the {@link TransactionRecord.Builder} of the record
+     * Returns the category of the builder's transaction.
+     * @return the category
      */
     HandleContext.TransactionCategory category();
 
@@ -235,23 +238,29 @@ public interface StreamBuilder {
      * @return true if this transaction is internal
      */
     default boolean isUserDispatch() {
-        return category() == USER || category() == SCHEDULED;
+        return category() == USER || category() == SCHEDULED || category() == NODE;
     }
 
     /**
-     * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
-     *
+     * Convenience method to package as {@link TransactionBody} as a {@link Transaction} whose
+     * {@link SignedTransaction} has an unset {@link SignatureMap}.
      * @param body the transaction body
      * @return the transaction
      */
-    static Transaction transactionWith(@NonNull TransactionBody body) {
-        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-        final var signedTransaction =
-                SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
-        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
-        return Transaction.newBuilder()
-                .signedTransactionBytes(signedTransactionBytes)
-                .build();
+    static Transaction transactionWith(@NonNull final TransactionBody body) {
+        requireNonNull(body);
+        return transactionWith(body, null);
+    }
+
+    /**
+     * Convenience method to package a {@link TransactionBody} as a {@link Transaction} whose
+     * {@link SignedTransaction} has an empty {@link SignatureMap}.
+     * @param body the transaction body
+     * @return the transaction
+     */
+    static Transaction nodeTransactionWith(@NonNull final TransactionBody body) {
+        requireNonNull(body);
+        return transactionWith(body, SignatureMap.DEFAULT);
     }
 
     /**
@@ -282,5 +291,61 @@ public interface StreamBuilder {
          * Changes are committed independent of the user and parent transactions.
          */
         IRREVERSIBLE
+    }
+
+    private static Transaction transactionWith(
+            @NonNull final TransactionBody body, @Nullable final SignatureMap sigMap) {
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+        final var signedTransaction = SignedTransaction.newBuilder()
+                .sigMap(sigMap)
+                .bodyBytes(bodyBytes)
+                .build();
+        final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(signedTransaction);
+        return Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
+    }
+
+    /**
+     * Allows a {@link com.hedera.node.app.spi.workflows.TransactionHandler} that dispatches child transactions
+     * to customize exactly how these records are externalized. Specifically, it allows the handler to,
+     * <ul>
+     *     <li>Completely suppress the record because it contains redundant information (as in the case of
+     *     the child transaction dispatched to implement a top-level HAPI {@code ContractCreate}).</li>
+     *     <li>Transform the dispatched {@link Transaction} immediately before it is externalized (as
+     *     in the case of the child {@link com.hedera.hapi.node.token.CryptoCreateTransactionBody} dispatched
+     *     to implement an internal contract creation, which should be externalized as an equivalent
+     *     {@link com.hedera.hapi.node.contract.ContractCreateTransactionBody}.</li>
+     * </ul>
+     *
+     * <b>IMPORTANT:</b> implementations that suppress the record should throw if they nonetheless receive an
+     * {@link TransactionCustomizer#apply(Object)} call. (With the current scope of this interface, the
+     * provided {@link #SUPPRESSING_TRANSACTION_CUSTOMIZER} can simply be used.)
+     */
+    @FunctionalInterface
+    interface TransactionCustomizer extends UnaryOperator<Transaction> {
+        TransactionCustomizer NOOP_TRANSACTION_CUSTOMIZER = t -> t;
+
+        TransactionCustomizer SUPPRESSING_TRANSACTION_CUSTOMIZER = new TransactionCustomizer() {
+            @Override
+            public Transaction apply(@NonNull final Transaction transaction) {
+                throw new UnsupportedOperationException(
+                        "Will not customize a transaction that should have been suppressed");
+            }
+
+            @Override
+            public boolean isSuppressed() {
+                return true;
+            }
+        };
+
+        /**
+         * Indicates whether the record of a dispatched transaction should be suppressed.
+         *
+         * @return {@code true} if the record should be suppressed; {@code false} otherwise
+         */
+        default boolean isSuppressed() {
+            return false;
+        }
     }
 }

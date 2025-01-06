@@ -26,6 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * The base test class for all unit tests in Smart Contract Service.
+ */
 @ExtendWith(MockitoExtension.class)
 public class CallTestBase {
     @Mock

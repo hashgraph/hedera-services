@@ -555,7 +555,7 @@ class StoppableThreadTests {
 
         assertThrows(
                 MutabilityException.class,
-                () -> configuration.setNodeId(new NodeId(0L)),
+                () -> configuration.setNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -571,7 +571,7 @@ class StoppableThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration.setOtherNodeId(new NodeId(0L)),
+                () -> configuration.setOtherNodeId(NodeId.of(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,

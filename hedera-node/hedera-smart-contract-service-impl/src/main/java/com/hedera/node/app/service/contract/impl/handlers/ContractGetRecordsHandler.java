@@ -38,10 +38,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractGetRecordsHandler extends PaidQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractGetRecordsHandler() {
-        // Exists for injection
-    }
+    public ContractGetRecordsHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

@@ -35,6 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * A base class which aims to combine common logic for Create and Create2 tests
+ */
 @ExtendWith(MockitoExtension.class)
 public class CreateOperationTestBase {
     protected static final long VALUE = 123_456L;

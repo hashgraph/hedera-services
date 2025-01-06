@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,9 @@ import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.event.preconsensus.BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.INIT_SIG_SET_FILE_VERSION;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -35,7 +34,9 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,7 +69,7 @@ public final class SignedStateFileWriter {
      * @param directory       the directory where the state is being written
      */
     public static void writeHashInfoFile(
-            @NonNull final PlatformContext platformContext, final Path directory, final MerkleRoot state)
+            @NonNull final PlatformContext platformContext, final Path directory, final PlatformMerkleStateRoot state)
             throws IOException {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
@@ -109,31 +110,26 @@ public final class SignedStateFileWriter {
     }
 
     /**
-     * Write a {@link SignedState} to a stream.
+     * Write a {@link SigSet} to a stream.
      *
      * @param out         the stream to write to
-     * @param directory   the directory to write to
      * @param signedState the signed state to write
      */
-    private static void writeStateFileToStream(
-            final MerkleDataOutputStream out, final Path directory, final SignedState signedState) throws IOException {
-        out.write(VERSIONED_FILE_BYTE);
-        out.writeInt(FILE_VERSION);
+    private static void writeSignatureSetToStream(final MerkleDataOutputStream out, final SignedState signedState)
+            throws IOException {
+        out.writeInt(INIT_SIG_SET_FILE_VERSION);
         out.writeProtocolVersion();
-        out.writeMerkleTree(directory, signedState.getState());
-        out.writeSerializable(signedState.getState().getHash(), true);
         out.writeSerializable(signedState.getSigSet(), true);
     }
 
     /**
-     * Write the signed state file.
-     *
-     * @param directory   the directory to write to
-     * @param signedState the signed state to write
+     * Write the signature set file.
+     * @param directory the directory to write to
+     * @param signedState the signature set file
      */
-    public static void writeStateFile(final Path directory, final SignedState signedState) throws IOException {
-        writeAndFlush(
-                directory.resolve(SIGNED_STATE_FILE_NAME), out -> writeStateFileToStream(out, directory, signedState));
+    public static void writeSignatureSetFile(final @NonNull Path directory, final @NonNull SignedState signedState)
+            throws IOException {
+        writeAndFlush(directory.resolve(SIGNATURE_SET_FILE_NAME), out -> writeSignatureSetToStream(out, signedState));
     }
 
     /**
@@ -154,13 +150,16 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(directory);
         Objects.requireNonNull(signedState);
 
-        writeStateFile(directory, signedState);
+        final PlatformMerkleStateRoot state = signedState.getState();
+        state.setTime(platformContext.getTime());
+        state.createSnapshot(directory);
+        writeSignatureSetFile(directory, signedState);
         writeHashInfoFile(platformContext, directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         if (!signedState.isGenesisState()) {
             // Genesis states do not have address books.
-            writeStateAddressBookFile(directory, signedState.getAddressBook());
+            writeStateAddressBookFile(directory, RosterUtils.buildAddressBook(signedState.getRoster()));
         }
         writeSettingsUsed(directory, platformContext.getConfiguration());
 
@@ -169,7 +168,7 @@ public final class SignedStateFileWriter {
                     platformContext,
                     selfId,
                     directory,
-                    signedState.getState().getPlatformState().getAncientThreshold(),
+                    signedState.getState().getReadablePlatformState().getAncientThreshold(),
                     signedState.getRound());
         }
     }
@@ -221,7 +220,8 @@ public final class SignedStateFileWriter {
 
             executeAndRename(
                     savedStateDirectory,
-                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState));
+                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState),
+                    platformContext.getConfiguration());
 
             logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
                             signedState.getRound(),

@@ -18,13 +18,13 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,9 +48,9 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
      * {@inheritDoc}
      */
     public void validate(
-            final SignedState signedState, final AddressBook addressBook, SignedStateValidationData previousStateData) {
+            final SignedState signedState, final Roster roster, SignedStateValidationData previousStateData) {
         throwIfOld(signedState, previousStateData);
-        signedState.pruneInvalidSignatures(addressBook);
+        signedState.pruneInvalidSignatures(roster);
         signedState.throwIfNotVerifiable();
     }
 
@@ -67,10 +67,10 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
     private void throwIfOld(final SignedState signedState, final SignedStateValidationData previousStateData)
             throws SignedStateInvalidException {
 
-        if (signedState.getState().getPlatformState().getRound() < previousStateData.round()
+        if (signedState.getState().getReadablePlatformState().getRound() < previousStateData.round()
                 || signedState
                         .getState()
-                        .getPlatformState()
+                        .getReadablePlatformState()
                         .getConsensusTimestamp()
                         .isBefore(previousStateData.consensusTimestamp())) {
             logger.error(

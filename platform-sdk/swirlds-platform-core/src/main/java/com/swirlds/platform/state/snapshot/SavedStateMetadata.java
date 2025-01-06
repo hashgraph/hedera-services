@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,12 @@ import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SOFTWA
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.TOTAL_WEIGHT;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.WALL_CLOCK_TIME;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -124,7 +127,7 @@ public record SavedStateMetadata(
     /**
      * Use this constant for the node ID if the thing writing the state is not a node.
      */
-    public static final NodeId NO_NODE_ID = new NodeId(Long.MAX_VALUE);
+    public static final NodeId NO_NODE_ID = NodeId.of(Long.MAX_VALUE);
 
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
@@ -147,7 +150,7 @@ public record SavedStateMetadata(
                 parsePrimitiveLong(data, MINIMUM_GENERATION_NON_ANCIENT),
                 parseNonNullString(data, SOFTWARE_VERSION),
                 parseNonNullInstant(data, WALL_CLOCK_TIME),
-                new NodeId(parsePrimitiveLong(data, NODE_ID)),
+                NodeId.of(parsePrimitiveLong(data, NODE_ID)),
                 parseNodeIdList(data, SIGNING_NODES),
                 parsePrimitiveLong(data, SIGNING_WEIGHT_SUM),
                 parsePrimitiveLong(data, TOTAL_WEIGHT));
@@ -167,7 +170,8 @@ public record SavedStateMetadata(
         Objects.requireNonNull(signedState.getState().getHash(), "state must be hashed");
         Objects.requireNonNull(now, "now must not be null");
 
-        final PlatformStateAccessor platformState = signedState.getState().getPlatformState();
+        final PlatformStateAccessor platformState = signedState.getState().getReadablePlatformState();
+        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(signedState.getState());
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
@@ -186,9 +190,7 @@ public record SavedStateMetadata(
                 selfId,
                 signingNodes,
                 signedState.getSigningWeight(),
-                platformState.getAddressBook() == null
-                        ? 0
-                        : platformState.getAddressBook().getTotalWeight());
+                roster == null ? 0 : RosterUtils.computeTotalWeight(roster));
     }
 
     /**
@@ -485,7 +487,7 @@ public record SavedStateMetadata(
 
         for (final String part : parts) {
             try {
-                list.add(new NodeId(Long.parseLong(part.strip())));
+                list.add(NodeId.of(Long.parseLong(part.strip())));
             } catch (final NumberFormatException e) {
                 throwInvalidRequiredField(field, value, e);
                 return null;

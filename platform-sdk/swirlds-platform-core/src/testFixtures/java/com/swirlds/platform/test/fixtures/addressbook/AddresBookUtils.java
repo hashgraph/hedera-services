@@ -46,7 +46,7 @@ public class AddresBookUtils {
                 new SerializableX509Certificate(cert),
                 "");
         final var address2 = new Address(
-                new NodeId(1),
+                NodeId.of(1),
                 "",
                 "",
                 10L,

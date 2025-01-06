@@ -16,7 +16,10 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -36,16 +39,28 @@ public interface EmbeddedHedera {
     void start();
 
     /**
+     * Starts the embedded Hedera node from a saved state customized by the given specs.
+     *
+     * @param state the state to customize
+     */
+    void restart(@NonNull FakeState state);
+
+    /**
      * Stops the embedded Hedera node.
      */
     void stop();
 
     /**
      * Returns the fake state of the embedded Hedera node.
-     *
      * @return the fake state of the embedded Hedera node
      */
     FakeState state();
+
+    /**
+     * Returns the fake TSS base service of the embedded Hedera node.
+     * @return the fake TSS base service of the embedded Hedera node
+     */
+    FakeTssBaseService tssBaseService();
 
     /**
      * Returns the software version of the embedded Hedera node.
@@ -70,6 +85,18 @@ public interface EmbeddedHedera {
      * @return the current synthetic time
      */
     Instant now();
+
+    /**
+     * Returns the embedded Hedera.
+     * @return the embedded Hedera
+     */
+    Hedera hedera();
+
+    /**
+     * Returns the roster of the embedded Hedera node.
+     * @return the roster of the embedded Hedera node
+     */
+    Roster roster();
 
     /**
      * Advances the synthetic time in the embedded Hedera node by a given duration.
@@ -105,5 +132,5 @@ public interface EmbeddedHedera {
      * @param nodeAccountId the account ID of the node to send the query to
      * @return the response to the query
      */
-    Response send(@NonNull Query query, @NonNull AccountID nodeAccountId);
+    Response send(@NonNull Query query, @NonNull AccountID nodeAccountId, final boolean asNodeOperator);
 }

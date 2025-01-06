@@ -39,7 +39,7 @@ class NegotiatorPair {
     }
 
     public NegotiatorPair(final TestProtocol protocol) throws IOException {
-        this(protocol, ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1)));
+        this(protocol, ConnectionFactory.createLocalConnections(NodeId.of(0L), NodeId.of(1)));
     }
 
     public void start() {

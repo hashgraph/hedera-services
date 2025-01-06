@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -41,7 +42,7 @@ public interface Call {
      *     <li>The "full result" of the call, including both its EVM-standard {@link PrecompileContractResult}
      *     and gas requirement (which is often difficult to compute without executing the call); as well as
      *     any {@link ContractCallStreamBuilder} created
-     *     as a side-effect of executing the system contract.</li>
+     *     as a side effect of executing the system contract.</li>
      *     <li>Any additional cost <i>beyond</i> the gas requirement.</li>
      * </ol>
      *
@@ -50,15 +51,35 @@ public interface Call {
      * @param responseCode the response code after the execution
      */
     record PricedResult(FullResult fullResult, long nonGasCost, ResponseCodeEnum responseCode, boolean isViewCall) {
+        /**
+         * @param result the full result of the call
+         * @param responseCode the response code after the execution
+         * @param isViewCall whether it is a view call
+         * @return the result, the gas requirement, and any non-gas cost
+         */
         public static PricedResult gasOnly(FullResult result, ResponseCodeEnum responseCode, boolean isViewCall) {
             return new PricedResult(result, 0L, responseCode, isViewCall);
         }
 
+        /**
+         * @param result the full result of the call
+         * @param responseCode the response code after the execution
+         * @param isViewCall whether it is a view call
+         * @param nonGasCost any additional cost beyond the gas requirement
+         * @return the result, the gas requirement, and any non-gas cost
+         */
         public static PricedResult gasPlus(
                 FullResult result, ResponseCodeEnum responseCode, boolean isViewCall, long nonGasCost) {
             return new PricedResult(result, nonGasCost, responseCode, isViewCall);
         }
 
+        /**
+         * @param senderId the account that is the sender
+         * @param contractId the smart contract instance whose function was called
+         * @param functionParameters the parameters passed into the contract call
+         * @param remainingGas the gas limit
+         * @return the contract function result
+         */
         public ContractFunctionResult asResultOfInsufficientGasRemaining(
                 @NonNull final AccountID senderId,
                 @NonNull final ContractID contractId,
@@ -76,6 +97,13 @@ public interface Call {
                     .build();
         }
 
+        /**
+         * @param senderId  the account that is the sender
+         * @param contractId the smart contract instance whose function was called
+         * @param functionParameters the parameters passed into the contract call
+         * @param remainingGas the gas limit
+         * @return the contract function result
+         */
         public ContractFunctionResult asResultOfCall(
                 @NonNull final AccountID senderId,
                 @NonNull final ContractID contractId,
@@ -106,6 +134,10 @@ public interface Call {
         throw new UnsupportedOperationException("Prefer an explicit execute(MessageFrame) override");
     }
 
+    /**
+     * @param frame the message frame
+     * @return the result, the gas requirement, and any non-gas cost
+     */
     @NonNull
     default PricedResult execute(MessageFrame frame) {
         return execute();
@@ -118,5 +150,15 @@ public interface Call {
      */
     default boolean allowsStaticFrame() {
         return false;
+    }
+
+    /**
+     * Prepares a {@link SchedulableTransactionBody} for dispatching a scheduled call.
+     *
+     * @return the native TransactionBody implied by this call
+     */
+    @NonNull
+    default SchedulableTransactionBody asSchedulableDispatchIn() {
+        throw new UnsupportedOperationException("Needs scheduleNative() support");
     }
 }

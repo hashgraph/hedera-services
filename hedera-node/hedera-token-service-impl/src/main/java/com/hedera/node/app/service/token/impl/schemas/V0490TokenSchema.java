@@ -38,8 +38,9 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Initial mod-service schema for the token service.
  */
-public class V0490TokenSchema extends StakingInfoManagementSchema {
+public class V0490TokenSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0490TokenSchema.class);
 
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
@@ -128,13 +129,13 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
         }
 
         // We will use these various configs for creating accounts. It would be nice to consolidate them somehow
-        final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
-        final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
-        final var accountsConfig = ctx.configuration().getConfigData(AccountsConfig.class);
+        final var ledgerConfig = ctx.appConfig().getConfigData(LedgerConfig.class);
+        final var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
+        final var accountsConfig = ctx.appConfig().getConfigData(AccountsConfig.class);
 
         // Generate synthetic accounts based on the genesis configuration
         final Consumer<SortedSet<Account>> noOpCb = ignore -> {};
-        syntheticAccountCreator.generateSyntheticAccounts(ctx.configuration(), noOpCb, noOpCb, noOpCb, noOpCb, noOpCb);
+        syntheticAccountCreator.generateSyntheticAccounts(ctx.appConfig(), noOpCb, noOpCb, noOpCb, noOpCb, noOpCb);
         // ---------- Create system accounts -------------------------
         for (final Account acct : syntheticAccountCreator.systemAccounts()) {
             accounts.put(acct.accountIdOrThrow(), acct);
@@ -236,10 +237,10 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     }
 
     private void initializeStakingNodeInfo(@NonNull final MigrationContext ctx) {
-        final var config = ctx.configuration();
+        final var config = ctx.appConfig();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var stakingConfig = config.getConfigData(StakingConfig.class);
-        final var addressBook = ctx.networkInfo().addressBook();
+        final var addressBook = ctx.genesisNetworkInfo().addressBook();
         final var numberOfNodes = addressBook.size();
 
         final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;

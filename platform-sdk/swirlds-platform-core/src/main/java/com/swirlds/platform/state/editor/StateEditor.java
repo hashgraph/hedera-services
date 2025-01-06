@@ -36,7 +36,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
-import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
@@ -67,7 +66,7 @@ public class StateEditor {
         platformContext = PlatformContext.create(configuration);
 
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(platformContext, statePath, SignedStateFileUtils::readState);
+                SignedStateFileReader.readStateFile(configuration, statePath);
 
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.println("\nLoading state from " + statePath);
@@ -203,7 +202,7 @@ public class StateEditor {
         try (final ReservedSignedState reservedSignedState =
                 signedState.getAndReserve("StateEditor.getSignedStateCopy() 1")) {
             final SignedState newSignedState = new SignedState(
-                    platformContext,
+                    platformContext.getConfiguration(),
                     CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",

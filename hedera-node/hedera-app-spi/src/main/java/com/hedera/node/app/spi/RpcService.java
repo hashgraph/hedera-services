@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.pbj.runtime.RpcServiceDefinition;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import java.util.HashSet;
 import java.util.Set;
@@ -146,15 +147,12 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
     }
 
     public synchronized void allNodesReceived() {
-        if (newLastLeafPath < 0) {
-            // Empty teacher
-            return;
-        }
-        // no-op if newLastLeafPath is greater or equal to oldLastLeafPath
         logger.info(
                 RECONNECT.getMarker(),
                 "allNodesReceived(): newLastLeafPath = " + newLastLeafPath + ", oldLastLeafPath = " + oldLastLeafPath);
-        for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
+        final long firstOldStalePath = (newLastLeafPath == Path.INVALID_PATH) ? 1 : newLastLeafPath + 1;
+        // No-op if newLastLeafPath is greater or equal to oldLastLeafPath
+        for (long p = firstOldStalePath; p <= oldLastLeafPath; p++) {
             final VirtualLeafRecord<K, ?> oldExtraLeafRecord = oldRecords.findLeafRecord(p, false);
             assert oldExtraLeafRecord != null || p < oldFirstLeafPath;
             if (oldExtraLeafRecord != null) {

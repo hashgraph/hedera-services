@@ -31,19 +31,23 @@ import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
-import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
+import com.swirlds.platform.gossip.config.GossipConfig;
+import com.swirlds.platform.gossip.config.InterfaceBindingConverter;
+import com.swirlds.platform.gossip.config.NetworkEndpoint;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
+import com.swirlds.platform.wiring.ComponentWiringConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.hiero.event.creator.impl.EventCreationConfig;
 
 /**
  * Registers configuration types for the platform.
@@ -89,12 +93,16 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 UptimeConfig.class,
                 VirtualMapConfig.class,
                 WiringConfig.class,
-                InternalLoggingConfig.class);
+                InternalLoggingConfig.class,
+                ComponentWiringConfig.class,
+                GossipConfig.class);
     }
 
     @NonNull
     @Override
     public Set<ConverterPair<?>> getConverters() {
-        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
+        return Set.of(
+                new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse),
+                new ConverterPair<>(NetworkEndpoint.class, new InterfaceBindingConverter()));
     }
 }

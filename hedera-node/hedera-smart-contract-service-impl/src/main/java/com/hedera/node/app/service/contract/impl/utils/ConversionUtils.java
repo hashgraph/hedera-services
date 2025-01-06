@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
@@ -64,10 +65,15 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
  * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
  */
 public class ConversionUtils {
+    /** The standard length as long of an address in Ethereum.*/
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
+    /** The standard length of an address in Ethereum.*/
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
+    /** The count of zero bytes in a long-zero address format.*/
     public static final int NUM_LONG_ZEROS = 12;
+    /** Fee schedule units per tinycent.*/
     public static final long FEE_SCHEDULE_UNITS_PER_TINYCENT = 1000;
+
     private static final BigInteger MIN_LONG_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
     private static final BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
@@ -159,6 +165,18 @@ public class ConversionUtils {
         final var integralAddress = contractId.hasContractNum()
                 ? asEvmAddress(contractId.contractNumOrThrow())
                 : contractId.evmAddressOrThrow().toByteArray();
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
+     * Given a {@link ScheduleID}, returns its address as a headlong address.
+     *
+     * @param scheduleID the schedule id
+     * @return the headlong address
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final ScheduleID scheduleID) {
+        requireNonNull(scheduleID);
+        final var integralAddress = asEvmAddress(scheduleID.scheduleNum());
         return asHeadlongAddress(integralAddress);
     }
 
@@ -400,11 +418,21 @@ public class ConversionUtils {
     /**
      * Given an EVM address, returns whether it is long-zero.
      *
-     * @param address the EVM address
+     * @param address the EVM address (as a BESU {@link org.hyperledger.besu.datatypes.Address})
      * @return whether it is long-zero
      */
     public static boolean isLongZero(@NonNull final Address address) {
         return isLongZeroAddress(address.toArrayUnsafe());
+    }
+
+    /**
+     * Given an EVM address, returns whether it is long-zero.
+     *
+     * @param address the EVM address (as a headlong {@link com.esaulpaugh.headlong.abi.Address})
+     * @return whether it is long-zero
+     */
+    public static boolean isLongZero(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return isLongZeroAddress(explicitFromHeadlong(address));
     }
 
     /**
@@ -471,6 +499,16 @@ public class ConversionUtils {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
         return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.ScheduleID asScheduleId(
+            @NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
+        return com.hederahashgraph.api.proto.java.ScheduleID.newBuilder()
+                .setScheduleNum(address.value().longValueExact())
+                .build();
     }
 
     /**
@@ -725,6 +763,18 @@ public class ConversionUtils {
     }
 
     /**
+     * Given an exchange rate and a tinybar amount, returns the equivalent tinycent amount.
+     *
+     * @param exchangeRate the exchange rate
+     * @param tinyBars the tinybar amount
+     * @return the equivalent tinycent amount
+     */
+    public static long fromTinybarsToTinycents(final ExchangeRate exchangeRate, final long tinyBars) {
+        return fromAToB(BigInteger.valueOf(tinyBars), exchangeRate.centEquiv(), exchangeRate.hbarEquiv())
+                .longValueExact();
+    }
+
+    /**
      * Given an amount in one unit and its conversion rate to another unit, returns the equivalent amount
      * in the other unit.
      *
@@ -785,6 +835,25 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link ContractCreateTransactionBody} and a new account number, returns a creation body
+     * that contains a self-managed admin key (contract key with the new account number).
+     *
+     * @param op the creation body
+     * @param accountNum the new account number for the about to be newly created contract
+     * @return the fully customized creation body
+     */
+    public static @NonNull ContractCreateTransactionBody selfManagedCustomizedCreation(
+            @NonNull final ContractCreateTransactionBody op, final long accountNum) {
+        requireNonNull(op);
+        final var builder = op.copyBuilder();
+        return builder.adminKey(Key.newBuilder()
+                        .contractID(
+                                ContractID.newBuilder().contractNum(accountNum).build())
+                        .build())
+                .build();
+    }
+
+    /**
      * Returns a tuple of the {@code KeyValue} struct
      * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
      * @param key the key to get the tuple for
@@ -801,6 +870,10 @@ public class ConversionUtils {
                 headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
     }
 
+    /**
+     * @param contents Ethereum content
+     * @return remove the leading 0x from an Ethereum content
+     */
     public static byte[] removeIfAnyLeading0x(com.hedera.pbj.runtime.io.buffer.Bytes contents) {
         final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
         final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static java.util.Collections.emptySet;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -47,7 +49,7 @@ class TestTransactionKeys implements TransactionKeys {
 
     @Override
     public Set<Account> requiredHollowAccounts() {
-        return null;
+        return emptySet();
     }
 
     @Override

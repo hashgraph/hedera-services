@@ -32,9 +32,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
@@ -44,12 +46,16 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,11 +86,22 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @Mock
     private GasCalculator gasCalculator;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ContractServiceComponent contractServiceComponent;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
+    private final Metrics metrics = new NoOpMetrics();
+    private final ContractMetrics contractMetrics = new ContractMetrics(() -> metrics, () -> contractsConfig);
+
     private ContractCallHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractCallHandler(() -> factory, gasCalculator);
+        contractMetrics.createContractMetrics();
+        given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
+        subject = new ContractCallHandler(() -> factory, gasCalculator, contractServiceComponent);
     }
 
     @Test
@@ -149,6 +166,10 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
                 .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
+
+        // check that invalid contract id is rejected
+        final var txn3 = contractCallTransactionWithInvalidContractId();
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn3));
     }
 
     @Test
@@ -181,6 +202,16 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder())
+                .build();
+    }
+
+    private TransactionBody contractCallTransactionWithInvalidContractId() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
+                        .contractID(invalidContract))
                 .build();
     }
 

@@ -25,7 +25,7 @@ import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -65,22 +65,23 @@ public final class StateInitializer {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
         } else {
-            previousSoftwareVersion = signedState.getState().getPlatformState().getCreationSoftwareVersion();
+            previousSoftwareVersion =
+                    signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
             trigger = RESTART;
         }
 
-        final MerkleRoot initialState = signedState.getState();
+        final PlatformMerkleStateRoot initialState = signedState.getState();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.
         if (initialState.getHash() != null) {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
-        if (initialState.getSwirldState().getHash() != null) {
+        if (initialState.getHash() != null) {
             throw new IllegalStateException("Expected initial swirld state to be unhashed");
         }
 
-        initialState.getSwirldState().init(platform, trigger, previousSoftwareVersion);
+        initialState.init(platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(
                 () -> {

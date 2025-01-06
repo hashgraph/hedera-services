@@ -22,11 +22,14 @@ import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.scheduledTxnIdFrom;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
+import static com.hedera.node.config.types.EntityType.NODE;
 import static com.hedera.node.config.types.EntityType.SCHEDULE;
 import static com.hedera.node.config.types.EntityType.TOKEN;
 import static com.hedera.node.config.types.EntityType.TOPIC;
+import static com.hedera.services.bdd.junit.support.translators.impl.FileUpdateTranslator.EXCHANGE_RATES_FILE_NUM;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -66,6 +69,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,16 +81,18 @@ import org.apache.logging.log4j.Logger;
 public class BaseTranslator {
     private static final Logger log = LogManager.getLogger(BaseTranslator.class);
 
-    private static final long EXCHANGE_RATES_FILE_NUM = 112L;
-
     /**
      * These fields are context maintained for the full lifetime of the translator.
      */
     private long highestKnownEntityNum = 0L;
 
+    private long highestKnownNodeId;
+
     private ExchangeRateSet activeRates;
     private final Map<TokenID, Long> totalSupplies = new HashMap<>();
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
+    private final Map<TransactionID, ScheduleID> scheduleRefs = new HashMap<>();
+    private final Map<ScheduleID, TransactionID> scheduleTxnIds = new HashMap<>();
     private final Set<TokenAssociation> knownAssociations = new HashSet<>();
     private final Map<PendingAirdropId, PendingAirdropValue> pendingAirdrops = new HashMap<>();
 
@@ -96,11 +102,11 @@ public class BaseTranslator {
     private long prevHighestKnownEntityNum = 0L;
 
     private Instant userTimestamp;
-    private ScheduleID scheduleRef;
     private final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
     private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
+    private final Set<ScheduleID> purgedScheduleIds = new HashSet<>();
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -109,6 +115,14 @@ public class BaseTranslator {
     public interface Spec {
         void accept(
                 @NonNull TransactionReceipt.Builder receiptBuilder, @NonNull TransactionRecord.Builder recordBuilder);
+    }
+
+    /**
+     * Constructs a translator with the given highest known node ID.
+     * @param highestKnownNodeId the highest known node ID
+     */
+    public BaseTranslator(final long highestKnownNodeId) {
+        this.highestKnownNodeId = highestKnownNodeId;
     }
 
     /**
@@ -159,7 +173,7 @@ public class BaseTranslator {
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
         sidecarRecords.clear();
-        scheduleRef = null;
+        purgedScheduleIds.clear();
         scanUnit(unit);
         nextCreatedNums.values().forEach(list -> {
             final Set<Long> distinctNums = Set.copyOf(list);
@@ -175,8 +189,18 @@ public class BaseTranslator {
             serialNos.addAll(mintedHere.subList(0, numMints.getOrDefault(tokenId, 0)));
             serialNos.sort(Comparator.naturalOrder());
         });
+        if (nextCreatedNums.containsKey(NODE)) {
+            highestKnownNodeId = nextCreatedNums.get(NODE).getLast();
+        }
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Finishes the ongoing transactional unit, purging any schedules that were deleted.
+     */
+    public void finishLastUnit() {
+        purgedScheduleIds.forEach(scheduleId -> scheduleRefs.remove(scheduleTxnIds.remove(scheduleId)));
     }
 
     /**
@@ -185,7 +209,7 @@ public class BaseTranslator {
      * @param num the number to query
      * @return true if the number was created
      */
-    public boolean createdThisUnit(final long num) {
+    public boolean entityCreatedThisUnit(final long num) {
         return num > prevHighestKnownEntityNum;
     }
 
@@ -330,7 +354,7 @@ public class BaseTranslator {
         if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()) {
             recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
         }
-        if (!followsUserRecord) {
+        if (!followsUserRecord || parts.transactionIdOrThrow().scheduled()) {
             // Only preceding and user transactions get exchange rates in their receipts; note that
             // auto-account creations are always preceding dispatches and so get exchange rates
             receiptBuilder.exchangeRate(activeRates);
@@ -340,8 +364,9 @@ public class BaseTranslator {
             final var output = parts.callContractOutputOrThrow();
             recordBuilder.contractCallResult(output.contractCallResultOrThrow());
         }
+        // If this transaction was executed by virtue of being scheduled, set its schedule ref
         if (parts.transactionIdOrThrow().scheduled()) {
-            recordBuilder.scheduleRef(scheduleRefOrThrow());
+            Optional.ofNullable(scheduleRefs.get(parts.transactionIdOrThrow())).ifPresent(recordBuilder::scheduleRef);
         }
         return new SingleTransactionRecord(
                 parts.transactionParts().wrapper(),
@@ -351,17 +376,37 @@ public class BaseTranslator {
     }
 
     /**
-     * Returns the modified schedule id for the ongoing transactional unit.
-     *
-     * @return the modified schedule id
+     * Updates the active exchange rates with the contents of the given state change.
+     * @param change the state change to update from
      */
-    public @NonNull ScheduleID scheduleRefOrThrow() {
-        return requireNonNull(scheduleRef);
+    public void updateActiveRates(@NonNull final StateChange change) {
+        final var contents =
+                change.mapUpdateOrThrow().valueOrThrow().fileValueOrThrow().contents();
+        try {
+            activeRates = ExchangeRateSet.PROTOBUF.parse(contents);
+            log.info("Updated active exchange rates to {}", activeRates);
+        } catch (ParseException e) {
+            throw new IllegalStateException("Rates file updated with unparseable contents", e);
+        }
+    }
+
+    /**
+     * Returns the active exchange rates.
+     * @return the active exchange rates
+     */
+    public ExchangeRateSet activeRates() {
+        return activeRates;
     }
 
     private void scanUnit(@NonNull final BlockTransactionalUnit unit) {
         unit.stateChanges().forEach(stateChange -> {
-            if (stateChange.hasMapUpdate()) {
+            if (stateChange.hasMapDelete()) {
+                final var mapDelete = stateChange.mapDeleteOrThrow();
+                final var key = mapDelete.keyOrThrow();
+                if (key.hasScheduleIdKey()) {
+                    purgedScheduleIds.add(key.scheduleIdKeyOrThrow());
+                }
+            } else if (stateChange.hasMapUpdate()) {
                 final var mapUpdate = stateChange.mapUpdateOrThrow();
                 final var key = mapUpdate.keyOrThrow();
                 if (key.hasTokenIdKey()) {
@@ -389,8 +434,6 @@ public class BaseTranslator {
                         nextCreatedNums
                                 .computeIfAbsent(FILE, ignore -> new LinkedList<>())
                                 .add(num);
-                    } else if (num == EXCHANGE_RATES_FILE_NUM) {
-                        updateActiveRates(stateChange);
                     }
                 } else if (key.hasScheduleIdKey()) {
                     final var num = key.scheduleIdKeyOrThrow().scheduleNum();
@@ -399,13 +442,28 @@ public class BaseTranslator {
                                 .computeIfAbsent(SCHEDULE, ignore -> new LinkedList<>())
                                 .add(num);
                     }
-                    scheduleRef = key.scheduleIdKeyOrThrow();
+                    final var schedule = mapUpdate.valueOrThrow().scheduleValueOrThrow();
+                    final var scheduleId = key.scheduleIdKeyOrThrow();
+                    final var scheduledTxnId = scheduledTxnIdFrom(
+                            schedule.originalCreateTransactionOrThrow().transactionIDOrThrow());
+                    scheduleRefs.put(scheduledTxnId, scheduleId);
+                    scheduleTxnIds.put(scheduleId, scheduledTxnId);
                 } else if (key.hasAccountIdKey()) {
                     final var num = key.accountIdKeyOrThrow().accountNumOrThrow();
                     if (num > highestKnownEntityNum) {
                         nextCreatedNums
                                 .computeIfAbsent(ACCOUNT, ignore -> new LinkedList<>())
                                 .add(num);
+                    }
+                } else if (key.hasEntityNumberKey()) {
+                    final var value = mapUpdate.valueOrThrow();
+                    if (value.hasNodeValue()) {
+                        final long nodeId = key.entityNumberKeyOrThrow();
+                        if (nodeId > highestKnownNodeId) {
+                            nextCreatedNums
+                                    .computeIfAbsent(NODE, ignore -> new LinkedList<>())
+                                    .add(nodeId);
+                        }
                     }
                 } else if (key.hasNftIdKey()) {
                     final var nftId = key.nftIdKeyOrThrow();
@@ -446,16 +504,6 @@ public class BaseTranslator {
                         .ifPresent(sidecarRecords::addAll);
             }
         });
-    }
-
-    private void updateActiveRates(@NonNull final StateChange change) {
-        final var contents =
-                change.mapUpdateOrThrow().valueOrThrow().fileValueOrThrow().contents();
-        try {
-            activeRates = ExchangeRateSet.PROTOBUF.parse(contents);
-        } catch (ParseException e) {
-            throw new IllegalStateException("Rates file updated with unparseable contents", e);
-        }
     }
 
     private static boolean isContractOp(@NonNull final BlockTransactionParts parts) {

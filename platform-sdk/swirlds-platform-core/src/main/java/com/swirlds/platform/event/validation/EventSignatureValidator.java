@@ -46,10 +46,10 @@ public interface EventSignatureValidator {
     void setEventWindow(@NonNull final EventWindow eventWindow);
 
     /**
-     * Set the previous and current address books
+     * Set the previous and current rosters
      *
-     * @param addressBookUpdate the new address books
+     * @param rosterUpdate the new rosters
      */
-    @InputWireLabel("AddressBookUpdate")
-    void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate);
+    @InputWireLabel("RosterUpdate")
+    void updateRosters(@NonNull final RosterUpdate rosterUpdate);
 }

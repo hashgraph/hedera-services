@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.ToLongFunction;
 
 /**
  * A builder for {@link TaskScheduler}s.
@@ -176,6 +177,14 @@ public interface TaskSchedulerBuilder<OUT> {
      */
     @NonNull
     TaskSchedulerBuilder<OUT> withHyperlink(@Nullable String hyperlink);
+
+    /**
+     * Provide a function to count weight of a data object for component health monitoring.
+     * @param dataCounter the
+     * @return this
+     */
+    @NonNull
+    TaskSchedulerBuilder<OUT> withDataCounter(@NonNull ToLongFunction<Object> dataCounter);
 
     /**
      * Build the task scheduler.

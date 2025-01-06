@@ -41,7 +41,7 @@ public final class RosterValidator {
             throw new InvalidRosterException("roster is null");
         }
 
-        final List<RosterEntry> rosterEntries = roster.rosters();
+        final List<RosterEntry> rosterEntries = roster.rosterEntries();
 
         if (rosterEntries.isEmpty()) {
             throw new InvalidRosterException("roster is empty");
@@ -72,13 +72,6 @@ public final class RosterValidator {
             // May want to also check if the bytes represent a valid certificate.
             if (re.gossipCaCertificate().length() == 0) {
                 throw new InvalidRosterException("gossipCaCertificate is empty for NodeId " + re.nodeId());
-            }
-
-            if (re.tssEncryptionKey().length() == 0) {
-                // This is a valid case for an un-keyed roster.
-            } else {
-                // May want to also check if the bytes represent a valid key.
-                // For now, assume that a non-zero length is valid.
             }
 
             if (re.gossipEndpoint().isEmpty()) {

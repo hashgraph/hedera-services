@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -31,7 +30,6 @@ import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -63,7 +61,6 @@ class StateRegistryTests {
     static void setUp() throws ConstructableRegistryException {
         registry = ConstructableRegistry.getInstance();
         version = SemanticVersion.newBuilder().major(nextInt(1, 100)).build();
-        registry.registerConstructable(new ClassConstructorPair(BlockingSwirldState.class, BlockingSwirldState::new));
         registerMerkleStateRootClassIds();
     }
 
@@ -81,34 +78,39 @@ class StateRegistryTests {
         // Restore the registry to its original condition at boot time
         RuntimeObjectRegistry.reset();
 
-        assertEquals(0, RuntimeObjectRegistry.getActiveObjectsCount(State.class), "no states have been created yet");
+        assertEquals(
+                0,
+                RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
+                "no states have been created yet");
 
-        final List<MerkleRoot> states = new LinkedList<>();
+        final List<PlatformMerkleStateRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
-            states.add(new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
+            states.add(new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                     "actual count should match expected count");
         }
 
         // Fast copy a state
-        final MerkleRoot stateToCopy = new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        final PlatformMerkleStateRoot stateToCopy =
+                new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
         states.add(stateToCopy);
-        final MerkleRoot copyOfStateToCopy = stateToCopy.copy();
+        final PlatformMerkleStateRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "actual count should match expected count");
 
         final Path dir = testDirectory;
 
         // Deserialize a state
-        final MerkleStateRoot stateToSerialize =
-                new MerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
-        final var platformState = stateToSerialize.getPlatformState();
+        final PlatformMerkleStateRoot stateToSerialize =
+                new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateToSerialize);
+        final var platformState = stateToSerialize.getWritablePlatformState();
         platformState.bulkUpdate(v -> {
             v.setCreationSoftwareVersion(new BasicSoftwareVersion(version.minor()));
             v.setLegacyRunningEventHash(new Hash());
@@ -118,11 +120,11 @@ class StateRegistryTests {
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
         io.startReading();
-        final MerkleRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
+        final PlatformMerkleStateRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
         states.add(deserializedState);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "actual count should match expected count");
 
         // Deleting states in a random order should cause the number of states to decrease
@@ -131,7 +133,7 @@ class StateRegistryTests {
             states.remove(random.nextInt(states.size())).release();
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                     "actual count should match expected count");
         }
     }

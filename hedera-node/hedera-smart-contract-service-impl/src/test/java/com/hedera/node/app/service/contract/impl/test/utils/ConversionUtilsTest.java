@@ -45,10 +45,12 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -242,6 +244,17 @@ class ConversionUtilsTest {
 
         final var actual2 = ConversionUtils.contractIDToBesuAddress(VALID_CONTRACT_ADDRESS);
         assertEquals(actual2, pbjToBesuAddress(VALID_CONTRACT_ADDRESS.evmAddress()));
+    }
+
+    @Test
+    void selfManagedCustomizedCreationTest() {
+        final var op = ContractCreateTransactionBody.DEFAULT;
+        final long newContractNum = 1005L;
+        final var actual = ConversionUtils.selfManagedCustomizedCreation(op, newContractNum);
+        assertTrue(actual.adminKey().hasContractID());
+        assertEquals(
+                newContractNum,
+                actual.adminKey().contractIDOrElse(ContractID.DEFAULT).contractNum());
     }
 
     private byte[] bloomFor(@NonNull final Log log) {

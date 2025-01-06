@@ -74,7 +74,7 @@ public class RandomAddressBuilder {
         // Future work: use randotron utility methods once randotron changes merge
 
         if (nodeId == null) {
-            nodeId = new NodeId(random.nextLong(0, Long.MAX_VALUE));
+            nodeId = NodeId.of(random.nextLong(0, Long.MAX_VALUE));
         }
 
         if (weight == null) {
@@ -82,7 +82,7 @@ public class RandomAddressBuilder {
         }
 
         if (port == null) {
-            port = random.nextInt(0, 65535);
+            port = random.nextInt(1, 65535);
         }
 
         if (hostname == null) {

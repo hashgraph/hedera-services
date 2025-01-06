@@ -28,7 +28,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -117,12 +116,12 @@ public class Shadowgraph implements Clearable {
      * Constructor.
      *
      * @param platformContext    the platform context
-     * @param addressBook        the address book
+     * @param numberOfNodes      numberOfNodes
      * @param intakeEventCounter tracks events in the intake pipeline
      */
     public Shadowgraph(
             @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
+            @NonNull final int numberOfNodes,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         ancientMode = platformContext
@@ -131,7 +130,7 @@ public class Shadowgraph implements Clearable {
                 .getAncientMode();
 
         this.metrics = new ShadowgraphMetrics(platformContext);
-        this.numberOfNodes = addressBook.getSize();
+        this.numberOfNodes = numberOfNodes;
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         tips = new HashSet<>();
         hashToShadowEvent = new HashMap<>();

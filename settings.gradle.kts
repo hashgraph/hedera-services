@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,36 +14,30 @@
  * limitations under the License.
  */
 
-pluginManagement { includeBuild("gradle/plugins") }
-
-plugins { id("com.hedera.gradle.settings") }
-
+plugins { id("org.hiero.gradle.build") version "0.1.4" }
 
 javaModules {
-    // Project to aggregate code coverage data for the whole repository into one report´
-    module("gradle/reports")
-
     // This "intermediate parent project" should be removed
     module("platform-sdk") { artifact = "swirlds-platform" }
 
     // The Hedera API module
-    module("hapi") {
-        group = "com.hedera.hashgraph"
-    }
+    module("hapi") { group = "com.hedera.hashgraph" }
 
     // The Hedera platform modules
     directory("platform-sdk") {
         group = "com.swirlds"
         module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
-        module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
+        module(
+            "swirlds-unit-tests/core/swirlds-platform-test"
+        ) // nested module is not found automatically
     }
 
     // The Hedera services modules
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
 
-        // Configure 'artifact' for projects where the folder does not correspond to the artifact name
+        // Configure 'artifact' for projects where folder does not correspond to artifact name
         module("hapi-fees") { artifact = "app-hapi-fees" }
         module("hapi-utils") { artifact = "app-hapi-utils" }
         module("hedera-addressbook-service") { artifact = "app-service-addressbook" }
@@ -68,34 +62,11 @@ javaModules {
     }
 
     // Platform-base demo applications
-    directory("example-apps") {
-        group = "com.swirlds"
-    }
+    directory("example-apps") { group = "com.swirlds" }
 
     // Platform demo applications
-    directory("platform-sdk/platform-apps/demos") {
-        group = "com.swirlds"
-    }
+    directory("platform-sdk/platform-apps/demos") { group = "com.swirlds" }
 
     // Platform test applications
-    directory("platform-sdk/platform-apps/tests") {
-        group = "com.swirlds"
-    }
-
-    // "BOM" with versions of 3rd party dependencies
-    versions("hedera-dependency-versions")
-}
-
-// The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.54.0"
-
-dependencyResolutionManagement {
-    // Protobuf tool versions
-    versionCatalogs.create("libs") {
-        version("google-proto", "3.25.4")
-        version("grpc-proto", "1.66.0")
-        version("hapi-proto", hapiProtoVersion)
-
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
-    }
+    directory("platform-sdk/platform-apps/tests") { group = "com.swirlds" }
 }

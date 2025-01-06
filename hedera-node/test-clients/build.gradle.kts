@@ -1,24 +1,10 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
+import com.github.jengelman.gradle.plugins.shadow.internal.DefaultDependencyFilter
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.shadow-jar")
+    id("org.hiero.gradle.module.application")
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -26,6 +12,8 @@ description = "Hedera Services Test Clients for End to End Tests (EET)"
 mainModuleInfo {
     runtimeOnly("org.junit.jupiter.engine")
     runtimeOnly("org.junit.platform.launcher")
+    runtimeOnly("org.hiero.event.creator")
+    runtimeOnly("org.hiero.event.creator.impl")
 }
 
 testModuleInfo { runtimeOnly("org.junit.jupiter.api") }
@@ -35,12 +23,54 @@ sourceSets {
     create("yahcli")
 }
 
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
+
 tasks.register<JavaExec>("runTestClient") {
     group = "build"
     description = "Run a test client via -PtestClient=<Class>"
 
     classpath = sourceSets.main.get().runtimeClasspath + files(tasks.jar)
     mainClass = providers.gradleProperty("testClient")
+}
+
+tasks.jacocoTestReport {
+    classDirectories.setFrom(files(project(":app").layout.buildDirectory.dir("classes/java/main")))
+    sourceDirectories.setFrom(files(project(":app").projectDir.resolve("src/main/java")))
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.test {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    // Unlike other tests, these intentionally corrupt embedded state to test FAIL_INVALID
+    // code paths; hence we do not run LOG_VALIDATION after the test suite finishes
+    useJUnitPlatform { includeTags("(INTEGRATION|STREAM_VALIDATION)") }
+
+    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target an embedded network whose mode is set per-class
+    systemProperty("hapi.spec.embedded.mode", "per-class")
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
 }
 
 val prCheckTags =
@@ -52,7 +82,8 @@ val prCheckTags =
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
-        "hapiTestMisc" to "!(CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
+        "hapiTestMisc" to
+            "!(INTEGRATION|CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
     )
 val prCheckStartPorts =
     mapOf(
@@ -66,9 +97,11 @@ val prCheckStartPorts =
         "hapiTestMisc" to "32000"
     )
 
-tasks { prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } } }
+tasks {
+    prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("testSubprocess") } }
+}
 
-tasks.test {
+tasks.register<Test>("testSubprocess") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
@@ -150,7 +183,7 @@ tasks.register<Test>("testEmbedded") {
     useJUnitPlatform {
         includeTags(
             if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&(!INTEGRATION)"
         )
     }
 
@@ -166,10 +199,8 @@ tasks.register<Test>("testEmbedded") {
         "junit.jupiter.testclass.order.default",
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
-    // Tell our launcher to target an embedded network
-    systemProperty("hapi.spec.embedded.mode", true)
-    // Configure log4j2.xml for the embedded node
-    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+    // Tell our launcher to target a concurrent embedded network
+    systemProperty("hapi.spec.embedded.mode", "concurrent")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -207,7 +238,7 @@ tasks.register<Test>("testRepeatable") {
         includeTags(
             if (ciTagExpression.isBlank())
                 "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&(!INTEGRATION)"
         )
     }
 
@@ -218,9 +249,7 @@ tasks.register<Test>("testRepeatable") {
         "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
     )
     // Tell our launcher to target a repeatable embedded network
-    systemProperty("hapi.spec.repeatable.mode", true)
-    // Configure log4j2.xml for the embedded node
-    systemProperty("log4j.configurationFile", "repeatable-node0-log4j2.xml")
+    systemProperty("hapi.spec.embedded.mode", "repeatable")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"
@@ -230,16 +259,22 @@ tasks.register<Test>("testRepeatable") {
     modularity.inferModulePath.set(false)
 }
 
-tasks.shadowJar {
-    archiveFileName.set("SuiteRunner.jar")
+tasks.withType<ShadowJar>().configureEach {
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    mergeServiceFiles()
 
-    manifest {
-        attributes(
-            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
-            "Multi-Release" to "true"
-        )
-    }
+    manifest { attributes("Multi-Release" to "true") }
+
+    // There is an issue in the shadow plugin that it automatically accesses the
+    // files in 'runtimeClasspath' while Gradle is building the task graph.
+    // See: https://github.com/GradleUp/shadow/issues/882
+    dependencyFilter = NoResolveDependencyFilter()
 }
+
+application.mainClass = "com.hedera.services.bdd.suites.SuiteRunner"
+
+tasks.shadowJar { archiveFileName.set("SuiteRunner.jar") }
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
@@ -248,12 +283,7 @@ val yahCliJar =
         archiveClassifier.set("yahcli")
         configurations = listOf(project.configurations.getByName("yahcliRuntimeClasspath"))
 
-        manifest {
-            attributes(
-                "Main-Class" to "com.hedera.services.yahcli.Yahcli",
-                "Multi-Release" to "true"
-            )
-        }
+        manifest { attributes("Main-Class" to "com.hedera.services.yahcli.Yahcli") }
     }
 
 val rcdiffJar =
@@ -265,12 +295,7 @@ val rcdiffJar =
         archiveFileName.set("rcdiff.jar")
         configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
 
-        manifest {
-            attributes(
-                "Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper",
-                "Multi-Release" to "true"
-            )
-        }
+        manifest { attributes("Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper") }
     }
 
 val validationJar =
@@ -282,8 +307,7 @@ val validationJar =
         manifest {
             attributes(
                 "Main-Class" to
-                    "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios",
-                "Multi-Release" to "true"
+                    "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios"
             )
         }
     }
@@ -318,4 +342,10 @@ val cleanYahCli =
 tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
+}
+
+class NoResolveDependencyFilter : DefaultDependencyFilter(project) {
+    override fun resolve(configuration: FileCollection): FileCollection {
+        return configuration
+    }
 }

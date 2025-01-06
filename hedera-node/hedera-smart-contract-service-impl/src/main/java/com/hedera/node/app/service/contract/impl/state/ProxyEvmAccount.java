@@ -39,14 +39,16 @@ import org.hyperledger.besu.evm.code.CodeFactory;
 public class ProxyEvmAccount extends AbstractProxyEvmAccount {
 
     /*
-     * Four byte function selectors for the two functions that are eligible for proxy redirection
+     * Four byte function selectors for the functions that are eligible for proxy redirection
      * in the Hedera Account Service system contract
      */
     private static final Set<Integer> ACCOUNT_PROXY_FUNCTION_SELECTOR = Set.of(
             // hbarAllowance(address spender)
             0xbbee989e,
             // hbarApprove(address spender, int256 amount)
-            0x86aff07c);
+            0x86aff07c,
+            // setUnlimitedAutomaticAssociations(bool enableAutoAssociations
+            0xf5677e99);
 
     // Only pass in a non-null account address if the function selector is eligible for proxy redirection.
     // A null address will return the 0x bytecode.

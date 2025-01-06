@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -43,7 +44,10 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -103,7 +107,14 @@ public class WritableStoreFactory {
                 new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
-        newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
+        // Roster Service
+        newMap.put(
+                WritableRosterStore.class,
+                new StoreEntry(RosterService.NAME, (states, config, metrics) -> new WritableRosterStore(states)));
+        // TSSBase Service
+        newMap.put(
+                WritableTssStore.class,
+                new StoreEntry(TssBaseService.NAME, (states, config, metrics) -> new WritableTssStore(states)));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -127,7 +138,7 @@ public class WritableStoreFactory {
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
-        requireNonNull(state, "The argument 'stack' cannot be null!");
+        requireNonNull(state);
         this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
         this.storeMetricsService =

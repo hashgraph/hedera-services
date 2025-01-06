@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system;
 
-import com.swirlds.platform.system.address.AddressBook;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,7 +74,7 @@ public interface Round extends Iterable<ConsensusEvent> {
      * @return the roster that was used to compute consensus for this round
      */
     @NonNull
-    AddressBook getConsensusRoster();
+    Roster getConsensusRoster();
 
     /**
      * A convenience method that supplies every transaction in this round to a consumer.

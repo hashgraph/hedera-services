@@ -92,7 +92,7 @@ final class GrpcServiceBuilder {
      * The set of transaction method names that need corresponding service method definitions generated.
      *
      * <p>Initially this set is empty, and is populated by calls to {@link #transaction(String)}. Then,
-     * when {@link #build(Metrics)} is called, the set is used to create the transaction service method definitions.
+     * when {@link #build(Metrics, boolean)} is called, the set is used to create the transaction service method definitions.
      */
     private final Set<String> txMethodNames = new HashSet<>();
 
@@ -100,7 +100,7 @@ final class GrpcServiceBuilder {
      * The set of query method names that need corresponding service method definitions generated.
      *
      * <p>Initially this set is empty, and is populated by calls to {@link #query(String)}. Then,
-     * when {@link #build(Metrics)} is called, the set is used to create the query service method definitions.
+     * when {@link #build(Metrics, boolean)} is called, the set is used to create the query service method definitions.
      */
     private final Set<String> queryMethodNames = new HashSet<>();
 

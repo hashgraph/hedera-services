@@ -35,6 +35,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AssociationsDecoder {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public AssociationsDecoder() {
         // Dagger2

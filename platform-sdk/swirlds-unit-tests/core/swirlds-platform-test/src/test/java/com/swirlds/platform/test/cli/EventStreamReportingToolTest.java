@@ -53,8 +53,9 @@ class EventStreamReportingToolTest {
     Path tmpDir;
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ConstructableRegistryException {
         StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     @AfterAll
@@ -67,14 +68,11 @@ class EventStreamReportingToolTest {
      * written, it generates a report and checks the values.
      */
     @Test
-    void createReportTest() throws IOException, ConstructableRegistryException {
+    void createReportTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
-
-        // setup
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(
@@ -112,14 +110,11 @@ class EventStreamReportingToolTest {
      * written, it generates a report and checks the values.
      */
     @Test
-    void createTimeBoundReportTest() throws IOException, ConstructableRegistryException {
+    void createTimeBoundReportTest() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final int numNodes = 10;
         final int numEvents = 100_000;
         final Duration eventStreamWindowSize = Duration.ofSeconds(1);
-
-        // setup
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         // generate consensus events
         final Deque<ConsensusRound> rounds = GenerateConsensus.generateConsensusRounds(

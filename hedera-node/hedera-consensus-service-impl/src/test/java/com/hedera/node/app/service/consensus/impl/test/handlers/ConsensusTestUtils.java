@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
+/**
+ * Util class used in unit tests for Consensus Service
+ */
 public final class ConsensusTestUtils {
 
     static final Key SIMPLE_KEY_A = Key.newBuilder()

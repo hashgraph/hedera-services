@@ -22,6 +22,7 @@ import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Cre
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Delete;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 import static com.swirlds.merkle.test.fixtures.map.pta.TransactionRecord.DEFAULT_EXPIRATION_TIME;
+import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +44,7 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import java.io.IOException;
 import java.time.Instant;
@@ -69,7 +71,7 @@ public class PttTransactionPoolTest {
 
     static {
         platform = Mockito.mock(Platform.class);
-        Mockito.when(platform.getSelfId()).thenReturn(new NodeId(myID));
+        Mockito.when(platform.getSelfId()).thenReturn(NodeId.of(myID));
         System.arraycopy(payload, 0, payloadWithSig, 0, payload.length);
         expectedFCMFamily = new DummyExpectedFCMFamily(myID);
         fCMFamily = new FCMFamily(true);
@@ -180,7 +182,8 @@ public class PttTransactionPoolTest {
                 .setOriginNode(otherID)
                 .build();
         try {
-            final PlatformTestingToolState state = new PlatformTestingToolState();
+            final PlatformTestingToolState state =
+                    new PlatformTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
             state.setFcmFamily(fCMFamily);
             handler.performOperation(
                     trans,
@@ -237,7 +240,8 @@ public class PttTransactionPoolTest {
                 .setOriginNode(otherID)
                 .build();
         try {
-            final PlatformTestingToolState state = new PlatformTestingToolState();
+            final PlatformTestingToolState state =
+                    new PlatformTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
             state.setFcmFamily(fCMFamily);
             handler.performOperation(
                     trans,

@@ -91,7 +91,7 @@ public class PrivilegesVerifier {
                     txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
             case CRYPTO_DELETE -> checkEntityDelete(
                     txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
-            case NODE_CREATE, NODE_DELETE -> checkNodeChange(payerId);
+            case NODE_CREATE -> checkNodeCreate(payerId);
             default -> SystemPrivilege.UNNECESSARY;
         };
     }
@@ -137,7 +137,7 @@ public class PrivilegesVerifier {
         return accountID.accountNumOrThrow() == accountsConfig.feeSchedulesAdmin() || isSuperUser(accountID);
     }
 
-    private boolean hasNodeChangePrivilige(@NonNull final AccountID accountID) {
+    private boolean hasNodeCreatePrivilige(@NonNull final AccountID accountID) {
         return accountID.accountNumOrThrow() == accountsConfig.addressBookAdmin() || isSuperUser(accountID);
     }
 
@@ -217,8 +217,8 @@ public class PrivilegesVerifier {
         }
     }
 
-    private SystemPrivilege checkNodeChange(@NonNull final AccountID payerId) {
-        return hasNodeChangePrivilige(payerId) ? AUTHORIZED : UNAUTHORIZED;
+    private SystemPrivilege checkNodeCreate(@NonNull final AccountID payerId) {
+        return hasNodeCreatePrivilige(payerId) ? AUTHORIZED : UNAUTHORIZED;
     }
 
     private SystemPrivilege checkEntityDelete(final long entityNum) {

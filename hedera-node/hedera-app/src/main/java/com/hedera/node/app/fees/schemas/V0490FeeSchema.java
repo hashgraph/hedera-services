@@ -21,9 +21,9 @@ import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.config.data.BootstrapConfig;
-import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -52,7 +52,7 @@ public class V0490FeeSchema extends Schema {
         if (isGenesis) {
             // Set the initial exchange rates (from the bootstrap config) as the midnight rates
             final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
-            final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+            final var bootstrapConfig = ctx.appConfig().getConfigData(BootstrapConfig.class);
             final var exchangeRateSet = ExchangeRateSet.newBuilder()
                     .currentRate(ExchangeRate.newBuilder()
                             .centEquiv(bootstrapConfig.ratesCurrentCentEquiv())

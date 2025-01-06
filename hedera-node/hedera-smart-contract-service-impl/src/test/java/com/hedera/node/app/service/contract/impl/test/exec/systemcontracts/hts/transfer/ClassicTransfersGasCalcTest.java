@@ -71,7 +71,8 @@ class ClassicTransfersGasCalcTest extends CallTestBase {
                 + PRETEND_LAZY_CREATION_TINYBAR_PRICE;
         final var expectedGasRequirement = 666L;
         final var body = TransactionBody.newBuilder().cryptoTransfer(op).build();
-        given(systemContractGasCalculator.gasRequirement(body, AccountID.DEFAULT, expectedTotalTinybarPrice))
+        given(systemContractGasCalculator.gasRequirementWithTinycents(
+                        body, AccountID.DEFAULT, expectedTotalTinybarPrice))
                 .willReturn(expectedGasRequirement);
 
         final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
@@ -96,7 +97,8 @@ class ClassicTransfersGasCalcTest extends CallTestBase {
                 PRETEND_NFT_TRANSFER_TINYBAR_PRICE + 2 * expectedFtMinimumPrice + 2 * expectedHbarMinimumPrice;
         final var expectedGasRequirement = 666L;
         final var body = TransactionBody.newBuilder().cryptoTransfer(op).build();
-        given(systemContractGasCalculator.gasRequirement(body, AccountID.DEFAULT, expectedTotalTinybarPrice))
+        given(systemContractGasCalculator.gasRequirementWithTinycents(
+                        body, AccountID.DEFAULT, expectedTotalTinybarPrice))
                 .willReturn(expectedGasRequirement);
 
         final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
@@ -109,27 +111,27 @@ class ClassicTransfersGasCalcTest extends CallTestBase {
     }
 
     private void givenPretendPricesWithCustomFees() {
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_HBAR))
                 .willReturn(PRETEND_HBAR_TRANSFER_TINYBAR_PRICE);
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_NFT_CUSTOM_FEES))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_NFT_CUSTOM_FEES))
                 .willReturn(PRETEND_NFT_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE);
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES))
                 .willReturn(PRETEND_FUNGIBLE_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE);
     }
 
     private void givenPretendPricesWithoutCustomFees() {
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_NFT))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_NFT))
                 .willReturn(PRETEND_NFT_TRANSFER_TINYBAR_PRICE);
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_HBAR))
                 .willReturn(PRETEND_HBAR_TRANSFER_TINYBAR_PRICE);
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_FUNGIBLE))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.TRANSFER_FUNGIBLE))
                 .willReturn(PRETEND_FUNGIBLE_TRANSFER_TINYBAR_PRICE);
     }
 
     private void givenPretendLazyCreationPrices() {
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_UPDATE))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.CRYPTO_UPDATE))
                 .willReturn(PRETEND_CRYPTO_UPDATE_TINYBAR_PRICE);
-        given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_CREATE))
+        given(systemContractGasCalculator.canonicalPriceInTinycents(DispatchType.CRYPTO_CREATE))
                 .willReturn(PRETEND_CRYPTO_CREATE_TINYBAR_PRICE);
     }
 

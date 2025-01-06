@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+plugins { id("org.hiero.gradle.module.library") }
 
 description = "Default Hedera Consensus Service Implementation"
 
@@ -26,7 +23,6 @@ mainModuleInfo { annotationProcessor("dagger.compiler") }
 testModuleInfo {
     requires("com.hedera.node.app.service.consensus.impl")
     requires("com.swirlds.state.api.test.fixtures")
-    requires("com.hedera.node.app.service.token")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.google.protobuf")

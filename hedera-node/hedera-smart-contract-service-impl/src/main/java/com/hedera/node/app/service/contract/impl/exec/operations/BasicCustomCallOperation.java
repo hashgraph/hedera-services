@@ -38,6 +38,9 @@ import org.hyperledger.besu.evm.operation.Operation.OperationResult;
  * override in {@link CustomCallOperation}, {@link CustomStaticCallOperation}, and {@link CustomDelegateCallOperation}.
  */
 public interface BasicCustomCallOperation {
+    /**
+     * Response for underflow.
+     */
     Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
 

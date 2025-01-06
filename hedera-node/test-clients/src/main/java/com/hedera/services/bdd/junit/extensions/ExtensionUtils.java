@@ -23,7 +23,9 @@ import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import com.hedera.services.bdd.junit.restart.RestartHapiTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -38,8 +40,10 @@ public class ExtensionUtils {
         return isAnnotated(method, HapiTest.class)
                 || isAnnotated(method, LeakyHapiTest.class)
                 || isAnnotated(method, GenesisHapiTest.class)
+                || isAnnotated(method, RestartHapiTest.class)
                 || isAnnotated(method, EmbeddedHapiTest.class)
                 || isAnnotated(method, RepeatableHapiTest.class)
-                || isAnnotated(method, LeakyEmbeddedHapiTest.class);
+                || isAnnotated(method, LeakyEmbeddedHapiTest.class)
+                || isAnnotated(method, LeakyRepeatableHapiTest.class);
     }
 }

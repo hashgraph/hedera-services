@@ -113,7 +113,7 @@ class CryptographyTests {
             signatures[i] = ed25519SignaturePool.next();
             final SignatureComponents components = extractComponents(signatures[i]);
             assertTrue(cryptography.verifySync(
-                    components.data(), components.publicKey(), components.signatureBytes(), SignatureType.ED25519));
+                    components.data(), components.signatureBytes(), components.publicKey(), SignatureType.ED25519));
         }
     }
 
@@ -129,8 +129,8 @@ class CryptographyTests {
             assertTrue(
                     cryptography.verifySync(
                             components.data(),
-                            components.publicKey(),
                             components.signatureBytes(),
+                            components.publicKey(),
                             SignatureType.ECDSA_SECP256K1),
                     "Signature should be valid");
         }
@@ -141,14 +141,25 @@ class CryptographyTests {
         ecdsaSignaturePool = new EcdsaSignedTxnPool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 64);
         final TransactionSignature signature = ecdsaSignaturePool.next();
         final SignatureComponents components = extractComponents(signature);
+        final byte[] data = components.data();
+        final byte[] publicKey = components.publicKey();
+        final byte[] signatureBytes = components.signatureBytes();
         Configurator.setAllLevels("", Level.ALL);
         assertFalse(
                 cryptography.verifySync(
-                        components.data(),
-                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
-                        components.signatureBytes(),
+                        data,
+                        Arrays.copyOfRange(signatureBytes, 1, signatureBytes.length),
+                        publicKey,
                         SignatureType.ECDSA_SECP256K1),
                 "Fails for invalid signature");
+
+        assertFalse(
+                cryptography.verifySync(
+                        data,
+                        signatureBytes,
+                        Arrays.copyOfRange(publicKey, 1, publicKey.length),
+                        SignatureType.ECDSA_SECP256K1),
+                "Fails for invalid public key");
     }
 
     @Test
@@ -156,14 +167,26 @@ class CryptographyTests {
         ed25519SignaturePool = new SignaturePool(cryptoConfig.computeCpuDigestThreadCount() * PARALLELISM, 100, true);
         final TransactionSignature signature = ed25519SignaturePool.next();
         final SignatureComponents components = extractComponents(signature);
+        final byte[] data = components.data();
+        final byte[] publicKey = components.publicKey();
+        final byte[] signatureBytes = components.signatureBytes();
         Configurator.setAllLevels("", Level.ALL);
+
         assertFalse(
                 cryptography.verifySync(
-                        components.data(),
-                        Arrays.copyOfRange(components.publicKey(), 0, components.publicKey().length - 1),
-                        components.signatureBytes(),
+                        data,
+                        Arrays.copyOfRange(signatureBytes, 1, signatureBytes.length),
+                        publicKey,
                         SignatureType.ED25519),
                 "Fails for invalid signature");
+
+        assertFalse(
+                cryptography.verifySync(
+                        data,
+                        signatureBytes,
+                        Arrays.copyOfRange(publicKey, 1, publicKey.length),
+                        SignatureType.ED25519),
+                "Fails for invalid public key");
     }
 
     @Test
@@ -195,7 +218,7 @@ class CryptographyTests {
                 .position(signature.getSignatureOffset())
                 .get(signatureBytes);
 
-        return new SignatureComponents(data, signatureBytes, publicKey);
+        return new SignatureComponents(data, publicKey, signatureBytes);
     }
 
     private void checkMessages(final Message... messages) throws ExecutionException, InterruptedException {

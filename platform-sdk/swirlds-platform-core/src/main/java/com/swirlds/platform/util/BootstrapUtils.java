@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.virtualmap.constructable.ConstructableUtils.registerVirtualMapConstructables;
 
+import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
@@ -31,7 +33,9 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
+import com.swirlds.config.extensions.sources.YamlConfigSource;
 import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
 import com.swirlds.platform.config.BasicConfig;
@@ -45,6 +49,7 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
@@ -89,7 +94,7 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
-     * Load the configuration for the platform.
+     * Load the configuration for the platform without overrides.
      *
      * @param configurationBuilder the configuration builder to setup
      * @param settingsPath         the path to the settings.txt file
@@ -98,11 +103,31 @@ public final class BootstrapUtils {
     public static void setupConfigBuilder(
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
             throws IOException {
+        setupConfigBuilder(configurationBuilder, settingsPath, null);
+    }
+
+    /**
+     * Load the configuration for the platform.
+     *
+     * @param configurationBuilder the configuration builder to setup
+     * @param settingsPath         the path to the settings.txt file
+     * @param nodeOverridesPath    the path to the node-overrides.yaml file
+     * @throws IOException if there is a problem reading the configuration files
+     */
+    public static void setupConfigBuilder(
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Path settingsPath,
+            @Nullable final Path nodeOverridesPath)
+            throws IOException {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
+
+        if (nodeOverridesPath != null) {
+            final ConfigSource yamlConfigSource = new YamlConfigSource(nodeOverridesPath);
+            configurationBuilder.withSource(yamlConfigSource);
+        }
     }
 
     /**
@@ -150,6 +175,19 @@ public final class BootstrapUtils {
     }
 
     /**
+     * Add classes to the constructable registry which need the configuration.
+     * @param configuration configuration
+     */
+    public static void setupConstructableRegistryWithConfiguration(Configuration configuration)
+            throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(configuration)));
+
+        registerVirtualMapConstructables(configuration);
+    }
+
+    /**
      * Load the SwirldMain for the app.
      *
      * @param appMainName the name of the app main class
@@ -192,9 +230,13 @@ public final class BootstrapUtils {
             @NonNull final SoftwareVersion appVersion, @Nullable final SignedState loadedSignedState) {
         Objects.requireNonNull(appVersion, "The app version must not be null.");
 
-        final SoftwareVersion loadedSoftwareVersion = loadedSignedState == null
-                ? null
-                : loadedSignedState.getState().getPlatformState().getCreationSoftwareVersion();
+        final SoftwareVersion loadedSoftwareVersion;
+        if (loadedSignedState == null) {
+            loadedSoftwareVersion = null;
+        } else {
+            PlatformMerkleStateRoot state = loadedSignedState.getState();
+            loadedSoftwareVersion = state.getReadablePlatformState().getCreationSoftwareVersion();
+        }
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
         final boolean softwareUpgrade;
         if (versionComparison < 0) {

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
-import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -31,13 +31,16 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.state.spi.ReadableStates;
@@ -92,10 +95,14 @@ public class AddressBookTestBase {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_COMPLEX_KEY)))
             .build();
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
+            .withValue("addressBook.useRosterLifecycle", true)
+            .getOrCreateConfig();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
-    protected final Bytes defauleAdminKeyBytes =
+    protected final Bytes defaultAdminKeyBytes =
             Bytes.wrap("0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
 
     final Key invalidKey = Key.newBuilder()
@@ -171,8 +178,7 @@ public class AddressBookTestBase {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         readableStore = new ReadableNodeStoreImpl(readableStates);
-        final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
     }
 
     protected void refreshStoresWithCurrentNodeInBothReadableAndWritable() {
@@ -275,6 +281,13 @@ public class AddressBookTestBase {
                 .weight(0)
                 .adminKey(key)
                 .build();
+    }
+
+    protected Key mockPayerLookup(Key key, AccountID contextPayerId, ReadableAccountStore accountStore) {
+        final var account = mock(Account.class);
+        given(account.key()).willReturn(key);
+        given(accountStore.getAccountById(contextPayerId)).willReturn(account);
+        return key;
     }
 
     public static List<X509Certificate> generateX509Certificates(final int n) {

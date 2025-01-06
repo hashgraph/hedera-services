@@ -37,10 +37,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractGetBySolidityIDHandler extends FreeQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public ContractGetBySolidityIDHandler() {
-        // Exists for injection
-    }
+    public ContractGetBySolidityIDHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

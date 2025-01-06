@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import java.util.Random;
@@ -46,8 +44,8 @@ class StateTest {
     @DisplayName("Test Copy")
     void testCopy() {
 
-        final MerkleRoot state = randomSignedState().getState();
-        final MerkleRoot copy = state.copy();
+        final PlatformMerkleStateRoot state = randomSignedState().getState();
+        final PlatformMerkleStateRoot copy = state.copy();
 
         assertNotSame(state, copy, "copy should not return the same object");
 
@@ -68,7 +66,7 @@ class StateTest {
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Try Reserve")
     void tryReserveTest() {
-        final MerkleRoot state = randomSignedState().getState();
+        final PlatformMerkleStateRoot state = randomSignedState().getState();
         assertEquals(
                 1,
                 state.getReservationCount(),
@@ -86,14 +84,13 @@ class StateTest {
 
     private static SignedState randomSignedState() {
         Random random = new Random(0);
-        State root = new State();
-        root.setSwirldState(new MerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        PlatformMerkleStateRoot merkleStateRoot = new PlatformMerkleStateRoot(
+                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
-                TestPlatformContextBuilder.create().build(),
+                TestPlatformContextBuilder.create().build().getConfiguration(),
                 CryptoStatic::verifySignature,
-                root,
+                merkleStateRoot,
                 "test",
                 shouldSaveToDisk,
                 false,

@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
@@ -27,8 +12,10 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.types.LongPair;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -111,6 +98,16 @@ public interface HapiPropertySource {
         return AccountID.getDefaultInstance();
     }
 
+    /**
+     * Returns an {@link StreamMode} parsed from the given property.
+     * @param property the property to get the value from
+     * @return the {@link StreamMode} value
+     */
+    default StreamMode getStreamMode(@NonNull final String property) {
+        requireNonNull(property);
+        return StreamMode.valueOf(get(property));
+    }
+
     default ServiceEndpoint getServiceEndpoint(String property) {
         try {
             return asServiceEndpoint(get(property));
@@ -138,6 +135,11 @@ public interface HapiPropertySource {
 
     default TimeUnit getTimeUnit(String property) {
         return TimeUnit.valueOf(get(property));
+    }
+
+    default ScaleFactor getScaleFactor(@NonNull final String property) {
+        requireNonNull(property);
+        return ScaleFactor.from(get(property));
     }
 
     default double getDouble(String property) {
@@ -283,6 +285,17 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
             return asDnsServiceEndpoint(v);
         }
+    }
+
+    /**
+     * Converts the given {@link Bytes} instance to a readable IPv4 address string.
+     * @param ipV4Addr the {@link Bytes} instance to convert
+     * @return the readable IPv4 address string
+     */
+    static String asReadableIp(@NonNull final Bytes ipV4Addr) {
+        requireNonNull(ipV4Addr);
+        final var bytes = ipV4Addr.toByteArray();
+        return (0xff & bytes[0]) + "." + (0xff & bytes[1]) + "." + (0xff & bytes[2]) + "." + (0xff & bytes[3]);
     }
 
     static ServiceEndpoint asServiceEndpoint(String v) {

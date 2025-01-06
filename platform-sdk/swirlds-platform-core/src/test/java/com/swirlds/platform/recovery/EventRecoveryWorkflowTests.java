@@ -40,7 +40,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.CesEvent;
@@ -107,7 +107,7 @@ class EventRecoveryWorkflowTests {
     @Test
     @DisplayName("applyTransactions() Test")
     void applyTransactionsTest() {
-        final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
+        final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
@@ -127,13 +127,13 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(immutableState)
-                .preHandle(any());
+                .preHandle(any(), any());
         doAnswer(invocation -> {
                     fail("mutable state should handle transactions");
                     return null;
                 })
                 .when(immutableState)
-                .handleConsensusRound(any(), any());
+                .handleConsensusRound(any(), any(), any());
 
         final SwirldState mutableState = mock(SwirldState.class);
         doAnswer(invocation -> {
@@ -141,7 +141,7 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(mutableState)
-                .preHandle(any());
+                .preHandle(any(), any());
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should only be handled once");
                     assertSame(round, invocation.getArgument(0), "unexpected round");
@@ -150,7 +150,7 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(mutableState)
-                .handleConsensusRound(any(), any());
+                .handleConsensusRound(any(), any(), any());
 
         EventRecoveryWorkflow.applyTransactions(immutableState, mutableState, platformState, round);
 

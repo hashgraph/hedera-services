@@ -56,7 +56,7 @@ class SigSetTests {
 
         for (int i = 0; i < 1_000; i++) {
             // There will be a few duplicates, but that doesn't really matter
-            final NodeId nodeId = new NodeId(random.nextLong(0, 10_000));
+            final NodeId nodeId = NodeId.of(random.nextLong(0, 10_000));
             final Signature signature = randomSignature(random);
             signatures.put(nodeId, signature);
         }
