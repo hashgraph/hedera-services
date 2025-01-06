@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,13 @@ package com.swirlds.demo.stress;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import static com.hedera.pbj.runtime.ProtoParserTools.readInt64;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -40,6 +45,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -53,6 +59,10 @@ import java.util.function.Function;
 @ConstructableIgnored
 public class StressTestingToolState extends PlatformMerkleStateRoot {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
+
+    // The length of a system transaction -> round number (5-15 bytes depending on size) + signature (384 bytes) + hash
+    // (48 bytes)
+    private static final int[] SYSTEM_TRANSACTION_LENGTH_RANGE = new int[] {437, 447};
 
     /** A running sum of transaction contents */
     private long runningSum = 0;
@@ -103,6 +113,13 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     public void preHandle(
             @NonNull final Event event,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+        event.forEachTransaction(transaction -> {
+            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                stateSignatureTransaction.accept(
+                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            }
+        });
+
         busyWait(config.preHandleTime());
     }
 
@@ -115,7 +132,17 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final PlatformStateModifier platformState,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
-        round.forEachTransaction(this::handleTransaction);
+
+        for (final var event : round) {
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    stateSignatureTransaction.accept(
+                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                } else {
+                    handleTransaction(transaction);
+                }
+            });
+        }
     }
 
     private void handleTransaction(@NonNull final ConsensusTransaction trans) {
@@ -125,6 +152,41 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
         runningSum +=
                 ByteUtils.byteArrayToLong(trans.getApplicationTransaction().toByteArray(), 0);
         busyWait(config.handleTime());
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        final var transactionBytes = transaction.getApplicationTransaction();
+
+        if (transactionBytes.length() == 0
+                || (transactionBytes.length() < SYSTEM_TRANSACTION_LENGTH_RANGE[0]
+                        || transactionBytes.length() > SYSTEM_TRANSACTION_LENGTH_RANGE[1])) {
+            return false;
+        }
+
+        final var readableData = transactionBytes.toReadableSequentialData();
+        readableData.readVarInt(false);
+        final var maybeRound = readInt64(readableData);
+
+        if (maybeRound < 0) {
+            return false;
+        } else {
+            final var stateSignatureTransaction = tryToParseSystemTransaction(readableData);
+            return stateSignatureTransaction.signature() != Bytes.EMPTY;
+        }
+    }
+
+    private StateSignatureTransaction tryToParseSystemTransaction(final ReadableSequentialData transactionBytes) {
+        try {
+            return StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes);
+        } catch (ParseException e) {
+            return StateSignatureTransaction.DEFAULT;
+        }
     }
 
     @SuppressWarnings("all")
