@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -170,6 +171,38 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             // add assert for hbar
             assertBalances.add(getAccountBalance(collectorName + 0).hasTinyBars(ONE_HBAR));
             return assertBalances.toArray(SpecOperation[]::new);
+        }
+
+        @HapiTest
+        @DisplayName("Validate the number of child records of the submit message transaction")
+        final Stream<DynamicTest> validateNumberOfChildRecords() {
+            return hapiTest(flattened(
+                    // create 9 denomination tokens and transfer them to the submitter
+                    createMultipleTokensWith2LayerFees(SUBMITTER, 9),
+                    // create 9 collectors and associate them with tokens
+                    associateAllTokensToCollectors(),
+                    // create topic with 10 multilayer fees - 9 HTS + 1 HBAR
+                    createTopicWith10Different2layerFees(),
+                    submitMessageTo(TOPIC)
+                            .acceptAllCustomFees(true)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit"),
+
+                    // validate 0 child records
+                    withOpContext((spec, log) -> {
+                        final var submitTxnRecord = getTxnRecord("submit")
+                                .andAllChildRecords()
+                                // 3 layers * 9 HTS fees + 1 HBAR fee
+                                .hasAssessedCustomFeesSize(28)
+                                .logged();
+                        allRunFor(spec, submitTxnRecord);
+                        final var transactionRecordSize =
+                                submitTxnRecord.getChildRecords().size();
+                        assertEquals(0, transactionRecordSize);
+                    }),
+                    // assert topic fee collector balance
+                    assertAllCollectorsBalances()));
         }
 
         @HapiTest
