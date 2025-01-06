@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -344,7 +345,12 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .feeScheduleKeyName(feeScheduleKey)
                             .feeExemptKeys(feeScheduleKey)
                             .withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST").signedByPayerAnd(feeScheduleKey),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(fee)
+                            .message("TEST")
+                            .signedByPayerAnd(feeScheduleKey)
+                            // any non payer key in FEKL, should sign with full prefixes keys
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(feeScheduleKey)),
                     getAccountBalance(collector).hasTinyBars(0L));
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -80,7 +81,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -128,12 +131,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic.hasSubmitKey()) {
             context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
         }
-        // add optional fee exempt keys in to the key verifieer
-        // later it will be used to validate if transaction was signed by
-        // any of these keys and based on that, custom fees will be charged or not
-        if (!topic.feeExemptKeyList().isEmpty()) {
-            context.optionalKeys(new HashSet<>(topic.feeExemptKeyList()));
-        }
+        //        // add optional fee exempt keys in to the key verifieer
+        //        // later it will be used to validate if transaction was signed by
+        //        // any of these keys and based on that, custom fees will be charged or not
+        //        if (!topic.feeExemptKeyList().isEmpty()) {
+        //            context.optionalKeys(new HashSet<>(topic.feeExemptKeyList()));
+        //        }
     }
 
     /**
@@ -342,14 +345,34 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     private boolean isFeeExempted(@NonNull final List<Key> feeExemptKeyList, @NonNull final KeyVerifier keyVerifier) {
         if (!feeExemptKeyList.isEmpty()) {
-            for (final var key : feeExemptKeyList) {
-                final var keyVerificationResult = keyVerifier.verificationFor(key);
-                if (keyVerificationResult.passed()) {
+            final var authorizingKeys =
+                    keyVerifier.authorizingSimpleKeys().stream().toList();
+            final VerificationAssistant callback =
+                    (k, ignore) -> simpleKeyVerifierFrom(authorizingKeys).test(k);
+            // check if authorizing keys are satisfying any of the fee exempt keys
+            for (final var feeExemptKey : feeExemptKeyList) {
+                if (keyVerifier.verificationFor(feeExemptKey, callback).passed()) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    public static Predicate<Key> simpleKeyVerifierFrom(@NonNull final List<Key> signatories) {
+        final Set<Key> cryptoSigs = new HashSet<>();
+        signatories.forEach(k -> {
+            switch (k.key().kind()) {
+                case ED25519, ECDSA_SECP256K1 -> cryptoSigs.add(k);
+                default -> {
+                    // No other key type can be a signatory
+                }
+            }
+        });
+        return key -> switch (key.key().kind()) {
+            case ED25519, ECDSA_SECP256K1 -> cryptoSigs.contains(key);
+            default -> false;
+        };
     }
 
     /**
