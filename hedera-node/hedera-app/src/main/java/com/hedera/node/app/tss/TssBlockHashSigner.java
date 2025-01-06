@@ -29,8 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A {@link BlockHashSigner} that uses whatever parts of the TSS protocol are enabled to sign blocks.
@@ -73,7 +71,6 @@ import javax.inject.Singleton;
  *     </li>
  * </ol>
  */
-@Singleton
 public class TssBlockHashSigner implements BlockHashSigner {
     @Nullable
     private final HintsService hintsService;
@@ -81,7 +78,6 @@ public class TssBlockHashSigner implements BlockHashSigner {
     @Nullable
     private final HistoryService historyService;
 
-    @Inject
     public TssBlockHashSigner(
             @NonNull final HintsService hintsService,
             @NonNull final HistoryService historyService,
