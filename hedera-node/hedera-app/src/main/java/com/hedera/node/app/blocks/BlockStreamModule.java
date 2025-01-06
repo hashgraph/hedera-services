@@ -45,11 +45,9 @@ public interface BlockStreamModule {
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
 
         final int fileBufferSize = blockStreamConfig.fileBufferSizeKb() * 1024;
-        System.out.println("matt: initializing block item writer with file buffer size " + fileBufferSize);
-        var blockFileBuffer = new byte[fileBufferSize];
+        final byte[] blockFileBuffer = new byte[fileBufferSize];
         final int gzipBufferSize = blockStreamConfig.gzipBufferSizeKb() * 1024;
-        System.out.println("matt: initializing block item writer with gzip buffer size " + gzipBufferSize);
-        var gzipBuffer = new byte[gzipBufferSize];
+        final byte[] gzipBuffer = new byte[gzipBufferSize];
 
         return switch (blockStreamConfig.writerMode()) {
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, blockFileBuffer, gzipBuffer);
