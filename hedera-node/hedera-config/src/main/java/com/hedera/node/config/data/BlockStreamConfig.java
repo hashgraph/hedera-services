@@ -38,4 +38,6 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int serializationBatchSize,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int hashCombineBatchSize,
-        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock) {}
+        @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
+        @ConfigProperty(defaultValue = "4194") @NodeProperty int fileBufferSizeKb,
+        @ConfigProperty(defaultValue = "256") @NodeProperty int gzipBufferSizeKb) {}

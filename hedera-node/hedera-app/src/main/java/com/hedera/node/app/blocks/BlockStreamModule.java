@@ -43,8 +43,16 @@ public interface BlockStreamModule {
             @NonNull final FileSystem fileSystem) {
         final var config = configProvider.getConfiguration();
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+
+        final int fileBufferSize = blockStreamConfig.fileBufferSizeKb() * 1024;
+        System.out.println("matt: initializing block item writer with file buffer size " + fileBufferSize);
+        var blockFileBuffer = new byte[fileBufferSize];
+        final int gzipBufferSize = blockStreamConfig.gzipBufferSizeKb() * 1024;
+        System.out.println("matt: initializing block item writer with gzip buffer size " + gzipBufferSize);
+        var gzipBuffer = new byte[gzipBufferSize];
+
         return switch (blockStreamConfig.writerMode()) {
-            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, blockFileBuffer, gzipBuffer);
             case GRPC -> throw new IllegalArgumentException("gRPC block writer not yet implemented");
         };
     }

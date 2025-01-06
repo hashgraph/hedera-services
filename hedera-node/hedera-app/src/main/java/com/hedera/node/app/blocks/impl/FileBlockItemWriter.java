@@ -78,6 +78,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
         CLOSED
     }
 
+    // Default initializations
+    private static byte[] blockFileBuffer = new byte[0];
+    private static byte[] gzipBuffer = new byte[0];
+
     /**
      * Construct a new FileBlockItemWriter.
      *
@@ -98,6 +102,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.compressFiles = blockStreamConfig.compressFilesOnCreation();
 
+        // Initialize write buffers
+        FileBlockItemWriter.blockFileBuffer = blockFileBuffer;
+        FileBlockItemWriter.gzipBuffer = gzipBuffer;
+
         // Compute directory for block files
         final Path blockDir = fileSystem.getPath(blockStreamConfig.blockFileDir());
         nodeScopedBlockDir = blockDir.resolve("block-" + asAccountString(nodeInfo.accountId()));
@@ -111,10 +119,6 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
-    private static final byte[] manualBuffer1 = new byte[1024 * 1024]; // 1 MB
-    private static final byte[] manualBuffer2 = new byte[1024 * 256]; // 256 KB
-    private static final byte[] manualBuffer3 = new byte[1024 * 1024 * 4]; // 4 MB
-
     @Override
     public void openBlock(long blockNumber) {
         if (state == State.OPEN) throw new IllegalStateException("Cannot initialize a FileBlockItemWriter twice");
@@ -126,16 +130,16 @@ public class FileBlockItemWriter implements BlockItemWriter {
         OutputStream out = null;
         try {
             out = Files.newOutputStream(blockFilePath);
-            out = new DirectFromParentBufferedOutputStream3(out, manualBuffer1);
             if (compressFiles) {
-                out = new DirectFromParentGZIPOutputStream3(out, manualBuffer2);
-                // By wrapping the GZIPOutputStream in a BufferedOutputStream, the code reduces the number of write
-                // operations to the GZIPOutputStream, and therefore the number of synchronized calls. Instead of
-                // writing each small piece of data immediately to the GZIPOutputStream, it writes the data to the
-                // buffer, and only when the buffer is full, it writes all the data to the GZIPOutputStream in one go.
-                // This can significantly improve the performance when writing many small amounts of data.
-                out = new DirectFromParentBufferedOutputStream3(out, manualBuffer3);
+                // Note the reassignment, wrapping the file output stream in a GZIPOutputStream
+                out = new DirectFromParentGZIPOutputStream3(out, gzipBuffer);
             }
+            // By wrapping the output stream in a BufferedOutputStream, the code reduces the number of write
+            // operations to the underlying resource, and therefore the number of synchronized calls. Instead of
+            // writing each small piece of data immediately to the resource, it writes the data to the
+            // buffer, and only when the buffer is full, it writes all the data to the resource in one go.
+            // This can significantly improve the performance when writing many small amounts of data.
+            out = new DirectFromParentBufferedOutputStream3(out, blockFileBuffer);
 
             this.writableStreamingData = new WritableStreamingData(out);
         } catch (final IOException e) {
