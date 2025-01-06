@@ -39,7 +39,6 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -77,7 +76,7 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private MerkleRoot state;
+    private PlatformMerkleStateRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
     private Roster roster;
@@ -138,7 +137,7 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
-        final MerkleRoot stateInstance;
+        final PlatformMerkleStateRoot stateInstance;
         registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
@@ -147,7 +146,7 @@ public class RandomSignedStateGenerator {
                 stateInstance = new PlatformMerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
+            stateInstance.setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }

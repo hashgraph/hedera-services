@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -41,8 +40,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 /**
- * A test implementation of {@link MerkleRoot} and {@link SwirldState} state for SignedStateManager unit tests.
- * Node that some of the {@link MerkleRoot} methods are intentionally not implemented. If a test needs these methods,
+ * A test implementation of {@link PlatformMerkleStateRoot} and {@link SwirldState} state for SignedStateManager unit tests.
+ * Node that some of the {@link PlatformMerkleStateRoot} methods are intentionally not implemented. If a test needs these methods,
  * {@link MerkleStateRoot} should be used instead.
  */
 public class BlockingSwirldState extends PlatformMerkleStateRoot {

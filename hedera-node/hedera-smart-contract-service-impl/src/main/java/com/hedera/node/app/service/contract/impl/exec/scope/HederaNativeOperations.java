@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -271,4 +272,10 @@ public interface HederaNativeOperations {
     default SortedSet<Key> authorizingSimpleKeys() {
         return NO_AUTHORIZING_KEYS;
     }
+
+    /**
+     * Returns the {@link TransactionID} for the top level transaction.
+     * @return the transaction ID
+     */
+    TransactionID getTransactionID();
 }

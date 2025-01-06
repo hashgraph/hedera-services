@@ -107,7 +107,7 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
      * @return merkle tree root
      */
     @NonNull
-    public static MerkleRoot getStateRootNode() {
+    public static PlatformMerkleStateRoot getStateRootNode() {
         final PlatformMerkleStateRoot state = new TurtleTestingToolState();
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;

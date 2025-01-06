@@ -39,7 +39,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.state.State;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -118,7 +117,7 @@ public class ReconnectStateLoader {
             }
 
             // Before attempting to load the state, verify that the platform roster matches the state roster.
-            final State state = (MerkleStateRoot<?>) signedState.getState().getSwirldState();
+            final State state = signedState.getState();
             final Roster stateRoster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
             if (!roster.equals(stateRoster)) {
                 throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes "
@@ -170,9 +169,7 @@ public class ReconnectStateLoader {
                     .getNotifierWiring()
                     .getInputWire(AppNotifier::sendReconnectCompleteNotification)
                     .put(new ReconnectCompleteNotification(
-                            signedState.getRound(),
-                            signedState.getConsensusTimestamp(),
-                            signedState.getState().getSwirldState()));
+                            signedState.getRound(), signedState.getConsensusTimestamp(), signedState.getState()));
 
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());

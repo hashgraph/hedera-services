@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -185,7 +185,7 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             // Make one more copy to force the state in recoveredState to be immutable.
-            final MerkleRoot mutableStateCopy =
+            final PlatformMerkleStateRoot mutableStateCopy =
                     recoveredState.state().get().getState().copy();
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
@@ -376,7 +376,7 @@ public final class EventRecoveryWorkflow {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         previousState.get().getState().throwIfImmutable();
-        final MerkleRoot newState = previousState.get().getState().copy();
+        final PlatformMerkleStateRoot newState = previousState.get().getState().copy();
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
@@ -397,7 +397,7 @@ public final class EventRecoveryWorkflow {
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
-                newState.getSwirldState().cast(),
+                newState.cast(),
                 newState.getWritablePlatformState(),
                 round);
 

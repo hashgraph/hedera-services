@@ -36,6 +36,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -56,6 +58,11 @@ import org.yaml.snakeyaml.Yaml;
  * All list elements are stored as JSON strings and can be deserialized in an {@link com.swirlds.config.api.converter.ConfigConverter}
  */
 public class YamlConfigSource implements ConfigSource {
+
+    /**
+     * The logger
+     */
+    private static final Logger logger = LogManager.getLogger(YamlConfigSource.class);
 
     /**
      * The {@link ObjectMapper} used to convert maps to JSON.
@@ -131,6 +138,11 @@ public class YamlConfigSource implements ConfigSource {
         this.properties = new HashMap<>();
         this.listProperties = new HashMap<>();
         this.ordinal = ordinal;
+
+        if (!Files.exists(filePath)) {
+            logger.warn("File {} does not exist, no properties will be loaded", filePath);
+            return;
+        }
 
         try (InputStream resource = Files.newInputStream(filePath)) {
             convertYamlToMaps(resource);
