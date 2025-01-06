@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2025 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
 # limitations under the License.
 ##
 
-name: "ZXCron: [Platform] Develop JRS Regression"
+name: "ZXCron: [Node] Main JRS Tests"
 on:
-  schedule:
-    - cron: '30 5 * * *'
   workflow_dispatch:
 
 defaults:
@@ -48,7 +46,7 @@ jobs:
     with:
       ref: ${{ github.sha }}
       branch-name: ${{ github.ref_name }}
-      workflow-file: platform-flow-jrs-daily-regression.yaml
+      workflow-file: node-flow-fsts-daily-regression.yaml
       workflow-file-ref: ${{ github.ref }}
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
