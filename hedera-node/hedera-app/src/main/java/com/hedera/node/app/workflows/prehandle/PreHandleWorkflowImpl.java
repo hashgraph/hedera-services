@@ -28,6 +28,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFai
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
@@ -143,6 +144,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {
+            if (tx.isSystem()) return;
             try {
                 tx.setMetadata(preHandleTransaction(
                         creator, readableStoreFactory, accountStore, tx, stateSignatureTxnCallback));
@@ -186,7 +188,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 return previousResult;
             }
 
-            if (txInfo.txBody().hasStateSignatureTransaction()) {
+            if (txInfo.functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
                 stateSignatureTransactionCallback.accept(txInfo.txBody().stateSignatureTransaction());
                 return PreHandleResult.stateSignatureTransactionEncountered(txInfo);
             }
