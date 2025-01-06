@@ -332,7 +332,7 @@ class SignScheduleTranslatorTest {
 
         // when:
         final var input = Bytes.wrapByteBuffer(
-                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys(
                 input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
 
