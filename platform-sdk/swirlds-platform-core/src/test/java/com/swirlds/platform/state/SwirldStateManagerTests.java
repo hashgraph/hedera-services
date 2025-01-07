@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,6 +28,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -35,6 +36,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,10 +44,11 @@ import org.junit.jupiter.api.Test;
 class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private MerkleRoot initialState;
+    private PlatformMerkleStateRoot initialState;
 
     @BeforeEach
     void setup() {
+        MerkleDb.resetDefaultInstancePath();
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
         final Roster roster = RandomRosterBuilder.create(Randotron.create()).build();
         when(platform.getRoster()).thenReturn(roster);
@@ -56,6 +59,11 @@ class SwirldStateManagerTests {
         swirldStateManager = new SwirldStateManager(
                 platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(initialState);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @Test
@@ -83,6 +91,7 @@ class SwirldStateManagerTests {
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
+        MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss1);
 
         assertEquals(
@@ -95,7 +104,9 @@ class SwirldStateManagerTests {
                 swirldStateManager.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
 
+        MerkleDb.resetDefaultInstancePath();
         final SignedState ss2 = newSignedState();
+        MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss2);
 
         assertEquals(
@@ -114,7 +125,7 @@ class SwirldStateManagerTests {
                         + "decremented.");
     }
 
-    private static MerkleRoot newState() {
+    private static PlatformMerkleStateRoot newState() {
         final PlatformMerkleStateRoot state = new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);

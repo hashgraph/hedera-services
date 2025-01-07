@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.swirlds.demo.iss;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -58,7 +58,6 @@ public class ISSTestingToolMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(ISSTestingToolState.class, () -> {
                 ISSTestingToolState issTestingToolState = new ISSTestingToolState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(issTestingToolState);
                 return issTestingToolState;
             }));
             registerMerkleStateRootClassIds();
@@ -115,7 +114,7 @@ public class ISSTestingToolMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new ISSTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

@@ -84,18 +84,10 @@ public class GrpcUtils {
                     .getScheduleInfo(query);
             case TokenGetNftInfo -> clients.getTokenSvcStub(nodeAccountId, false, asNodeOperator)
                     .getTokenNftInfo(query);
-            case TokenGetNftInfos -> clients.getTokenSvcStub(nodeAccountId, false, asNodeOperator)
-                    .getTokenNftInfos(query);
-            case TokenGetAccountNftInfos -> clients.getTokenSvcStub(nodeAccountId, false, asNodeOperator)
-                    .getAccountNftInfos(query);
             case NetworkGetExecutionTime -> clients.getNetworkSvcStub(nodeAccountId, false, asNodeOperator)
                     .getExecutionTime(query);
             case GetAccountDetails -> clients.getNetworkSvcStub(nodeAccountId, false, asNodeOperator)
                     .getAccountDetails(query);
-            case CryptoGetStakers -> clients.getCryptoSvcStub(nodeAccountId, false, asNodeOperator)
-                    .getStakersByAccountID(query);
-            case TransactionGetFastRecord -> clients.getCryptoSvcStub(nodeAccountId, false, asNodeOperator)
-                    .getFastTransactionRecord(query);
             default -> throw new IllegalArgumentException(functionality + " is not a query");
         };
     }

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_INT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -111,6 +112,10 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
 
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
+        if (op.contractID().hasEvmAddress()) {
+            validateTruePreCheck(
+                    op.contractID().evmAddressOrThrow().length() == EVM_ADDRESS_LENGTH_AS_INT, INVALID_CONTRACT_ID);
+        }
         // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have
         // nothing
         // to call)

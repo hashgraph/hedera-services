@@ -43,7 +43,7 @@ public final class MerkleDbFileUtils {
             throws IOException {
         int totalBytesRead = 0;
         while (dstBuffer.hasRemaining()) {
-            final long bytesRead = fileChannel.read(dstBuffer);
+            final int bytesRead = fileChannel.read(dstBuffer);
             if (bytesRead < 0) {
                 // Reached EOF
                 break;
@@ -63,7 +63,9 @@ public final class MerkleDbFileUtils {
     public static ByteBuffer readFromFileChannel(final FileChannel fileChannel, final int bytesToRead)
             throws IOException {
         final ByteBuffer headerBuffer = ByteBuffer.allocate(bytesToRead);
-        completelyRead(fileChannel, headerBuffer);
+        if (completelyRead(fileChannel, headerBuffer) != bytesToRead) {
+            throw new IOException("Failed to read " + bytesToRead + " bytes from file channel " + fileChannel);
+        }
         headerBuffer.rewind();
         return headerBuffer;
     }
@@ -88,7 +90,7 @@ public final class MerkleDbFileUtils {
             final FileChannel fileChannel, final ByteBuffer dstBuffer, final long startPosition) throws IOException {
         int totalBytesRead = 0;
         while (dstBuffer.hasRemaining()) {
-            final long bytesRead = fileChannel.read(dstBuffer, startPosition + totalBytesRead);
+            final int bytesRead = fileChannel.read(dstBuffer, startPosition + totalBytesRead);
             if (bytesRead < 0) {
                 // Reached EOF
                 break;
@@ -163,13 +165,13 @@ public final class MerkleDbFileUtils {
      * @throws IOException
      * 		if an exception occurs while trying to transfer data.
      */
-    public static int completelyTransferFrom(
+    public static long completelyTransferFrom(
             final FileChannel dstChannel,
             final ReadableByteChannel srcChannel,
             final long dstPosition,
             final long maxBytesToTransfer)
             throws IOException {
-        int totalBytesTransferred = 0;
+        long totalBytesTransferred = 0;
         while (totalBytesTransferred < maxBytesToTransfer) {
             final long bytesTransferred = dstChannel.transferFrom(
                     srcChannel, dstPosition + totalBytesTransferred, maxBytesToTransfer - totalBytesTransferred);

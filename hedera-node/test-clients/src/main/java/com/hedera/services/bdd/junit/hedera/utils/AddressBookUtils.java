@@ -1,38 +1,40 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.hedera.utils;
 
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary.FAKE_LEDGER_ID;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.StreamSupport.stream;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.protobuf.ByteString;
+import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
+import com.hedera.node.app.tss.api.FakeGroupElement;
+import com.hedera.node.app.tss.handlers.TssUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.math.BigInteger;
 import java.nio.file.Path;
+import java.security.cert.CertificateEncodingException;
+import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
@@ -42,9 +44,67 @@ public class AddressBookUtils {
     public static final long CLASSIC_FIRST_NODE_ACCOUNT_NUM = 3;
     public static final String[] CLASSIC_NODE_NAMES =
             new String[] {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8"};
+    // TODO - replace with real encryption keys
+    public static final Map<Long, Bytes> CLASSIC_ENCRYPTION_KEYS = LongStream.range(0, CLASSIC_NODE_NAMES.length)
+            .boxed()
+            .collect(toMap(Function.identity(), i -> Bytes.fromHex("aa".repeat(i.intValue() + 1))));
+    // TODO - make this parameterizable
+    public static final int CLASSIC_MAX_SHARES_PER_NODE = 3;
+    // TODO - generate real shares, encode message using the real encryption keys
+    public static final Function<Roster, TssKeyMaterial> CLASSIC_KEY_MATERIAL_GENERATOR = roster -> {
+        final var directory = TssUtils.computeParticipantDirectory(
+                roster,
+                CLASSIC_MAX_SHARES_PER_NODE,
+                nodeId -> new BlsPublicKey(
+                        new FakeGroupElement(new BigInteger(
+                                CLASSIC_ENCRYPTION_KEYS.get(nodeId).toByteArray())),
+                        TssUtils.SIGNATURE_SCHEMA));
+        final var rosterHash = RosterUtils.hash(roster).getBytes();
+        final var tssMessageOps = IntStream.range(0, directory.getThreshold())
+                .mapToObj(i -> TssMessageTransactionBody.newBuilder()
+                        .shareIndex(i + 1L)
+                        .sourceRosterHash(Bytes.EMPTY)
+                        .targetRosterHash(rosterHash)
+                        .tssMessage(Bytes.wrap(FakeTssLibrary.validMessage(i).toBytes()))
+                        .build())
+                .toList();
+        return new TssKeyMaterial(Bytes.wrap(FAKE_LEDGER_ID.toBytes()), tssMessageOps);
+    };
 
     private AddressBookUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Given a config.txt file, generates the same map of node ids to ASN.1 DER encodings of X.509 certificates
+     * as will be produced in a test network.
+     * @param configTxt the contents of a config.txt file
+     * @return the map of node IDs to their cert encodings
+     */
+    public static Map<Long, Bytes> certsFor(@NonNull final String configTxt) {
+        final AddressBook synthBook;
+        try {
+            synthBook = com.swirlds.platform.system.address.AddressBookUtils.parseAddressBookText(configTxt);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(e);
+        }
+        try {
+            CryptoStatic.generateKeysAndCerts(synthBook);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error generating keys and certs", e);
+        }
+        return IntStream.range(0, synthBook.getSize())
+                .boxed()
+                .collect(toMap(j -> synthBook.getNodeId(j).id(), j -> {
+                    try {
+                        return Bytes.wrap(requireNonNull(synthBook
+                                        .getAddress(synthBook.getNodeId(j))
+                                        .getSigCert())
+                                .getEncoded());
+                    } catch (CertificateEncodingException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }));
     }
 
     /**
@@ -61,6 +121,25 @@ public class AddressBookUtils {
             @NonNull final List<HederaNode> nodes,
             final int nextInternalGossipPort,
             final int nextExternalGossipPort) {
+        return configTxtForLocal(networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, Map.of());
+    }
+
+    /**
+     * Returns the contents of a <i>config.txt</i> file for the given network, with the option to override the
+     * weights of the nodes.
+     * @param networkName the name of the network
+     * @param nodes the nodes in the network
+     * @param nextInternalGossipPort the next gossip port to use
+     * @param nextExternalGossipPort the next gossip TLS port to use
+     * @param overrideWeights the map of node IDs to their weights
+     * @return the contents of the <i>config.txt</i> file
+     */
+    public static String configTxtForLocal(
+            @NonNull final String networkName,
+            @NonNull final List<HederaNode> nodes,
+            final int nextInternalGossipPort,
+            final int nextExternalGossipPort,
+            @NonNull final Map<Long, Long> overrideWeights) {
         final var sb = new StringBuilder();
         sb.append("swirld, ")
                 .append(networkName)
@@ -76,7 +155,9 @@ public class AddressBookUtils {
                     .append(node.getNodeId())
                     .append(", ")
                     .append(node.getName())
-                    .append(", 1, 127.0.0.1, ")
+                    .append(", ")
+                    .append(overrideWeights.getOrDefault(node.getNodeId(), 1L))
+                    .append(", 127.0.0.1, ")
                     .append(nextInternalGossipPort + (node.getNodeId() * 2))
                     .append(", 127.0.0.1, ")
                     .append(nextExternalGossipPort + (node.getNodeId() * 2))
@@ -126,8 +207,7 @@ public class AddressBookUtils {
                         .build(),
                 host,
                 nextGrpcPort + nodeId * 2,
-                nextNodeOperatorPort + nodeId * 2,
-                nextNodeOperatorPortEnabled,
+                nextNodeOperatorPort + nodeId,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
@@ -138,6 +218,7 @@ public class AddressBookUtils {
      * Returns the "classic" metadata for a node in the network, matching the names
      * used by {@link #configTxtForLocal(String, List, int, int)} to generate the
      * <i>config.txt</i> file.
+     *
      * @param nodeId the ID of the node
      * @param networkName the name of the network
      * @param host the host name or IP address
@@ -171,7 +252,6 @@ public class AddressBookUtils {
                 host,
                 nextGrpcPort + nodeId * 2,
                 nextNodeOperatorPort + nodeId,
-                true,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
@@ -179,17 +259,26 @@ public class AddressBookUtils {
     }
 
     /**
-     * Returns a stream of numeric node ids from the given address book.
+     * Returns a stream of numeric node ids from the given roster.
      *
-     * @param addressBook the address book
+     * @param roster the roster
      * @return the stream of node ids
      */
-    public static Stream<Long> nodeIdsFrom(AddressBook addressBook) {
-        return stream(addressBook.spliterator(), false).map(Address::getNodeId).map(NodeId::id);
+    public static Stream<Long> nodeIdsFrom(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        return roster.rosterEntries().stream().map(RosterEntry::nodeId);
+    }
+
+    public static RosterEntry entryById(@NonNull final Roster roster, final long nodeId) {
+        requireNonNull(roster);
+        return roster.rosterEntries().stream()
+                .filter(entry -> entry.nodeId() == nodeId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No entry for node" + nodeId));
     }
 
     /**
-     *  Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
+     * Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
      *
      * @param host is an ip or domain name, do not pass in an invalid ip such as "130.0.0.1", will set it as domain name otherwise.
      * @param port the port number
@@ -213,18 +302,8 @@ public class AddressBookUtils {
     }
 
     /**
-     * Returns Address of the node id from the given address book.
-     *
-     * @param addressBook the address book
-     * @return the stream of node ids
-     */
-    public static Address nodeAddressFrom(@NonNull final AddressBook addressBook, final long nodeId) {
-        requireNonNull(addressBook);
-        return addressBook.getAddress(NodeId.of(nodeId));
-    }
-
-    /**
      * Returns the classic fee collector account ID for a given node ID.
+     *
      * @param nodeId the node ID
      * @return the classic fee collector account ID
      */

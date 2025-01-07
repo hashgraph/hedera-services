@@ -1,33 +1,23 @@
-/*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip423;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_ASSETS_LOC;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHashAt;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -39,15 +29,17 @@ import java.util.List;
 
 public final class LongTermScheduleUtils {
 
-    static final String SENDER = "sender";
+    public static final String SENDER = "sender";
+    public static final String SENDER_KEY = "senderKey";
+    public static final String SENDER_TXN = "senderTxn";
+    public static final String NEW_SENDER_KEY = "newSenderKey";
+    public static final String RECEIVER = "receiver";
+    public static final String CREATE_TXN = "createTxn";
+    public static final String TRIGGERING_TXN = "triggeringTxn";
     static final String PAYER = "payer";
     static final String ADMIN = "admin";
     static final String EXTRA_KEY = "extraKey";
     static final String SHARED_KEY = "sharedKey";
-    static final String NEW_SENDER_KEY = "newSenderKey";
-    static final String SENDER_TXN = "senderTxn";
-    static final String CREATE_TXN = "createTxn";
-    static final String RECEIVER = "receiver";
     static final String BASIC_XFER = "basicXfer";
     static final String TWO_SIG_XFER = "twoSigXfer";
     static final String DEFERRED_XFER = "deferredXfer";
@@ -78,7 +70,7 @@ public final class LongTermScheduleUtils {
 
     private LongTermScheduleUtils() {}
 
-    static boolean transferListCheck(
+    public static boolean transferListCheck(
             HapiGetTxnRecord triggered,
             AccountID givingAccountID,
             AccountID receivingAccountID,
@@ -127,8 +119,23 @@ public final class LongTermScheduleUtils {
                         .designatingPayer(GENESIS)
                         .payingWith(payer)
                         .recordingScheduledTxn()
+                        .waitForExpiry()
                         .expiringIn(lifetime)
                         .via(via)));
         return operations.toArray(SpecOperation[]::new);
+    }
+
+    public static SpecOperation[] triggerSchedule(String schedule, long waitForSeconds) {
+        return flattened(
+                sleepForSeconds(waitForSeconds),
+                cryptoCreate("foo").via(TRIGGERING_TXN),
+                // Pause execution for 1 second to allow time for the scheduled transaction to be
+                // processed and removed from the state
+                sleepForSeconds(1),
+                getScheduleInfo(schedule).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+    }
+
+    public static SpecOperation[] triggerSchedule(String schedule) {
+        return triggerSchedule(schedule, 6);
     }
 }

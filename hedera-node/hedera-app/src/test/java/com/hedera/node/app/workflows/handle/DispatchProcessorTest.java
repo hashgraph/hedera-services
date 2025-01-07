@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -120,6 +121,8 @@ class DispatchProcessorTest {
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
     private static final TransactionInfo ETH_TXN_INFO = new TransactionInfo(
             Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION, null);
+    private static final TransactionInfo NODE_CREATE_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, NODE_CREATE, null);
 
     @Mock
     private EthereumTransactionHandler ethereumTransactionHandler;
@@ -218,9 +221,7 @@ class DispatchProcessorTest {
                 .willReturn(true);
         given(recordBuilder.exchangeRate(any())).willReturn(recordBuilder);
         given(dispatch.handleContext()).willReturn(context);
-        given(dispatch.txnCategory()).willReturn(USER);
         givenAuthorization();
-        given(dispatch.txnCategory()).willReturn(USER);
 
         subject.processDispatch(dispatch);
 
@@ -564,7 +565,6 @@ class DispatchProcessorTest {
         given(dispatchValidator.validationReportFor(dispatch)).willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         given(dispatch.handleContext()).willReturn(context);
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
 
@@ -620,6 +620,27 @@ class DispatchProcessorTest {
         assertFinished();
     }
 
+    @Test
+    void unauthorizedNodeCreateWhenPayerNotTreasurySysAdminAddressBookAdmin() {
+        given(dispatchValidator.validationReportFor(dispatch)).willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(NODE_CREATE_TXN_INFO);
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, NODE_CREATE_TXN_INFO.functionality()))
+                .willReturn(false);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.txnCategory()).willReturn(USER);
+
+        subject.processDispatch(dispatch);
+
+        verifyTrackedFeePayments();
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(UNAUTHORIZED);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
+        assertFinished();
+    }
+
     private void givenSystemEffectSuccess(@NonNull final TransactionInfo txnInfo) {
         given(systemFileUpdates.handleTxBody(stack, txnInfo.txBody())).willReturn(SUCCESS);
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
@@ -648,11 +669,7 @@ class DispatchProcessorTest {
 
     private void assertFinished(@NonNull final IsRootStack isRootStack) {
         verify(recordFinalizer).finalizeRecord(dispatch);
-        if (isRootStack == IsRootStack.YES) {
-            verify(stack).commitTransaction(any());
-        } else {
-            verify(stack).commitFullStack();
-        }
+        verify(stack).commitFullStack();
     }
 
     private void verifyTrackedFeePayments() {

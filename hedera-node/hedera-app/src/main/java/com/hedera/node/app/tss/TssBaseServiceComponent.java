@@ -57,4 +57,6 @@ public interface TssBaseServiceComponent {
     TssKeysAccessor tssKeysAccessor();
 
     TssDirectoryAccessor tssDirectoryAccessor();
+
+    TssCryptographyManager tssCryptographyManager();
 }

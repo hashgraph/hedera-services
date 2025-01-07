@@ -113,6 +113,9 @@ class ContractCallLocalHandlerTest {
     @Mock
     private GasCalculator gasCalculator;
 
+    private final ContractID invalidContract =
+            ContractID.newBuilder().evmAddress(Bytes.fromHex("abcdabcd")).build();
+
     private final InstantSource instantSource = InstantSource.system();
 
     private ContractCallLocalHandler subject;
@@ -188,6 +191,19 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(null);
+        given(contractCallLocalQuery.functionParameters()).willReturn(Bytes.EMPTY);
+        givenDefaultConfig();
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateFailsIfInvalidContractIdTest() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.contractID()).willReturn(invalidContract);
         given(contractCallLocalQuery.functionParameters()).willReturn(Bytes.EMPTY);
         givenDefaultConfig();
 

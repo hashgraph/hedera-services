@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.config.StateConfig_;
@@ -62,7 +63,7 @@ import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
@@ -75,11 +76,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -95,18 +97,21 @@ class StateFileManagerTests {
     /**
      * Temporary directory provided by JUnit
      */
-    @TempDir
     Path testDirectory;
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        FakeStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @BeforeEach
     void beforeEach() throws IOException {
+        // Don't use JUnit @TempDir as it runs into a thread race with Merkle DB DataSource release...
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile(
+                "SignedStateFileReadWriteTest", FakeStateLifecycles.CONFIGURATION);
         LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
+        MerkleDb.resetDefaultInstancePath();
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue(
                         StateCommonConfig_.SAVED_STATE_DIRECTORY,
@@ -116,6 +121,11 @@ class StateFileManagerTests {
                 .build();
         signedStateFilePath =
                 new SignedStateFilePath(context.getConfiguration().getConfigData(StateCommonConfig.class));
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     /**
@@ -147,6 +157,7 @@ class StateFileManagerTests {
 
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
+        MerkleDb.resetDefaultInstancePath();
         final DeserializedSignedState deserializedSignedState =
                 readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
         MerkleCryptoFactory.getInstance()
@@ -262,7 +273,10 @@ class StateFileManagerTests {
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final int totalStates = 100;
+        // Each state now has a VirtualMap for ROSTERS, and each VirtualMap consumes a lot of RAM.
+        // So one cannot keep too many VirtualMaps in memory at once, or OOMs pop up.
+        // Therefore, the number of states this test can use at once should be reasonably small:
+        final int totalStates = 10;
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
@@ -301,13 +315,15 @@ class StateFileManagerTests {
 
             timestamp = timestamp.plus(secondsDelta, ChronoUnit.SECONDS);
 
+            MerkleDb.resetDefaultInstancePath();
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
                     .build();
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
-            controller.markSavedState(new StateAndRound(reservedSignedState, mock(ConsensusRound.class)));
+            controller.markSavedState(
+                    new StateAndRound(reservedSignedState, mock(ConsensusRound.class), mock(ArrayList.class)));
             makeImmutable(reservedSignedState.get());
 
             if (signedState.isStateToSave()) {
@@ -400,6 +416,7 @@ class StateFileManagerTests {
                 .getSignedStatesBaseDirectory()
                 .resolve("iss")
                 .resolve("node" + SELF_ID + "_round" + issRound);
+        MerkleDb.resetDefaultInstancePath();
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
         makeImmutable(issState);
@@ -413,6 +430,7 @@ class StateFileManagerTests {
                 .getSignedStatesBaseDirectory()
                 .resolve("fatal")
                 .resolve("node" + SELF_ID + "_round" + fatalRound);
+        MerkleDb.resetDefaultInstancePath();
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
         makeImmutable(fatalState);
@@ -423,6 +441,7 @@ class StateFileManagerTests {
         // Save a bunch of states. After each time, check the states that are still on disk.
         final List<SignedState> states = new ArrayList<>();
         for (int round = 1; round <= count; round++) {
+            MerkleDb.resetDefaultInstancePath();
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(round).build();
             issState.markAsStateToSave(PERIODIC_SNAPSHOT);
@@ -440,9 +459,13 @@ class StateFileManagerTests {
             }
 
             // Verify that old states are properly deleted
+            int filesCount;
+            try (Stream<Path> list = Files.list(statesDirectory)) {
+                filesCount = (int) list.count();
+            }
             assertEquals(
                     Math.min(statesOnDisk, round),
-                    (int) Files.list(statesDirectory).count(),
+                    filesCount,
                     "unexpected number of states on disk after saving round " + round);
 
             // ISS/fatal state should still be in place

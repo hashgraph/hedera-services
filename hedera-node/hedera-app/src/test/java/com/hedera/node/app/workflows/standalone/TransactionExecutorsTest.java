@@ -21,9 +21,10 @@ import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
-import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -31,13 +32,13 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -188,6 +189,20 @@ public class TransactionExecutorsTest {
         assertThat(stringWriter.toString()).startsWith(EXPECTED_TRACE_START);
     }
 
+    @Test
+    void respectsOverrideMaxSignedTxnSize() {
+        final var overrides = Map.of(MAX_SIGNED_TXN_SIZE_PROPERTY, "42");
+        // Construct a full implementation of the consensus node State API with all genesis accounts and files
+        final var state = genesisState(overrides);
+
+        // Get a standalone executor based on this state, with an override to allow slightly longer memos
+        final var executor = TRANSACTION_EXECUTORS.newExecutor(state, overrides, null);
+
+        // With just 42 bytes allowed for signed transactions, the executor will not be able to construct
+        // a dispatch for the transaction and throw an exception
+        assertThrows(NullPointerException.class, () -> executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH));
+    }
+
     private TransactionBody contractCallMultipurposePickFunction() {
         final var callData = PICK_FUNCTION.encodeCallWithArgs();
         return newBodyBuilder()
@@ -250,6 +265,7 @@ public class TransactionExecutorsTest {
                 UNAVAILABLE_GOSSIP,
                 () -> config,
                 () -> DEFAULT_NODE_INFO,
+                () -> NO_OP_METRICS,
                 new AppThrottleFactory(
                         () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
         registerServices(appContext, config, servicesRegistry);
@@ -320,6 +336,7 @@ public class TransactionExecutorsTest {
     }
 
     private static NetworkInfo fakeNetworkInfo() {
+        final AccountID someAccount = AccountID.newBuilder().accountNum(12345).build();
         final var addressBook = new AddressBook(StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(
                                 RandomAddressBookBuilder.create(new Random())
@@ -342,19 +359,29 @@ public class TransactionExecutorsTest {
             @NonNull
             @Override
             public NodeInfo selfNodeInfo() {
-                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate()));
+                return new NodeInfoImpl(
+                        0,
+                        someAccount,
+                        0,
+                        List.of(ServiceEndpoint.DEFAULT, ServiceEndpoint.DEFAULT),
+                        getCertBytes(randomX509Certificate()));
             }
 
             @NonNull
             @Override
             public List<NodeInfo> addressBook() {
-                return List.of(
-                        new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), getCertBytes(randomX509Certificate())));
+                return List.of(new NodeInfoImpl(
+                        0,
+                        someAccount,
+                        0,
+                        List.of(ServiceEndpoint.DEFAULT, ServiceEndpoint.DEFAULT),
+                        getCertBytes(randomX509Certificate())));
             }
 
             @Override
             public NodeInfo nodeInfo(final long nodeId) {
-                return new NodeInfoImpl(0, AccountID.DEFAULT, 0, List.of(), Bytes.EMPTY);
+                return new NodeInfoImpl(
+                        0, someAccount, 0, List.of(ServiceEndpoint.DEFAULT, ServiceEndpoint.DEFAULT), Bytes.EMPTY);
             }
 
             @Override
@@ -365,11 +392,6 @@ public class TransactionExecutorsTest {
             @Override
             public void updateFrom(final State state) {
                 throw new UnsupportedOperationException("Not implemented");
-            }
-
-            @Override
-            public Roster roster() {
-                return buildRoster(addressBook);
             }
         };
     }

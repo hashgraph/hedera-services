@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -57,7 +57,6 @@ public class MigrationTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(MigrationTestingToolState.class, () -> {
                         MigrationTestingToolState migrationTestingToolState = new MigrationTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(migrationTestingToolState);
                         return migrationTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
@@ -82,7 +81,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    public static final int SOFTWARE_VERSION = 6;
+    public static final int SOFTWARE_VERSION = 7;
     public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
     private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 
@@ -197,7 +196,7 @@ public class MigrationTestingToolMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new MigrationTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

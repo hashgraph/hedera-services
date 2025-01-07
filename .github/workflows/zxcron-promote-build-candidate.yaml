@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: develop
+          ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Find Build Candidates
@@ -74,8 +74,8 @@ jobs:
               gh run cancel ${{ github.run_id }}
             fi
 
-            # Verify the commit is on develop and continue
-            if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet develop >/dev/null 2>&1; then
+            # Verify the commit is on main and continue
+            if git branch --contains "${CANDIDATE_COMMIT}" | grep --quiet main >/dev/null 2>&1; then
               git push --delete origin $(git tag --list "${TAG_PATTERN}")
               git tag --delete $(git tag --list "${TAG_PATTERN}")
               echo "build-candidate-exists=true" >> "${GITHUB_OUTPUT}"
@@ -165,11 +165,11 @@ jobs:
           egress-policy: audit
 
       - name: Report Promoted Build
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_OPERATIONS_WEBHOOK }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
+          webhook: ${{ secrets.SLACK_CITR_OPERATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
             {
               "attachments": [
@@ -230,12 +230,33 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Report failure (PagerDuty)
+        run: |
+          curl --request 'POST' \
+          --url 'https://events.pagerduty.com/v2/enqueue' \
+          --header 'Content-Type: application/json' \
+          --data '{
+            "payload": {
+              "summary": "Hedera Services - eXtended Test Suite Failure",
+              "severity": "error",
+              "source": "GitHub Actions - eXtended Test Suite",
+              "custom_details": {
+                "Fetch Latest Build Candidate": "${{ needs.determine-build-candidate.result }}",
+                "Promote Build Candidate": "${{ needs.promote-build-candidate.result }}",
+                "Source Commit": "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}>",
+                "Workflow Run": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+              }
+            },
+            "routing_key": "${{ secrets.PAGERDUTY_CITR_INTEGRATION_KEY }}",
+            "event_action": "trigger"
+          }'
+
       - name: Report failure (slack)
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        env:
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
+          webhook: ${{ secrets.SLACK_CITR_FAILURES_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
             {
               "attachments": [

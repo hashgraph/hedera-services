@@ -21,6 +21,7 @@ import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
@@ -53,6 +54,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.PathsConfig;
@@ -74,6 +76,7 @@ import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
@@ -236,8 +239,10 @@ public class Browser {
                 configBuilder.withConfigDataType(configType);
             }
 
-            rethrowIO(() ->
-                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
+                    configBuilder,
+                    getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME),
+                    getAbsolutePath(DEFAULT_OVERRIDES_YAML_FILE_NAME)));
             final Configuration configuration = configBuilder.build();
 
             setupGlobalMetrics(configuration);
@@ -274,6 +279,8 @@ public class Browser {
                     FileSystemManager.create(configuration),
                     recycleBin,
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
+            // Each platform needs a different temporary state on disk.
+            MerkleDb.resetDefaultInstancePath();
             // Create the initial state for the platform
             final HashedReservedSignedState reservedState = getInitialState(
                     configuration,
@@ -302,7 +309,7 @@ public class Browser {
                     initialState,
                     nodeId,
                     AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                    RosterUtils.buildRosterHistory(initialState.get().getState().getReadablePlatformState()));
+                    RosterUtils.buildRosterHistory((State) initialState.get().getState()));
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
@@ -311,7 +318,6 @@ public class Browser {
             // dependencies into the PlatformBuilder.
             final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)
                     .withPlatformContext(platformContext)
-                    .withConfiguration(configuration)
                     .withKeysAndCerts(keysAndCerts)
                     .build();
             platforms.put(nodeId, platform);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,12 +41,13 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.hiero.consensus.gossip.FallenBehindManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -129,11 +131,18 @@ class ReconnectProtocolTests {
 
     @BeforeEach
     void setup() {
+        MerkleDb.resetDefaultInstancePath();
+
         reconnectController = mock(ReconnectController.class);
         when(reconnectController.blockLearnerPermit()).thenReturn(true);
 
         teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
     }
 
     @DisplayName("Test the conditions under which the protocol should and should not be initiated")
@@ -299,7 +308,7 @@ class ReconnectProtocolTests {
                 Time.getCurrent());
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
-        final MerkleRoot state = mock(MerkleRoot.class);
+        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
         when(signedState.getState()).thenReturn(state);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");

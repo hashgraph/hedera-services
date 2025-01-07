@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,11 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
@@ -46,6 +48,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -67,14 +70,13 @@ import java.util.function.Function;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 @ConstructableIgnored
-public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot>
-        implements SwirldState, MerkleRoot {
+public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleStateRoot> implements SwirldState {
 
-    private static final long CLASS_ID = 0x8e300b0dfdafbb1bL;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
     /**
      * The callbacks for Hedera lifecycle events.
      */
-    private final MerkleStateLifecycles lifecycles;
+    private final StateLifecycles lifecycles;
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
@@ -85,8 +87,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * @param versionFactory a factory for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
      */
     public PlatformMerkleStateRoot(
-            @NonNull MerkleStateLifecycles lifecycles,
-            @NonNull Function<SemanticVersion, SoftwareVersion> versionFactory) {
+            @NonNull StateLifecycles lifecycles, @NonNull Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.lifecycles = requireNonNull(lifecycles);
         this.versionFactory = requireNonNull(versionFactory);
     }
@@ -146,11 +147,17 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(@NonNull final Round round, @NonNull final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void sealConsensusRound(@NonNull final Round round) {
         requireNonNull(round);
@@ -162,7 +169,9 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(@NonNull final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         lifecycles.onPreHandle(event, this);
     }
 
@@ -175,10 +184,12 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     }
 
     /**
-     * {@inheritDoc}
+     * Get writable platform state. Works only on mutable {@link PlatformMerkleStateRoot}.
+     * Call this method only if you need to modify the platform state.
+     *
+     * @return mutable platform state
      */
     @NonNull
-    @Override
     public PlatformStateModifier getWritablePlatformState() {
         if (isImmutable()) {
             throw new IllegalStateException("Cannot get writable platform state when state is immutable");
@@ -191,16 +202,17 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      *
      * @param accessor a source of values
      */
-    @Override
     public void updatePlatformState(@NonNull final PlatformStateModifier accessor) {
         writablePlatformStateStore().setAllFrom(accessor);
     }
 
     /**
-     * {@inheritDoc}
+     * Get readable platform state.
+     * Works on both - mutable and immutable {@link PlatformMerkleStateRoot} and, therefore, this method should be preferred.
+     *
+     * @return immutable platform state
      */
     @NonNull
-    @Override
     public PlatformStateAccessor getReadablePlatformState() {
         return getServices().isEmpty()
                 ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
@@ -218,7 +230,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
         final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
         return index == -1
-                ? V0540PlatformStateSchema.GENESIS_PLATFORM_STATE
+                ? V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE
                 : ((SingletonNode<PlatformState>) getChild(index)).getValue();
     }
 
@@ -232,25 +244,17 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
                 : getPlatformState().consensusSnapshot().round();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public SwirldState getSwirldState() {
-        return this;
-    }
-
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
     /**
-     * {@inheritDoc}
+     * Generate a string that describes this state.
+     *
+     * @param hashDepth the depth of the tree to visit and print
      */
     @NonNull
-    @Override
     public String getInfoString(final int hashDepth) {
         return createInfoString(hashDepth, getReadablePlatformState(), getHash(), this);
     }

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl.schemas;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -25,7 +24,6 @@ import static java.util.Spliterator.DISTINCT;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
 import com.hedera.hapi.node.base.FeeComponents;
 import com.hedera.hapi.node.base.FeeData;
@@ -42,7 +40,6 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -56,7 +53,6 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -89,7 +85,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Spliterators;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -106,11 +101,15 @@ import org.apache.logging.log4j.Logger;
 public class V0490FileSchema extends Schema {
     private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
 
-    private static final AtomicInteger NEXT_DISPATCH_NONCE = new AtomicInteger(1);
-
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
     public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
+
+    /**
+     * The default throttle definitions resource. Used as the ultimate fallback if the configured file and resource is
+     * not found.
+     */
+    private static final String DEFAULT_THROTTLES_RESOURCE = "genesis/throttles.json";
 
     /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
@@ -224,7 +223,7 @@ public class V0490FileSchema extends Schema {
         final var nodeDetails = new ArrayList<NodeAddress>();
         for (final var nodeInfo : networkInfo.addressBook()) {
             nodeDetails.add(NodeAddress.newBuilder()
-                    .stake(nodeInfo.stake())
+                    .stake(nodeInfo.weight())
                     .nodeAccountId(nodeInfo.accountId())
                     .nodeId(nodeInfo.nodeId())
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
@@ -259,25 +258,11 @@ public class V0490FileSchema extends Schema {
      */
     public static void dispatchSynthFileUpdate(
             @NonNull final SystemContext systemContext, @NonNull final FileID fileId, @NonNull final Bytes contents) {
-        final var config = systemContext.configuration();
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        final var sysAdminId = AccountID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .accountNum(config.getConfigData(AccountsConfig.class).systemAdmin())
-                .build();
-        systemContext.dispatchUpdate(TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(sysAdminId)
-                        .transactionValidStart(asTimestamp(systemContext.now()))
-                        .nonce(NEXT_DISPATCH_NONCE.getAndIncrement())
-                        .build())
-                .fileUpdate(FileUpdateTransactionBody.newBuilder()
-                        .fileID(fileId)
-                        .contents(contents)
-                        .expirationTime(maxLifetimeExpiry(systemContext))
-                        .build())
-                .build());
+        systemContext.dispatchAdmin(b -> b.fileUpdate(FileUpdateTransactionBody.newBuilder()
+                .fileID(fileId)
+                .contents(contents)
+                .expirationTime(maxLifetimeExpiry(systemContext))
+                .build()));
     }
 
     private Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
@@ -632,9 +617,11 @@ public class V0490FileSchema extends Schema {
      * @return the throttle definitions proto as a byte array
      */
     private static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
-        // Get the path to the throttles permissions file
+        // Get the path to the throttles resource
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
-        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);
+        // Get the path to the throttles file
+        final var throttleDefinitionsFile = bootstrapConfig.throttleDefsJsonFile();
+        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsFile);
 
         // If the file exists, load from there
         String throttleDefinitionsContent = null;
@@ -656,8 +643,26 @@ public class V0490FileSchema extends Schema {
                 throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
                 logger.info("Throttle definitions loaded from classpath resource {}", throttleDefinitionsResource);
             } catch (IOException | NullPointerException e) {
-                logger.fatal("Throttle definitions could not be loaded from disk or from classpath");
-                throw new IllegalStateException("Throttle definitions could not be loaded from classpath", e);
+                logger.warn(
+                        "Throttle definitions could not be loaded from classpath resource {}, using default fallback resource",
+                        throttleDefinitionsResource);
+            }
+        }
+
+        if (throttleDefinitionsContent == null) {
+            // Load the default throttle definitions resource
+            try (final var in =
+                    Thread.currentThread().getContextClassLoader().getResourceAsStream(DEFAULT_THROTTLES_RESOURCE)) {
+                throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
+                logger.info(
+                        "Throttle definitions loaded from default fallback classpath resource {}",
+                        DEFAULT_THROTTLES_RESOURCE);
+            } catch (IOException | NullPointerException e) {
+                logger.fatal(
+                        "Throttle definitions could not be loaded from default fallback classpath resource {}",
+                        DEFAULT_THROTTLES_RESOURCE);
+                throw new IllegalArgumentException(
+                        "Throttle definitions could not be loaded from default fallback classpath resource", e);
             }
         }
 

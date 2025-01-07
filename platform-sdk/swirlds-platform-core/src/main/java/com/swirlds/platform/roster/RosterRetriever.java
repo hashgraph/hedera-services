@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
+import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -61,10 +62,14 @@ public final class RosterRetriever {
      * If the active roster is missing from RosterState,
      * then fall back to reading an AddressBook from the PlatformState
      * and converting it to a Roster.
+     * <p>
+     * This method may return null in case the RosterService states are not populated,
+     * and the PlatformService state doesn't have an AddressBook,
+     * which generally represents a new network genesis case.
      *
      * @return an active Roster for the round of the state, or a Roster that represents the current AddressBook in PlatformState
      */
-    @NonNull
+    @Nullable
     public static Roster retrieveActiveOrGenesisRoster(@NonNull final State state) {
         final var roster = retrieveActive(state, getRound(state));
         if (roster != null) {
@@ -73,7 +78,36 @@ public final class RosterRetriever {
         // We are currently in bootstrap for the genesis roster, which is set in the address book
         final var readablePlatformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        return buildRoster(requireNonNull(readablePlatformStateStore.getAddressBook()));
+        return buildRoster(readablePlatformStateStore.getAddressBook());
+    }
+
+    /**
+     * Retrieve the previous Roster from the state, or null if the roster has never changed yet.
+     *
+     * The previous roster is the one that has been in use prior to the current active roster,
+     * i.e. prior to the one returned by the retrieveActiveOrGenesisRoster() method.
+     *
+     * @param state a state to fetch the previous roster from
+     * @return the previous roster, or null
+     */
+    @Nullable
+    public static Roster retrievePreviousRoster(@NonNull final State state) {
+        final ReadableSingletonState<RosterState> rosterState =
+                state.getReadableStates(ROSTER_SERVICE).getSingleton(ROSTER_STATES_KEY);
+        final List<RoundRosterPair> roundRosterPairs =
+                requireNonNull(rosterState.get()).roundRosterPairs();
+
+        if (roundRosterPairs.isEmpty()) {
+            final var readablePlatformStateStore =
+                    new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
+            return buildRoster(readablePlatformStateStore.getPreviousAddressBook());
+        }
+
+        if (roundRosterPairs.size() < 2) {
+            return null;
+        }
+
+        return retrieveInternal(state, roundRosterPairs.get(1).activeRosterHash());
     }
 
     /**
@@ -211,6 +245,7 @@ public final class RosterRetriever {
         if (addressBook == null) {
             return null;
         }
+
         return Roster.newBuilder()
                 .rosterEntries(addressBook.getNodeIdSet().stream()
                         .map(addressBook::getAddress)

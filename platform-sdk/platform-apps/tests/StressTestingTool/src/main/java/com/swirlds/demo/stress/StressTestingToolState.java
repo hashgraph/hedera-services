@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,13 @@ package com.swirlds.demo.stress;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
-import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -41,6 +43,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -58,7 +61,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     public StressTestingToolConfig config;
 
     public StressTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
     }
@@ -97,7 +100,9 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         busyWait(config.preHandleTime());
     }
 
@@ -105,7 +110,10 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

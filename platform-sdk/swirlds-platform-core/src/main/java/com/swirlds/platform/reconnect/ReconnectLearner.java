@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -29,14 +30,14 @@ import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.state.merkle.SigSet;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
@@ -55,8 +56,8 @@ public class ReconnectLearner {
     private static final Logger logger = LogManager.getLogger(ReconnectLearner.class);
 
     private final Connection connection;
-    private final AddressBook addressBook;
-    private final MerkleRoot currentState;
+    private final Roster roster;
+    private final PlatformMerkleStateRoot currentState;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
@@ -74,8 +75,8 @@ public class ReconnectLearner {
      * 		responsible for managing thread lifecycles
      * @param connection
      * 		the connection to use for the reconnect
-     * @param addressBook
-     * 		the current address book
+     * @param roster
+     * 		the current roster
      * @param currentState
      * 		the most recent state from the learner
      * @param reconnectSocketTimeout
@@ -87,8 +88,8 @@ public class ReconnectLearner {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
-            @NonNull final AddressBook addressBook,
-            @NonNull final MerkleRoot currentState,
+            @NonNull final Roster roster,
+            @NonNull final PlatformMerkleStateRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
@@ -98,13 +99,13 @@ public class ReconnectLearner {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
-        this.addressBook = Objects.requireNonNull(addressBook);
+        this.roster = Objects.requireNonNull(roster);
         this.currentState = Objects.requireNonNull(currentState);
         this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
-        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), addressBook);
+        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), roster);
     }
 
     /**
@@ -156,8 +157,9 @@ public class ReconnectLearner {
         try {
             receiveSignatures();
             reservedSignedState = reconnect();
-            validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
+            validator.validate(reservedSignedState.get(), roster, stateValidationData);
             ReconnectUtils.endReconnectHandshake(connection);
+            SignedStateFileReader.unregisterServiceStates(reservedSignedState.get());
             return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
             if (reservedSignedState != null) {
@@ -202,7 +204,7 @@ public class ReconnectLearner {
                 platformContext.getMetrics());
         synchronizer.synchronize();
 
-        final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
+        final PlatformMerkleStateRoot state = (PlatformMerkleStateRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
                 platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,
@@ -211,6 +213,7 @@ public class ReconnectLearner {
                 false,
                 false,
                 false);
+        SignedStateFileReader.registerServiceStates(newSignedState);
         newSignedState.setSigSet(sigSet);
 
         final double mbReceived = connection.getDis().getSyncByteCounter().getMebiBytes();
