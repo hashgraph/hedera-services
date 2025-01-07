@@ -40,8 +40,8 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
@@ -71,15 +71,13 @@ class StatsSigningTestingToolStateTest {
     private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedSystemTransactions;
     private ConsensusTransaction consensusTransaction;
     private StateSignatureTransaction stateSignatureTransaction;
-    private Supplier<SttTransactionPool> transactionPoolSupplier;
-    private SttTransactionPool transactionPool;
 
     @BeforeEach
     void setUp() {
-        transactionPool = mock(SttTransactionPool.class);
-        transactionPoolSupplier = mock(Supplier.class);
+        SttTransactionPool transactionPool = mock(SttTransactionPool.class);
+        Supplier<SttTransactionPool> transactionPoolSupplier = mock(Supplier.class);
         state = new StatsSigningTestingToolState(
-                mock(MerkleStateLifecycles.class), mock(Function.class), transactionPoolSupplier);
+                mock(StateLifecycles.class), mock(Function.class), transactionPoolSupplier);
         random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         event = mock(PlatformEvent.class);

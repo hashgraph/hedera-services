@@ -32,6 +32,7 @@ import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -116,7 +117,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
@@ -124,9 +125,8 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                     return;
                 }
 
-                if (areTransactionBytesSystemOnes(transaction)) {
-                    stateSignatureTransaction.accept(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                     return;
                 }
 
@@ -147,13 +147,16 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         throwIfImmutable();
 
         round.forEachEventTransaction((event, transaction) -> {
+            if (transaction.isSystem()) {
+                return;
+            }
+
             if (areTransactionBytesSystemOnes(transaction)) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
             } else {
                 handleTransaction(transaction);
             }
@@ -161,10 +164,6 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
-        if (trans.isSystem()) {
-            return;
-        }
-
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -254,6 +253,16 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
 
         final var transactionPool = transactionPoolSupplier.get();
         return wrapper.hasRemaining() && dataLength != transactionPool.getTransactionSize();
+    }
+
+    private void consumeSystemTransaction(final Transaction transaction, final Event event, final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction = StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(
+                    new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 
     private void maybeDelay() {
