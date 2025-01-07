@@ -96,6 +96,7 @@ public class BlockRetentionManager {
      */
     public void cleanupExpiredBlocks() {
         // Wait for previous deletion tasks to complete
+        System.out.println("Waiting for previous deletion tasks to complete");
         CompletableFuture.runAsync(() -> {}, cleanupExecutor).join();
 
         // Collect files into a list to avoid consuming the stream multiple times
@@ -137,6 +138,7 @@ public class BlockRetentionManager {
     private Stream<Path> listFilesIgnoreErrors() {
         Stream<Path> files = Stream.empty();
         try {
+            System.out.println("Scanning directory: " + uploadedDir);
             files = Files.list(uploadedDir);
         } catch (IOException ex) {
             log.warn("Error scanning directory: {}", ex.getMessage());
@@ -154,6 +156,7 @@ public class BlockRetentionManager {
     }
 
     private boolean isBlockFile(@NonNull final Path file) {
+        System.out.println("Checking if file is block file: " + file);
         final String fileName = file.getFileName().toString();
         final String blockFileExtensionGz =
                 FileBlockItemWriter.RECORD_EXTENSION + FileBlockItemWriter.COMPRESSION_ALGORITHM_EXTENSION;
