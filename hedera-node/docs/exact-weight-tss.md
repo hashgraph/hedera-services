@@ -223,33 +223,36 @@ a candidate roster $B$ with nodes $\{B_1, \ldots, B_m\}$ and hinTS aggregation k
 Furthermore, let
 $$w_A = \sum_{i=1}^n w(A_i)$$
 be the total weight of roster $A$, and similarly for $B$. Also,
-- Let $\mathcal{A} \subset A$ be the set of nodes in $A$ that have a Schnorr signature on the
+- Let $SA \subset A$ be the set of nodes in $A$ that have a Schnorr signature on the
 pair $(B, \textrm{ak}_B)$.
-- Let $\mathcal{B} \subset B$ be the set of nodes in $B$ that have a hinTS key in $\textrm{ak}_B$.
+- Let $SB \subset B$ be the set of nodes in $B$ that have a Schnorr key in $B$.
+- Let $HB \subset B$ be the set of nodes in $B$ that have a hinTS key in $\textrm{ak}_B$.
 
 Now, to preserve aBFT security, we must have Schnorr signatures on the pair $(B, \textrm{ak}\_B)$ from at least 1/3 of
 the weight in $A$. That is,
-$$w\_\mathcal{A} = \sum\_{A\_i \in \mathcal{A}} w(A\_i) \geq \frac{1}{3} w\_A$$
+$$w\_{SA} = \sum\_{A\_i \in {SA}} w(A\_i) \geq \frac{1}{3} w\_A$$
 
 This implies that at least one honest node with non-zero weight signed off on the transition.
 
 However, there are two further conditions that `(B, m)` must satisfy for the network to remain operational after
 adopting it.
 
-First, $\mathcal{B}$ must contain strictly more than 2/3 of the weight in $B$, so that even if just less
+First, $HB$ must contain strictly more than 2/3 of the weight in $B$, so that even if just less
 than 1/3 of the weight in $B$ is malicious, there will remain 1/3 honest weight that can construct hinTS signatures
 and keep signing blocks.
 
-$$w_\mathcal{B} = \sum_{B_i \in \mathcal{B}} w(B_i) > \frac{2}{3} w_B$$
+$$w_{HB} = \sum_{B_i \in HB} w(B_i) > \frac{2}{3} w_B$$
 
-Second, if $\mathbb{B} \subset B$ is the set of nodes in $B$ with a published Schnorr key, we must again have
+Second, we must again have
 
-$$w_\mathbb{B} = \sum_{B_i \in \mathbb{B}} w(B_i) > \frac{2}{3} w_B$$
+$$w_{SB} = \sum_{B_i \in SB} w(B_i) > \frac{2}{3} w_B$$
 
-so that again, even if just less than 1/3 of the weight in $B$ is malicious, there will remain at least 1/3 honest weight that can sign off on the next transition. (It is, of course, not necessary that $\mathcal{B} = \mathbb{B}$; only that these weight conditions are satisfied.)
+so that again, even if just less than 1/3 of the weight in $B$ is malicious, there will remain at least 1/3 honest weight that
+can sign off on the next transition. (It is, of course, not necessary that $SB = HB$; only that these weight conditions
+are satisfied.)
 
 **Important:** Given the current set of Heiro admin transactions, and the requirement that staking elections be
-done to only active nodes, it is not possible to satisfy the above inequalities on $\mathcal{B}$ and $\mathbb{B}$
+done to only active nodes, it is not possible to satisfy the above inequalities on $SB$ and $\mathbb{B}$
 while changing more than 1/3 of the weight in the network in a single transition.
 
 ## References
