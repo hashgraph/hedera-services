@@ -53,8 +53,12 @@ public class BlockItemNonceValidator implements BlockStreamValidator {
         if (item.hasEventTransaction()) {
             Bytes txnBytes = Objects.requireNonNull(item.eventTransaction()).applicationTransactionOrThrow();
             Transaction txn = Transaction.PROTOBUF.parse(txnBytes);
+            // Skip if no transaction body, but still fail on parse errors
+            if (!txn.hasBody()) {
+                return null;
+            }
             TransactionBody body = txn.bodyOrThrow();
-            return body.transactionIDOrThrow();
+            return body.hasTransactionID() ? body.transactionIDOrThrow() : null;
         }
         return null;
     }
@@ -75,7 +79,7 @@ public class BlockItemNonceValidator implements BlockStreamValidator {
                     throw new RuntimeException(e);
                 }
 
-                if (txnId != null) {
+                if (txnId != null && txnId.hasAccountID() && txnId.hasTransactionValidStart()) {
                     // Create key from accountID and validStart
                     String key = txnId.accountID().toString() + ":"
                             + txnId.transactionValidStart().toString();
