@@ -106,7 +106,7 @@ public class BlockRetentionManager {
         // Submit deletion tasks for each file
         fileList.forEach(file -> CompletableFuture.runAsync(
                 () -> {
-                    System.out.printf("Deleting expired block file: %s%n", file);
+                    System.out.printf("%s: Deleting expired block file: %s%n", Instant.now(), file);
                     quietDeleteFile(file);
                 },
                 cleanupExecutor));
@@ -171,6 +171,11 @@ public class BlockRetentionManager {
 
         final Instant now = Instant.now();
         final Instant expirationTime = now.minus(retentionPeriod);
+        System.out.println("File: " + file);
+        System.out.println("Now: " + now);
+        System.out.println("File time: " + fileTime);
+        System.out.println("Expiration time: " + expirationTime);
+        System.out.println(fileTime.isBefore(expirationTime));
         return fileTime.isBefore(expirationTime);
     }
 }
