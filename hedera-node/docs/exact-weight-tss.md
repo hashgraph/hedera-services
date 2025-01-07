@@ -251,7 +251,7 @@ so that again, even if just less than 1/3 of the weight in $B$ is malicious, the
 can sign off on the next transition. (It is, of course, not necessary that $SB = HB$; only that these weight conditions
 are satisfied.)
 
-**Important:** Given the current set of Heiro admin transactions, and the requirement that staking elections be
+**Important:** Given the current set of Hiero admin transactions, and the requirement that staking elections be
 done to only active nodes, it is not possible to satisfy the above inequalities on $SB$ and $\mathbb{B}$
 while changing more than 1/3 of the weight in the network in a single transition.
 
