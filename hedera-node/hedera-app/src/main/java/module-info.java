@@ -104,8 +104,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
-    exports com.hedera.node.app.uploader;
-    exports com.hedera.node.app.uploader.credentials;
+    exports com.hedera.node.app.blocks.cloud.uploader;
+    exports com.hedera.node.app.blocks.cloud.uploader.configs;
     exports com.hedera.node.app.tss.api;
     exports com.hedera.node.app.tss.handlers;
     exports com.hedera.node.app.tss.stores;

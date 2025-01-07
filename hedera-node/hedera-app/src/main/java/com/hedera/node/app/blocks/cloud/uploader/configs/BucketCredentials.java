@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.blocks.cloud.uploader.configs;
 
 import java.util.Arrays;
 import java.util.Objects;
