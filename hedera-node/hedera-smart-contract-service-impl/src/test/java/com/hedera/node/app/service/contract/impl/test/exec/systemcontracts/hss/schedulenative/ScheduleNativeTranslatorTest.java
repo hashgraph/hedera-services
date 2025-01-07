@@ -123,6 +123,8 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 gasCalculator,
                 configuration);
         // when/then
+        // we need to fill in the create translator map for this test to work.
+        new CreateTranslator(new CreateDecoder());
         assertTrue(subject.matches(attempt));
     }
 

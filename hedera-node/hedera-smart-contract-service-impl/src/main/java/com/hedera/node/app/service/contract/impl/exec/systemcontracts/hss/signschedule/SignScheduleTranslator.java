@@ -18,20 +18,18 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signs
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.SystemContractUtils.preprocessEcdsaSignatures;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.pbj.runtime.io.buffer.Bytes.wrap;
-import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -45,11 +43,15 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType;
+import com.hedera.node.app.spi.signatures.SignatureVerifier.SimpleKeyStatus;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Inject;
@@ -76,9 +78,13 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         requireNonNull(attempt);
         final var signScheduleEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractSignScheduleEnabled();
+        final var signScheduleFromContractEnabled = attempt.configuration()
+                .getConfigData(ContractsConfig.class)
+                .systemContractSignScheduleFromContractEnabled();
         final var authorizeScheduleEnabled =
                 attempt.configuration().getConfigData(ContractsConfig.class).systemContractAuthorizeScheduleEnabled();
-        return attempt.isSelectorIfConfigEnabled(signScheduleEnabled, SIGN_SCHEDULE_PROXY, SIGN_SCHEDULE)
+        return attempt.isSelectorIfConfigEnabled(signScheduleEnabled, SIGN_SCHEDULE_PROXY)
+                || attempt.isSelectorIfConfigEnabled(signScheduleFromContractEnabled, SIGN_SCHEDULE)
                 || attempt.isSelectorIfConfigEnabled(authorizeScheduleEnabled, AUTHORIZE_SCHEDULE);
     }
 
@@ -112,7 +118,8 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
      * @param scheduleID the schedule ID
      * @return the transaction body
      */
-    private TransactionBody bodyFor(@NonNull ScheduleID scheduleID) {
+    @VisibleForTesting
+    public TransactionBody bodyFor(@NonNull ScheduleID scheduleID) {
         requireNonNull(scheduleID);
         return TransactionBody.newBuilder()
                 .scheduleSign(ScheduleSignTransactionBody.newBuilder()
@@ -128,7 +135,8 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
      * @param attempt the call attempt
      * @return the schedule ID
      */
-    private ScheduleID scheduleIdFor(@NonNull HssCallAttempt attempt) {
+    @VisibleForTesting
+    public ScheduleID scheduleIdFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
         if (attempt.isSelector(SIGN_SCHEDULE_PROXY)) {
             return getScheduleIDForSignScheduleProxy(attempt);
@@ -150,7 +158,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         return getScheduleIDFromCall(attempt, call);
     }
 
-    private static @Nullable ScheduleID getScheduleIDFromCall(@NonNull Null HssCallAttempt attempt, Tuple call) {
+    private static @Nullable ScheduleID getScheduleIDFromCall(@NonNull HssCallAttempt attempt, Tuple call) {
         final Address scheduleAddress = call.get(SCHEDULE_ID_INDEX);
         final var number = numberOfLongZero(explicitFromHeadlong(scheduleAddress));
         final var schedule = attempt.enhancement().nativeOperations().getSchedule(number);
@@ -165,7 +173,7 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     }
 
     /**
-     * Extracts the key set for a {@code signSchedule()} call.
+     * Extracts the key set for a {@code signSchedule(address, bytes)} call.  Otherwise, delegates to the call attempt.
      *
      * @param attempt the call attempt
      * @return the key set
@@ -173,16 +181,12 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
     private Set<Key> keySetFor(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
 
+        // Check for the signSchedule(address, bytes) call.  This form of key set extraction will never be used
+        // for the HIP 756 calls and thus we treat it separately.
         if (attempt.isSelector(SIGN_SCHEDULE)) {
             return getKeyForSignSchedule(attempt);
         }
-        final var sender = attempt.enhancement().nativeOperations().getAccount(attempt.senderId());
-        requireNonNull(sender);
-        if (sender.smartContract()) {
-            return getKeysForContractSender(attempt);
-        } else {
-            return getKeysForEOASender(attempt);
-        }
+        return attempt.keySetFor();
     }
 
     @NonNull
@@ -200,51 +204,45 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         final Bytes message = Bytes.wrap(buffer.array());
 
         final var signatureBlob = (byte[]) call.get(SIGNATURE_MAP_INDEX);
-        SignatureMap sigMap;
         try {
-            sigMap = requireNonNull(SignatureMap.PROTOBUF.parse(wrap(signatureBlob)));
+            final var chainId =
+                    attempt.configuration().getConfigData(ContractsConfig.class).chainId();
+            final var sigMap = preprocessEcdsaSignatures(
+                    requireNonNull(SignatureMap.PROTOBUF.parse(wrap(signatureBlob))), chainId);
             for (var sigPair : sigMap.sigPair()) {
+                // For ED25519 and ECDSA keys, verify the key and add it to the key set if verified
                 if (sigPair.hasEd25519()) {
-                    // verify the key and add it to the set
-                    keys.add(Key.newBuilder().ed25519(sigPair.ed25519OrThrow()).build());
+                    var key = Key.newBuilder().ed25519(sigPair.pubKeyPrefix()).build();
+                    if (isVerifiedSignature(attempt, key, message, sigMap)) {
+                        keys.add(key);
+                    }
                 }
                 if (sigPair.hasEcdsaSecp256k1()) {
-                    keys.add(Key.newBuilder()
-                            .ecdsaSecp256k1(sigPair.ecdsaSecp256k1OrThrow())
-                            .build());
+                    var key = Key.newBuilder()
+                            .ecdsaSecp256k1(sigPair.pubKeyPrefix())
+                            .build();
+                    if (isVerifiedSignature(attempt, key, message, sigMap)) {
+                        keys.add(key);
+                    }
                 }
             }
-        } catch (@NonNull final ParseException | NullPointerException ex) {
+        } catch (@NonNull final ParseException | NullPointerException | IllegalArgumentException ex) {
             throw new HandleException(INVALID_TRANSACTION_BODY);
         }
         return keys;
     }
 
-    @NonNull
-    private static Set<Key> getKeysForEOASender(@NonNull HssCallAttempt attempt) {
-        // If an Eth sender key is present, use it. Otherwise, use the account key if present.
-        Key key = attempt.enhancement().systemOperations().maybeEthSenderKey();
-        if (key != null) {
-            return Set.of(key);
-        }
-        return attempt.enhancement().nativeOperations().authorizingSimpleKeys();
-    }
-
-    @NonNull
-    private static Set<Key> getKeysForContractSender(@NonNull HssCallAttempt attempt) {
-        final var contractNum = maybeMissingNumberOf(attempt.senderAddress(), attempt.nativeOperations());
-        if (contractNum == MISSING_ENTITY_NUMBER) {
-            return emptySet();
-        }
-        if (attempt.isOnlyDelegatableContractKeysActive()) {
-            return Set.of(Key.newBuilder()
-                    .delegatableContractId(
-                            ContractID.newBuilder().contractNum(contractNum).build())
-                    .build());
-        } else {
-            return Set.of(Key.newBuilder()
-                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
-                    .build());
-        }
+    /**
+     * Verifies the signature for a given key.
+     * @param attempt the call attempt
+     * @param key the key to verify
+     * @param message the message to verify - concatenation of realm, shard, and schedule numbers
+     * @param sigMap the signature map used for verification
+     * @return true if the signature is verified, false otherwise
+     */
+    private static boolean isVerifiedSignature(
+            @NonNull HssCallAttempt attempt, Key key, Bytes message, SignatureMap sigMap) {
+        return attempt.signatureVerifier()
+                .verifySignature(key, message, MessageType.RAW, sigMap, ky -> SimpleKeyStatus.ONLY_IF_CRYPTO_SIG_VALID);
     }
 }
