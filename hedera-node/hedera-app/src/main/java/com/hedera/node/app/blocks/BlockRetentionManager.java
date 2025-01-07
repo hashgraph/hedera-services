@@ -96,7 +96,6 @@ public class BlockRetentionManager {
      */
     public void cleanupExpiredBlocks() {
         // Wait for previous deletion tasks to complete
-        System.out.println("Waiting for previous deletion tasks to complete");
         CompletableFuture.runAsync(() -> {}, cleanupExecutor).join();
 
         // Collect files into a list to avoid consuming the stream multiple times
@@ -105,12 +104,7 @@ public class BlockRetentionManager {
                 .toList();
 
         // Submit deletion tasks for each file
-        fileList.forEach(file -> CompletableFuture.runAsync(
-                () -> {
-                    System.out.printf("%s: Deleting expired block file: %s%n", Instant.now(), file);
-                    quietDeleteFile(file);
-                },
-                cleanupExecutor));
+        fileList.forEach(file -> CompletableFuture.runAsync(() -> quietDeleteFile(file), cleanupExecutor));
     }
 
     /**
@@ -138,7 +132,6 @@ public class BlockRetentionManager {
     private Stream<Path> listFilesIgnoreErrors() {
         Stream<Path> files = Stream.empty();
         try {
-            System.out.println("Scanning directory: " + uploadedDir);
             files = Files.list(uploadedDir);
         } catch (IOException ex) {
             log.warn("Error scanning directory: {}", ex.getMessage());
@@ -156,7 +149,6 @@ public class BlockRetentionManager {
     }
 
     private boolean isBlockFile(@NonNull final Path file) {
-        System.out.println("Checking if file is block file: " + file);
         final String fileName = file.getFileName().toString();
         final String blockFileExtensionGz =
                 FileBlockItemWriter.RECORD_EXTENSION + FileBlockItemWriter.COMPRESSION_ALGORITHM_EXTENSION;
@@ -174,11 +166,6 @@ public class BlockRetentionManager {
 
         final Instant now = Instant.now();
         final Instant expirationTime = now.minus(retentionPeriod);
-        System.out.println("File: " + file);
-        System.out.println("Now: " + now);
-        System.out.println("File time: " + fileTime);
-        System.out.println("Expiration time: " + expirationTime);
-        System.out.println(fileTime.isBefore(expirationTime));
         return fileTime.isBefore(expirationTime);
     }
 }
