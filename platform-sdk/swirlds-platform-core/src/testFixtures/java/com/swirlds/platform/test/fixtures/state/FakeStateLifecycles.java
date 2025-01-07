@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
@@ -71,7 +71,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
+public enum FakeStateLifecycles implements StateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
 
     public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
@@ -98,7 +98,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
             registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
             registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             registry.registerConstructable(new ClassConstructorPair(
-                    VirtualMap.class, () -> new VirtualMap(FakeMerkleStateLifecycles.CONFIGURATION)));
+                    VirtualMap.class, () -> new VirtualMap(FakeStateLifecycles.CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
                     MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
@@ -231,12 +231,12 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
 
     @Override
     public void onUpdateWeight(
-            @NonNull MerkleStateRoot state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
+            @NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
         // no-op
     }
 
     @Override
-    public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
+    public void onNewRecoveredState(@NonNull State recoveredState) {
         // no-op
     }
 }
