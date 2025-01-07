@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Nft;
@@ -74,7 +75,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expiry().seconds(),
                 headlongAddressOf(token.autoRenewAccountOrElse(ZERO_ACCOUNT_ID)),
-                Math.max(0, token.autoRenewPeriod().seconds()));
+                Math.max(0, token.autoRenewPeriodOrElse(Duration.DEFAULT).seconds()));
     }
 
     /**
@@ -290,7 +291,7 @@ public class TokenTupleUtils {
 
         return Tuple.of(
                 hederaToken,
-                0L,
+                token.initialSupply(),
                 false,
                 false,
                 false,
