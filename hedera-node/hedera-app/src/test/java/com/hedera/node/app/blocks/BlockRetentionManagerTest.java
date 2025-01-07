@@ -65,8 +65,8 @@ class BlockRetentionManagerTest {
 
     @Test
     void testScheduleCleanup() throws IOException {
-        final long retentionPeriodMs = 20;
-        final long cleanupPeriodMs = 10;
+        final long retentionPeriodMs = 200;
+        final long cleanupPeriodMs = 100;
         blockRetentionManager = new BlockRetentionManager(
                 uploadedDir, Duration.ofMillis(retentionPeriodMs), Duration.ofMillis(cleanupPeriodMs), 4);
         final Runnable cleanupTask = () -> blockRetentionManager.startCleanup();
