@@ -37,14 +37,11 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -162,15 +159,6 @@ public class ConsistencyTestingToolStateTest {
         // Given
         final var secondConsensusTransaction = mock(TransactionWrapper.class);
         final var thirdConsensusTransaction = mock(TransactionWrapper.class);
-        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(event.getConsensusTimestamp()).thenReturn(Instant.now());
-        when(event.consensusTransactionIterator())
-                .thenReturn(List.of(
-                                (ConsensusTransaction) consensusTransaction,
-                                secondConsensusTransaction,
-                                thirdConsensusTransaction)
-                        .iterator());
-
         final var stateSignatureTransactionBytes =
                 StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
@@ -213,12 +201,8 @@ public class ConsistencyTestingToolStateTest {
 
     @Test
     void preHandleEventWithMultipleSystemTransactions() {
-        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         final var secondConsensusTransaction = mock(TransactionWrapper.class);
         final var thirdConsensusTransaction = mock(TransactionWrapper.class);
-        when(event.transactionIterator())
-                .thenReturn(List.of(consensusTransaction, secondConsensusTransaction, thirdConsensusTransaction)
-                        .iterator());
         final var stateSignatureTransactionBytes =
                 StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
@@ -242,9 +226,6 @@ public class ConsistencyTestingToolStateTest {
 
     @Test
     void preHandleEventWithSystemTransaction() {
-        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(event.transactionIterator())
-                .thenReturn(Collections.singletonList(consensusTransaction).iterator());
         final var emptyStateSignatureBytes = StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureBytes);
 
@@ -281,9 +262,6 @@ public class ConsistencyTestingToolStateTest {
 
     @Test
     void preHandleEventWithDeprecatedSystemTransaction() {
-        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(event.transactionIterator())
-                .thenReturn(Collections.singletonList(consensusTransaction).iterator());
         when(consensusTransaction.isSystem()).thenReturn(true);
 
         doAnswer(invocation -> {
