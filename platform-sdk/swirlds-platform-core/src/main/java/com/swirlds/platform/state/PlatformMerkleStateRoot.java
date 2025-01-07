@@ -76,7 +76,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     /**
      * The callbacks for Hedera lifecycle events.
      */
-    private final MerkleStateLifecycles lifecycles;
+    private final StateLifecycles lifecycles;
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
@@ -87,8 +87,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      * @param versionFactory a factory for creating {@link SoftwareVersion} based on provided {@link SemanticVersion}
      */
     public PlatformMerkleStateRoot(
-            @NonNull MerkleStateLifecycles lifecycles,
-            @NonNull Function<SemanticVersion, SoftwareVersion> versionFactory) {
+            @NonNull StateLifecycles lifecycles, @NonNull Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.lifecycles = requireNonNull(lifecycles);
         this.versionFactory = requireNonNull(versionFactory);
     }

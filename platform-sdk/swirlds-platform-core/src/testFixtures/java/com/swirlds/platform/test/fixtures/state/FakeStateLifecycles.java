@@ -39,8 +39,8 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
@@ -74,7 +74,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
-public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
+public enum FakeStateLifecycles implements StateLifecycles {
     FAKE_MERKLE_STATE_LIFECYCLES;
 
     public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
@@ -101,7 +101,7 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
             registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
             registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             registry.registerConstructable(new ClassConstructorPair(
-                    VirtualMap.class, () -> new VirtualMap(FakeMerkleStateLifecycles.CONFIGURATION)));
+                    VirtualMap.class, () -> new VirtualMap(FakeStateLifecycles.CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
                     MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
@@ -240,12 +240,12 @@ public enum FakeMerkleStateLifecycles implements MerkleStateLifecycles {
 
     @Override
     public void onUpdateWeight(
-            @NonNull MerkleStateRoot state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
+            @NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
         // no-op
     }
 
     @Override
-    public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
+    public void onNewRecoveredState(@NonNull State recoveredState) {
         // no-op
     }
 }
