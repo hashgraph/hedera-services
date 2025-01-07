@@ -31,9 +31,11 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -42,6 +44,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class RedirectPrecompileSuite {
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String MULTI_KEY = "purpose";
     private static final String ACCOUNT = "anybody";
     private static final String CONTRACT = "RedirectTestContract";
@@ -86,6 +89,37 @@ public class RedirectPrecompileSuite {
                                                 .forFunction(ParsingConstants.FunctionType.ERC_BALANCE)
                                                 .withBalance(totalSupply))
                                         .gasUsed(2607L))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> decimalsOfNftFails() {
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(NON_FUNGIBLE_TOKEN)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .initialSupply(0)
+                        .maxSupply(10),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                CONTRACT,
+                                "decimalsRedirect",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .payingWith(ACCOUNT)
+                                .via(TXN)
+                                .logged()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(1_000_000))));
     }
 
     @HapiTest
