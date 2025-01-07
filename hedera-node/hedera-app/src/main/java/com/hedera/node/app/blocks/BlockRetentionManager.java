@@ -104,7 +104,12 @@ public class BlockRetentionManager {
                 .toList();
 
         // Submit deletion tasks for each file
-        fileList.forEach(file -> CompletableFuture.runAsync(() -> quietDeleteFile(file), cleanupExecutor));
+        fileList.forEach(file -> CompletableFuture.runAsync(
+                () -> {
+                    System.out.printf("Deleting expired block file: %s%n", file);
+                    quietDeleteFile(file);
+                },
+                cleanupExecutor));
     }
 
     /**
