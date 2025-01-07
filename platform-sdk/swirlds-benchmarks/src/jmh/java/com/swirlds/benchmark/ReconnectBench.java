@@ -21,6 +21,7 @@ import com.swirlds.benchmark.reconnect.MerkleBenchmarkUtils;
 import com.swirlds.benchmark.reconnect.StateBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.util.ArrayList;
@@ -257,6 +258,7 @@ public class ReconnectBench extends VirtualMapBaseBench {
                 delayStorageFuzzRangePercent,
                 delayNetworkMicroseconds,
                 delayNetworkFuzzRangePercent,
+                new NodeId(),
                 configuration);
     }
 }

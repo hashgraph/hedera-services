@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
@@ -76,6 +77,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
@@ -205,7 +207,7 @@ public class ServicesMain implements SwirldMain {
      * </ol>
      *  Now, note that {@link Hedera#newMerkleStateRoot()} returns {@link PlatformMerkleStateRoot}
      *  instances that delegate their lifecycle methods to an injected instance of
-     *  {@link com.swirlds.platform.state.MerkleStateLifecycles}---and the implementation of that
+     *  {@link StateLifecycles}---and the implementation of that
      *  injected by {@link Hedera#newMerkleStateRoot()} delegates these calls back to the Hedera
      *  instance itself.
      *  <p>
@@ -385,8 +387,10 @@ public class ServicesMain implements SwirldMain {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
-        rethrowIO(() ->
-                BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
+                configurationBuilder,
+                getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME),
+                getAbsolutePath(DEFAULT_OVERRIDES_YAML_FILE_NAME)));
         final Configuration configuration = configurationBuilder.build();
         checkConfiguration(configuration);
         return configuration;

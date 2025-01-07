@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public record BBMHederaAccount(
     }
 
     public int[] getFirstUint256Key() {
-        return firstContractStorageKey == Bytes.EMPTY ? null : toInts(firstContractStorageKey);
+        return Bytes.EMPTY.equals(firstContractStorageKey) ? null : toInts(firstContractStorageKey);
     }
 
     private static int[] toInts(Bytes bytes) {
