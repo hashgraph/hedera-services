@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss;
+package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * A Singleton state object that represents the status of the TSS keying process.
- * This key SHALL be used to determine the stage of the TSS keying process.
+ * Provides the ability to asynchronously sign a block hash.
  */
-public record TssStatus(TssKeyingStatus tssKeyingStatus, RosterToKey rosterToKey, @NonNull Bytes ledgerId) {}
+public interface BlockHashSigner {
+    /**
+     * Whether the signer is ready.
+     */
+    boolean isReady();
+
+    /**
+     * Returns a future that resolves to the signature of the given block hash.
+     *
+     * @param blockHash the block hash
+     * @return the future
+     */
+    CompletableFuture<Bytes> signFuture(@NonNull Bytes blockHash);
+}
