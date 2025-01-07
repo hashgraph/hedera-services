@@ -41,6 +41,11 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
 jobs:
   prepare-tag-release:
     name: Prepare Release [Tag]
@@ -55,68 +60,30 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout Code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
-        with:
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          fetch-depth: 0
-
-
-      - name: Install GnuPG Tools
+      - name: Install Semantic Version Tools
         run: |
-          if ! command -v gpg2 >/dev/null 2>&1; then
-            echo "::group::Updating APT Repository Indices"
-              sudo apt update
-            echo "::endgroup::"
-            echo "::group::Installing GnuPG Tools"
-              sudo apt install -y gnupg2
-            echo "::endgroup::"
-          fi
-
-      - name: Import GPG key
-        id: gpg_key
-        uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
-        with:
-          gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
-          passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
-          git_config_global: true
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-          git_tag_gpgsign: false
-
-      - name: Setup Node
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: 20
-
-      - name: Install Semantic Release
-        run: |
-          npm install -g semantic-release@21.0.7 @semantic-release/git@10.0.1 @semantic-release/exec@6.0.3 gradle-semantic-release-plugin@1.7.6
-          npm install -g conventional-changelog-conventionalcommits@6.1.0 @commitlint/cli@17.6.6 @commitlint/config-conventional@17.6.6
-          npm install -g marked-mangle@1.0.1 marked-gfm-heading-id@3.0.4 semantic-release-conventional-commits@3.0.0
-
-      - name: Calculate Next Version
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_AUTHOR_NAME: ${{ secrets.GIT_USER_NAME }}
-          GIT_AUTHOR_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
-          GIT_COMMITTER_NAME: ${{ secrets.GIT_USER_NAME }}
-          GIT_COMMITTER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
-        run: |
-          npx semantic-release --dry-run
-          ls -al
-          cat VERSION
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
 
       - name: Extract Tag Version
         id: tag
         run: |
-          cat VERSION
-          RELEASE_VERSION="$(cat VERSION | tr -d '[:space:]')"
-          PRERELEASE_FLAG="false"
-          [[ "${RELEASE_VERSION}" == *"-"* ]] && PRERELEASE_FLAG="true"
+          RELEASE_VERSION="$(semver get release "${{ github.ref_name }}")"
+          PRERELEASE_VERSION="$(semver get prerel "${{ github.ref_name }}")"
 
-          echo "version=${RELEASE_VERSION}" >>"${GITHUB_OUTPUT}"
+          FINAL_VERSION="${RELEASE_VERSION}"
+          PRERELEASE_FLAG="false"
+          [[ -n "${PRERELEASE_VERSION}" ]] && FINAL_VERSION="${RELEASE_VERSION}-${PRERELEASE_VERSION}"
+          [[ -n "${PRERELEASE_VERSION}" ]] && PRERELEASE_FLAG="true"
+
+          echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   release-tag:
@@ -188,28 +155,52 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: develop
+          ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Trigger ZXF Prepare Extended Test Suite
+      - name: Check Prep XTS Job State
+        id: check-xts-job
         if: ${{ needs.release-branch.result == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JOB_ENABLED="true"
+          JOB_STATE=$(gh workflow list --all --json name,state | jq -r '.[]|select(.name=="ZXF: Prepare Extended Test Suite")|.state')
+          [[ "${JOB_STATE}" == "disabled_manually" ]] && JOB_ENABLED="false"
+          echo "enabled=${JOB_ENABLED}" >> $GITHUB_OUTPUT
+
+      - name: Trigger ZXF Prepare Extended Test Suite
+        if: ${{ needs.release-branch.result == 'success' && steps.check-xts-job.outputs.enabled == 'true' }}
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
         with:
           workflow: .github/workflows/zxf-prepare-extended-test-suite.yaml
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-          ref: develop # ensure we are always using the workflow definition from the develop branch
+          ref: main # ensure we are always using the workflow definition from the main branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{ "ref": "${{ inputs.ref }}" }'
 
-      - name: Trigger ZXF Deploy Integration
+      - name: Check Integration Job State
+        id: check-integration-job
         if: ${{ needs.release-branch.result == 'success' &&
+            (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
+            !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JOB_ENABLED="true"
+          JOB_STATE=$(gh workflow list --all --json name,state | jq -r '.[]|select(.name=="ZXF: [Node] Deploy Integration Network Release")|.state')
+          [[ "${JOB_STATE}" == "disabled_manually" ]] && JOB_ENABLED="false"
+          echo "enabled=${JOB_ENABLED}" >> $GITHUB_OUTPUT
+
+      - name: Trigger ZXF Deploy Integration
+        if: ${{ needs.release-branch.result == 'success' && steps.check-integration-job.outputs.enabled == 'true' &&
           (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
           !cancelled() }}
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
         with:
           workflow: .github/workflows/node-zxf-deploy-integration.yaml
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-          ref: develop # ensure we are always using the workflow definition from the develop branch
+          ref: main # ensure we are always using the workflow definition from the main branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{
               "ref": "${{ inputs.ref }}",
@@ -233,7 +224,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: develop
+          ref: main
           fetch-depth: '0'
 
       - name: Checkout Hedera Protobufs Code
