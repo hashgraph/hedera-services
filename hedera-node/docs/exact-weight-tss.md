@@ -1,13 +1,14 @@
 ## Exact-weight TSS
 
-A **threshold signature scheme (TSS)** allows a group of parties to collectively sign a message by aggregating their
+A **threshold signature scheme (TSS)** lets a group of parties collectively sign a message by aggregating their
 partial signatures. The **access structure** of a TSS is the set of subsets of the parties whose partial signatures
 can be combined to form a valid signature. For an aBFT proof-of-stake blockchain, the ideal access structure at any
-point in the protocol includes any set of nodes holding at least 1/3 of the total stake. This means the TSS must support
-arbitrarily precise (in the case of Hiero, 64-bit) party weights.
+point in the protocol includes any set of nodes holding at least 1/3 of the total consensus weight. In a Hiero network,
+consensus weights are the whole number of HBARs staked to each node, and hence require 64-bit precision since each
+network has a fixed supply of 50B HBAR.
 
 Ignoring the amount of work and party interactions required of a verifier, it is relatively straightforward to design
-such a TSS. It is enormously harder to design an **efficient** TSS with this property. Efficiency demands,
+such a TSS. It is much harder to design an **efficient** TSS with this property. Efficiency demands,
 - A stable, succinct **ledger identity** that verifiers can trust during any period since adoption of the TSS in which
 the network's aBFT properties are not compromised; no matter how many nodes are added or removed, or change their
 signing keys.
@@ -15,8 +16,8 @@ signing keys.
 - **Fixed-cost, non-interactive verification** that is again independent of the size of the network.
 
 Hiero uses an efficient exact-weight TSS where signing works via the **hinTS** scheme published in [1], and the
-ledger's identity is the hash of the ids, weights, and Schnorr public keys of the permissioned nodes in the network at
-the time the TSS was adopted.
+ledger's identity is the hash of the ids, weights, and Schnorr public keys of the permissioned nodes in the network
+at the time the TSS was adopted.
 
 This document provides the high-level design of how Hiero TSS is implemented.
 
@@ -51,8 +52,12 @@ proving via recursive SNARK that a set of node ids, weights, Schnorr keys; and a
 from the ledger id with each transition in the derivation having valid Schnorr signatures from nodes with at least 1/3
 of the weight in the source roster.
 
-The node software combines these services to achieve TSS by setting the binary strings in the `HistoryService` proofs
-to the verification keys computed by the `HintsService` for the corresponding rosters.
+The node software combines these services to achieve TSS by setting the binary strings in the `HistoryService` proof
+for each roster to the concatenation of two items:
+1. The verification key computed by the `HintsService` for that roster.
+2. The minimum trustable threshold weight that must be presented to a verifier along with a signature for this
+verification key. **Important:** This means 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
+50B HBAR (unless all HBAR were in fact staked to nodes in the roster).
 
 Despite their separate responsibilities, both the `HintsService` and `HistoryService` share a high-level design that
 we call the `RosterCompanionService`. This abstraction is a service whose goal is to derive some **primary state** for
@@ -190,13 +195,14 @@ the ledger id.
 
 The TSS system is then just the combination of the `HintsService` and `HistoryService` with the `RosterService`, with
 the `HistoryService` metadata always set to the verification key of the `HintsService` for the current roster. The
-complete ledger signature $S_L$ on a message $\textrm{msg}$ thus combines a hinTS signature $S_h$ on $\textrm{msg}$ with
-a proof $P_{\textrm{vk}}$ that the verification key $\textrm{vk}$ in $S_h$ is exactly the metadata in a chain of trusted
+complete ledger signature $S_L$ on a message $\textrm{msg}$ thus combines a hinTS signature $S_h$ with proven
+threshold $\mathcal{T_S}$ at least a claimed minimum threshold $\mathcal{T}$ on $\textrm{msg}$ with a proof
+$P_{\textrm{vk},\mathcal{T}}$ that the pair $(\textrm{vk}, \mathcal{T})$ is exactly the metadata in a chain of trusted
 `(roster, metadata)` pairs extending from a well-known ledger id `I`. That is,
 
-$$ S_L[\textrm{msg}] = (S_h[\textrm{msg}], P_{\textrm{vk}})$$
+$$ S_L[\textrm{msg}] = (S_h[\textrm{msg}], P_{\textrm{vk},\mathcal{T}})$$
 
-An entity interested in verifying the signatures of a Hiero network will then,
+An verifier of the signatures of a Hiero network will then,
 - Validate out-of-band through some means that `I` is, in fact, the ledger id of the Hiero network in question.
 - Deploy a generic hinTS verifier, *extended with* the ability to verify proofs asserting a chain-of-trust from `I`.
 - Given a signature $S_L$ on $\textrm{msg}$ message $\textrm{msg}$, first check that $P_{\textrm{vk}}$ is valid, and
@@ -208,6 +214,42 @@ There are only a few other details; namely,
 - The `IngestWorkflow` must reject user transactions during the bootstrap phase.
 - The `BlockStreamManager` must include every round in the genesis block until the TSS system is ready. (And thus it
 must be possible to tell the platform not to use any of these rounds for state saving or reconnect.)
+
+#### Implied limitations on the transition phase
+
+Consider a transition from roster $A$ with nodes $\{A_1, \ldots, A_n\}$ and hinTS aggregation key $\textrm{ak}_A$ to
+a candidate roster $B$ with nodes $\{B_1, \ldots, B_m\}$ and hinTS aggregation key $\textrm{ak}_B$.
+
+Furthermore, let
+$$w_A = \sum_{i=1}^n w(A_i)$$
+be the total weight of roster $A$, and similarly for $B$. Also,
+- Let $\mathcal{A} \subset A$ be the set of nodes in $A$ that have a Schnorr signature on the
+pair $(B, \textrm{ak}_B)$.
+- Let $\mathcal{B} \subset B$ be the set of nodes in $B$ that have a hinTS key in $\textrm{ak}_B$.
+
+Now, to preserve aBFT security, we must have Schnorr signatures on the pair $(B, \textrm{ak}_B)$ from at least 1/3 of
+the weight in $A$. That is,
+$$w_\mathcal{A} = \sum_{A_i \in \mathcal{A}} w(A_i) \geq \frac{1}{3} w_A$$
+
+This implies that at least one honest node with non-zero weight signed off on the transition.
+
+However, there are two further conditions that `(B, m)` must satisfy for the network to remain operational after
+adopting it.
+
+First, $\mathcal{B}$ must contain strictly more than 2/3 of the weight in $B$, so that even if just less
+than 1/3 of the weight in $B$ is malicious, there will remain 1/3 honest weight that can construct hinTS signatures
+and keep signing blocks.
+$$w_\mathcal{B} = \sum_{B_i \in \mathcal{B}} w(B_i) > \frac{2}{3} w_B$$
+
+Second, if $\mathbb{B} \subset B$ is the set of nodes in $B$ with a published Schnorr key, we must again have
+$$w_\mathbb{B} = \sum_{B_i \in \mathbb{B}} w(B_i) > \frac{2}{3} w_B$$
+so that again, even if just less than 1/3 of the weight
+in $B$ is malicious, there will remain at least 1/3 honest weight that can sign off on the next transition. (It is,
+of course, not necessary that $\mathcal{B} = \mathbb{B}$; only that these weight conditions are satisfied.)
+
+**Important:** Given the current set of Heiro admin transactions, and the requirement that staking elections be
+done to only active nodes, it is not possible to satisfy the above inequalities on $\mathcal{B}$ and $\mathbb{B}$
+while changing more than 1/3 of the weight in the network in a single transition.
 
 ## References
 
