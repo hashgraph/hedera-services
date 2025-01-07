@@ -53,7 +53,6 @@ import org.junit.jupiter.api.Test;
 class ISSTestingToolStateTest {
 
     private static final int RUNNING_SUM_INDEX = 3;
-    private Random random;
     private ISSTestingToolMain main;
     private ISSTestingToolState state;
     private PlatformStateModifier platformStateModifier;
@@ -68,7 +67,7 @@ class ISSTestingToolStateTest {
     void setUp() {
         state = new ISSTestingToolState(mock(MerkleStateLifecycles.class), mock(Function.class));
         main = mock(ISSTestingToolMain.class);
-        random = new Random();
+        final var random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);

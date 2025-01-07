@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -241,11 +242,10 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull Event event,
-            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         event.forEachTransaction(transaction -> {
             if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
             }
         });
     }
@@ -257,7 +257,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -265,9 +265,8 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             final ConsensusEvent event = eventIterator.next();
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
-                if (areTransactionBytesSystemOnes(transaction)) {
-                    stateSignatureTransaction.accept(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                 } else {
                     handleTransaction(transaction);
                 }
@@ -331,6 +330,16 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      */
     private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 4;
+    }
+
+    private void consumeSystemTransaction(final Transaction transaction, final Event event, final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction = StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(
+                    new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 
     /**
