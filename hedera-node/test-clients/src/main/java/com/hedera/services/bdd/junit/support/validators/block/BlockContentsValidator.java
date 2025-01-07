@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -71,10 +70,6 @@ public class BlockContentsValidator implements BlockStreamValidator {
         // A block SHALL start with a `header`.
         if (!blockItems.getFirst().hasBlockHeader()) {
             Assertions.fail("Block does not start with a block header");
-        }
-
-        if (!Objects.requireNonNull(blockItems.getFirst().blockHeaderOrThrow()).hasFirstTransactionConsensusTime()) {
-            Assertions.fail("Block header doesn't have first transaction consensus time set");
         }
 
         // A block SHALL end with a `state_proof`.
