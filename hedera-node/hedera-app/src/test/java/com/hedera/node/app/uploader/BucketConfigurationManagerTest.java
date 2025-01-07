@@ -44,9 +44,9 @@ public class BucketConfigurationManagerTest {
 
     private BucketConfigurationManager subject;
     private static final CloudBucketConfig AWS_DEFAULT_BUCKET_CONFIG = new CloudBucketConfig(
-            "default-aws-bucket", "aws", "https://s3.amazonaws.com", "us-east-1", "hedera-mainnet-blocks", true);
+            "default-aws-bucket", "aws", "https://s3.amazonaws.com", "us-east-1", "bucket-name", true);
     private static final CloudBucketConfig GCP_DEFAULT_BUCKET_CONFIG = new CloudBucketConfig(
-            "default-gcp-bucket", "gcp", "https://storage.googleapis.com", "", "hedera-mainnet-blocks", true);
+            "default-gcp-bucket", "gcp", "https://storage.googleapis.com", "", "bucket-name", true);
 
     private static final ObjectMapper mapper = new ObjectMapper();
 

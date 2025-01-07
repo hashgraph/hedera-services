@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.blocks.cloud.uploader.configs;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
  * @param accessKey the access key of the bucket
  * @param secretKey the secret key of the bucket
  */
-public record BucketCredentials(String accessKey, String secretKey) {
+public record BucketCredentials(@NonNull String accessKey, @NonNull String secretKey) {
     public BucketCredentials {
         Objects.requireNonNull(accessKey, "access key cannot be null");
         Objects.requireNonNull(secretKey, "secret key cannot be null");

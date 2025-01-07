@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.cloud.uploader.configs;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Objects;
 
@@ -24,7 +25,7 @@ import java.util.Objects;
  *
  * @param credentials the credentials
  */
-public record OnDiskBucketConfig(Map<String, BucketCredentials> credentials) {
+public record OnDiskBucketConfig(@NonNull Map<String, BucketCredentials> credentials) {
     public OnDiskBucketConfig {
         Objects.requireNonNull(credentials, "Credentials map cannot be null");
     }

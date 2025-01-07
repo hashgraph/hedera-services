@@ -18,6 +18,9 @@ package com.hedera.node.config.types;
 
 import static java.util.Objects.requireNonNull;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * Configuration for the cloud bucket uploader.
  * @param name       the name
@@ -27,11 +30,11 @@ import static java.util.Objects.requireNonNull;
  * @param bucketName the name of the bucket
  */
 public record CloudBucketConfig(
-        String name,
-        String provider,
-        String endpoint,
-        String region, // required for AWS only
-        String bucketName,
+        @NonNull String name,
+        @NonNull String provider,
+        @NonNull String endpoint,
+        @Nullable String region, // required for AWS only
+        @NonNull String bucketName,
         boolean enabled) {
     public CloudBucketConfig {
         requireNonNull(name, "name cannot be null");

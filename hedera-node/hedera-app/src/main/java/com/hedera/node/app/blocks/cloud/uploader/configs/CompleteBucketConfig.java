@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.blocks.cloud.uploader.configs;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * The complete bucket configuration combining configuration file with on disk credentials.
  *
@@ -27,10 +30,10 @@ package com.hedera.node.app.blocks.cloud.uploader.configs;
  * @param credentials the credentials for the bucket
  */
 public record CompleteBucketConfig(
-        String name,
-        String provider,
-        String endpoint,
-        String region,
-        String bucketName,
+        @NonNull String name,
+        @NonNull String provider,
+        @NonNull String endpoint,
+        @Nullable String region,
+        @NonNull String bucketName,
         boolean enabled,
-        BucketCredentials credentials) {}
+        @NonNull BucketCredentials credentials) {}
