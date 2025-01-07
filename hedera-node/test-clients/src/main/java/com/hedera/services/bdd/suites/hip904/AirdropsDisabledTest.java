@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.hip904;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -55,6 +54,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -120,9 +120,9 @@ import org.junit.jupiter.api.DynamicTest;
 public class AirdropsDisabledTest {
     private static final Logger LOG = LogManager.getLogger(AirdropsDisabledTest.class);
 
-    private static String owner = "owner";
-    private static String receiver = "receiver";
-    private static String fungibleToken = "fungibleToken";
+    private static final String owner = "owner";
+    private static final String receiver = "receiver";
+    private static final String fungibleToken = "fungibleToken";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
@@ -315,67 +315,59 @@ public class AirdropsDisabledTest {
             j1++;
         }
 
-        return defaultHapiSpec("canMergeCreate2ChildWithHollowAccountFungibleTransfersUnlimitedAssociations")
-                .given(givenOps)
-                .when(
-                        // GET BYTECODE OF THE CREATE2 CONTRACT
-                        sourcing(() -> contractCallLocal(
-                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    final var tcInitcode = (byte[]) results[0];
-                                    testContractInitcode.set(tcInitcode);
-                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
-                                })
-                                .payingWith(GENESIS)
-                                .nodePayment(ONE_HBAR)),
-                        // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
-                        sourcing(() -> setExpectedCreate2Address(
-                                contract, salt, expectedCreate2Address, testContractInitcode)),
+        return hapiTest(flattened(
+                givenOps,
+                // GET BYTECODE OF THE CREATE2 CONTRACT
+                sourcing(() -> contractCallLocal(
+                                contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                        .exposingTypedResultsTo(results -> {
+                            final var tcInitcode = (byte[]) results[0];
+                            testContractInitcode.set(tcInitcode);
+                            LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                        })
+                        .payingWith(GENESIS)
+                        .nodePayment(ONE_HBAR)),
+                // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
+                sourcing(() -> setExpectedCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)),
 
-                        // Now create a hollow account at the desired address
-                        lazyCreateAccountWithFungibleTransfers(creation, expectedCreate2Address, ftIds, partyAlias),
-                        getTxnRecord(creation)
-                                .andAllChildRecords()
-                                .logged()
-                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
-                        sourcing(() -> getAccountInfo(hollowCreationAddress.get())
+                // Now create a hollow account at the desired address
+                lazyCreateAccountWithFungibleTransfers(creation, expectedCreate2Address, ftIds, partyAlias),
+                getTxnRecord(creation)
+                        .andAllChildRecords()
+                        .logged()
+                        .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                sourcing(() -> getAccountInfo(hollowCreationAddress.get())
+                        .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
+                        .logged()),
+                // deploy create2
+                sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        .sending(tcValue)
+                        .via("TEST2")),
+                getTxnRecord("TEST2").andAllChildRecords().logged(),
+                captureOneChildCreate2MetaFor(
+                        "Merged deployed contract with hollow account", "TEST2", mergedMirrorAddr, mergedAliasAddr),
+
+                // check failure when trying to deploy again
+                sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        /* Cannot repeat CREATE2
+                        with same args without destroying the existing contract */
+                        .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
+
+                // check created contract
+                sourcing(() -> getContractInfo(mergedAliasAddr.get())
+                        .has(contractWith()
+                                .defaultAdminKey()
+                                .maxAutoAssociations(fungibleTransfersSize)
                                 .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
-                                .logged()))
-                .then(
-                        // deploy create2
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)
-                                .via("TEST2")),
-                        getTxnRecord("TEST2").andAllChildRecords().logged(),
-                        captureOneChildCreate2MetaFor(
-                                "Merged deployed contract with hollow account",
-                                "TEST2",
-                                mergedMirrorAddr,
-                                mergedAliasAddr),
-
-                        // check failure when trying to deploy again
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                /* Cannot repeat CREATE2
-                                with same args without destroying the existing contract */
-                                .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
-
-                        // check created contract
-                        sourcing(() -> getContractInfo(mergedAliasAddr.get())
-                                .has(contractWith()
-                                        .defaultAdminKey()
-                                        .maxAutoAssociations(fungibleTransfersSize)
-                                        .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
-                                        .memo(LAZY_MEMO)
-                                        .balance(tcValue))
-                                .logged()),
-                        sourcing(
-                                () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
-                        sourcing(() ->
-                                assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
+                                .memo(LAZY_MEMO)
+                                .balance(tcValue))
+                        .logged()),
+                sourcing(() -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
+                sourcing(() -> assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode))));
     }
 
     @HapiTest

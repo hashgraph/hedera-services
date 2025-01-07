@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -55,12 +54,6 @@ public interface EmbeddedHedera {
      * @return the fake state of the embedded Hedera node
      */
     FakeState state();
-
-    /**
-     * Returns the fake TSS base service of the embedded Hedera node.
-     * @return the fake TSS base service of the embedded Hedera node
-     */
-    FakeTssBaseService tssBaseService();
 
     /**
      * Returns the software version of the embedded Hedera node.
