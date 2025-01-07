@@ -527,7 +527,7 @@ public class SystemFileExportsTest {
             assertNotNull(updateItem, "No update for " + fileNumProperty + " found in post-upgrade txn");
             final var synthOp = updateItem.body().getFileUpdate();
             final var addressBookId =
-                    new FileID(0, 0, Long.parseLong(spec.startupProperties().get("files.addressBook")));
+                    new FileID(0, 0, Long.parseLong(spec.startupProperties().get(fileNumProperty)));
             assertEquals(addressBookId, toPbj(synthOp.getFileID()));
             try {
                 final var updatedAddressBook = NodeAddressBook.PROTOBUF.parse(
