@@ -11,8 +11,7 @@ The implementation of a native fixed fee system for the submission of topic mess
 ## Goals
 
 1. Update existing `ConsensusCreateTopic`, `ConsensusUpdateTopic` and `ConsensusTopicInfo` to support custom fees.
-2. Introduce a new `ConsensusApproveAllowance` operation.
-3. Update existing `ConsensusSubmitMessage` to validate and charge custom fees, if needed.
+2. Update existing `ConsensusSubmitMessage` to validate and charge custom fees, if needed.
 
 ## Architecture
 
@@ -100,91 +99,21 @@ repeated Key fee_exempt_key_list = 9;
 Note:
 In `consensus_update_topic`, `custom_fees` and `fee_exempt_key_list` are wrapped in order to differentiate between setting an empty list and not updating the list.
 
-Create new transaction type as defined in the HIP:
+The `ConsensusSubmitMessageTransactionBody` message is updated to include the optional max_custom_fees property for specifying the maximum fee that the user is willing to pay for the message.
 
 ```protobuf
-message ConsensusApproveAllowanceTransactionBody {
+message ConsensusSubmitMessageTransactionBody {
+  [..]
   /**
-   * List of hbar allowances approved by the account owner.
-   */
-  repeated ConsensusCryptoFeeScheduleAllowance consensus_crypto_fee_schedule_allowances = 4;
+    * The maximum custom fee that the user is willing to pay for the message. This field will be ignored if `accept_all_custom_fees` is set to `true`.
+    */
+  repeated FixedFee max_custom_fees = 4;
 
   /**
-   * List of fungible token allowances approved by the account owner.
+   * If set to true, the transaction will accept all custom fees from the topic id
    */
-  repeated ConsensusTokenFeeScheduleAllowance consensus_token_fee_schedule_allowances = 5;
+  bool accept_all_custom_fees = 5;
 }
-```
-
-```protobuf
-/**
- * An approved allowance of hbar transfers for a spender.
- */
-message ConsensusCryptoFeeScheduleAllowance {
-  /**
-   * The account ID of the hbar owner (ie. the grantor of the allowance).
-   */
-  AccountID owner = 1;
-
-  /**
-   * The topic ID enabled to spend fees from the hbar allowance.
-   */
-  TopicID topicId = 2;
-
-  /**
-   * The amount of the spender's allowance in tinybars.
-   */
-  uint64 amount = 3;
-
-  /**
-   * The maximum amount of the spender's token allowance per message.
-   */
-  uint64 amount_per_message = 4;
-}
-```
-
-```protobuf
-/**
- * An approved allowance of fungible token transfers for a spender.
- */
-message ConsensusTokenFeeScheduleAllowance {
-  /**
-   * The token that the allowance pertains to.
-   */
-  TokenID tokenId = 1;
-
-  /**
-   * The account ID of the token owner (ie. the grantor of the allowance).
-   */
-  AccountID owner = 2;
-
-  /**
-   * The topic ID enabled to spend fees from the token allowance.
-   */
-  TopicID topicId = 3;
-
-  /**
-   * The maximum amount of the spender's token allowance.
-   */
-  uint64 amount = 4;
-
-  /**
-   * The maximum amount of the spender's token allowance per message.
-   */
-  uint64 amount_per_message = 5;
-}
-```
-
-Add new RPC to `consensus_service.proto` :
-
-```protobuf
-/**
- * Approve allowance for custom fees.
- * <p>
- * Set fee limits per topic.
- * It is applicable only for topics with custom fees.
- */
-rpc approveAllowance (Transaction) returns (TransactionResponse);
 ```
 
 ### Fees
@@ -263,8 +192,9 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
       - Check if fee collector account is usable (not deleted/expired).
       - Check if the fee type is `fixed`.
       - If the fee has denominating token:
-        - Check if the token is usable ()
-        - Validate fee amount - TBD MAX_FEE is not defined in the HIP, and it is used in the context of SDK only
+        - Check if the token is usable
+        - Check if the token is fungible
+        - Check if the fee amount is no more then the token's max supply
         - Check if the collector is associated with the token
     - Store the values of the new fields in the state.
 
@@ -290,50 +220,26 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
         - Check if the collector is associated with the token
     - Update the values of the new fields in the state.
 
-#### ConsensusApproveAllowance
-
-- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `ConsensusApproveAllowance` transaction type
-- Update `ConsensusServiceDefinition` class to include the new RPC method definition for approve allowance.
-- Implement new `ConsensusApproveAllowanceHandler` class that should be invoked when the gRPC server handles `ConsensusApproveAllowanceTransaction` transactions. The class should be responsible for:
-  - Verify that the amounts are set and positive values.
-  - Pure-checks:
-    - Validate there are no duplications in `ConsensusCryptoFeeScheduleAllowance` grouped by `owner` and `topicId`
-    - Validate there are no duplications in `ConsensusTokenFeeScheduleAllowance` grouped
-      by `tokenId`, `owner`, `topicId`
-    - Validate the `amounts` are positive
-    - Validate that the `amount` is no bigger than `amount_per_message`
-  - Pre-handle:
-    - The transaction must be signed by the sender.
-    - TBD - more validations ?
-  - Handle:
-    - Any additional validation depending on config or state, i.e. semantics checks
-      - Validate that the `topicId`s are usable(existing/not deleted/not expired)
-    - Check that the sender account is a valid one. That is an existing account, and it is not deleted or expired.
-    - Add approved allowance:
-      - Set `ConsensusCryptoFeeScheduleAllowance` to the account.
-      - Set `ConsensusTokenFeeScheduleAllowance` to the account
-  - TBD Fee calculation logic
-- Interact with the account state
-- TBD Update throttle definitions to include the new `ConsensusApproveAllowance` transaction type
-  - Throttle definitions are specified in `throttles.json` files
-  - There are different configurations containing throttle definitions under `hedera-node/configuration/` for the different environments e.g. testnet, previewnet, mainnet
-  - There is also a default throttle definition file in `resources/genesis/throttles.json` that is used during the genesis
-  - Add the new `ConsensusApproveAllowance` transaction type to the `ThroughputLimits` bucket
-  - Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
-
 #### ConsensusSubmitMessage
 
 - Update `ConsensusSubmitMessageHandler`
   - Handle:
-    - Check if the topic has custom fees:
-      - Check if the sender has the needed allowance set.
-      - Dispatch a crypto transfer transaction to pay the fees.
+    - Check if the topic has custom fees.
+    - Check if the payer is fee exempt.
+    - Check if max fee limit covers the total fees.
+    - Build and Dispatch a crypto transfer transaction to pay the fees.
 
 ## Acceptance Tests
 
 ### Topic create acceptance tests
 
-* todo
+* Create topic with `feeScheduleKey`. The topic should have a `feeScheduleKey`.
+* Create topic with `feeExemptKeyList`. The topic should have a `feeExemptKeyList`.
+* Create topic with fixed HBAR `customFees`. The topic should have fixed HBAR `customFees`.
+* Create topic with fixed fungible token `customFees`. The topic should have fixed fungible token `customFees`.
+* Create topic with invalid custom fee. The transaction should fail.
+* Create topic with more than ten custom fees. The transaction should fail.
+* Create topic with more than ten fee exempt keys. The transaction should fail.
 
 ### Topic update acceptance tests
 
@@ -349,10 +255,15 @@ rpc approveAllowance (Transaction) returns (TransactionResponse);
 * Update the topic with a fee exempt key list to remove all entries. Now the topic should have no entries.
 * Update the feeScheduleKey and sign with the old one. The transaction should fail with `INVALID_SIGNATURE`
 
-### Approve allowance acceptance tests
-
-* todo
-
 ### Submit message acceptance tests
 
-* todo
+* Submit a message to a topic with no custom fees. The transaction should succeed.
+* Submit a message to a topic with HBAR custom fees and the payer has sufficient balance. The transaction should succeed.
+* Submit a message to a topic with HBAR custom fees and the payer has insufficient balance. The transaction should fail.
+* Submit a message to a topic with fungible token custom fees and the payer has sufficient balance. The transaction should
+  succeed.
+* Submit a message to a topic with fungible token custom fees and the payer has insufficient balance. The transaction should
+  fail.
+* Submit a message to a topic with custom fees and the payer is in the fee exempt list. The transaction should succeed and payer should be fee exempt.
+* Submit a message to a topic with custom fees but the max fee is not enough. The transaction should fail.
+* Submit a message with acceptAllCustomFees set to true. The transaction should succeed.

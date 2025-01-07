@@ -167,16 +167,6 @@ The `ConsensusGetInfoQuery` message includes the following fields:
 - `header`: Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
 - `topicID`: Represents the identifier of the topic for which information is being requested.
 
-#### ConsensusApproveAllowanceTransactionBody
-
-`ConsensusApproveAllowanceTransactionBody` is used in a transaction, that sets an account's fund limits, that users are willing to spend on а given topic.
-This transaction is applicable only for topics with custom fees. Without such allowance, accounts will be not able to submit messages to topics with custom fees.
-
-The `ConsensusApproveAllowanceTransactionBody` message includes the following fields:
-
-- `consensusCryptoFeeScheduleAllowances`: List of hbar allowances approved by the account owner. It contains a limit per message and a total limit of hbar that the owner is willing to pay.
-- `consensusTokenFeeScheduleAllowances`: List of fungible token allowances approved by the account owner. It contains limit per message and total limit of fungible tokens, that owner is willing to pay.
-
 #### ConsensusSubmitMessageTransactionBody
 
 `ConsensusSubmitMessageTransactionBody` is used in a transaction that submits a topic message to the Hedera network. Once the transaction is successfully executed, the receipt of the transaction will include the topic's updated sequence number and topic running hash.
@@ -187,6 +177,8 @@ The `ConsensusSubmitMessageTransactionBody` message includes the following field
 - `message`: Message to be submitted. Max size of the Transaction (including signatures) is 6KiB.
 - `topicID`: Represents the identifier of the topic to submit message to.
 - `chunkInfo`: Optional information of the current chunk in a fragmented message.
+- `maxCustomFees`: Optional list containing maximum custom fees to be paid for the transaction.
+- `acceptAllCustomFees`: Optional boolean value to accept all custom fees.
 
 ## Handlers
 
@@ -240,15 +232,9 @@ The ```consensusDeleteTopicHandler``` is responsible for handling the deletion o
 
 The `consensusGetTopicInfoHandler` is responsible for handling the retrieval of information about a specific topic in the consensus service. It validates the transaction, checks if the topic exists and is not deleted, and retrieves the topic's information such as memo, running hash, sequence number, expiration time, admin key, submit key, auto-renew period, and auto-renew account. It also calculates the fees for the get topic info operation.
 
-todo check what will be validated here
-
-### consensusApproveAllowanceHandler
-
-The `consensusApproveAllowanceHandler` is responsible for handling the alliance of funds spent on submissions of messages to a topic with custom fees. It validates the transaction and calculates the transaction fees.
-
 ### consensusSubmitMessageHandler
 
-The `ConsensusGetInfoHandler` is responsible for handling the submission of messages to topics in the consensus service. It validates the transaction, checks the topic existence and its submit key, and updates the running hash and sequence number of the topic. It also calculates the fees for the submit message operation.
+The `consensusSubmitMessageHandler` is responsible for handling the submission of messages to topics in the consensus service. It validates the transaction, checks the topic existence and its submit key, and updates the running hash and sequence number of the topic. If the topic has any custom fees, it tries to assess the fees. It also calculates the fees for the submit message operation.
 
 ## Network Response Messages
 
