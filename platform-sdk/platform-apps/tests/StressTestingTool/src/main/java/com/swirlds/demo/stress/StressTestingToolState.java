@@ -119,15 +119,16 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         event.forEachTransaction(transaction -> {
             if (!transaction.isSystem()) {
                 final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
 
-                if(stateSignatureTransaction.signature() != Bytes.EMPTY) {
-                    stateSignatureTransactionCallback.accept(
-                            new ScopedSystemTransaction<>(event.getCreatorId(),
-                                    event.getSoftwareVersion(), stateSignatureTransaction));
+                if (stateSignatureTransaction.signature() != Bytes.EMPTY) {
+                    stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
                 }
             }
         });
@@ -142,7 +143,9 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         throwIfImmutable();
 
         for (final var event : round) {
@@ -153,10 +156,9 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
 
                 final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
 
-                if(stateSignatureTransaction.signature() != Bytes.EMPTY) {
-                    stateSignatureTransactionCallback.accept(
-                            new ScopedSystemTransaction<>(event.getCreatorId(),
-                                    event.getSoftwareVersion(), stateSignatureTransaction));
+                if (stateSignatureTransaction.signature() != Bytes.EMPTY) {
+                    stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
                 } else {
                     handleTransaction(transaction);
                 }
