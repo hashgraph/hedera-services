@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -583,6 +585,65 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 assertNull(leafRec);
             }
         }
+    }
+
+    @Test
+    void inMemoryManyAddManyRemoveNoFlushTest() throws InterruptedException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
+
+        final VirtualRootNode<TestKey, TestValue> copy0 = root;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+
+        final int nCopies = 100;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+
+        // Here is the test: every elemement is added in one copy and then removed in the
+        // next copy. Every copy will contain no more than 500 elements, therefore its
+        // effective size will be small, so none of the copies should be flushed to disk
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            final int N = 1000;
+            final List<Integer> l = new ArrayList<>(N);
+            for (int i = 0; i < N; i++) {
+                l.add(i);
+            }
+            Collections.shuffle(l);
+            for (int i = 0; i < N; i++) {
+                final int keyIndex = l.get(i);
+                final TestKey key = new TestKey(keyIndex);
+                if (i % 2 == copyNo % 2) { // add
+                    final TestValue value = new TestValue(1000000 + keyIndex);
+                    root.put(key, value);
+                } else { // remove
+                    root.remove(key);
+                }
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 0; i < nCopies - 2; i++) {
+            final VirtualRootNode<TestKey, TestValue> copy = copies[i];
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(() -> copy.isMerged(), Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
+
+        root.release();
     }
 
     @Test
