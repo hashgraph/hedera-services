@@ -409,7 +409,7 @@ public class ServicesMain implements SwirldMain {
     private static NodeId ensureSingleNode(@NonNull final List<NodeId> nodesToRun) {
         requireNonNull(nodesToRun);
 
-        logger.info(STARTUP.getMarker(), "there are {} nodes set to run locally", nodesToRun.size());
+        logger.info(STARTUP.getMarker(), "The following nodes {} are set to run locally", nodesToRun);
         if (nodesToRun.isEmpty()) {
             final String errorMessage = "No nodes are configured to run locally.";
             logger.error(STARTUP.getMarker(), errorMessage);
