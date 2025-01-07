@@ -45,7 +45,7 @@ public interface HistoryLibrary {
      * @param message the message
      * @return true if the hints are valid; false otherwise
      */
-    boolean verifySchnorr(@NonNull Bytes publicKey, @NonNull Bytes message);
+    boolean verifySchnorrSignature(@NonNull Bytes publicKey, @NonNull Bytes message);
 
     /**
      * Hashes the given proof roster.
