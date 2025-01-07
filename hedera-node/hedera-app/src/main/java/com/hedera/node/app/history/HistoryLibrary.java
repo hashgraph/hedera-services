@@ -43,7 +43,7 @@ public interface HistoryLibrary {
      * Validates the Schnorr signature for the given message and public key.
      * @param publicKey the public key
      * @param message the message
-     * @return true if the hints are valid; false otherwise
+     * @return true if the Schnorr signatures are valid; false otherwise
      */
     boolean verifySchnorrSignature(@NonNull Bytes publicKey, @NonNull Bytes message);
 
