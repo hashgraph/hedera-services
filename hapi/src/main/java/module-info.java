@@ -69,6 +69,8 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.block.stream.protoc;
     exports com.hedera.hapi.block;
     exports com.hedera.hapi.services.auxiliary.tss.legacy;
+    exports com.hedera.hapi.node.state.hints;
+    exports com.hedera.hapi.node.state.history;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;

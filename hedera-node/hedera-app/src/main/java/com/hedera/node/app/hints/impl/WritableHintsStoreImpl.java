@@ -1,0 +1,278 @@
+/*
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.hints.impl;
+
+import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.HintsId;
+import com.hedera.hapi.node.state.hints.HintsKey;
+import com.hedera.hapi.node.state.hints.HintsKeySet;
+import com.hedera.hapi.node.state.hints.PartyAssignment;
+import com.hedera.hapi.node.state.hints.PreprocessVoteId;
+import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
+
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
+import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
+import static java.util.Objects.requireNonNull;
+
+/**
+ * Default implementation of {@link WritableHintsStore}.
+ */
+public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements WritableHintsStore {
+    private static final Logger log = LogManager.getLogger(WritableHintsStoreImpl.class);
+
+    private final WritableKVState<HintsId, HintsKeySet> hintsKeys;
+    private final WritableSingletonState<HintsConstruction> nextConstruction;
+    private final WritableSingletonState<HintsConstruction> activeConstruction;
+    private final WritableKVState<PreprocessVoteId, PreprocessedKeysVote> votes;
+
+    public WritableHintsStoreImpl(@NonNull WritableStates states) {
+        super(states);
+        this.hintsKeys = states.get(HINTS_KEY);
+        this.nextConstruction = states.getSingleton(NEXT_CONSTRUCTION_KEY);
+        this.activeConstruction = states.getSingleton(ACTIVE_CONSTRUCTION_KEY);
+        this.votes = states.get(PREPROCESSING_VOTES_KEY);
+    }
+
+    @NonNull
+    @Override
+    public HintsConstruction getOrCreateConstructionFor(
+            @NonNull final ActiveRosters activeRosters, @NonNull final Instant now) {
+        requireNonNull(activeRosters);
+        requireNonNull(now);
+        var construction = getConstructionFor(activeRosters);
+        if (construction == null) {
+            construction = newConstruction(
+                    activeRosters.sourceRosterHash(),
+                    activeRosters.targetRosterHash(),
+                    activeRosters::findRelatedRoster,
+                    now);
+        }
+        return construction;
+    }
+
+    @Override
+    public HintsConstruction newConstructionFor(
+            @NonNull final Bytes sourceRosterHash,
+            @NonNull final Bytes targetRosterHash,
+            @NonNull final ReadableRosterStore rosterStore,
+            @NonNull final Instant now) {
+        requireNonNull(sourceRosterHash);
+        requireNonNull(targetRosterHash);
+        requireNonNull(rosterStore);
+        return newConstruction(sourceRosterHash, targetRosterHash, rosterStore::get, now);
+    }
+
+    @Override
+    public boolean includeHintsKey(
+            final int k,
+            final long partyId,
+            final long nodeId,
+            @NonNull final HintsKey hintsKey,
+            @NonNull final Instant now) {
+        final var id = new HintsId(partyId, k);
+        var keySet = hintsKeys.get(id);
+        boolean inUse = false;
+        if (keySet == null) {
+            inUse = true;
+            keySet = HintsKeySet.newBuilder()
+                    .key(hintsKey)
+                    .nodeId(nodeId)
+                    .adoptionTime(asTimestamp(now))
+                    .build();
+        } else {
+            keySet = keySet.copyBuilder().nodeId(nodeId).nextKey(hintsKey).build();
+        }
+        hintsKeys.put(id, keySet);
+        return inUse;
+    }
+
+    @Override
+    public HintsConstruction completeAggregation(
+            final long constructionId,
+            @NonNull final PreprocessedKeys keys,
+            @NonNull final Map<Long, Long> nodePartyIds) {
+        requireNonNull(keys);
+        requireNonNull(nodePartyIds);
+        return updateOrThrow(
+                constructionId, b -> b.preprocessedKeys(keys).partyAssignments(asPartyAssignments(nodePartyIds)));
+    }
+
+    @Override
+    public HintsConstruction setAggregationTime(final long constructionId, @NonNull final Instant now) {
+        requireNonNull(now);
+        return updateOrThrow(constructionId, b -> b.aggregationTime(asTimestamp(now)));
+    }
+
+    @Override
+    public HintsConstruction rescheduleAggregationCheckpoint(final long constructionId, @NonNull final Instant then) {
+        requireNonNull(then);
+        return updateOrThrow(constructionId, b -> b.nextAggregationCheckpoint(asTimestamp(then)));
+    }
+
+    @Override
+    public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
+        if (activeRosters.phase() != HANDOFF) {
+            throw new IllegalArgumentException("Not in handoff phase");
+        }
+        if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(activeRosters.currentRosterHash())) {
+            purgeVotes(requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
+            activeConstruction.put(nextConstruction.get());
+            nextConstruction.put(HintsConstruction.DEFAULT);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean purgeConstructionsNotFor(
+            @NonNull final Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore) {
+        requireNonNull(targetRosterHash);
+        requireNonNull(rosterStore);
+        if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(targetRosterHash)) {
+            purgeVotes(requireNonNull(activeConstruction.get()), rosterStore::get);
+            activeConstruction.put(nextConstruction.get());
+            nextConstruction.put(HintsConstruction.DEFAULT);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Updates the construction with the given ID using the given spec.
+     *
+     * @param constructionId the construction ID
+     * @param spec the spec
+     * @return the updated construction
+     */
+    private HintsConstruction updateOrThrow(
+            final long constructionId, @NonNull final UnaryOperator<HintsConstruction.Builder> spec) {
+        HintsConstruction construction;
+        if (requireNonNull(construction = activeConstruction.get()).constructionId() == constructionId) {
+            activeConstruction.put(
+                    construction = spec.apply(construction.copyBuilder()).build());
+        } else if (requireNonNull(construction = nextConstruction.get()).constructionId() == constructionId) {
+            nextConstruction.put(
+                    construction = spec.apply(construction.copyBuilder()).build());
+        } else {
+            throw new IllegalArgumentException("No construction with id " + constructionId);
+        }
+        return construction;
+    }
+
+    private HintsConstruction newConstruction(
+            @NonNull final Bytes sourceRosterHash,
+            @NonNull final Bytes targetRosterHash,
+            @NonNull final Function<Bytes, Roster> lookup,
+            @NonNull final Instant now) {
+        final var currentConstruction = requireNonNull(activeConstruction.get());
+        final var candidateConstruction = requireNonNull(nextConstruction.get());
+        final long nextConstructionId =
+                Math.max(currentConstruction.constructionId(), candidateConstruction.constructionId()) + 1;
+        final var construction = HintsConstruction.newBuilder()
+                .constructionId(nextConstructionId)
+                .sourceRosterHash(sourceRosterHash)
+                .targetRosterHash(targetRosterHash)
+                .build();
+        if (currentConstruction.equals(HintsConstruction.DEFAULT)) {
+            if (!sourceRosterHash.equals(targetRosterHash)) {
+                log.warn(
+                        "Setting genesis construction with different source/target roster hashes ({} to {})",
+                        sourceRosterHash,
+                        targetRosterHash);
+            }
+            if (!candidateConstruction.equals(HintsConstruction.DEFAULT)) {
+                log.warn(
+                        "Purging next construction {} before setting active construction ({} to {})",
+                        candidateConstruction,
+                        sourceRosterHash,
+                        targetRosterHash);
+                purgeVotes(candidateConstruction, lookup);
+            }
+            activeConstruction.put(construction);
+        } else {
+            if (!currentConstruction.targetRosterHash().equals(construction.sourceRosterHash())) {
+                log.warn(
+                        "Setting next construction ({} to {}) with with active target {}",
+                        sourceRosterHash,
+                        targetRosterHash,
+                        currentConstruction.targetRosterHash());
+            }
+            nextConstruction.put(construction);
+        }
+        // Rotate any hint keys requested to be used in the next construction
+        final var targetRoster = requireNonNull(lookup.apply(targetRosterHash));
+        final int M = partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
+        final int k = Integer.numberOfTrailingZeros(M);
+        final var adoptionTime = asTimestamp(now);
+        for (long partyId = 0; partyId < M; partyId++) {
+            final var hintsId = new HintsId(partyId, k);
+            final var keySet = hintsKeys.get(hintsId);
+            if (keySet != null && keySet.hasNextKey()) {
+                final var rotatedKeySet = keySet.copyBuilder()
+                        .key(keySet.nextKey())
+                        .adoptionTime(adoptionTime)
+                        .nextKey((HintsKey) null)
+                        .build();
+                hintsKeys.put(hintsId, rotatedKeySet);
+            }
+        }
+        return construction;
+    }
+
+    /**
+     * Purges the votes for the given construction relative to the given roster store.
+     *
+     * @param construction the construction
+     * @param lookup the roster lookup
+     */
+    private void purgeVotes(
+            @NonNull final HintsConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
+        final var sourceRoster = requireNonNull(lookup.apply(construction.sourceRosterHash()));
+        sourceRoster
+                .rosterEntries()
+                .forEach(entry -> votes.remove(new PreprocessVoteId(construction.constructionId(), entry.nodeId())));
+    }
+
+    private List<PartyAssignment> asPartyAssignments(@NonNull final Map<Long, Long> nodePartyIds) {
+        return nodePartyIds.entrySet().stream()
+                .map(entry -> new PartyAssignment(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+}
