@@ -182,8 +182,8 @@ jobs:
       - name: Check Integration Job State
         id: check-integration-job
         if: ${{ needs.release-branch.result == 'success' &&
-            (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
-            !cancelled() }}
+          (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
+          !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
