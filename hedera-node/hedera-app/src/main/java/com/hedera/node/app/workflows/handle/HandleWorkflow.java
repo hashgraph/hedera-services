@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -66,7 +81,6 @@ import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -80,7 +94,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.SchedulingConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.InitTrigger;
@@ -131,7 +144,6 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
-    private final TssBaseService tssBaseService;
     private final ConfigProvider configProvider;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
@@ -165,7 +177,6 @@ public class HandleWorkflow {
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
             @NonNull final AddressBookHelper addressBookHelper,
-            @NonNull final TssBaseService tssBaseService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final ScheduleService scheduleService) {
@@ -190,7 +201,6 @@ public class HandleWorkflow {
         this.userTxnFactory = requireNonNull(userTxnFactory);
         this.configProvider = requireNonNull(configProvider);
         this.addressBookHelper = requireNonNull(addressBookHelper);
-        this.tssBaseService = requireNonNull(tssBaseService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.scheduleService = requireNonNull(scheduleService);
@@ -209,9 +219,6 @@ public class HandleWorkflow {
     public void handleRound(@NonNull final State state, @NonNull final Round round) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
-        if (configProvider.getConfiguration().getConfigData(TssConfig.class).keyCandidateRoster()) {
-            tssBaseService.ensureParticipantDirectoryKnown(state);
-        }
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -644,14 +651,11 @@ public class HandleWorkflow {
      * @param dispatch the dispatch to manage time for
      */
     private void advanceTimeFor(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
-        // WARNING: The two time-based checks below rely on the BlockStreamManager's last-handled time
-        // not being updated yet, so we must not call setLastHandleTime() until after them
+        // WARNING: The check below relies on the BlockStreamManager's last-handled time not being updated yet,
+        // so we must not call setLastHandleTime() until after them
         processStakePeriodChanges(userTxn, dispatch);
         if (isNextSecond(userTxn.consensusNow(), blockStreamManager.lastHandleTime())) {
-            // Check the tss status and manage it if necessary
-            final var isStakePeriodBoundary = processStakePeriodChanges(userTxn, dispatch);
-            tssBaseService.manageTssStatus(
-                    userTxn.stack(), isStakePeriodBoundary, userTxn.consensusNow(), storeMetricsService);
+            processStakePeriodChanges(userTxn, dispatch);
         }
         blockStreamManager.setLastHandleTime(userTxn.consensusNow());
         if (streamMode != BLOCKS) {
@@ -789,12 +793,12 @@ public class HandleWorkflow {
     /**
      * Processes any side effects of crossing a stake period boundary.
      *
-     * @param userTxn  the user transaction that crossed the boundary
+     * @param userTxn the user transaction that crossed the boundary
      * @param dispatch the dispatch for the user transaction that crossed the boundary
      */
-    private boolean processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+    private void processStakePeriodChanges(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         try {
-            return stakePeriodChanges.process(
+            stakePeriodChanges.process(
                     dispatch,
                     userTxn.stack(),
                     userTxn.tokenContextImpl(),
@@ -807,7 +811,6 @@ public class HandleWorkflow {
             // get back to user transactions
             logger.error("Failed to process stake period changes", e);
         }
-        return false;
     }
 
     private static void logPreDispatch(@NonNull final UserTxn userTxn) {
