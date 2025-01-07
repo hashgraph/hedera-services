@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.uploader.configs;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,7 +34,7 @@ class CompleteBucketConfigTest {
         BucketCredentials credentials = new BucketCredentials("accessKey", "secretKey".toCharArray());
 
         CompleteBucketConfig config =
-                new CompleteBucketConfig(name, provider, endpoint, region, bucketName, enabled, credentials);
+                new CompleteBucketConfig(name, provider.toString(), endpoint, region, bucketName, enabled, credentials);
 
         assertEquals(name, config.name());
         assertEquals(provider, config.provider());
@@ -51,13 +51,31 @@ class CompleteBucketConfigTest {
         BucketCredentials credentials2 = new BucketCredentials("accessKey2", "secretKey2".toCharArray());
 
         CompleteBucketConfig config1 = new CompleteBucketConfig(
-                "bucket1", BucketProvider.AWS, "https://endpoint1", "us-east-1", "bucket-name1", true, credentials1);
+                "bucket1",
+                BucketProvider.AWS.toString(),
+                "https://endpoint1",
+                "us-east-1",
+                "bucket-name1",
+                true,
+                credentials1);
 
         CompleteBucketConfig config2 = new CompleteBucketConfig(
-                "bucket1", BucketProvider.AWS, "https://endpoint1", "us-east-1", "bucket-name1", true, credentials1);
+                "bucket1",
+                BucketProvider.AWS.toString(),
+                "https://endpoint1",
+                "us-east-1",
+                "bucket-name1",
+                true,
+                credentials1);
 
         CompleteBucketConfig config3 = new CompleteBucketConfig(
-                "bucket2", BucketProvider.GCP, "https://endpoint2", "us-central1", "bucket-name2", false, credentials2);
+                "bucket2",
+                BucketProvider.GCP.toString(),
+                "https://endpoint2",
+                "us-central1",
+                "bucket-name2",
+                false,
+                credentials2);
 
         assertEquals(config1, config2); // Equal objects
         assertEquals(config1.hashCode(), config2.hashCode()); // Equal hash codes
@@ -71,7 +89,7 @@ class CompleteBucketConfigTest {
         BucketCredentials credentials = new BucketCredentials("accessKey", "secretKey".toCharArray());
         CompleteBucketConfig config = new CompleteBucketConfig(
                 "testBucket",
-                BucketProvider.AWS,
+                BucketProvider.AWS.toString(),
                 "https://s3.amazonaws.com",
                 "us-east-1",
                 "my-bucket",

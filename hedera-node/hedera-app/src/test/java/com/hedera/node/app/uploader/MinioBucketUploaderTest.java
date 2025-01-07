@@ -19,8 +19,8 @@ package com.hedera.node.app.uploader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.hedera.node.app.uploader.credentials.BucketCredentials;
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
+import com.hedera.node.app.uploader.configs.BucketCredentials;
+import com.hedera.node.app.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -89,14 +89,20 @@ class MinioBucketUploaderTest {
         gcsBucketCredentials = new BucketCredentials("gcsAccessKey", "gcsSecretKey".toCharArray());
         awsBucketConfig = new CompleteBucketConfig(
                 "awsBucketConfig",
-                BucketProvider.AWS,
+                BucketProvider.AWS.toString(),
                 "aws-endpoint",
                 "us-west-2",
                 "aws-bucket",
                 true,
                 awsBucketCredentials);
         gcsBucketConfig = new CompleteBucketConfig(
-                "gcsBucketConfig", BucketProvider.GCP, "gcs-endpoint", "", "gcs-bucket", true, gcsBucketCredentials);
+                "gcsBucketConfig",
+                BucketProvider.GCP.toString(),
+                "gcs-endpoint",
+                "",
+                "gcs-bucket",
+                true,
+                gcsBucketCredentials);
         // Mock Headers for StatObjectResponse with valid timestamp
         mockHeaders = new okhttp3.Headers.Builder()
                 .add("last-modified", "Wed, 12 Oct 2022 10:15:30 GMT") // Valid RFC 1123 timestamp
@@ -279,7 +285,7 @@ class MinioBucketUploaderTest {
         // Mock the CompleteBucketConfig
         CompleteBucketConfig mockBucketConfig = mock(CompleteBucketConfig.class);
         when(mockBucketConfig.bucketName()).thenReturn("test-bucket");
-        when(mockBucketConfig.provider()).thenReturn(BucketProvider.AWS);
+        when(mockBucketConfig.provider()).thenReturn(BucketProvider.AWS.toString());
         when(mockBucketConfig.endpoint()).thenReturn("https://s3.amazonaws.com");
         when(mockBucketConfig.credentials()).thenReturn(awsBucketCredentials);
 

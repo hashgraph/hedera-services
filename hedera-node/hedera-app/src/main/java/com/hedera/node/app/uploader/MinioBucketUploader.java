@@ -18,7 +18,7 @@ package com.hedera.node.app.uploader;
 
 import com.hedera.node.app.annotations.CommonExecutor;
 import com.hedera.node.app.uploader.RetryUtils.SupplierWithException;
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
+import com.hedera.node.app.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.BucketProvider;
@@ -62,7 +62,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                                 config.credentials().accessKey(),
                                 Arrays.toString(config.credentials().secretKey()));
                 // Add region only if the provider is AWS
-                if (config.provider() == BucketProvider.AWS && config.region() != null) {
+                if (config.provider().equals(BucketProvider.AWS) && config.region() != null) {
                     builder.region(config.region());
                 }
                 // Build and add the client to the list
@@ -80,7 +80,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
         List<CompleteBucketConfig> completeBucketConfigs = bucketConfigurationManager.getCompleteBucketConfigs();
         this.uploadExecutor = executor;
         this.bucketName = completeBucketConfigs.getFirst().bucketName();
-        this.provider = completeBucketConfigs.getFirst().provider();
+        this.provider = BucketProvider.valueOf(completeBucketConfigs.getFirst().provider());
         this.maxRetryAttempts = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)

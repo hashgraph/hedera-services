@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.cloud.uploader.configs;
+package com.hedera.node.app.uploader.configs;
 
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * A record which maps the bucket name to its bucket credentials on disk.
+ * A record which maps the bucket name to its bucket configs on disk.
  *
- * @param credentials the credentials
+ * @param credentials the configs
  */
 public record OnDiskBucketConfig(Map<String, BucketCredentials> credentials) {
     public OnDiskBucketConfig {

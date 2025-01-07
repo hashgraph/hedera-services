@@ -93,7 +93,7 @@ public class HgcaaLogValidator {
                 // have zero weight and the RosterStore rejects a zero-weight roster as invalid
                 List.of("Candidate roster was rejected"),
                 List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"),
-                List.of("No credentials found in", "for bucket:"),
+                List.of("No configs found in", "for bucket:"),
                 List.of("Error watching configuration file:"));
 
         private int numProblems = 0;

@@ -21,9 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.node.app.blocks.cloud.uploader.BucketConfigurationManager;
-import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
-import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
+import com.hedera.node.app.uploader.configs.CompleteBucketConfig;
+import com.hedera.node.app.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;

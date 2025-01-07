@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.cloud.uploader.configs;
+package com.hedera.node.app.uploader.configs;
 
 /**
- * The complete bucket configuration combining configuration file with on disk credentials.
+ * The complete bucket configuration combining configuration file with on disk configs.
  *
  * @param name        the name
  * @param provider    the provider to use for the upload
  * @param endpoint    the endpoint
  * @param region      the region (required only for AWS)
  * @param bucketName  the name of the bucket
- * @param credentials the credentials for the bucket
+ * @param credentials the configs for the bucket
  */
 public record CompleteBucketConfig(
         String name,

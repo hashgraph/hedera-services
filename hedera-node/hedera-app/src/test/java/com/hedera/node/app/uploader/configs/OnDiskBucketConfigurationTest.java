@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader.credentials;
+package com.hedera.node.app.uploader.configs;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,7 +31,7 @@ class OnDiskBucketConfigurationTest {
         credentials.put("bucket1", new BucketCredentials("accessKey1", "secretKey1".toCharArray()));
         OnDiskBucketConfig config = new OnDiskBucketConfig(credentials);
         assertEquals(credentials, config.credentials());
-        // Test with empty credentials
+        // Test with empty configs
         Map<String, BucketCredentials> emptyCredentials = Collections.emptyMap();
         config = new OnDiskBucketConfig(emptyCredentials);
         assertTrue(config.credentials().isEmpty());

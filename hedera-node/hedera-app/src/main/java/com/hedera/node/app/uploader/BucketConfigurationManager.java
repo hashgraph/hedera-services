@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.cloud.uploader;
+package com.hedera.node.app.uploader;
 
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
-import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
+import com.hedera.node.app.uploader.configs.CompleteBucketConfig;
+import com.hedera.node.app.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.types.CloudBucketConfig;
@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * A singleton class that will handle the entire bucket configuration. This is needed since we will have
- * cloud bucket configuration file and on disk credentials.
+ * cloud bucket configuration file and on disk configs.
  */
 @Singleton
 public class BucketConfigurationManager {
@@ -67,7 +67,7 @@ public class BucketConfigurationManager {
     }
 
     /**
-     * Combines the buckets configuration with their respective credentials.
+     * Combines the buckets configuration with their respective configs.
      * @param blockStreamConfig configuration properties for block streams
      */
     public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
@@ -96,7 +96,7 @@ public class BucketConfigurationManager {
     }
 
     /**
-     * Watch the bucket credentials file for changes and apply them at runtime.
+     * Watch the bucket configs file for changes and apply them at runtime.
      */
     private void watchCredentialsFile() {
         final var bucketCredentialsPath = blockStreamConfig.credentialsPath();
@@ -134,7 +134,7 @@ public class BucketConfigurationManager {
         try {
             return mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
         } catch (IOException e) {
-            logger.error("Failed to load credentials from {}", credentialsPath, e);
+            logger.error("Failed to load configs from {}", credentialsPath, e);
             return null;
         }
     }
@@ -143,7 +143,7 @@ public class BucketConfigurationManager {
             @NonNull final CloudBucketConfig bucket, @NonNull final Path credentialsPath) {
         final var bucketCredentials = credentials.credentials().get(bucket.name());
         if (bucketCredentials == null) {
-            logger.error("No credentials found in {} for bucket: {}", credentialsPath, bucket.name());
+            logger.error("No configs found in {} for bucket: {}", credentialsPath, bucket.name());
             return null;
         }
 
@@ -158,7 +158,7 @@ public class BucketConfigurationManager {
     }
 
     /**
-     * @return the current complete configurations including the credentials for each bucket
+     * @return the current complete configurations including the configs for each bucket
      */
     public List<CompleteBucketConfig> getCompleteBucketConfigs() {
         return currentConfig.get();
