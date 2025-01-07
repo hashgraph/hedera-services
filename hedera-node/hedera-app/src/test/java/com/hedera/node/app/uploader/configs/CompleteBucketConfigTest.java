@@ -37,7 +37,7 @@ class CompleteBucketConfigTest {
                 new CompleteBucketConfig(name, provider.toString(), endpoint, region, bucketName, enabled, credentials);
 
         assertEquals(name, config.name());
-        assertEquals(provider, config.provider());
+        assertEquals(provider.toString(), config.provider());
         assertEquals(endpoint, config.endpoint());
         assertEquals(region, config.region());
         assertEquals(bucketName, config.bucketName());

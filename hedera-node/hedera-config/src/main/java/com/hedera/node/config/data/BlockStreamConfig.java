@@ -38,7 +38,7 @@ import java.util.List;
  * @param grpcPort the port of the gRPC server
  * @param uploadRetryAttempts the number of retries to attempt if needed
  * @param localRetentionHours the time we will retain the block files locally
- * @param credentialsPath the path to the bucket configs
+ * @param credentialsPath the path to the bucket credentials
  * @param buckets the buckets configuration
  */
 @ConfigData("blockStream")
@@ -52,7 +52,7 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
         @ConfigProperty(defaultValue = "localhost") String grpcAddress,
         @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort,
-        @ConfigProperty(defaultValue = "3") @NetworkProperty int uploadRetryAttempts,
-        @ConfigProperty(defaultValue = "168") @NetworkProperty int localRetentionHours,
-        @ConfigProperty(defaultValue = "data/config/bucket-configs.json") @NetworkProperty String credentialsPath,
+        @ConfigProperty(defaultValue = "3") @NodeProperty int uploadRetryAttempts,
+        @ConfigProperty(defaultValue = "168") @NodeProperty int localRetentionHours,
+        @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
         @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) @NetworkProperty List<CloudBucketConfig> buckets) {}
