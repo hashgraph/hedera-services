@@ -227,9 +227,9 @@ be the total weight of roster $A$, and similarly for $B$. Also,
 pair $(B, \textrm{ak}_B)$.
 - Let $\mathcal{B} \subset B$ be the set of nodes in $B$ that have a hinTS key in $\textrm{ak}_B$.
 
-Now, to preserve aBFT security, we must have Schnorr signatures on the pair $(B, \textrm{ak}_B)$ from at least 1/3 of
+Now, to preserve aBFT security, we must have Schnorr signatures on the pair $(B, \textrm{ak}\_B)$ from at least 1/3 of
 the weight in $A$. That is,
-$$w_\mathcal{A} = \sum_{A_i \in \mathcal{A}} w(A_i) \geq \frac{1}{3} w_A$$
+$$w\_\mathcal{A} = \sum\_{A\_i \in \mathcal{A}} w(A\_i) \geq \frac{1}{3} w\_A$$
 
 This implies that at least one honest node with non-zero weight signed off on the transition.
 
@@ -239,10 +239,13 @@ adopting it.
 First, $\mathcal{B}$ must contain strictly more than 2/3 of the weight in $B$, so that even if just less
 than 1/3 of the weight in $B$ is malicious, there will remain 1/3 honest weight that can construct hinTS signatures
 and keep signing blocks.
+
 $$w_\mathcal{B} = \sum_{B_i \in \mathcal{B}} w(B_i) > \frac{2}{3} w_B$$
 
 Second, if $\mathbb{B} \subset B$ is the set of nodes in $B$ with a published Schnorr key, we must again have
+
 $$w_\mathbb{B} = \sum_{B_i \in \mathbb{B}} w(B_i) > \frac{2}{3} w_B$$
+
 so that again, even if just less than 1/3 of the weight in $B$ is malicious, there will remain at least 1/3 honest weight that can sign off on the next transition. (It is, of course, not necessary that $\mathcal{B} = \mathbb{B}$; only that these weight conditions are satisfied.)
 
 **Important:** Given the current set of Heiro admin transactions, and the requirement that staking elections be
