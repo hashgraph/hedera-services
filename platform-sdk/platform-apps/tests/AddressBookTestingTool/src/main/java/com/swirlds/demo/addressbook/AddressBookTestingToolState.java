@@ -221,8 +221,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         event.transactionIterator().forEachRemaining(transaction -> {
             if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
             }
         });
     }
@@ -253,9 +252,12 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
         for (ConsensusEvent event : round) {
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                if (transaction.isSystem()) {
+                    return;
+                }
+
                 if (areTransactionBytesSystemOnes(transaction)) {
-                    stateSignatureTransaction.accept(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                    consumeSystemTransaction(transaction, event, stateSignatureTransaction);
                 } else {
                     handleTransaction(transaction);
                 }
@@ -284,14 +286,32 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     }
 
     /**
+     * Converts a transaction to a {@link StateSignatureTransaction} and then consumes it into a callback.
+     *
+     * @param transaction the transaction to consume
+     * @param event the event that contains the transaction
+     * @param stateSignatureTransactionCallback the callback to call with the system transaction
+     */
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (com.hedera.pbj.runtime.ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
+    }
+
+    /**
      * Apply a transaction to the state.
      *
      * @param transaction the transaction to apply
      */
     private void handleTransaction(@NonNull final ConsensusTransaction transaction) {
-        if (transaction.isSystem()) {
-            return;
-        }
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
