@@ -43,8 +43,8 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -83,7 +83,7 @@ class StressTestingToolStateTest {
 
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException, KeyStoreException, KeyGeneratingException, NoSuchProviderException {
-        state = new StressTestingToolState(mock(MerkleStateLifecycles.class), mock(Function.class));
+        state = new StressTestingToolState(mock(StateLifecycles.class), mock(Function.class));
         random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         event = mock(PlatformEvent.class);
