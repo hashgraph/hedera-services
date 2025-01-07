@@ -57,7 +57,6 @@ import org.junit.jupiter.api.Test;
 public class ConsistencyTestingToolStateTest {
 
     private static ConsistencyTestingToolState state;
-    private ConsistencyTestingToolMain main;
     private Random random;
     private PlatformStateModifier platformStateModifier;
     private Platform platform;
@@ -101,7 +100,6 @@ public class ConsistencyTestingToolStateTest {
 
         state.init(platform, initTrigger, softwareVersion);
 
-        main = mock(ConsistencyTestingToolMain.class);
         random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
@@ -123,7 +121,7 @@ public class ConsistencyTestingToolStateTest {
     }
 
     @Test
-    void handleConsensusRoundWithApplicationTransactionEmptySystemTransactionList() {
+    void handleConsensusRoundWithApplicationTransaction() {
         final var bytes = Bytes.wrap(new byte[] {1, 1, 1, 1, 1, 1, 1, 1});
         when(consensusTransaction.getApplicationTransaction()).thenReturn(bytes);
 
@@ -144,7 +142,6 @@ public class ConsistencyTestingToolStateTest {
     void handleConsensusRoundWithSystemTransaction() {
         final var stateSignatureTransactionBytes =
                 StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
-        when(main.encodeSystemTransaction(stateSignatureTransaction)).thenReturn(stateSignatureTransactionBytes);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         doAnswer(invocation -> {
@@ -176,7 +173,6 @@ public class ConsistencyTestingToolStateTest {
 
         final var stateSignatureTransactionBytes =
                 StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
-        when(main.encodeSystemTransaction(stateSignatureTransaction)).thenReturn(stateSignatureTransactionBytes);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
@@ -263,6 +259,24 @@ public class ConsistencyTestingToolStateTest {
         state.preHandle(event, consumer);
 
         assertThat(consumedTransactions).hasSize(1);
+    }
+
+    @Test
+    void preHandleEventWithApplicationTransaction() {
+        final var bytes = Bytes.wrap(new byte[] {1, 1, 1, 1, 1, 1, 1, 1});
+        when(consensusTransaction.getApplicationTransaction()).thenReturn(bytes);
+
+        doAnswer(invocation -> {
+                    Consumer<Transaction> consumer = invocation.getArgument(0);
+                    consumer.accept(consensusTransaction);
+                    return null;
+                })
+                .when(event)
+                .forEachTransaction(any());
+
+        state.preHandle(event, consumer);
+
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
