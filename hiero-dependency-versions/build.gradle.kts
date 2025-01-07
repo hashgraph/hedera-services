@@ -53,6 +53,7 @@ dependencies.constraints {
     api("io.helidon.webclient:helidon-webclient-grpc:$helidon") {
         because("io.helidon.webclient.grpc")
     }
+    api("io.minio:minio:8.5.14") { because("io.minio") }
     api("org.awaitility:awaitility:4.2.0") { because("awaitility") }
     api("com.fasterxml.jackson.core:jackson-core:$jackson") {
         because("com.fasterxml.jackson.core")
@@ -78,6 +79,7 @@ dependencies.constraints {
     api("com.google.protobuf:protobuf-java-util:$protobuf") { because("com.google.protobuf.util") }
     api("com.hedera.pbj:pbj-runtime:0.9.2") { because("com.hedera.pbj.runtime") }
     api("com.squareup:javapoet:1.13.0") { because("com.squareup.javapoet") }
+    api("com.squareup.okio:okio-jvm:3.9.1") { because("okio") }
     api("net.java.dev.jna:jna:5.12.1") { because("com.sun.jna") }
     api("com.google.dagger:dagger:$dagger") { because("dagger") }
     api("com.google.dagger:dagger-compiler:$dagger") { because("dagger.compiler") }

@@ -14,23 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.uploader;
 
-/**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
- */
-public enum BlockStreamWriterMode {
-    /**
-     * Write block streams to a gRPC stream.
-     */
-    GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    BUCKET
+public class HashMismatchException extends RuntimeException {
+    public HashMismatchException(String objectKey, String provider) {
+        super(String.format("Hash mismatch for block %s in provider %s", objectKey, provider));
+    }
 }

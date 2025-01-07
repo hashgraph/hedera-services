@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,14 @@ package com.hedera.node.config.data;
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
 import com.hedera.node.config.types.BlockStreamWriterMode;
+import com.hedera.node.config.types.CloudBucketConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.annotation.Max;
 import com.swirlds.config.api.validation.annotation.Min;
+import java.util.List;
 
 /**
  * Configuration for the block stream.
@@ -33,6 +36,10 @@ import com.swirlds.config.api.validation.annotation.Min;
  * @param compressFilesOnCreation whether to compress files on creation
  * @param grpcAddress the address of the gRPC server
  * @param grpcPort the port of the gRPC server
+ * @param uploadRetryAttempts the number of retries to attempt if needed
+ * @param localRetentionHours the time we will retain the block files locally
+ * @param credentialsPath the path to the bucket credentials
+ * @param buckets the buckets configuration
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
@@ -44,4 +51,8 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "32") @NetworkProperty int hashCombineBatchSize,
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
         @ConfigProperty(defaultValue = "localhost") String grpcAddress,
-        @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort) {}
+        @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort,
+        @ConfigProperty(defaultValue = "3") @NodeProperty int uploadRetryAttempts,
+        @ConfigProperty(defaultValue = "168") @NodeProperty int localRetentionHours,
+        @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) @NetworkProperty List<CloudBucketConfig> buckets) {}

@@ -17,20 +17,15 @@
 package com.hedera.node.config.types;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * Defines the type of bucket provider that we are going to use.
  */
-public enum BlockStreamWriterMode {
+public enum BucketProvider {
     /**
-     * Write block streams to a gRPC stream.
+     * Upload files to AWS.
      */
-    GRPC,
+    AWS,
     /**
-     * Write block streams to files.
+     * Upload files to GCP.
      */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    BUCKET
+    GCP,
 }

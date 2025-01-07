@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.app.util.FileUtilities;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.ParseException;
@@ -56,6 +58,7 @@ public class SystemFileUpdates {
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
     private final ThrottleServiceManager throttleServiceManager;
+    private final BucketConfigurationManager bucketConfigurationManager;
 
     /**
      * Creates a new instance of this class.
@@ -67,11 +70,13 @@ public class SystemFileUpdates {
             @NonNull final ConfigProviderImpl configProvider,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final ThrottleServiceManager throttleServiceManager) {
+            @NonNull final ThrottleServiceManager throttleServiceManager,
+            @NonNull final BucketConfigurationManager bucketConfigurationManger) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
+        this.bucketConfigurationManager = requireNonNull(bucketConfigurationManger);
     }
 
     /**
@@ -115,6 +120,8 @@ public class SystemFileUpdates {
         } else if (fileNum == filesConfig.networkProperties()) {
             updateConfig(configuration, ConfigType.NETWORK_PROPERTIES, state);
             throttleServiceManager.refreshThrottleConfiguration();
+            final var blockStreamConfig = configuration.getConfigData(BlockStreamConfig.class);
+            bucketConfigurationManager.loadCompleteBucketConfigs(blockStreamConfig);
         } else if (fileNum == filesConfig.hapiPermissions()) {
             updateConfig(configuration, ConfigType.API_PERMISSIONS, state);
         } else if (fileNum == filesConfig.throttleDefinitions()) {
