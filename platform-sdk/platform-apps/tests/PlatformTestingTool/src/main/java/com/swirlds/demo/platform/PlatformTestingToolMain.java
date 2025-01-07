@@ -43,6 +43,8 @@ import static java.lang.System.exit;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -1276,5 +1278,10 @@ public class PlatformTestingToolMain implements SwirldMain {
         });
         queryInStateThread.setName("queryInState_node" + selfId);
         queryInStateThread.start();
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

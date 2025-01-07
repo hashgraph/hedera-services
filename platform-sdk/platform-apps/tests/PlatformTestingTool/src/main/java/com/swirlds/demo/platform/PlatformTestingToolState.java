@@ -16,11 +16,13 @@
 
 package com.swirlds.demo.platform;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.readInt64;
 import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
+import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.STATESIGNATURETRANSACTION;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
@@ -34,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.*;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
@@ -236,6 +239,16 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
     private Set<MapKey> accountsWithExpiringRecords;
     // last timestamp purging records
     private long lastPurgeTimestamp = 0;
+    // The length of a system transaction:
+    // 1 byte - encoded field position +
+    // (varying length up to 10 bytes) round number long +
+    // 1 byte - encoded field position +
+    // 2 bytes - encoded size +
+    // 384 bytes - signature
+    // 1 byte - encoded field position +
+    // 1 byte - encoded size +
+    // 48 bytes - hash
+    private static final int[] SYSTEM_TRANSACTION_LENGTH_RANGE = new int[] {437, 448};
     /**
      * The instant of the previously handled transaction. Null if no transactions have yet been handled by this state
      * instance. Used to verify that each transaction happens at a later instant than its predecessor.
@@ -1045,11 +1058,63 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
-    protected void preHandleTransaction(final Transaction transaction) {
+    protected void preHandleTransaction(final Transaction transaction, final Event event, final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         if (transaction.isSystem()) {
             return;
         }
-        expandSignatures(transaction);
+
+        final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
+
+        if(stateSignatureTransaction.signature() != Bytes.EMPTY) {
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } else {
+            expandSignatures(transaction);
+        }
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private StateSignatureTransaction getStateSignatureTransaction(final Transaction transaction) {
+        final var transactionBytes = transaction.getApplicationTransaction();
+
+        if (transactionBytes.length() == 0
+                || (transactionBytes.length() < SYSTEM_TRANSACTION_LENGTH_RANGE[0]
+                || transactionBytes.length() > SYSTEM_TRANSACTION_LENGTH_RANGE[1])) {
+            return StateSignatureTransaction.DEFAULT;
+        }
+
+        final var readableData = transactionBytes.toReadableSequentialData();
+        readableData.readVarInt(false);
+        final var maybeRound = readInt64(readableData);
+
+        if (maybeRound < 0) {
+            return StateSignatureTransaction.DEFAULT;
+        } else {
+            return tryToParseSystemTransaction(transaction);
+        }
+    }
+
+    private StateSignatureTransaction tryToParseSystemTransaction(final Transaction transaction) {
+        try {
+            final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(
+                    transaction.getApplicationTransaction().toByteArray());
+            final byte[] testTransactionRawBytes =
+                    testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
+            final TestTransaction testTransaction = TestTransaction.parseFrom(
+                    testTransactionRawBytes);
+
+            if (testTransaction.getBodyCase() == STATESIGNATURETRANSACTION) {
+                return convertStateSignatureTransaction(testTransaction.getStateSignatureTransaction());
+            } else {
+                return StateSignatureTransaction.DEFAULT;
+            }
+        } catch (final InvalidProtocolBufferException e) {
+            return StateSignatureTransaction.DEFAULT;
+        }
     }
 
     @Override
@@ -1064,7 +1129,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
         delay();
         updateTransactionCounters();
         round.forEachEventTransaction((event, transaction) ->
-                handleConsensusTransaction(event, transaction, platformState, round.getRoundNum()));
+                handleConsensusTransaction(event, transaction, platformState, round.getRoundNum(), stateSignatureTransaction));
     }
 
     /**
@@ -1091,14 +1156,15 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
             final ConsensusEvent event,
             final ConsensusTransaction trans,
             final PlatformStateModifier platformState,
-            final long roundNum) {
+            final long roundNum,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         if (trans.isSystem()) {
             return;
         }
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
-                    event.getCreatorId(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, platformState);
+                    event.getCreatorId(), event.getSoftwareVersion(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, platformState, stateSignatureTransaction);
         } catch (final InterruptedException e) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -1126,10 +1192,12 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
 
     private void handleTransaction(
             @NonNull final NodeId id,
+            @NonNull final SemanticVersion semanticVersion,
             @NonNull final Instant timeCreated,
             @NonNull final Instant timestamp,
             @NonNull final ConsensusTransaction trans,
-            @NonNull final PlatformStateModifier platformState) {
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(
@@ -1144,6 +1212,12 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
                 // if this is expected manually inject invalid signature
                 boolean expectingInvalidSignature = false;
                 final TestTransaction testTransaction = TestTransaction.parseFrom(testTransactionRawBytes);
+                if (testTransaction.getBodyCase() == STATESIGNATURETRANSACTION) {
+                    final var stateSignatureTransaction = convertStateSignatureTransaction(testTransaction.getStateSignatureTransaction());
+                    stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(id, semanticVersion, stateSignatureTransaction));
+                    return;
+                }
+
                 if (testTransaction.getBodyCase() == FCMTRANSACTION) {
                     final FCMTransaction fcmTransaction = testTransaction.getFcmTransaction();
                     if (fcmTransaction.getInvalidSig()) {
@@ -1227,6 +1301,11 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
             case VIRTUALMERKLETRANSACTION:
                 handleVirtualMerkleTransaction(testTransaction.get().getVirtualMerkleTransaction(), id, timeCreated);
                 break;
+            case STATESIGNATURETRANSACTION:
+                final var stateSignatureTransaction = convertStateSignatureTransaction(testTransaction.get()
+                        .getStateSignatureTransaction());
+                stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(id, semanticVersion, stateSignatureTransaction));
+                break;
             default:
                 logger.error(EXCEPTION.getMarker(), "Unrecognized transaction!");
         }
@@ -1250,6 +1329,12 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
                 }
             }
         }
+    }
+
+    private StateSignatureTransaction convertStateSignatureTransaction(final
+            com.swirlds.demo.platform.fs.stresstest.proto.StateSignatureTransaction stateSignatureTransaction) {
+        return StateSignatureTransaction.newBuilder().round(stateSignatureTransaction.getRound())
+                .signature(Bytes.wrap(stateSignatureTransaction.getSignature().toByteArray())).hash(Bytes.wrap(stateSignatureTransaction.getHash().toByteArray())).build();
     }
 
     /**
@@ -1661,6 +1746,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
     public void preHandle(
             @NonNull final Event event,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        event.forEachTransaction(this::preHandleTransaction);
+        event.forEachTransaction(
+                (t) -> {preHandleTransaction(t, event, stateSignatureTransaction);});
     }
 }
