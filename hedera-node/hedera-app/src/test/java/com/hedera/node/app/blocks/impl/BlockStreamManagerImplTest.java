@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -54,12 +53,12 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.InitialStateHash;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -78,13 +77,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -113,7 +112,7 @@ class BlockStreamManagerImplTest {
     private final InitialStateHash hashInfo = new InitialStateHash(completedFuture(ZERO_BLOCK_HASH), 0);
 
     @Mock
-    private TssBaseService tssBaseService;
+    private BlockHashSigner blockHashSigner;
 
     @Mock
     private StateHashedNotification notification;
@@ -204,10 +203,10 @@ class BlockStreamManagerImplTest {
     void canUpdateDistinguishedTimes() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         subject = new BlockStreamManagerImpl(
+                blockHashSigner,
                 () -> aWriter,
                 ForkJoinPool.commonPool(),
                 configProvider,
-                tssBaseService,
                 boundaryStateChangeListener,
                 hashInfo,
                 SemanticVersion.DEFAULT);
@@ -224,10 +223,10 @@ class BlockStreamManagerImplTest {
     void requiresLastHashToBeInitialized() {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1));
         subject = new BlockStreamManagerImpl(
+                blockHashSigner,
                 () -> aWriter,
                 ForkJoinPool.commonPool(),
                 configProvider,
-                tssBaseService,
                 boundaryStateChangeListener,
                 hashInfo,
                 SemanticVersion.DEFAULT);
@@ -243,7 +242,6 @@ class BlockStreamManagerImplTest {
                 platformStateWith(null),
                 aWriter);
         givenEndOfRoundSetup();
-        final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
         given(round.getRoundNum()).willReturn(ROUND_NO);
 
@@ -272,6 +270,8 @@ class BlockStreamManagerImplTest {
         subject.writeItem(FAKE_STATE_CHANGES);
         subject.writeItem(FAKE_RECORD_FILE_ITEM);
 
+        // Immediately resolve to the expected ledger signature
+        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
         // End the round
         subject.endRound(state, ROUND_NO);
 
@@ -297,10 +297,6 @@ class BlockStreamManagerImplTest {
                 BlockRecordService.EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
-        verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture(), any());
-
-        // Provide the ledger signature to the subject
-        subject.accept(blockHashCaptor.getValue(), FIRST_FAKE_SIGNATURE.toByteArray());
 
         // Assert the block proof was written
         final var proofItem = lastAItem.get();
@@ -338,7 +334,7 @@ class BlockStreamManagerImplTest {
         subject.endRound(state, ROUND_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
-        verify(tssBaseService, never()).requestLedgerSignature(any(), any());
+        verifyNoInteractions(blockHashSigner);
     }
 
     @Test
@@ -352,7 +348,6 @@ class BlockStreamManagerImplTest {
         givenEndOfRoundSetup();
         given(round.getRoundNum()).willReturn(ROUND_NO);
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
-        final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
 
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
@@ -377,6 +372,8 @@ class BlockStreamManagerImplTest {
             subject.writeItem(FAKE_RECORD_FILE_ITEM);
         }
 
+        // Immediately resolve to the expected ledger signature
+        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
         // End the round
         subject.endRound(state, ROUND_NO);
 
@@ -402,10 +399,6 @@ class BlockStreamManagerImplTest {
                 BlockRecordService.EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
-        verify(tssBaseService).requestLedgerSignature(blockHashCaptor.capture(), any());
-
-        // Provide the ledger signature to the subject
-        subject.accept(blockHashCaptor.getValue(), FIRST_FAKE_SIGNATURE.toByteArray());
 
         // Assert the block proof was written
         final var proofItem = lastAItem.get();
@@ -428,7 +421,6 @@ class BlockStreamManagerImplTest {
                 })
                 .when(bWriter)
                 .writePbjItem(any());
-        final ArgumentCaptor<byte[]> blockHashCaptor = ArgumentCaptor.forClass(byte[].class);
         given(round.getRoundNum()).willReturn(ROUND_NO);
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
 
@@ -442,6 +434,9 @@ class BlockStreamManagerImplTest {
         subject.writeItem(FAKE_TRANSACTION_RESULT);
         subject.writeItem(FAKE_STATE_CHANGES);
         subject.writeItem(FAKE_RECORD_FILE_ITEM);
+        final var firstSignature = new CompletableFuture<Bytes>();
+        final var secondSignature = new CompletableFuture<Bytes>();
+        given(blockHashSigner.signFuture(any())).willReturn(firstSignature).willReturn(secondSignature);
         // End the round in block N
         subject.endRound(state, ROUND_NO);
 
@@ -460,13 +455,8 @@ class BlockStreamManagerImplTest {
         // End the round in block N+1
         subject.endRound(state, ROUND_NO + 1);
 
-        verify(tssBaseService, times(2)).requestLedgerSignature(blockHashCaptor.capture(), any());
-        final var allBlockHashes = blockHashCaptor.getAllValues();
-        assertEquals(2, allBlockHashes.size());
-
-        // Provide the N+1 ledger signature to the subject first
-        subject.accept(allBlockHashes.getLast(), FIRST_FAKE_SIGNATURE.toByteArray());
-        subject.accept(allBlockHashes.getFirst(), SECOND_FAKE_SIGNATURE.toByteArray());
+        secondSignature.complete(FIRST_FAKE_SIGNATURE);
+        firstSignature.complete(SECOND_FAKE_SIGNATURE);
 
         // Assert both block proofs were written, but with the proof for N using an indirect proof
         final var aProofItem = lastAItem.get();
@@ -500,10 +490,10 @@ class BlockStreamManagerImplTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new BlockStreamManagerImpl(
+                blockHashSigner,
                 () -> writers[nextWriter.getAndIncrement()],
                 ForkJoinPool.commonPool(),
                 configProvider,
-                tssBaseService,
                 boundaryStateChangeListener,
                 hashInfo,
                 SemanticVersion.DEFAULT);
