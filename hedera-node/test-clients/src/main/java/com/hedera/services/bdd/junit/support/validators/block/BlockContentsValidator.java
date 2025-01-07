@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -70,6 +71,10 @@ public class BlockContentsValidator implements BlockStreamValidator {
         // A block SHALL start with a `header`.
         if (!blockItems.getFirst().hasBlockHeader()) {
             Assertions.fail("Block does not start with a block header");
+        }
+
+        if (Objects.requireNonNull(blockItems.getFirst().blockHeaderOrThrow()).hasFirstTransactionConsensusTime()) {
+            Assertions.fail("Block header doesn't have first transaction consensus time set");
         }
 
         // A block SHALL end with a `state_proof`.
