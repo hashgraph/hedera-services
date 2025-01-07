@@ -25,9 +25,9 @@ import com.hedera.node.app.statedumpers.legacy.EntityId;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class TokenAssociationsDumpUtils {
     public static void dumpModTokenRelations(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<EntityIDPair>, OnDiskValue<TokenRelation>> associations,
+            @NonNull final VirtualMap associations,
             @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTokenRelations = gatherTokenRelations(associations);
@@ -56,8 +56,7 @@ public class TokenAssociationsDumpUtils {
     }
 
     @NonNull
-    private static Map<BBMTokenAssociationId, BBMTokenAssociation> gatherTokenRelations(
-            VirtualMap<OnDiskKey<EntityIDPair>, OnDiskValue<TokenRelation>> source) {
+    private static Map<BBMTokenAssociationId, BBMTokenAssociation> gatherTokenRelations(VirtualMap source) {
         final var r = new HashMap<BBMTokenAssociationId, BBMTokenAssociation>();
         final var threadCount = 8;
         final var BBMTokenAssociations = new ConcurrentLinkedQueue<Pair<BBMTokenAssociationId, BBMTokenAssociation>>();
@@ -65,7 +64,7 @@ public class TokenAssociationsDumpUtils {
             VirtualMapMigration.extractVirtualMapData(
                     getStaticThreadManager(),
                     source,
-                    p -> BBMTokenAssociations.add(Pair.of(fromModIdPair(p.left().getKey()), fromMod(p.right()))),
+                    p -> BBMTokenAssociations.add(Pair.of(fromModIdPair(p.left()), fromMod(p.right()))),
                     threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of token associations virtual map interrupted!");
@@ -75,22 +74,31 @@ public class TokenAssociationsDumpUtils {
         return r;
     }
 
-    private static BBMTokenAssociationId fromModIdPair(@NonNull final EntityIDPair pair) {
-        return new BBMTokenAssociationId(
-                pair.accountId().accountNum(), pair.tokenId().tokenNum());
+    private static BBMTokenAssociationId fromModIdPair(@NonNull final Bytes pairBytes) {
+        try {
+            final EntityIDPair pair = EntityIDPair.PROTOBUF.parse(pairBytes);
+            return new BBMTokenAssociationId(
+                    pair.accountId().accountNum(), pair.tokenId().tokenNum());
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse an entity ID pair", e);
+        }
     }
 
-    private static BBMTokenAssociation fromMod(@NonNull final OnDiskValue<TokenRelation> wrapper) {
-        final var value = wrapper.getValue();
-        return new BBMTokenAssociation(
-                accountIdFromMod(value.accountId()),
-                tokenIdFromMod(value.tokenId()),
-                value.balance(),
-                value.frozen(),
-                value.kycGranted(),
-                value.automaticAssociation(),
-                tokenIdFromMod(value.previousToken()),
-                tokenIdFromMod(value.nextToken()));
+    private static BBMTokenAssociation fromMod(@NonNull final Bytes tokenRelBytes) {
+        try {
+            final TokenRelation value = TokenRelation.PROTOBUF.parse(tokenRelBytes);
+            return new BBMTokenAssociation(
+                    accountIdFromMod(value.accountId()),
+                    tokenIdFromMod(value.tokenId()),
+                    value.balance(),
+                    value.frozen(),
+                    value.kycGranted(),
+                    value.automaticAssociation(),
+                    tokenIdFromMod(value.previousToken()),
+                    tokenIdFromMod(value.nextToken()));
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a token relation", e);
+        }
     }
 
     public static EntityId accountIdFromMod(@Nullable final com.hedera.hapi.node.base.AccountID accountId) {

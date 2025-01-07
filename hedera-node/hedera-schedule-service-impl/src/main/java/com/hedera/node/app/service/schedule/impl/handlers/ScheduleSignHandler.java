@@ -91,7 +91,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var op = context.body().scheduleSignOrThrow();
         final var scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         // Non-final because we may update signatories and/or mark it as executed before putting it back
-        var schedule = scheduleStore.getForModify(op.scheduleIDOrThrow());
+        var schedule = scheduleStore.get(op.scheduleIDOrThrow());
 
         final var consensusNow = context.consensusNow();
         final var schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);

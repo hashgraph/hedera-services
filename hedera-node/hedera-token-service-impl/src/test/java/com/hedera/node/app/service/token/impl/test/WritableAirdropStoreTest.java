@@ -144,11 +144,11 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         subject.put(airdropId, accountAirdrop);
         subject.put(nftAirdropId, nftAccountAirdrop);
 
-        final var readAirdrop = subject.getForModify(airdropId);
+        final var readAirdrop = subject.get(airdropId);
         assertThat(readAirdrop).isNotNull();
         assertThat(airdropValue).isEqualTo(readAirdrop.pendingAirdropValue());
 
-        final var readNft = subject.getForModify(nftAirdropId);
+        final var readNft = subject.get(nftAirdropId);
         assertThat(nftAirdropId).isNotNull();
         assertThat(readNft).isNotNull();
         assertThat(readNft.pendingAirdropValue()).isNull();
@@ -162,8 +162,8 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         assertThat(subject.exists(nonExistingAirdropId)).isFalse();
         assertThat(subject.exists(nonExistingNftAirdropId)).isFalse();
 
-        final var readAirdrop = subject.getForModify(nonExistingAirdropId);
-        final var readNft = subject.getForModify(nonExistingNftAirdropId);
+        final var readAirdrop = subject.get(nonExistingAirdropId);
+        final var readNft = subject.get(nonExistingNftAirdropId);
 
         assertThat(readAirdrop).isNull();
         assertThat(readNft).isNull();
@@ -179,7 +179,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testGetWithNullParam() {
-        assertThatThrownBy(() -> subject.getForModify(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.get(null)).isInstanceOf(NullPointerException.class);
     }
 
     private PendingAirdropId getNonFungibleAirDrop() {

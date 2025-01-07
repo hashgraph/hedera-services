@@ -22,9 +22,9 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,8 +58,7 @@ public class StakingInfoDumpUtils {
             Pair.of("weight", getFieldFormatter(BBMStakingInfo::weight, Object::toString)));
 
     public static void dumpModStakingInfo(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> BBMStakingInfoVirtualMap) {
+            @NonNull final Path path, @NonNull final VirtualMap BBMStakingInfoVirtualMap) {
         System.out.printf("=== %d staking info ===%n", BBMStakingInfoVirtualMap.size());
 
         final var allBBMStakingInfo = gatherBBMStakingInfoFromMod(BBMStakingInfoVirtualMap);
@@ -75,8 +74,7 @@ public class StakingInfoDumpUtils {
     }
 
     @NonNull
-    static Map<Long, BBMStakingInfo> gatherBBMStakingInfoFromMod(
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> stakingInfo) {
+    static Map<Long, BBMStakingInfo> gatherBBMStakingInfoFromMod(@NonNull final VirtualMap stakingInfo) {
         final var r = new HashMap<Long, BBMStakingInfo>();
         final var threadCount = 5;
         final var mappings = new ConcurrentLinkedQueue<Pair<Long, BBMStakingInfo>>();
@@ -84,8 +82,15 @@ public class StakingInfoDumpUtils {
             VirtualMapMigration.extractVirtualMapDataC(
                     getStaticThreadManager(),
                     stakingInfo,
-                    p -> mappings.add(Pair.of(
-                            p.left().getKey().number(), fromMod(p.right().getValue()))),
+                    p -> {
+                        final EntityNumber entityNumber;
+                        try {
+                            entityNumber = EntityNumber.PROTOBUF.parse(p.left());
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse an entity number", e);
+                        }
+                        mappings.add(Pair.of(entityNumber.number(), fromMod(p.right())));
+                    },
                     threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of uniques virtual map interrupted!");
@@ -105,7 +110,13 @@ public class StakingInfoDumpUtils {
         writer.writeln("");
     }
 
-    public static BBMStakingInfo fromMod(@NonNull final StakingNodeInfo BBMStakingInfo) {
+    public static BBMStakingInfo fromMod(@NonNull final Bytes stakingInfoBytes) {
+        final StakingNodeInfo BBMStakingInfo;
+        try {
+            BBMStakingInfo = StakingNodeInfo.PROTOBUF.parse(stakingInfoBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse staking node info", e);
+        }
         Objects.requireNonNull(BBMStakingInfo.rewardSumHistory(), "rewardSumHistory");
         return new BBMStakingInfo(
                 Long.valueOf(BBMStakingInfo.nodeNumber()).intValue(),

@@ -22,8 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.statedumpers.utils.Writer;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,8 +46,7 @@ public class ContractStorageDumpUtils {
      * @param path the path to the file to write to
      * @param storage the virtual map to dump
      */
-    public static void dumpStorage(
-            @NonNull final Path path, @NonNull final VirtualMap<OnDiskKey<SlotKey>, OnDiskValue<SlotValue>> storage) {
+    public static void dumpStorage(@NonNull final Path path, @NonNull final VirtualMap storage) {
         final var slots = gatherSlots(storage);
         try (@NonNull final var writer = new Writer(path)) {
             slots.forEach(slot -> writer.writeln("0.0.%d[%s] -> (%s,%s,%s)"
@@ -76,8 +74,7 @@ public class ContractStorageDumpUtils {
     }
 
     @NonNull
-    private static List<Slot> gatherSlots(
-            @NonNull final VirtualMap<OnDiskKey<SlotKey>, OnDiskValue<SlotValue>> storage) {
+    private static List<Slot> gatherSlots(@NonNull final VirtualMap storage) {
         final var slotsToReturn = new ConcurrentLinkedQueue<Slot>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
@@ -86,9 +83,14 @@ public class ContractStorageDumpUtils {
                     getStaticThreadManager(),
                     storage,
                     p -> {
-                        processed.incrementAndGet();
-                        slotsToReturn.add(new Slot(
-                                p.left().getKey(), requireNonNull(p.right().getValue())));
+                        try {
+                            processed.incrementAndGet();
+                            final SlotKey slotKey = SlotKey.PROTOBUF.parse(p.left());
+                            final SlotValue slotValue = SlotValue.PROTOBUF.parse(requireNonNull(p.right()));
+                            slotsToReturn.add(new Slot(slotKey, slotValue));
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse a slot key/value", e);
+                        }
                     },
                     threadCount);
         } catch (final InterruptedException ex) {

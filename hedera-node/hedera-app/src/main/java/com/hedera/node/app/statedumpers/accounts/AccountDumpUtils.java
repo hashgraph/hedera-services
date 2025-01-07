@@ -18,13 +18,12 @@ package com.hedera.node.app.statedumpers.accounts;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,9 +67,7 @@ public class AccountDumpUtils {
     }
 
     public static void dumpModAccounts(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final VirtualMap accounts, @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             BBMHederaAccount[] dumpableAccounts = gatherAccounts(accounts);
             reportOnAccounts(writer, dumpableAccounts);
@@ -80,8 +77,7 @@ public class AccountDumpUtils {
     }
 
     @NonNull
-    public static BBMHederaAccount[] gatherAccounts(
-            @NonNull VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts) {
+    public static BBMHederaAccount[] gatherAccounts(@NonNull VirtualMap accounts) {
         final var accountsToReturn = new ConcurrentLinkedQueue<BBMHederaAccount>();
         final var threadCount = 8;
         final var processed = new AtomicInteger();
@@ -108,42 +104,47 @@ public class AccountDumpUtils {
         return accountsArr;
     }
 
-    public static BBMHederaAccount fromMod(OnDiskValue<Account> account) {
-        return new BBMHederaAccount(
-                account.getValue().accountId(),
-                account.getValue().alias(),
-                account.getValue().key(),
-                account.getValue().expirationSecond(),
-                account.getValue().tinybarBalance(),
-                account.getValue().memo(),
-                account.getValue().deleted(),
-                account.getValue().stakedToMe(),
-                account.getValue().stakePeriodStart(),
-                account.getValue().stakedId(),
-                account.getValue().declineReward(),
-                account.getValue().receiverSigRequired(),
-                account.getValue().headTokenId(),
-                account.getValue().headNftId(),
-                account.getValue().headNftSerialNumber(),
-                account.getValue().numberOwnedNfts(),
-                account.getValue().maxAutoAssociations(),
-                account.getValue().usedAutoAssociations(),
-                account.getValue().numberAssociations(),
-                account.getValue().smartContract(),
-                account.getValue().numberPositiveBalances(),
-                account.getValue().ethereumNonce(),
-                account.getValue().stakeAtStartOfLastRewardedPeriod(),
-                account.getValue().autoRenewAccountId(),
-                account.getValue().autoRenewSeconds(),
-                account.getValue().contractKvPairsNumber(),
-                account.getValue().cryptoAllowances(),
-                account.getValue().approveForAllNftAllowances(),
-                account.getValue().tokenAllowances(),
-                account.getValue().numberTreasuryTitles(),
-                account.getValue().expiredAndPendingRemoval(),
-                account.getValue().firstContractStorageKey(),
-                account.isImmutable(),
-                account.getValue().hasStakedNodeId() ? account.getValue().stakedNodeId() : -1);
+    public static BBMHederaAccount fromMod(final Bytes accountBytes) {
+        try {
+            final var account = Account.PROTOBUF.parse(accountBytes);
+            return new BBMHederaAccount(
+                    account.accountId(),
+                    account.alias(),
+                    account.key(),
+                    account.expirationSecond(),
+                    account.tinybarBalance(),
+                    account.memo(),
+                    account.deleted(),
+                    account.stakedToMe(),
+                    account.stakePeriodStart(),
+                    account.stakedId(),
+                    account.declineReward(),
+                    account.receiverSigRequired(),
+                    account.headTokenId(),
+                    account.headNftId(),
+                    account.headNftSerialNumber(),
+                    account.numberOwnedNfts(),
+                    account.maxAutoAssociations(),
+                    account.usedAutoAssociations(),
+                    account.numberAssociations(),
+                    account.smartContract(),
+                    account.numberPositiveBalances(),
+                    account.ethereumNonce(),
+                    account.stakeAtStartOfLastRewardedPeriod(),
+                    account.autoRenewAccountId(),
+                    account.autoRenewSeconds(),
+                    account.contractKvPairsNumber(),
+                    account.cryptoAllowances(),
+                    account.approveForAllNftAllowances(),
+                    account.tokenAllowances(),
+                    account.numberTreasuryTitles(),
+                    account.expiredAndPendingRemoval(),
+                    account.firstContractStorageKey(),
+                    true,
+                    account.hasStakedNodeId() ? account.stakedNodeId() : -1);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse an account", e);
+        }
     }
 
     public static void reportOnAccounts(@NonNull final Writer writer, @NonNull final BBMHederaAccount[] accountsArr) {

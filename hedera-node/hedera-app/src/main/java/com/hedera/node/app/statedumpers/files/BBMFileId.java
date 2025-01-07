@@ -19,12 +19,19 @@ package com.hedera.node.app.statedumpers.files;
 import com.google.common.collect.ComparisonChain;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record BBMFileId(long shardNum, long realmNum, long fileNum) implements Comparable<BBMFileId> {
 
-    public static BBMFileId fromMod(@NonNull final FileID fileID) {
-        return new BBMFileId(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
+    public static BBMFileId fromMod(@NonNull final Bytes fileIdBytes) {
+        try {
+            final FileID fileID = FileID.PROTOBUF.parse(fileIdBytes);
+            return new BBMFileId(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a file ID", e);
+        }
     }
 
     static BBMFileId fromMono(@NonNull final Integer fileNum) {

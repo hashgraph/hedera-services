@@ -55,6 +55,12 @@ public class BenchmarkValue implements VirtualValue {
         valueBytes = Arrays.copyOf(other.valueBytes, other.valueBytes.length);
     }
 
+    public BenchmarkValue(final ReadableSequentialData in) {
+        final int len = in.readInt();
+        valueBytes = new byte[len];
+        in.readBytes(valueBytes);
+    }
+
     public long toLong() {
         return Utils.fromBytes(valueBytes);
     }
@@ -75,8 +81,13 @@ public class BenchmarkValue implements VirtualValue {
         return new BenchmarkValue(this);
     }
 
-    public static int getSerializedSize() {
-        return Integer.BYTES + valueSize;
+    public int getSizeInBytes() {
+        return Integer.BYTES + valueBytes.length;
+    }
+
+    public void writeTo(final WritableSequentialData out) {
+        out.writeInt(valueBytes.length);
+        out.writeBytes(valueBytes);
     }
 
     @Override

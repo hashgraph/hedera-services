@@ -28,9 +28,9 @@ import com.hedera.node.app.statedumpers.legacy.RichInstant;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,9 +46,7 @@ import java.util.stream.Collectors;
 
 public class UniqueTokenDumpUtils {
     public static void dumpModUniqueTokens(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> uniques,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final VirtualMap uniques, @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableUniques = gatherUniques(uniques);
             reportOnUniques(writer, dumpableUniques);
@@ -58,8 +56,7 @@ public class UniqueTokenDumpUtils {
     }
 
     @NonNull
-    private static Map<BBMUniqueTokenId, BBMUniqueToken> gatherUniques(
-            @NonNull final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> source) {
+    private static Map<BBMUniqueTokenId, BBMUniqueToken> gatherUniques(@NonNull final VirtualMap source) {
         final var r = new HashMap<BBMUniqueTokenId, BBMUniqueToken>();
         final var threadCount = 5;
         final var mappings = new ConcurrentLinkedQueue<Pair<BBMUniqueTokenId, BBMUniqueToken>>();
@@ -67,7 +64,7 @@ public class UniqueTokenDumpUtils {
             VirtualMapMigration.extractVirtualMapDataC(
                     getStaticThreadManager(),
                     source,
-                    p -> mappings.add(Pair.of(fromMod(p.left().getKey()), fromMod(p.right()))),
+                    p -> mappings.add(Pair.of(fromModTokenId(p.left()), fromModToken(p.right()))),
                     threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of uniques virtual map interrupted!");
@@ -82,15 +79,19 @@ public class UniqueTokenDumpUtils {
         return r;
     }
 
-    static BBMUniqueToken fromMod(@NonNull final OnDiskValue<Nft> wrapper) {
-        final var value = wrapper.getValue();
-        return new BBMUniqueToken(
-                idFromMod(value.ownerId()),
-                idFromMod(value.spenderId()),
-                new RichInstant(value.mintTime().seconds(), value.mintTime().nanos()),
-                value.metadata().toByteArray(),
-                idPairFromMod(value.ownerPreviousNftId()),
-                idPairFromMod(value.ownerNextNftId()));
+    static BBMUniqueToken fromModToken(@NonNull final Bytes nftBytes) {
+        try {
+            final var value = Nft.PROTOBUF.parse(nftBytes);
+            return new BBMUniqueToken(
+                    idFromMod(value.ownerId()),
+                    idFromMod(value.spenderId()),
+                    new RichInstant(value.mintTime().seconds(), value.mintTime().nanos()),
+                    value.metadata().toByteArray(),
+                    idPairFromMod(value.ownerPreviousNftId()),
+                    idPairFromMod(value.ownerNextNftId()));
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse an NFT", e);
+        }
     }
 
     private static EntityId idFromMod(@Nullable final AccountID accountId) {
@@ -103,8 +104,13 @@ public class UniqueTokenDumpUtils {
                 : NftNumPair.fromLongs(nftId.tokenIdOrThrow().tokenNum(), nftId.serialNumber());
     }
 
-    static BBMUniqueTokenId fromMod(@NonNull final NftID nftID) {
-        return new BBMUniqueTokenId(nftID.tokenIdOrThrow().tokenNum(), nftID.serialNumber());
+    static BBMUniqueTokenId fromModTokenId(@NonNull final Bytes nftIdBytes) {
+        try {
+            final NftID nftID = NftID.PROTOBUF.parse(nftIdBytes);
+            return new BBMUniqueTokenId(nftID.tokenIdOrThrow().tokenNum(), nftID.serialNumber());
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse an NFT ID", e);
+        }
     }
 
     public static void reportOnUniques(

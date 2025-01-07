@@ -27,9 +27,9 @@ import com.hedera.node.app.statedumpers.legacy.JKey;
 import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,9 +52,7 @@ public class TopicDumpUtils {
     }
 
     public static void dumpModTopics(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final VirtualMap topics, @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableTopics = gatherTopics(topics);
             reportOnTopics(writer, dumpableTopics);
@@ -63,8 +61,7 @@ public class TopicDumpUtils {
         }
     }
 
-    private static Map<Long, BBMTopic> gatherTopics(
-            @NonNull final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topicsStore) {
+    private static Map<Long, BBMTopic> gatherTopics(@NonNull final VirtualMap topicsStore) {
         final var r = new TreeMap<Long, BBMTopic>();
         final var threadCount = 8;
         final var mappings = new ConcurrentLinkedQueue<Pair<Long, BBMTopic>>();
@@ -73,13 +70,13 @@ public class TopicDumpUtils {
                     getStaticThreadManager(),
                     topicsStore,
                     p -> {
+                        final TopicID topicId;
                         try {
-                            mappings.add(Pair.of(
-                                    Long.valueOf(p.left().getKey().topicNum()),
-                                    fromMod(p.right().getValue())));
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                            topicId = TopicID.PROTOBUF.parse(p.left());
+                        } catch (final ParseException e) {
+                            throw new RuntimeException("Failed to parse a token ID", e);
                         }
+                        mappings.add(Pair.of(topicId.topicNum(), fromMod(p.right())));
                     },
                     threadCount);
         } catch (final InterruptedException ex) {
@@ -95,7 +92,13 @@ public class TopicDumpUtils {
         return r;
     }
 
-    static BBMTopic fromMod(@NonNull final com.hedera.hapi.node.state.consensus.Topic topic) {
+    static BBMTopic fromMod(@NonNull final Bytes topicBytes) {
+        final Topic topic;
+        try {
+            topic = Topic.PROTOBUF.parse(topicBytes);
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a topic", e);
+        }
         return new BBMTopic(
                 (int) topic.topicId().topicNum(),
                 topic.memo(),

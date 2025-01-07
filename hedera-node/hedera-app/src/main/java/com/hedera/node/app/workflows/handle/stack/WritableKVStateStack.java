@@ -78,12 +78,6 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
         return getCurrent().get(key);
     }
 
-    @Override
-    @Nullable
-    public V getForModify(@NonNull final K key) {
-        return getCurrent().getForModify(key);
-    }
-
     @SuppressWarnings("unchecked")
     @Nullable
     @Override

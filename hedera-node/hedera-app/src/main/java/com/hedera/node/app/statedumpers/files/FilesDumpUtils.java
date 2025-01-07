@@ -18,7 +18,6 @@ package com.hedera.node.app.statedumpers.files;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
@@ -26,9 +25,9 @@ import com.hedera.node.app.statedumpers.legacy.HFileMeta;
 import com.hedera.node.app.statedumpers.legacy.JKey;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.state.merkle.disk.OnDiskKey;
-import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,9 +43,7 @@ public class FilesDumpUtils {
     }
 
     public static void dumpModFiles(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> files,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final VirtualMap files, @NonNull final DumpCheckpoint checkpoint) {
         try (@NonNull final var writer = new Writer(path)) {
             final var dumpableFiles = gatherModFiles(files);
             reportOnFiles(writer, dumpableFiles);
@@ -56,8 +53,7 @@ public class FilesDumpUtils {
     }
 
     @NonNull
-    public static Map<BBMFileId, BBMHederaFile> gatherModFiles(
-            VirtualMap<OnDiskKey<FileID>, OnDiskValue<File>> source) {
+    public static Map<BBMFileId, BBMHederaFile> gatherModFiles(VirtualMap source) {
         final var r = new HashMap<BBMFileId, BBMHederaFile>();
         final var threadCount = 8;
         final var files = new ConcurrentLinkedQueue<Pair<BBMFileId, BBMHederaFile>>();
@@ -65,7 +61,7 @@ public class FilesDumpUtils {
             VirtualMapMigration.extractVirtualMapData(
                     getStaticThreadManager(),
                     source,
-                    p -> files.add(Pair.of(BBMFileId.fromMod(p.left().getKey()), fromMod(p.right()))),
+                    p -> files.add(Pair.of(BBMFileId.fromMod(p.left()), fromMod(p.right()))),
                     threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of files virtual map interrupted!");
@@ -75,21 +71,25 @@ public class FilesDumpUtils {
         return r;
     }
 
-    static BBMHederaFile fromMod(@NonNull final OnDiskValue<File> wrapper) {
-        final var value = wrapper.getValue();
-        JKey key;
+    static BBMHederaFile fromMod(@NonNull final Bytes fileBytes) {
         try {
-            key = JKey.mapKey(Key.newBuilder().keyList(value.keys()).build());
-        } catch (Exception e) {
-            key = null;
+            final var value = File.PROTOBUF.parse(fileBytes);
+            JKey key;
+            try {
+                key = JKey.mapKey(Key.newBuilder().keyList(value.keys()).build());
+            } catch (Exception e) {
+                key = null;
+            }
+            final var meta = new HFileMeta(value.deleted(), key, value.expirationSecond(), value.memo());
+            return new BBMHederaFile(
+                    FileStore.ORDINARY,
+                    (int) value.fileId().fileNum(),
+                    value.contents().toByteArray(),
+                    meta,
+                    SystemFileType.byId.get((int) value.fileId().fileNum()));
+        } catch (final ParseException e) {
+            throw new RuntimeException("Failed to parse a file", e);
         }
-        final var meta = new HFileMeta(value.deleted(), key, value.expirationSecond(), value.memo());
-        return new BBMHederaFile(
-                FileStore.ORDINARY,
-                (int) value.fileId().fileNum(),
-                value.contents().toByteArray(),
-                meta,
-                SystemFileType.byId.get((int) value.fileId().fileNum()));
     }
 
     private static void reportOnFiles(
