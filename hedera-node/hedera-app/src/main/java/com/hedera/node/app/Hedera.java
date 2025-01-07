@@ -96,7 +96,7 @@ import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.MerkleStateLifecyclesImpl;
+import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
@@ -498,8 +498,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
-            final Supplier<PlatformMerkleStateRoot> baseSupplier = () ->
-                    new PlatformMerkleStateRoot(new MerkleStateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+            final Supplier<PlatformMerkleStateRoot> baseSupplier =
+                    () -> new PlatformMerkleStateRoot(new StateLifecyclesImpl(this), ServicesSoftwareVersion::new);
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
@@ -879,7 +879,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
     }
 
-    public void onNewRecoveredState(@NonNull final MerkleStateRoot recoveredState) {
+    public void onNewRecoveredState(@NonNull final State recoveredState) {
         try {
             if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
                 dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY, MerkleStateChild.childrenToDump());

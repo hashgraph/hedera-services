@@ -32,8 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import javax.inject.Singleton;
 
 /**
- * FUTURE
- * ------
  * A {@link BlockHashSigner} that uses whatever parts of the TSS protocol are enabled to sign blocks.
  * That is,
  * <ol>
