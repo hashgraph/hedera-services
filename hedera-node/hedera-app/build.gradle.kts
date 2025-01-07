@@ -38,7 +38,6 @@ mainModuleInfo {
 }
 
 testModuleInfo {
-    requires("com.fasterxml.jackson.core")
     requires("com.google.common.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
