@@ -13,26 +13,6 @@
     "@semantic-release/git",
     "@semantic-release/github"
   ],
-  "verifyRelease": [
-    [
-      "@semantic-release/exec",
-      { "cmd": "echo ${nextRelease.version} > VERSION" }
-    ]
-  ],
-  "prepare": [
-    [
-      "@semantic-release/exec",
-      { "cmd": "./gradlew versionAsSpecified --scan -PnewVersion=${nextRelease.version}" }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": [
-          "version.txt"
-        ]
-      }
-    ]
-  ],
   "branches":[
     {
       "name": "main"
