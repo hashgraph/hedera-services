@@ -257,7 +257,9 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -332,11 +334,15 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         return transaction.getApplicationTransaction().length() > 4;
     }
 
-    private void consumeSystemTransaction(final Transaction transaction, final Event event, final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         try {
-            final var stateSignatureTransaction = StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
-            stateSignatureTransactionCallback.accept(
-                    new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
         } catch (ParseException e) {
             logger.error("Failed to parse StateSignatureTransaction", e);
         }

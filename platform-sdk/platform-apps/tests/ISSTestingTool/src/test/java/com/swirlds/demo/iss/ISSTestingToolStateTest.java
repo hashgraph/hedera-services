@@ -32,8 +32,8 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -65,7 +65,7 @@ class ISSTestingToolStateTest {
 
     @BeforeEach
     void setUp() {
-        state = new ISSTestingToolState(mock(MerkleStateLifecycles.class), mock(Function.class));
+        state = new ISSTestingToolState(mock(StateLifecycles.class), mock(Function.class));
         main = mock(ISSTestingToolMain.class);
         final var random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
