@@ -258,7 +258,15 @@ Service are:
 - ```INVALID_TRANSACTION;```: The transaction specified is invalid
 - ```MESSAGE_SIZE_TOO_LARGE;```: The message size specified is too large
 - ```INVALID_TOPIC_ID;```: The topic ID specified is invalid
-  todo add the new custom fee related response codes
+- ```MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED;```: The provided fee exempt key list size exceeded the limit
+- ```FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;```: The provided fee exempt key list contains duplicated keys
+- ```INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;```: The provided fee exempt key list contains an invalid key
+- ```INVALID_FEE_SCHEDULE_KEY;```: The provided fee schedule key contains an invalid key
+- ```FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 379;```: If a fee schedule key is not set when we create a topic we cannot add it on update
+- ```FEE_SCHEDULE_KEY_NOT_SET;```: If the topic's custom fees are updated the topic SHOULD have a fee schedule key
+- ```MAX_CUSTOM_FEE_LIMIT_EXCEEDED;```: The fee amount is exceeding the amount that the payer is willing to pay
+- ```NO_VALID_MAX_CUSTOM_FEE;```: No provided max custom fee, or there are no corresponding topic fees
+- ```DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST;```: The provided max custom fee list contains fees with duplicate denominations
 
 ## Consensus Service Schema Implementation
 
