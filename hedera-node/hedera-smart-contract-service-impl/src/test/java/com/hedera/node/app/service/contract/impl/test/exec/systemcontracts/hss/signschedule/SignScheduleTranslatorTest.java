@@ -231,7 +231,7 @@ class SignScheduleTranslatorTest {
     }
 
     @Test
-    void testScheduleIdForSignScheduleProxy() {
+    void testAttemptForSignScheduleProxy() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(enhancement.systemOperations()).willReturn(systemContractOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
@@ -311,7 +311,7 @@ class SignScheduleTranslatorTest {
     }
 
     @Test
-    void testScheduleIdForAuthorizeSchedule() {
+    void testAttemptForAuthorizeSchedule() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
         given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
@@ -377,5 +377,77 @@ class SignScheduleTranslatorTest {
         long gas = SignScheduleTranslator.gasRequirement(transactionBody, gasCalculator, enhancement, payerId);
 
         assertEquals(expectedGas, gas);
+    }
+
+    @Test
+    void testBodyFor() {
+        // then:
+        final var body = subject.bodyFor(scheduleID);
+
+        assertThat(body.hasScheduleSign()).isTrue();
+        assertThat(body.scheduleSignOrThrow().scheduleID()).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testScheduleIdForSignScheduleProxy() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                bytesForRedirectScheduleTxn(
+                        SignScheduleTranslator.SIGN_SCHEDULE_PROXY.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        final var returnedScheduleId = subject.scheduleIdFor(attempt);
+        assertThat(returnedScheduleId).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testScheduleIdForAuthorizeSchedule() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(
+                        SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        final var returnedScheduleId = subject.scheduleIdFor(attempt);
+        assertThat(returnedScheduleId).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testScheduleIdForScheduleService() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, new byte[0]))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        final var returnedScheduleId = subject.scheduleIdFor(attempt);
+        assertThat(returnedScheduleId).isEqualTo(scheduleID);
     }
 }

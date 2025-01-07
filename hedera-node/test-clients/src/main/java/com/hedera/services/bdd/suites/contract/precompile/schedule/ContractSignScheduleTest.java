@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile.schedule;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -31,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEd25519PrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -40,11 +42,13 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ED25519KEY;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.SENDER;
 
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -58,6 +62,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -251,36 +256,40 @@ public class ContractSignScheduleTest {
 
         @BeforeAll
         static void beforeAll(final TestLifecycle testLifecycle) {
-            String ECDSA_RECEIVER_KEY = "EcDsaReceiverKey";
+            final String ECDSA_RECEIVER_KEY = "EcdsaReceiverKey";
+            final String ED_SENDER = "EdSender";
+            final String ED_RECEIVER = "EdReceiver";
             testLifecycle.doAdhoc(
                     overriding("contracts.systemContract.scheduleService.enabled", "true"),
                     overriding("contracts.systemContract.scheduleService.signSchedule.enabled", "true"),
                     newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                    newKeyNamed(ED25519KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
                     newKeyNamed(ECDSA_RECEIVER_KEY).shape(SECP_256K1_SHAPE),
+                    cryptoCreate(ED_SENDER).balance(ONE_HUNDRED_HBARS).key(ED25519KEY),
+                    cryptoCreate(ED_RECEIVER),
                     uploadInitCode(CONTRACT),
                     contractCreate(CONTRACT),
                     cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
                     scheduleCreate(
                                     SCHEDULE_G,
                                     cryptoTransfer(tinyBarsFromToWithAlias(ECDSA_KEY, ECDSA_RECEIVER_KEY, 1)))
-                            .exposingCreatedIdTo(scheduleID_G::set));
+                            .exposingCreatedIdTo(scheduleID_G::set),
+                    scheduleCreate(SCHEDULE_H, cryptoTransfer(tinyBarsFromTo(ED_SENDER, ED_RECEIVER, 1)))
+                            .exposingCreatedIdTo(scheduleID_H::set));
         }
 
         @HapiTest
-        @DisplayName("Signature executes schedule transaction")
-        final Stream<DynamicTest> signScheduleWithContract() {
+        @DisplayName("Sign schedule using ecdsa key")
+        final Stream<DynamicTest> signScheduleWithContractEcdsaKey() {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_G).isNotExecuted(),
                     withOpContext((spec, opLog) -> {
-                        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
-                        buffer.putLong(scheduleID_G.get().getShardNum());
-                        buffer.putLong(scheduleID_G.get().getRealmNum());
-                        buffer.putLong(scheduleID_G.get().getScheduleNum());
-                        final Bytes message = Bytes.wrap(buffer.array());
+                        final var message = getMessageBytes(scheduleID_G);
+                        final var messageHash = new Keccak.Digest256().digest(message.toByteArray());
 
                         final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                         final var publicKey = spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
-                        final var signedBytes = Signing.signMessage(message.toByteArray(), privateKey);
+                        final var signedBytes = Signing.signMessage(messageHash, privateKey);
 
                         final var signatureMap = SignatureMap.newBuilder()
                                 .sigPair(SignaturePair.newBuilder()
@@ -301,6 +310,47 @@ public class ContractSignScheduleTest {
                         allRunFor(spec, call);
                     }),
                     getScheduleInfo(SCHEDULE_G).isExecuted());
+        }
+
+        @HapiTest
+        @DisplayName("Sign schedule using ed key")
+        final Stream<DynamicTest> signScheduleWithContractEdKey() {
+            return hapiTest(
+                    getScheduleInfo(SCHEDULE_H).isNotExecuted(),
+                    withOpContext((spec, opLog) -> {
+                        final var message = getMessageBytes(scheduleID_H);
+
+                        final var privateKey = getEd25519PrivateKeyFromSpec(spec, ED25519KEY);
+                        final var publicKey = spec.registry().getKey(ED25519KEY).getEd25519();
+                        final var signedBytes = SignatureGenerator.signBytes(message.toByteArray(), privateKey);
+
+                        final var signatureMap = SignatureMap.newBuilder()
+                                .sigPair(SignaturePair.newBuilder()
+                                        .ed25519(Bytes.wrap(signedBytes))
+                                        .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
+                                        .build())
+                                .build();
+
+                        final var signatureMapBytes =
+                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                        final var call = contractCall(
+                                        CONTRACT,
+                                        SIGN_SCHEDULE_CALL,
+                                        mirrorAddrWith(scheduleID_H.get().getScheduleNum()),
+                                        signatureMapBytes)
+                                .gas(2_000_000L);
+                        allRunFor(spec, call);
+                    }),
+                    getScheduleInfo(SCHEDULE_H).isExecuted());
+        }
+
+        private Bytes getMessageBytes(AtomicReference<ScheduleID> scheduleID) {
+            final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
+            buffer.putLong(scheduleID.get().getShardNum());
+            buffer.putLong(scheduleID.get().getRealmNum());
+            buffer.putLong(scheduleID.get().getScheduleNum());
+            return Bytes.wrap(buffer.array());
         }
     }
 }
