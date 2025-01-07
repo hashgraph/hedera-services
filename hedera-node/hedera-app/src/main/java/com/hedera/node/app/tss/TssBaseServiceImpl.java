@@ -239,9 +239,9 @@ public class TssBaseServiceImpl implements TssBaseService {
             @NonNull final byte[] messageHash, @NonNull final Instant lastUsedConsensusTime) {
         requireNonNull(messageHash);
         requireNonNull(lastUsedConsensusTime);
-        final var mockSignature = noThrowSha384HashOf(messageHash);
         CompletableFuture.runAsync(
                 () -> {
+                    final var mockSignature = noThrowSha384HashOf(messageHash);
                     if (appContext
                             .configSupplier()
                             .get()

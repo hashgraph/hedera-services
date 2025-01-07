@@ -260,7 +260,6 @@ class BlockStreamManagerImplTest {
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
-        verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
         assertNull(subject.prngSeed());
@@ -274,6 +273,8 @@ class BlockStreamManagerImplTest {
 
         // End the round
         subject.endRound(state, ROUND_NO);
+
+        verify(aWriter).openBlock(N_BLOCK_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
         final var expectedBlockInfo = new BlockStreamInfo(
@@ -322,9 +323,8 @@ class BlockStreamManagerImplTest {
         // Start the round that will be block N
         subject.startRound(round, state);
 
-        // Assert the internal state of the subject has changed as expected and the writer has been opened
+        // Assert the internal state of the subject has changed as expected
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
-        verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
 
@@ -362,7 +362,6 @@ class BlockStreamManagerImplTest {
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
-        verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
         assertEquals(N_BLOCK_NO, subject.blockNo());
@@ -379,6 +378,8 @@ class BlockStreamManagerImplTest {
 
         // End the round
         subject.endRound(state, ROUND_NO);
+
+        verify(aWriter).openBlock(N_BLOCK_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
         final var expectedBlockInfo = new BlockStreamInfo(
