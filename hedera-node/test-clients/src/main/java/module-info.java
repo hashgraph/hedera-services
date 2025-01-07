@@ -27,7 +27,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.lifecycle;
     exports com.hedera.services.bdd.spec.utilops.lifecycle.ops;
     exports com.hedera.services.bdd.spec.utilops.mod;
-    exports com.hedera.services.bdd.spec.utilops.tss;
     exports com.hedera.services.bdd.spec.utilops.pauses;
     exports com.hedera.services.bdd.spec.utilops.streams;
     exports com.hedera.services.bdd.spec.utilops.upgrade;
@@ -64,8 +63,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.utils;
     exports com.hedera.services.bdd.junit.restart;
 
-    requires com.hedera.cryptography.bls;
-    requires com.hedera.cryptography.pairings.api;
     requires com.hedera.cryptography.tss;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;

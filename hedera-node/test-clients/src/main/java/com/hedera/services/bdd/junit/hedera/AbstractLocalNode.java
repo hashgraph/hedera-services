@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.junit.hedera;
 
 import static com.hedera.node.app.info.DiskStartupNetworks.ARCHIVE;
@@ -11,20 +26,15 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.condi
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.internal.network.Network;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.function.LongFunction;
 
 /**
  * Implementation support for a node that uses a local working directory.
@@ -44,14 +54,9 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     }
 
     @Override
-    public @NonNull T initWorkingDir(
-            @NonNull final String configTxt,
-            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+    public @NonNull T initWorkingDir(@NonNull final String configTxt) {
         requireNonNull(configTxt);
-        requireNonNull(tssEncryptionKeyFn);
-        requireNonNull(tssKeyMaterialFn);
-        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
+        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
         workingDirInitialized = true;
         return self();
     }

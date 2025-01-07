@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,9 +58,6 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.stores.ReadableTssStore;
-import com.hedera.node.app.tss.stores.ReadableTssStoreImpl;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -122,7 +119,6 @@ public class ReadableStoreFactory {
                 ReadablePlatformStateStore.class,
                 new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
         newMap.put(ReadableRosterStore.class, new StoreEntry(RosterService.NAME, ReadableRosterStoreImpl::new));
-        newMap.put(ReadableTssStore.class, new StoreEntry(TssBaseService.NAME, ReadableTssStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }
 

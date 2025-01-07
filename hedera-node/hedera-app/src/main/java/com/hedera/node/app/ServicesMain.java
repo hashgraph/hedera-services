@@ -46,8 +46,7 @@ import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssLibraryImpl;
+import com.hedera.node.app.tss.TssBlockHashSigner;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -96,7 +95,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -367,14 +365,8 @@ public class ServicesMain implements SwirldMain {
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
-                        appContext,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new TssLibraryImpl(appContext),
-                        ForkJoinPool.commonPool(),
-                        metrics),
-                DiskStartupNetworks::new);
+                DiskStartupNetworks::new,
+                TssBlockHashSigner::new);
     }
 
     /**

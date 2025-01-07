@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.Hedera.TssBaseServiceFactory;
 import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
@@ -46,7 +45,7 @@ import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -121,11 +120,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      */
     protected FakeState state;
     /**
-     * Non-final because the compiler can't tell that the {@link TssBaseServiceFactory} lambda we give the
-     * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.tss.TssBaseServiceImpl}
-     * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
+     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
      */
-    protected FakeTssBaseService tssBaseService;
+    protected LapsingBlockHashSigner blockHashSigner;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -149,11 +148,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                appContext -> {
-                    this.tssBaseService = new FakeTssBaseService(appContext);
-                    return this.tssBaseService;
-                },
-                DiskStartupNetworks::new);
+                DiskStartupNetworks::new,
+                () -> this.blockHashSigner = new LapsingBlockHashSigner());
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
@@ -220,11 +216,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public FakeState state() {
         return state;
-    }
-
-    @Override
-    public FakeTssBaseService tssBaseService() {
-        return tssBaseService;
     }
 
     @Override
