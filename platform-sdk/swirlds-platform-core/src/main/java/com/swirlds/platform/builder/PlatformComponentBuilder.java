@@ -890,11 +890,7 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getAddressBook(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

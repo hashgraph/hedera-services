@@ -142,6 +142,7 @@ class FrameBuilderTest {
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
         assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
         assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.ONE, frame.getBlobGasPrice());
         assertEquals(Wei.of(VALUE), frame.getValue());
         assertEquals(Wei.of(VALUE), frame.getApparentValue());
         assertSame(blockValues, frame.getBlockValues());
@@ -190,6 +191,7 @@ class FrameBuilderTest {
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
         assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
         assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.ONE, frame.getBlobGasPrice());
         assertEquals(Wei.of(VALUE), frame.getValue());
         assertEquals(Wei.of(VALUE), frame.getApparentValue());
         assertSame(blockValues, frame.getBlockValues());
@@ -257,6 +259,7 @@ class FrameBuilderTest {
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
         assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
         assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.ONE, frame.getBlobGasPrice());
         assertEquals(Wei.of(VALUE), frame.getValue());
         assertEquals(Wei.of(VALUE), frame.getApparentValue());
         assertSame(blockValues, frame.getBlockValues());
@@ -297,6 +300,7 @@ class FrameBuilderTest {
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
         assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
         assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.ONE, frame.getBlobGasPrice());
         assertEquals(Wei.of(VALUE), frame.getValue());
         assertEquals(Wei.of(VALUE), frame.getApparentValue());
         assertSame(blockValues, frame.getBlockValues());
@@ -339,6 +343,7 @@ class FrameBuilderTest {
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
         assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
         assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.ONE, frame.getBlobGasPrice());
         assertEquals(Wei.of(VALUE), frame.getValue());
         assertEquals(Wei.of(VALUE), frame.getApparentValue());
         assertSame(blockValues, frame.getBlockValues());
@@ -382,6 +387,7 @@ class FrameBuilderTest {
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
         assertSame(EIP_1014_ADDRESS, frame.getOriginatorAddress());
         assertEquals(Wei.of(NETWORK_GAS_PRICE), frame.getGasPrice());
+        assertEquals(Wei.ONE, frame.getBlobGasPrice());
         assertEquals(Wei.of(VALUE), frame.getValue());
         assertEquals(Wei.of(VALUE), frame.getApparentValue());
         assertSame(blockValues, frame.getBlockValues());

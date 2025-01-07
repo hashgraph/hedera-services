@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -37,9 +38,9 @@ import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -84,6 +85,10 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
          * Add a virtual map and remove all blobs.
          */
         public static final int VIRTUAL_MAP = 4;
+        /**
+         * Added ROSTERS and ROSTER_STATE
+         */
+        public static final int ROSTERS = 5;
     }
 
     private static final long CLASS_ID = 0x1a0daec64a09f6a4L;
@@ -93,21 +98,25 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      */
     private static class ChildIndices {
         public static final int UNUSED_PLATFORM_STATE = 0;
-        public static final int UNUSED_ROSTERS = 1;
-        public static final int UNUSED_ROSTER_STATE = 2;
+        public static final int MERKLE_MAP = 1;
+        public static final int VIRTUAL_MAP = 2;
 
-        public static final int MERKLE_MAP = 3;
-        public static final int VIRTUAL_MAP = 4;
+        public static final int UNUSED_ROSTERS = 3;
+        public static final int UNUSED_ROSTER_STATE = 4;
 
         public static final int CHILD_COUNT = 5;
+
+        // these constants are to migrate from v4 to v5
+        public static final int OLD_CHILD_COUNT = 3;
     }
 
     public NodeId selfId;
 
     public MigrationTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
+        allocateSpaceForChild(ChildIndices.CHILD_COUNT);
     }
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
@@ -122,7 +131,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      */
     @Override
     public int getMinimumChildCount() {
-        return ChildIndices.CHILD_COUNT;
+        return ChildIndices.OLD_CHILD_COUNT;
     }
 
     /**
@@ -151,6 +160,16 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
             default:
                 return false;
         }
+    }
+
+    @Override
+    public MerkleNode migrate(int version) {
+        if (version == ClassVersion.VIRTUAL_MAP) {
+            FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(this);
+            return this;
+        }
+
+        return super.migrate(version);
     }
 
     /**
@@ -266,9 +285,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
             final ConsensusEvent event = eventIt.next();
@@ -308,7 +325,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.VIRTUAL_MAP;
+        return ClassVersion.ROSTERS;
     }
 
     /**

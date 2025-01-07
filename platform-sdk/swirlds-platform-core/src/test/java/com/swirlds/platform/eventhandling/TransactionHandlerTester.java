@@ -25,7 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.service.PlatformStateValueAccumulator;
@@ -59,9 +59,7 @@ public class TransactionHandlerTester {
                 TestPlatformContextBuilder.create().build();
         platformState = new PlatformStateValueAccumulator();
 
-        final MerkleRoot consensusState = mock(MerkleRoot.class);
-        final SwirldState swirldState = mock(SwirldState.class);
-        when(consensusState.getSwirldState()).thenReturn(swirldState);
+        final PlatformMerkleStateRoot consensusState = mock(PlatformMerkleStateRoot.class);
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.getReadablePlatformState()).thenReturn(platformState);
         when(consensusState.getWritablePlatformState()).thenReturn(platformState);
@@ -69,7 +67,7 @@ public class TransactionHandlerTester {
                     handledRounds.add(i.getArgument(0));
                     return null;
                 })
-                .when(swirldState)
+                .when(consensusState)
                 .handleConsensusRound(any(), any(), any());
         final StatusActionSubmitter statusActionSubmitter = submittedActions::add;
         swirldStateManager = new SwirldStateManager(

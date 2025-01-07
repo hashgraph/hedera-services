@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -26,7 +26,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -36,14 +35,13 @@ import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 /**
- * A test implementation of {@link MerkleRoot} and {@link SwirldState} state for SignedStateManager unit tests.
- * Node that some of the {@link MerkleRoot} methods are intentionally not implemented. If a test needs these methods,
+ * A test implementation of {@link PlatformMerkleStateRoot} and {@link SwirldState} state for SignedStateManager unit tests.
+ * Node that some of the {@link PlatformMerkleStateRoot} methods are intentionally not implemented. If a test needs these methods,
  * {@link MerkleStateRoot} should be used instead.
  */
 public class BlockingSwirldState extends PlatformMerkleStateRoot {
@@ -86,9 +84,7 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         // intentionally does nothing
     }
 
@@ -114,9 +110,7 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
         if (!(obj instanceof final BlockingSwirldState that)) {
             return false;
         }
-        return Objects.equals(
-                this.getReadablePlatformState().getAddressBook(),
-                that.getReadablePlatformState().getAddressBook());
+        return Objects.equals(this.getReadablePlatformState(), that.getReadablePlatformState());
     }
 
     /**

@@ -105,6 +105,7 @@ public class FrameBuilder {
                 .initialGas(transaction.gasAvailable(intrinsicGas))
                 .originator(from)
                 .gasPrice(Wei.of(context.gasPrice()))
+                .blobGasPrice(Wei.ONE) // Per Hedera CANCUN adaptation
                 .sender(from)
                 .value(value)
                 .apparentValue(value)

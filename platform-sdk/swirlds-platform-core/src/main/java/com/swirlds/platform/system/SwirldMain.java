@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.system;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -67,7 +67,7 @@ public interface SwirldMain extends Runnable {
      * @return merkle state tree root node
      */
     @NonNull
-    MerkleRoot newMerkleStateRoot();
+    PlatformMerkleStateRoot newMerkleStateRoot();
 
     /**
      * <p>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,4 +48,7 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "TssMessage,TssVote,TssShareSignature") @NetworkProperty
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
-        @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport) {}
+        @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport,
+        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateRoster,
+        @ConfigProperty(defaultValue = "candidate-roster.json") @NodeProperty String candidateRosterExportFile,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean preserveStateWeightsDuringOverride) {}

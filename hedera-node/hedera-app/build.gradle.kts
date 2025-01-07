@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.feature.benchmark")
-    id("com.hedera.gradle.feature.test-fixtures")
+    id("org.hiero.gradle.module.library")
+    id("org.hiero.gradle.feature.benchmark")
+    id("org.hiero.gradle.feature.test-fixtures")
 }
 
 description = "Hedera Application - Implementation"
@@ -44,7 +43,8 @@ configurations {
 
 testModuleInfo {
     requires("com.fasterxml.jackson.core")
-    requires("com.google.jimfs")
+    requires("com.fasterxml.jackson.databind")
+    requires("com.google.common.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
@@ -54,7 +54,7 @@ testModuleInfo {
     requires("com.swirlds.state.api.test.fixtures")
     requires("com.swirlds.state.impl.test.fixtures")
     requires("com.swirlds.base.test.fixtures")
-    requires("headlong")
+    requires("com.esaulpaugh.headlong")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.api")

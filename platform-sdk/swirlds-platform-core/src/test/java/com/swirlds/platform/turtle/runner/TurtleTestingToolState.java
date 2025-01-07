@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.turtle.runner;
 
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
@@ -25,7 +25,6 @@ import com.swirlds.platform.state.*;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -84,9 +83,7 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         state = NonCryptographicHashing.hash64(
                 state,
                 round.getRoundNum(),
@@ -110,7 +107,7 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
      * @return merkle tree root
      */
     @NonNull
-    public static MerkleRoot getStateRootNode() {
+    public static PlatformMerkleStateRoot getStateRootNode() {
         final PlatformMerkleStateRoot state = new TurtleTestingToolState();
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         return state;
