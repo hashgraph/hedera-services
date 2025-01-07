@@ -119,11 +119,16 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public void preHandle(
             @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         event.forEachTransaction(transaction -> {
-            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+            if (!transaction.isSystem()) {
+                final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
+
+                if(stateSignatureTransaction.signature() != Bytes.EMPTY) {
+                    stateSignatureTransactionCallback.accept(
+                            new ScopedSystemTransaction<>(event.getCreatorId(),
+                                    event.getSoftwareVersion(), stateSignatureTransaction));
+                }
             }
         });
 
@@ -137,14 +142,21 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     public void handleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         throwIfImmutable();
 
         for (final var event : round) {
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
-                if (areTransactionBytesSystemOnes(transaction)) {
-                    stateSignatureTransaction.accept(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                if (transaction.isSystem()) {
+                    return;
+                }
+
+                final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
+
+                if(stateSignatureTransaction.signature() != Bytes.EMPTY) {
+                    stateSignatureTransactionCallback.accept(
+                            new ScopedSystemTransaction<>(event.getCreatorId(),
+                                    event.getSoftwareVersion(), stateSignatureTransaction));
                 } else {
                     handleTransaction(transaction);
                 }
@@ -153,27 +165,25 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private void handleTransaction(@NonNull final ConsensusTransaction trans) {
-        if (trans.isSystem()) {
-            return;
-        }
         runningSum +=
                 ByteUtils.byteArrayToLong(trans.getApplicationTransaction().toByteArray(), 0);
         busyWait(config.handleTime());
     }
 
     /**
-     * Checks if the transaction bytes are system ones.
+     * Tries to parse the transaction bytes to a {@link StateSignatureTransaction}.
      *
-     * @param transaction the consensus transaction to check
-     * @return true if the transaction bytes are system ones, false otherwise
+     * @param transaction the transaction to parse
+     * @return {@link StateSignatureTransaction} the constructed system transaction - default if parsing fails
      */
-    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+    @NonNull
+    private StateSignatureTransaction getStateSignatureTransaction(final Transaction transaction) {
         final var transactionBytes = transaction.getApplicationTransaction();
 
         if (transactionBytes.length() == 0
                 || (transactionBytes.length() < SYSTEM_TRANSACTION_LENGTH_RANGE[0]
                         || transactionBytes.length() > SYSTEM_TRANSACTION_LENGTH_RANGE[1])) {
-            return false;
+            return StateSignatureTransaction.DEFAULT;
         }
 
         final var readableData = transactionBytes.toReadableSequentialData();
@@ -181,17 +191,17 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
         final var maybeRound = readInt64(readableData);
 
         if (maybeRound < 0) {
-            return false;
+            return StateSignatureTransaction.DEFAULT;
         } else {
-            final var stateSignatureTransaction = tryToParseSystemTransaction(readableData);
-            return stateSignatureTransaction.signature() != Bytes.EMPTY;
+            return tryToParseSystemTransaction(readableData);
         }
     }
 
+    @NonNull
     private StateSignatureTransaction tryToParseSystemTransaction(final ReadableSequentialData transactionBytes) {
         try {
             return StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes);
-        } catch (ParseException e) {
+        } catch (final ParseException e) {
             return StateSignatureTransaction.DEFAULT;
         }
     }
