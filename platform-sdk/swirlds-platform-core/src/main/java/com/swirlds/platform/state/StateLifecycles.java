@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,16 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Implements the major lifecycle events for the Merkle state.
+ * Implements the major lifecycle events for the state.
  *
  * <p>Currently these are implied by the {@link com.swirlds.platform.system.SwirldState}
  * interface; but in the future will be callbacks registered with a platform builder.
  */
-public interface MerkleStateLifecycles {
+public interface StateLifecycles {
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this node.
@@ -74,20 +73,21 @@ public interface MerkleStateLifecycles {
             @Nullable SoftwareVersion previousVersion);
 
     /**
-     * Called when the platform needs to update the weights in the network
-     * address book
+     * Called when the platform needs to update the weights in the network address book; deprecated since 0.58
+     * because the application now directly decides what weights to put in address book (or, once roster lifecycle
+     * is fully enabled, the roster).
      *
      * @param state the working state of the network
      * @param configAddressBook the address book used to configure the network
      * @param context the current platform context
      */
-    void onUpdateWeight(
-            @NonNull MerkleStateRoot state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
+    @Deprecated(forRemoval = true)
+    void onUpdateWeight(@NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
 
     /**
      * Called when event stream recovery finishes.
      *
      * @param recoveredState the recovered state after reapplying all events
      */
-    void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState);
+    void onNewRecoveredState(@NonNull State recoveredState);
 }

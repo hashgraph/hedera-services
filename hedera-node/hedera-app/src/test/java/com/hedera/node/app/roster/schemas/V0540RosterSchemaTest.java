@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.roster.schemas;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
@@ -267,6 +282,26 @@ class V0540RosterSchemaTest {
         subject.restart(ctx);
 
         verify(rosterStore).putActiveRoster(ROSTER, ROUND_NO + 1L);
+        verify(startupNetworks).setOverrideRound(ROUND_NO);
+    }
+
+    @Test
+    void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() {
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.startupNetworks()).willReturn(startupNetworks);
+        given(ctx.roundNumber()).willReturn(ROUND_NO);
+        given(ctx.newStates()).willReturn(writableStates);
+        given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
+        given(rosterStore.getActiveRoster())
+                .willReturn(new Roster(
+                        List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build())));
+        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+        final var adaptedRoster = new Roster(
+                List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build()));
+
+        subject.restart(ctx);
+
+        verify(rosterStore).putActiveRoster(adaptedRoster, ROUND_NO + 1L);
         verify(startupNetworks).setOverrideRound(ROUND_NO);
     }
 }
