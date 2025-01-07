@@ -55,9 +55,9 @@ of the weight in the source roster.
 The node software combines these services to achieve TSS by setting the binary strings in the `HistoryService` proof
 for each roster to the concatenation of two items:
 1. The verification key computed by the `HintsService` for that roster.
-2. The minimum trustable threshold weight that must be presented to a verifier along with a signature for this
-verification key. **Important:** This means 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
-50B HBAR (unless all HBAR were in fact staked to nodes in the roster).
+2. The minimum threshold weight that a verifier should accept for a signature by this
+verification key. (This will 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
+50B HBAR---unless all HBAR were, in fact, staked to nodes in the roster).
 
 Despite their separate responsibilities, both the `HintsService` and `HistoryService` share a high-level design that
 we call the `RosterCompanionService`. This abstraction is a service whose goal is to derive some **primary state** for
@@ -243,9 +243,7 @@ $$w_\mathcal{B} = \sum_{B_i \in \mathcal{B}} w(B_i) > \frac{2}{3} w_B$$
 
 Second, if $\mathbb{B} \subset B$ is the set of nodes in $B$ with a published Schnorr key, we must again have
 $$w_\mathbb{B} = \sum_{B_i \in \mathbb{B}} w(B_i) > \frac{2}{3} w_B$$
-so that again, even if just less than 1/3 of the weight
-in $B$ is malicious, there will remain at least 1/3 honest weight that can sign off on the next transition. (It is,
-of course, not necessary that $\mathcal{B} = \mathbb{B}$; only that these weight conditions are satisfied.)
+so that again, even if just less than 1/3 of the weight in $B$ is malicious, there will remain at least 1/3 honest weight that can sign off on the next transition. (It is, of course, not necessary that $\mathcal{B} = \mathbb{B}$; only that these weight conditions are satisfied.)
 
 **Important:** Given the current set of Heiro admin transactions, and the requirement that staking elections be
 done to only active nodes, it is not possible to satisfy the above inequalities on $\mathcal{B}$ and $\mathbb{B}$
