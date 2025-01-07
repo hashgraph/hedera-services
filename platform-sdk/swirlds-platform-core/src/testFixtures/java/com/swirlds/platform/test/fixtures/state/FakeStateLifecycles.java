@@ -56,10 +56,10 @@ import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
-import com.swirlds.state.merkle.vmapsupport.OnDiskKeySerializer;
-import com.swirlds.state.merkle.vmapsupport.OnDiskValueSerializer;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
+import com.swirlds.state.merkle.vmapsupport.OnDiskKeySerializer;
+import com.swirlds.state.merkle.vmapsupport.OnDiskValueSerializer;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -97,8 +97,8 @@ public enum FakeStateLifecycles implements StateLifecycles {
                             FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
             registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
             registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            registry.registerConstructable(new ClassConstructorPair(
-                    VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
+            registry.registerConstructable(
+                    new ClassConstructorPair(VirtualMap.class, () -> new VirtualMap(CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
                     MerkleDbDataSourceBuilder.class, () -> new MerkleDbDataSourceBuilder(CONFIGURATION)));
             registry.registerConstructable(new ClassConstructorPair(
