@@ -56,7 +56,7 @@ The node software combines these services to achieve TSS by setting the binary s
 for each roster to the concatenation of two items:
 1. The verification key computed by the `HintsService` for that roster.
 2. The minimum threshold weight that a verifier should accept for a signature by this
-verification key. (This will 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
+verification key. (This will be 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
 50B HBAR---unless all HBAR were, in fact, staked to nodes in the roster).
 
 Despite their separate responsibilities, both the `HintsService` and `HistoryService` share a high-level design that
