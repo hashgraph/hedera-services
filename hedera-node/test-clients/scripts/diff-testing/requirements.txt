@@ -16,7 +16,7 @@ cachetools==5.3.2
 certifi==2024.2.2
 cffi==1.16.0
 charset-normalizer==3.3.2
-cryptography==42.0.2
+cryptography==43.0.1
 Deprecated==1.2.14
 docstring-parser==0.15
 google-api-core==2.16.2
