@@ -18,12 +18,14 @@ package com.swirlds.platform.state.iss.internal;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.state.notifications.AsyncIssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -37,6 +39,7 @@ public class DefaultIssHandler implements IssHandler {
     private final Consumer<String> haltRequestedConsumer;
     private final FatalErrorConsumer fatalErrorConsumer;
     private final Scratchpad<IssScratchpad> issScratchpad;
+    private final NotificationEngine notificationEngine;
 
     private boolean halted;
 
@@ -52,11 +55,13 @@ public class DefaultIssHandler implements IssHandler {
             @NonNull final PlatformContext platformContext,
             @NonNull final Consumer<String> haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final Scratchpad<IssScratchpad> issScratchpad) {
+            @NonNull final Scratchpad<IssScratchpad> issScratchpad,
+            @NonNull final NotificationEngine notificationEngine) {
         this.haltRequestedConsumer = Objects.requireNonNull(haltRequestedConsumer);
         this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.issScratchpad = Objects.requireNonNull(issScratchpad);
+        this.notificationEngine = Objects.requireNonNull(notificationEngine);
     }
 
     /**
@@ -65,7 +70,7 @@ public class DefaultIssHandler implements IssHandler {
     @Override
     public void issObserved(@NonNull final IssNotification issNotification) {
         switch (issNotification.getIssType()) {
-            case SELF_ISS -> selfIssObserved(issNotification.getRound());
+            case SELF_ISS -> selfIssObserved(issNotification);
             case OTHER_ISS -> otherIssObserved();
             case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());
         }
@@ -109,16 +114,19 @@ public class DefaultIssHandler implements IssHandler {
     /**
      * This method is called when there is a self ISS.
      *
-     * @param round the round of the ISS
+     * @param notification the self-ISS notification
      */
-    private void selfIssObserved(@NonNull final Long round) {
+    private void selfIssObserved(@NonNull final IssNotification notification) {
 
         if (halted) {
             // don't take any action once halted
             return;
         }
 
-        updateIssRoundInScratchpad(round);
+        // For self-ISS events, forward the notification asynchronously to the app
+        notificationEngine.dispatch(AsyncIssListener.class, notification);
+
+        updateIssRoundInScratchpad(notification.getRound());
 
         if (stateConfig.haltOnAnyIss()) {
             haltRequestedConsumer.accept("self ISS observed");

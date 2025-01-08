@@ -932,7 +932,8 @@ public class PlatformComponentBuilder {
                         // halt without needing to be stopped here. This should eventually be cleaned up.
                     },
                     SystemExitUtils::handleFatalError,
-                    blocks.issScratchpad());
+                    blocks.issScratchpad(),
+                    blocks.notificationEngine());
         }
         return issHandler;
     }

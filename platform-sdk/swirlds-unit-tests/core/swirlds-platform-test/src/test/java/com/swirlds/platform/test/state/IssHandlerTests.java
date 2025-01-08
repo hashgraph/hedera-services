@@ -19,9 +19,14 @@ package com.swirlds.platform.test.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -31,16 +36,26 @@ import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
+import com.swirlds.platform.system.state.notifications.AsyncIssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("IssHandler Tests")
 class IssHandlerTests {
+
+    NotificationEngine notificationEngine;
+
+    @BeforeEach
+    void beforeEach() {
+        notificationEngine = mock(NotificationEngine.class);
+    }
+
     @Test
     @DisplayName("Other ISS Always Freeze")
     void otherIssAlwaysFreeze() {
@@ -59,8 +74,9 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
+
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -75,6 +91,7 @@ class IssHandlerTests {
 
         // Another node ISSed, we will not record that on the scratchpad.
         assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
+        verifyNoInteractions(notificationEngine);
     }
 
     @Test
@@ -96,7 +113,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -104,6 +121,7 @@ class IssHandlerTests {
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
+        verifyNoInteractions(notificationEngine);
     }
 
     @Test
@@ -126,16 +144,18 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
-        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
+        final IssNotification notification = new IssNotification(1234L, IssType.SELF_ISS);
+        handler.issObserved(notification);
 
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(1, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
+        verify(notificationEngine, times(1)).dispatch(AsyncIssListener.class, notification);
     }
 
     @Test
@@ -158,16 +178,18 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
-        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
+        final IssNotification notification = new IssNotification(1234L, IssType.SELF_ISS);
+        handler.issObserved(notification);
 
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
+        verify(notificationEngine, times(1)).dispatch(AsyncIssListener.class, notification);
     }
 
     @Test
@@ -190,22 +212,24 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
-        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
+        final IssNotification notification = new IssNotification(1234L, IssType.SELF_ISS);
+        handler.issObserved(notification);
 
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
+        handler.issObserved(new IssNotification(1235L, IssType.SELF_ISS));
 
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
+        verify(notificationEngine, times(1)).dispatch(AsyncIssListener.class, notification);
     }
 
     @Test
@@ -228,7 +252,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -237,7 +261,8 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
+        verifyNoInteractions(notificationEngine);
     }
 
     @Test
@@ -260,7 +285,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -275,7 +300,8 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
+        verifyNoInteractions(notificationEngine);
     }
 
     @Test
@@ -298,7 +324,7 @@ class IssHandlerTests {
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad, notificationEngine);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -313,6 +339,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
+        verifyNoInteractions(notificationEngine);
     }
 }
