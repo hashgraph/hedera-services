@@ -96,7 +96,6 @@ final class ServicesMainTest {
 
         try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
             assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
-            // assertDoesNotThrow(() -> ServicesMain.main(args));
             systemExitUtilsMockedStatic.verify(() -> SystemExitUtils.exitSystem(NODE_ADDRESS_MISMATCH));
         }
     }
