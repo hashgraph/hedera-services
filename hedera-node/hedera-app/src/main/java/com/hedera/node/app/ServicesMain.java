@@ -229,10 +229,15 @@ public class ServicesMain implements SwirldMain {
             exitSystem(NODE_ADDRESS_MISMATCH);
         }
         final var platformConfig = buildPlatformConfig();
+        // Determine which nodes were _requested_ to run from the command line
         final var cliNodesToRun = commandLineArgs.localNodesToStart();
+        // Determine which nodes are _configured_ to run from the config file(s)
         final var configNodesToRun =
                 platformConfig.getConfigData(BasicConfig.class).nodesToRun();
+        // Using the requested nodes to run from the command line, the nodes configured to run, and now the
+        // address book on disk, reconcile the list of nodes to run
         final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, cliNodesToRun, configNodesToRun);
+        // Finally, verify that the reconciliation of above node IDs yields exactly one node to run
         final var selfId = ensureSingleNode(nodesToRun);
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
         final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, Set.copyOf(nodesToRun));
