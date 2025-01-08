@@ -202,12 +202,13 @@ the ledger id.
 
 ### Integration with protocol components
 
-The TSS system is then just the combination of the `HintsService` and `HistoryService` with the `RosterService`, with
-the `HistoryService` metadata always set to the verification key of the `HintsService` for the current roster. The
-complete ledger signature $S_L$ on a message $\textrm{msg}$ thus combines a hinTS signature $S_h$ with proven
-threshold $\mathcal{T_S}$ at least a claimed minimum threshold $\mathcal{T}$ on $\textrm{msg}$ with a proof
-$P_{\textrm{vk},\mathcal{T}}$ that the pair $(\textrm{vk}, \mathcal{T})$ is exactly the metadata in a chain of trusted
-`(roster, metadata)` pairs extending from a well-known ledger id `I`. That is,
+The TSS system is then just the combination of the `HintsService` and `HistoryService` with the `RosterService`; with
+the `HistoryService` metadata always set to the verification key of the `HintsService` for the current roster,
+concatenated to the weight threshold $T$ required for signatures with that key. The complete ledger signature
+$S_L$ on a message $\textrm{msg}$ thus combines a hinTS signature $S_h$ with proven threshold $\mathcal{T_S}$ at
+least a claimed minimum threshold $\mathcal{T}$ on $\textrm{msg}$ with a proof $P_{\textrm{vk},\mathcal{T}}$ that
+the pair $(\textrm{vk}, \mathcal{T})$ is exactly the metadata in a chain of trusted `(roster, metadata)` pairs
+extending from a well-known ledger id `I`. That is,
 
 $$ S_L[\textrm{msg}] = (S_h[\textrm{msg}], P_{\textrm{vk},\mathcal{T}})$$
 
