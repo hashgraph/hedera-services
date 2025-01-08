@@ -42,6 +42,7 @@ module com.hedera.node.app {
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
+    requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires com.google.common;
