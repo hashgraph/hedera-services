@@ -1,0 +1,65 @@
+##
+# Copyright (C) 2025 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "ZXF: Trigger Semantic Release"
+on:
+  workflow_dispatch:
+    inputs:
+      build-id:
+        description: "Build ID of the Tag"
+        type: string
+        required: true
+        default: "none"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+jobs:
+  trigger-semantic-release:
+    name: Trigger Semantic Release
+    runs-on: network-node-linux-medium
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        with:
+          egress-policy: audit
+
+      - name: Process, Validate, and Pad Build Input
+        run: |
+          echo "The input is ${{ inputs.number_input }}"
+          if ! [[ "${{ inputs.number_input }}" =~ ^[0-9]+$ ]]; then
+            echo "Input is not a valid integer"
+            exit 1
+          fi
+          echo "Input is a valid integer: $(( ${{ inputs.number_input }} ))"
+          
+          # 5-digit padding
+          padded_number=$(printf "%05d" ${{ inputs.number_input }})
+          echo "Padded number is: $padded_number"
+
+      - name: Checkout Code
+        id: checkout_code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: '0'
+          ref: main
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
