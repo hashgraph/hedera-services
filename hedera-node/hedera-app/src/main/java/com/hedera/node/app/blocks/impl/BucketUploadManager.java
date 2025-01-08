@@ -53,7 +53,7 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
     public static final String HASHMISMATCH_DIR = "hashmismatch";
     private final List<CloudBucketUploader> uploaders;
     private final ReadWriteLock uploadersLock;
-    private final ExecutorService executorService;
+    final ExecutorService executorService;
     private final Path uploadedDir;
     private final Path hashMismatchDir;
     private final ConcurrentHashMap<Path, CompletableFuture<Void>> pendingUploads;
@@ -167,7 +167,7 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
         }
     }
 
-    private CompletableFuture<Void> uploadToProvider(Path blockPath, CloudBucketUploader uploader) {
+    CompletableFuture<Void> uploadToProvider(Path blockPath, CloudBucketUploader uploader) {
         return CompletableFuture.runAsync(
                 () -> {
                     try {
