@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -334,6 +334,7 @@ public final class CallAttemptHelpers {
             final HederaWorldUpdater.Enhancement enhancement,
             final AddressIdConverter addressIdConverter,
             final VerificationStrategies verificationStrategies,
+            final SignatureVerifier signatureVerifier,
             final SystemContractGasCalculator gasCalculator,
             final Configuration config) {
 
@@ -345,6 +346,7 @@ public final class CallAttemptHelpers {
                 config,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 List.of(translator),
                 false);
