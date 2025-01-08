@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,12 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -83,6 +85,9 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @Mock
     private ThrottleServiceManager throttleServiceManager;
 
+    @Mock
+    private BucketConfigurationManager bucketConfigurationManager;
+
     @BeforeEach
     void setUp() {
         files = new HashMap<>();
@@ -91,13 +96,15 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var config = new TestConfigBuilder(false)
                 .withConverter(Bytes.class, new BytesConverter())
                 .withConverter(LongPair.class, new LongPairConverter())
+                .withConfigDataType(BlockStreamConfig.class)
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new SystemFileUpdates(configProvider, exchangeRateManager, feeManager, throttleServiceManager);
+        subject = new SystemFileUpdates(
+                configProvider, exchangeRateManager, feeManager, throttleServiceManager, bucketConfigurationManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -107,14 +114,17 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> new SystemFileUpdates(null, exchangeRateManager, feeManager, throttleServiceManager))
+        assertThatThrownBy(() -> new SystemFileUpdates(
+                        null, exchangeRateManager, feeManager, throttleServiceManager, bucketConfigurationManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SystemFileUpdates(configProvider, exchangeRateManager, feeManager, null))
+        assertThatThrownBy(() -> new SystemFileUpdates(
+                        configProvider, exchangeRateManager, feeManager, null, bucketConfigurationManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SystemFileUpdates(configProvider, null, feeManager, throttleServiceManager))
+        assertThatThrownBy(() -> new SystemFileUpdates(
+                        configProvider, null, feeManager, throttleServiceManager, bucketConfigurationManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new SystemFileUpdates(configProvider, exchangeRateManager, null, throttleServiceManager))
+        assertThatThrownBy(() -> new SystemFileUpdates(
+                        configProvider, exchangeRateManager, null, throttleServiceManager, bucketConfigurationManager))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);

@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.uploader.configs;
+
+import java.util.Map;
+import java.util.Objects;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * A record which maps the bucket name to its bucket configs on disk.
+ *
+ * @param credentials the configs
  */
-public enum BlockStreamWriterMode {
-    /**
-     * Write block streams to a gRPC stream.
-     */
-    GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    BUCKET
+public record OnDiskBucketConfig(Map<String, BucketCredentials> credentials) {
+    public OnDiskBucketConfig {
+        Objects.requireNonNull(credentials, "Credentials map cannot be null");
+    }
 }
