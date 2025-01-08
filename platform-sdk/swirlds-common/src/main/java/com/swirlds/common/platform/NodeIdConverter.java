@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss;
+package com.swirlds.common.platform;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
- * A Singleton state object that represents the status of the TSS keying process.
- * This key SHALL be used to determine the stage of the TSS keying process.
+ * Implementation of {@link ConfigConverter} that supports {@link NodeId} as data type for the config.
  */
-public record TssStatus(TssKeyingStatus tssKeyingStatus, RosterToKey rosterToKey, @NonNull Bytes ledgerId) {}
+public class NodeIdConverter implements ConfigConverter<NodeId> {
+
+    @Override
+    public NodeId convert(@NonNull final String value) throws IllegalArgumentException, NullPointerException {
+        Objects.requireNonNull(value, "Parameter 'value' cannot be null");
+        return NodeId.of(Long.parseLong(value.trim()));
+    }
+}

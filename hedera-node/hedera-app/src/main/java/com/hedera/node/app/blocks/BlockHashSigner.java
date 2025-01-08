@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.handlers;
+package com.hedera.node.app.blocks;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.CompletableFuture;
 
-public record TssHandlers(
-        @NonNull TssMessageHandler tssMessageHandler,
-        @NonNull TssVoteHandler tssVoteHandler,
-        @NonNull TssShareSignatureHandler tssShareSignatureHandler) {}
+/**
+ * Provides the ability to asynchronously sign a block hash.
+ */
+public interface BlockHashSigner {
+    /**
+     * Whether the signer is ready.
+     */
+    boolean isReady();
+
+    /**
+     * Returns a future that resolves to the signature of the given block hash.
+     *
+     * @param blockHash the block hash
+     * @return the future
+     */
+    CompletableFuture<Bytes> signFuture(@NonNull Bytes blockHash);
+}

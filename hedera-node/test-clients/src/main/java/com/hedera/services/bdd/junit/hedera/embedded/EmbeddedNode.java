@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     }
 
     @Override
-    public EmbeddedNode initWorkingDir(@NonNull final String configTxt) {
+    public @NonNull EmbeddedNode initWorkingDir(@NonNull final String configTxt) {
         super.initWorkingDir(configTxt);
         updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "application-override.properties") String upgradePropertyOverridesFile,
         @ConfigProperty(defaultValue = "api-permission-override.properties") String upgradePermissionOverridesFile,
         @ConfigProperty(defaultValue = "node-admin-keys.json") String upgradeNodeAdminKeysFile,
-        @ConfigProperty(defaultValue = "TssMessage,TssVote,TssShareSignature") @NetworkProperty
-                HederaFunctionalitySet nodeTransactionsAllowList,
+        @ConfigProperty(defaultValue = "NONE") @NetworkProperty HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
         @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport,
         @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateRoster,
