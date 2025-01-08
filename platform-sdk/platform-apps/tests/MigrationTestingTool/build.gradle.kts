@@ -19,7 +19,6 @@ plugins { id("org.hiero.gradle.module.application") }
 application.mainClass = "com.swirlds.demo.migration.MigrationTestingToolMain"
 
 testModuleInfo {
-    requires("com.swirlds.common.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.assertj.core")
     requires("org.junit.jupiter.params")
