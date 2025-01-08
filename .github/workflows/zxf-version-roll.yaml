@@ -16,7 +16,6 @@
 
 name: "ZXF: Version Roll"
 on:
-  workflow_dispatch:
 
 defaults:
   run:
