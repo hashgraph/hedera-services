@@ -312,7 +312,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
                 if (isSystemTransaction(trans.getApplicationTransaction())) {
                     stateSignatureTransaction.accept(
                             new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), event));
-                    return;
+                    continue;
                 }
 
                 final MigrationTestingToolTransaction mTrans =
