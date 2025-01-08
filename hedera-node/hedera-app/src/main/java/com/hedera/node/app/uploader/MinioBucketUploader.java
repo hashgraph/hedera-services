@@ -97,6 +97,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
     }
 
     @Override
+    // public void uploadBlock(Path blockPath) {
     public CompletableFuture<Void> uploadBlock(Path blockPath) {
         return CompletableFuture.runAsync(
                 () -> {
@@ -104,10 +105,37 @@ public class MinioBucketUploader implements CloudBucketUploader {
                         throw new IllegalArgumentException("Block path does not exist: " + blockPath);
                     }
                     String fileName = blockPath.getFileName().toString();
-                    String objectKey = fileName.endsWith(".blk.gz")
+                    String objectKey = fileName.endsWith(".blk")
                             ? fileName.replaceAll("[^\\d]", "") // Extract numeric part
                             : "";
                     try {
+                        //                        String localMd5 = calculateMD5Hash(blockPath);
+                        //                        boolean matchFound = false;
+                        //                        boolean hashMismatchFound = false;
+
+                        //                        // List all objects with the same key prefix
+                        //                        Iterable<Result<Item>> results =
+                        // minioClient.listObjects(ListObjectsArgs.builder()
+                        //                                .bucket(bucketName)
+                        //                                .prefix(objectKey)
+                        //                                .recursive(false)
+                        //                                .build());
+                        //
+                        //                        // Check each existing object
+                        //                        for (Result<Item> result : results) {
+                        //                            Item item = result.get();
+                        //                            String existingMd5 = item.etag();
+                        //
+                        //                            if (existingMd5.equals(localMd5)) {
+                        //                                logger.debug("Block {} already exists with matching MD5",
+                        // objectKey);
+                        //                                matchFound = true;
+                        //                                break;
+                        //                            } else {
+                        //                                hashMismatchFound = true;
+                        //                            }
+                        //                        }
+
                         // First check if object already exists
                         if (blockExistsOnCloud(objectKey)) {
                             String existingMd5 = getBlockMd5Internal(objectKey);
@@ -115,7 +143,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                                 logger.debug("Block {} already exists with matching MD5", objectKey);
                                 return;
                             }
-                            throw new HashMismatchException(objectKey, provider.toString());
+                            throw new HashMismatchException(objectKey, provider.toString(), bucketName);
                         }
                         // Upload with retry logic
                         RetryUtils.withRetry(
@@ -130,7 +158,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
                                                     .build());
                                     return null;
                                 },
-                                maxRetryAttempts > 0 ? maxRetryAttempts : 3);
+                                maxRetryAttempts);
                     } catch (Exception e) {
                         throw new CompletionException("Failed to upload block " + objectKey, e);
                     }
@@ -143,10 +171,18 @@ public class MinioBucketUploader implements CloudBucketUploader {
         return CompletableFuture.supplyAsync(() -> blockExistsOnCloud(objectKey), uploadExecutor);
     }
 
+    public boolean blockExistsBool(String objectKey) {
+        return blockExistsOnCloud(objectKey);
+    }
+
     @Override
     public CompletableFuture<String> getBlockMd5(String objectKey) {
         return CompletableFuture.supplyAsync(() -> getBlockMd5Internal(objectKey), uploadExecutor);
     }
+    //    @Override
+    //    public String getBlockMd5(String objectKey) {
+    //        return getBlockMd5Internal(objectKey);
+    //    }
 
     @Override
     public BucketProvider getProvider() {

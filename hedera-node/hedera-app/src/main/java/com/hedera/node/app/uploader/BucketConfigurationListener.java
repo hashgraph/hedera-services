@@ -16,8 +16,18 @@
 
 package com.hedera.node.app.uploader;
 
-public class HashMismatchException extends RuntimeException {
-    public HashMismatchException(String objectKey, String provider, String bucketName) {
-        super(String.format("Hash mismatch for block %s in provider %s bucket %s", objectKey, provider, bucketName));
-    }
+import com.hedera.node.app.uploader.configs.CompleteBucketConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+
+/**
+ * Interface for components that need to be notified when bucket configurations are loaded or updated.
+ */
+public interface BucketConfigurationListener {
+    /**
+     * Called when bucket configurations are loaded or updated.
+     *
+     * @param configs The complete list of bucket configurations
+     */
+    void onBucketConfigurationsUpdated(@NonNull List<CompleteBucketConfig> configs);
 }

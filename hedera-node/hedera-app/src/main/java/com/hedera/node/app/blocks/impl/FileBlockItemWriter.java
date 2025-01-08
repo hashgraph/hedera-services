@@ -20,6 +20,7 @@ import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.schema.BlockSchema;
+import com.hedera.node.app.blocks.BlockFileClosedListener;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -37,6 +38,8 @@ import java.math.BigInteger;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,11 +69,17 @@ public class FileBlockItemWriter implements BlockItemWriter {
     /** The state of this writer */
     private State state;
 
+    /** The list of registered block closed listeners */
+    private final List<BlockFileClosedListener> blockClosedListeners;
+
     /**
      * The block number for the file we are writing. Each file corresponds to one, and only one, block. Once it is
      * set in {@link #openBlock}, it is never changed.
      */
     private long blockNumber;
+
+    /** The current block file path */
+    private Path currentBlockPath;
 
     private enum State {
         UNINITIALIZED,
@@ -84,16 +93,19 @@ public class FileBlockItemWriter implements BlockItemWriter {
      * @param configProvider configuration provider
      * @param nodeInfo information about the current node
      * @param fileSystem the file system to use for writing block files
+     * @param uploadManager the upload manager to handle block uploads (optional)
      */
     public FileBlockItemWriter(
             @NonNull final ConfigProvider configProvider,
             @NonNull final NodeInfo nodeInfo,
-            @NonNull final FileSystem fileSystem) {
+            @NonNull final FileSystem fileSystem,
+            final BucketUploadManager uploadManager) {
         requireNonNull(configProvider, "The supplied argument 'configProvider' cannot be null!");
         requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' cannot be null!");
         requireNonNull(fileSystem, "The supplied argument 'fileSystem' cannot be null!");
 
         this.state = State.UNINITIALIZED;
+        this.blockClosedListeners = new ArrayList<>();
         final var config = configProvider.getConfiguration();
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.compressFiles = blockStreamConfig.compressFilesOnCreation();
@@ -109,6 +121,29 @@ public class FileBlockItemWriter implements BlockItemWriter {
             logger.fatal("Could not create block directory {}", nodeScopedBlockDir, e);
             throw new UncheckedIOException(e);
         }
+
+        // Register upload manager if provided
+        if (uploadManager != null) {
+            registerBlockClosedListener(uploadManager);
+        }
+    }
+
+    /**
+     * Register a listener to be notified when blocks are closed.
+     *
+     * @param listener The listener to register
+     */
+    public void registerBlockClosedListener(@NonNull BlockFileClosedListener listener) {
+        blockClosedListeners.add(listener);
+    }
+
+    /**
+     * Unregister a previously registered listener.
+     *
+     * @param listener The listener to unregister
+     */
+    public void unregisterBlockClosedListener(@NonNull BlockFileClosedListener listener) {
+        blockClosedListeners.remove(listener);
     }
 
     @Override
@@ -117,10 +152,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
 
         this.blockNumber = blockNumber;
-        final var blockFilePath = getBlockFilePath(blockNumber);
+        this.currentBlockPath = getBlockFilePath(blockNumber);
         OutputStream out = null;
         try {
-            out = Files.newOutputStream(blockFilePath);
+            out = Files.newOutputStream(currentBlockPath);
             out = new BufferedOutputStream(out, 1024 * 1024); // 1 MB
             if (compressFiles) {
                 out = new GZIPOutputStream(out, 1024 * 256); // 256 KB
@@ -142,8 +177,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
                     logger.error("Error closing the FileBlockItemWriter output stream", ex);
                 }
             }
-            // We must be able to produce blocks.
-            logger.fatal("Could not create block file {}", blockFilePath, e);
+            logger.fatal("Could not create block file {}", currentBlockPath, e);
             throw new UncheckedIOException(e);
         }
 
@@ -190,6 +224,15 @@ public class FileBlockItemWriter implements BlockItemWriter {
         try {
             writableStreamingData.close();
             state = State.CLOSED;
+
+            // Notify all registered listeners
+            for (BlockFileClosedListener listener : blockClosedListeners) {
+                try {
+                    listener.onBlockClosed(currentBlockPath);
+                } catch (Exception e) {
+                    logger.error("Error notifying listener of block closure", e);
+                }
+            }
         } catch (final IOException e) {
             logger.error("Error closing the FileBlockItemWriter output stream", e);
             throw new UncheckedIOException(e);

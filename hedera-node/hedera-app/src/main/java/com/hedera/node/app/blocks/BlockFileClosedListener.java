@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader;
+package com.hedera.node.app.blocks;
 
-public class HashMismatchException extends RuntimeException {
-    public HashMismatchException(String objectKey, String provider, String bucketName) {
-        super(String.format("Hash mismatch for block %s in provider %s bucket %s", objectKey, provider, bucketName));
-    }
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
+
+/**
+ * Interface for components that need to be notified when block files are closed.
+ */
+public interface BlockFileClosedListener {
+    /**
+     * Called when a block file is closed.
+     *
+     * @param blockPath The path to the closed block file
+     */
+    void onBlockClosed(@NonNull Path blockPath);
 }

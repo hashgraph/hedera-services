@@ -120,6 +120,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
     exports com.hedera.node.app.roster.schemas;
+    exports com.hedera.node.app.blocks.cloud.uploader;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

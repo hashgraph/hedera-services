@@ -46,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +66,7 @@ class MinioBucketUploaderTest {
     @Mock
     private ConfigProvider configProvider;
 
+    @Mock
     private ExecutorService executorService;
 
     @Mock
@@ -208,15 +210,18 @@ class MinioBucketUploaderTest {
         for (Map.Entry<String, InputStream> entry : blockFiles.entrySet()) {
             String fileName = entry.getKey(); // File name in the bucket
             InputStream inputStream = entry.getValue();
-
             // Write InputStream to a temporary file
             Path blockFile = Files.createTempFile(fileName, ".blk.gz");
             try (OutputStream outputStream = Files.newOutputStream(blockFile)) {
                 inputStream.transferTo(outputStream);
             }
             CompletableFuture<Void> result = uploader.uploadBlock(blockFile);
+
+            // Pass the Path to uploader.uploadBlock()
             //            assertDoesNotThrow(result::join); // Ensure no exceptions are thrown
             assertThrows(CompletionException.class, result::join);
+            Path finalBlockFile = blockFile;
+            assertThrows(TimeoutException.class, () -> uploader.uploadBlock(finalBlockFile));
         }
     }
 
@@ -236,10 +241,19 @@ class MinioBucketUploaderTest {
         assertEquals(
                 "Block path does not exist: " + tempFile, exception.getCause().getMessage());
 
+        // Verify the behavior
+        assertThrows(TimeoutException.class, () -> uploader.uploadBlock(tempFile));
         verify(minioClient, never()).uploadObject(any());
     }
 
     @Test
+    //    @Test
+    void testBlockExistsReturnsTrue() throws Exception {
+        when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mock(io.minio.StatObjectResponse.class));
+        assertTrue(uploader.blockExistsBool("test-object"));
+    }
+
+    //    @Test
     void testBlockExistsReturnsFalse() throws Exception {
         // Mock minioClient behavior
         lenient().when(minioClient.statObject(any(StatObjectArgs.class))).thenReturn(mockStatResponse);

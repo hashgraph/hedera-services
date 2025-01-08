@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader;
+package com.hedera.node.app.blocks.cloud.uploader;
 
-public class HashMismatchException extends RuntimeException {
-    public HashMismatchException(String objectKey, String provider, String bucketName) {
-        super(String.format("Hash mismatch for block %s in provider %s bucket %s", objectKey, provider, bucketName));
-    }
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
+
+/**
+ * Interface for components that need to be notified when block files are closed and ready for upload.
+ */
+public interface BucketUploadListener {
+    /**
+     * Called when a block file is closed and ready for upload.
+     *
+     * @param blockPath The path to the closed block file
+     */
+    void onBlockClosed(@NonNull Path blockPath);
 }

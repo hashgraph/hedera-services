@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
+import com.hedera.node.app.blocks.impl.BucketUploadManager;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import com.hedera.node.app.blocks.impl.GrpcBlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
@@ -41,14 +42,14 @@ public interface BlockStreamModule {
     static Supplier<BlockItemWriter> bindBlockItemWriterSupplier(
             @NonNull final ConfigProvider configProvider,
             @NonNull final NodeInfo selfNodeInfo,
-            @NonNull final FileSystem fileSystem) {
+            @NonNull final FileSystem fileSystem,
+            @NonNull final BucketUploadManager bucketUploadManager) {
         final var config = configProvider.getConfiguration();
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
-            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
             case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
-            case BUCKET -> throw new IllegalArgumentException(
-                    "file block writer with bucket uploader not yet implemented");
+            case BUCKET -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, bucketUploadManager);
         };
     }
 }

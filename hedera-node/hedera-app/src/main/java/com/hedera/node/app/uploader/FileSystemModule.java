@@ -14,10 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.uploader;
+package com.hedera.node.app.blocks.cloud.uploader;
 
-public class HashMismatchException extends RuntimeException {
-    public HashMismatchException(String objectKey, String provider, String bucketName) {
-        super(String.format("Hash mismatch for block %s in provider %s bucket %s", objectKey, provider, bucketName));
+import dagger.Module;
+import dagger.Provides;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import javax.inject.Singleton;
+
+/**
+ * Module for providing the FileSystem instance.
+ */
+@Module
+public class FileSystemModule {
+
+    /**
+     * Provides the default FileSystem instance.
+     *
+     * @return The default FileSystem instance
+     */
+    @Provides
+    @Singleton
+    static FileSystem provideFileSystem() {
+        return FileSystems.getDefault();
     }
 }

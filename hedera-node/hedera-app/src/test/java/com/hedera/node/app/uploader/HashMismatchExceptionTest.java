@@ -26,7 +26,8 @@ class HashMismatchExceptionTest {
     void testExceptionMessage() {
         String objectKey = "block123";
         String provider = "AWS";
-        HashMismatchException exception = new HashMismatchException(objectKey, provider);
+        String bucketName = "bucket123";
+        HashMismatchException exception = new HashMismatchException(objectKey, provider, bucketName);
         String expectedMessage = "Hash mismatch for block block123 in provider AWS";
         assertEquals(expectedMessage, exception.getMessage());
     }
@@ -35,7 +36,8 @@ class HashMismatchExceptionTest {
     void testExceptionIsRuntimeException() {
         String objectKey = "block456";
         String provider = "GCS";
-        HashMismatchException exception = new HashMismatchException(objectKey, provider);
+        String bucketName = "bucket456";
+        HashMismatchException exception = new HashMismatchException(objectKey, provider, bucketName);
         assertInstanceOf(RuntimeException.class, exception);
     }
 }

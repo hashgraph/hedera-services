@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Future;
 
 public interface CloudBucketUploader {
+
     Future<Void> uploadBlock(Path blockPath);
 
     Future<Boolean> blockExists(String objectKey);
@@ -28,4 +29,11 @@ public interface CloudBucketUploader {
     Future<String> getBlockMd5(String objectKey);
 
     BucketProvider getProvider();
+    //    void uploadBlock(Path blockPath);
+    //
+    //    boolean blockExists(String objectKey);
+    //
+    //    String getBlockMd5(String objectKey);
+    //
+    //    BucketProvider getProvider();
 }
