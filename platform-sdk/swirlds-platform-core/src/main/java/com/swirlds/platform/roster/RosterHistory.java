@@ -97,14 +97,16 @@ public class RosterHistory {
         final boolean previousExists = history.size() > 1;
 
         final StringBuilder sb = new StringBuilder();
-        sb.append("RosterHistory[ currentRosterRound: ").append(history.getFirst().roundNumber()).append(" ][ ");
-        if(previousExists) {
+        sb.append("RosterHistory[ currentRosterRound: ")
+                .append(history.getFirst().roundNumber())
+                .append(" ][ ");
+        if (previousExists) {
             sb.append("previousRosterRound: ").append(history.get(1).roundNumber());
         } else {
             sb.append("no previous roster set");
         }
         sb.append(" ]\nCurrent Roster: ").append(Roster.JSON.toJSON(getCurrentRoster()));
-        if(previousExists) {
+        if (previousExists) {
             sb.append("\nPrevious Roster: ").append(Roster.JSON.toJSON(getPreviousRoster()));
         }
         return sb.toString();
