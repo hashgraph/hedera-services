@@ -1,7 +1,23 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -80,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -750,8 +767,7 @@ public class ScheduleLongTermExecutionTest {
                 })));
     }
 
-    @HapiTest
-    @Order(14)
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     public Stream<DynamicTest> executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
@@ -763,7 +779,7 @@ public class ScheduleLongTermExecutionTest {
                 cryptoCreate(RECEIVER).balance(noBalance),
                 scheduleCreate(FAILED_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount)))
                         .waitForExpiry()
-                        .withRelativeExpiry(SENDER_TXN, 4)
+                        .withRelativeExpiry(SENDER_TXN, 5)
                         .recordingScheduledTxn()
                         .designatingPayer(PAYING_ACCOUNT)
                         .via(CREATE_TX),
@@ -778,15 +794,13 @@ public class ScheduleLongTermExecutionTest {
                         .hasWaitForExpiry()
                         .isNotExecuted()
                         .isNotDeleted()
-                        .hasRelativeExpiry(SENDER_TXN, 4)
+                        .hasRelativeExpiry(SENDER_TXN, 5)
                         .hasRecordedScheduledTxn(),
                 triggerSchedule(FAILED_XFER),
                 getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                 withOpContext((spec, opLog) -> {
                     var triggeredTx = getTxnRecord(CREATE_TX).scheduled();
-
                     allRunFor(spec, triggeredTx);
-
                     Assertions.assertEquals(
                             ACCOUNT_DELETED,
                             triggeredTx.getResponseRecord().getReceipt().getStatus(),

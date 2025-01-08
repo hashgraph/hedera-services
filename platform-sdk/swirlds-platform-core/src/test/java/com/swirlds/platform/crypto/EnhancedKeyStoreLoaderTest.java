@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.swirlds.platform.crypto;
 
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
-import static com.swirlds.platform.state.address.AddressBookNetworkUtils.isLocal;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -35,6 +34,7 @@ import java.nio.file.Path;
 import java.security.KeyStoreException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -81,16 +81,10 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("enhanced-valid-no-agreement-key"))
                 .exists()
                 .isNotEmptyDirectory();
-        assertThat(testDataDirectory.resolve("enhanced-valid-no-tss-key"))
-                .exists()
-                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-2"))
-                .exists()
-                .isNotEmptyDirectory();
-        assertThat(testDataDirectory.resolve("enhanced-valid-corrupt-tss-key"))
                 .exists()
                 .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("legacy-valid").resolve("public.pfx"))
@@ -117,14 +111,15 @@ class EnhancedKeyStoreLoaderTest {
                 "hybrid-valid",
                 "enhanced-valid",
                 "enhanced-valid-no-agreement-key",
-                "enhanced-valid-no-tss-key",
-                "enhanced-valid-corrupt-tss-key"
             })
     void keyStoreLoaderPositiveTest(final String directoryName)
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        final Set<NodeId> nodesToStart = addressBook.getNodeIdSet();
+
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), nodesToStart);
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
@@ -140,7 +135,7 @@ class EnhancedKeyStoreLoaderTest {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address addr = addressBook.getAddress(nodeId);
 
-            if (!isLocal(addr)) {
+            if (!nodesToStart.contains(addr.getNodeId())) {
                 assertThat(kc).doesNotContainKey(nodeId);
             } else {
                 assertThat(kc).containsKey(nodeId);
@@ -151,8 +146,6 @@ class EnhancedKeyStoreLoaderTest {
                 assertThat(keysAndCerts.sigCert()).isNotNull();
                 assertThat(keysAndCerts.agrKeyPair()).isNotNull();
                 assertThat(keysAndCerts.sigKeyPair()).isNotNull();
-                assertThat(keysAndCerts.privateTssEncryptionKey()).isNotNull();
-                assertThat(keysAndCerts.publicTssEncryptionKey()).isNotNull();
             }
 
             assertThat(addr.getSigPublicKey()).isNotNull();
@@ -173,7 +166,8 @@ class EnhancedKeyStoreLoaderTest {
     void keyStoreLoaderNegativeCase1Test(final String directoryName) throws IOException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), addressBook.getNodeIdSet());
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
@@ -198,7 +192,8 @@ class EnhancedKeyStoreLoaderTest {
     void keyStoreLoaderNegativeCase2Test(final String directoryName) throws IOException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), addressBook.getNodeIdSet());
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
@@ -254,7 +249,8 @@ class EnhancedKeyStoreLoaderTest {
     void migraitonNegativeCaseTest(final String directoryName) throws IOException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
         final AddressBook addressBook = addressBook();
-        final EnhancedKeyStoreLoader loader = EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory));
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(addressBook, configure(keyDirectory), addressBook.getNodeIdSet());
 
         assertThat(keyDirectory).exists().isDirectory().isReadable().isNotEmptyDirectory();
 
