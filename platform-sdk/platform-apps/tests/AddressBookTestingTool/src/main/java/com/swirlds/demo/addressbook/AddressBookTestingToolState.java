@@ -59,7 +59,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -217,10 +216,22 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
     @Override
     public void preHandle(
-            @NonNull Event event,
-            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            @NonNull final Event event,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         event.transactionIterator().forEachRemaining(transaction -> {
-            if (!transaction.isSystem() && areTransactionBytesSystemOnes(transaction)) {
+            // We are not interested in pre-handling any system transactions, as they are
+            // specific for the platform only.We also don't want to consume deprecated
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+            // callback,since it's intended to be used only for the new form of encoded system
+            // transactions in Bytes. Thus, we can directly skip the current
+            // iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            // We should consume in the callback the new form of system transactions in Bytes
+            if (areTransactionBytesSystemOnes(transaction)) {
                 consumeSystemTransaction(transaction, event, stateSignatureTransaction);
             }
         });
@@ -250,12 +261,20 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         roundsHandled++;
         setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
 
-        for (ConsensusEvent event : round) {
+        for (final var event : round) {
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                // We are not interested in handling any system transactions, as they are
+                // specific for the platform only.We also don't want to consume deprecated
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+                // callback, since it's intended to be used only for the new form of encoded system
+                // transactions in Bytes. Thus, we can directly skip the current
+                // iteration, if it processes a deprecated system transaction with the
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
                 if (transaction.isSystem()) {
                     return;
                 }
 
+                // We should consume in the callback the new form of system transactions in Bytes
                 if (areTransactionBytesSystemOnes(transaction)) {
                     consumeSystemTransaction(transaction, event, stateSignatureTransaction);
                 } else {
@@ -301,7 +320,7 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
                     StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
             stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
                     event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
-        } catch (com.hedera.pbj.runtime.ParseException e) {
+        } catch (final com.hedera.pbj.runtime.ParseException e) {
             logger.error("Failed to parse StateSignatureTransaction", e);
         }
     }
