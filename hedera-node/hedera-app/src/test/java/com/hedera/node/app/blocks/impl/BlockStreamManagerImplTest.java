@@ -67,7 +67,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableStates;
@@ -76,6 +79,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -136,6 +140,21 @@ class BlockStreamManagerImplTest {
 
     @Mock
     private Round round;
+
+    @Mock
+    private Iterator<ConsensusEvent> eventIterator;
+
+    @Mock
+    private Iterator<ConsensusTransaction> transactionIterator;
+
+    @Mock
+    private TransactionWrapper transaction1;
+
+    @Mock
+    private TransactionWrapper transaction2;
+
+    @Mock
+    private ConsensusEvent event;
 
     @Mock
     private State state;
@@ -484,6 +503,14 @@ class BlockStreamManagerImplTest {
             @NonNull final PlatformState platformState,
             @NonNull final BlockItemWriter... writers) {
         given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+        given(round.iterator()).willReturn(eventIterator);
+        given(eventIterator.hasNext()).willReturn(true, false);
+        given(eventIterator.next()).willReturn(event);
+        given(event.consensusTransactionIterator()).willReturn(transactionIterator);
+        given(transactionIterator.hasNext()).willReturn(true).willReturn(true).willReturn(false);
+        given(transactionIterator.next()).willReturn(transaction1).willReturn(transaction2);
+        given(transaction1.getConsensusTimestamp()).willReturn(null);
+        given(transaction2.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
         final AtomicInteger nextWriter = new AtomicInteger(0);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("blockStream.roundsPerBlock", roundsPerBlock)
