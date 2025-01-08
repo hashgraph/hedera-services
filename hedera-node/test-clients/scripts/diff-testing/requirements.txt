@@ -26,7 +26,7 @@ google-cloud-storage==2.14.0
 google-crc32c==1.5.0
 google-resumable-media==2.7.0
 googleapis-common-protos==1.62.0
-idna==3.6
+idna==3.7
 jsons==1.6.3
 mypy-extensions==1.0.0
 protobuf==4.25.2
