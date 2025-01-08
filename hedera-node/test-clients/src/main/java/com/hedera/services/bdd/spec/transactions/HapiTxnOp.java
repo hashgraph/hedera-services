@@ -54,6 +54,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
+import com.hedera.services.bdd.spec.verification.Condition;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -75,6 +76,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -122,6 +124,21 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     protected Optional<EnumSet<ResponseCodeEnum>> permissiblePrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
     protected Optional<EnumSet<ResponseCodeEnum>> retryPrechecks = Optional.empty();
+
+    protected List<Condition> conditions = new ArrayList<>();
+
+    public T satisfies(@NonNull final Condition condition) {
+        conditions.add(condition);
+        return self();
+    }
+
+    public T satisfies(@NonNull final BooleanSupplier condition, @NonNull final Supplier<String> errorMessage) {
+        return satisfies(new Condition(condition, errorMessage));
+    }
+
+    public T satisfies(@NonNull final BooleanSupplier condition, @NonNull final String errorMessage) {
+        return satisfies(new Condition(condition, () -> errorMessage));
+    }
 
     /**
      * A strategy for submitting a transaction of the given function and type to a network node with the given id.
@@ -300,6 +317,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
         if (requiresFinalization(spec)) {
             spec.offerFinisher(new DelegatingOpFinisher(this));
+        }
+
+        for (final var condition : conditions) {
+            if (!condition.condition().getAsBoolean()) {
+                throw new HapiTxnCheckStateException("Condition failed: " + condition.errorMessage());
+            }
         }
 
         return !deferStatusResolution;

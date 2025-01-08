@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,4 +46,8 @@ public enum RepeatableReason {
      * other tests if they expect the default throttles.
      */
     THROTTLE_OVERRIDES,
+    /**
+     * The test uses the state signature transaction callback.
+     */
+    USES_STATE_SIGNATURE_TRANSACTION_CALLBACK,
 }
