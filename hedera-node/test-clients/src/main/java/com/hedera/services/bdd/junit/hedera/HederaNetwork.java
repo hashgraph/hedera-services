@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -34,9 +32,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.LongFunction;
 
 /**
  * A network of Hedera nodes.
@@ -164,13 +159,8 @@ public interface HederaNetwork {
      * Starts all nodes in the network with the given customizations.
      *
      * @param bootstrapOverrides the overrides
-     * @param tssEncryptionKeyFn the encryption key function
-     * @param tssKeyMaterialFn the key material function
      */
-    default void startWith(
-            @NonNull final Map<String, String> bootstrapOverrides,
-            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+    default void startWith(@NonNull final Map<String, String> bootstrapOverrides) {
         throw new UnsupportedOperationException();
     }
 

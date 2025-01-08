@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package com.swirlds.platform.crypto;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
-import com.hedera.cryptography.bls.BlsPrivateKey;
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.Key;
@@ -62,9 +60,7 @@ public record KeysAndCerts(
         KeyPair agrKeyPair,
         X509Certificate sigCert,
         X509Certificate agrCert,
-        PublicStores publicStores,
-        BlsPrivateKey privateTssEncryptionKey,
-        BlsPublicKey publicTssEncryptionKey) {
+        PublicStores publicStores) {
     private static final int SIG_SEED = 2;
     private static final int AGR_SEED = 0;
     private static final int TSS_ENCRYPTION_KEY_SEED = 3;
@@ -117,7 +113,7 @@ public record KeysAndCerts(
             publicStores.setCertificate(KeyCertPurpose.AGREEMENT, agreementCert, dnA);
         }
 
-        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores, null, null);
+        return new KeysAndCerts(signingKeyPair, agreementKeyPair, signingCert, agreementCert, publicStores);
     }
 
     private static KeyPair getKeyPair(final KeyStore privateKeyStore, final char[] password, final String storeName)
@@ -203,14 +199,7 @@ public record KeysAndCerts(
 
         final BlsKeyPair blsKeyPair = CryptoStatic.generateBlsKeyPair(tssEncryptionKeyRandom);
 
-        return new KeysAndCerts(
-                sigKeyPair,
-                agrKeyPair,
-                sigCert,
-                agrCert,
-                publicStores,
-                blsKeyPair.privateKey(),
-                blsKeyPair.publicKey());
+        return new KeysAndCerts(sigKeyPair, agrKeyPair, sigCert, agrCert, publicStores);
     }
 
     /**
