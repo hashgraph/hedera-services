@@ -69,28 +69,25 @@ final class ServicesMainTest {
 
     private final ServicesMain subject = new ServicesMain();
 
-    // no local nodes specified but more than one match in address book
+    // no local nodes specified, no environment nodes specified
     @Test
-    void hardExitOnTooManyLocalNodes() {
+    void throwsExceptionOnNoNodesToRun() {
         withBadCommandLineArgs();
         String[] args = {};
-
-        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
-            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
-        }
+        assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
     }
 
     // local node specified which does not match the address book
     @Test
-    void hardExitOnNonMatchingNodeId() {
+    void throwsExceptionOnNonMatchingNodeId() {
         withBadCommandLineArgs();
         String[] args = {"-local", "1234"}; // 1234 does not match anything in address book
         assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
     }
 
-    // more than one local node specified which matches the address book
+    // more than one local node specified on the commandline
     @Test
-    void hardExitOnTooManyMatchingNodes() {
+    void hardExitOnTooManyCliNodes() {
         withBadCommandLineArgs();
         String[] args = {"-local", "1", "2"}; // both "1" and "2" match entries in address book
 
