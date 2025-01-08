@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,8 +223,13 @@ public abstract class AbstractLongList<C> implements LongList {
                 maxLongs = headerBuffer.getLong();
                 if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {
                     minValidIndex.set(headerBuffer.getLong());
-                    // "inflating" the size by number of indices that are to the left of the min valid index
-                    size.set(minValidIndex.get() + (fileChannel.size() - currentFileHeaderSize) / Long.BYTES);
+                    if (minValidIndex.get() == -1) {
+                        // list is empty
+                        size.set(0);
+                    } else {
+                        // "inflating" the size by number of indices that are to the left of the min valid index
+                        size.set(minValidIndex.get() + (fileChannel.size() - currentFileHeaderSize) / Long.BYTES);
+                    }
                 } else {
                     minValidIndex.set(0);
                     size.set((fileChannel.size() - FILE_HEADER_SIZE_V1) / Long.BYTES);

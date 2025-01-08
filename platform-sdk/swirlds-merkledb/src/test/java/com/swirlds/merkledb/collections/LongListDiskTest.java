@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
 public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
+
+    @Override
+    protected LongListDisk createLongList() {
+        return new LongListDisk(CONFIGURATION);
+    }
 
     @Override
     protected LongListDisk createLongListWithChunkSizeInMb(int chunkSizeInMb) {
@@ -61,6 +66,18 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
     }
 
     /**
+     * Provides a stream of writer paired with two reader implementations for testing
+     * cross-compatibility.
+     * <p>
+     * Used for {@link AbstractLongListTest#updateMinToTheLowerEnd}
+     *
+     * @return a stream of arguments containing a writer and two readers.
+     */
+    static Stream<Arguments> longListWriterSecondReaderPairsProvider() {
+        return longListWriterSecondReaderPairsProviderBase(longListWriterReaderPairsProvider());
+    }
+
+    /**
      * Provides writer-reader pairs combined with range configurations for testing.
      * <p>
      * Used for {@link AbstractLongListTest#writeReadRangeElement}
@@ -72,7 +89,7 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
     }
 
     /**
-     * Provides writer-reader pairs combined with chunk offset configurations for testing.
+     * Provides writer-reader pairs combined with chunk offset configurations (first set) for testing.
      * <p>
      * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
      *
@@ -80,5 +97,16 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
      */
     static Stream<Arguments> longListWriterReaderOffsetPairsProvider() {
         return longListWriterReaderOffsetPairsProviderBase(longListWriterReaderPairsProvider());
+    }
+
+    /**
+     * Provides writer-reader pairs combined with chunk offset configurations (second set) for testing.
+     * <p>
+     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
+     *
+     * @return a stream of arguments for chunk offset based parameterized tests
+     */
+    static Stream<Arguments> longListWriterReaderOffsetPairs2Provider() {
+        return longListWriterReaderOffsetPairs2ProviderBase(longListWriterReaderPairsProvider());
     }
 }
