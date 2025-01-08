@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
@@ -55,7 +56,6 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
@@ -69,7 +69,9 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -84,6 +86,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -105,7 +108,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
     private final int serializationBatchSize;
-    private final TssBaseService tssBaseService;
+    private final BlockHashSigner blockHashSigner;
     private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
     private final ExecutorService executor;
@@ -169,17 +172,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Inject
     public BlockStreamManagerImpl(
+            @NonNull final BlockHashSigner blockHashSigner,
             @NonNull final Supplier<BlockItemWriter> writerSupplier,
             @NonNull final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final TssBaseService tssBaseService,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final InitialStateHash initialStateHash,
             @NonNull final SemanticVersion version) {
+        this.blockHashSigner = requireNonNull(blockHashSigner);
         this.version = requireNonNull(version);
         this.writerSupplier = requireNonNull(writerSupplier);
         this.executor = requireNonNull(executor);
-        this.tssBaseService = requireNonNull(tssBaseService);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         requireNonNull(configProvider);
         final var config = configProvider.getConfiguration();
@@ -240,18 +243,40 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
             blockNumber = blockStreamInfo.blockNumber() + 1;
             pendingItems = new ArrayList<>();
-
+            final var firstTransactionTimestamp = getFirstTransactionTimestamp(round);
             pendingItems.add(BlockItem.newBuilder()
                     .blockHeader(BlockHeader.newBuilder()
                             .number(blockNumber)
                             .previousBlockHash(lastBlockHash)
                             .hashAlgorithm(SHA2_384)
                             .softwareVersion(platformState.creationSoftwareVersionOrThrow())
-                            .hapiProtoVersion(hapiVersion))
+                            .hapiProtoVersion(hapiVersion)
+                            .firstTransactionConsensusTime(firstTransactionTimestamp))
                     .build());
 
             writer.openBlock(blockNumber);
         }
+    }
+
+    /**
+     * Returns the consensus timestamp of the first transaction in the given round, or {@code null} if no such
+     * transaction is found.
+     *
+     * @param round the round
+     * @return the consensus timestamp of the first transaction in the given round, or {@code null} if no such
+     */
+    @Nullable
+    private Timestamp getFirstTransactionTimestamp(final @NonNull Round round) {
+        for (final ConsensusEvent event : round) {
+            final Iterator<ConsensusTransaction> txnIterator = event.consensusTransactionIterator();
+            while (txnIterator.hasNext()) {
+                final ConsensusTransaction transaction = txnIterator.next();
+                if (transaction.getConsensusTimestamp() != null) {
+                    return asTimestamp(transaction.getConsensusTimestamp());
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -349,9 +374,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Update in-memory state to prepare for the next block
             lastBlockHash = blockHash;
             writer = null;
-            // Request the ledger signature for the block hash.
-            // The boundary timestamp plus nanos will be used for the TssShareSignature transaction's valid start
-            tssBaseService.requestLedgerSignature(blockHash.toByteArray(), asInstant(boundaryTimestamp));
+            blockHashSigner
+                    .signFuture(blockHash)
+                    .thenAccept(signature -> finishProofWithSignature(blockHash, signature));
 
             final var exportNetworkToDisk =
                     switch (diskNetworkExport) {
@@ -404,20 +429,21 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     /**
+     * If still pending, finishes the block proof for the block with the given hash using the given direct signature.
+     * <p>
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
      *
-     * @param message   the block hash to finish the block proof for
-     * @param signature the signature to use in the block proof
+     * @param blockHash      the block hash to finish the block proof for
+     * @param blockSignature the signature to use in the block proof
      */
-    @Override
-    public synchronized void accept(@NonNull final byte[] message, @NonNull final byte[] signature) {
+    private synchronized void finishProofWithSignature(
+            @NonNull final Bytes blockHash, @NonNull final Bytes blockSignature) {
         // Find the block whose hash is the signed message, tracking any sibling hashes
         // needed for indirect proofs of earlier blocks along the way
         long blockNumber = Long.MIN_VALUE;
         boolean impliesIndirectProof = false;
         final List<List<MerkleSiblingHash>> siblingHashes = new ArrayList<>();
-        final var blockHash = Bytes.wrap(message);
         for (final var block : pendingBlocks) {
             if (impliesIndirectProof) {
                 siblingHashes.add(List.of(block.siblingHashes()));
@@ -433,7 +459,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             return;
         }
         // Write proofs for all pending blocks up to and including the signed block number
-        final var blockSignature = Bytes.wrap(signature);
         while (!pendingBlocks.isEmpty() && pendingBlocks.peek().number() <= blockNumber) {
             final var block = pendingBlocks.poll();
             final var proof = block.proofBuilder()

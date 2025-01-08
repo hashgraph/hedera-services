@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -53,11 +52,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
-import java.util.function.Function;
-import java.util.function.LongFunction;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
@@ -127,18 +123,10 @@ public class WorkingDirUtils {
      *
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
-     * @param tssEncryptionKeyFn a function that returns the TSS encryption key for a given node ID
-     * @param tssKeyMaterialFn a function that returns the TSS key material for the network, if available
      */
-    public static void recreateWorkingDir(
-            @NonNull final Path workingDir,
-            @NonNull final String configTxt,
-            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+    public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
         requireNonNull(workingDir);
         requireNonNull(configTxt);
-        requireNonNull(tssEncryptionKeyFn);
-        requireNonNull(tssKeyMaterialFn);
 
         // Clean up any existing directory structure
         rm(workingDir);
@@ -150,7 +138,7 @@ public class WorkingDirUtils {
                 workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
         // Write the address book (config.txt) and genesis network (genesis-network.json) files
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
-        final var network = networkFrom(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn, OnlyRoster.NO);
+        final var network = networkFrom(configTxt, OnlyRoster.NO);
         writeStringUnchecked(
                 workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
                 Network.JSON.toJSON(network));
@@ -412,19 +400,11 @@ public class WorkingDirUtils {
      * set to the same certificates used in each position by a test network.
      *
      * @param configTxt the contents of the <i>config.txt</i> file
-     * @param tssEncryptionKeyFn a function that returns the TSS encryption key for a given node ID
-     * @param tssKeyMaterialFn a function that returns the TSS key material for the network, if available
      * @param onlyRoster if true, only the roster entries will be set in the network
      * @return the network
      */
-    public static Network networkFrom(
-            @NonNull final String configTxt,
-            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn,
-            @NonNull final OnlyRoster onlyRoster) {
+    public static Network networkFrom(@NonNull final String configTxt, @NonNull final OnlyRoster onlyRoster) {
         requireNonNull(configTxt);
-        requireNonNull(tssEncryptionKeyFn);
-        requireNonNull(tssKeyMaterialFn);
         requireNonNull(onlyRoster);
         final var certs = AddressBookUtils.certsFor(configTxt);
         final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
@@ -440,29 +420,22 @@ public class WorkingDirUtils {
                             .rosterEntry(new RosterEntry(nodeId, weight, cert, gossipEndpoints));
                     if (onlyRoster == OnlyRoster.NO) {
                         metadata.node(new Node(
-                                        nodeId,
-                                        toPbj(HapiPropertySource.asAccount(parts[9])),
-                                        "node" + (nodeId + 1),
-                                        gossipEndpoints,
-                                        List.of(),
-                                        cert,
-                                        // The gRPC certificate hash is irrelevant for PR checks
-                                        Bytes.EMPTY,
-                                        weight,
-                                        false,
-                                        CLASSIC_ADMIN_KEY))
-                                .tssEncryptionKey(tssEncryptionKeyFn.apply(nodeId));
+                                nodeId,
+                                toPbj(HapiPropertySource.asAccount(parts[9])),
+                                "node" + (nodeId + 1),
+                                gossipEndpoints,
+                                List.of(),
+                                cert,
+                                // The gRPC certificate hash is irrelevant for PR checks
+                                Bytes.EMPTY,
+                                weight,
+                                false,
+                                CLASSIC_ADMIN_KEY));
                     }
                     return metadata.build();
                 })
                 .toList();
-        final var roster = nodeMetadata.stream().map(NodeMetadata::rosterEntry).toList();
-        final var tssKeyMaterial = tssKeyMaterialFn.apply(roster);
-        return Network.newBuilder()
-                .ledgerId(tssKeyMaterial.map(TssKeyMaterial::ledgerId).orElse(Bytes.EMPTY))
-                .tssMessages(tssKeyMaterial.map(TssKeyMaterial::tssMessages).orElse(List.of()))
-                .nodeMetadata(nodeMetadata)
-                .build();
+        return Network.newBuilder().nodeMetadata(nodeMetadata).build();
     }
 
     private static ServiceEndpoint endpointFrom(@NonNull final String hostLiteral, @NonNull final String portLiteral) {

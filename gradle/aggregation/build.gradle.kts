@@ -23,6 +23,7 @@ plugins {
 
 dependencies {
     implementation(project(":app"))
+    // examples that also contain tests we would like to run
     implementation(project(":swirlds-platform-base-example"))
     implementation(project(":AddressBookTestingTool"))
     implementation(project(":ConsistencyTestingTool"))
@@ -31,7 +32,9 @@ dependencies {
     implementation(project(":PlatformTestingTool"))
     implementation(project(":StatsSigningTestingTool"))
     implementation(project(":StressTestingTool"))
+    // projects that only contains tests (and no production code)
     implementation(project(":test-clients"))
+    implementation(project(":swirlds-platform-test"))
 }
 
 tasks.testCodeCoverageReport {

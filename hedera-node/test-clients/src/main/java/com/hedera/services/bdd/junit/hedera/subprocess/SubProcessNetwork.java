@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
@@ -65,7 +64,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -428,8 +426,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            final var overrideNetwork = WorkingDirUtils.networkFrom(
-                    configTxt, i -> Bytes.EMPTY, rosterEntries -> Optional.empty(), OnlyRoster.YES);
+            final var overrideNetwork = WorkingDirUtils.networkFrom(configTxt, OnlyRoster.YES);
             final var genesisNetworkPath = node.getExternalPath(DATA_CONFIG_DIR).resolve(GENESIS_NETWORK_JSON);
             final var isGenesis = genesisNetworkPath.toFile().exists();
             // Only write override-network.json if a node is not starting from genesis; otherwise it will adopt
@@ -478,8 +475,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 metadata.nodeOrThrow()
                         .copyBuilder()
                         .gossipEndpoint(endpoints.getLast(), endpoints.getFirst())
-                        .build(),
-                metadata.tssEncryptionKey());
+                        .build());
     }
 
     private void reinitializePorts() {
