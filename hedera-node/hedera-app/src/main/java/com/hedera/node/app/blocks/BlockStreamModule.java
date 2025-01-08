@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import java.nio.file.FileSystem;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module()
+@Module
 public interface BlockStreamModule {
     @Binds
     @Singleton
@@ -48,7 +48,7 @@ public interface BlockStreamModule {
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
-            case FILE_AND_BUCKET -> () ->
+            case BUCKET -> () ->
                     new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, bucketUploadManager);
             case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
         };

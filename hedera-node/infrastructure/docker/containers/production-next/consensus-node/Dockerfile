@@ -277,6 +277,9 @@ ENV JAVA_OPTS ""
 ENV JAVA_MAIN_CLASS "com.hedera.node.app.ServicesMain"
 ENV JAVA_CLASS_PATH "data/lib/*:data/apps/*"
 
+## Consensus Node Configuration
+ENV CONSENSUS_NODE_ID=""
+
 # Performance Tuning for Malloc
 ENV MALLOC_ARENA_MAX 4
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.blocks.cloud.uploader.BucketConfigurationManager;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -44,6 +45,7 @@ import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -95,6 +97,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var config = new TestConfigBuilder(false)
                 .withConverter(Bytes.class, new BytesConverter())
                 .withConverter(LongPair.class, new LongPairConverter())
+                .withConfigDataType(BlockStreamConfig.class)
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(LedgerConfig.class)

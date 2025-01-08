@@ -65,6 +65,7 @@ testModuleInfo {
     requires("uk.org.webcompere.systemstubs.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
     requires("okhttp3")
+    requires("awaitility")
 }
 
 jmhModuleInfo {

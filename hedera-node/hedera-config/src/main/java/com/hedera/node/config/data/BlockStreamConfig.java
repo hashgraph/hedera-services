@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ package com.hedera.node.config.data;
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
 import com.hedera.node.config.types.BlockStreamWriterMode;
+import com.hedera.node.config.types.CloudBucketConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.validation.annotation.Max;
 import com.swirlds.config.api.validation.annotation.Min;
 import java.util.List;
@@ -43,7 +45,7 @@ import java.util.List;
 @ConfigData("blockStream")
 public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
-        @ConfigProperty(defaultValue = "FILE_AND_BUCKET") @NodeProperty BlockStreamWriterMode writerMode,
+        @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "/opt/hgcapp/blockStreams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int serializationBatchSize,
@@ -51,33 +53,8 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
         @ConfigProperty(defaultValue = "localhost") String grpcAddress,
         @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort,
-        @ConfigProperty(defaultValue = "3") @NetworkProperty int uploadRetryAttempts,
-        @ConfigProperty(defaultValue = "168") @NetworkProperty int localRetentionHours,
-        @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
-        @ConfigProperty(defaultValue = "15") @Min(1) @Max(100) @NetworkProperty int maxUploadThreads,
-
-        // Bucket configurations with default AWS and GCP public buckets
-        @ConfigProperty(
-                        defaultValue =
-                                """
-        [
-            {
-                "name": "default-aws-bucket",
-                "provider": "AWS",
-                "endpoint": "https://s3.amazonaws.com",
-                "region": "us-east-1",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            },
-            {
-                "name": "default-gcp-bucket",
-                "provider": "GCP",
-                "endpoint": "https://storage.googleapis.com",
-                "region": "",
-                "bucketName": "hedera-mainnet-blocks",
-                "enabled": "true"
-            }
-        ]
-        """)
-                @NetworkProperty
-                List<CloudBucketConfig> buckets) {}
+        @ConfigProperty(defaultValue = "3") @NodeProperty int uploadRetryAttempts,
+        @ConfigProperty(defaultValue = "168") @NodeProperty int localRetentionHours,
+        @ConfigProperty(defaultValue = "data/config/bucket-credentials.yaml") @NetworkProperty String credentialsPath,
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) @NetworkProperty List<CloudBucketConfig> buckets,
+        @ConfigProperty(defaultValue = "15") @Min(1) @Max(100) @NetworkProperty int maxUploadThreads) {}

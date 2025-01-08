@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,4 +47,5 @@ public record AddressBookConfig(
         @ConfigProperty(defaultValue = "false") boolean forceUseOfConfigAddressBook,
         @ConfigProperty(defaultValue = "data/saved/address_book") String addressBookDirectory,
         @ConfigProperty(defaultValue = "50") int maxRecordedAddressBookFiles,
-        @ConfigProperty(defaultValue = "false") boolean useRosterLifecycle) {}
+        @ConfigProperty(defaultValue = "false") boolean useRosterLifecycle,
+        @ConfigProperty(defaultValue = "true") boolean createCandidateRosterOnPrepareUpgrade) {}

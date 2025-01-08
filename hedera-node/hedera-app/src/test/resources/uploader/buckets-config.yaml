@@ -1,0 +1,4 @@
+blockStream:
+  buckets:
+    - { "name": "default-aws-bucket", "provider": "aws", "endpoint": "https://s3.amazonaws.com", "region": "us-east-1", "bucketName": "bucket-name", "enabled": "true" }
+    - { "name": "default-gcp-bucket", "provider": "gcp", "endpoint": "https://storage.googleapis.com", "region": "", "bucketName": "bucket-name", "enabled": "true" }
