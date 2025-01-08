@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,26 +225,6 @@ public class Address implements SelfSerializable {
     @NonNull
     public String getSelfName() {
         return selfName;
-    }
-
-    /**
-     * Get local IP port
-     *
-     * @param a the Address object to be operated on
-     * @return port number
-     */
-    public int getConnectPort(Address a) {
-        return isLocalTo(a) ? getPortInternal() : getPortExternal();
-    }
-
-    /**
-     * Check whether a given Address has the same external address as mine.
-     *
-     * @param a Given Address to check.
-     * @return True if they are exactly the same.
-     */
-    public boolean isLocalTo(Address a) {
-        return Objects.equals(getHostnameExternal(), a.getHostnameExternal());
     }
 
     /**
