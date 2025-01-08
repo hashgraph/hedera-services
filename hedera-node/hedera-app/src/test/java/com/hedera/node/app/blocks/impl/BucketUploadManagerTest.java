@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.blocks.cloud.uploader.HashMismatchException;
 import com.hedera.node.app.blocks.cloud.uploader.MinioBucketUploader;
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
+import com.hedera.node.app.blocks.cloud.uploader.MinioClientFactory;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.node.config.types.BucketProvider;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -173,10 +173,10 @@ class BucketUploadManagerTest {
         try (MockedConstruction<MinioBucketUploader> mocked =
                 mockConstruction(MinioBucketUploader.class, (mock, context) -> {
                     // Mock the provider first
-                    when(mock.getProvider()).thenReturn(BucketProvider.AWS);
+                    when(mock.getProvider()).thenReturn(MinioClientFactory.AWS_PROVIDER);
 
                     // Then set up the exception
-                    doThrow(new HashMismatchException("test", "AWS", "bucket"))
+                    doThrow(new HashMismatchException("test", MinioClientFactory.AWS_PROVIDER, "bucket"))
                             .when(mock)
                             .uploadBlock(any(Path.class));
                 })) {
@@ -196,11 +196,11 @@ class BucketUploadManagerTest {
                 // Expected - ignore the exception
             }
 
+            // Give a small delay for file operations to complete
+            Thread.sleep(1000);
+
             // Verify uploader was used
             verify(mockUploader).uploadBlock(blockPath);
-
-            // Give a small delay for file operations to complete
-            Thread.sleep(500);
 
             // Debug output
             System.out.println("Block path exists: " + Files.exists(blockPath));

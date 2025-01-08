@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.blocks.cloud.uploader;
 
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.node.config.types.BucketProvider;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.Result;
@@ -43,7 +42,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
     private static final Logger logger = LogManager.getLogger(MinioBucketUploader.class);
     private final MinioClient minioClient;
     private final String bucketName;
-    private final BucketProvider provider;
+    private final String provider;
     private final ExecutorService uploadExecutor;
     private final int maxRetryAttempts;
 
@@ -141,7 +140,7 @@ public class MinioBucketUploader implements CloudBucketUploader {
     }
 
     @Override
-    public BucketProvider getProvider() {
+    public String getProvider() {
         return provider;
     }
 

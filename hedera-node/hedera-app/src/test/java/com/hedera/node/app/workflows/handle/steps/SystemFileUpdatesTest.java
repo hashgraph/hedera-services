@@ -40,7 +40,6 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;

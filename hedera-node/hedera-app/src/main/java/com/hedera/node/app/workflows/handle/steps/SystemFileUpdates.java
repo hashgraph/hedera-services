@@ -30,7 +30,6 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.uploader.BucketConfigurationManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.FilesConfig;

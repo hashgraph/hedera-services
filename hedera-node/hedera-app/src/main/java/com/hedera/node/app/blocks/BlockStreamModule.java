@@ -48,8 +48,7 @@ public interface BlockStreamModule {
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
-            case BUCKET -> () ->
-                    new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, bucketUploadManager);
+            case BUCKET -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, bucketUploadManager);
             case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
         };
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.blocks.cloud.uploader;
 
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
-import com.hedera.node.config.types.BucketProvider;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.minio.MinioClient;
 
@@ -25,6 +24,8 @@ import io.minio.MinioClient;
  * Factory class for creating MinioClient instances.
  */
 public class MinioClientFactory {
+
+    public static String AWS_PROVIDER = "AWS";
 
     private MinioClientFactory() {
         // Utility class
@@ -44,7 +45,7 @@ public class MinioClientFactory {
                         new String(config.credentials().secretKey()));
 
         // Add region only if the provider is AWS
-        if (config.provider() == BucketProvider.AWS && config.region() != null) {
+        if (config.provider().equals(AWS_PROVIDER) && config.region() != null) {
             builder.region(config.region());
         }
 

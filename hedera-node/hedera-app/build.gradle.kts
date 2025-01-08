@@ -22,6 +22,11 @@ plugins {
 
 description = "Hedera Application - Implementation"
 
+dependencies {
+    implementation("io.minio:minio:8.5.7")
+    implementation("com.squareup.okio:okio-jvm:3.7.0")
+}
+
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
     annotationProcessor("com.google.auto.service.processor")
@@ -33,8 +38,6 @@ mainModuleInfo {
     runtimeOnly("io.helidon.webclient")
     runtimeOnly("io.helidon.webclient.grpc")
     runtimeOnly("com.hedera.cryptography.altbn128")
-
-    runtimeOnly("io.minio")
 }
 
 configurations {

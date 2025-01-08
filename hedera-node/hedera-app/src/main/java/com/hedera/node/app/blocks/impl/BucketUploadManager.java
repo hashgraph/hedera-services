@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.hedera.node.app.blocks.cloud.uploader.BucketConfigurationListener;
 import com.hedera.node.app.blocks.cloud.uploader.CloudBucketUploader;
 import com.hedera.node.app.blocks.cloud.uploader.HashMismatchException;
 import com.hedera.node.app.blocks.cloud.uploader.MinioBucketUploader;
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -171,10 +171,8 @@ public class BucketUploadManager implements BlockFileClosedListener, BucketConfi
                         uploader.uploadBlock(blockPath);
                     } catch (HashMismatchException e) {
                         logger.error(
-                                "Hash mismatch while uploading block to {}: {}",
-                                uploader.getProvider().name(),
-                                e.getCause());
-                        handleHashMismatch(blockPath, uploader.getProvider().name());
+                                "Hash mismatch while uploading block to {}: {}", uploader.getProvider(), e.getCause());
+                        handleHashMismatch(blockPath, uploader.getProvider());
                     }
                 },
                 executorService);

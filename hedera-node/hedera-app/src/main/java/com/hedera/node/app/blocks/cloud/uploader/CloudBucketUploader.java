@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.blocks.cloud.uploader;
 
-import com.hedera.node.config.types.BucketProvider;
 import java.nio.file.Path;
 
 public interface CloudBucketUploader {
@@ -26,5 +25,5 @@ public interface CloudBucketUploader {
 
     String getBlockMd5(String objectKey);
 
-    BucketProvider getProvider();
+    String getProvider();
 }

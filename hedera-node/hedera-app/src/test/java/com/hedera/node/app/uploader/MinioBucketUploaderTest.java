@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package com.hedera.node.app.uploader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.hedera.node.app.blocks.cloud.uploader.BucketConfigurationManager;
 import com.hedera.node.app.blocks.cloud.uploader.MinioBucketUploader;
-import com.hedera.node.app.uploader.credentials.BucketCredentials;
-import com.hedera.node.app.uploader.credentials.CompleteBucketConfig;
+import com.hedera.node.app.blocks.cloud.uploader.configs.BucketCredentials;
+import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.node.config.types.BucketProvider;
 import io.minio.MinioClient;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
@@ -54,7 +54,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,18 +94,12 @@ class MinioBucketUploaderTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        awsBucketCredentials = new BucketCredentials("awsAccessKey", "awsSecretKey".toCharArray());
-        gcsBucketCredentials = new BucketCredentials("gcsAccessKey", "gcsSecretKey".toCharArray());
+        awsBucketCredentials = new BucketCredentials("awsAccessKey", "awsSecretKey");
+        gcsBucketCredentials = new BucketCredentials("gcsAccessKey", "gcsSecretKey");
         awsBucketConfig = new CompleteBucketConfig(
-                "awsBucketConfig",
-                BucketProvider.AWS,
-                "aws-endpoint",
-                "us-west-2",
-                "aws-bucket",
-                true,
-                awsBucketCredentials);
+                "awsBucketConfig", "AWS", "aws-endpoint", "us-west-2", "aws-bucket", true, awsBucketCredentials);
         gcsBucketConfig = new CompleteBucketConfig(
-                "gcsBucketConfig", BucketProvider.GCP, "gcs-endpoint", "", "gcs-bucket", true, gcsBucketCredentials);
+                "gcsBucketConfig", "GCP", "gcs-endpoint", "", "gcs-bucket", true, gcsBucketCredentials);
         // Mock Headers for StatObjectResponse with valid timestamp
         mockHeaders = new okhttp3.Headers.Builder()
                 .add("last-modified", "Wed, 12 Oct 2022 10:15:30 GMT") // Valid RFC 1123 timestamp
@@ -243,11 +236,5 @@ class MinioBucketUploaderTest {
         }
 
         return blockFiles;
-    }
-
-    @AfterEach
-    void tearDown() {
-        uploader.clearCharArray(awsBucketCredentials.secretKey());
-        uploader.clearCharArray(gcsBucketCredentials.secretKey());
     }
 }
