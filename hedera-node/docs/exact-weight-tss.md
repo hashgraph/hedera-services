@@ -29,13 +29,14 @@ the network roster at the time of adoption, the TSS implementation is naturally 
 1. **Bootstrap**: Only a genesis roster exists, and although the nodes have secure communication channels,
 there is no consensus state with the Schnorr or hinTS public keys of the nodes. In this phase, the TSS system must
 derive this state from gossip; finish preprocessing for the hinTS scheme; and prove the initial hinTS verification
-key is embedded as metadata at the start of the chain of rosters blessed by Schnorr signatures from nodes in the
-previous roster with at least 1/3 of the weight.
-2. **Transition**: The current roster is fully active; the TSS state includes a consensus proof that its hinTS
-verification key was derived from the ledger id. There is also a candidate roster that reflects the latest dynamic
-address book changes and HBAR stake adjustments. In this phase, the TSS system must repeat hinTS preprocessing for
-the candidate roster; and collect enough Schnorr signatures from the current roster to (recursively) prove the new
-hinTS verification key was also derived from the ledger id.
+key and weight threshold are embedded as metadata at the start of the chain of rosters blessed by Schnorr signatures
+from nodes in the previous roster with at least 1/3 of the weight. (Since bootstrap begins the chain, verifiers must
+trust the genesis roster's members for prior reasons.)
+2. **Transition**: The current roster is fully active; the TSS state includes a consensus proof that the roster,
+its hinTS verification key, and minimum weight threshold were all blessed by a previous roster. There is also a
+candidate roster that reflects the latest dynamic address book changes and HBAR stake adjustments. In this phase, the
+TSS system must repeat hinTS preprocessing for the candidate roster; and collect enough Schnorr signatures from the
+current roster to (recursively) prove _that_ roster's hinTS construction and minimum weight threshold.
 3. **Handoff**: The current roster is fully active, but there is no candidate roster because the network has just
 replaced its current roster with the candidate roster. In this phase, the TSS system may, for example, purge any
 obsolete state accumulated during its previous transition phases; but it has no urgent responsibilities besides, of
@@ -48,16 +49,20 @@ We structure the TSS system as two services with distinct responsibilities:
 string (CRS)** grounding the protocol; that is, preprocessing, key generation, hint generation, partial signing,
 partial verification, and signature aggregation.
 2. The `HistoryService`, which is unaware of its role in specifically TSS, and implements a more general function of
-proving via recursive SNARK that a set of node ids, weights, Schnorr keys; and an arbitrary binary string, were derived
+proving via recursive SNARK that a set of node ids, weights, Schnorr keys; and some arbitrary metadata, were derived
 from the ledger id with each transition in the derivation having valid Schnorr signatures from nodes with at least 1/3
 of the weight in the source roster.
 
-The node software combines these services to achieve TSS by setting the binary strings in the `HistoryService` proof
+The node software combines these services to achieve TSS by setting the metadata in the `HistoryService` proof
 for each roster to the concatenation of two items:
 1. The verification key computed by the `HintsService` for that roster.
 2. The minimum threshold weight that a verifier should accept for a signature by this
-verification key. (This will be 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
-50B HBAR---unless all HBAR were, in fact, staked to nodes in the roster).
+verification key; in particular, 1/3 of the total weight in the roster, which is _not_ necessarily 1/3 of
+50B HBAR---unless all HBAR were staked to nodes in the roster.
+
+(Note the full message that nodes sign with their Schnorr keys in each `HistoryService` proof is the concatenation of
+the above metadata with the hash of a canonical serialization of the list of `(node id, weight, Schnorr key)` triples
+defining the next roster.)
 
 Despite their separate responsibilities, both the `HintsService` and `HistoryService` share a high-level design that
 we call the `RosterCompanionService`. This abstraction is a service whose goal is to derive some **primary state** for
@@ -83,10 +88,10 @@ the current roster.
 
 #### A note on performance
 
-In the first release of Hiero TSS, revisions to the candidate roster only happened at consensus midnight; and handoffs
-in the chain of trust only happened at upgrade boundaries scheduled 12 or more hours after UTC midnight. So new nodes
-after a handoff had an entire release to successfully gossip their hinTS and Schnorr keys; and there were many hours
-between the latest revision to the candidate roster and the next handoff to complete the work for each transition.
+In the first release of Hiero TSS, revisions to the candidate roster only happened at consensus midnight; and roster
+handoffs only happened at upgrade boundaries scheduled 12 or more hours after UTC midnight. So new nodes after a handoff
+had an entire release to successfully gossip their hinTS and Schnorr keys; and there were many hours between the latest
+revision to the candidate roster and the next handoff to complete the work for each transition.
 
 If Hiero networks move to a much more compressed schedule for roster revisions and transitions, `RCS` implementations
 may want to do some transition phase work preemptively, even before the next revision to the candidate roster.For
@@ -110,7 +115,10 @@ The main features of a hinTS construction are items such as,
 in the ongoing construction).
 4. If the construction is complete, the hinTS aggregation and verification keys for the scheme.
 5. If the construction is complete, the final mapping of node ids to hinTS party ids in the target roster.
-6. If the construction is still collecting hinTS keys, the consensus time for the next aggregation attempt.
+6. If the construction is still collecting hinTS keys, the consensus time for the next aggregation attempt (an
+**attempt** is a deterministic point in consensus time at which honest nodes pause and evaluate if they have enough
+hinTS keys to satisfy the weight inequalities discussed in the [section](#implied-limitations-on-the-transition-phase)
+below and begin the hinTS preprocessing algorithm).
 7. If the construction has stopped accepting hinTS keys, the adoption time of the last accepted hinTS key.
 
 Note that despite the strong functional analogy between the constructions that make up the roster-scoped primary state
@@ -124,8 +132,9 @@ items such as,
 1. _Per construction size $M = 2^k$_ : For as many parties as possible, for a party with id $i \in [0, M)$, the
 party's hinTS key; the node id that submitted that hinTS key; the consensus time the hinTS key was adopted in the
 ongoing construction; and, if applicable, a revised hinTS key the same node wishes to use in subsequent constructions
-of size $M$. (Note that a node's assigned party id for a particular construction size never changes; so this implies
-such secondary state is fully purged before reusing a party id for a new node id.)
+of size $M$. (A node operator might wish to rotate their key for security reasons and trigger such a revision.)
+Note that a node's assigned party id for a particular construction size never changes; so this implies such secondary
+state is fully purged before reusing a party id for a new node id.
 2. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of
 construction $c$ accounting for at least 1/3 of its weight, their consensus vote for a particular preprocessing
 output with aggregation and verification keys for construction $c$.
@@ -156,7 +165,7 @@ entry, the ledger id. Its roster-scoped primary state is a **proof construction*
 deterministic progress toward the proof that this roster extends the chain of trust, incorporating any requested
 metadata for the roster. The main features of a proof construction are items such as,
 1. An id $c$ for the construction to help connect related proof state like votes to the construction.
-2. The source roster hash.
+2. The source roster hash; and if this is not the ledger id, the proof from the ledger id to the source roster.
 3. The target roster hash.
 4. If the construction is complete, the proof that the target roster and metadata belong to the chain of trust.
 5. If the construction is waiting on Schnorr keys, the consensus time for the next attempt to assemble the next
@@ -178,9 +187,9 @@ $c$ accounting for at least 1/3 of its weight, their consensus vote for a partic
 The **reconciliation loop** of the `HistoryService` evolves this secondary state by a combination of scheduling
 expensive cryptographic operations to run off the `handleTransaction` thread, and gossiping the results of these
 operations (or votes on those results) to other nodes. These node operations likely include,
-1. `HistoryProofKeyPublication` - a transaction publishing the node's Schnorr key for use in the next construction.
-2. `HistoryAssemblySignature` - a transaction publishing the node's signature on a particular metadata and roster
-assembly for a certain construction id.
+1. `HistorySchnorrKeyPublication` - a transaction publishing the node's Schnorr key for use in the next construction.
+2. `HistoryMessageSignature` - a transaction publishing the node's signature on the serialization of a
+metadata and roster concatenation for a certain construction id.
 3. `HistoryProofVote` - a transaction publishing the node's vote for a particular proof output for a certain
 construction id.
 
@@ -206,8 +215,8 @@ An verifier of the signatures of a Hiero network will then,
 - Validate out-of-band through some means that `I` is, in fact, the ledger id of the Hiero network in question.
 - Deploy a generic hinTS verifier, *extended with* the ability to verify proofs asserting a chain-of-trust from `I`.
 - Given a signature $S_L$ on $\textrm{msg}$ message $\textrm{msg}$, first check that $P_{\textrm{vk}}$ is valid, and
-hence the hinTS scheme producing $S_h$ was in fact produced by nodes inheriting a chain of trust from the nodes that
-constituted `I`. Second, verify that $S_h$ is a valid hinTS signature on $\textrm{msg}$.
+hence the hinTS scheme producing $S_h$ was in fact produced by nodes inheriting a chain of trust starting from the
+nodes that established the trusted ledger id. Second, verify that $S_h$ is a valid hinTS signature on $\textrm{msg}$.
 
 There are only a few other details; namely,
 - The `HandleWorkflow` is responsible for driving the reconciliation loops of both companion services.
