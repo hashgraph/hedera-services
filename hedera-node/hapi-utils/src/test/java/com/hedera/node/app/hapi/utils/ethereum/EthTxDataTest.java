@@ -395,6 +395,7 @@ class EthTxDataTest {
                 BigInteger.ONE,
                 oneByte,
                 oneByte,
+                null,
                 1,
                 oneByte,
                 oneByte,
@@ -415,6 +416,7 @@ class EthTxDataTest {
                 BigInteger.ONE,
                 oneByte,
                 oneByte,
+                null,
                 1,
                 oneByte,
                 oneByte,
@@ -478,6 +480,7 @@ class EthTxDataTest {
                 oneByte,
                 WEIBARS_IN_A_TINYBAR,
                 oneByte,
+                null,
                 null,
                 1,
                 oneByte,
@@ -545,6 +548,7 @@ class EthTxDataTest {
                         BigInteger.ONE,
                         oneByte,
                         oneByte,
+                        null,
                         1,
                         oneByte,
                         oneByte,
@@ -574,6 +578,7 @@ class EthTxDataTest {
                 BigInteger.ONE,
                 oneByte,
                 oneByte,
+                null,
                 1,
                 oneByte,
                 oneByte,
@@ -593,7 +598,7 @@ class EthTxDataTest {
 
         final var oneByte = new byte[] {1};
         final EthTxData ethTxData = new EthTxData(
-                oneByte, type, oneByte, 1, oneByte, oneByte, oneByte, 1, oneByte, bigValue, oneByte, null, 1, oneByte,
+                oneByte, type, oneByte, 1, oneByte, oneByte, oneByte, 1, oneByte, bigValue, oneByte, null, null, 1, oneByte,
                 oneByte, oneByte);
         final var encoded = ethTxData.encodeTx();
 
