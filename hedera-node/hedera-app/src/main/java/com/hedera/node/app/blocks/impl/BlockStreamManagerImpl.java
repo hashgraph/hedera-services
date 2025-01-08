@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.BlockItem.ItemOneOfType.TRANSACTION_RESULT;
@@ -54,7 +69,9 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,6 +86,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -225,18 +243,40 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
             blockNumber = blockStreamInfo.blockNumber() + 1;
             pendingItems = new ArrayList<>();
-
+            final var firstTransactionTimestamp = getFirstTransactionTimestamp(round);
             pendingItems.add(BlockItem.newBuilder()
                     .blockHeader(BlockHeader.newBuilder()
                             .number(blockNumber)
                             .previousBlockHash(lastBlockHash)
                             .hashAlgorithm(SHA2_384)
                             .softwareVersion(platformState.creationSoftwareVersionOrThrow())
-                            .hapiProtoVersion(hapiVersion))
+                            .hapiProtoVersion(hapiVersion)
+                            .firstTransactionConsensusTime(firstTransactionTimestamp))
                     .build());
 
             writer.openBlock(blockNumber);
         }
+    }
+
+    /**
+     * Returns the consensus timestamp of the first transaction in the given round, or {@code null} if no such
+     * transaction is found.
+     *
+     * @param round the round
+     * @return the consensus timestamp of the first transaction in the given round, or {@code null} if no such
+     */
+    @Nullable
+    private Timestamp getFirstTransactionTimestamp(final @NonNull Round round) {
+        for (final ConsensusEvent event : round) {
+            final Iterator<ConsensusTransaction> txnIterator = event.consensusTransactionIterator();
+            while (txnIterator.hasNext()) {
+                final ConsensusTransaction transaction = txnIterator.next();
+                if (transaction.getConsensusTimestamp() != null) {
+                    return asTimestamp(transaction.getConsensusTimestamp());
+                }
+            }
+        }
+        return null;
     }
 
     @Override
