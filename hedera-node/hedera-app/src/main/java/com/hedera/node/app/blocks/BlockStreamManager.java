@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.function.BiConsumer;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -37,7 +36,7 @@ import java.util.function.BiConsumer;
  * Items written to the stream will be produced in the order they are written. The leaves of the input and output item
  * Merkle trees will be in the order they are written.
  */
-public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]>, StateHashedListener {
+public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener {
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**
