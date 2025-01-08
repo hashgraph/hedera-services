@@ -40,7 +40,7 @@ is to gather the required signatures for the scheduled transaction, the `waitFor
 
 - `ScheduleNativeTranslator` - This class will be responsible for handling the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken`, `scheduleCreateNonFungibleTokenWithCustomFees`, `scheduleUpdateTokenInfo` and selectors and dispatching them to the Schedule Service.
 - `ScheduleNativeCall` - This class provides methods and constants for decoding the given `HssCallAttempt` into the appropriate `TransactionBody` by using the `asSchedulableDispatchIn` method of the `Call` interfaced described below.
-- `GetScheduledInfoTranslator` - This class will be responsible for handling the `getScheduledFungibleTokenCreateTransaction`, `getScheduledNonFungibleTokenCreateTransaction` and `getScheduledTokenAddress` selectors and dispatching them to the Schedule Service.
+- `GetScheduledInfoTranslator` - This class will be responsible for handling the `getScheduledFungibleTokenCreateTransaction` and `getScheduledNonFungibleTokenCreateTransaction` selectors and dispatching them to the Schedule Service.
 - `GetScheduledTokenInfoCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
 - `GetScheduledNonFungibleTokenInfoCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
 
@@ -84,8 +84,8 @@ The calling contract should then have the balance to cover the cost of the Nativ
 
 ### Feature Flags
 
-In order to gate the newly introduced system contract calls, we will reuse the following feature flag:
-- `contracts.systemContract.scheduleService.enabled` - to enable the `scheduleNative` function.
+In order to gate the newly introduced system contract calls, we will add the following feature flag:
+- `contracts.systemContract.scheduleService.scheduleNative.enabled` - to enable the `scheduleNative` function.
 
 ## Security Implications
 
