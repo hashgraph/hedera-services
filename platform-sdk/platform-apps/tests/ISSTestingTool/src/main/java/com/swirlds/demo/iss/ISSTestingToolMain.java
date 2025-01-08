@@ -138,7 +138,7 @@ public class ISSTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
         return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

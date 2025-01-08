@@ -278,7 +278,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
         while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
+            final var event = eventIterator.next();
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
                 // We are not interested in handling any system transactions, as they are specific
