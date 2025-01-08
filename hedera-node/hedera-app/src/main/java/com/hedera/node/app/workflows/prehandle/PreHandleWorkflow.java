@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.swirlds.platform.system.events.Event;
@@ -25,6 +26,7 @@ import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,12 +41,14 @@ public interface PreHandleWorkflow {
      * @param readableStoreFactory the {@link ReadableStoreFactory} that is used for looking up stores
      * @param creator The {@link AccountID} of the node that created these transactions
      * @param transactions An {@link Stream} over all transactions to pre-handle
+     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     void preHandle(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final AccountID creator,
-            @NonNull final Stream<Transaction> transactions);
+            @NonNull final Stream<Transaction> transactions,
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback);
 
     /**
      * A convenience method to start the pre-handle transaction workflow for a single
@@ -54,14 +58,16 @@ public interface PreHandleWorkflow {
      * @param storeFactory The {@link ReadableStoreFactory} based on the current state
      * @param accountStore The {@link ReadableAccountStore} based on the current state
      * @param platformTx The {@link Transaction} to pre-handle
+     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      * @return The {@link PreHandleResult} of running pre-handle
      */
     default @NonNull PreHandleResult preHandleTransaction(
             @NonNull AccountID creator,
             @NonNull ReadableStoreFactory storeFactory,
             @NonNull ReadableAccountStore accountStore,
-            @NonNull Transaction platformTx) {
-        return preHandleTransaction(creator, storeFactory, accountStore, platformTx, null);
+            @NonNull Transaction platformTx,
+            @NonNull Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
+        return preHandleTransaction(creator, storeFactory, accountStore, platformTx, null, stateSignatureTxnCallback);
     }
 
     /**
@@ -74,6 +80,7 @@ public interface PreHandleWorkflow {
      * @param accountStore The {@link ReadableAccountStore} based on the current state
      * @param platformTx The {@link Transaction} to pre-handle
      * @param maybeReusableResult The result of a previous call to the same method that may,
+     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      * depending on changes in state, be reusable for this call
      * @return The {@link PreHandleResult} of running pre-handle
      */
@@ -83,7 +90,8 @@ public interface PreHandleWorkflow {
             @NonNull ReadableStoreFactory storeFactory,
             @NonNull ReadableAccountStore accountStore,
             @NonNull Transaction platformTx,
-            @Nullable PreHandleResult maybeReusableResult);
+            @Nullable PreHandleResult maybeReusableResult,
+            @NonNull Consumer<StateSignatureTransaction> stateSignatureTxnCallback);
 
     /**
      * This method gets all the verification data for the current transaction. If pre-handle was previously ran
@@ -100,7 +108,7 @@ public interface PreHandleWorkflow {
     default PreHandleResult getCurrentPreHandleResult(
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn,
-            final ReadableStoreFactory storeFactory) {
+            @NonNull final ReadableStoreFactory storeFactory) {
         final var metadata = platformTxn.getMetadata();
         final PreHandleResult previousResult;
         if (metadata instanceof PreHandleResult result) {
@@ -122,6 +130,7 @@ public interface PreHandleWorkflow {
                 storeFactory,
                 storeFactory.getStore(ReadableAccountStore.class),
                 platformTxn,
-                previousResult);
+                previousResult,
+                txns -> {});
     }
 }
