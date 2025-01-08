@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1071,7 +1071,8 @@ public class PlatformComponentBuilder {
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
-                    blocks.intakeEventCounter());
+                    blocks.intakeEventCounter(),
+                    blocks.stateLifecycles());
         }
         return gossip;
     }
@@ -1301,7 +1302,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.swirldStateManager(),
                     blocks.statusActionSubmitterReference().get(),
-                    blocks.appVersion());
+                    blocks.appVersion(),
+                    blocks.stateLifecycles());
         }
         return transactionHandler;
     }

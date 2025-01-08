@@ -48,6 +48,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -71,10 +72,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(StatsSigningTestingToolState.class, () -> {
-                        StatsSigningTestingToolState statsSigningTestingToolState = new StatsSigningTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES,
-                                version -> new BasicSoftwareVersion(version.major()),
-                                () -> null);
+                        StatsSigningTestingToolState statsSigningTestingToolState =
+                                new StatsSigningTestingToolState(version -> new BasicSoftwareVersion(version.major()));
                         return statsSigningTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
@@ -299,11 +298,14 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
         final PlatformMerkleStateRoot state = new StatsSigningTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()),
-                () -> sttTransactionPool);
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    public StateLifecycles newStateLifecycles() {
+        return new StatsSigningTestingToolStateLifecycles(() -> sttTransactionPool);
     }
 
     /**

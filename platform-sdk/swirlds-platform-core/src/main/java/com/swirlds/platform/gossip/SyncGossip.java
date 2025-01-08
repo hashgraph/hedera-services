@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -171,7 +172,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final StateLifecycles stateLifecycles) {
 
         shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), intakeEventCounter);
 
@@ -272,7 +274,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
-                        platformContext, threadManager, roster, reconnectConfig.asyncStreamTimeout(), reconnectMetrics),
+                        platformContext,
+                        threadManager,
+                        roster,
+                        reconnectConfig.asyncStreamTimeout(),
+                        reconnectMetrics,
+                        stateLifecycles),
                 stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 

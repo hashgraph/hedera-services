@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,19 +41,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * Manages all interactions with the state object required by {@link SwirldState}.
+ * Manages all interactions with the state object required by {@link StateEventHandler}.
  */
 public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
-     * Stats relevant to SwirldState operations.
+     * Stats relevant to StateEventHandler operations.
      */
     private final SwirldStateMetrics stats;
 
     /**
      * reference to the state that reflects all known consensus transactions
      */
-    private final AtomicReference<PlatformMerkleStateRoot> stateRef = new AtomicReference<>();
+    private final AtomicReference<StateEventHandler> stateEventHandlerRef = new AtomicReference<>();
 
     /**
      * The most recent immutable state. No value until the first fast copy is created.
@@ -103,38 +103,41 @@ public class SwirldStateManager implements FreezePeriodChecker {
     }
 
     /**
-     * Set the initial state for the platform. This method should only be called once.
+     * Set the initial eventHandler for the platform. This method should only be called once.
      *
-     * @param state the initial state
+     * @param eventHandler the initial eventHandler
      */
-    public void setInitialState(@NonNull final PlatformMerkleStateRoot state) {
+    public void setInitialHandler(@NonNull final StateEventHandler eventHandler) {
+        Objects.requireNonNull(eventHandler);
+        PlatformMerkleStateRoot state = eventHandler.getStateRoot();
         Objects.requireNonNull(state);
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        if (stateRef.get() != null) {
-            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
+        if (stateEventHandlerRef.get() != null) {
+            throw new IllegalStateException(
+                    "Attempt to set initial eventHandler when there is already a eventHandler reference.");
         }
 
-        // Create a fast copy so there is always an immutable state to
+        // Create a fast copy so there is always an immutable eventHandler to
         // invoke handleTransaction on for pre-consensus transactions
-        fastCopyAndUpdateRefs(state);
+        fastCopyAndUpdateRefs(eventHandler);
     }
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link SwirldState#handleConsensusRound(Round, PlatformStateModifier, Consumer<ScopedSystemTransaction<StateSignatureTransaction>>)}.
+     * {@link StateEventHandler#handleConsensusRound(Round, PlatformStateModifier, Consumer<ScopedSystemTransaction<StateSignatureTransaction>>)}.
      *
      * @param round the round to handle
      */
     public List<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
-        final PlatformMerkleStateRoot state = stateRef.get();
+        final StateEventHandler state = stateEventHandlerRef.get();
 
         uptimeTracker.handleRound(round);
         transactionHandler.handleRound(round, state);
 
         // TODO update this logic to return the transactions from the callback consumer passed in
-        // state.getSwirldState().handleConsensusRound, when it is implemented
+        // state.getStateEventHandler().handleConsensusRound, when it is implemented
         return extractFromRound(round, StateSignatureTransaction.class);
     }
 
@@ -144,7 +147,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     public void sealConsensusRound(@NonNull final Round round) {
         Objects.requireNonNull(round);
-        final PlatformMerkleStateRoot state = stateRef.get();
+        final StateEventHandler state = stateEventHandlerRef.get();
         state.sealConsensusRound(round);
     }
 
@@ -153,7 +156,11 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * made to the returned state.
      */
     public PlatformMerkleStateRoot getConsensusState() {
-        return stateRef.get();
+        return stateEventHandlerRef.get().getStateRoot();
+    }
+
+    public StateEventHandler getStateEventHandler() {
+        return stateEventHandlerRef.get();
     }
 
     /**
@@ -165,9 +172,15 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
-        stateRef.get()
+        stateEventHandlerRef
+                .get()
+                .getStateRoot()
                 .getWritablePlatformState()
-                .setLastFrozenTime(stateRef.get().getReadablePlatformState().getFreezeTime());
+                .setLastFrozenTime(stateEventHandlerRef
+                        .get()
+                        .getStateRoot()
+                        .getReadablePlatformState()
+                        .getFreezeTime());
     }
 
     /**
@@ -176,21 +189,24 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param signedState the signed state to load
      */
     public void loadFromSignedState(@NonNull final SignedState signedState) {
-        final PlatformMerkleStateRoot state = signedState.getState();
+        final StateEventHandler stateEventHandler = signedState.getStateEventHandler();
+        final PlatformMerkleStateRoot state = stateEventHandler.getStateRoot();
 
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        fastCopyAndUpdateRefs(state);
+        fastCopyAndUpdateRefs(stateEventHandler);
     }
 
-    private void fastCopyAndUpdateRefs(final PlatformMerkleStateRoot state) {
-        final PlatformMerkleStateRoot consState = fastCopy(state, stats, softwareVersion);
+    private void fastCopyAndUpdateRefs(final StateEventHandler eventHandler) {
+        PlatformMerkleStateRoot currentStateRoot = eventHandler.getStateRoot();
+        final StateEventHandler newHandler =
+                eventHandler.withNewStateRoot(fastCopy(currentStateRoot, stats, softwareVersion));
 
-        // Set latest immutable first to prevent the newly immutable state from being deleted between setting the
+        // Set latest immutable first to prevent the newly immutable eventHandler from being deleted between setting the
         // stateRef and the latestImmutableState
-        setLatestImmutableState(state);
-        setState(consState);
+        setLatestImmutableState(currentStateRoot);
+        setPlatformEventHandler(newHandler);
     }
 
     /**
@@ -198,14 +214,14 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param state the new mutable state
      */
-    private void setState(final PlatformMerkleStateRoot state) {
-        final PlatformMerkleStateRoot currVal = stateRef.get();
+    private void setPlatformEventHandler(final StateEventHandler state) {
+        final StateEventHandler currVal = stateEventHandlerRef.get();
         if (currVal != null) {
-            currVal.release();
+            currVal.getStateRoot().release();
         }
         // Do not increment the reference count because the state provided already has a reference count of at least
         // one to represent this reference and to prevent it from being deleted before this reference is set.
-        stateRef.set(state);
+        stateEventHandlerRef.set(state);
     }
 
     private void setLatestImmutableState(final PlatformMerkleStateRoot immutableState) {
@@ -240,7 +256,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @see PlatformMerkleStateRoot#copy()
      */
     public PlatformMerkleStateRoot getStateForSigning() {
-        fastCopyAndUpdateRefs(stateRef.get());
+        fastCopyAndUpdateRefs(stateEventHandlerRef.get());
         return latestImmutableState.get();
     }
 }

@@ -44,7 +44,9 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.state.NoOpStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -94,8 +96,8 @@ public class StatsDemoMain implements SwirldMain {
         try {
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(new ClassConstructorPair(StatsDemoState.class, () -> {
-                StatsDemoState statsDemoState = new StatsDemoState(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                StatsDemoState statsDemoState =
+                        new StatsDemoState(version -> new BasicSoftwareVersion(version.major()));
                 return statsDemoState;
             }));
             registerMerkleStateRootClassIds();
@@ -316,11 +318,16 @@ public class StatsDemoMain implements SwirldMain {
     @NonNull
     @Override
     public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new StatsDemoState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        final PlatformMerkleStateRoot state =
+                new StatsDemoState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @NonNull
+    @Override
+    public StateLifecycles newStateLifecycles() {
+        return NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
     }
 
     /**

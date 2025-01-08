@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import java.io.IOException;
@@ -120,7 +120,7 @@ class EventRecoveryWorkflowTests {
         final List<PlatformEvent> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
-        final SwirldState immutableState = mock(SwirldState.class);
+        final StateEventHandler immutableState = mock(StateEventHandler.class);
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should not have been handled yet");
                     preHandleList.add(invocation.getArgument(0));
@@ -135,7 +135,7 @@ class EventRecoveryWorkflowTests {
                 .when(immutableState)
                 .handleConsensusRound(any(), any(), any());
 
-        final SwirldState mutableState = mock(SwirldState.class);
+        final StateEventHandler mutableState = mock(StateEventHandler.class);
         doAnswer(invocation -> {
                     fail("immutable state should pre-handle transactions");
                     return null;

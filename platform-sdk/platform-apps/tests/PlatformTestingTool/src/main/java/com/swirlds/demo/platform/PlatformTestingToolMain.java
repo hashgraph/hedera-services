@@ -87,6 +87,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -441,7 +442,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         FCQueueStatistics.register(metrics);
 
         // Register PTT statistics
-        PlatformTestingToolState.initStatistics(platform);
+        PlatformTestingToolStateLifecycles.initStatistics(platform);
 
         final int SAMPLING_PERIOD = 5000; /* millisecond */
         Timer statTimer = new Timer("stat timer" + selfId, true);
@@ -862,14 +863,25 @@ public class PlatformTestingToolMain implements SwirldMain {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new PlatformTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        final PlatformMerkleStateRoot state =
+                new PlatformTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public StateLifecycles<PlatformTestingToolState> newStateLifecycles() {
+        return new PlatformTestingToolStateLifecycles();
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {

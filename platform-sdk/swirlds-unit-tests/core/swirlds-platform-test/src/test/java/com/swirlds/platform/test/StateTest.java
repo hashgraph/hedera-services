@@ -84,14 +84,15 @@ class StateTest {
 
     private static SignedState randomSignedState() {
         Random random = new Random(0);
-        PlatformMerkleStateRoot merkleStateRoot = new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        PlatformMerkleStateRoot merkleStateRoot =
+                new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build().getConfiguration(),
                 CryptoStatic::verifySignature,
                 merkleStateRoot,
                 "test",
+                FAKE_MERKLE_STATE_LIFECYCLES,
                 shouldSaveToDisk,
                 false,
                 false);

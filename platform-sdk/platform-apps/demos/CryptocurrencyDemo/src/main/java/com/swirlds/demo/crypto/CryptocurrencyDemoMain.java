@@ -42,6 +42,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -61,8 +62,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         try {
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(new ClassConstructorPair(CryptocurrencyDemoState.class, () -> {
-                CryptocurrencyDemoState cryptocurrencyDemoState = new CryptocurrencyDemoState(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                CryptocurrencyDemoState cryptocurrencyDemoState =
+                        new CryptocurrencyDemoState(version -> new BasicSoftwareVersion(version.major()));
                 return cryptocurrencyDemoState;
             }));
             registerMerkleStateRootClassIds();
@@ -199,14 +200,25 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new CryptocurrencyDemoState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        final PlatformMerkleStateRoot state =
+                new CryptocurrencyDemoState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public StateLifecycles newStateLifecycles() {
+        return new CryptocurrencyDemoStateLifecycles();
     }
 
     /**

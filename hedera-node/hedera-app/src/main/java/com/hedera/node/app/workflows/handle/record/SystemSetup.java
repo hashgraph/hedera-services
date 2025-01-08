@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -323,7 +324,7 @@ public class SystemSetup {
     /**
      * Called only once, before handling the first transaction in network history. Externalizes
      * side effects of genesis setup done in
-     * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}.
+     * {@link StateEventHandler#init(Platform, InitTrigger, SoftwareVersion)}.
      *
      * @throws NullPointerException if called more than once
      */

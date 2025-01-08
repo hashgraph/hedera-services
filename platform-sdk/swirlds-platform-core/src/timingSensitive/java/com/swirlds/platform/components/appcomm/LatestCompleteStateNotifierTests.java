@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,9 +54,9 @@ public class LatestCompleteStateNotifierTests {
             try {
                 assertThat(senderLatch.await(1, TimeUnit.SECONDS)).isTrue();
                 assertFalse(
-                        n.getSwirldState().isDestroyed(),
-                        "SwirldState should not be destroyed until the callback has completed");
-                assertEquals(signedState.getSwirldState(), n.getSwirldState(), "Unexpected SwirldState");
+                        n.getSwirldState().getStateRoot().isDestroyed(),
+                        "StateEventHandler should not be destroyed until the callback has completed");
+                assertEquals(signedState.getStateEventHandler(), n.getSwirldState(), "Unexpected StateEventHandler");
                 listenerLatch.countDown();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

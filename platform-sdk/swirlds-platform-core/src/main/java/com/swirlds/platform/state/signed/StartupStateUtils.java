@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
@@ -86,6 +87,7 @@ public final class StartupStateUtils {
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<PlatformMerkleStateRoot> genesisStateBuilder,
+            @NonNull final StateLifecycles<?> stateLifecycles,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -99,7 +101,7 @@ public final class StartupStateUtils {
         requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, stateLifecycles);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -108,15 +110,15 @@ public final class StartupStateUtils {
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
 
-                return copyInitialSignedState(configuration, loadedState.get());
+                return copyInitialSignedState(configuration, loadedState.get(), stateLifecycles);
             }
         }
 
-        final ReservedSignedState genesisState =
-                buildGenesisState(configuration, configAddressBook, softwareVersion, genesisStateBuilder.get());
+        final ReservedSignedState genesisState = buildGenesisState(
+                configuration, configAddressBook, softwareVersion, genesisStateBuilder.get(), stateLifecycles);
 
         try (genesisState) {
-            return copyInitialSignedState(configuration, genesisState.get());
+            return copyInitialSignedState(configuration, genesisState.get(), stateLifecycles);
         }
     }
 
@@ -139,7 +141,8 @@ public final class StartupStateUtils {
             @NonNull final NodeId selfId,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
-            @NonNull final SoftwareVersion currentSoftwareVersion) {
+            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final StateLifecycles stateLifecycles) {
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -155,7 +158,7 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState state =
-                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles);
+                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles, stateLifecycles);
         return state;
     }
 
@@ -168,7 +171,9 @@ public final class StartupStateUtils {
      * @return a copy of the initial signed state
      */
     public static @NonNull HashedReservedSignedState copyInitialSignedState(
-            @NonNull final Configuration configuration, @NonNull final SignedState initialSignedState) {
+            @NonNull final Configuration configuration,
+            @NonNull final SignedState initialSignedState,
+            @NonNull final StateLifecycles stateLifecycles) {
         requireNonNull(configuration);
         requireNonNull(initialSignedState);
 
@@ -178,6 +183,7 @@ public final class StartupStateUtils {
                 CryptoStatic::verifySignature,
                 stateCopy,
                 "StartupStateUtils: copy initial state",
+                stateLifecycles,
                 false,
                 false,
                 false);
@@ -217,14 +223,15 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final List<SavedStateInfo> savedStateFiles)
+            @NonNull final List<SavedStateInfo> savedStateFiles,
+            @NonNull final StateLifecycles stateLifecycles)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             final ReservedSignedState state =
-                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile);
+                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile, stateLifecycles);
             if (state != null) {
                 return state;
             }
@@ -246,14 +253,15 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final SavedStateInfo savedStateFile)
+            @NonNull final SavedStateInfo savedStateFile,
+            @NonNull final StateLifecycles stateLifecycles)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile());
+            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile(), stateLifecycles);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 
@@ -326,14 +334,22 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final PlatformMerkleStateRoot stateRoot) {
+            @NonNull final PlatformMerkleStateRoot stateRoot,
+            @NonNull final StateLifecycles stateLifecycles) {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
         }
 
         final SignedState signedState = new SignedState(
-                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
+                configuration,
+                CryptoStatic::verifySignature,
+                stateRoot,
+                "genesis state",
+                stateLifecycles,
+                false,
+                false,
+                false);
         return signedState.reserve("initial reservation on genesis state");
     }
 

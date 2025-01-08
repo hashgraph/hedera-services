@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,11 @@ import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.PlatformStateEventHandler;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -167,6 +169,9 @@ public class SignedState implements SignedStateInfo {
      */
     private final boolean pcesRound;
 
+    @NonNull
+    private final StateEventHandler stateEventHandler;
+
     /**
      * Instantiate a signed state.
      *
@@ -189,9 +194,11 @@ public class SignedState implements SignedStateInfo {
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final PlatformMerkleStateRoot state,
             @NonNull final String reason,
+            @NonNull final StateLifecycles stateLifecycles,
             final boolean freezeState,
             final boolean deleteOnBackgroundThread,
             final boolean pcesRound) {
+        this.stateEventHandler = new PlatformStateEventHandler(state, stateLifecycles);
 
         state.reserve();
 
@@ -481,8 +488,8 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the root node of the application's state.
      */
-    public @NonNull SwirldState getSwirldState() {
-        return state;
+    public @NonNull StateEventHandler getStateEventHandler() {
+        return stateEventHandler;
     }
 
     /**

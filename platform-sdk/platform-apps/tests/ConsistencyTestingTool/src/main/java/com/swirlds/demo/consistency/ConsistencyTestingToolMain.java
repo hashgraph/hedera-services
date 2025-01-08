@@ -25,6 +25,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -55,8 +56,8 @@ public class ConsistencyTestingToolMain implements SwirldMain {
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(ConsistencyTestingToolState.class, () -> {
-                        ConsistencyTestingToolState consistencyTestingToolState = new ConsistencyTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                        ConsistencyTestingToolState consistencyTestingToolState =
+                                new ConsistencyTestingToolState(version -> new BasicSoftwareVersion(version.major()));
                         // Don't call FAKE_MERKLE_STATE_LIFECYCLES.initStates(consistencyTestingToolState) here.
                         // The stub states are automatically initialized upon loading the state from disk,
                         // or after finishing a reconnect.
@@ -114,11 +115,20 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new ConsistencyTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
+        final PlatformMerkleStateRoot state =
+                new ConsistencyTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
 
         return state;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public StateLifecycles<ConsistencyTestingToolState> newStateLifecycles() {
+        return new ConsistencyTestingToolStateLifecycles();
     }
 
     /**

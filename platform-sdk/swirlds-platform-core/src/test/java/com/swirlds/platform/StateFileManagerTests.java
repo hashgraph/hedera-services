@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStat
 import static com.swirlds.platform.state.snapshot.StateToDiskReason.FATAL_ERROR;
 import static com.swirlds.platform.state.snapshot.StateToDiskReason.ISS;
 import static com.swirlds.platform.state.snapshot.StateToDiskReason.PERIODIC_SNAPSHOT;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -62,7 +63,7 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
-import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingState;
 import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -158,8 +159,10 @@ class StateFileManagerTests {
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
         MerkleDb.resetDefaultInstancePath();
-        final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
+        final DeserializedSignedState deserializedSignedState = readStateFile(
+                TestPlatformContextBuilder.create().build().getConfiguration(),
+                stateFile,
+                FAKE_MERKLE_STATE_LIFECYCLES);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
@@ -210,7 +213,7 @@ class StateFileManagerTests {
     void saveFatalSignedState() throws InterruptedException, IOException {
         final SignedState signedState =
                 new RandomSignedStateGenerator().setUseBlockingState(true).build();
-        ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
+        ((BlockingState) signedState.getStateEventHandler().getStateRoot()).enableBlockingSerialization();
 
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -227,7 +230,7 @@ class StateFileManagerTests {
         // shouldn't be finished yet
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
-        ((BlockingSwirldState) signedState.getSwirldState()).unblockSerialization();
+        ((BlockingState) signedState.getStateEventHandler()).unblockSerialization();
         thread.join(1000);
 
         final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
@@ -361,7 +364,8 @@ class StateFileManagerTests {
                                             TestPlatformContextBuilder.create()
                                                     .build()
                                                     .getConfiguration(),
-                                            savedStateInfo.stateFile())
+                                            savedStateInfo.stateFile(),
+                                            FAKE_MERKLE_STATE_LIFECYCLES)
                                     .reservedSignedState()
                                     .get(),
                             "should be able to read state on disk");

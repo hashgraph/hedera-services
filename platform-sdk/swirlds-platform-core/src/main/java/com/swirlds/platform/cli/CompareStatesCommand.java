@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.platform.state.NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
 
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -136,7 +137,7 @@ public final class CompareStatesCommand extends AbstractCommand {
         logger.info(LogMarker.CLI.getMarker(), "Loading state from {}", statePath);
 
         final ReservedSignedState signedState = SignedStateFileReader.readStateFile(
-                        platformContext.getConfiguration(), statePath)
+                        platformContext.getConfiguration(), statePath, NO_OP_STATE_LIFECYCLES)
                 .reservedSignedState();
         logger.info(LogMarker.CLI.getMarker(), "Hashing state");
         try {

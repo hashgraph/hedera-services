@@ -137,6 +137,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.InitTrigger;
@@ -284,6 +285,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * The factory for the startup networks.
      */
     private final StartupNetworksFactory startupNetworksFactory;
+
+    private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -464,8 +467,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
+            stateLifecycles = new StateLifecyclesImpl(this);
             final Supplier<PlatformMerkleStateRoot> baseSupplier =
-                    () -> new PlatformMerkleStateRoot(new StateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+                    () -> new PlatformMerkleStateRoot(ServicesSoftwareVersion::new);
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
@@ -509,6 +513,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
         return stateRootSupplier.get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public StateLifecycles<PlatformMerkleStateRoot> newStateLifecycles() {
+        return stateLifecycles;
     }
 
     @Override

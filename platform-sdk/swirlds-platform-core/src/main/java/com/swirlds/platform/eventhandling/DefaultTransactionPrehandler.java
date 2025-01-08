@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,9 +94,10 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                latestImmutableState.get().getSwirldState().preHandle(event, NO_OP_CONSUMER);
+                latestImmutableState.get().getStateEventHandler().preHandle(event, NO_OP_CONSUMER);
             } catch (final Throwable t) {
-                logger.error(EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", event, t);
+                logger.error(
+                        EXCEPTION.getMarker(), "error invoking StateEventHandler.preHandle() for event {}", event, t);
             }
         } finally {
             event.signalPrehandleCompletion();
@@ -105,7 +106,8 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             preHandleTime.update(startTime, time.nanoTime());
         }
 
-        // TODO adapt this logic to read transactions directly from the callback passed in SwirldState.preHandle() when
+        // TODO adapt this logic to read transactions directly from the callback passed in StateEventHandler.preHandle()
+        // when
         // implemented
         return extractFromEvent(event, StateSignatureTransaction.class);
     }

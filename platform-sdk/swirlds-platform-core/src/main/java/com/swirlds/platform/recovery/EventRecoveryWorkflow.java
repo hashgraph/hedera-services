@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO_OP_CONSUMER;
+import static com.swirlds.platform.state.NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
@@ -61,9 +62,9 @@ import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
@@ -151,7 +152,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
-                        platformContext.getConfiguration(), signedStateFile)
+                        platformContext.getConfiguration(), signedStateFile, NO_OP_STATE_LIFECYCLES)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
                     initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
@@ -265,7 +266,9 @@ public final class EventRecoveryWorkflow {
     private static void notifyStateRecovered(
             final NotificationEngine notificationEngine, final SignedState recoveredState) {
         final NewRecoveredStateNotification notification = new NewRecoveredStateNotification(
-                recoveredState.getSwirldState(), recoveredState.getRound(), recoveredState.getConsensusTimestamp());
+                recoveredState.getStateEventHandler(),
+                recoveredState.getRound(),
+                recoveredState.getConsensusTimestamp());
         notificationEngine.dispatch(NewRecoveredStateListener.class, notification);
     }
 
@@ -311,7 +314,7 @@ public final class EventRecoveryWorkflow {
 
         initialState
                 .get()
-                .getSwirldState()
+                .getStateEventHandler()
                 .init(
                         platform,
                         InitTrigger.EVENT_STREAM_RECOVERY,
@@ -396,7 +399,7 @@ public final class EventRecoveryWorkflow {
         });
 
         applyTransactions(
-                previousState.get().getSwirldState().cast(),
+                previousState.get().getStateEventHandler(),
                 newState.cast(),
                 newState.getWritablePlatformState(),
                 round);
@@ -414,6 +417,7 @@ public final class EventRecoveryWorkflow {
                         CryptoStatic::verifySignature,
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",
+                        NO_OP_STATE_LIFECYCLES,
                         isFreezeState,
                         false,
                         false)
@@ -477,8 +481,8 @@ public final class EventRecoveryWorkflow {
      * @param round          the current round
      */
     static void applyTransactions(
-            final SwirldState immutableState,
-            final SwirldState mutableState,
+            final StateEventHandler immutableState,
+            final StateEventHandler mutableState,
             final PlatformStateModifier platformState,
             final Round round) {
 

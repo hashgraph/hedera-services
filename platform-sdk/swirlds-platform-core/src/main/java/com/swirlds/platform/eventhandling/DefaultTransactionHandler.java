@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -106,6 +107,9 @@ public class DefaultTransactionHandler implements TransactionHandler {
      */
     private final boolean waitForPrehandle;
 
+    @NonNull
+    private final StateLifecycles stateLifecycles;
+
     /**
      * Constructor
      *
@@ -118,7 +122,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final SoftwareVersion softwareVersion) {
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final StateLifecycles stateLifecycles) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
@@ -132,6 +137,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
+        this.stateLifecycles = stateLifecycles;
 
         final PlatformSchedulersConfig schedulersConfig =
                 platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
@@ -290,6 +296,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
                 CryptoStatic::verifySignature,
                 immutableStateCons,
                 "TransactionHandler.createSignedState()",
+                stateLifecycles,
                 freezeRoundReceived,
                 true,
                 consensusRound.isPcesRound());

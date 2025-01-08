@@ -141,10 +141,9 @@ public class RandomSignedStateGenerator {
         registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
-                stateInstance = new BlockingSwirldState();
+                stateInstance = new BlockingState();
             } else {
-                stateInstance = new PlatformMerkleStateRoot(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                stateInstance = new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
             }
             stateInstance.setTime(Time.getCurrent());
         } else {
@@ -199,7 +198,7 @@ public class RandomSignedStateGenerator {
         } else {
             consensusSnapshotInstance = consensusSnapshot;
         }
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState((MerkleStateRoot) stateInstance);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateInstance);
         final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
@@ -210,7 +209,7 @@ public class RandomSignedStateGenerator {
             v.setConsensusTimestamp(consensusTimestampInstance);
         });
 
-        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(stateInstance);
         RosterUtils.setActiveRoster((State) stateInstance, rosterInstance, roundInstance);
 
         if (signatureVerifier == null) {
@@ -230,6 +229,7 @@ public class RandomSignedStateGenerator {
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
+                FAKE_MERKLE_STATE_LIFECYCLES,
                 freezeStateInstance,
                 deleteOnBackgroundThread,
                 pcesRound);
@@ -456,10 +456,10 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set if this state should use a {@link BlockingSwirldState} instead of a {@link MerkleStateRoot}.
+     * Set if this state should use a {@link BlockingState} instead of a {@link MerkleStateRoot}.
      * This flag is fasle by default.
      *
-     * @param useBlockingState true if this state should use {@link BlockingSwirldState}
+     * @param useBlockingState true if this state should use {@link BlockingState}
      * @return this object
      */
     public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {

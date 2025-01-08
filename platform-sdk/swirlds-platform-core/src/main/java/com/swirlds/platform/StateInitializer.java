@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,20 @@ import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StateEventHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates the logic for calling
- * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
+ * {@link StateEventHandler#init(Platform, InitTrigger, SoftwareVersion)}
  * startup time.
  */
 public final class StateInitializer {
@@ -70,30 +69,19 @@ public final class StateInitializer {
             trigger = RESTART;
         }
 
-        final PlatformMerkleStateRoot initialState = signedState.getState();
+        final StateEventHandler initialStateEvenHandler = signedState.getStateEventHandler();
+        final PlatformMerkleStateRoot stateRoot = initialStateEvenHandler.getStateRoot();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.
-        if (initialState.getHash() != null) {
+
+        if (stateRoot.getHash() != null) {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
-        if (initialState.getHash() != null) {
-            throw new IllegalStateException("Expected initial swirld state to be unhashed");
-        }
 
-        initialState.init(platform, trigger, previousSoftwareVersion);
+        initialStateEvenHandler.init(platform, trigger, previousSoftwareVersion);
 
-        abortAndThrowIfInterrupted(
-                () -> {
-                    try {
-                        MerkleCryptoFactory.getInstance()
-                                .digestTreeAsync(initialState)
-                                .get();
-                    } catch (final ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                },
-                "interrupted while attempting to hash the state");
+        abortAndThrowIfInterrupted(stateRoot::computeHash, "interrupted while attempting to hash the state");
 
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();

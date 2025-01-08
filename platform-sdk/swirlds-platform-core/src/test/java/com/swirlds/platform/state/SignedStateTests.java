@@ -76,8 +76,7 @@ class SignedStateTests {
      */
     private PlatformMerkleStateRoot buildMockState(
             final Random random, final Runnable reserveCallback, final Runnable releaseCallback) {
-        final var real = new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        final var real = new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(real);
         RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
         final PlatformMerkleStateRoot state = spy(real);
@@ -225,8 +224,8 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final PlatformMerkleStateRoot state = spy(new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        final PlatformMerkleStateRoot state =
+                spy(new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         when(state.getReadablePlatformState()).thenReturn(platformState);
@@ -236,6 +235,7 @@ class SignedStateTests {
                 mock(SignatureVerifier.class),
                 state,
                 "test",
+                FAKE_MERKLE_STATE_LIFECYCLES,
                 false,
                 false,
                 false);

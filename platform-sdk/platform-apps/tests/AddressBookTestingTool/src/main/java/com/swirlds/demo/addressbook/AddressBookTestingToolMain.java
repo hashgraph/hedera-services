@@ -29,6 +29,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -65,12 +66,9 @@ public class AddressBookTestingToolMain implements SwirldMain {
         try {
             logger.info(STARTUP.getMarker(), "Registering AddressBookTestingToolState with ConstructableRegistry");
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(AddressBookTestingToolState.class, () -> {
-                        AddressBookTestingToolState addressBookTestingToolState = new AddressBookTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        return addressBookTestingToolState;
-                    }));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    AddressBookTestingToolState.class,
+                    () -> new AddressBookTestingToolState(version -> new BasicSoftwareVersion(version.major()))));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "AddressBookTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
@@ -129,10 +127,15 @@ public class AddressBookTestingToolMain implements SwirldMain {
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
         final PlatformMerkleStateRoot state = new AddressBookTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    @NonNull
+    public StateLifecycles<AddressBookTestingToolState> newStateLifecycles() {
+        return new AddressBookTestingToolStateLifecycles();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -231,8 +232,8 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Version upgrade, SwirldState set 0 weight.")
-    void versionUpgradeSwirldStateZeroWeight() throws IOException {
+    @DisplayName("Version upgrade, state set 0 weight.")
+    void versionUpgradeStateZeroWeight() throws IOException {
         final Randotron randotron = Randotron.create();
         clearTestDirectory();
         final Roster roster = getRandomRoster(randotron);
@@ -261,8 +262,8 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Version upgrade, Swirld State modified the address book.")
-    void versionUpgradeSwirldStateModifiedAddressBook() throws IOException {
+    @DisplayName("Version upgrade, state modified the address book.")
+    void versionUpgradeStateModifiedAddressBook() throws IOException {
         final Randotron randotron = Randotron.create();
         clearTestDirectory();
         final Roster roster = getRandomRoster(randotron);
@@ -291,8 +292,8 @@ class AddressBookInitializerTest {
     }
 
     @Test
-    @DisplayName("Version upgrade, Swirld State updates weight successfully.")
-    void versionUpgradeSwirldStateWeightUpdateWorks() throws IOException {
+    @DisplayName("Version upgrade, State updates weight successfully.")
+    void versionUpgradeStateWeightUpdateWorks() throws IOException {
         final Randotron randotron = Randotron.create();
         clearTestDirectory();
         final SignedState signedState = getMockSignedState7WeightRandomAddressBook(randotron);
@@ -364,7 +365,7 @@ class AddressBookInitializerTest {
     }
 
     /**
-     * Creates a mock signed state and a SwirldState that sets all addresses to have weight = 7.
+     * Creates a mock signed state and a State that sets all addresses to have weight = 7.
      *
      * @return The mock SignedState.
      */
@@ -373,16 +374,16 @@ class AddressBookInitializerTest {
     }
 
     /**
-     * Creates a mock signed state and a SwirldState that sets all addresses to the given weightValue.
+     * Creates a mock signed state and a State that sets all addresses to the given weightValue.
      *
-     * @param weightValue         The weight value that the SwirldState should set all addresses to in its updateWeight
+     * @param weightValue         The weight value that the State should set all addresses to in its updateWeight
      *                            method.
      * @param currentRoster       The roster that should be returned by {@link SignedState#getRoster()} and used to
      *                            derive the address book for {@link PlatformStateAccessor#getAddressBook()}
      * @param previousAddressBook The address book that should be returned by
      *                            {@link PlatformStateAccessor#getPreviousAddressBook()}
      * @param fromGenesis         Whether the state should be from genesis or not.
-     * @return The mock SignedState and SwirldState configured to set all addresses with given weightValue.
+     * @return The mock SignedState and State configured to set all addresses with given weightValue.
      */
     private SignedState getMockSignedState(
             final int weightValue,
@@ -391,9 +392,10 @@ class AddressBookInitializerTest {
             boolean fromGenesis) {
         final SignedState signedState = mock(SignedState.class);
         final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
-        final PlatformMerkleStateRoot state =
-                getMockSwirldStateSupplier(weightValue).get();
-        when(signedState.getSwirldState()).thenReturn(state);
+        final StateEventHandler eventHandler =
+                getMockStateEvenHandlerSupplier(weightValue).get();
+        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
+        when(signedState.getStateEventHandler()).thenReturn(eventHandler);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         RosterServiceStateMock.setup(state, currentRoster, 1L, RosterRetriever.buildRoster(previousAddressBook));
@@ -409,14 +411,14 @@ class AddressBookInitializerTest {
      * Creates a mock swirld state with the given scenario.
      *
      * @param scenario The scenario to load.
-     * @return A SwirldState which behaves according to the input scenario.
+     * @return A StateEventHandler which behaves according to the input scenario.
      */
-    private Supplier<PlatformMerkleStateRoot> getMockSwirldStateSupplier(int scenario) {
+    private Supplier<StateEventHandler> getMockStateEvenHandlerSupplier(int scenario) {
 
         final AtomicReference<AddressBook> configAddressBook = new AtomicReference<>();
-        final PlatformMerkleStateRoot swirldState = mock(PlatformMerkleStateRoot.class);
+        final StateEventHandler stateEventHandler = mock(StateEventHandler.class);
 
-        final OngoingStubbing<AddressBook> stub = when(swirldState.updateWeight(
+        final OngoingStubbing<AddressBook> stub = when(stateEventHandler.updateWeight(
                 argThat(confAB -> {
                     configAddressBook.set(confAB);
                     return true;
@@ -445,7 +447,7 @@ class AddressBookInitializerTest {
                 stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 10));
         }
 
-        return () -> swirldState;
+        return () -> stateEventHandler;
     }
 
     /**

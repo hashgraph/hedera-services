@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.system.StateEventHandler;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +37,7 @@ public class TransactionHandler {
     /** The id of this node. */
     private final NodeId selfId;
 
-    /** Stats relevant to SwirldState operations. */
+    /** Stats relevant to StateEventHandler operations. */
     private final SwirldStateMetrics stats;
 
     public TransactionHandler(final NodeId selfId, final SwirldStateMetrics stats) {
@@ -45,19 +46,20 @@ public class TransactionHandler {
     }
 
     /**
-     * Applies a consensus round to SwirldState, handles any exceptions gracefully, and updates relevant statistics.
+     * Applies a consensus round to StateEventHandler, handles any exceptions gracefully, and updates relevant statistics.
      *
      * @param round
      * 		the round to apply
-     * @param state
-     * 		the state to apply {@code round} to
+     * @param eventHandler
+     * 		the eventHandler to apply {@code round} to
      */
-    public void handleRound(final ConsensusRound round, final PlatformMerkleStateRoot state) {
+    public void handleRound(final ConsensusRound round, final StateEventHandler eventHandler) {
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.handleConsensusRound(round, state.getWritablePlatformState(), NO_OP_CONSUMER);
+            eventHandler.handleConsensusRound(
+                    round, eventHandler.getStateRoot().getWritablePlatformState(), NO_OP_CONSUMER);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 
@@ -73,7 +75,7 @@ public class TransactionHandler {
         } catch (final Throwable t) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "error invoking SwirldState.handleConsensusRound() [ nodeId = {} ] with round {}",
+                    "error invoking StateEventHandler.handleConsensusRound() [ nodeId = {} ] with round {}",
                     selfId,
                     round.getRoundNum(),
                     t);

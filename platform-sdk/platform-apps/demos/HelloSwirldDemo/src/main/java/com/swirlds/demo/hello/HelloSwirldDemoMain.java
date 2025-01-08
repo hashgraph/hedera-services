@@ -42,6 +42,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -60,8 +61,8 @@ public class HelloSwirldDemoMain implements SwirldMain {
         try {
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(new ClassConstructorPair(HelloSwirldDemoState.class, () -> {
-                HelloSwirldDemoState helloSwirldDemoState = new HelloSwirldDemoState(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                HelloSwirldDemoState helloSwirldDemoState =
+                        new HelloSwirldDemoState(version -> new BasicSoftwareVersion(version.major()));
                 return helloSwirldDemoState;
             }));
             registerMerkleStateRootClassIds();
@@ -130,11 +131,16 @@ public class HelloSwirldDemoMain implements SwirldMain {
     @NonNull
     @Override
     public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new HelloSwirldDemoState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+        final PlatformMerkleStateRoot state =
+                new HelloSwirldDemoState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @NonNull
+    @Override
+    public StateLifecycles<HelloSwirldDemoState> newStateLifecycles() {
+        return new HelloSwirldDemoStateLifecycles();
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class AddressBookInitializer {
 
     /**
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
-     * the SwirldState on upgrade.
+     * the StateEventHandler on upgrade.
      *
      * @param selfId The id of this node.
      * @param currentVersion The current version of the application.
@@ -230,7 +230,7 @@ public class AddressBookInitializer {
                     STARTUP.getMarker(),
                     "The address book weight may be updated by the application using data from the state snapshot.");
             candidateAddressBook = initialState
-                    .getSwirldState()
+                    .getStateEventHandler()
                     .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);

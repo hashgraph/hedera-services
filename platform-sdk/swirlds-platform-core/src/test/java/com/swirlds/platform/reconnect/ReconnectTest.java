@@ -18,6 +18,7 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -193,6 +194,7 @@ final class ReconnectTest {
                 roster,
                 state,
                 RECONNECT_SOCKET_TIMEOUT,
-                reconnectMetrics);
+                reconnectMetrics,
+                FAKE_MERKLE_STATE_LIFECYCLES);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -61,6 +62,10 @@ public class ReconnectLearner {
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
+
+    @NonNull
+    private final StateLifecycles stateLifecycles;
+
     private SigSet sigSet;
     private final PlatformContext platformContext;
     /**
@@ -91,7 +96,9 @@ public class ReconnectLearner {
             @NonNull final Roster roster,
             @NonNull final PlatformMerkleStateRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
-            @NonNull final ReconnectMetrics statistics) {
+            @NonNull final ReconnectMetrics statistics,
+            @NonNull final StateLifecycles stateLifecycles) {
+        this.stateLifecycles = stateLifecycles;
 
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
         currentState.throwIfDestroyed("Can not perform reconnect with destroyed state");
@@ -210,6 +217,7 @@ public class ReconnectLearner {
                 CryptoStatic::verifySignature,
                 state,
                 "ReconnectLearner.reconnect()",
+                stateLifecycles,
                 false,
                 false,
                 false);

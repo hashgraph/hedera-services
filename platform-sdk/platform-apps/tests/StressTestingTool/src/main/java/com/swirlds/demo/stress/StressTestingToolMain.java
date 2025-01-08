@@ -45,6 +45,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -65,11 +66,9 @@ public class StressTestingToolMain implements SwirldMain {
         try {
             logger.info(STARTUP.getMarker(), "Registering StressTestingToolState with ConstructableRegistry");
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-            constructableRegistry.registerConstructable(new ClassConstructorPair(StressTestingToolState.class, () -> {
-                StressTestingToolState stressTestingToolState = new StressTestingToolState(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                return stressTestingToolState;
-            }));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    StressTestingToolState.class,
+                    () -> new StressTestingToolState(version -> new BasicSoftwareVersion(version.major()))));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "StressTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
@@ -254,11 +253,15 @@ public class StressTestingToolMain implements SwirldMain {
 
     @Override
     public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new StressTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(SOFTWARE_VERSION.getSoftwareVersion()));
+        final PlatformMerkleStateRoot state =
+                new StressTestingToolState(version -> new BasicSoftwareVersion(SOFTWARE_VERSION.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    public StateLifecycles<StressTestingToolState> newStateLifecycles() {
+        return new StressTestingToolStateLifecycles();
     }
 
     /**

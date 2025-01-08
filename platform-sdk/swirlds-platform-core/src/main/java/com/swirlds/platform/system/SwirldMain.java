@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.platform.system;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -45,8 +46,8 @@ public interface SwirldMain extends Runnable {
      * </p>
      *
      * <p>
-     * Any changes necessary to initialize {@link SwirldState} should be made in
-     * {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
+     * Any changes necessary to initialize {@link StateEventHandler} should be made in
+     * {@link StateEventHandler#init(Platform, InitTrigger, SoftwareVersion)}
      * </p>
      *
      * @param platform the Platform that instantiated this SwirldMain
@@ -68,6 +69,12 @@ public interface SwirldMain extends Runnable {
      */
     @NonNull
     PlatformMerkleStateRoot newMerkleStateRoot();
+
+    /**
+     * Instantiate and return a new instance of the state lifecycles for this SwirldMain object.
+     * @return state lifecycles
+     */
+    StateLifecycles newStateLifecycles();
 
     /**
      * <p>

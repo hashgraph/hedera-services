@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@
 package com.swirlds.platform.system;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.base.state.Mutable;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
@@ -31,9 +32,9 @@ import java.util.function.Consumer;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
- * {@link SwirldState}. The class that implements the SwirldState should have a zero-argument constructor.
+ * {@link StateEventHandler}. The class that implements the StateEventHandler should have a zero-argument constructor.
  */
-public interface SwirldState extends MerkleNode {
+public interface StateEventHandler extends Mutable {
 
     /**
      * <p>
@@ -100,7 +101,7 @@ public interface SwirldState extends MerkleNode {
     }
 
     /**
-     * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
+     * Implementations of the StateEventHandler should always override this method in production.  The AddressBook returned
      * should have the same Address entries as the configuration AddressBook, but with the weight values updated.
      * <p>
      * The default implementation of this method is provided for use in testing and to prevent compilation failure of
@@ -120,8 +121,17 @@ public interface SwirldState extends MerkleNode {
     }
 
     /**
-     * {@inheritDoc}
+     * Returns an instance of the {@link PlatformMerkleStateRoot} that represents the state of the application.
+     * @return the state root
      */
-    @Override
-    SwirldState copy();
+    @NonNull
+    PlatformMerkleStateRoot getStateRoot();
+
+    /**
+     * Returns a new instance of the {@link StateEventHandler} with the given {@link PlatformMerkleStateRoot}.
+     * @param stateRoot the new state root
+     * @return the new state event handler
+     */
+    @NonNull
+    StateEventHandler withNewStateRoot(@NonNull final PlatformMerkleStateRoot stateRoot);
 }

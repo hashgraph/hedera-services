@@ -53,6 +53,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -83,6 +84,10 @@ public final class PlatformBuilder {
     private final String appName;
     private final SoftwareVersion softwareVersion;
     private final ReservedSignedState initialState;
+
+    @NonNull
+    private final StateLifecycles stateLifecycles;
+
     private final NodeId selfId;
     private final String swirldName;
 
@@ -144,14 +149,15 @@ public final class PlatformBuilder {
      * the app will pass the loaded state via the initialState argument to this method. If the snapshot doesn't exist,
      * then the app will create a new genesis state and pass it via the same initialState argument.
      *
-     * @param appName             the name of the application, currently used for deciding where to store states on
-     *                            disk
-     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
-     * @param selfId              the ID of this node
-     * @param softwareVersion     the software version of the application
-     * @param initialState        the initial state supplied by the application
+     * @param appName                  the name of the application, currently used for deciding where to store states on
+     *                                 disk
+     * @param swirldName               the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion          the software version of the application
+     * @param initialState             the initial state supplied by the application
+     * @param stateLifecycles          the state lifecycle events handler
+     * @param selfId                   the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
-     * @param rosterHistory       the roster history provided by the application to use at startup
+     * @param rosterHistory            the roster history provided by the application to use at startup
      */
     @NonNull
     public static PlatformBuilder create(
@@ -159,30 +165,40 @@ public final class PlatformBuilder {
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
+            @NonNull StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
             @NonNull final RosterHistory rosterHistory) {
         return new PlatformBuilder(
-                appName, swirldName, softwareVersion, initialState, selfId, consensusEventStreamName, rosterHistory);
+                appName,
+                swirldName,
+                softwareVersion,
+                initialState,
+                stateLifecycles,
+                selfId,
+                consensusEventStreamName,
+                rosterHistory);
     }
 
     /**
      * Constructor.
      *
-     * @param appName               the name of the application, currently used for deciding where to store states on
-     *                              disk
-     * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
-     * @param softwareVersion       the software version of the application
-     * @param initialState          the genesis state supplied by application
-     * @param selfId                the ID of this node
+     * @param appName                  the name of the application, currently used for deciding where to store states on
+     *                                 disk
+     * @param swirldName               the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion          the software version of the application
+     * @param initialState             the genesis state supplied by application
+     * @param stateLifecycles          the state lifecycle events handler
+     * @param selfId                   the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
-     * @param rosterHistory         the roster history provided by the application to use at startup
+     * @param rosterHistory            the roster history provided by the application to use at startup
      */
     private PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
+            @NonNull final StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
             @NonNull final RosterHistory rosterHistory) {
@@ -191,6 +207,7 @@ public final class PlatformBuilder {
         this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.initialState = Objects.requireNonNull(initialState);
+        this.stateLifecycles = Objects.requireNonNull(stateLifecycles);
         this.selfId = Objects.requireNonNull(selfId);
         this.consensusEventStreamName = Objects.requireNonNull(consensusEventStreamName);
         this.rosterHistory = Objects.requireNonNull(rosterHistory);
@@ -471,7 +488,8 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
-                firstPlatform);
+                firstPlatform,
+                stateLifecycles);
 
         return new PlatformComponentBuilder(buildingBlocks);
     }

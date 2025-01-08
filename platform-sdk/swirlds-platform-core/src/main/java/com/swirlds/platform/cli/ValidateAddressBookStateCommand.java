@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.swirlds.platform.cli;
+
+import static com.swirlds.platform.state.NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
 
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -70,7 +72,7 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
 
         System.out.printf("Reading state from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(configuration, statePath);
+                SignedStateFileReader.readStateFile(configuration, statePath, NO_OP_STATE_LIFECYCLES);
 
         System.out.printf("Reading address book from %s %n", addressBookPath.toAbsolutePath());
         final String addressBookString = Files.readString(addressBookPath);

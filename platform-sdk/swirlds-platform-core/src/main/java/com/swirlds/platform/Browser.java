@@ -72,13 +72,13 @@ import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
@@ -279,11 +279,13 @@ public class Browser {
             // Each platform needs a different temporary state on disk.
             MerkleDb.resetDefaultInstancePath();
             // Create the initial state for the platform
+            StateLifecycles stateLifecycles = appMain.newStateLifecycles();
             final HashedReservedSignedState reservedState = getInitialState(
                     configuration,
                     recycleBin,
                     appMain.getSoftwareVersion(),
                     appMain::newMerkleStateRoot,
+                    stateLifecycles,
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     nodeId,
@@ -304,9 +306,10 @@ public class Browser {
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
                     initialState,
+                    stateLifecycles,
                     nodeId,
                     AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                    RosterUtils.buildRosterHistory((State) initialState.get().getState()));
+                    RosterUtils.buildRosterHistory(initialState.get().getState()));
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);

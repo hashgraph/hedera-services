@@ -32,6 +32,7 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.PlatformStateEventHandler;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
@@ -41,7 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class SwirldStateManagerTests {
+class StateEventHandlerManagerTests {
 
     private SwirldStateManager swirldStateManager;
     private PlatformMerkleStateRoot initialState;
@@ -58,7 +59,7 @@ class SwirldStateManagerTests {
 
         swirldStateManager = new SwirldStateManager(
                 platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
-        swirldStateManager.setInitialState(initialState);
+        swirldStateManager.setInitialHandler(new PlatformStateEventHandler(initialState, FAKE_MERKLE_STATE_LIFECYCLES));
     }
 
     @AfterEach
@@ -126,8 +127,8 @@ class SwirldStateManagerTests {
     }
 
     private static PlatformMerkleStateRoot newState() {
-        final PlatformMerkleStateRoot state = new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        final PlatformMerkleStateRoot state =
+                new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
@@ -143,7 +144,7 @@ class SwirldStateManagerTests {
         final SignedState ss = new RandomSignedStateGenerator().build();
         assertEquals(
                 1,
-                ss.getSwirldState().getReservationCount(),
+                ss.getStateEventHandler().getStateRoot().getReservationCount(),
                 "Creating a signed state should increment the state reference count.");
         return ss;
     }

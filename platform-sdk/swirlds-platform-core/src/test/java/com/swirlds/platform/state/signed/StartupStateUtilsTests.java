@@ -106,8 +106,7 @@ public class StartupStateUtilsTests {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(
                         PlatformMerkleStateRoot.class,
-                        () -> new PlatformMerkleStateRoot(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
+                        () -> new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @NonNull
@@ -175,7 +174,8 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1))
+                        new BasicSoftwareVersion(1),
+                        FAKE_MERKLE_STATE_LIFECYCLES)
                 .getNullable();
 
         assertNull(loadedState);
@@ -204,7 +204,8 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1))
+                        new BasicSoftwareVersion(1),
+                        FAKE_MERKLE_STATE_LIFECYCLES)
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -237,7 +238,8 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1))
+                        new BasicSoftwareVersion(1),
+                        FAKE_MERKLE_STATE_LIFECYCLES)
                 .get());
     }
 
@@ -282,7 +284,8 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1))
+                        new BasicSoftwareVersion(1),
+                        FAKE_MERKLE_STATE_LIFECYCLES)
                 .getNullable();
 
         if (latestUncorruptedState != null) {

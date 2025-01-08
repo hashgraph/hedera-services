@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,12 +75,13 @@ import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.wiring.PlatformWiring;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -135,7 +136,7 @@ public class SwirldsPlatform implements Platform {
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
     /**
-     * Handles all interaction with {@link SwirldState}
+     * Handles all interaction with {@link StateEventHandler}
      */
     private final SwirldStateManager swirldStateManager;
 
@@ -250,7 +251,7 @@ public class SwirldsPlatform implements Platform {
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = blocks.swirldStateManager();
-        swirldStateManager.setInitialState(initialState.getState());
+        swirldStateManager.setInitialHandler(initialState.getStateEventHandler());
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 
@@ -511,7 +512,7 @@ public class SwirldsPlatform implements Platform {
     @SuppressWarnings("unchecked")
     @Override
     @NonNull
-    public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
+    public <T extends MerkleStateRoot> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {
         final ReservedSignedState wrapper = latestImmutableStateNexus.getState(reason);
         return wrapper == null
                 ? AutoCloseableWrapper.empty()
