@@ -94,24 +94,19 @@ public class RosterHistory {
     @Override
     @NonNull
     public String toString() {
+        final boolean previousExists = history.size() > 1;
 
         final StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("    \"current\": {\n");
-        sb.append("        \"round\": ")
-                .append(history.getFirst().roundNumber())
-                .append(",\n");
-        sb.append("        \"roster\": ")
-                .append(Roster.JSON.toJSON(getCurrentRoster()))
-                .append("},\n");
-        sb.append("    \"previous\": {\n");
-        sb.append("        \"round\": ")
-                .append(history.size() > 1 ? history.get(1).roundNumber() : -1)
-                .append(",\n");
-        sb.append("        \"roster\": ")
-                .append(history.size() > 1 ? Roster.JSON.toJSON(getPreviousRoster()) : "\"Current Roster Used\"")
-                .append("}\n");
-        sb.append("}\n");
+        sb.append("RosterHistory[ currentRosterRound: ").append(history.getFirst().roundNumber()).append(" ][ ");
+        if(previousExists) {
+            sb.append("previousRosterRound: ").append(history.get(1).roundNumber());
+        } else {
+            sb.append("no previous roster set");
+        }
+        sb.append(" ]\nCurrent Roster: ").append(Roster.JSON.toJSON(getCurrentRoster()));
+        if(previousExists) {
+            sb.append("\nPrevious Roster: ").append(Roster.JSON.toJSON(getPreviousRoster()));
+        }
         return sb.toString();
     }
 }

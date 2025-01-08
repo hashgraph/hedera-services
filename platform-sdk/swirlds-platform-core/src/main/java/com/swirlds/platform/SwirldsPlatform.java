@@ -211,7 +211,7 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
-        logger.info(STARTUP.getMarker(), "Roster History: {}", blocks.rosterHistory());
+        logger.info(STARTUP.getMarker(), "Platform starting with roster history: {}", blocks.rosterHistory());
         currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
