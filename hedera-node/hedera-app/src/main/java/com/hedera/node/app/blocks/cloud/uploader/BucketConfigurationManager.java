@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks.cloud.uploader;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
 import com.hedera.node.config.ConfigProvider;
@@ -49,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class BucketConfigurationManager {
     private static final Logger logger = LogManager.getLogger(BucketConfigurationManager.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
     private BlockStreamConfig blockStreamConfig;
     private volatile OnDiskBucketConfig credentials;
@@ -132,7 +133,8 @@ public class BucketConfigurationManager {
         }
 
         try {
-            return mapper.readValue(credentialsPath.toFile(), OnDiskBucketConfig.class);
+            final String content = mapper.readTree(credentialsPath.toFile()).toString();
+            return mapper.readValue(content, OnDiskBucketConfig.class);
         } catch (IOException e) {
             logger.error("Failed to load credentials from {}", credentialsPath, e);
             return null;

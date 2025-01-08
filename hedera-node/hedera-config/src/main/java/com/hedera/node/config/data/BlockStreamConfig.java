@@ -54,5 +54,5 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort,
         @ConfigProperty(defaultValue = "3") @NodeProperty int uploadRetryAttempts,
         @ConfigProperty(defaultValue = "168") @NodeProperty int localRetentionHours,
-        @ConfigProperty(defaultValue = "data/config/bucket-credentials.json") @NetworkProperty String credentialsPath,
+        @ConfigProperty(defaultValue = "data/config/bucket-credentials.yaml") @NetworkProperty String credentialsPath,
         @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) @NetworkProperty List<CloudBucketConfig> buckets) {}

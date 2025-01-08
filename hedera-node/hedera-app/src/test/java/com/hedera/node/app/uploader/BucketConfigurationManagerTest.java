@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.hedera.node.app.blocks.cloud.uploader.BucketConfigurationManager;
 import com.hedera.node.app.blocks.cloud.uploader.configs.CompleteBucketConfig;
 import com.hedera.node.app.blocks.cloud.uploader.configs.OnDiskBucketConfig;
@@ -48,7 +49,7 @@ public class BucketConfigurationManagerTest {
     private static final CloudBucketConfig GCP_DEFAULT_BUCKET_CONFIG = new CloudBucketConfig(
             "default-gcp-bucket", "gcp", "https://storage.googleapis.com", "", "bucket-name", true);
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
     @Test
     void testHappyCompletionOfBucketConfigs() {
@@ -58,16 +59,9 @@ public class BucketConfigurationManagerTest {
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new BucketConfigurationManager(configProvider);
 
-        List<CloudBucketConfig> cloudBucketConfigs = List.of(AWS_DEFAULT_BUCKET_CONFIG, GCP_DEFAULT_BUCKET_CONFIG);
-        final var credentialsPath = BucketConfigurationManagerTest.class
-                .getClassLoader()
-                .getResourceAsStream("uploader/bucket-credentials.json");
-        OnDiskBucketConfig credentials;
-        try {
-            credentials = mapper.readValue(credentialsPath, OnDiskBucketConfig.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        final List<CloudBucketConfig> cloudBucketConfigs =
+                List.of(AWS_DEFAULT_BUCKET_CONFIG, GCP_DEFAULT_BUCKET_CONFIG);
+        final OnDiskBucketConfig credentials = readCredentials();
 
         final List<CompleteBucketConfig> completeBucketConfigs =
                 generateCompleteBucketConfigs(cloudBucketConfigs, credentials);
@@ -100,5 +94,17 @@ public class BucketConfigurationManagerTest {
                             bucketCredentials);
                 })
                 .toList();
+    }
+
+    private OnDiskBucketConfig readCredentials() {
+        final var credentialsStream = BucketConfigurationManagerTest.class
+                .getClassLoader()
+                .getResourceAsStream("uploader/bucket-credentials.yaml");
+        try {
+            final String content = mapper.readTree(credentialsStream).toString();
+            return mapper.readValue(content, OnDiskBucketConfig.class);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Parsing OnDiskBucketConfig failed", e);
+        }
     }
 }
