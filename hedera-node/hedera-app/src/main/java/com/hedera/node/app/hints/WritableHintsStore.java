@@ -56,14 +56,15 @@ public interface WritableHintsStore extends ReadableHintsStore {
     /**
      * Includes the given hints key for the given node and party IDs relative to a max universe size, assigning
      * the given adoption time if the key is immediately in use.
-     * @param k the base-2 log of the number of parties
-     * @param partyId the party ID
-     * @param hintsKey the hints key to include
+     *
      * @param nodeId the node ID
+     * @param partyId the party ID
+     * @param partySize the party size
+     * @param hintsKey the hints key to include
      * @param now the adoption time
      * @return whether the key was immediately in use
      */
-    boolean includeHintsKey(int k, long partyId, long nodeId, @NonNull HintsKey hintsKey, @NonNull final Instant now);
+    boolean setHintsKey(long nodeId, int partyId, int partySize, @NonNull HintsKey hintsKey, @NonNull final Instant now);
 
     /**
      * Completes the aggregation for the construction with the given ID and returns the
@@ -71,7 +72,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @return the updated construction
      */
     HintsConstruction completeAggregation(
-            long constructionId, @NonNull PreprocessedKeys keys, @NonNull Map<Long, Long> nodePartyIds);
+            long constructionId, @NonNull PreprocessedKeys keys, @NonNull Map<Long, Integer> nodePartyIds);
 
     /**
      * Sets the aggregation time for the construction with the given ID and returns the

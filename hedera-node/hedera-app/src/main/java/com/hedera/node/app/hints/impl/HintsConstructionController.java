@@ -42,18 +42,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.OptionalLong;
+import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.LongStream;
+import java.util.stream.IntStream;
 
 /**
  * Manages the process objects and work needed to advance toward completion of a hinTS construction.
  */
 public class HintsConstructionController {
     private final int k;
-    private final int M;
+    private final int m;
     private final long selfId;
     private final Urgency urgency;
     private final Executor executor;
@@ -62,8 +62,8 @@ public class HintsConstructionController {
     private final HintsLibrary operations;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
-    private final Map<Long, Long> nodePartyIds = new HashMap<>();
-    private final Map<Long, Long> partyNodeIds = new HashMap<>();
+    private final Map<Long, Integer> nodePartyIds = new HashMap<>();
+    private final Map<Integer, Long> partyNodeIds = new HashMap<>();
     private final RosterTransitionWeights weights;
     private final Map<Long, PreprocessedKeysVote> votes = new HashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
@@ -111,7 +111,7 @@ public class HintsConstructionController {
      * @param hintsKey the hinTS key
      * @param isValid whether the key is valid
      */
-    private record Validation(long partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
+    private record Validation(int partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
 
     public HintsConstructionController(
             final long selfId,
@@ -131,8 +131,8 @@ public class HintsConstructionController {
         this.urgency = requireNonNull(urgency);
         this.hintKeysWaitTime = requireNonNull(hintKeysWaitTime);
         this.weights = requireNonNull(weights);
-        this.M = HintsService.partySizeForRosterNodeCount(weights.targetRosterSize());
-        this.k = Integer.numberOfTrailingZeros(M);
+        this.m = HintsService.partySizeForRosterNodeCount(weights.targetRosterSize());
+        this.k = Integer.numberOfTrailingZeros(m);
         this.executor = requireNonNull(executor);
         this.signingContext = requireNonNull(signingContext);
         this.submissions = requireNonNull(submissions);
@@ -150,12 +150,10 @@ public class HintsConstructionController {
     }
 
     /**
-     * Returns whether the construction has the given maximum universe size log base-2.
-     * @param k a log base-2 maximum universe size
-     * @return whether the construction has the given maximum universe size
+     * Returns whether the construction has the given party size.
      */
-    public boolean hasLog2UniverseSize(final int k) {
-        return this.k == k;
+    public boolean hasPartySize(final int m) {
+        return this.m == m;
     }
 
     /**
@@ -253,18 +251,19 @@ public class HintsConstructionController {
 
     /**
      * Returns the party id for the given node id, if available.
+     *
      * @param nodeId the node ID
      * @return the party ID, if available
      */
-    public OptionalLong partyIdOf(final long nodeId) {
-        return nodePartyIds.containsKey(nodeId) ? OptionalLong.of(nodePartyIds.get(nodeId)) : OptionalLong.empty();
+    public OptionalInt partyIdOf(final long nodeId) {
+        return nodePartyIds.containsKey(nodeId) ? OptionalInt.of(nodePartyIds.get(nodeId)) : OptionalInt.empty();
     }
 
     /**
      * Returns the next available party id.
      */
-    public long nextPartyId() {
-        return LongStream.range(0, M)
+    public int nextPartyId() {
+        return IntStream.range(0, m)
                 .filter(partyId -> !partyNodeIds.containsKey(partyId))
                 .findFirst()
                 .orElseThrow();
@@ -346,7 +345,7 @@ public class HintsConstructionController {
                     final var aggregatedWeights = nodePartyIds.entrySet().stream()
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
-                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, M);
+                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, m);
                     final var body = HintsAggregationVoteTransactionBody.newBuilder()
                             .constructionId(construction.constructionId())
                             .vote(PreprocessedKeysVote.newBuilder()
@@ -382,10 +381,10 @@ public class HintsConstructionController {
      * @param hintsKey the hints key
      * @return the future
      */
-    private CompletableFuture<Validation> validationFuture(final long partyId, @NonNull final HintsKey hintsKey) {
+    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final HintsKey hintsKey) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var isValid = operations.validate(hintsKey, M);
+                    final var isValid = operations.validate(hintsKey, m);
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);
@@ -397,9 +396,10 @@ public class HintsConstructionController {
      */
     private void ensureHintsKeyPublished() {
         if (publicationFuture != null && weights.hasTargetWeightOf(selfId) && !nodePartyIds.containsKey(selfId)) {
+            final int selfPartyId = nodePartyIds.get(selfId);
             publicationFuture = CompletableFuture.runAsync(
                     () -> {
-                        final var hints = operations.computeHints(blsKeyPair.privateKey(), M);
+                        final var hints = operations.computeHints(blsKeyPair.privateKey(), selfPartyId, m);
                         final var hintsKey =
                                 new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
                         final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);

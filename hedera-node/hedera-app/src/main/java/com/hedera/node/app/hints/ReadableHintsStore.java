@@ -39,12 +39,12 @@ public interface ReadableHintsStore {
      * The full record of a hinTS key publication, including the key, the submitting node id, and (importantly)
      * the party id for that node id in this construction.
      *
-     * @param hintsKey the hinTS key itself
      * @param nodeId the node ID submitting the key
+     * @param hintsKey the hinTS key itself
      * @param partyId the party ID for the node in this construction
      * @param adoptionTime the time at which the key was adopted
      */
-    record HintsKeyPublication(@NonNull HintsKey hintsKey, long nodeId, long partyId, @NonNull Instant adoptionTime) {
+    record HintsKeyPublication(long nodeId, @NonNull HintsKey hintsKey, int partyId, @NonNull Instant adoptionTime) {
         public HintsKeyPublication {
             requireNonNull(hintsKey);
             requireNonNull(adoptionTime);
@@ -89,12 +89,11 @@ public interface ReadableHintsStore {
     Map<Long, PreprocessedKeysVote> votesFor(long constructionId, @NonNull Set<Long> nodeIds);
 
     /**
-     * Returns all the {@link HintsKeyPublication}s by nodes in the given set for the given maximum universe size.
-     *
-     * @param k the maximum universe size
+     * Returns the hinTS keys published by the given set of nodes for the given party size.
      * @param nodeIds the node ids
+     * @param partySize the party size
      * @return the {@link HintsKeyPublication}s
      */
     @NonNull
-    List<HintsKeyPublication> publicationsForMaxSizeLog2(int k, @NonNull Set<Long> nodeIds);
+    List<HintsKeyPublication> getNodeHintsKeyPublications(@NonNull Set<Long> nodeIds, int partySize);
 }

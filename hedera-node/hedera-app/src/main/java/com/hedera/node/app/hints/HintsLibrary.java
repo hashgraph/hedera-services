@@ -85,11 +85,13 @@ public interface HintsLibrary {
 
     /**
      * Computes the hints for the given public key and number of parties.
+     *
      * @param privateKey the private key
+     * @param partyId the party id
      * @param n the number of parties
      * @return the hints
      */
-    Bytes computeHints(@NonNull BlsPrivateKey privateKey, int n);
+    Bytes computeHints(@NonNull BlsPrivateKey privateKey, int partyId, int n);
 
     /**
      * Validates the hinTS public key for the given number of parties.
@@ -106,5 +108,5 @@ public interface HintsLibrary {
      * @param n the number of parties
      * @return the aggregated keys
      */
-    PreprocessedKeys preprocess(@NonNull Map<Long, HintsKey> hintKeys, @NonNull Map<Long, Long> weights, int n);
+    PreprocessedKeys preprocess(@NonNull Map<Integer, HintsKey> hintKeys, @NonNull Map<Integer, Long> weights, int n);
 }

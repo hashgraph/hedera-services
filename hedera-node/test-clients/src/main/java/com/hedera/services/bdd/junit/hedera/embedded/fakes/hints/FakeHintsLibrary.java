@@ -83,7 +83,7 @@ public class FakeHintsLibrary implements HintsLibrary {
     }
 
     @Override
-    public Bytes computeHints(@NonNull final BlsPrivateKey privateKey, final int n) {
+    public Bytes computeHints(@NonNull final BlsPrivateKey privateKey, int partyId, final int n) {
         requireNonNull(privateKey);
         throw new AssertionError("Not implemented");
     }
@@ -95,7 +95,7 @@ public class FakeHintsLibrary implements HintsLibrary {
     }
 
     @Override
-    public PreprocessedKeys preprocess(@NonNull Map<Long, HintsKey> hintKeys, @NonNull Map<Long, Long> weights, int n) {
+    public PreprocessedKeys preprocess(@NonNull Map<Integer, HintsKey> hintKeys, @NonNull Map<Integer, Long> weights, int n) {
         requireNonNull(hintKeys);
         requireNonNull(weights);
         throw new AssertionError("Not implemented");

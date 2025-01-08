@@ -150,11 +150,11 @@ public class HintsConstructionControllers {
     /**
      * Returns the in-progress controller for the hinTS construction with the given universe size, if it exists.
      *
-     * @param k the log2 of the universe size
+     * @param m the log2 of the universe size
      * @return the controller, if it exists
      */
-    public Optional<HintsConstructionController> getInProgressByUniverseSizeLog2(final int k) {
-        return Optional.ofNullable(controller).filter(c -> c.hasLog2UniverseSize(k));
+    public Optional<HintsConstructionController> getInProgressByPartySize(final int m) {
+        return Optional.ofNullable(controller).filter(c -> c.hasPartySize(m));
     }
 
     private HintsConstructionController newControllerFor(
@@ -173,8 +173,8 @@ public class HintsConstructionControllers {
         final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
         final var votes = hintsStore.votesFor(
                 construction.constructionId(), weights.sourceNodeWeights().keySet());
-        final var publications = hintsStore.publicationsForMaxSizeLog2(
-                k, weights.targetNodeWeights().keySet());
+        final var publications = hintsStore.getNodeHintsKeyPublications(
+                weights.targetNodeWeights().keySet(), k);
         return new HintsConstructionController(
                 selfNodeInfoSupplier.get().nodeId(),
                 construction,
@@ -209,7 +209,7 @@ public class HintsConstructionControllers {
                 : weightsFrom(requireNonNull(rosterStore.get(construction.targetRosterHash())));
         final int k = Integer.numberOfTrailingZeros(partySizeForRosterNodeCount(targetNodeWeights.size()));
         final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
-        final var publications = hintsStore.publicationsForMaxSizeLog2(k, targetNodeWeights.keySet());
+        final var publications = hintsStore.getNodeHintsKeyPublications(targetNodeWeights.keySet(), k);
         final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
         return new HintsConstructionController(
                 selfNodeInfoSupplier.get().nodeId(),

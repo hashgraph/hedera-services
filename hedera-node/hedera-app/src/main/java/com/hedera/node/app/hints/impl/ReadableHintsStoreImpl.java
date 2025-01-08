@@ -125,17 +125,17 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public @NonNull List<HintsKeyPublication> publicationsForMaxSizeLog2(
-            final int k, @NonNull final Set<Long> nodeIds) {
+    public @NonNull List<HintsKeyPublication> getNodeHintsKeyPublications(
+            @NonNull final Set<Long> nodeIds, final int partySize) {
         requireNonNull(nodeIds);
-        final int M = 1 << k;
+        final int M = 1 << partySize;
         final List<HintsKeyPublication> publications = new ArrayList<>();
-        for (long partyId = 0; partyId < M; partyId++) {
-            final var keySet = hintsKeys.get(new HintsId(partyId, k));
+        for (int partyId = 0; partyId < M; partyId++) {
+            final var keySet = hintsKeys.get(new HintsId(partyId, partySize));
             if (keySet != null) {
                 if (nodeIds.contains(keySet.nodeId())) {
                     publications.add(new HintsKeyPublication(
-                            keySet.keyOrThrow(), keySet.nodeId(), partyId, asInstant(keySet.adoptionTimeOrThrow())));
+                            keySet.nodeId(), keySet.keyOrThrow(), partyId, asInstant(keySet.adoptionTimeOrThrow())));
                 }
             }
         }

@@ -54,14 +54,14 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().hintsKeyPublicationOrThrow();
-        controllers.getInProgressByUniverseSizeLog2(op.maxSizeLog2()).ifPresent(controller -> {
+        controllers.getInProgressByPartySize(op.maxSizeLog2()).ifPresent(controller -> {
             final long nodeId = context.creatorInfo().nodeId();
             final var partyId = controller.partyIdOf(nodeId).orElseGet(controller::nextPartyId);
             final var hintsKey = op.hintsKeyOrThrow();
             final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
             final var adoptionTime = context.consensusNow();
-            if (hintsStore.includeHintsKey(op.maxSizeLog2(), partyId, nodeId, hintsKey, adoptionTime)) {
-                controller.incorporateHintsKey(new HintsKeyPublication(hintsKey, nodeId, partyId, adoptionTime));
+            if (hintsStore.setHintsKey(nodeId, partyId, op.maxSizeLog2(), hintsKey, adoptionTime)) {
+                controller.incorporateHintsKey(new HintsKeyPublication(nodeId, hintsKey, partyId, adoptionTime));
             }
         });
     }

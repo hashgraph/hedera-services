@@ -99,13 +99,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public boolean includeHintsKey(
-            final int k,
-            final long partyId,
-            final long nodeId,
+    public boolean setHintsKey(
+            final long nodeId, final int partyId, final int partySize,
             @NonNull final HintsKey hintsKey,
             @NonNull final Instant now) {
-        final var id = new HintsId(partyId, k);
+        final var id = new HintsId(partyId, partySize);
         var keySet = hintsKeys.get(id);
         boolean inUse = false;
         if (keySet == null) {
@@ -126,7 +124,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     public HintsConstruction completeAggregation(
             final long constructionId,
             @NonNull final PreprocessedKeys keys,
-            @NonNull final Map<Long, Long> nodePartyIds) {
+            @NonNull final Map<Long, Integer> nodePartyIds) {
         requireNonNull(keys);
         requireNonNull(nodePartyIds);
         return updateOrThrow(
@@ -269,7 +267,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                 .forEach(entry -> votes.remove(new PreprocessVoteId(construction.constructionId(), entry.nodeId())));
     }
 
-    private List<PartyAssignment> asPartyAssignments(@NonNull final Map<Long, Long> nodePartyIds) {
+    private List<PartyAssignment> asPartyAssignments(@NonNull final Map<Long, Integer> nodePartyIds) {
         return nodePartyIds.entrySet().stream()
                 .map(entry -> new PartyAssignment(entry.getKey(), entry.getValue()))
                 .toList();
