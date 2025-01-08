@@ -214,9 +214,10 @@ $$ S_L[\textrm{msg}] = (S_h[\textrm{msg}], P_{\textrm{vk},\mathcal{T}})$$
 An verifier of the signatures of a Hiero network will then,
 - Validate out-of-band through some means that `I` is, in fact, the ledger id of the Hiero network in question.
 - Deploy a generic hinTS verifier, *extended with* the ability to verify proofs asserting a chain-of-trust from `I`.
-- Given a signature $S_L$ on $\textrm{msg}$ message $\textrm{msg}$, first check that $P_{\textrm{vk}}$ is valid, and
-hence the hinTS scheme producing $S_h$ was in fact produced by nodes inheriting a chain of trust starting from the
-nodes that established the trusted ledger id. Second, verify that $S_h$ is a valid hinTS signature on $\textrm{msg}$.
+- Given a signature $S_L$ on $\textrm{msg}$ message $\textrm{msg}$, first check that $P_{\textrm{vk},\mathcal{T}}$ is
+valid, and hence the hinTS scheme producing $S_h$ was in fact produced by nodes inheriting a chain of trust starting
+from the nodes that established the trusted ledger id. Second, verify that $S_h$ is a valid hinTS signature on
+$\textrm{msg}$.
 
 There are only a few other details; namely,
 - The `HandleWorkflow` is responsible for driving the reconciliation loops of both companion services.
