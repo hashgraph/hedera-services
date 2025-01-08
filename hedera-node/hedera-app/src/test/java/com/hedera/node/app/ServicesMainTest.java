@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -29,17 +31,13 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.api.intern.ConfigurationProvider;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.util.BootstrapUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -50,10 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class ServicesMainTest {
     private static final MockedStatic<LegacyConfigPropertiesLoader> legacyConfigPropertiesLoaderMockedStatic =
             mockStatic(LegacyConfigPropertiesLoader.class);
-    private static final MockedStatic<BootstrapUtils> bootstrapUtilsMockedStatic = mockStatic(BootstrapUtils.class);
-
-    private static final MockedStatic<ConfigurationBuilder> configurationBuilderMockedStatic =
-            mockStatic(ConfigurationBuilder.class);
 
     @Mock(strictness = LENIENT)
     private LegacyConfigProperties legacyConfigProperties = mock(LegacyConfigProperties.class);
@@ -74,15 +68,24 @@ final class ServicesMainTest {
     void throwsExceptionOnNoNodesToRun() {
         withBadCommandLineArgs();
         String[] args = {};
-        assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
+        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
+            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
+            systemExitUtilsMockedStatic.verify(
+                    () -> SystemExitUtils.exitSystem(eq(NODE_ADDRESS_MISMATCH), anyString()));
+        }
     }
 
     // local node specified which does not match the address book
     @Test
-    void throwsExceptionOnNonMatchingNodeId() {
+    void hardExitOnNonMatchingNodeId() {
         withBadCommandLineArgs();
         String[] args = {"-local", "1234"}; // 1234 does not match anything in address book
-        assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
+
+        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
+            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
+            systemExitUtilsMockedStatic.verify(
+                    () -> SystemExitUtils.exitSystem(eq(NODE_ADDRESS_MISMATCH), anyString()));
+        }
     }
 
     // more than one local node specified on the commandline
@@ -124,9 +127,5 @@ final class ServicesMainTest {
                 .thenReturn(legacyConfigProperties);
 
         when(legacyConfigProperties.getAddressBook()).thenReturn(new AddressBook());
-
-        configurationBuilderMockedStatic
-                .when(ConfigurationBuilder::create)
-                .thenReturn(ConfigurationProvider.getInstance().createBuilder().withConfigDataType(BasicConfig.class));
     }
 }
