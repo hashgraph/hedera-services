@@ -301,7 +301,7 @@ public class DiskStartupNetworks implements StartupNetworks {
             final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(Paths.get(DEFAULT_CONFIG_FILE_NAME));
             try {
                 legacyBook = configFile.getAddressBook();
-                // load the public keys into the address book.  No private keys need to be loaded.
+                // Load the public keys into the address book. No private keys should be loaded!
                 CryptoStatic.initNodeSecurity(legacyBook, platformConfig, Set.of());
             } catch (Exception e) {
                 throw new IllegalStateException("Error generating keys and certs", e);
