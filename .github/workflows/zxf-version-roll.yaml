@@ -79,6 +79,7 @@ jobs:
           current_version=$(cat version.txt)
           echo "Current version: $current_version"
           echo "version=$current_version" >> $GITHUB_ENV
+          printf "Current Version: $current_version" >> $GITHUB_STEP_SUMMARY
 
       - name: Increment Minor Version
         id: increment_version
@@ -94,6 +95,7 @@ jobs:
           
           echo "New version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_ENV
+          printf "New Version: new_version" >> $GITHUB_STEP_SUMMARY
 
       - name: Update version.txt
         run: |
