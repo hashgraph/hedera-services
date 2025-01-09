@@ -42,7 +42,7 @@ public class GossipConfigTest {
         assertEquals(4, gossipConfig.interfaceBindings().size());
         assertEquals(4, gossipConfig.endpointOverrides().size());
 
-        final NetworkEndpoint endpoint = gossipConfig.networkEndpoints().getFirst();
+        final NetworkEndpoint endpoint = gossipConfig.interfaceBindings().getFirst();
         assertEquals(0, endpoint.nodeId());
         assertEquals(InetAddress.getByName("10.10.10.1"), endpoint.hostname());
         assertEquals(1234, endpoint.port());
