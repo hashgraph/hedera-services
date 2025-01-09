@@ -57,6 +57,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
@@ -128,6 +129,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
@@ -166,6 +168,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -821,7 +824,10 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
-    public void onPreHandle(@NonNull final Event event, @NonNull final State state) {
+    public void onPreHandle(
+            @NonNull final Event event,
+            @NonNull final State state,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
@@ -837,9 +843,20 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             return;
         }
 
+        final Consumer<StateSignatureTransaction> simplifiedStateSignatureTxnCallback = txn -> {
+            final var scopedTxn = new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), txn);
+            stateSignatureTxnCallback.accept(scopedTxn);
+        };
+
         final var transactions = new ArrayList<Transaction>(1000);
         event.forEachTransaction(transactions::add);
-        daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
+        daggerApp
+                .preHandleWorkflow()
+                .preHandle(
+                        readableStoreFactory,
+                        creator.accountId(),
+                        transactions.stream(),
+                        simplifiedStateSignatureTxnCallback);
     }
 
     public void onNewRecoveredState(@NonNull final State recoveredState) {
@@ -862,9 +879,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state) {
+    public void onHandleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final State state,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         daggerApp.workingStateAccessor().setState(state);
-        daggerApp.handleWorkflow().handleRound(state, round);
+        daggerApp.handleWorkflow().handleRound(state, round, stateSignatureTxnCallback);
     }
 
     /**

@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
@@ -49,6 +50,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
@@ -82,6 +84,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -108,7 +111,10 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onPreHandle(@NonNull Event event, @NonNull State state) {
+        public void onPreHandle(
+                @NonNull Event event,
+                @NonNull State state,
+                @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onPreHandleCalled.set(true);
         }
 
@@ -118,7 +124,10 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onHandleConsensusRound(@NonNull Round round, @NonNull State state) {
+        public void onHandleConsensusRound(
+                @NonNull Round round,
+                @NonNull State state,
+                @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onHandleCalled.set(true);
         }
 
