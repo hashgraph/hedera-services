@@ -569,18 +569,18 @@ public class SystemFileExportsTest {
         assertEquals(Map.of(SUCCESS, 1), histogram.get(NodeStakeUpdate));
         final var postGenesisContents = SysFileLookups.getSystemFileContents(spec, fileNum -> true);
         items.entries().stream().filter(item -> item.function() == FileCreate).forEach(item -> {
+            final var fileId = item.createdFileId();
             final var preContents = requireNonNull(
-                    preGenesisContents.get(item.createdFileId()),
-                    "No pre-genesis contents for " + item.createdFileId());
+                    preGenesisContents.get(item.createdFileId()), "No pre-genesis contents for " + fileId);
             final var postContents = requireNonNull(
-                    postGenesisContents.get(item.createdFileId()),
-                    "No post-genesis contents for " + item.createdFileId());
+                    postGenesisContents.get(item.createdFileId()), "No post-genesis contents for " + fileId);
             final var exportedContents =
                     fromByteString(item.body().getFileCreate().getContents());
-            assertEquals(
-                    exportedContents, preContents, item.createdFileId() + " contents don't match pre-genesis query");
-            assertEquals(
-                    exportedContents, postContents, item.createdFileId() + " contents don't match post-genesis query");
+            if (fileId.fileNum()
+                    != 102) { // for nodedetail, the node's weight changed between preContent and exportedContents
+                assertEquals(exportedContents, preContents, fileId + " contents don't match pre-genesis query");
+            }
+            assertEquals(exportedContents, postContents, fileId + " contents don't match post-genesis query");
         });
     }
 
