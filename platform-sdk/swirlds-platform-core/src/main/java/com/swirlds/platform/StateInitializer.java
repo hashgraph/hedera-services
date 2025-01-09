@@ -23,6 +23,7 @@ import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
@@ -33,6 +34,8 @@ import com.swirlds.platform.system.StateEventHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.ExecutionException;
 
 /**
  * Encapsulates the logic for calling
@@ -70,18 +73,29 @@ public final class StateInitializer {
         }
 
         final StateEventHandler initialStateEvenHandler = signedState.getStateEventHandler();
-        final PlatformMerkleStateRoot stateRoot = signedState.getState();
+        final PlatformMerkleStateRoot initialState = signedState.getState();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.
 
-        if (stateRoot.getHash() != null) {
+        if (initialState.getHash() != null) {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
 
         initialStateEvenHandler.init(platform, trigger, previousSoftwareVersion);
 
-        abortAndThrowIfInterrupted(stateRoot::computeHash, "interrupted while attempting to hash the state");
+        abortAndThrowIfInterrupted(
+                () -> {
+                    try {
+                        MerkleCryptoFactory.getInstance()
+                                .digestTreeAsync(initialState)
+                                .get();
+                    } catch (final ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                "interrupted while attempting to hash the state");
+
 
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();

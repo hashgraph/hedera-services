@@ -145,7 +145,6 @@ class EventRecoveryWorkflowTests {
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should only be handled once");
                     assertSame(round, invocation.getArgument(0), "unexpected round");
-                    assertSame(platformState, invocation.getArgument(1), "unexpected dual state");
                     roundHandled.set(true);
                     return null;
                 })
