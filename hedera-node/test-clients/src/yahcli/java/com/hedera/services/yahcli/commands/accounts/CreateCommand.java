@@ -87,7 +87,7 @@ public class CreateCommand implements Callable<Integer> {
         } else if ("ED25519".equalsIgnoreCase(keyType)) {
             sigType = SigControl.ED25519_ON;
         } else {
-            COMMON_MESSAGES.warn("Invalid key type: " + keyType + ". Must be 'ED25519' or SECP256K1");
+            COMMON_MESSAGES.warn("Invalid key type: " + keyType + ". Must be 'ED25519' or 'SECP256K1'");
             return 1;
         }
         final var effectiveMemo = memo != null ? memo : "";
