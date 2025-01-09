@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.file.Path;
 import java.security.DrbgParameters;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.SecureRandom;
+import java.security.Security;
+import java.security.interfaces.ECPrivateKey;
+import java.security.spec.ECGenParameterSpec;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -88,6 +94,23 @@ public final class Ed25519Utils {
         }
     }
 
+    public static ECPrivateKey readECKeyFrom(final File pem, final String passphrase) {
+        final var relocatedPem = relocatedIfNotPresentInWorkingDir(pem);
+        try (final var in = new FileInputStream(relocatedPem)) {
+            final var decryptProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder()
+                    .setProvider(BC_PROVIDER)
+                    .build(passphrase.toCharArray());
+            final var converter = new JcaPEMKeyConverter().setProvider(BC_PROVIDER);
+            try (final var parser = new PEMParser(new InputStreamReader(in))) {
+                final var encryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) parser.readObject();
+                final var info = encryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptProvider);
+                return (ECPrivateKey) converter.getPrivateKey(info);
+            }
+        } catch (final IOException | OperatorCreationException | PKCSException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     public static Path relocatedIfNotPresentInWorkingDir(final Path path) {
         return relocatedIfNotPresentInWorkingDir(path.toFile()).toPath();
     }
@@ -100,7 +123,51 @@ public final class Ed25519Utils {
         writeKeyTo(keyFrom(seed), pemLoc, passphrase);
     }
 
-    public static void writeKeyTo(final EdDSAPrivateKey key, final String pemLoc, final String passphrase) {
+    public class Secp256k1KeyGenerator {
+        private static final String PASSWORD = "pass"; // Replace with a secure password
+
+        public static void main(String[] args) throws Exception {
+            Security.addProvider(new BouncyCastleProvider());
+
+            // Generate a secp256k1 ECDSA key pair
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
+            keyPairGenerator.initialize(new ECGenParameterSpec("secp256k1"));
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+            PrivateKey privateKey = keyPair.getPrivate();
+
+            // Write the encrypted private key to a .pem file
+            System.out.println("checking..");
+            try (JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter("/Users/matthess/Desktop/encrypted-novel.pem"))) {
+                JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder = new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC);
+                encryptorBuilder.setRandom(SecureRandom.getInstance("SHA1PRNG"));
+                encryptorBuilder.setPasssword(PASSWORD.toCharArray());
+                encryptorBuilder.setIterationCount(10000);
+                JcaPKCS8Generator pkcs8Generator = new JcaPKCS8Generator(privateKey, encryptorBuilder.build());
+                pemWriter.writeObject(pkcs8Generator.generate());
+            } catch (IOException | OperatorCreationException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        Security.addProvider(new BouncyCastleProvider());
+
+        // Generate an ECDSA key pair
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
+        keyPairGenerator.initialize(new ECGenParameterSpec("secp256k1"));
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        PrivateKey privateKey = keyPair.getPrivate();
+
+        // Write the private key to a .pem file
+        try (JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter("novel.pem"))) {
+            pemWriter.writeObject(privateKey);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeKeyTo(final PrivateKey key, final String pemLoc, final String passphrase) {
         final var pem = new File(pemLoc);
         try (final var out = new FileOutputStream(pem)) {
             final var random = SecureRandom.getInstance("DRBG", DRBG_INSTANTIATION);

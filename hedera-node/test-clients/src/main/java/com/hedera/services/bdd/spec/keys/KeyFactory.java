@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.keys;
 
+import static com.hedera.services.bdd.spec.infrastructure.ECKeyUtil.getPublicKeyFromPrivateKey;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PREFIXES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
@@ -28,6 +29,7 @@ import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.ECKeyUtil;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -37,10 +39,8 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
@@ -57,6 +57,8 @@ import java.util.stream.IntStream;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.junit.jupiter.api.Assertions;
 
 /**
@@ -111,8 +113,13 @@ public class KeyFactory {
     public KeyFactory(@NonNull final HapiSpecSetup setup, @NonNull final HapiSpecRegistry registry) throws Exception {
         this.setup = requireNonNull(setup);
         this.registry = requireNonNull(registry);
-        final var genesisKey = setup.payerKey();
-        incorporate(setup.genesisAccountName(), genesisKey, KeyShape.listSigs(ON));
+        final var genesisKey = setup.payerECKey();
+//        incorporate(setup.genesisAccountName(), genesisKey, KeyShape.listSigs(ON));
+
+        byte[] publickKeyByte = ECKeyUtil.getPublicKeyFromPrivateKey2(genesisKey);
+        final var pubKeyHex = com.swirlds.common.utility.CommonUtils.hex(publickKeyByte);
+        pkMap.put(pubKeyHex, genesisKey);
+        controlMap.put(registry.getKey(setup.genesisAccountName()), KeyShape.listSigs(ON));
     }
 
     /**
@@ -200,8 +207,8 @@ public class KeyFactory {
      *
      * @param name the name of the key to export
      */
-    public void exportEcdsaKey(@NonNull final String name) {
-        exportEcdsaKey(name, key -> key.getECDSASecp256K1().toByteArray());
+    public void exportEcdsaKey(@NonNull final String name, @NonNull final String loc, @NonNull final String pass) {
+        exportEcdsaKey(name, loc, pass, key -> key.getECDSASecp256K1().toByteArray());
     }
 
     /**
@@ -592,16 +599,16 @@ public class KeyFactory {
         Ed25519Utils.writeKeyTo(key, loc, passphrase);
     }
 
-    private void exportEcdsaKey(@NonNull final String name, @NonNull final Function<Key, byte[]> targetKeyExtractor) {
+    private void exportEcdsaKey(
+            @NonNull final String name,
+            @NonNull final String loc2,
+            @NonNull final String pass,
+            @NonNull final Function<Key, byte[]> targetKeyExtractor) {
         final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
         final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
         final var key = (ECPrivateKey) pkMap.get(hexedPubKey);
-        final var loc = explicitEcdsaLocFor(name);
-        try {
-            Files.writeString(Paths.get(loc), hexedPubKey + "|" + key.getS().toString(16));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var loc = loc2 != null ? loc2 : explicitEcdsaLocFor(name);
+        Ed25519Utils.writeKeyTo(key, loc, pass);
     }
 
     private List<Entry<Key, SigControl>> authorsFor(

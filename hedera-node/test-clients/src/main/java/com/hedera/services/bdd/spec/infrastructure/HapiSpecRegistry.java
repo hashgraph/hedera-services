@@ -19,6 +19,8 @@ package com.hedera.services.bdd.spec.infrastructure;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
+import static com.hedera.services.bdd.spec.infrastructure.ECKeyUtil.getPublicKeyFromPrivateKey;
+import static com.hedera.services.bdd.spec.infrastructure.ECKeyUtil.getPublicKeyFromPrivateKey2;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 
@@ -53,7 +55,13 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
+
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,8 +80,15 @@ public class HapiSpecRegistry {
     public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
         this.setup = setup;
 
-        final var key = setup.payerKey();
-        final var genesisKey = asPublicKey(CommonUtils.hex(key.getAbyte()));
+//        final var key = setup.payerKey().getAbyte()
+        final var key = setup.payerECKey();
+
+//        var publicKey = getPublicKeyFromPrivateKey(key);
+        // Calculate the public key
+        var publickKeyByte = getPublicKeyFromPrivateKey2(key);
+        // store the genesis key
+        final var pubKeyHex = com.swirlds.common.utility.CommonUtils.hex(publickKeyByte);
+        final var genesisKey = asPublicKey(pubKeyHex);
 
         saveAccountId(setup.genesisAccountName(), setup.genesisAccount());
         saveKey(setup.genesisAccountName(), asKeyList(genesisKey));

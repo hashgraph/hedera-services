@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.services.yahcli.config;
 
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.readECKeyFrom;
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.readKeyPairFrom;
 import static com.hedera.services.yahcli.config.ConfigUtils.asId;
 import static com.hedera.services.yahcli.config.ConfigUtils.isLiteral;
@@ -62,7 +63,8 @@ public class ConfigManager {
     }
 
     static ConfigManager from(Yahcli yahcli) throws IOException {
-        var yamlLoc = yahcli.getConfigLoc();
+        //        var yamlLoc = yahcli.getConfigLoc();
+        var yamlLoc = "/Users/matthess/Downloads/repo/hedera-services/hedera-node/test-clients/yahcli/config.yml";
         var yamlIn = new Yaml(new Constructor(GlobalConfig.class, new LoaderOptions()));
         try (InputStream fin = Files.newInputStream(Paths.get(yamlLoc))) {
             GlobalConfig globalConfig = yamlIn.load(fin);
@@ -129,6 +131,7 @@ public class ConfigManager {
             return Optional.of(fromEnv);
         }
         Optional<String> finalPassphrase = Optional.empty();
+        System.out.println("keyFile: " + keyFile);
         var optPassFile = AccessoryUtils.passFileFor(keyFile);
         if (optPassFile.isPresent()) {
             try {
@@ -151,12 +154,18 @@ public class ConfigManager {
     }
 
     static boolean unlocks(File keyFile, String passphrase) {
-        try {
-            readKeyPairFrom(keyFile, passphrase);
-            return true;
-        } catch (Exception ignore) {
-            return false;
-        }
+            try {
+                readKeyPairFrom(keyFile, passphrase);
+                return true;
+            } catch (Exception ignore) {
+            }
+
+            try {
+                readECKeyFrom(keyFile, passphrase);
+                return true;
+            } catch (Exception ignore) {
+                return false;
+            }
     }
 
     public String keysLoc() {

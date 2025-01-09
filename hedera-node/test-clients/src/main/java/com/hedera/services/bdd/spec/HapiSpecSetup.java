@@ -33,6 +33,9 @@ import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.nio.file.Path;
+import java.security.interfaces.ECPrivateKey;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -117,6 +120,16 @@ public class HapiSpecSetup {
         } else {
             return Ed25519Utils.readKeyFrom(defaultPayerPemKeyLoc(), defaultPayerPemKeyPassphrase());
         }
+    }
+
+    public ECPrivateKey payerECKey() {
+//        if (StringUtils.isNotEmpty(defaultPayerKey())) {
+//            return Ed25519Utils.keyFrom(com.swirlds.common.utility.CommonUtils.unhex(defaultPayerKey()));
+//        }  else {
+        var pemKeyLoc = defaultPayerPemKeyLoc();
+        var file = Path.of(pemKeyLoc);
+            return Ed25519Utils.readECKeyFrom(file.toFile(), defaultPayerPemKeyPassphrase());
+//        }
     }
 
     /**

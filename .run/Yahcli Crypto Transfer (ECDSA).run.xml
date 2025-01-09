@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Yahcli Crypto Transfer (ECDSA)" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/hedera-node/test-clients/build/libs/test-clients-0.59.0-SNAPSHOT-yahcli.jar" />
+    <option name="VM_PARAMETERS" value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8888" />
+    <option name="PROGRAM_PARAMETERS" value="-n testnet -p 5362099 accounts send --memo &quot;mh/lev test transfer w/ECDSA&quot; --to 4960983 7" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/hedera-node/test-clients/yahcli" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="Gradle.BeforeRunTask" enabled="true" tasks="compileYahcliJava yahCliJar" externalProjectPath="$PROJECT_DIR$/hedera-node/test-clients" vmOptions="" scriptParameters="" />
+    </method>
+  </configuration>
+</component>

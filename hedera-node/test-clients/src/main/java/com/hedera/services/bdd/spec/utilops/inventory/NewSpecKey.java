@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,11 @@ public class NewSpecKey extends UtilOp {
         if (immediateExportLoc.isPresent() && immediateExportPass.isPresent()) {
             final var exportLoc = immediateExportLoc.get();
             final var exportPass = immediateExportPass.get();
-            exportWithPass(spec, name, exportLoc, exportPass);
+            if (shape.get() == SigControl.SECP256K1_ON) {
+                exportEcdsa(spec, name, exportLoc, exportPass);
+            } else {
+                exportWithPass(spec, name, exportLoc, exportPass);
+            }
             if (verboseLoggingOn && yahcliLogger) {
                 System.out.println(".i. Exported a newly generated key in PEM format to " + exportLoc);
             }
@@ -172,6 +176,13 @@ public class NewSpecKey extends UtilOp {
             }
         }
         return false;
+    }
+
+    static void exportEcdsa(HapiSpec spec, String name, String exportLoc, String exportPass)
+            throws IOException {
+        spec.keys().exportEcdsaKey(name, exportLoc, exportPass);
+        final var passLoc = exportLoc.replace(".pem", ".pass");
+        Files.writeString(Paths.get(passLoc), exportPass);
     }
 
     static void exportWithPass(HapiSpec spec, String name, String exportLoc, String exportPass) throws IOException {
