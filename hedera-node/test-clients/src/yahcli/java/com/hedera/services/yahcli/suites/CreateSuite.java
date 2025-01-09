@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,12 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +48,7 @@ public class CreateSuite extends HapiSuite {
     private final Map<String, String> specConfig;
     private final String memo;
     private final long initialBalance;
+    private final SigControl sigType;
     private final int numBusyRetries;
 
     private final boolean receiverSigRequired;
@@ -59,11 +62,13 @@ public class CreateSuite extends HapiSuite {
             final long initialBalance,
             final String memo,
             final String novelTarget,
+            final SigControl sigType,
             final int numBusyRetries,
             final boolean receiverSigRequired) {
         this.memo = memo;
         this.specConfig = specConfig;
         this.novelTarget = novelTarget;
+        this.sigType = sigType;
         this.numBusyRetries = numBusyRetries;
         this.initialBalance = initialBalance;
         this.receiverSigRequired = receiverSigRequired;
@@ -83,12 +88,13 @@ public class CreateSuite extends HapiSuite {
         final var newKey = "newKey";
         final var success = new AtomicBoolean(false);
         final var novelPass = TxnUtils.randomAlphaNumeric(12);
+        NewSpecKey newSpecKey = UtilVerbs.newKeyNamed(newKey)
+                .exportingTo(novelTarget, novelPass)
+                .shape(sigType);
+        newSpecKey = (sigType == SigControl.ED25519_ON) ? newSpecKey.includingEd25519Mnemonic() : newSpecKey;
         return HapiSpec.customHapiSpec("DoCreate")
                 .withProperties(specConfig)
-                .given(UtilVerbs.newKeyNamed(newKey)
-                        .shape(SigControl.ED25519_ON)
-                        .exportingTo(novelTarget, novelPass)
-                        .includingEd25519Mnemonic())
+                .given(newSpecKey)
                 .when(UtilVerbs.withOpContext((spec, opLog) -> {
                     int attemptNo = 1;
                     do {
@@ -118,9 +124,15 @@ public class CreateSuite extends HapiSuite {
                 }))
                 .then(UtilVerbs.withOpContext((spec, opLog) -> {
                     if (success.get()) {
-                        final var locs = new String[] {
-                            novelTarget, novelTarget.replace(".pem", ".pass"), novelTarget.replace(".pem", ".words"),
+                        final var locs = new ArrayList<String>() {
+                            {
+                                add(novelTarget);
+                                add(novelTarget.replace(".pem", ".pass"));
+                            }
                         };
+                        if (sigType == SigControl.ED25519_ON) {
+                            locs.add(novelTarget.replace(".pem", ".words"));
+                        }
                         final var accountId = "account" + createdNo.get();
                         for (final var loc : locs) {
                             try (final var fin = Files.newInputStream(Paths.get(loc))) {

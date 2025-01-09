@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,6 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
@@ -200,8 +196,8 @@ public class KeyFactory {
      *
      * @param name the name of the key to export
      */
-    public void exportEcdsaKey(@NonNull final String name) {
-        exportEcdsaKey(name, key -> key.getECDSASecp256K1().toByteArray());
+    public void exportEcdsaKey(@NonNull final String name, @NonNull final String loc, @NonNull final String pass) {
+        exportEcdsaKey(name, loc, pass, key -> key.getECDSASecp256K1().toByteArray());
     }
 
     /**
@@ -592,16 +588,16 @@ public class KeyFactory {
         Ed25519Utils.writeKeyTo(key, loc, passphrase);
     }
 
-    private void exportEcdsaKey(@NonNull final String name, @NonNull final Function<Key, byte[]> targetKeyExtractor) {
+    private void exportEcdsaKey(
+            @NonNull final String name,
+            @NonNull final String loc,
+            @NonNull final String pass,
+            @NonNull final Function<Key, byte[]> targetKeyExtractor) {
         final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
         final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
         final var key = (ECPrivateKey) pkMap.get(hexedPubKey);
-        final var loc = explicitEcdsaLocFor(name);
-        try {
-            Files.writeString(Paths.get(loc), hexedPubKey + "|" + key.getS().toString(16));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var explicitLoc = loc != null ? loc : explicitEcdsaLocFor(name);
+        Ed25519Utils.writeKeyTo(key, explicitLoc, pass);
     }
 
     private List<Entry<Key, SigControl>> authorsFor(
