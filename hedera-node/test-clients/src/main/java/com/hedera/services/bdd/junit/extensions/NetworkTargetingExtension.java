@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,22 +21,15 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_ENCRYPTION_KEYS;
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_KEY_MATERIAL_GENERATOR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirVersion;
-import static com.hedera.services.bdd.junit.restart.StartupAssets.ROSTER_AND_ENCRYPTION_KEYS;
-import static com.hedera.services.bdd.junit.restart.StartupAssets.ROSTER_AND_FULL_TSS_KEY_MATERIAL;
 import static com.hedera.services.bdd.spec.HapiSpec.doTargetSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
@@ -47,27 +40,21 @@ import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
-import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.restart.RestartHapiTest;
 import com.hedera.services.bdd.junit.restart.SavedStateSpec;
-import com.hedera.services.bdd.junit.restart.StartupAssets;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.function.LongFunction;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -82,32 +69,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
     private static final String SPEC_NAME = "<RESTART>";
-    private static final Set<StartupAssets> OVERRIDES_WITH_ENCRYPTION_KEYS =
-            EnumSet.of(ROSTER_AND_ENCRYPTION_KEYS, ROSTER_AND_FULL_TSS_KEY_MATERIAL);
 
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
     public static final AtomicReference<RepeatableKeyGenerator> REPEATABLE_KEY_GENERATOR = new AtomicReference<>();
-
-    /**
-     * The functions that provide the TSS encryption key and key material for a TSS node.
-     * @param tssEncryptionKeyFn the function that provides the TSS encryption key
-     * @param tssKeyMaterialFn the function that provides the TSS key material
-     */
-    private record TssSourceFns(
-            @NonNull LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
-        public static TssSourceFns from(@NonNull final StartupAssets assets) {
-            requireNonNull(assets);
-            return new TssSourceFns(
-                    OVERRIDES_WITH_ENCRYPTION_KEYS.contains(assets)
-                            ? CLASSIC_ENCRYPTION_KEYS::get
-                            : nodeId -> Bytes.EMPTY,
-                    assets == ROSTER_AND_FULL_TSS_KEY_MATERIAL
-                            ? rosterEntries ->
-                                    Optional.of(CLASSIC_KEY_MATERIAL_GENERATOR.apply(new Roster(rosterEntries)))
-                            : rosterEntries -> Optional.empty());
-        }
-    }
 
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
@@ -118,7 +82,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 final var a = method.getAnnotation(GenesisHapiTest.class);
                 final var bootstrapOverrides = Arrays.stream(a.bootstrapOverrides())
                         .collect(toMap(ConfigOverride::key, ConfigOverride::value));
-                targetNetwork.startWith(bootstrapOverrides, nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
+                targetNetwork.startWith(bootstrapOverrides);
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else if (isAnnotated(method, RestartHapiTest.class)) {
                 final var targetNetwork =
@@ -127,22 +91,14 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
 
                 final var setupOverrides =
                         Arrays.stream(a.setupOverrides()).collect(toMap(ConfigOverride::key, ConfigOverride::value));
-                final var setupTssSourceFns = TssSourceFns.from(a.setupAssets());
 
                 final var restartOverrides =
                         Arrays.stream(a.restartOverrides()).collect(toMap(ConfigOverride::key, ConfigOverride::value));
-                final var restartTssSourceFns = TssSourceFns.from(a.restartAssets());
 
                 switch (a.restartType()) {
-                    case GENESIS -> targetNetwork.startWith(
-                            restartOverrides,
-                            restartTssSourceFns.tssEncryptionKeyFn(),
-                            restartTssSourceFns.tssKeyMaterialFn());
-                    case SAME_VERSION -> targetNetwork.startWith(
-                            setupOverrides,
-                            setupTssSourceFns.tssEncryptionKeyFn(),
-                            setupTssSourceFns.tssKeyMaterialFn());
-                    case UPGRADE_BOUNDARY -> startFromPreviousVersion(targetNetwork, setupOverrides, setupTssSourceFns);
+                    case GENESIS -> targetNetwork.startWith(restartOverrides);
+                    case SAME_VERSION -> targetNetwork.startWith(setupOverrides);
+                    case UPGRADE_BOUNDARY -> startFromPreviousVersion(targetNetwork, setupOverrides);
                 }
                 switch (a.restartType()) {
                     case GENESIS -> {
@@ -241,12 +197,9 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
      *
      * @param targetNetwork the target network
      * @param overrides the overrides
-     * @param tssSourceFns the TSS source functions
      */
     private void startFromPreviousVersion(
-            @NonNull final EmbeddedNetwork targetNetwork,
-            @NonNull final Map<String, String> overrides,
-            @NonNull final TssSourceFns tssSourceFns) {
+            @NonNull final EmbeddedNetwork targetNetwork, @NonNull final Map<String, String> overrides) {
         final Map<String, String> netOverrides = new HashMap<>(overrides);
         final var currentVersion = workingDirVersion();
         final var previousVersion = currentVersion
@@ -257,7 +210,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 .build("")
                 .build();
         netOverrides.put("hedera.services.version", HapiUtils.toString(previousVersion));
-        targetNetwork.startWith(netOverrides, tssSourceFns.tssEncryptionKeyFn(), tssSourceFns.tssKeyMaterialFn());
+        targetNetwork.startWith(netOverrides);
     }
 
     private FakeState postGenesisStateOf(

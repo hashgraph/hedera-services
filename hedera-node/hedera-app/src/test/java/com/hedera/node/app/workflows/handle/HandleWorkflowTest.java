@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManage
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -145,9 +144,6 @@ class HandleWorkflowTest {
     @Mock
     private UserTxnFactory userTxnFactory;
 
-    @Mock
-    private TssBaseService tssBaseService;
-
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -171,7 +167,7 @@ class HandleWorkflowTest {
 
         givenSubjectWith(RECORDS, emptyList());
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();
@@ -188,7 +184,7 @@ class HandleWorkflowTest {
         givenSubjectWith(BOTH, builders);
         given(blockStreamManager.blockTimestamp()).willReturn(BLOCK_TIME);
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         builders.forEach(builder -> verify(blockStreamManager)
                 .writeItem(BlockItem.newBuilder()
@@ -224,7 +220,6 @@ class HandleWorkflowTest {
                 migrationStateChanges,
                 userTxnFactory,
                 new AddressBookHelper(),
-                tssBaseService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 scheduleService);
