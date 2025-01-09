@@ -26,4 +26,4 @@ import com.swirlds.common.notification.Listener;
  * If you require ordered and synchronous dispatch that includes all ISS events, then use {@link IssListener}.
  */
 @DispatchModel(mode = DispatchMode.ASYNC, order = DispatchOrder.ORDERED)
-public interface FatalIssListener extends Listener<IssNotification> {}
+public interface AsyncFatalIssListener extends Listener<IssNotification> {}

@@ -24,7 +24,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
-import com.swirlds.platform.system.state.notifications.FatalIssListener;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
@@ -89,7 +89,7 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
 
         if (IssType.CATASTROPHIC_ISS == notification.getIssType() || IssType.SELF_ISS == notification.getIssType()) {
             // Forward notification to application
-            notificationEngine.dispatch(FatalIssListener.class, notification);
+            notificationEngine.dispatch(AsyncFatalIssListener.class, notification);
         }
     }
 }

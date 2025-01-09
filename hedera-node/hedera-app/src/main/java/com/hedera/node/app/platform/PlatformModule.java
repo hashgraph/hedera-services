@@ -24,7 +24,7 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.state.notifications.FatalIssListener;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -73,5 +73,5 @@ public interface PlatformModule {
 
     @Binds
     @Singleton
-    FatalIssListener bindFatalIssListener(FatalIssListenerImpl listener);
+    AsyncFatalIssListener bindFatalIssListener(FatalIssListenerImpl listener);
 }

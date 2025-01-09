@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.listeners;
 
-import com.swirlds.platform.system.state.notifications.FatalIssListener;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -25,7 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class FatalIssListenerImpl implements FatalIssListener {
+public class FatalIssListenerImpl implements AsyncFatalIssListener {
 
     private static final Logger log = LogManager.getLogger(FatalIssListenerImpl.class);
 

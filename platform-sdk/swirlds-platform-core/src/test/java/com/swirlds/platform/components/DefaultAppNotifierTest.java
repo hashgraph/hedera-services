@@ -38,7 +38,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.state.notifications.FatalIssListener;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
@@ -147,7 +147,7 @@ public class DefaultAppNotifierTest {
         if (isFatal) {
             // if the ISS event is considered fatal to the local node, verify the event is also sent to the
             // FatalIssListener
-            verify(notificationEngine, times(1)).dispatch(FatalIssListener.class, notification);
+            verify(notificationEngine, times(1)).dispatch(AsyncFatalIssListener.class, notification);
         }
 
         verifyNoMoreInteractions(notificationEngine);
