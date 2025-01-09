@@ -25,10 +25,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesFo
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfig;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
-import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ECDSA_WITH_ALIAS_KEY_INFOS;
-import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ED25519_KEY_INFOS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.identityconnectors.common.ByteUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -63,6 +60,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
+import java.util.Random;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,6 +118,15 @@ class SignScheduleTranslatorTest {
 
     @Mock
     private SignatureVerifier signatureVerifier;
+
+    private static final Key ecdsaKey = Key.newBuilder()
+            .ecdsaSecp256k1(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(
+                    "02b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39d2"))
+            .build();
+    private static final Key ed25519 = Key.newBuilder()
+            .ed25519(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(
+                    "02b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39c5"))
+            .build();
 
     private SignScheduleTranslator subject;
 
@@ -483,9 +490,7 @@ class SignScheduleTranslatorTest {
 
         final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
 
-        assertThat(keySet)
-                .contains(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey())
-                .contains(FAKE_ED25519_KEY_INFOS[0].publicKey());
+        assertThat(keySet).contains(ecdsaKey).contains(ed25519);
     }
 
     @Test
@@ -564,7 +569,6 @@ class SignScheduleTranslatorTest {
     }
 
     private static com.hedera.pbj.runtime.io.buffer.Bytes getSigMapKnownKeyTypeBytes(final int chainId) {
-        final var prefixEcdsa = FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey().ecdsaSecp256k1OrThrow();
         final var signatureEcdsa = randomBytes(66);
 
         int v = 35 + (chainId * 2);
@@ -573,16 +577,15 @@ class SignScheduleTranslatorTest {
         v >>= 8;
         signatureEcdsa[64] = (byte) (v & 0xFF);
 
-        final var prefixEd = FAKE_ED25519_KEY_INFOS[0].publicKey().ed25519OrThrow();
         final var signatureEd = randomBytes(64);
         final var sigMap = SignatureMap.newBuilder()
                 .sigPair(List.of(
                         SignaturePair.newBuilder()
-                                .pubKeyPrefix(prefixEcdsa)
+                                .pubKeyPrefix(ecdsaKey.ecdsaSecp256k1OrThrow())
                                 .ecdsaSecp256k1(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEcdsa))
                                 .build(),
                         SignaturePair.newBuilder()
-                                .pubKeyPrefix(prefixEd)
+                                .pubKeyPrefix(ed25519.ed25519OrThrow())
                                 .ed25519(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEd))
                                 .build()))
                 .build();
@@ -591,17 +594,24 @@ class SignScheduleTranslatorTest {
     }
 
     private static com.hedera.pbj.runtime.io.buffer.Bytes getSigMapUnknownKeyTypeBytes() {
-        final var prefixEcdsa = FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey().ecdsaSecp256k1OrThrow();
         final var signatureEcdsa = randomBytes(64);
-        final var prefixEd = FAKE_ED25519_KEY_INFOS[0].publicKey().ed25519OrThrow();
-        final var signatureEd = randomBytes(64);
         final var sigMap = SignatureMap.newBuilder()
                 .sigPair(List.of(SignaturePair.newBuilder()
-                        .pubKeyPrefix(prefixEcdsa)
+                        .pubKeyPrefix(ecdsaKey.ecdsaSecp256k1OrThrow())
                         .rsa3072(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEcdsa))
                         .build()))
                 .build();
 
         return SignatureMap.PROTOBUF.toBytes(sigMap);
+    }
+
+    public static byte[] randomBytes(Random r, int length) {
+        byte[] ret = new byte[length];
+        r.nextBytes(ret);
+        return ret;
+    }
+
+    public static byte[] randomBytes(int length) {
+        return randomBytes(new Random(), length);
     }
 }
