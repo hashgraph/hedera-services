@@ -82,6 +82,7 @@ import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -153,6 +154,7 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final ScheduleService scheduleService;
+    private final CongestionMetrics congestionMetrics;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -184,7 +186,8 @@ public class HandleWorkflow {
             @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final ScheduleService scheduleService) {
+            @NonNull final ScheduleService scheduleService,
+            @NonNull final CongestionMetrics congestionMetrics) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -209,6 +212,7 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.scheduleService = requireNonNull(scheduleService);
+        this.congestionMetrics = requireNonNull(congestionMetrics);
         this.streamMode = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
@@ -319,7 +323,7 @@ public class HandleWorkflow {
             }
         }
         // Update all throttle metrics once per round
-        throttleServiceManager.updateAllMetrics();
+        throttleServiceManager.updateAllMetrics(); // TODO: update congestion multiplier metrics here?
         // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
@@ -384,6 +388,7 @@ public class HandleWorkflow {
         }
 
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+        congestionMetrics.updateMultiplier(userTxn.txnInfo(), userTxn.readableStoreFactory());
 
         if (streamMode == RECORDS) {
             // We don't support long-term scheduled transactions if only producing records
