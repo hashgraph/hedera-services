@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
@@ -478,7 +479,9 @@ public class SystemFileExportsTest {
             try {
                 final var updatedAddressBook = NodeAddressBook.PROTOBUF.parse(
                         Bytes.wrap(synthOp.getContents().toByteArray()));
+                var prevNodeId = -1L;
                 for (final var address : updatedAddressBook.nodeAddress()) {
+                    assertTrue(address.nodeId() > prevNodeId, "Node IDs must be in ascending order");
                     final var expectedCert = gossipCertificates.get().get(address.nodeId());
                     final var expectedPubKey = expectedCert.getPublicKey().getEncoded();
                     final var actualPubKey = unhex(address.rsaPubKey());
@@ -495,6 +498,7 @@ public class SystemFileExportsTest {
 
                     final var expectedServiceEndpoint = endpointsFor((int) address.nodeId());
                     assertEquals(expectedServiceEndpoint, address.serviceEndpoint());
+                    prevNodeId = address.nodeId();
                 }
             } catch (ParseException e) {
                 Assertions.fail("Update contents was not protobuf " + e.getMessage());
@@ -523,12 +527,14 @@ public class SystemFileExportsTest {
             assertNotNull(updateItem, "No update for " + fileNumProperty + " found in post-upgrade txn");
             final var synthOp = updateItem.body().getFileUpdate();
             final var addressBookId =
-                    new FileID(0, 0, Long.parseLong(spec.startupProperties().get("files.addressBook")));
+                    new FileID(0, 0, Long.parseLong(spec.startupProperties().get(fileNumProperty)));
             assertEquals(addressBookId, toPbj(synthOp.getFileID()));
             try {
                 final var updatedAddressBook = NodeAddressBook.PROTOBUF.parse(
                         Bytes.wrap(synthOp.getContents().toByteArray()));
+                var prevNodeId = -1L;
                 for (final var address : updatedAddressBook.nodeAddress()) {
+                    assertTrue(address.nodeId() > prevNodeId, "Node IDs must be in ascending order");
                     final var actualCertHash = address.nodeCertHash().toByteArray();
                     assertArrayEquals(
                             getHexStringBytesFromBytes(grpcCertHashes[(int) address.nodeId()]),
@@ -537,6 +543,7 @@ public class SystemFileExportsTest {
 
                     final var expectedServiceEndpoint = endpointsFor((int) address.nodeId());
                     assertEquals(expectedServiceEndpoint, address.serviceEndpoint());
+                    prevNodeId = address.nodeId();
                 }
             } catch (ParseException e) {
                 Assertions.fail("Update contents was not protobuf " + e.getMessage());
