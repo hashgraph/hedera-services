@@ -196,11 +196,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             writeObjectByChildIndex(PLANNED_ISS_LIST_INDEX, plannedIssList);
             writeObjectByChildIndex(PLANNED_LOG_ERROR_LIST_INDEX, plannedLogErrorList);
         } else {
-            StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
+            final StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
             if (runningSumLeaf != null) {
                 runningSum = Long.parseLong(runningSumLeaf.getLabel());
             }
-            StringLeaf genesisTimestampLeaf = getChild(GENESIS_TIMESTAMP_INDEX);
+            final StringLeaf genesisTimestampLeaf = getChild(GENESIS_TIMESTAMP_INDEX);
             if (genesisTimestampLeaf != null) {
                 genesisTimestamp = Instant.parse(genesisTimestampLeaf.getLabel());
             }
@@ -213,14 +213,14 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                 Scratchpad.create(platform.getContext(), selfId, IssTestingToolScratchpad.class, "ISSTestingTool");
     }
 
-    <T extends SelfSerializable> List<T> readObjectByChildIndex(int index, Supplier<T> factory) {
-        StringLeaf stringValue = getChild(index);
+    <T extends SelfSerializable> List<T> readObjectByChildIndex(final int index, final Supplier<T> factory) {
+        final StringLeaf stringValue = getChild(index);
         if (stringValue != null) {
             try {
-                SerializableDataInputStream in = new SerializableDataInputStream(
+                final SerializableDataInputStream in = new SerializableDataInputStream(
                         new ByteArrayInputStream(stringValue.getLabel().getBytes(StandardCharsets.UTF_8)));
                 return in.readSerializableList(1024, false, factory);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         } else {
@@ -228,13 +228,13 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
-    <T extends SelfSerializable> void writeObjectByChildIndex(int index, List<T> list) {
+    <T extends SelfSerializable> void writeObjectByChildIndex(final int index, final List<T> list) {
         try {
-            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-            SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
+            final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
             out.writeSerializableList(list, false, true);
             setChild(index, new StringLeaf(byteOut.toString(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -250,7 +250,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             // specific for the platform only.We also don't want to consume deprecated
             // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
             // callback,since it's intended to be used only for the new form of encoded system
-            // transactions in Bytes. Thus, we can directly skip the current
+            // transactions in Bytes.Thus, we can directly skip the current
             // iteration, if it processes a deprecated system transaction with the
             // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
             if (transaction.isSystem()) {
@@ -285,7 +285,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                 // for the platform only.We also don't want to consume deprecated
                 // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
                 // callback,since it's intended to be used only for the new form of encoded system
-                // transactions in Bytes. Thus, we can directly skip the current
+                // transactions in Bytes.Thus, we can directly skip the current
                 // iteration, if it processes a deprecated system transaction with the
                 // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
                 if (transaction.isSystem()) {
