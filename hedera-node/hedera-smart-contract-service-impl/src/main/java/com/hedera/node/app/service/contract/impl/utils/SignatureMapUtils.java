@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.common;
+package com.hedera.node.app.service.contract.impl.utils;
 
 import static java.util.Objects.requireNonNull;
 
@@ -30,8 +30,8 @@ import java.util.List;
 /**
  * Some utility methods that are useful for processing system contracts.
  */
-public class SystemContractUtils {
-    private SystemContractUtils() {
+public class SignatureMapUtils {
+    private SignatureMapUtils() {
         // Utility class
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -49,8 +49,10 @@ public class SystemContractUtils {
         for (var spair : sigMap.sigPair()) {
             if (spair.hasEcdsaSecp256k1()) {
                 final var ecSig = requireNonNull(spair.ecdsaSecp256k1());
-                if (ecSig.length() == 65) {
-                    checkChainId(ecSig.toByteArray(), chainId);
+                if (ecSig.length() > 64) {
+                    if (!validChainId(ecSig.toByteArray(), chainId)) {
+                        throw new IllegalArgumentException("v value in ECDSA signature does not match chain ID");
+                    }
                     spair = new SignaturePair(
                             spair.pubKeyPrefix(), new OneOf<>(SignatureOneOfType.ECDSA_SECP256K1, ecSig.slice(0, 64)));
                 }
@@ -64,16 +66,19 @@ public class SystemContractUtils {
      * Check that the v value in an ECDSA signature matches the chain ID if it is greater than 35 per EIP 155
      * @param ecSig
      * @param chainId
+     * @return true if the v value matches the chain ID or is not relevant, false otherwise
      */
-    public static void checkChainId(final byte[] ecSig, final int chainId) {
-        final int v = ecSig[64];
+    public static boolean validChainId(final byte[] ecSig, final int chainId) {
+        int v = 0;
+        for (int i = 64; i < ecSig.length; i++) {
+            v <<= 8;
+            v |= (ecSig[i] & 0xFF);
+        }
         if (v >= 35) {
             // See EIP 155 - https://eips.ethereum.org/EIPS/eip-155
             final var chainIdParityZero = 35 + (chainId * 2);
-            if (v == chainIdParityZero || v == chainIdParityZero + 1) {
-                return;
-            }
-            throw new IllegalArgumentException("v value in ECDSA signature does not match chain ID");
+            return v == chainIdParityZero || v == chainIdParityZero + 1;
         }
+        return true;
     }
 }

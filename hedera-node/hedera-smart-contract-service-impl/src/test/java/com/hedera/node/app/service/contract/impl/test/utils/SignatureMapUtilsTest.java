@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common;
+package com.hedera.node.app.service.contract.impl.test.utils;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.SystemContractUtils.checkChainId;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.SystemContractUtils.preprocessEcdsaSignatures;
+import static com.hedera.node.app.service.contract.impl.utils.SignatureMapUtils.preprocessEcdsaSignatures;
+import static com.hedera.node.app.service.contract.impl.utils.SignatureMapUtils.validChainId;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.SignatureMap;
@@ -28,9 +27,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the SystemContractUtils class.
+ * Tests for the SignatureMapUtils class.
  */
-class SystemContractUtilsTest {
+class SignatureMapUtilsTest {
 
     @Test
     void testPreprocessEcdsaSignatures() {
@@ -73,21 +72,25 @@ class SystemContractUtilsTest {
         final var chainId = 199;
         final var ecSig = new byte[65];
         ecSig[64] = (byte) (35 + (chainId * 3));
-        assertThrows(IllegalArgumentException.class, () -> checkChainId(ecSig, chainId));
+        assertThat(validChainId(ecSig, chainId)).isFalse();
     }
 
     @Test
     void testCorrectChainId() {
         final var chainId = 199;
-        final var ecSig = new byte[65];
-        ecSig[64] = (byte) (35 + (chainId * 2));
-        assertDoesNotThrow(() -> checkChainId(ecSig, chainId));
+        int v = 35 + (chainId * 2);
+        // distribute the v value across the last two bytes
+        final var ecSig = new byte[66];
+        ecSig[65] = (byte) (v & 0xFF);
+        v >>= 8;
+        ecSig[64] = (byte) (v & 0xFF);
+        assertThat(validChainId(ecSig, chainId)).isTrue();
     }
 
     @Test
     void testChainIdBelow35() {
         final var ecSig = new byte[65];
         ecSig[64] = 34;
-        assertDoesNotThrow(() -> checkChainId(ecSig, 0));
+        assertThat(validChainId(ecSig, 0)).isTrue();
     }
 }

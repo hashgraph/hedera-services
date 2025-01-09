@@ -18,9 +18,10 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signs
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.SystemContractUtils.preprocessEcdsaSignatures;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.SignatureMapUtils.preprocessEcdsaSignatures;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.messageFromScheduleId;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.pbj.runtime.io.buffer.Bytes.wrap;
 import static java.util.Objects.requireNonNull;
@@ -51,7 +52,6 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Inject;
@@ -189,19 +189,15 @@ public class SignScheduleTranslator extends AbstractCallTranslator<HssCallAttemp
         return attempt.keySetFor();
     }
 
+    @VisibleForTesting
     @NonNull
-    private static Set<Key> getKeyForSignSchedule(@NonNull HssCallAttempt attempt) {
+    public static Set<Key> getKeyForSignSchedule(@NonNull HssCallAttempt attempt) {
         requireNonNull(attempt);
         final Set<Key> keys = new HashSet<>();
         final var call = SIGN_SCHEDULE.decodeCall(attempt.inputBytes());
         final var scheduleId = requireNonNull(getScheduleIDFromCall(attempt, call));
 
-        // compute the message as the concatenation of the realm, shard, and schedule numbers
-        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
-        buffer.putLong(scheduleId.shardNum());
-        buffer.putLong(scheduleId.realmNum());
-        buffer.putLong(scheduleId.scheduleNum());
-        final Bytes message = Bytes.wrap(buffer.array());
+        final var message = messageFromScheduleId(scheduleId);
 
         final var signatureBlob = (byte[]) call.get(SIGNATURE_MAP_INDEX);
         try {

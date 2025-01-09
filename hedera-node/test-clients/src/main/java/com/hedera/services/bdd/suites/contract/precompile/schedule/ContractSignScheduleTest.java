@@ -57,12 +57,15 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.utils.Signing;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -248,17 +251,14 @@ public class ContractSignScheduleTest {
     class SignScheduleFromContractTest {
         private static final AtomicReference<ScheduleID> scheduleID_G = new AtomicReference<>();
         private static final AtomicReference<ScheduleID> scheduleID_H = new AtomicReference<>();
-        private static final String CONTRACT_CONTROLLED = "contractControlled";
-        private static final String SIGN_SCHEDULE = "signSchedule";
-        private static final String IHRC755 = "IHRC755";
         private static final String SCHEDULE_G = "testScheduleG";
         private static final String SCHEDULE_H = "testScheduleH";
+        private static final String ED_SENDER = "EdSender";
+        private static final String ECDSA_RECEIVER_KEY = "EcdsaReceiverKey";
+        private static final String ED_RECEIVER = "EdReceiver";
 
         @BeforeAll
         static void beforeAll(final TestLifecycle testLifecycle) {
-            final String ECDSA_RECEIVER_KEY = "EcdsaReceiverKey";
-            final String ED_SENDER = "EdSender";
-            final String ED_RECEIVER = "EdReceiver";
             testLifecycle.doAdhoc(
                     overriding("contracts.systemContract.scheduleService.enabled", "true"),
                     overriding("contracts.systemContract.scheduleService.signSchedule.enabled", "true"),
@@ -283,33 +283,10 @@ public class ContractSignScheduleTest {
         final Stream<DynamicTest> signScheduleWithContractEcdsaKey() {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_G).isNotExecuted(),
-                    withOpContext((spec, opLog) -> {
-                        final var message = getMessageBytes(scheduleID_G);
-                        final var messageHash = new Keccak.Digest256().digest(message.toByteArray());
-
-                        final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
-                        final var publicKey = spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
-                        final var signedBytes = Signing.signMessage(messageHash, privateKey);
-
-                        final var signatureMap = SignatureMap.newBuilder()
-                                .sigPair(SignaturePair.newBuilder()
-                                        .ecdsaSecp256k1(Bytes.wrap(signedBytes))
-                                        .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
-                                        .build())
-                                .build();
-
-                        final var signatureMapBytes =
-                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
-
-                        final var call = contractCall(
-                                        CONTRACT,
-                                        SIGN_SCHEDULE_CALL,
-                                        mirrorAddrWith(scheduleID_G.get().getScheduleNum()),
-                                        signatureMapBytes)
-                                .gas(2_000_000L);
-                        allRunFor(spec, call);
-                    }),
-                    getScheduleInfo(SCHEDULE_G).isExecuted());
+                    signWithEd(scheduleID_G, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                    getScheduleInfo(SCHEDULE_G).isNotExecuted().hasSignatories(GENESIS),
+                    signWithEcdsa(scheduleID_G, ResponseCodeEnum.SUCCESS),
+                    getScheduleInfo(SCHEDULE_G).isExecuted().hasSignatories(GENESIS, ECDSA_KEY));
         }
 
         @HapiTest
@@ -317,32 +294,71 @@ public class ContractSignScheduleTest {
         final Stream<DynamicTest> signScheduleWithContractEdKey() {
             return hapiTest(
                     getScheduleInfo(SCHEDULE_H).isNotExecuted(),
-                    withOpContext((spec, opLog) -> {
-                        final var message = getMessageBytes(scheduleID_H);
+                    signWithEcdsa(scheduleID_H, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                    getScheduleInfo(SCHEDULE_H).isNotExecuted().hasSignatories(GENESIS),
+                    signWithEd(scheduleID_H, ResponseCodeEnum.SUCCESS),
+                    getScheduleInfo(SCHEDULE_H).isExecuted().hasSignatories(GENESIS, ED25519KEY));
+        }
 
-                        final var privateKey = getEd25519PrivateKeyFromSpec(spec, ED25519KEY);
-                        final var publicKey = spec.registry().getKey(ED25519KEY).getEd25519();
-                        final var signedBytes = SignatureGenerator.signBytes(message.toByteArray(), privateKey);
+        private @NotNull CustomSpecAssert signWithEd(
+                final AtomicReference<ScheduleID> scheduleID, final ResponseCodeEnum expectedStatus) {
+            return withOpContext((spec, opLog) -> {
+                final var message = getMessageBytes(scheduleID);
 
-                        final var signatureMap = SignatureMap.newBuilder()
-                                .sigPair(SignaturePair.newBuilder()
-                                        .ed25519(Bytes.wrap(signedBytes))
-                                        .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
-                                        .build())
-                                .build();
+                final var privateKey = getEd25519PrivateKeyFromSpec(spec, ED25519KEY);
+                final var publicKey = spec.registry().getKey(ED25519KEY).getEd25519();
+                final var signedBytes = SignatureGenerator.signBytes(message.toByteArray(), privateKey);
 
-                        final var signatureMapBytes =
-                                SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+                final var signatureMap = SignatureMap.newBuilder()
+                        .sigPair(SignaturePair.newBuilder()
+                                .ed25519(Bytes.wrap(signedBytes))
+                                .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
+                                .build())
+                        .build();
 
-                        final var call = contractCall(
-                                        CONTRACT,
-                                        SIGN_SCHEDULE_CALL,
-                                        mirrorAddrWith(scheduleID_H.get().getScheduleNum()),
-                                        signatureMapBytes)
-                                .gas(2_000_000L);
-                        allRunFor(spec, call);
-                    }),
-                    getScheduleInfo(SCHEDULE_H).isExecuted());
+                final var signatureMapBytes =
+                        SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                final var call = contractCall(
+                                CONTRACT,
+                                SIGN_SCHEDULE_CALL,
+                                mirrorAddrWith(scheduleID.get().getScheduleNum()),
+                                signatureMapBytes)
+                        .gas(2_000_000L)
+                        .hasKnownStatus(expectedStatus);
+                allRunFor(spec, call);
+            });
+        }
+
+        private @NotNull CustomSpecAssert signWithEcdsa(
+                final AtomicReference<ScheduleID> scheduleID, final ResponseCodeEnum expectedStatus) {
+            return withOpContext((spec, opLog) -> {
+                final var message = getMessageBytes(scheduleID);
+                final var messageHash = new Keccak.Digest256().digest(message.toByteArray());
+
+                final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                final var publicKey = spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1();
+                final var signedBytes = Signing.signMessage(messageHash, privateKey);
+
+                final var signatureMap = SignatureMap.newBuilder()
+                        .sigPair(SignaturePair.newBuilder()
+                                .ecdsaSecp256k1(Bytes.wrap(signedBytes))
+                                .pubKeyPrefix(Bytes.wrap(publicKey.toByteArray()))
+                                .build())
+                        .build();
+
+                final var signatureMapBytes =
+                        SignatureMap.PROTOBUF.toBytes(signatureMap).toByteArray();
+
+                final var call = contractCall(
+                                CONTRACT,
+                                SIGN_SCHEDULE_CALL,
+                                mirrorAddrWith(scheduleID.get().getScheduleNum()),
+                                signatureMapBytes)
+                        .gas(2_000_000L)
+                        .hasKnownStatus(expectedStatus);
+                allRunFor(spec, call);
+            });
         }
 
         private Bytes getMessageBytes(AtomicReference<ScheduleID> scheduleID) {
