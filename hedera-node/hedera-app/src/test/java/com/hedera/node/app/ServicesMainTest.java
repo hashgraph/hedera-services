@@ -38,6 +38,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -62,6 +63,11 @@ final class ServicesMainTest {
     private PlatformMerkleStateRoot merkleStateRoot;
 
     private final ServicesMain subject = new ServicesMain();
+
+    @AfterAll
+    static void afterAll() {
+        legacyConfigPropertiesLoaderMockedStatic.close();
+    }
 
     // no local nodes specified, no environment nodes specified
     @Test

@@ -442,6 +442,8 @@ public class ServicesMain implements SwirldMain {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
             exitSystem(CONFIGURATION_ERROR);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw e;
         }
     }
