@@ -801,8 +801,12 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * @return True if there is a leaf corresponding to this key.
      */
     public boolean containsKey(final Bytes key) {
+        return containsKey(key, key.hashCode());
+    }
+
+    public boolean containsKey(final Bytes key, final int legacyKeyHashCode) {
         requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
-        final long path = records.findKey(key);
+        final long path = records.findKey(key, legacyKeyHashCode);
         statistics.countReadEntities();
         return path != INVALID_PATH;
     }
@@ -814,10 +818,15 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * 		The key. This must not be null.
      * @return The value. The value may be null, or will be read only.
      */
-    @SuppressWarnings("unchecked")
     public <V> V get(@NonNull final Bytes key, final Codec<V> valueCodec) {
+        return get(key, key.hashCode(), valueCodec);
+    }
+
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public <V> V get(@NonNull final Bytes key, final int legacyKeyHashCode, final Codec<V> valueCodec) {
         requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
-        final VirtualLeafBytes<V> rec = records.findLeafRecord(key);
+        final VirtualLeafBytes<V> rec = records.findLeafRecord(key, legacyKeyHashCode);
         statistics.countReadEntities();
         return rec == null ? null : rec.value(valueCodec);
     }
@@ -825,7 +834,7 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
     @SuppressWarnings("rawtypes")
     public Bytes getBytes(@NonNull final Bytes key) {
         requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
-        final VirtualLeafBytes rec = records.findLeafRecord(key);
+        final VirtualLeafBytes rec = records.findLeafRecord(key, key.hashCode());
         statistics.countReadEntities();
         return rec == null ? null : rec.valueBytes();
     }
@@ -844,21 +853,36 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
         put(key, value, valueCodec, null);
     }
 
+    @Deprecated
+    public <V> void put(final Bytes key, final int legacyKeyHashCode, final V value, final Codec<V> valueCodec) {
+        put(key, legacyKeyHashCode, value, valueCodec, null);
+    }
+
     public void putBytes(final Bytes key, final Bytes valueBytes) {
         put(key, null, null, valueBytes);
     }
 
     public <V> void put(final Bytes key, final V value, final Codec<V> valueCodec, final Bytes valueBytes) {
+        put(key, key.hashCode(), value, valueCodec, valueBytes);
+    }
+
+    @Deprecated
+    public <V> void put(
+            final Bytes key,
+            final int legacyKeyHashCode,
+            final V value,
+            final Codec<V> valueCodec,
+            final Bytes valueBytes) {
         throwIfImmutable();
         assert !isHashed() : "Cannot modify already hashed node";
         assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
             requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
 
-            final long path = records.findKey(key);
+            final long path = records.findKey(key, legacyKeyHashCode);
             if (path == INVALID_PATH) {
                 // The key is not stored. So add a new entry and return.
-                add(key, value, valueCodec, valueBytes);
+                add(key, legacyKeyHashCode, value, valueCodec, valueBytes);
                 statistics.countAddedEntities();
                 statistics.setSize(state.size());
                 return;
@@ -884,14 +908,19 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      *                   always returns null
      * @return The removed value. May return null if there was no value to remove or if the value was null.
      */
-    @SuppressWarnings("unchecked")
     public <V> V remove(@NonNull final Bytes key, @Nullable final Codec<V> valueCodec) {
+        return remove(key, key.hashCode(), valueCodec);
+    }
+
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public <V> V remove(@NonNull final Bytes key, final int legacyKeyHashCode, @Nullable final Codec<V> valueCodec) {
         throwIfImmutable();
         requireNonNull(key);
         assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
         try {
             // Verify whether the current leaf exists. If not, we can just return null.
-            VirtualLeafBytes<V> leafToDelete = records.findLeafRecord(key);
+            VirtualLeafBytes<V> leafToDelete = records.findLeafRecord(key, legacyKeyHashCode);
             if (leafToDelete == null) {
                 return null;
             }
@@ -1615,7 +1644,12 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * @param key key to the leaf node
      */
     public void warm(final Bytes key) {
-        records.findLeafRecord(key);
+        warm(key, key.hashCode());
+    }
+
+    @Deprecated
+    public void warm(final Bytes key, final int legacyKeyHashCode) {
+        records.findLeafRecord(key, legacyKeyHashCode);
     }
 
     ////////////////////////
@@ -1630,7 +1664,12 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
      * @param value
      * 		The value to add. May be null.
      */
-    private <V> void add(final Bytes key, final V value, final Codec<V> valueCodec, final Bytes valueBytes) {
+    private <V> void add(
+            final Bytes key,
+            final int legacyKeyHashCode,
+            final V value,
+            final Codec<V> valueCodec,
+            final Bytes valueBytes) {
         throwIfImmutable();
         assert !isHashed() : "Cannot modify already hashed node";
 
@@ -1708,8 +1747,8 @@ public final class VirtualRootNode extends PartialBinaryMerkleInternal
 
         // FUTURE WORK: make VirtualLeafBytes.<init>(path, key, value, codec, bytes) public?
         final VirtualLeafBytes<V> newLeaf = valueCodec != null
-                ? new VirtualLeafBytes<>(leafPath, key, value, valueCodec)
-                : new VirtualLeafBytes<>(leafPath, key, valueBytes);
+                ? new VirtualLeafBytes<>(leafPath, key, legacyKeyHashCode, value, valueCodec)
+                : new VirtualLeafBytes<>(leafPath, key, legacyKeyHashCode, valueBytes);
         cache.putLeaf(newLeaf, true);
     }
 

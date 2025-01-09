@@ -31,6 +31,7 @@ import com.swirlds.state.spi.metrics.StoreMetrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * An implementation of {@link WritableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -75,7 +76,9 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected V readFromDataSource(@NonNull K key) {
         final var kb = keyCodec.toBytes(key);
-        final var value = virtualMap.get(kb, valueCodec);
+        // FUTURE work: remove legacy hash code
+        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
+        final var value = virtualMap.get(kb, legacyKeyHashCode, valueCodec);
         // Log to transaction state log, what was read
         logMapGet(getStateKey(), key, value);
         return value;
@@ -95,10 +98,12 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         final Bytes kb = keyCodec.toBytes(key);
         assert kb != null;
+        // FUTURE work: remove legacy hash code
+        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
         // If we expect a lot of empty values, Bytes.EMPTY optimization below may be helpful, but
         // for now it just adds a call to measureRecord(), but benefits are unclear
         // final Bytes v = valueCodec.measureRecord(value) == 0 ? Bytes.EMPTY : valueCodec.toBytes(value);
-        virtualMap.put(kb, value, valueCodec);
+        virtualMap.put(kb, legacyKeyHashCode, value, valueCodec);
         // Log to transaction state log, what was put
         logMapPut(getStateKey(), key, value);
     }
@@ -107,7 +112,9 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected void removeFromDataSource(@NonNull K key) {
         final var k = keyCodec.toBytes(key);
-        final var removed = virtualMap.remove(k, valueCodec);
+        // FUTURE work: remove legacy hash code
+        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
+        final var removed = virtualMap.remove(k, legacyKeyHashCode, valueCodec);
         // Log to transaction state log, what was removed
         logMapRemove(getStateKey(), key, removed);
     }

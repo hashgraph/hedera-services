@@ -16,6 +16,7 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
@@ -70,7 +71,8 @@ public class HalfDiskMapBench extends BaseBench {
             for (int j = 0; j < numRecords; ++j) {
                 long id = nextAscKey();
                 long value = nextValue();
-                store.put(BenchmarkKey.longToKey(id), value);
+                final Bytes key = BenchmarkKey.longToKey(id);
+                store.put(key, key.hashCode(), value);
                 if (verify) map[(int) id] = value;
             }
             store.endWriting();
@@ -86,7 +88,8 @@ public class HalfDiskMapBench extends BaseBench {
         if (verify) {
             start = System.currentTimeMillis();
             for (int id = 0; id < map.length; ++id) {
-                long value = store.get(BenchmarkKey.longToKey(id), INVALID_PATH);
+                final Bytes key = BenchmarkKey.longToKey(id);
+                long value = store.get(key, key.hashCode(), INVALID_PATH);
                 if (value != map[id]) {
                     throw new RuntimeException("Bad value");
                 }

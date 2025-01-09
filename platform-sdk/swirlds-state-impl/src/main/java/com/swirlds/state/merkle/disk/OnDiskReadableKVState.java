@@ -27,6 +27,7 @@ import com.swirlds.state.spi.ReadableKVStateBase;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -69,7 +70,9 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     protected V readFromDataSource(@NonNull K key) {
         final var kb = keyCodec.toBytes(key);
-        final var value = virtualMap.get(kb, valueCodec);
+        // FUTURE work: remove legacy hash code
+        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
+        final var value = virtualMap.get(kb, legacyKeyHashCode, valueCodec);
         // Log to transaction state log, what was read
         logMapGet(getStateKey(), key, value);
         return value;
@@ -95,6 +98,9 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
 
     @Override
     public void warm(@NonNull final K key) {
-        virtualMap.warm(keyCodec.toBytes(key));
+        final var kb = keyCodec.toBytes(key);
+        // FUTURE work: remove legacy hash code
+        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
+        virtualMap.warm(kb, legacyKeyHashCode);
     }
 }

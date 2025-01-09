@@ -66,14 +66,18 @@ public interface RecordAccessor {
      * it in memory, set <code>cache</code> to true. If the key cannot be found in
      * the data source, then null is returned.
      *
-     * @param key
-     * 		The key. Must not be null.
+     * @param key The key. Must not be null.
      * @return The leaf, or null if there is not one.
      * @throws UncheckedIOException
      * 		If we fail to access the data store, then a catastrophic error occurred and
      * 		an UncheckedIOException is thrown.
      */
     VirtualLeafBytes findLeafRecord(final Bytes key);
+
+    @Deprecated
+    default VirtualLeafBytes findLeafRecord(final Bytes key, final int legacyKeyHashCode) {
+        return findLeafRecord(key);
+    }
 
     /**
      * Locates and returns a leaf node based on the path. If the leaf
@@ -93,11 +97,15 @@ public interface RecordAccessor {
 
     /**
      * Finds the path of the given key.
-     * @param key
-     * 		The key. Must not be null.
+     * @param key The key. Must not be null.
      * @return The path or INVALID_PATH if the key is not found.
      */
     long findKey(final Bytes key);
+
+    @Deprecated
+    default long findKey(final Bytes key, final int legacyKeyHashCode) {
+        return findKey(key);
+    }
 
     /**
      * Gets the data source backed by this {@link RecordAccessor}

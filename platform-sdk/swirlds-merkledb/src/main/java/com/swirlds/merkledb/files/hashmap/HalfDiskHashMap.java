@@ -402,7 +402,13 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @param value the value to store for given key
      */
     public void put(final Bytes keyBytes, final long value) {
-        final int keyHashCode = keyBytes.hashCode();
+        put(keyBytes, keyBytes.hashCode(), value);
+    }
+
+    @Deprecated
+    public void put(final Bytes keyBytes, final int keyHashCode, final long value) {
+        // FUTURE WORK: use keyBytes.hashCode() instead of legacy key hash code
+        // final int keyHashCode = keyBytes.hashCode();
         final BucketMutation bucketMap = findBucketForUpdate(keyBytes, keyHashCode, INVALID_VALUE, value);
         bucketMap.put(keyBytes, keyHashCode, value);
     }
@@ -426,7 +432,13 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @param value the value to store for the given key
      */
     public void putIfEqual(final Bytes keyBytes, final long oldValue, final long value) {
-        final int keyHashCode = keyBytes.hashCode();
+        putIfEqual(keyBytes, keyBytes.hashCode(), oldValue, value);
+    }
+
+    @Deprecated
+    public void putIfEqual(final Bytes keyBytes, final int keyHashCode, final long oldValue, final long value) {
+        // FUTURE WORK: use keyBytes.hashCode() instead of legacy key hash code
+        // final int keyHashCode = keyBytes.hashCode();
         final BucketMutation bucketMap = findBucketForUpdate(keyBytes, keyHashCode, oldValue, value);
         bucketMap.putIfEqual(keyBytes, keyHashCode, oldValue, value);
     }
@@ -437,7 +449,12 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @param keyBytes The key to delete entry for
      */
     public void delete(final Bytes keyBytes) {
-        put(keyBytes, INVALID_VALUE);
+        delete(keyBytes, keyBytes.hashCode());
+    }
+
+    @Deprecated
+    public void delete(final Bytes keyBytes, final int keyHashCode) {
+        put(keyBytes, keyHashCode, INVALID_VALUE);
     }
 
     /**
@@ -450,7 +467,12 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      *                 if no current value check is needed
      */
     public void deleteIfEqual(final Bytes keyBytes, final long oldValue) {
-        putIfEqual(keyBytes, oldValue, INVALID_VALUE);
+        deleteIfEqual(keyBytes, keyBytes.hashCode(), oldValue);
+    }
+
+    @Deprecated
+    public void deleteIfEqual(final Bytes keyBytes, final int keyHashCode, final long oldValue) {
+        putIfEqual(keyBytes, keyHashCode, oldValue, INVALID_VALUE);
     }
 
     /**
@@ -737,10 +759,16 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
      * @throws IOException If there was a problem reading from the map
      */
     public long get(final Bytes keyBytes, final long notFoundValue) throws IOException {
+        return get(keyBytes, keyBytes.hashCode(), notFoundValue);
+    }
+
+    @Deprecated
+    public long get(final Bytes keyBytes, final int keyHashCode, final long notFoundValue) throws IOException {
         if (keyBytes == null) {
             throw new IllegalArgumentException("Can not get a null key");
         }
-        final int keyHashCode = keyBytes.hashCode();
+        // FUTURE WORK: use keyBytes.hashCode() instead of legacy key hash code
+        // final int keyHashCode = keyBytes.hashCode();
         final int bucketIndex = computeBucketIndex(keyHashCode);
         try (final Bucket bucket = readBucket(bucketIndex)) {
             if (bucket != null) {
