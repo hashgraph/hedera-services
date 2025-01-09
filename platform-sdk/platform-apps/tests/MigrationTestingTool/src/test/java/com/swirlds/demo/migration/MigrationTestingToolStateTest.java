@@ -156,8 +156,6 @@ public class MigrationTestingToolStateTest {
         final var eventCore = mock(EventCore.class);
         when(gossipEvent.eventCore()).thenReturn(eventCore);
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
-        when(eventCore.creatorNodeId()).thenReturn(1L);
-        when(eventCore.parents()).thenReturn(Collections.emptyList());
         final var eventTransaction = mock(EventTransaction.class);
         final var secondEventTransaction = mock(EventTransaction.class);
         final var thirdEventTransaction = mock(EventTransaction.class);
@@ -178,10 +176,6 @@ public class MigrationTestingToolStateTest {
         when(gossipEvent.eventTransaction())
                 .thenReturn(List.of(eventTransaction, secondEventTransaction, thirdEventTransaction));
         event = new PlatformEvent(gossipEvent);
-        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(transaction.getApplicationTransaction()).thenReturn(transactionBytes);
-        when(secondEventTransaction.applicationTransaction()).thenReturn(transactionBytes);
-        when(thirdEventTransaction.applicationTransaction()).thenReturn(transactionBytes);
 
         state.preHandle(event, consumer);
 
@@ -193,8 +187,6 @@ public class MigrationTestingToolStateTest {
         final var gossipEvent = mock(GossipEvent.class);
         final var eventCore = mock(EventCore.class);
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
-        when(eventCore.creatorNodeId()).thenReturn(1L);
-        when(eventCore.parents()).thenReturn(Collections.emptyList());
         final var eventTransaction = mock(EventTransaction.class);
         when(gossipEvent.eventCore()).thenReturn(eventCore);
         when(gossipEvent.eventTransaction()).thenReturn(List.of(eventTransaction));
@@ -208,11 +200,7 @@ public class MigrationTestingToolStateTest {
         final var systemTransactionWithType =
                 new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, transactionBytes);
         when(eventTransaction.transaction()).thenReturn(systemTransactionWithType);
-
         event = new PlatformEvent(gossipEvent);
-
-        when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
-        when(transaction.getApplicationTransaction()).thenReturn(transactionBytes);
 
         state.preHandle(event, consumer);
 
