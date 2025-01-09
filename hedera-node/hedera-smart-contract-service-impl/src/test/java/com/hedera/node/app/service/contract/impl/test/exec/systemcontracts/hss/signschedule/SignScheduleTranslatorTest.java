@@ -25,11 +25,15 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesFo
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfig;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
+import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ECDSA_WITH_ALIAS_KEY_INFOS;
+import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ED25519_KEY_INFOS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.identityconnectors.common.ByteUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -38,6 +42,8 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
@@ -53,8 +59,10 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -449,5 +457,151 @@ class SignScheduleTranslatorTest {
 
         final var returnedScheduleId = subject.scheduleIdFor(attempt);
         assertThat(returnedScheduleId).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testGetKeysForSignScheduleWhenVerified() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+        given(signatureVerifier.verifySignature(any(), any(), any(), any(), any()))
+                .willReturn(true);
+
+        final var sigMapBytes = getSigMapKnownKeyTypeBytes(296);
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
+
+        assertThat(keySet)
+                .contains(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey())
+                .contains(FAKE_ED25519_KEY_INFOS[0].publicKey());
+    }
+
+    @Test
+    void testGetKeysForSignScheduleWhenNotVerified() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+        given(signatureVerifier.verifySignature(any(), any(), any(), any(), any()))
+                .willReturn(false);
+
+        final var sigMapBytes = getSigMapKnownKeyTypeBytes(296);
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
+
+        assertThat(keySet).isEmpty();
+    }
+
+    @Test
+    void testGetKeysForSignScheduleThrowsWhenWrongChainId() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+
+        final var sigMapBytes = getSigMapKnownKeyTypeBytes(396);
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        assertThrows(HandleException.class, () -> SignScheduleTranslator.getKeyForSignSchedule(attempt));
+    }
+
+    @Test
+    void testGetKeysForSignScheduleWhenUnknownKeyType() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+
+        final var sigMapBytes = getSigMapUnknownKeyTypeBytes();
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                configuration);
+
+        final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
+
+        assertThat(keySet).isEmpty();
+    }
+
+    private static com.hedera.pbj.runtime.io.buffer.Bytes getSigMapKnownKeyTypeBytes(final int chainId) {
+        final var prefixEcdsa = FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey().ecdsaSecp256k1OrThrow();
+        final var signatureEcdsa = randomBytes(66);
+
+        int v = 35 + (chainId * 2);
+        final var ecSig = new byte[66];
+        signatureEcdsa[65] = (byte) (v & 0xFF);
+        v >>= 8;
+        signatureEcdsa[64] = (byte) (v & 0xFF);
+
+        final var prefixEd = FAKE_ED25519_KEY_INFOS[0].publicKey().ed25519OrThrow();
+        final var signatureEd = randomBytes(64);
+        final var sigMap = SignatureMap.newBuilder()
+                .sigPair(List.of(
+                        SignaturePair.newBuilder()
+                                .pubKeyPrefix(prefixEcdsa)
+                                .ecdsaSecp256k1(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEcdsa))
+                                .build(),
+                        SignaturePair.newBuilder()
+                                .pubKeyPrefix(prefixEd)
+                                .ed25519(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEd))
+                                .build()))
+                .build();
+
+        return SignatureMap.PROTOBUF.toBytes(sigMap);
+    }
+
+    private static com.hedera.pbj.runtime.io.buffer.Bytes getSigMapUnknownKeyTypeBytes() {
+        final var prefixEcdsa = FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey().ecdsaSecp256k1OrThrow();
+        final var signatureEcdsa = randomBytes(64);
+        final var prefixEd = FAKE_ED25519_KEY_INFOS[0].publicKey().ed25519OrThrow();
+        final var signatureEd = randomBytes(64);
+        final var sigMap = SignatureMap.newBuilder()
+                .sigPair(List.of(SignaturePair.newBuilder()
+                        .pubKeyPrefix(prefixEcdsa)
+                        .rsa3072(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEcdsa))
+                        .build()))
+                .build();
+
+        return SignatureMap.PROTOBUF.toBytes(sigMap);
     }
 }
