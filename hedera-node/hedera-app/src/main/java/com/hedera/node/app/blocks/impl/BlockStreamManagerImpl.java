@@ -67,7 +67,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
@@ -220,7 +220,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         endRoundStateHashes.put(round.getRoundNum(), new CompletableFuture<>());
 
         final var platformState = state.getReadableStates(PlatformStateService.NAME)
-                .<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY)
+                .<PlatformState>getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY)
                 .get();
         requireNonNull(platformState);
         if (isFreezeRound(platformState, round)) {

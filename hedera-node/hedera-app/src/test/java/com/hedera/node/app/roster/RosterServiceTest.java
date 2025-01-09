@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.roster.schemas.RosterTransplantSchema;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V0590RosterSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -66,7 +66,7 @@ class RosterServiceTest {
         verify(schemaRegistry).register(captor.capture());
         final var schemas = captor.getAllValues();
         assertThat(schemas).hasSize(1);
-        assertThat(schemas.getFirst()).isInstanceOf(V0540RosterSchema.class);
+        assertThat(schemas.getFirst()).isInstanceOf(V0590RosterSchema.class);
         assertThat(schemas.getFirst()).isInstanceOf(RosterTransplantSchema.class);
     }
 

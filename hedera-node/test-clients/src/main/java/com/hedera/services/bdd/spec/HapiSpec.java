@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;

@@ -21,8 +21,8 @@ import static com.hedera.node.app.info.DiskStartupNetworks.ARCHIVE;
 import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static com.hedera.node.app.info.DiskStartupNetworks.OVERRIDE_NETWORK_JSON;
 import static com.hedera.node.app.info.DiskStartupNetworks.fromLegacyAddressBook;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.FAKE_NETWORK_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutorsTest.NO_OP_METRICS;
@@ -277,7 +277,7 @@ class DiskStartupNetworksTest {
         final var servicesRegistry = new FakeServicesRegistry();
         final var tssBaseService = new TssBaseServiceImpl();
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
-        PLATFORM_STATE_SERVICE.setDiskAddressBook(new AddressBook());
+        RosterService.setDiskAddressBook(RosterUtils.buildAddressBook(RosterUtils.rosterFrom(network)));
         Set.of(
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,

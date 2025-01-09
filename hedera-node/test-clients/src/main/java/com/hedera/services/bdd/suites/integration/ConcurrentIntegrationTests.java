@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package com.hedera.services.bdd.suites.integration;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MANIPULATES_EVENT_VERSION;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;

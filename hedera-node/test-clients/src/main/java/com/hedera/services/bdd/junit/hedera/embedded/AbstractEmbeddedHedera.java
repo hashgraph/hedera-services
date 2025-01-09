@@ -21,7 +21,7 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;

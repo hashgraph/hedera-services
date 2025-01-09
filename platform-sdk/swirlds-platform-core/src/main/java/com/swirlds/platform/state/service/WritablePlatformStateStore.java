@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -59,7 +59,7 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(writableStates, versionFactory);
         this.writableStates = writableStates;
-        this.state = writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+        this.state = writableStates.getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY);
     }
 
     /**
@@ -70,7 +70,7 @@ public class WritablePlatformStateStore extends ReadablePlatformStateStore imple
     public WritablePlatformStateStore(@NonNull final WritableStates writableStates) {
         super(writableStates);
         this.writableStates = writableStates;
-        this.state = writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+        this.state = writableStates.getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY);
     }
 
     /**

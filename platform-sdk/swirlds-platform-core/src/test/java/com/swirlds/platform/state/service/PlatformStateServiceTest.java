@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V058RosterLifecycleTransitionSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -54,21 +53,20 @@ class PlatformStateServiceTest {
         given(registry.register(captor.capture())).willReturn(registry);
         PLATFORM_STATE_SERVICE.registerSchemas(registry);
         final var schemas = captor.getAllValues();
-        assertEquals(2, schemas.size());
-        assertInstanceOf(V0540PlatformStateSchema.class, schemas.getFirst());
-        assertInstanceOf(V058RosterLifecycleTransitionSchema.class, schemas.getLast());
+        assertEquals(1, schemas.size());
+        assertInstanceOf(V0590PlatformStateSchema.class, schemas.getFirst());
     }
 
     @Test
     void emptyRootIsAtGenesis() {
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+        given(root.findNodeIndex(PlatformStateService.NAME, V0590PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(-1);
         assertNull(PLATFORM_STATE_SERVICE.creationVersionOf(root));
     }
 
     @Test
     void rootWithPlatformStateGetsVersionFromPlatformState() {
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+        given(root.findNodeIndex(PlatformStateService.NAME, V0590PlatformStateSchema.PLATFORM_STATE_KEY))
                 .willReturn(0);
         given(root.getChild(0)).willReturn(platformState);
         given(platformState.getValue())

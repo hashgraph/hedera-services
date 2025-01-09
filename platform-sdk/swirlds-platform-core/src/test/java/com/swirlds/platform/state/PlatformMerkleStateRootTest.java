@@ -50,7 +50,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -929,10 +929,10 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             stateRoot.updatePlatformState(randomPlatformState);
             ReadableSingletonState<PlatformState> readableSingletonState = stateRoot
                     .getReadableStates(PlatformStateService.NAME)
-                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+                    .getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY);
             WritableSingletonState<PlatformState> writableSingletonState = stateRoot
                     .getWritableStates(PlatformStateService.NAME)
-                    .getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+                    .getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY);
 
             assertThat(readableSingletonState.get()).isEqualTo(toPbjPlatformState(randomPlatformState));
             assertThat(writableSingletonState.get()).isEqualTo(toPbjPlatformState(randomPlatformState));
@@ -945,7 +945,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             stateRoot.updatePlatformState(randomPlatformState);
             WritableStates writableStates = stateRoot.getWritableStates(PlatformStateService.NAME);
             WritableSingletonState<PlatformState> writableSingletonState =
-                    writableStates.getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
+                    writableStates.getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY);
             PlatformStateModifier newPlatformState = randomPlatformState(stateRoot.getWritablePlatformState());
             writableSingletonState.put(toPbjPlatformState(newPlatformState));
             ((CommittableWritableStates) writableStates).commit();

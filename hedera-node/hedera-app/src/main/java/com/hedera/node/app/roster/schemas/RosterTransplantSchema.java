@@ -50,6 +50,7 @@ public interface RosterTransplantSchema {
      * Restart the {@link RosterService} by copying any roster overrides from the startup assets into the state.
      * @param ctx the migration context
      * @param rosterStoreFactory the factory to use to create the writable roster store
+     * @return true if the override network configuration is present and thus has been applied to the state
      */
     default boolean restart(
             @NonNull final MigrationContext ctx,
