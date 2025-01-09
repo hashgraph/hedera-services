@@ -16,16 +16,26 @@
 
 package com.swirlds.demo.consistency;
 
+import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,8 +65,8 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link ConsistencyTestingToolStateLifecycles#onHandleConsensusRound(Round, ConsistencyTestingToolState)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link ConsistencyTestingToolStateLifecycles#onHandleConsensusRound(Round, ConsistencyTestingToolState)} for rounds with no events.
+     * {@link ConsistencyTestingToolStateLifecycles#onHandleConsensusRound(Round, ConsistencyTestingToolState, Consumer < ScopedSystemTransaction < StateSignatureTransaction >>)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link ConsistencyTestingToolStateLifecycles#onHandleConsensusRound(Round, ConsistencyTestingToolState, Consumer<ScopedSystemTransaction<StateSignatureTransaction>>)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -64,17 +74,36 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
     private long roundsHandled = 0;
 
     /**
+     * The history of transactions that have been handled by this app.
+     * <p>
+     * A deep copy of this object is NOT created when this state is copied. This object does not affect the hash of this
+     * node.
+     */
+    private final TransactionHandlingHistory transactionHandlingHistory;
+
+    /**
+     * The set of transactions that have been preconsensus-handled by this app, but haven't yet been
+     * postconsensus-handled. This is used to ensure that transactions are prehandled exactly 1 time, prior to
+     * posthandling.
+     * <p>
+     * Does not affect the hash of this node.
+     */
+    private final Set<Long> transactionsAwaitingPostHandle;
+
+    /**
      * Constructor
      */
     public ConsistencyTestingToolState(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(versionFactory);
+        transactionHandlingHistory = new TransactionHandlingHistory();
+        transactionsAwaitingPostHandle = ConcurrentHashMap.newKeySet();
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
 
     /**
      * Initialize the state
      */
-    void initState() {
+    void initState(Path logFilePath) {
         final StringLeaf stateLongLeaf = getChild(STATE_LONG_INDEX);
         if (stateLongLeaf != null && stateLongLeaf.getLabel() != null) {
             this.stateLong = Long.parseLong(stateLongLeaf.getLabel());
@@ -85,6 +114,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             this.roundsHandled = Long.parseLong(roundsHandledLeaf.getLabel());
             logger.info(STARTUP.getMarker(), "State initialized with {} rounds handled.", roundsHandled);
         }
+        transactionHandlingHistory.init(logFilePath);
     }
 
     /**
@@ -127,6 +157,8 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         super(Objects.requireNonNull(that));
         this.stateLong = that.stateLong;
         this.roundsHandled = that.roundsHandled;
+        this.transactionHandlingHistory = that.transactionHandlingHistory;
+        this.transactionsAwaitingPostHandle = that.transactionsAwaitingPostHandle;
     }
 
     /**
@@ -151,6 +183,47 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
+    }
+
+    private void processRound(Round round) {
+        stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
+        transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
+        setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
+    }
+
+    void processTransactions(Round round) {
+        incrementRoundsHandled();
+        round.forEachTransaction(this::applyTransactionToState);
+        processRound(round);
+    }
+
+    void processPrehandle(long transactionContents) {
+        if (!transactionsAwaitingPostHandle.add(transactionContents)) {
+            logger.error(EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
+        }
+    }
+
+    /**
+     * Sets the new {@link ConsistencyTestingToolState#stateLong} to the non-cryptographic hash of the existing state, and the contents of the
+     * transaction being handled
+     *
+     * @param transaction the transaction to apply to the state
+     */
+    private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
+        Objects.requireNonNull(transaction);
+        if (transaction.isSystem()) {
+            return;
+        }
+
+        final long transactionContents =
+                byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
+
+        if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
+            logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
+        }
+
+        stateLong = NonCryptographicHashing.hash64(stateLong, transactionContents);
+        setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
     }
 
     /**

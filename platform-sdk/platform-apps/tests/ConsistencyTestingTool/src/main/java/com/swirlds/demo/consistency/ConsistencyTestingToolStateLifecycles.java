@@ -17,7 +17,6 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.Objects.requireNonNull;
@@ -25,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.StateLifecycles;
@@ -35,7 +33,6 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -43,9 +40,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,33 +52,12 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
     private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolState.class);
 
     /**
-     * The history of transactions that have been handled by this app.
-     * <p>
-     * A deep copy of this object is NOT created when this state is copied. This object does not affect the hash of this
-     * node.
-     */
-    private final TransactionHandlingHistory transactionHandlingHistory;
-
-    /**
      * If not zero, and we are handling the first round after genesis, configure a freeze this duration later.
      * <p>
      * Does not affect the hash of this node (although actions may be taken based on this info that DO affect the
      * hash).
      */
     private Duration freezeAfterGenesis = null;
-
-    /**
-     * The set of transactions that have been preconsensus-handled by this app, but haven't yet been
-     * postconsensus-handled. This is used to ensure that transactions are prehandled exactly 1 time, prior to
-     * posthandling.
-     * <p>
-     * Does not affect the hash of this node.
-     */
-    private final Set<Long> transactionsAwaitingPostHandle = ConcurrentHashMap.newKeySet();
-
-    public ConsistencyTestingToolStateLifecycles() {
-        this.transactionHandlingHistory = new TransactionHandlingHistory();
-    }
 
     @Override
     public void onStateInitialized(
@@ -113,9 +86,8 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
 
         this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
-        state.initState();
+        state.initState(logFilePath);
 
-        transactionHandlingHistory.init(logFilePath);
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
     }
 
@@ -143,35 +115,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
             platformState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
         }
 
-        round.forEachTransaction(v -> applyTransactionToState(v, state));
-
-        state.incrementRoundsHandled();
-        final long stateLong = NonCryptographicHashing.hash64(state.getStateLong(), round.getRoundNum());
-        transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
-        state.setStateLong(stateLong);
-    }
-
-    /**
-     * Sets the new {@link ConsistencyTestingToolState#stateLong} to the non-cryptographic hash of the existing state, and the contents of the
-     * transaction being handled
-     *
-     * @param transaction the transaction to apply to the state
-     */
-    private void applyTransactionToState(
-            final @NonNull ConsensusTransaction transaction, @NonNull ConsistencyTestingToolState state) {
-        Objects.requireNonNull(transaction);
-        if (transaction.isSystem()) {
-            return;
-        }
-
-        final long transactionContents =
-                byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
-
-        if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
-            logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
-        }
-
-        state.setStateLong(NonCryptographicHashing.hash64(state.getStateLong(), transactionContents));
+        state.processTransactions(round);
     }
 
     /**
@@ -189,10 +133,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
             final long transactionContents =
                     byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
-            if (!transactionsAwaitingPostHandle.add(transactionContents)) {
-                logger.error(
-                        EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
-            }
+            state.processPrehandle(transactionContents);
         });
     }
 
