@@ -45,8 +45,8 @@ class YamlConfigSourceTest {
         // then
         Assertions.assertNotNull(yamlConfigSource);
 
-        Assertions.assertTrue(yamlConfigSource.isListProperty("gossip.networkEndpoints"));
-        final List<String> interfaceBindings = yamlConfigSource.getListValue("gossip.networkEndpoints");
+        Assertions.assertTrue(yamlConfigSource.isListProperty("gossip.interfaceBindings"));
+        final List<String> interfaceBindings = yamlConfigSource.getListValue("gossip.interfaceBindings");
         Assertions.assertEquals(4, interfaceBindings.size());
         Assertions.assertEquals("{\"nodeId\":0,\"hostname\":\"10.10.10.1\",\"port\":1234}", interfaceBindings.get(0));
         Assertions.assertEquals("{\"nodeId\":0,\"hostname\":\"10.10.10.2\",\"port\":1234}", interfaceBindings.get(1));

@@ -35,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
+import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -55,6 +56,7 @@ public class DispatchForResponseCodeHssCall extends AbstractCall {
     private final VerificationStrategy verificationStrategy;
     private final DispatchGasCalculator dispatchGasCalculator;
     private final Set<Key> authorizingKeys;
+    private final DispatchOptions.UsePresetTxnId usePresetTxnId;
 
     /**
      * Convenience overload that slightly eases construction for the most common case.
@@ -76,6 +78,28 @@ public class DispatchForResponseCodeHssCall extends AbstractCall {
                 attempt.defaultVerificationStrategy(),
                 dispatchGasCalculator,
                 authorizingKeys);
+    }
+
+    /**
+     * Constructor overload to modify the presetTxnId property.
+     *
+     * @param attempt the attempt to translate to a dispatching
+     * @param syntheticBody the synthetic body to dispatch
+     * @param dispatchGasCalculator the dispatch gas calculator to use
+     */
+    public DispatchForResponseCodeHssCall(
+            @NonNull final HssCallAttempt attempt,
+            @Nullable final TransactionBody syntheticBody,
+            @NonNull final DispatchGasCalculator dispatchGasCalculator,
+            @NonNull final Set<Key> authorizingKeys,
+            @NonNull final DispatchOptions.UsePresetTxnId usePresetTxnId) {
+        super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
+        this.senderId = attempt.addressIdConverter().convertSender(attempt.senderAddress());
+        this.syntheticBody = syntheticBody;
+        this.verificationStrategy = attempt.defaultVerificationStrategy();
+        this.dispatchGasCalculator = Objects.requireNonNull(dispatchGasCalculator);
+        this.authorizingKeys = authorizingKeys;
+        this.usePresetTxnId = usePresetTxnId;
     }
 
     /**
@@ -103,6 +127,7 @@ public class DispatchForResponseCodeHssCall extends AbstractCall {
         this.verificationStrategy = Objects.requireNonNull(verificationStrategy);
         this.dispatchGasCalculator = Objects.requireNonNull(dispatchGasCalculator);
         this.authorizingKeys = authorizingKeys;
+        this.usePresetTxnId = UsePresetTxnId.NO;
     }
 
     @Override
@@ -122,7 +147,7 @@ public class DispatchForResponseCodeHssCall extends AbstractCall {
                         senderId,
                         ContractCallStreamBuilder.class,
                         authorizingKeys,
-                        DispatchOptions.UsePresetTxnId.NO);
+                        usePresetTxnId);
         final var gasRequirement =
                 dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         var status = recordBuilder.status();

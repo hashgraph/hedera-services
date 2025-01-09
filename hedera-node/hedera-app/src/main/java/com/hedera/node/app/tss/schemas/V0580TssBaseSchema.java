@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.hedera.node.app.tss.schemas;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
-import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,7 +27,8 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
-public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchema {
+@Deprecated(forRemoval = true, since = "0.59.0")
+public class V0580TssBaseSchema extends Schema {
     public static final String TSS_ENCRYPTION_KEYS_KEY = "TSS_ENCRYPTION_KEYS";
     /**
      * This will at most be equal to the number of nodes in the network.
@@ -49,10 +49,5 @@ public class V0580TssBaseSchema extends Schema implements TssBaseTransplantSchem
     public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(StateDefinition.onDisk(
                 TSS_ENCRYPTION_KEYS_KEY, EntityNumber.PROTOBUF, TssEncryptionKeys.PROTOBUF, MAX_TSS_ENCRYPTION_KEYS));
-    }
-
-    @Override
-    public void restart(@NonNull final MigrationContext ctx) {
-        TssBaseTransplantSchema.super.restart(ctx);
     }
 }

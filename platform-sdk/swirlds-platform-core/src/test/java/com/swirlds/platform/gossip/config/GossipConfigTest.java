@@ -31,15 +31,15 @@ public class GossipConfigTest {
     @Test
     void testReadingFile() throws UnknownHostException {
         final Configuration configuration = new TestConfigBuilder()
-                .withSource(new YamlConfigSource("overwrites.yaml"))
+                .withSource(new YamlConfigSource("node-overrides.yaml"))
                 .getOrCreateConfig();
         assertNotNull(configuration);
 
         final GossipConfig gossipConfig = configuration.getConfigData(GossipConfig.class);
         assertNotNull(gossipConfig);
 
-        assertNotNull(gossipConfig.networkEndpoints());
-        assertEquals(4, gossipConfig.networkEndpoints().size());
+        assertNotNull(gossipConfig.interfaceBindings());
+        assertEquals(4, gossipConfig.interfaceBindings().size());
         assertEquals(4, gossipConfig.endpointOverrides().size());
 
         final NetworkEndpoint endpoint = gossipConfig.networkEndpoints().getFirst();
