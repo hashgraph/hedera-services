@@ -32,7 +32,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -49,6 +48,7 @@ import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -69,7 +69,8 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     // 1 byte - encoded field position +
     // 1 byte - encoded size +
     // 48 bytes - hash
-    private static final int[] SYSTEM_TRANSACTION_LENGTH_RANGE = new int[] {437, 448};
+    private static final int MIN_SYSTEM_TRANSACTION_LENGTH = 437;
+    private static final int MAX_SYSTEM_TRANSACTION_LENGTH = 448;
 
     /** A running sum of transaction contents */
     private long runningSum = 0;
@@ -104,6 +105,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void init(
             @NonNull final Platform platform,
             @NonNull final InitTrigger trigger,
@@ -123,14 +125,21 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
                     final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
                             stateSignatureTransactionCallback) {
         event.forEachTransaction(transaction -> {
+            // We are not interested in pre-handling any system transactions, as they are
+            // specific for the platform only.We also don't want to consume deprecated
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+            // callback,since it's intended to be used only for the new form of encoded system
+            // transactions in Bytes.Thus, we can directly skip the current
+            // iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
             if (!transaction.isSystem()) {
-                final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
-
-                if (stateSignatureTransaction.signature() != Bytes.EMPTY) {
-                    stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
-                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
-                }
+                return;
             }
+
+            final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
+            stateSignatureTransaction.ifPresent(
+                    signatureTransaction -> stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                            event.getCreatorId(), event.getSoftwareVersion(), signatureTransaction)));
         });
 
         busyWait(config.preHandleTime());
@@ -150,15 +159,22 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
 
         for (final var event : round) {
             event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                // We are not interested in handling any system transactions, as they are
+                // specific for the platform only.We also don't want to consume deprecated
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+                // callback,since it's intended to be used only for the new form of encoded system
+                // transactions in Bytes.Thus, we can directly skip the current
+                // iteration, if it processes a deprecated system transaction with the
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
                 if (transaction.isSystem()) {
                     return;
                 }
 
                 final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
 
-                if (stateSignatureTransaction.signature() != Bytes.EMPTY) {
+                if (stateSignatureTransaction.isPresent()) {
                     stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
-                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction.get()));
                 } else {
                     handleTransaction(transaction);
                 }
@@ -176,16 +192,16 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
      * Tries to parse the transaction bytes to a {@link StateSignatureTransaction}.
      *
      * @param transaction the transaction to parse
-     * @return {@link StateSignatureTransaction} the constructed system transaction - default if parsing fails
+     * @return optional of the {@link StateSignatureTransaction} containing the parsed system transaction
      */
     @NonNull
-    private StateSignatureTransaction getStateSignatureTransaction(final Transaction transaction) {
+    private Optional<StateSignatureTransaction> getStateSignatureTransaction(@NonNull final Transaction transaction) {
         final var transactionBytes = transaction.getApplicationTransaction();
 
         if (transactionBytes.length() == 0
-                || (transactionBytes.length() < SYSTEM_TRANSACTION_LENGTH_RANGE[0]
-                        || transactionBytes.length() > SYSTEM_TRANSACTION_LENGTH_RANGE[1])) {
-            return StateSignatureTransaction.DEFAULT;
+                || (transactionBytes.length() < MIN_SYSTEM_TRANSACTION_LENGTH
+                        || transactionBytes.length() > MAX_SYSTEM_TRANSACTION_LENGTH)) {
+            return Optional.empty();
         }
 
         final var readableData = transactionBytes.toReadableSequentialData();
@@ -193,18 +209,19 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
         final var maybeRound = readInt64(readableData);
 
         if (maybeRound < 0) {
-            return StateSignatureTransaction.DEFAULT;
+            return Optional.empty();
         } else {
             return tryToParseSystemTransaction(readableData);
         }
     }
 
     @NonNull
-    private StateSignatureTransaction tryToParseSystemTransaction(final ReadableSequentialData transactionBytes) {
+    private Optional<StateSignatureTransaction> tryToParseSystemTransaction(
+            @NonNull final ReadableSequentialData transactionBytes) {
         try {
-            return StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes);
+            return Optional.of(StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes));
         } catch (final ParseException e) {
-            return StateSignatureTransaction.DEFAULT;
+            return Optional.empty();
         }
     }
 
