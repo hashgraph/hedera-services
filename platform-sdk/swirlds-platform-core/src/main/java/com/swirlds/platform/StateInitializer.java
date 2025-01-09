@@ -32,10 +32,9 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StateEventHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.concurrent.ExecutionException;
 
 /**
  * Encapsulates the logic for calling
@@ -95,7 +94,6 @@ public final class StateInitializer {
                     }
                 },
                 "interrupted while attempting to hash the state");
-
 
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();
