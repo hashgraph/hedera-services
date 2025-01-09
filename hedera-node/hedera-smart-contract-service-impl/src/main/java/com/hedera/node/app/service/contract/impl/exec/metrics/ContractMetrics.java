@@ -207,19 +207,20 @@ public class ContractMetrics {
 
     private @NonNull Counter makeCounter(
             @NonNull final MethodMetricType metricType,
-            @NonNull final String nam,
+            @NonNull final String name,
             @NonNull final String clarification) {
-        final var name = toMethodMetricName(nam, metricType);
-        final var descr = toMethodMetricDescr(nam, metricType, clarification);
-        final var config =
-                new Counter.Config(METRIC_CATEGORY, name).withDescription(descr).withUnit(METRIC_TXN_UNIT);
+        final var metricName = toMethodMetricName(name, metricType);
+        final var descr = toMethodMetricDescr(name, metricType, clarification);
+        final var config = new Counter.Config(METRIC_CATEGORY, metricName)
+                .withDescription(descr)
+                .withUnit(METRIC_TXN_UNIT);
         return newCounter(metricsSupplier.get(), config);
     }
 
-    private @NonNull Counter[] makeCounterPair(@NonNull final String nam, @NonNull final String clarification) {
+    private @NonNull Counter[] makeCounterPair(@NonNull final String name, @NonNull final String clarification) {
         final var metricPair = new Counter[2];
-        metricPair[MethodMetricType.TOTAL.index] = makeCounter(MethodMetricType.TOTAL, nam, clarification);
-        metricPair[MethodMetricType.FAILED.index] = makeCounter(MethodMetricType.FAILED, nam, clarification);
+        metricPair[MethodMetricType.TOTAL.index] = makeCounter(MethodMetricType.TOTAL, name, clarification);
+        metricPair[MethodMetricType.FAILED.index] = makeCounter(MethodMetricType.FAILED, name, clarification);
         return metricPair;
     }
 

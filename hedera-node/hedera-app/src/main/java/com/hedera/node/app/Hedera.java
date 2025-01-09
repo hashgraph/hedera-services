@@ -41,6 +41,7 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
+import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -168,6 +169,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -679,11 +681,14 @@ public final class Hedera
 
         // Tell each service it can do its final initialization (if needed) before the system starts
         // processing transactions.
-        if (trigger == GENESIS) {
+        // N.B.: Careful what's done at this point.  Must lead to deterministic state and deterministic
+        // record/block streams.
+        if (trigger == RESTART) {
             servicesRegistry.registrations().stream()
                     .map(Registration::service)
                     .filter(RpcService.class::isInstance)
                     .map(RpcService.class::cast)
+                    .sorted(Comparator.comparing(o -> o.getClass().getSimpleName()))
                     .forEach(RpcService::onStateInitializedForGenesis);
         }
     }

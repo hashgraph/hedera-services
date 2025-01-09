@@ -41,6 +41,9 @@ public interface RpcService extends Service {
      *
      * Called on each Service when `Hedera.onStateInitialized() is called for `InitTrigger.GENESIS`.
      * Services module is still single-threaded when this happens.
+     *
+     * N.B.: Each service must take care about what's done at this point: It must lead to a
+     * deterministic state and deterministic block stream.
      */
     default void onStateInitializedForGenesis() {}
 }

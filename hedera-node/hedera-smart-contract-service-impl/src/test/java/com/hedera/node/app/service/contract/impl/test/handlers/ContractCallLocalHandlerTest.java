@@ -40,11 +40,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
-import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -63,7 +61,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -123,16 +120,9 @@ class ContractCallLocalHandlerTest {
 
     private ContractCallLocalHandler subject;
 
-    @Mock(strictness = Strictness.LENIENT)
-    private ContractServiceComponent contractServiceComponent;
-
-    @Mock
-    private ContractMetrics contractMetrics;
-
     @BeforeEach
     void setUp() {
-        given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
-        subject = new ContractCallLocalHandler(() -> factory, gasCalculator, instantSource, contractServiceComponent);
+        subject = new ContractCallLocalHandler(() -> factory, gasCalculator, instantSource);
     }
 
     @Test

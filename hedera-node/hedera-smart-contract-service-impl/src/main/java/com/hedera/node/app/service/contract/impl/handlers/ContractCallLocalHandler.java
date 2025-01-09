@@ -39,7 +39,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent.Factory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -66,7 +65,6 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     private final Provider<QueryComponent.Factory> provider;
     private final GasCalculator gasCalculator;
     private final InstantSource instantSource;
-    private final ContractServiceComponent contractServiceComponent;
 
     /**
      *  Constructs a {@link ContractCreateHandler} with the given {@link Provider}, {@link GasCalculator} and {@link InstantSource}.
@@ -79,12 +77,10 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     public ContractCallLocalHandler(
             @NonNull final Provider<Factory> provider,
             @NonNull final GasCalculator gasCalculator,
-            @NonNull final InstantSource instantSource,
-            @NonNull final ContractServiceComponent contractServiceComponent) {
+            @NonNull final InstantSource instantSource) {
         this.provider = requireNonNull(provider);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.instantSource = requireNonNull(instantSource);
-        this.contractServiceComponent = requireNonNull(contractServiceComponent);
     }
 
     @Override
@@ -145,7 +141,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
 
-        final var component = provider.get().create(context, instantSource.instant(), CONTRACT_CALL_LOCAL);
+        final var component = getQueryComponent(context);
 
         final var outcome = component.contextQueryProcessor().call();
 
@@ -183,5 +179,10 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
                     .setNodedata(feeData.getNodedata().toBuilder().setGas(op.gas()))
                     .build();
         });
+    }
+
+    @NonNull
+    private QueryComponent getQueryComponent(@NonNull final QueryContext context) {
+        return requireNonNull(provider.get().create(context, instantSource.instant(), CONTRACT_CALL_LOCAL));
     }
 }

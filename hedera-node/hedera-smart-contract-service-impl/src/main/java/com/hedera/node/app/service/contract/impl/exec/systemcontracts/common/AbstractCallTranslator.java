@@ -25,8 +25,6 @@ import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Basic implementation support for a {@link CallTranslator} that returns a translated
@@ -34,8 +32,6 @@ import org.apache.logging.log4j.Logger;
  * @param <T> the type of the abstract call translator
  */
 public abstract class AbstractCallTranslator<T extends AbstractCallAttempt<T>> implements CallTranslator<T> {
-
-    private static final Logger log = LogManager.getLogger(AbstractCallTranslator.class);
 
     private final SystemContract systemContractKind;
     private final SystemContractMethodRegistry systemContractMethodRegistry;
