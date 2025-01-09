@@ -414,6 +414,8 @@ public class ServicesMain implements SwirldMain {
             final String errorMessage = "No nodes are configured to run locally.";
             logger.error(STARTUP.getMarker(), errorMessage);
             exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw new ConfigurationException(errorMessage);
         }
 
@@ -421,6 +423,8 @@ public class ServicesMain implements SwirldMain {
             final String errorMessage = "Multiple nodes are configured to run locally.";
             logger.error(EXCEPTION.getMarker(), errorMessage);
             exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw new ConfigurationException(errorMessage);
         }
         return nodesToRun.getFirst();
