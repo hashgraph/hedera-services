@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss.handlers;
+package com.hedera.services.bdd.spec.verification;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
-public record TssHandlers(
-        @NonNull TssMessageHandler tssMessageHandler,
-        @NonNull TssVoteHandler tssVoteHandler,
-        @NonNull TssShareSignatureHandler tssShareSignatureHandler) {}
+public record Condition(@NonNull BooleanSupplier condition, @NonNull Supplier<String> errorMessage) {}

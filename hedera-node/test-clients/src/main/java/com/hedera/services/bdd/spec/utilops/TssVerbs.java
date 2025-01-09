@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,10 @@ package com.hedera.services.bdd.spec.utilops;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
-import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.ByteString;
-import com.hedera.cryptography.tss.api.TssMessage;
-import com.hedera.hapi.services.auxiliary.tss.legacy.TssMessageTransactionBody;
 import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssLibrary;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
-import com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -41,8 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Consumer;
-import java.util.function.LongFunction;
-import java.util.function.LongUnaryOperator;
 
 /**
  * Factory for spec operations that support exercising TSS, especially in embedded mode.
@@ -59,7 +50,7 @@ public class TssVerbs {
      */
     public static SpecOperation startIgnoringTssSignatureRequests() {
         return doingContextual(
-                spec -> spec.repeatableEmbeddedHederaOrThrow().tssBaseService().startIgnoringRequests());
+                spec -> spec.repeatableEmbeddedHederaOrThrow().blockHashSigner().startIgnoringRequests());
     }
 
     /**
@@ -69,66 +60,16 @@ public class TssVerbs {
      */
     public static SpecOperation stopIgnoringTssSignatureRequests() {
         return doingContextual(
-                spec -> spec.repeatableEmbeddedHederaOrThrow().tssBaseService().stopIgnoringRequests());
+                spec -> spec.repeatableEmbeddedHederaOrThrow().blockHashSigner().stopIgnoringRequests());
     }
 
     /**
-     * Returns an operation that simulates a re-keying scenario in the context of a repeatable embedded test.
-     * @param dabEdits the edits to make before creating the candidate roster
-     * @param nodeStakes the node stakes to have in place at the stake period boundary
-     * @param tssMessageSims the TSS message simulations to apply
-     * @return the operation that will simulate the re-keying scenario
-     */
-    public static RekeyScenarioOp rekeyingScenario(
-            @NonNull final RekeyScenarioOp.DabEdits dabEdits,
-            @NonNull final LongUnaryOperator nodeStakes,
-            @NonNull final LongFunction<RekeyScenarioOp.TssMessageSim> tssMessageSims) {
-        return new RekeyScenarioOp(
-                dabEdits, nodeStakes, tssMessageSims, RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE);
-    }
-
-    /**
-     * Returns an operation that simulates a re-keying scenario in the context of a repeatable embedded test.
-     * @param dabEdits the edits to make before creating the candidate roster
-     * @param nodeStakes the node stakes to have in place at the stake period boundary
-     * @param tssMessageSims the TSS message simulations to apply
-     * @param blockSigningType the type of block signing to perform
-     * @return the operation that will simulate the re-keying scenario
-     */
-    public static RekeyScenarioOp rekeyingScenario(
-            @NonNull final RekeyScenarioOp.DabEdits dabEdits,
-            @NonNull final LongUnaryOperator nodeStakes,
-            @NonNull final LongFunction<RekeyScenarioOp.TssMessageSim> tssMessageSims,
-            @NonNull final RekeyScenarioOp.BlockSigningType blockSigningType) {
-        return new RekeyScenarioOp(dabEdits, nodeStakes, tssMessageSims, blockSigningType);
-    }
-
-    /**
-     * Returns an operation that simulates the synchronous submission and execution of a given TSS message
-     * from the given node id in the context of a repeatable embedded test.
-     *
+     * Submits a node transaction customized by the given body spec if the {@link HapiSpec}'s target network is an
+     * embedded network in repeatable mode.
      * @param nodeId the node id
-     * @param sourceRosterHash the source roster hash
-     * @param targetRosterHash the target roster hash
-     * @param tssMessage the TSS message
-     * @return the operation that will submit the TSS message
+     * @param spec the spec
+     * @param bodySpec the body spec
      */
-    public static SpecOperation submitTssMessage(
-            final long nodeId,
-            @NonNull final Bytes sourceRosterHash,
-            @NonNull final Bytes targetRosterHash,
-            @NonNull final TssMessage tssMessage) {
-        requireNonNull(tssMessage);
-        return doingContextual(spec -> submitRepeatable(
-                nodeId,
-                spec,
-                b -> b.setTssMessage(TssMessageTransactionBody.newBuilder()
-                        .setSourceRosterHash(fromPbj(sourceRosterHash))
-                        .setTargetRosterHash(fromPbj(targetRosterHash))
-                        .setShareIndex(FakeTssLibrary.getShareIndex(tssMessage))
-                        .setTssMessage(ByteString.copyFrom(tssMessage.toBytes())))));
-    }
-
     private static void submitRepeatable(
             final long nodeId,
             @NonNull final HapiSpec spec,

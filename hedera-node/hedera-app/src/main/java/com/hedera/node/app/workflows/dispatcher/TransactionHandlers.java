@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,9 +70,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.tss.handlers.TssMessageHandler;
-import com.hedera.node.app.tss.handlers.TssShareSignatureHandler;
-import com.hedera.node.app.tss.handlers.TssVoteHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -133,7 +130,4 @@ public record TransactionHandlers(
         @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull NodeDeleteHandler nodeDeleteHandler,
         @NonNull TokenClaimAirdropHandler tokenClaimAirdropHandler,
-        @NonNull UtilPrngHandler utilPrngHandler,
-        @NonNull TssMessageHandler tssMessageHandler,
-        @NonNull TssVoteHandler tssVoteHandler,
-        @NonNull TssShareSignatureHandler tssShareSignatureHandler) {}
+        @NonNull UtilPrngHandler utilPrngHandler) {}

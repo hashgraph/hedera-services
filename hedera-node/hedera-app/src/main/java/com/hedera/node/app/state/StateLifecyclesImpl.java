@@ -18,8 +18,10 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -30,6 +32,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Consumer;
 
 /**
  * Implements the major lifecycle events for Hedera Services by delegating to a Hedera instance.
@@ -42,13 +45,19 @@ public class StateLifecyclesImpl implements StateLifecycles {
     }
 
     @Override
-    public void onPreHandle(@NonNull final Event event, @NonNull final State state) {
-        hedera.onPreHandle(event, state);
+    public void onPreHandle(
+            @NonNull final Event event,
+            @NonNull final State state,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        hedera.onPreHandle(event, state, stateSignatureTransactionCallback);
     }
 
     @Override
-    public void onHandleConsensusRound(@NonNull final Round round, @NonNull final State state) {
-        hedera.onHandleConsensusRound(round, state);
+    public void onHandleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final State state,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
+        hedera.onHandleConsensusRound(round, state, stateSignatureTxnCallback);
     }
 
     @Override

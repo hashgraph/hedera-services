@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.tss;
+package com.hedera.node.app.blocks;
+
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.CompletableFuture;
+
 /**
- * An enum representing the key either active roster or candidate roster.
- * This value will be to key active roster if it is genesis stage.
+ * Provides the ability to asynchronously sign a block hash.
  */
-public enum RosterToKey {
+public interface BlockHashSigner {
     /**
-     * Key the active roster. This is true when we are keying roster on genesis stage.
+     * Whether the signer is ready.
      */
-    ACTIVE_ROSTER,
+    boolean isReady();
 
     /**
-     * Key the candidate roster. This is true when we are keying roster on non-genesis stage.
+     * Returns a future that resolves to the signature of the given block hash.
+     *
+     * @param blockHash the block hash
+     * @return the future
      */
-    CANDIDATE_ROSTER,
-
-    /**
-     * Key none of the roster. This is true when we are not keying any roster.
-     */
-    NONE
+    CompletableFuture<Bytes> signFuture(@NonNull Bytes blockHash);
 }
