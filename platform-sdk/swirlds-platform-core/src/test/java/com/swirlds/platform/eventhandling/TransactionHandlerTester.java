@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -85,7 +86,7 @@ public class TransactionHandlerTester {
                 NodeId.FIRST_NODE_ID,
                 statusActionSubmitter,
                 new BasicSoftwareVersion(1));
-        swirldStateManager.setInitialHandler(stateEventHandler);
+        swirldStateManager.setInitialHandlerAndState(Pair.of(stateEventHandler, consensusState));
         defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext,
                 swirldStateManager,

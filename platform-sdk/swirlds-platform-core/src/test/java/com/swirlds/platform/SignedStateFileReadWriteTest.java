@@ -187,7 +187,7 @@ class SignedStateFileReadWriteTest {
                 .build();
 
         // make immutable
-        signedState.getStateEventHandler().getStateRoot().copy();
+        signedState.getState().copy();
 
         writeSignedStateToDisk(
                 platformContext, NodeId.of(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);

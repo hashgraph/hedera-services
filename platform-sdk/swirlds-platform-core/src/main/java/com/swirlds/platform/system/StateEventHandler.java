@@ -21,7 +21,6 @@ import com.swirlds.base.state.Mutable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -83,13 +82,11 @@ public interface StateEventHandler extends Mutable {
      * This method should apply the transactions in the provided round to the state. Only called on mutable states.
      *
      * @param round         the round to apply
-     * @param platformState the platform state
      * @param stateSignatureTransaction a consumer that accepts a list of {@link ScopedSystemTransaction}s that
      *                                   will be used for callbacks
      */
     void handleConsensusRound(
             final Round round,
-            final PlatformStateModifier platformState,
             final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction);
 
     /**
@@ -119,13 +116,6 @@ public interface StateEventHandler extends Mutable {
         Objects.requireNonNull(context, "context must not be null");
         return configAddressBook;
     }
-
-    /**
-     * Returns an instance of the {@link PlatformMerkleStateRoot} that represents the state of the application.
-     * @return the state root
-     */
-    @NonNull
-    PlatformMerkleStateRoot getStateRoot();
 
     /**
      * Returns a new instance of the {@link StateEventHandler} with the given {@link PlatformMerkleStateRoot}.

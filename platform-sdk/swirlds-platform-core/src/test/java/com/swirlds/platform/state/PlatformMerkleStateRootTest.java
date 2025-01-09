@@ -782,11 +782,10 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateModifier.class);
             final var state = new PlatformMerkleStateRoot(softwareVersionSupplier);
             final var handler = new PlatformStateEventHandler(state, lifecycles);
 
-            handler.handleConsensusRound(round, platformState, systemTransactions -> {});
+            handler.handleConsensusRound(round, systemTransactions -> {});
             assertThat(onHandleCalled).isTrue();
         }
     }
@@ -802,13 +801,12 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
-            final var platformState = Mockito.mock(PlatformStateModifier.class);
             assertThrows(
                     MutabilityException.class,
-                    () -> stateEventHandler.handleConsensusRound(round, platformState, systemTransactions -> {}));
+                    () -> stateEventHandler.handleConsensusRound(round, systemTransactions -> {}));
 
             // But the copy does
-            newHandler.handleConsensusRound(round, platformState, systemTransactions -> {});
+            newHandler.handleConsensusRound(round, systemTransactions -> {});
             assertThat(onHandleCalled).isTrue();
         }
 

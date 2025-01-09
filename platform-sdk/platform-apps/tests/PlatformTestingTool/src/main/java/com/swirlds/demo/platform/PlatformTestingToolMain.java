@@ -712,7 +712,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         platform.getNotificationEngine().register(NewSignedStateListener.class, notification -> {
             if (timeToCheckBalances(notification.getConsensusTimestamp())) {
-                checkBalances(notification.getSwirldState());
+                checkBalances(notification.getStateRoot());
             }
         });
     }

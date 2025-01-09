@@ -133,7 +133,7 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(immutableState)
-                .handleConsensusRound(any(), any(), any());
+                .handleConsensusRound(any(), any());
 
         final StateEventHandler mutableState = mock(StateEventHandler.class);
         doAnswer(invocation -> {
@@ -150,7 +150,7 @@ class EventRecoveryWorkflowTests {
                     return null;
                 })
                 .when(mutableState)
-                .handleConsensusRound(any(), any(), any());
+                .handleConsensusRound(any(), any());
 
         EventRecoveryWorkflow.applyTransactions(immutableState, mutableState, platformState, round);
 

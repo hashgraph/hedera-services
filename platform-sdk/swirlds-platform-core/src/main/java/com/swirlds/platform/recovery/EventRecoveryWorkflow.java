@@ -492,7 +492,7 @@ public final class EventRecoveryWorkflow {
             immutableState.preHandle(event, NO_OP_CONSUMER);
         }
 
-        mutableState.handleConsensusRound(round, platformState, NO_OP_CONSUMER);
+        mutableState.handleConsensusRound(round, NO_OP_CONSUMER);
 
         // FUTURE WORK: there are currently no system transactions that are capable of modifying
         //  the state. If/when system transactions capable of modifying state are added, this workflow

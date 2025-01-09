@@ -21,6 +21,7 @@ import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
@@ -53,7 +54,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
     /**
      * reference to the state that reflects all known consensus transactions
      */
-    private final AtomicReference<StateEventHandler> stateEventHandlerRef = new AtomicReference<>();
+    private final AtomicReference<Pair<StateEventHandler, PlatformMerkleStateRoot>> eventHandlerAndStateRef =
+            new AtomicReference<>();
 
     /**
      * The most recent immutable state. No value until the first fast copy is created.
@@ -105,39 +107,40 @@ public class SwirldStateManager implements FreezePeriodChecker {
     /**
      * Set the initial eventHandler for the platform. This method should only be called once.
      *
-     * @param eventHandler the initial eventHandler
+     * @param eventHandlerAndState the initial eventHandler
      */
-    public void setInitialHandler(@NonNull final StateEventHandler eventHandler) {
-        Objects.requireNonNull(eventHandler);
-        PlatformMerkleStateRoot state = eventHandler.getStateRoot();
+    public void setInitialHandlerAndState(
+            @NonNull final Pair<StateEventHandler, PlatformMerkleStateRoot> eventHandlerAndState) {
+        Objects.requireNonNull(eventHandlerAndState);
+        PlatformMerkleStateRoot state = eventHandlerAndState.right();
         Objects.requireNonNull(state);
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        if (stateEventHandlerRef.get() != null) {
+        if (eventHandlerAndStateRef.get() != null) {
             throw new IllegalStateException(
                     "Attempt to set initial eventHandler when there is already a eventHandler reference.");
         }
 
         // Create a fast copy so there is always an immutable eventHandler to
         // invoke handleTransaction on for pre-consensus transactions
-        fastCopyAndUpdateRefs(eventHandler);
+        fastCopyAndUpdateRefs(eventHandlerAndState);
     }
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link StateEventHandler#handleConsensusRound(Round, PlatformStateModifier, Consumer<ScopedSystemTransaction<StateSignatureTransaction>>)}.
+     * {@link StateEventHandler#handleConsensusRound(Round, Consumer<ScopedSystemTransaction<StateSignatureTransaction>>)}.
      *
      * @param round the round to handle
      */
     public List<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
-        final StateEventHandler state = stateEventHandlerRef.get();
+        final StateEventHandler state = eventHandlerAndStateRef.get().left();
 
         uptimeTracker.handleRound(round);
         transactionHandler.handleRound(round, state);
 
         // TODO update this logic to return the transactions from the callback consumer passed in
-        // state.getStateEventHandler().handleConsensusRound, when it is implemented
+        // state.getStateRoot().handleConsensusRound, when it is implemented
         return extractFromRound(round, StateSignatureTransaction.class);
     }
 
@@ -147,7 +150,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     public void sealConsensusRound(@NonNull final Round round) {
         Objects.requireNonNull(round);
-        final StateEventHandler state = stateEventHandlerRef.get();
+        final StateEventHandler state = eventHandlerAndStateRef.get().left();
         state.sealConsensusRound(round);
     }
 
@@ -156,11 +159,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * made to the returned state.
      */
     public PlatformMerkleStateRoot getConsensusState() {
-        return stateEventHandlerRef.get().getStateRoot();
-    }
-
-    public StateEventHandler getStateEventHandler() {
-        return stateEventHandlerRef.get();
+        return eventHandlerAndStateRef.get().right();
     }
 
     /**
@@ -172,13 +171,13 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
-        stateEventHandlerRef
+        eventHandlerAndStateRef
                 .get()
-                .getStateRoot()
+                .right()
                 .getWritablePlatformState()
-                .setLastFrozenTime(stateEventHandlerRef
+                .setLastFrozenTime(eventHandlerAndStateRef
                         .get()
-                        .getStateRoot()
+                        .right()
                         .getReadablePlatformState()
                         .getFreezeTime());
     }
@@ -189,39 +188,39 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param signedState the signed state to load
      */
     public void loadFromSignedState(@NonNull final SignedState signedState) {
-        final StateEventHandler stateEventHandler = signedState.getStateEventHandler();
-        final PlatformMerkleStateRoot state = stateEventHandler.getStateRoot();
+        final Pair<StateEventHandler, PlatformMerkleStateRoot> pair =
+                Pair.of(signedState.getStateEventHandler(), signedState.getState());
+        final PlatformMerkleStateRoot state = pair.value();
 
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
 
-        fastCopyAndUpdateRefs(stateEventHandler);
+        fastCopyAndUpdateRefs(pair);
     }
 
-    private void fastCopyAndUpdateRefs(final StateEventHandler eventHandler) {
-        PlatformMerkleStateRoot currentStateRoot = eventHandler.getStateRoot();
-        final StateEventHandler newHandler =
-                eventHandler.withNewStateRoot(fastCopy(currentStateRoot, stats, softwareVersion));
+    private void fastCopyAndUpdateRefs(final Pair<StateEventHandler, PlatformMerkleStateRoot> eventHandlerAndState) {
+        PlatformMerkleStateRoot newRoot = fastCopy(eventHandlerAndState.right(), stats, softwareVersion);
+        final StateEventHandler newHandler = eventHandlerAndState.left().withNewStateRoot(newRoot);
 
-        // Set latest immutable first to prevent the newly immutable eventHandler from being deleted between setting the
+        // Set latest immutable first to prevent the newly immutable stateRoot from being deleted between setting the
         // stateRef and the latestImmutableState
-        setLatestImmutableState(currentStateRoot);
-        setPlatformEventHandler(newHandler);
+        setLatestImmutableState(eventHandlerAndState.right());
+        setPlatformEventHandler(Pair.of(newHandler, newRoot));
     }
 
     /**
      * Sets the consensus state to the state provided. Must be mutable and have a reference count of at least 1.
      *
-     * @param state the new mutable state
+     * @param eventHandlerAndState a pair of the new mutable state and the event handler
      */
-    private void setPlatformEventHandler(final StateEventHandler state) {
-        final StateEventHandler currVal = stateEventHandlerRef.get();
+    private void setPlatformEventHandler(final Pair<StateEventHandler, PlatformMerkleStateRoot> eventHandlerAndState) {
+        final var currVal = eventHandlerAndStateRef.get();
         if (currVal != null) {
-            currVal.getStateRoot().release();
+            currVal.right().release();
         }
         // Do not increment the reference count because the state provided already has a reference count of at least
         // one to represent this reference and to prevent it from being deleted before this reference is set.
-        stateEventHandlerRef.set(state);
+        eventHandlerAndStateRef.set(eventHandlerAndState);
     }
 
     private void setLatestImmutableState(final PlatformMerkleStateRoot immutableState) {
@@ -256,7 +255,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @see PlatformMerkleStateRoot#copy()
      */
     public PlatformMerkleStateRoot getStateForSigning() {
-        fastCopyAndUpdateRefs(stateEventHandlerRef.get());
+        fastCopyAndUpdateRefs(eventHandlerAndStateRef.get());
         return latestImmutableState.get();
     }
 }

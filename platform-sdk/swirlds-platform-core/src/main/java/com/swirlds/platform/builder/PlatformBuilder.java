@@ -165,7 +165,7 @@ public final class PlatformBuilder {
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
-            @NonNull StateLifecycles stateLifecycles,
+            @NonNull final StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
             @NonNull final RosterHistory rosterHistory) {

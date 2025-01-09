@@ -70,7 +70,7 @@ public final class StateInitializer {
         }
 
         final StateEventHandler initialStateEvenHandler = signedState.getStateEventHandler();
-        final PlatformMerkleStateRoot stateRoot = initialStateEvenHandler.getStateRoot();
+        final PlatformMerkleStateRoot stateRoot = signedState.getState();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.

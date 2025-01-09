@@ -23,7 +23,6 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
@@ -49,6 +48,9 @@ public class PlatformStateEventHandler implements StateEventHandler {
         this.lifecycles = lifecycles;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void init(
             @NonNull Platform platform, @NonNull InitTrigger trigger, @Nullable SoftwareVersion deserializedVersion) {
@@ -67,6 +69,9 @@ public class PlatformStateEventHandler implements StateEventHandler {
         lifecycles.onStateInitialized(stateRoot, platform, trigger, deserializedVersion);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void preHandle(
             final Event event,
@@ -74,15 +79,20 @@ public class PlatformStateEventHandler implements StateEventHandler {
         lifecycles.onPreHandle(event, stateRoot, stateSignatureTransaction);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void handleConsensusRound(
             final Round round,
-            final PlatformStateModifier platformState,
             final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         stateRoot.throwIfImmutable();
         lifecycles.onHandleConsensusRound(round, stateRoot, stateSignatureTransaction);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void sealConsensusRound(@NonNull final Round round) {
         requireNonNull(round);
@@ -90,6 +100,9 @@ public class PlatformStateEventHandler implements StateEventHandler {
         lifecycles.onSealConsensusRound(round, stateRoot);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public AddressBook updateWeight(
@@ -98,18 +111,18 @@ public class PlatformStateEventHandler implements StateEventHandler {
         return configAddressBook;
     }
 
-    @NonNull
-    @Override
-    public PlatformMerkleStateRoot getStateRoot() {
-        return stateRoot;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public PlatformStateEventHandler withNewStateRoot(@NonNull final PlatformMerkleStateRoot newRoot) {
         return new PlatformStateEventHandler(newRoot, lifecycles);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isImmutable() {
         return stateRoot.isImmutable();

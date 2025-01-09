@@ -45,7 +45,7 @@ public class DefaultLatestCompleteStateNotifier implements LatestCompleteStateNo
         }
         latestStateProvidedRound = reservedSignedState.get().getRound();
         final NewSignedStateNotification notification = new NewSignedStateNotification(
-                reservedSignedState.get().getStateEventHandler(),
+                reservedSignedState.get().getState(),
                 reservedSignedState.get().getRound(),
                 reservedSignedState.get().getConsensusTimestamp());
 

@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSaved
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -251,7 +252,8 @@ public class SwirldsPlatform implements Platform {
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = blocks.swirldStateManager();
-        swirldStateManager.setInitialHandler(initialState.getStateEventHandler());
+        swirldStateManager.setInitialHandlerAndState(
+                Pair.of(initialState.getStateEventHandler(), initialState.getState()));
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
 

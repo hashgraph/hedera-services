@@ -58,8 +58,7 @@ public class TransactionHandler {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            eventHandler.handleConsensusRound(
-                    round, eventHandler.getStateRoot().getWritablePlatformState(), NO_OP_CONSUMER);
+            eventHandler.handleConsensusRound(round, NO_OP_CONSUMER);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -59,7 +60,8 @@ class StateEventHandlerManagerTests {
 
         swirldStateManager = new SwirldStateManager(
                 platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
-        swirldStateManager.setInitialHandler(new PlatformStateEventHandler(initialState, FAKE_MERKLE_STATE_LIFECYCLES));
+        swirldStateManager.setInitialHandlerAndState(
+                Pair.of(new PlatformStateEventHandler(initialState, FAKE_MERKLE_STATE_LIFECYCLES), initialState));
     }
 
     @AfterEach
@@ -144,7 +146,7 @@ class StateEventHandlerManagerTests {
         final SignedState ss = new RandomSignedStateGenerator().build();
         assertEquals(
                 1,
-                ss.getStateEventHandler().getStateRoot().getReservationCount(),
+                ss.getState().getReservationCount(),
                 "Creating a signed state should increment the state reference count.");
         return ss;
     }
