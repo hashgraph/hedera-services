@@ -17,6 +17,7 @@
 package com.swirlds.demo.migration;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +38,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
+import java.security.SignatureException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +48,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 public class MigrationTestingToolStateTest {
     private static MigrationTestingToolState state;
@@ -78,6 +82,25 @@ public class MigrationTestingToolStateTest {
                 .hash(Bytes.wrap(hash))
                 .round(round.getRoundNum())
                 .build();
+    }
+
+    @Test
+    void handleConsensusRoundWithApplicationTransaction() throws SignatureException {
+        givenRoundAndEvent();
+        final TransactionGenerator generator = new TransactionGenerator(5);
+        final var bytes = Bytes.wrap(generator.generateTransaction());
+        final var tr = TransactionUtils.parseTransaction(bytes);
+        when(transaction.getApplicationTransaction()).thenReturn(bytes);
+
+        try (MockedStatic<TransactionUtils> utilities =
+                Mockito.mockStatic(TransactionUtils.class, Mockito.CALLS_REAL_METHODS)) {
+            MigrationTestingToolTransaction migrationTestingToolTransaction = Mockito.spy(tr);
+            utilities.when(() -> TransactionUtils.parseTransaction(any())).thenReturn(migrationTestingToolTransaction);
+            Mockito.doNothing().when(migrationTestingToolTransaction).applyTo(state);
+            state.handleConsensusRound(round, platformStateModifier, consumer);
+        }
+
+        assertThat(consumedTransactions).isEmpty();
     }
 
     @Test
