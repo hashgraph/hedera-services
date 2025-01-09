@@ -88,6 +88,7 @@ public class FileBlockItemWriterTest {
 
         FileBlockItemWriter fileBlockItemWriter =
                 new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
+        fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
@@ -110,6 +111,7 @@ public class FileBlockItemWriterTest {
 
         FileBlockItemWriter fileBlockItemWriter =
                 new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
+        fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");

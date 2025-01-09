@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,5 +84,31 @@ public class RosterHistory {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the roster history in a JSON compatible format.
+     *
+     * @return a JSON representation of the roster history
+     */
+    @Override
+    @NonNull
+    public String toString() {
+        final boolean previousExists = history.size() > 1;
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("RosterHistory[ currentRosterRound: ")
+                .append(history.getFirst().roundNumber())
+                .append(" ][ ");
+        if (previousExists) {
+            sb.append("previousRosterRound: ").append(history.get(1).roundNumber());
+        } else {
+            sb.append("no previous roster set");
+        }
+        sb.append(" ]\nCurrent Roster: ").append(Roster.JSON.toJSON(getCurrentRoster()));
+        if (previousExists) {
+            sb.append("\nPrevious Roster: ").append(Roster.JSON.toJSON(getPreviousRoster()));
+        }
+        return sb.toString();
     }
 }

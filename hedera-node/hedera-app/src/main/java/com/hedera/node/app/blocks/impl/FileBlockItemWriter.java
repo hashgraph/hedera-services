@@ -155,7 +155,9 @@ public class FileBlockItemWriter implements BlockItemWriter {
         this.currentBlockPath = getBlockFilePath(blockNumber);
         OutputStream out = null;
         try {
-            out = Files.newOutputStream(currentBlockPath);
+            if (!Files.exists(nodeScopedBlockDir)) {
+                Files.createDirectories(nodeScopedBlockDir);
+            }
             out = new BufferedOutputStream(out, 1024 * 1024); // 1 MB
             if (compressFiles) {
                 out = new GZIPOutputStream(out, 1024 * 256); // 256 KB
