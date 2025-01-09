@@ -52,7 +52,7 @@ public class BucketConfigurationManager {
     private static final Logger logger = LogManager.getLogger(BucketConfigurationManager.class);
     private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
-    private BlockStreamConfig blockStreamConfig;
+    private volatile BlockStreamConfig blockStreamConfig;
     private volatile OnDiskBucketConfig credentials;
     private final AtomicReference<List<CompleteBucketConfig>> currentConfig = new AtomicReference<>();
 
@@ -71,7 +71,7 @@ public class BucketConfigurationManager {
      * Combines the buckets configuration with their respective credentials.
      * @param blockStreamConfig configuration properties for block streams
      */
-    public void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
+    public synchronized void loadCompleteBucketConfigs(@NonNull final BlockStreamConfig blockStreamConfig) {
         // update local BlockStreamConfig if there was a network properties change
         if (!blockStreamConfig.equals(this.blockStreamConfig)) {
             this.blockStreamConfig = blockStreamConfig;
@@ -121,11 +121,12 @@ public class BucketConfigurationManager {
                 }
             } catch (IOException | InterruptedException e) {
                 logger.error("Error watching configuration file: {}", e.getMessage());
+                Thread.currentThread().interrupt();
             }
         });
     }
 
-    private OnDiskBucketConfig loadCredentials(@NonNull Path credentialsPath) {
+    private synchronized OnDiskBucketConfig loadCredentials(@NonNull Path credentialsPath) {
         if (!Files.exists(credentialsPath)) {
             logger.info(
                     "Credentials file {} does not exist and won't be used as configuration source", credentialsPath);
