@@ -17,14 +17,14 @@
 package com.hedera.node.app.platform;
 
 import com.hedera.node.app.annotations.CommonExecutor;
-import com.hedera.node.app.state.listeners.IssDetectedListener;
+import com.hedera.node.app.state.listeners.FatalIssListenerImpl;
 import com.hedera.node.app.state.listeners.ReconnectListener;
 import com.hedera.node.app.state.listeners.WriteStateToDiskListener;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.state.notifications.AsyncIssListener;
+import com.swirlds.platform.system.state.notifications.FatalIssListener;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -73,5 +73,5 @@ public interface PlatformModule {
 
     @Binds
     @Singleton
-    AsyncIssListener bindAsyncIssListener(IssDetectedListener listener);
+    FatalIssListener bindFatalIssListener(FatalIssListenerImpl listener);
 }
