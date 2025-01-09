@@ -21,9 +21,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody;
+import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.HederaConfig;
@@ -80,7 +80,7 @@ public class HintsSubmissions {
      * @param body the vote to submit
      * @return a future that completes when the vote has been submitted
      */
-    public CompletableFuture<Void> submitHintsVote(@NonNull final HintsAggregationVoteTransactionBody body) {
+    public CompletableFuture<Void> submitHintsVote(@NonNull final HintsPreprocessingVoteTransactionBody body) {
         requireNonNull(body);
         return submit(
                 b -> b.hintsAggregationVote(body),

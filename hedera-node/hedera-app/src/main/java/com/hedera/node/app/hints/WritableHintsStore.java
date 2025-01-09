@@ -20,8 +20,6 @@ import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.roster.ActiveRosters;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Map;
@@ -31,76 +29,53 @@ import java.util.Map;
  */
 public interface WritableHintsStore extends ReadableHintsStore {
     /**
-     * Creates a new {@link HintsConstruction} for the given source and target roster hashes.
-     * <p>
-     * Note that only two constructions can exist at a time, so this may have the side effect
-     * of purging a previous construction for a candidate roster.
-     *
-     * @param sourceRosterHash the source roster hash
-     * @param targetRosterHash the target roster hash
-     * @param rosterStore the roster store
-     * @param now the construction time
-     */
-    HintsConstruction newConstructionFor(
-            @NonNull Bytes sourceRosterHash,
-            @NonNull Bytes targetRosterHash,
-            @NonNull ReadableRosterStore rosterStore,
-            @NonNull Instant now);
-
-    /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
      */
     @NonNull
-    HintsConstruction getOrCreateConstructionFor(@NonNull ActiveRosters activeRosters, @NonNull Instant now);
+    HintsConstruction getOrCreateConstruction(@NonNull ActiveRosters activeRosters, @NonNull Instant now);
 
     /**
-     * Includes the given hints key for the given node and party IDs relative to a max universe size, assigning
+     * Includes the given hints key for the given node and party IDs relative to a party size, assigning
      * the given adoption time if the key is immediately in use.
      *
      * @param nodeId the node ID
      * @param partyId the party ID
-     * @param partySize the party size
+     * @param numParties the number of parties
      * @param hintsKey the hints key to include
      * @param now the adoption time
      * @return whether the key was immediately in use
      */
-    boolean setHintsKey(long nodeId, int partyId, int partySize, @NonNull HintsKey hintsKey, @NonNull final Instant now);
+    boolean setHintsKey(
+            long nodeId, int partyId, int numParties, @NonNull HintsKey hintsKey, @NonNull final Instant now);
 
     /**
-     * Completes the aggregation for the construction with the given ID and returns the
+     * Sets the consensus preprocessing output for the construction with the given ID and returns the
      * updated construction.
      * @return the updated construction
      */
-    HintsConstruction completeAggregation(
+    HintsConstruction setPreprocessingOutput(
             long constructionId, @NonNull PreprocessedKeys keys, @NonNull Map<Long, Integer> nodePartyIds);
 
     /**
-     * Sets the aggregation time for the construction with the given ID and returns the
-     * updated construction.
+     * Sets the preprocessing start time for the construction with the given ID and returns the updated construction.
      * @param constructionId the construction ID
      * @param now the aggregation time
      * @return the updated construction
      */
-    HintsConstruction setAggregationTime(long constructionId, @NonNull Instant now);
+    HintsConstruction setPreprocessingStartTime(long constructionId, @NonNull Instant now);
 
     /**
-     * Reschedules the next aggregation checkpoint for the construction with the given ID and returns the
+     * Reschedules the next preprocessing checkpoint for the construction with the given ID and returns the
      * updated construction.
      * @param constructionId the construction ID
-     * @param then the next aggregation checkpoint
+     * @param then the next preprocessing checkpoint
      * @return the updated construction
      */
-    HintsConstruction rescheduleAggregationCheckpoint(long constructionId, @NonNull Instant then);
+    HintsConstruction reschedulePreprocessingCheckpoint(long constructionId, @NonNull Instant then);
 
     /**
      * Purges any state no longer needed after a given handoff.
      * @return whether any state was purged
      */
     boolean purgeStateAfterHandoff(@NonNull ActiveRosters activeRosters);
-
-    /**
-     * Ensures the only construction in state is for the given target roster hash.
-     * @return whether any construction was purged
-     */
-    boolean purgeConstructionsNotFor(@NonNull Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore);
 }

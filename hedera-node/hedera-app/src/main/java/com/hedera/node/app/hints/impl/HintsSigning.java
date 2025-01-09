@@ -36,7 +36,7 @@ public class HintsSigning {
     private final long thresholdWeight;
     private final Bytes message;
     private final Bytes aggregationKey;
-    private final Map<Long, Long> partyIds;
+    private final Map<Long, Integer> partyIds;
     private final CompletableFuture<Bytes> future = new CompletableFuture<>();
     private final ConcurrentMap<Long, BlsSignature> signatures = new ConcurrentHashMap<>();
     private final AtomicLong weightOfSignatures = new AtomicLong();
@@ -47,7 +47,7 @@ public class HintsSigning {
             final long thresholdWeight,
             @NonNull final Bytes message,
             @NonNull final Bytes aggregationKey,
-            @NonNull final Map<Long, Long> partyIds,
+            @NonNull final Map<Long, Integer> partyIds,
             @NonNull final HintsLibrary operations) {
         this.constructionId = constructionId;
         this.thresholdWeight = thresholdWeight;

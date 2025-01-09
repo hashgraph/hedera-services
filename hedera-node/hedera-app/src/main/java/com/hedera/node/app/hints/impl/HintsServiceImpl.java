@@ -108,7 +108,7 @@ public class HintsServiceImpl implements HintsService {
         requireNonNull(hintsStore);
         switch (activeRosters.phase()) {
             case BOOTSTRAP, TRANSITION -> {
-                final var construction = hintsStore.getOrCreateConstructionFor(activeRosters, now);
+                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now);
                 if (!construction.hasPreprocessedKeys()) {
                     final var controller =
                             component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);

@@ -24,10 +24,10 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsId;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
-import com.hedera.hapi.node.state.hints.PreprocessVoteId;
-import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.hapi.node.state.hints.HintsPartyId;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -44,13 +44,13 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Provides read access to the {@link HintsConstruction} and {@link PreprocessedKeysVote} instances in state.
+ * Provides read access to the {@link HintsConstruction} and {@link PreprocessingVote} instances in state.
  */
 public class ReadableHintsStoreImpl implements ReadableHintsStore {
-    private final ReadableKVState<HintsId, HintsKeySet> hintsKeys;
+    private final ReadableKVState<HintsPartyId, HintsKeySet> hintsKeys;
     private final ReadableSingletonState<HintsConstruction> nextConstruction;
     private final ReadableSingletonState<HintsConstruction> activeConstruction;
-    private final ReadableKVState<PreprocessVoteId, PreprocessedKeysVote> votes;
+    private final ReadableKVState<PreprocessingVoteId, PreprocessingVote> votes;
 
     public ReadableHintsStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
@@ -111,12 +111,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public @NonNull Map<Long, PreprocessedKeysVote> votesFor(
-            final long constructionId, @NonNull final Set<Long> nodeIds) {
+    public @NonNull Map<Long, PreprocessingVote> votesFor(final long constructionId, @NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
-        final Map<Long, PreprocessedKeysVote> scopedVotes = new HashMap<>();
+        final Map<Long, PreprocessingVote> scopedVotes = new HashMap<>();
         for (final var nodeId : nodeIds) {
-            final var vote = votes.get(new PreprocessVoteId(constructionId, nodeId));
+            final var vote = votes.get(new PreprocessingVoteId(constructionId, nodeId));
             if (vote != null) {
                 scopedVotes.put(nodeId, vote);
             }
@@ -126,12 +125,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
 
     @Override
     public @NonNull List<HintsKeyPublication> getNodeHintsKeyPublications(
-            @NonNull final Set<Long> nodeIds, final int partySize) {
+            @NonNull final Set<Long> nodeIds, final int numParties) {
         requireNonNull(nodeIds);
-        final int M = 1 << partySize;
         final List<HintsKeyPublication> publications = new ArrayList<>();
-        for (int partyId = 0; partyId < M; partyId++) {
-            final var keySet = hintsKeys.get(new HintsId(partyId, partySize));
+        for (int partyId = 0; partyId < numParties; partyId++) {
+            final var keySet = hintsKeys.get(new HintsPartyId(partyId, numParties));
             if (keySet != null) {
                 if (nodeIds.contains(keySet.nodeId())) {
                     publications.add(new HintsKeyPublication(

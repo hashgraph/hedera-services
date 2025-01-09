@@ -20,10 +20,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsId;
 import com.hedera.hapi.node.state.hints.HintsKey;
-import com.hedera.hapi.node.state.hints.PreprocessVoteId;
-import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.hapi.node.state.hints.HintsPartyId;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.impl.HintsSigningContext;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -72,11 +72,11 @@ public class V059HintsSchema extends Schema {
         return Set.of(
                 StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, HintsConstruction.PROTOBUF),
                 StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, HintsConstruction.PROTOBUF),
-                StateDefinition.onDisk(HINTS_KEY, HintsId.PROTOBUF, HintsKey.PROTOBUF, MAX_HINTS),
+                StateDefinition.onDisk(HINTS_KEY, HintsPartyId.PROTOBUF, HintsKey.PROTOBUF, MAX_HINTS),
                 StateDefinition.onDisk(
                         PREPROCESSING_VOTES_KEY,
-                        PreprocessVoteId.PROTOBUF,
-                        PreprocessedKeysVote.PROTOBUF,
+                        PreprocessingVoteId.PROTOBUF,
+                        PreprocessingVote.PROTOBUF,
                         MAX_PREPROCESSING_VOTES));
     }
 

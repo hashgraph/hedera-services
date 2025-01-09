@@ -37,17 +37,17 @@ option java_multiple_files = true;
 
 /**
  * A transaction body to publish a node's vote for the results of
- * aggregating the hints for a specified construction id. The node
- * can either give their explicit aggregation results, or delegate
- * their vote to another node's results.
+ * aggregating the hinTS keys for a specified construction id. The
+ * node can either give their explicit aggregation results, or
+ * delegate their vote to another node's results.
  */
-message HintsAggregationVoteTransactionBody {
+message HintsPreprocessingVoteTransactionBody {
   /**
    * The id of the hinTS construction this vote is for. Because
    * the network only ever performs one construction a time, this
    * is somewhat redundant, but included to detect any strange
    * edge cases where a node is so far behind it votes on the wrong
-    * construction.
+   * construction.
    */
   uint64 construction_id = 1;
 
@@ -55,5 +55,5 @@ message HintsAggregationVoteTransactionBody {
    * The vote the node is casting for the aggregation of the hints
    * in the given construction (which should be ongoing).
    */
-  com.hedera.hapi.node.state.hints.PreprocessedKeysVote vote = 2;
+  com.hedera.hapi.node.state.hints.PreprocessingVote vote = 2;
 }

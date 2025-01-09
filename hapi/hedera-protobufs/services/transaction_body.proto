@@ -106,7 +106,7 @@ import "node_delete.proto";
 import "event/state_signature_transaction.proto";
 
 import "auxiliary/hints/hints_key_publication.proto";
-import "auxiliary/hints/hints_aggregation_vote.proto";
+import "auxiliary/hints/hints_preprocessing_vote.proto";
 import "auxiliary/hints/hints_partial_signature.proto";
 
 import "auxiliary/history/history_assembly_signature.proto";
@@ -572,7 +572,7 @@ message TransactionBody {
         /**
          * A transaction body for voting on hinTS aggregation keys.
          */
-        com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody hints_aggregation_vote = 66;
+        com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody hints_aggregation_vote = 66;
 
         /**
          * A transaction body for publishing a node's hintTS key.

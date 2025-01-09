@@ -26,18 +26,17 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsId;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
-import com.hedera.hapi.node.state.hints.PartyAssignment;
-import com.hedera.hapi.node.state.hints.PreprocessVoteId;
+import com.hedera.hapi.node.state.hints.HintsPartyId;
+import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
-import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -56,10 +55,10 @@ import org.apache.logging.log4j.Logger;
 public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements WritableHintsStore {
     private static final Logger log = LogManager.getLogger(WritableHintsStoreImpl.class);
 
-    private final WritableKVState<HintsId, HintsKeySet> hintsKeys;
+    private final WritableKVState<HintsPartyId, HintsKeySet> hintsKeys;
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
-    private final WritableKVState<PreprocessVoteId, PreprocessedKeysVote> votes;
+    private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
 
     public WritableHintsStoreImpl(@NonNull WritableStates states) {
         super(states);
@@ -71,7 +70,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     @NonNull
     @Override
-    public HintsConstruction getOrCreateConstructionFor(
+    public HintsConstruction getOrCreateConstruction(
             @NonNull final ActiveRosters activeRosters, @NonNull final Instant now) {
         requireNonNull(activeRosters);
         requireNonNull(now);
@@ -87,23 +86,13 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public HintsConstruction newConstructionFor(
-            @NonNull final Bytes sourceRosterHash,
-            @NonNull final Bytes targetRosterHash,
-            @NonNull final ReadableRosterStore rosterStore,
-            @NonNull final Instant now) {
-        requireNonNull(sourceRosterHash);
-        requireNonNull(targetRosterHash);
-        requireNonNull(rosterStore);
-        return newConstruction(sourceRosterHash, targetRosterHash, rosterStore::get, now);
-    }
-
-    @Override
     public boolean setHintsKey(
-            final long nodeId, final int partyId, final int partySize,
+            final long nodeId,
+            final int partyId,
+            final int numParties,
             @NonNull final HintsKey hintsKey,
             @NonNull final Instant now) {
-        final var id = new HintsId(partyId, partySize);
+        final var id = new HintsPartyId(partyId, numParties);
         var keySet = hintsKeys.get(id);
         boolean inUse = false;
         if (keySet == null) {
@@ -121,26 +110,25 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public HintsConstruction completeAggregation(
+    public HintsConstruction setPreprocessingOutput(
             final long constructionId,
             @NonNull final PreprocessedKeys keys,
             @NonNull final Map<Long, Integer> nodePartyIds) {
         requireNonNull(keys);
         requireNonNull(nodePartyIds);
-        return updateOrThrow(
-                constructionId, b -> b.preprocessedKeys(keys).partyAssignments(asPartyAssignments(nodePartyIds)));
+        return updateOrThrow(constructionId, b -> b.preprocessedKeys(keys).nodePartyIds(asList(nodePartyIds)));
     }
 
     @Override
-    public HintsConstruction setAggregationTime(final long constructionId, @NonNull final Instant now) {
+    public HintsConstruction setPreprocessingStartTime(final long constructionId, @NonNull final Instant now) {
         requireNonNull(now);
-        return updateOrThrow(constructionId, b -> b.aggregationTime(asTimestamp(now)));
+        return updateOrThrow(constructionId, b -> b.preprocessingStartTime(asTimestamp(now)));
     }
 
     @Override
-    public HintsConstruction rescheduleAggregationCheckpoint(final long constructionId, @NonNull final Instant then) {
+    public HintsConstruction reschedulePreprocessingCheckpoint(final long constructionId, @NonNull final Instant then) {
         requireNonNull(then);
-        return updateOrThrow(constructionId, b -> b.nextAggregationCheckpoint(asTimestamp(then)));
+        return updateOrThrow(constructionId, b -> b.preprocessingCheckpointTime(asTimestamp(then)));
     }
 
     @Override
@@ -150,20 +138,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         }
         if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(activeRosters.currentRosterHash())) {
             purgeVotes(requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
-            activeConstruction.put(nextConstruction.get());
-            nextConstruction.put(HintsConstruction.DEFAULT);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean purgeConstructionsNotFor(
-            @NonNull final Bytes targetRosterHash, @NonNull ReadableRosterStore rosterStore) {
-        requireNonNull(targetRosterHash);
-        requireNonNull(rosterStore);
-        if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(targetRosterHash)) {
-            purgeVotes(requireNonNull(activeConstruction.get()), rosterStore::get);
             activeConstruction.put(nextConstruction.get());
             nextConstruction.put(HintsConstruction.DEFAULT);
             return true;
@@ -235,11 +209,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         }
         // Rotate any hint keys requested to be used in the next construction
         final var targetRoster = requireNonNull(lookup.apply(targetRosterHash));
-        final int M = partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
-        final int k = Integer.numberOfTrailingZeros(M);
+        final int numParties =
+                partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
         final var adoptionTime = asTimestamp(now);
-        for (long partyId = 0; partyId < M; partyId++) {
-            final var hintsId = new HintsId(partyId, k);
+        for (long partyId = 0; partyId < numParties; partyId++) {
+            final var hintsId = new HintsPartyId(partyId, numParties);
             final var keySet = hintsKeys.get(hintsId);
             if (keySet != null && keySet.hasNextKey()) {
                 final var rotatedKeySet = keySet.copyBuilder()
@@ -264,12 +238,12 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         final var sourceRoster = requireNonNull(lookup.apply(construction.sourceRosterHash()));
         sourceRoster
                 .rosterEntries()
-                .forEach(entry -> votes.remove(new PreprocessVoteId(construction.constructionId(), entry.nodeId())));
+                .forEach(entry -> votes.remove(new PreprocessingVoteId(construction.constructionId(), entry.nodeId())));
     }
 
-    private List<PartyAssignment> asPartyAssignments(@NonNull final Map<Long, Integer> nodePartyIds) {
+    private List<NodePartyId> asList(@NonNull final Map<Long, Integer> nodePartyIds) {
         return nodePartyIds.entrySet().stream()
-                .map(entry -> new PartyAssignment(entry.getKey(), entry.getValue()))
+                .map(entry -> new NodePartyId(entry.getKey(), entry.getValue()))
                 .toList();
     }
 }

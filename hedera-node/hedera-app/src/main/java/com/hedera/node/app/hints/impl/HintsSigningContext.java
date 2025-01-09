@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.PartyAssignment;
+import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +42,7 @@ public class HintsSigningContext {
     private HintsConstruction construction;
 
     @Nullable
-    private Map<Long, Long> nodePartyIds;
+    private Map<Long, Integer> nodePartyIds;
 
     @Inject
     public HintsSigningContext(@NonNull final HintsLibrary operations) {
@@ -64,7 +64,7 @@ public class HintsSigningContext {
      */
     public void setConstruction(@NonNull final HintsConstruction construction) {
         this.construction = requireNonNull(construction);
-        this.nodePartyIds = asNodePartyIds(construction.partyAssignments());
+        this.nodePartyIds = asNodePartyIds(construction.nodePartyIds());
     }
 
     /**
@@ -108,11 +108,11 @@ public class HintsSigningContext {
 
     /**
      * Returns the party assignments as a map of node IDs to party IDs.
-     * @param partyAssignments the party assignments
+     * @param nodePartyIds the party assignments
      * @return the map of node IDs to party IDs
      */
-    private static Map<Long, Long> asNodePartyIds(@NonNull final List<PartyAssignment> partyAssignments) {
-        return partyAssignments.stream().collect(toMap(PartyAssignment::nodeId, PartyAssignment::partyId));
+    private static Map<Long, Integer> asNodePartyIds(@NonNull final List<NodePartyId> nodePartyIds) {
+        return nodePartyIds.stream().collect(toMap(NodePartyId::nodeId, NodePartyId::partyId));
     }
 
     /**

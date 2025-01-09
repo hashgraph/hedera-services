@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
-import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -86,14 +86,14 @@ public interface ReadableHintsStore {
      * @return the preprocessed keys and votes, or null
      */
     @NonNull
-    Map<Long, PreprocessedKeysVote> votesFor(long constructionId, @NonNull Set<Long> nodeIds);
+    Map<Long, PreprocessingVote> votesFor(long constructionId, @NonNull Set<Long> nodeIds);
 
     /**
      * Returns the hinTS keys published by the given set of nodes for the given party size.
      * @param nodeIds the node ids
-     * @param partySize the party size
+     * @param numParties the number of parties in the scheme
      * @return the {@link HintsKeyPublication}s
      */
     @NonNull
-    List<HintsKeyPublication> getNodeHintsKeyPublications(@NonNull Set<Long> nodeIds, int partySize);
+    List<HintsKeyPublication> getNodeHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties);
 }

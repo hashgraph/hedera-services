@@ -26,48 +26,26 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * The unique identifier for a node in a hinTS scheme with a
- * certain maximum size M = 2^k; maps to the node's party id
- * in the range [0, M).
+ * The id of a party in a hinTS scheme; at most one scheme of
+ * a given size is active at any time, so it suffices to specify
+ * the party id and the number of parties in the scheme.
  */
-message NodeSchemeId {
+message HintsPartyId {
   /**
-   * The node id.
-   */
-  uint64 node_id = 1;
-  /**
-   * The base-2 logarithm of the maximum number of parties.
-   */
-  uint32 max_size_log_2 = 2;
-}
-
-/**
- * The unique identifier for a party in a hinTS scheme with a
- * certain maximum size M = 2^k. As nodes join and depart the
- * the network, the node mapped to the party id may change, but
- * if there is a valid hint for the party id, it will be used
- * for constructions done when network size N is in the range
- * [2^(k-1), M).
- */
-message HintsId {
-  /**
-   * The unique identifier for a party in a hinTS scheme with a
-   * certain maximum size M = 2^k; so that party ids are in the
-   * range [0, M).
+   * The party id in the range [0, M) for a hinTS scheme of size M.
    */
   uint64 party_id = 1;
   /**
-   * The base-2 logarithm of the maximum number of parties.
+   * The number of parties in the hinTS scheme.
    */
-  uint32 max_size_log_2 = 2;
+  uint32 num_parties = 2;
 }
 
 /**
  * A party's public key and hint for use in construction of a hinTS
   * aggregation key and verification key. A hints key is determined
-  * by three inputs: The  maximum number M of parties in the scheme,
-  * the party's hinTS id in the range [0, M); and the party's BLS
-  * secret key.
+  * by three inputs: The party id, the number of parties in the
+  * scheme, and and the party's BLS secret key.
  */
 message HintsKey {
   /**
@@ -81,64 +59,56 @@ message HintsKey {
 }
 
 /**
- * A set of hints keys for a party, including the node that had this
- * party id at the time of publication, the key party is currently
- * using and the key the party wishes to use in the future.
+ * A set of hinTS keys for a hinTS party, including the node assigned
+ * this party id; the key the node is currently using; and the key the
+ * node wishes to use in the future.
  */
 message HintsKeySet {
   /**
-   * The id of the node had this party id at the time of publication.
+   * The id of the node using this hinTS key.
    */
   uint64 node_id = 1;
   /**
    * The consensus time at which the network adopted the current
-   * hints key in this set. An adoption time that is sufficiently
-   * tardy relative to the latest preprocessing start time may result
-   * in the party being given zero weight in that construction's
-   * aggregation key.
+   * hinTS key in this set as the above node's hinTS key. (An adoption
+   * time that is sufficiently tardy relative to the latest preprocessing
+   * start time may result in the party being given zero weight in that
+   * construction's aggregation key.)
    */
   proto.Timestamp adoption_time = 2;
   /**
-   * The hints key a party is using.
+   * The party's active hinTS key.
    */
   HintsKey key = 3;
   /**
-   * If not null, the hints key a party wishes to use in all future
-   * hinTS constructions. Will be adopted at the beginning of the
-   * next stake period after submission; but note that until the
-   * preprocessed keys for the _current roster_ derive from the
-   * hints in this key, the party must continue signing with their
-   * current secret key if they want to contribute to signing.
+   * If not null, the hinTS key the node wants to use in hinTS
+   * constructions starting from the next roster handoff. (The node
+   * must continue contributing partial signatures with the BLS key
+   * corresponding to the above key until such a handoff occurs.)
    */
   HintsKey next_key = 4;
 }
 
 /**
- * The preprocessed keys for a number of at most M parties in a hinTS
- * scheme; some or even most of the parties may have a zeroed public
- * key due to missing or invalid hints, but the weights of the parties
- * with valid hints will exceed 1/3 the stake held by the roster from
- * which candidate parties were mapped. (Ideally, the weights will equal
- * the sum of the stake held by the entire roster, in the case that all
- * nodes in the roster were active and honest for hinTS preprocessing.)
+ * The output of the hinTS preprocessing algorithm; that is, a
+ * linear-size aggregation key and a succinct verification key.
  */
 message PreprocessedKeys {
   /**
-   * The aggregation key for the parties in the scheme; specifies the
-   * set of parties with missing or invalid hints.
+   * The aggregation key for the hinTS scheme
    */
   bytes aggregation_key = 1;
   /**
-   * The succinct verification key for the parties in the scheme.
+   * The succinct verification key for the hinTS scheme.
    */
   bytes verification_key = 2;
 }
 
 /**
- * The unique identifier for a vote in the preprocessing stage of
- * hinTS construction.
+ * The unique identifier for a node's vote in the preprocessing stage
+ * of hinTS construction.
  */
-message PreprocessVoteId {
+message PreprocessingVoteId {
   /**
    * The unique identifier for the hinTS construction that this vote
    * is associated with.
@@ -151,15 +121,14 @@ message PreprocessVoteId {
 }
 
 /**
- * A node's vote for a particular output of hinTS preprocessing in a
- * certain construction; either by explicitly giving the preprocessed
- * keys, or by identifying a node that already voted for those exact
- * keys.
+ * A node's vote for a particular output of hinTS preprocessing for a
+ * construction; either by explicitly giving the preprocessed keys, or
+ * by pointing to a node that already voted for those exact keys.
  */
-message PreprocessedKeysVote {
+message PreprocessingVote {
   oneof vote {
     /**
-     * The preprocessed keys aggregated by this node.
+     * The preprocessed keys computed by this node.
      */
     PreprocessedKeys preprocessed_keys = 1;
     /**
@@ -171,64 +140,66 @@ message PreprocessedKeysVote {
 }
 
 /**
- * The assignment of a node to a party in a hinTS construction.
+ * Captures a node's hinTS party id.
  */
-message PartyAssignment {
+message NodePartyId {
   /**
-   * The id of the node.
+   * The node id.
    */
   uint64 node_id = 1;
   /**
    * The party id.
    */
-  uint64 party_id = 2;
+  uint32 party_id = 2;
 }
 
 /**
- * A summary of progress on a hinTS construction, including a unique
- * id, the time at which construction started, the hashes of the
- * rosters used to determine when certain thresholds are met, and the
- * preprocessed keys that were approved by nodes holding strictly more
- * than 1/3 of the weight in the source roster.
+ * A summary of progress on constructing a hinTS scheme, including a
+ * unique id, the time at which construction started, the hashes of the
+ * rosters used to determine when weight inequalities are satisfied,
+ * and the preprocessed keys that were approved by nodes holding at
+ * least 1/3 of the weight in the source roster.
  */
 message HintsConstruction {
   /**
-   * The unique identifier for this hinTS construction; useful for
-   * purging associated votes when the construction is completed or
-   * cancelled.
+   * The unique identifier for this hinTS construction; used to
+   * correlate secondary state like votes with the construction.
    */
   uint64 construction_id = 1;
   /**
    * The hash of the roster whose weights are used to determine when
-   * certain thresholds are during construction.
+   * >=1/3 weight signing thresholds are reached.
    */
   bytes source_roster_hash = 2;
   /**
-   * The hash of the roster whose weights are used to assess progress
-   * toward achieving hints for parties that hold at least a strong
-   * minority of the stake in that roster.
+   * The hash of the roster whose weights are used to determine when
+   * >2/3 weight signing thresholds are reached.
    */
   bytes target_roster_hash = 3;
-  /**
-   * If the network is still gathering hinTS keys for this construction,
-   * the next time at which nodes should evaluate the published keys for
-   * sufficient valid weight to begin aggregation into the final
-   * preprocessed keys.
-   */
-  proto.Timestamp next_aggregation_checkpoint = 4;
-  /**
-   * If the network has gathered enough hinTS keys for this construction
-   * to begin preprocessing, the cutoff time at those keys must have been
-   * adopted by to be included in the final preprocessed keys.
-   */
-  proto.Timestamp aggregation_time = 5;
+
+  oneof preprocessing_time {
+    /**
+     * If the network is still gathering hinTS keys for this construction,
+     * the next time at which honest nodes should apply the consensus policy
+     * to decide whether to begin the preprocessing stage.
+     */
+    proto.Timestamp preprocessing_checkpoint_time = 4;
+    /**
+     * If the network has gathered enough hinTS keys for this construction
+     * to begin preprocessing, the cutoff time at those keys must have been
+     * adopted by to be included in the final preprocessed keys.
+     */
+    proto.Timestamp preprocessing_start_time = 5;
+  }
+
   /**
    * If set, the preprocessed hinTS keys that were approved by nodes
    * holding at least 1/3 of the weight in the source roster.
    */
   PreprocessedKeys preprocessed_keys = 6;
+
   /**
-   * The assignments of nodes to parties in the construction.
+   * The party ids assigned the nodes.
    */
-  repeated PartyAssignment party_assignments = 7;
+  repeated NodePartyId node_party_ids = 7;
 }

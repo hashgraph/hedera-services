@@ -25,9 +25,9 @@ import static java.util.stream.Collectors.toMap;
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
-import com.hedera.hapi.node.state.hints.PreprocessedKeysVote;
-import com.hedera.hapi.services.auxiliary.hints.HintsAggregationVoteTransactionBody;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
+import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
@@ -65,7 +65,7 @@ public class HintsConstructionController {
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
     private final Map<Integer, Long> partyNodeIds = new HashMap<>();
     private final RosterTransitionWeights weights;
-    private final Map<Long, PreprocessedKeysVote> votes = new HashMap<>();
+    private final Map<Long, PreprocessingVote> votes = new HashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
 
     /**
@@ -123,7 +123,7 @@ public class HintsConstructionController {
             @NonNull final Duration hintKeysWaitTime,
             @NonNull final HintsLibrary operations,
             @NonNull final List<HintsKeyPublication> publications,
-            @NonNull final Map<Long, PreprocessedKeysVote> votes,
+            @NonNull final Map<Long, PreprocessingVote> votes,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsSigningContext signingContext) {
         this.selfId = selfId;
@@ -167,16 +167,16 @@ public class HintsConstructionController {
         if (construction.hasPreprocessedKeys()) {
             return;
         }
-        if (construction.hasAggregationTime()) {
+        if (construction.hasPreprocessingStartTime()) {
             if (!votes.containsKey(selfId) && aggregationFuture == null) {
-                aggregationFuture = startAggregateFuture(asInstant(construction.aggregationTimeOrThrow()));
+                aggregationFuture = startAggregateFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
             }
         } else {
             switch (recommendAggregationBehavior(now)) {
-                case RESCHEDULE_CHECKPOINT -> construction = hintsStore.rescheduleAggregationCheckpoint(
+                case RESCHEDULE_CHECKPOINT -> construction = hintsStore.reschedulePreprocessingCheckpoint(
                         construction.constructionId(), now.plus(hintKeysWaitTime));
                 case AGGREGATE_NOW -> {
-                    construction = hintsStore.setAggregationTime(construction.constructionId(), now);
+                    construction = hintsStore.setPreprocessingStartTime(construction.constructionId(), now);
                     aggregationFuture = startAggregateFuture(now);
                 }
                 case COME_BACK_LATER -> ensureHintsKeyPublished();
@@ -191,7 +191,9 @@ public class HintsConstructionController {
      */
     public void incorporateHintsKey(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
-        if (!construction.hasAggregationTime()) {
+        // Note that even though the controller ignores keys published after start of preprocessing phase, the
+        // handler will still be remembering them for use in future constructions
+        if (!construction.hasPreprocessingStartTime()) {
             nodePartyIds.put(publication.nodeId(), publication.partyId());
             partyNodeIds.put(publication.partyId(), publication.nodeId());
             validationFutures.put(
@@ -200,14 +202,14 @@ public class HintsConstructionController {
     }
 
     /**
-     * If the construction is not already complete, incorporates an aggregation vote into the controller's state,
-     * updating network state with the winning aggregation if one is found.
+     * If the construction is not already complete, incorporates a preprocessing outputs vote into the controller's
+     * state, updating network state with the winning output if one is found.
      * @param nodeId the node ID
-     * @param vote the aggregation vote
+     * @param vote the preprocessing outputs vote
      * @param hintsStore the hints store
      */
     public void incorporateAggregationVote(
-            final long nodeId, @NonNull final PreprocessedKeysVote vote, @NonNull final WritableHintsStore hintsStore) {
+            final long nodeId, @NonNull final PreprocessingVote vote, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(vote);
         requireNonNull(hintsStore);
         if (!construction.hasPreprocessedKeys()) {
@@ -221,7 +223,7 @@ public class HintsConstructionController {
                     .map(Map.Entry::getKey)
                     .findFirst();
             maybeWinningAggregation.ifPresent(keys -> {
-                construction = hintsStore.completeAggregation(construction.constructionId(), keys, nodePartyIds);
+                construction = hintsStore.setPreprocessingOutput(construction.constructionId(), keys, nodePartyIds);
                 if (hintsStore.getActiveConstruction().constructionId() == construction.constructionId()) {
                     signingContext.setConstruction(construction);
                 }
@@ -317,7 +319,7 @@ public class HintsConstructionController {
         if (validationFutures.size() == weights.targetRosterSize()) {
             return Recommendation.AGGREGATE_NOW;
         }
-        if (now.isBefore(asInstant(construction.nextAggregationCheckpointOrThrow()))) {
+        if (now.isBefore(asInstant(construction.preprocessingCheckpointTimeOrThrow()))) {
             return Recommendation.COME_BACK_LATER;
         } else {
             return switch (urgency) {
@@ -346,9 +348,9 @@ public class HintsConstructionController {
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
                     final var keys = operations.preprocess(hintKeys, aggregatedWeights, m);
-                    final var body = HintsAggregationVoteTransactionBody.newBuilder()
+                    final var body = HintsPreprocessingVoteTransactionBody.newBuilder()
                             .constructionId(construction.constructionId())
-                            .vote(PreprocessedKeysVote.newBuilder()
+                            .vote(PreprocessingVote.newBuilder()
                                     .preprocessedKeys(keys)
                                     .build())
                             .build();
@@ -384,7 +386,7 @@ public class HintsConstructionController {
     private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final HintsKey hintsKey) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var isValid = operations.validate(hintsKey, m);
+                    final var isValid = operations.validateHintsKey(hintsKey, m);
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);

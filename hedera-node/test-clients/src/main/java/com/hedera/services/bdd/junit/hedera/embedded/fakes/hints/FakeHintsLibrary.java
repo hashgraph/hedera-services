@@ -89,15 +89,28 @@ public class FakeHintsLibrary implements HintsLibrary {
     }
 
     @Override
-    public boolean validate(@NonNull final HintsKey hintsKey, final int n) {
+    public boolean validateHintsKey(@NonNull final HintsKey hintsKey, final int n) {
         requireNonNull(hintsKey);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public PreprocessedKeys preprocess(@NonNull Map<Integer, HintsKey> hintKeys, @NonNull Map<Integer, Long> weights, int n) {
+    public PreprocessedKeys preprocess(
+            @NonNull Map<Integer, HintsKey> hintKeys, @NonNull Map<Integer, Long> weights, int n) {
         requireNonNull(hintKeys);
         requireNonNull(weights);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public boolean verifyAggregate(
+            @NonNull final Bytes message,
+            @NonNull final Bytes signature,
+            final long threshold,
+            @NonNull final Bytes verificationKey) {
+        requireNonNull(message);
+        requireNonNull(signature);
+        requireNonNull(verificationKey);
         throw new AssertionError("Not implemented");
     }
 }
