@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package com.hedera.node.app.service.token.impl.test.handlers.staking;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.rescaleWeight;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleStakeToWeight;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,7 +90,7 @@ public class EndOfStakingPeriodUpdaterTest {
     private NodeStakeUpdateStreamBuilder nodeStakeUpdateRecordBuilder;
 
     @Mock
-    private BiConsumer<Long, Integer> weightUpdates;
+    private BiConsumer<Long, Long> weightUpdates;
 
     private ReadableAccountStore accountStore;
 
@@ -128,82 +126,6 @@ public class EndOfStakingPeriodUpdaterTest {
         subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
-    }
-
-    @Test
-    void convertsStakeValueToWeightCorrectly() {
-        final var stake1 = 100_000_000L;
-        final var stake2 = 123_456_789_123L;
-        final var stake3 = 500_000_867_919L;
-        final var stake4 = 900_000_789_111L;
-        final var stake5 = 0L;
-        final var totalStake = stake1 + stake2 + stake3 + stake4;
-        final var updatedWeight1 = scaleStakeToWeight(stake1, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight2 = scaleStakeToWeight(stake2, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight3 = scaleStakeToWeight(stake3, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight4 = scaleStakeToWeight(stake4, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var updatedWeight5 = scaleStakeToWeight(stake5, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var totalWeight = updatedWeight1 + updatedWeight2 + updatedWeight3 + updatedWeight4 + updatedWeight5;
-        assertThat(totalWeight).isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
-        assertThat(updatedWeight1).isEqualTo(1);
-        assertThat(updatedWeight2).isEqualTo((stake2 * SUM_OF_CONSENSUS_WEIGHTS) / totalStake);
-        assertThat(updatedWeight3).isEqualTo((stake3 * SUM_OF_CONSENSUS_WEIGHTS) / totalStake);
-        assertThat(updatedWeight4).isEqualTo((stake4 * SUM_OF_CONSENSUS_WEIGHTS) / totalStake);
-        assertThat(updatedWeight5).isZero();
-    }
-
-    @Test
-    void scalesBackWeightToStake() {
-        final var minStake = 100_000_000L;
-        final var maxStake = 900_000_789_000L;
-
-        final var equalsMinStake = 100_000_000L;
-        final var stakeInBetween1 = 123_456_789_123L;
-        final var stakeInBetween2 = 123_456_000_000L;
-        final var stakeEqualsMax = 900_000_789_000L;
-        final var zeroStake = 0L;
-        // calculate weights
-        final var totalStake = equalsMinStake + stakeInBetween1 + stakeInBetween2 + stakeEqualsMax + zeroStake;
-        final var weightForEqualsMin = scaleStakeToWeight(equalsMinStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightInBetween1 = scaleStakeToWeight(stakeInBetween1, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightInBetween2 = scaleStakeToWeight(stakeInBetween2, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightForEqualsMax = scaleStakeToWeight(stakeEqualsMax, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var weightForZeroStake = scaleStakeToWeight(zeroStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var totalWeight =
-                weightForEqualsMin + weightInBetween1 + weightInBetween2 + weightForEqualsMax + weightForZeroStake;
-        // total of all weights should be less than or equal to SUM_OF_CONSENSUS_WEIGHTS
-        assertThat(totalWeight).isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
-        assertThat(weightForEqualsMin).isEqualTo(1);
-        assertThat(weightInBetween1).isEqualTo((stakeInBetween1 * SUM_OF_CONSENSUS_WEIGHTS) / totalStake);
-        assertThat(weightInBetween2).isEqualTo((stakeInBetween2 * SUM_OF_CONSENSUS_WEIGHTS) / totalStake);
-        assertThat(weightForEqualsMax).isEqualTo((stakeEqualsMax * SUM_OF_CONSENSUS_WEIGHTS) / totalStake);
-        assertThat(weightForZeroStake).isZero();
-
-        final var scaledStake1 =
-                rescaleWeight(weightForEqualsMin, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var scaledStake2 =
-                rescaleWeight(weightInBetween1, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var scaledStake3 =
-                rescaleWeight(weightInBetween2, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var scaledStake4 =
-                rescaleWeight(weightForEqualsMax, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-        final var scaledStake5 =
-                rescaleWeight(weightForZeroStake, minStake, maxStake, totalStake, SUM_OF_CONSENSUS_WEIGHTS);
-
-        // calculate scaled weight based on the max weight allocated and max stake of all nodes
-        final var maxWeight = Math.max(
-                weightForEqualsMin, Math.max(weightInBetween1, Math.max(weightInBetween2, weightForEqualsMax)));
-        final var expectedEqualScaledStake =
-                ((maxStake - minStake) * (weightInBetween2 - 1)) / (maxWeight - 1) + minStake;
-        // stake equals min stake
-        assertThat(scaledStake1).isEqualTo(equalsMinStake);
-        // Both these fall in the same bucket since their weight is the same. So, they get same scaled weight
-        assertThat(scaledStake2).isEqualTo(expectedEqualScaledStake);
-        assertThat(scaledStake3).isEqualTo(expectedEqualScaledStake);
-        // stake equals max stake, will return max stake
-        assertThat(scaledStake4).isEqualTo(stakeEqualsMax);
-        // stake equals zero, will return zero
-        assertThat(scaledStake5).isEqualTo(zeroStake);
     }
 
     @Test
@@ -245,13 +167,13 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
         assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
         assertThat(resultStakingInfo1.weight()).isZero();
-        assertThat(resultStakingInfo2.weight()).isEqualTo(192);
+        assertThat(resultStakingInfo2.weight()).isEqualTo(50000000000L);
         assertThat(resultStakingInfo3.weight()).isZero();
         assertThat(resultStakingInfo1.pendingRewards()).isZero();
         assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(63000L);
         assertThat(resultStakingInfo3.pendingRewards()).isZero();
         assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
-                .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
+                .isLessThanOrEqualTo(resultStakingInfo2.stake());
 
         assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 1 is now [6, 6, 5]");
         assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 2 is now [101, 1, 1]");
@@ -318,14 +240,14 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
         assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
         assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
-        assertThat(resultStakingInfo1.weight()).isEqualTo(307);
-        assertThat(resultStakingInfo2.weight()).isEqualTo(192);
+        assertThat(resultStakingInfo1.weight()).isEqualTo(80000000000L);
+        assertThat(resultStakingInfo2.weight()).isEqualTo(50000000000L);
         assertThat(resultStakingInfo3.weight()).isZero();
         assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(72000);
         assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(63000L);
         assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(72000L);
         assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
-                .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
+                .isLessThanOrEqualTo(resultStakingInfo1.stake() + resultStakingInfo2.stake());
     }
 
     @Test
@@ -358,15 +280,15 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
         assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
         assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
-        assertThat(resultStakingInfo1.weight()).isEqualTo(307);
-        assertThat(resultStakingInfo2.weight()).isEqualTo(192);
+        assertThat(resultStakingInfo1.weight()).isEqualTo(80000000000L);
+        assertThat(resultStakingInfo2.weight()).isEqualTo(50000000000L);
         assertThat(resultStakingInfo3.weight()).isZero();
         // Since max stake rewarded is 0, all pending rewards should be 0
         assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(0L);
         assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(0L);
         assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(0L);
         assertThat(resultStakingInfo1.weight() + resultStakingInfo2.weight() + resultStakingInfo3.weight())
-                .isLessThanOrEqualTo(SUM_OF_CONSENSUS_WEIGHTS);
+                .isLessThanOrEqualTo(resultStakingInfo1.stake() + resultStakingInfo2.stake());
     }
 
     @Test
@@ -393,23 +315,6 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(6L, 6L, 5L));
         assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(1L, 1L, 1L));
         assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
-    }
-
-    @Test
-    void returnsZeroWeightIfTotalStakeOfAllNodeIsZero() {
-        final var weight = scaleStakeToWeight(10, 0, 500);
-        assertThat(weight).isEqualTo(0);
-        assertThat(logCaptor.errorLogs()).contains("Scaling 10 to zero weight because total stake is 0");
-    }
-
-    @Test
-    void returnsZeroScaledUpWeightIfTotalStakeOfAllNodeIsZero() {
-        final var weight = rescaleWeight(10, 1000, 1000, 0, 500);
-        assertThat(weight).isEqualTo(0);
-        assertThat(logCaptor.warnLogs())
-                .contains(
-                        "Total stake of all nodes is 0, "
-                                + "which shouldn't happen (weight=10, minStake=1000, maxStake=1000, sumOfConsensusWeights=500)");
     }
 
     @Test
@@ -464,7 +369,6 @@ public class EndOfStakingPeriodUpdaterTest {
         given(context.knownNodeIds()).willReturn(Set.of(NODE_NUM_1.number(), NODE_NUM_2.number(), NODE_NUM_3.number()));
     }
 
-    private static final int SUM_OF_CONSENSUS_WEIGHTS = 500;
     private static final long MIN_STAKE = 100L * HBARS_TO_TINYBARS;
     private static final long MAX_STAKE = 800L * HBARS_TO_TINYBARS;
     private static final long STAKE_TO_REWARD_1 = 700L * HBARS_TO_TINYBARS;
@@ -558,7 +462,6 @@ public class EndOfStakingPeriodUpdaterTest {
                 .withConfigDataType(StakingConfig.class)
                 .withValue("staking.isEnabled", true)
                 .withValue("staking.rewardRate", 100L)
-                .withValue("staking.sumOfConsensusWeights", SUM_OF_CONSENSUS_WEIGHTS)
                 .withValue("staking.maxStakeRewarded", Long.MAX_VALUE)
                 .withValue("staking.perHbarRewardRate", 100L)
                 .withValue("staking.rewardBalanceThreshold", 0);

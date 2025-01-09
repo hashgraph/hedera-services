@@ -113,7 +113,7 @@ public class StakePeriodChanges {
             final var config = tokenContext.configuration();
             try {
                 final var nodeStore = newWritableNodeStore(stack, config);
-                final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
+                final BiConsumer<Long, Long> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
                         .getForModify(nodeId)
                         .copyBuilder()
                         .weight(weight)
