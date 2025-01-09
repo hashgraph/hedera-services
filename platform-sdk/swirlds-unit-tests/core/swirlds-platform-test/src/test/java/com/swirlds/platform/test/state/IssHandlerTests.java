@@ -135,7 +135,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -167,7 +167,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -205,7 +205,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -237,7 +237,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -275,7 +275,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -313,6 +313,6 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 }
