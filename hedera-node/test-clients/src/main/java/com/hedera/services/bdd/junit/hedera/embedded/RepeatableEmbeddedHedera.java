@@ -21,6 +21,7 @@ import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.cr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -43,6 +45,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 /**
  * An embedded Hedera node that handles transactions synchronously on ingest and thus
@@ -58,6 +61,11 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
     private final Queue<Runnable> pendingNodeSubmissions = new ArrayDeque<>();
+
+    private static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CALLBACK = ignore -> {};
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleStateSignatureCallback =
+            NO_OP_CALLBACK;
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleStateSignatureCallback = NO_OP_CALLBACK;
 
     // The amount of consensus time that will be simulated to elapse before the next transaction---note
     // that in repeatable mode, every transaction gets its own event, and each event gets its own round
@@ -81,6 +89,20 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     @Override
     public void tick(@NonNull Duration duration) {
         time.tick(duration);
+    }
+
+    @Override
+    public TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
+        this.preHandleStateSignatureCallback = preHandleCallback;
+        this.handleStateSignatureCallback = handleCallback;
+        final var response = submit(transaction, nodeAccountId);
+        this.preHandleStateSignatureCallback = NO_OP_CALLBACK;
+        this.handleStateSignatureCallback = NO_OP_CALLBACK;
+        return response;
     }
 
     @Override
@@ -152,10 +174,10 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
      * Executes the transaction in the last-created event within its own round.
      */
     private void handleNextRound() {
-        hedera.onPreHandle(platform.lastCreatedEvent, state);
+        hedera.onPreHandle(platform.lastCreatedEvent, state, preHandleStateSignatureCallback);
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
-        hedera.handleWorkflow().handleRound(state, round);
+        hedera.handleWorkflow().handleRound(state, round, handleStateSignatureCallback);
         hedera.onSealConsensusRound(round, state);
         notifyStateHashed(round.getRoundNum());
     }
