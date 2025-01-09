@@ -25,7 +25,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
-import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
+import com.hedera.node.app.hapi.utils.keys.KeyUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -585,7 +585,7 @@ public class KeyFactory {
         final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
         final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
         final var key = (EdDSAPrivateKey) pkMap.get(hexedPubKey);
-        Ed25519Utils.writeKeyTo(key, loc, passphrase);
+        KeyUtils.writeKeyTo(key, loc, passphrase);
     }
 
     private void exportEcdsaKey(
@@ -597,7 +597,7 @@ public class KeyFactory {
         final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
         final var key = (ECPrivateKey) pkMap.get(hexedPubKey);
         final var explicitLoc = loc != null ? loc : explicitEcdsaLocFor(name);
-        Ed25519Utils.writeKeyTo(key, explicitLoc, pass);
+        KeyUtils.writeKeyTo(key, explicitLoc, pass);
     }
 
     private List<Entry<Key, SigControl>> authorsFor(
