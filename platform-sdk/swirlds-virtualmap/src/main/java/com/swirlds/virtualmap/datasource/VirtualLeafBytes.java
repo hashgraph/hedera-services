@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,10 +83,7 @@ public class VirtualLeafBytes<V> {
     private Bytes valueBytes;
 
     public VirtualLeafBytes(
-            final long path,
-            @NonNull final Bytes keyBytes,
-            @Nullable final V value,
-            @Nullable Codec<V> valueCodec) {
+            final long path, @NonNull final Bytes keyBytes, @Nullable final V value, @Nullable Codec<V> valueCodec) {
         this(path, keyBytes, keyBytes.hashCode(), value, valueCodec, null);
     }
 
@@ -100,19 +97,13 @@ public class VirtualLeafBytes<V> {
         this(path, keyBytes, keyHashCode, value, valueCodec, null);
     }
 
-    public VirtualLeafBytes(
-            final long path,
-            @NonNull final Bytes keyBytes,
-            @Nullable Bytes valueBytes) {
+    public VirtualLeafBytes(final long path, @NonNull final Bytes keyBytes, @Nullable Bytes valueBytes) {
         this(path, keyBytes, keyBytes.hashCode(), null, null, valueBytes);
     }
 
     @Deprecated
     public VirtualLeafBytes(
-            final long path,
-            @NonNull final Bytes keyBytes,
-            final int keyHashCode,
-            @Nullable Bytes valueBytes) {
+            final long path, @NonNull final Bytes keyBytes, final int keyHashCode, @Nullable Bytes valueBytes) {
         this(path, keyBytes, keyHashCode, null, null, valueBytes);
     }
 

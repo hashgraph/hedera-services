@@ -13,12 +13,12 @@ open module com.swirlds.common.test.fixtures {
     exports com.swirlds.common.test.fixtures.fcqueue;
     exports com.swirlds.common.test.fixtures.platform;
 
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
-    requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.logging;
     requires com.swirlds.virtualmap;
