@@ -17,7 +17,6 @@
 package com.swirlds.demo.migration;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +28,6 @@ import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.demo.migration.MigrationTestingToolTransaction.TransactionType;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -48,8 +46,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 public class MigrationTestingToolStateTest {
     private static MigrationTestingToolState state;
@@ -87,16 +83,10 @@ public class MigrationTestingToolStateTest {
     @Test
     void handleConsensusRoundWithSystemTransaction() {
         givenRoundAndEvent();
-
         final var stateSignatureTransactionBytes =
                 StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
-        try (MockedStatic<TransactionUtils> utilities = Mockito.mockStatic(TransactionUtils.class)) {
-            MigrationTestingToolTransaction migrationTestingToolTransaction =
-                    Mockito.spy(new MigrationTestingToolTransaction(TransactionType.MERKLE_MAP, 1L));
-            utilities.when(() -> TransactionUtils.parseTransaction(any())).thenReturn(migrationTestingToolTransaction);
-            Mockito.doNothing().when(migrationTestingToolTransaction).applyTo(state);
-        }
+
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
         assertThat(consumedTransactions).hasSize(1);
@@ -121,13 +111,6 @@ public class MigrationTestingToolStateTest {
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
-        try (MockedStatic<TransactionUtils> utilities = Mockito.mockStatic(TransactionUtils.class)) {
-            MigrationTestingToolTransaction migrationTestingToolTransaction =
-                    Mockito.spy(new MigrationTestingToolTransaction(TransactionType.MERKLE_MAP, 1L));
-            utilities.when(() -> TransactionUtils.parseTransaction(any())).thenReturn(migrationTestingToolTransaction);
-            Mockito.doNothing().when(migrationTestingToolTransaction).applyTo(state);
-        }
-
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
         assertThat(consumedTransactions).hasSize(3);
@@ -136,16 +119,8 @@ public class MigrationTestingToolStateTest {
     @Test
     void handleConsensusRoundWithDeprecatedSystemTransaction() {
         givenRoundAndEvent();
-
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.EMPTY);
         when(transaction.isSystem()).thenReturn(true);
-
-        try (MockedStatic<TransactionUtils> utilities = Mockito.mockStatic(TransactionUtils.class)) {
-            MigrationTestingToolTransaction migrationTestingToolTransaction =
-                    Mockito.spy(new MigrationTestingToolTransaction(TransactionType.MERKLE_MAP, 1L));
-            utilities.when(() -> TransactionUtils.parseTransaction(any())).thenReturn(migrationTestingToolTransaction);
-            Mockito.doNothing().when(migrationTestingToolTransaction).applyTo(state);
-        }
 
         state.handleConsensusRound(round, platformStateModifier, consumer);
 
