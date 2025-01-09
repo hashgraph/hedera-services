@@ -18,6 +18,7 @@ package com.hedera.node.app.state.listeners;
 
 import com.swirlds.platform.system.state.notifications.FatalIssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +35,7 @@ public class FatalIssListenerImpl implements FatalIssListener {
     }
 
     @Override
-    public void notify(final IssNotification data) {
+    public void notify(@NonNull final IssNotification data) {
         log.warn("ISS detected (type={}, round={})", data.getIssType(), data.getRound());
     }
 }

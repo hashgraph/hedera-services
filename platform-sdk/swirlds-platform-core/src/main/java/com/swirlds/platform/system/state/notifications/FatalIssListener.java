@@ -22,8 +22,8 @@ import com.swirlds.common.notification.DispatchOrder;
 import com.swirlds.common.notification.Listener;
 
 /**
- * Listener for fatal ISS events (i.e. of type SELF or CATASTROPHIC). This listener is unordered and asynchronous.
+ * Listener for fatal ISS events (i.e. of type SELF or CATASTROPHIC). This listener is ordered and asynchronous.
  * If you require ordered and synchronous dispatch that includes all ISS events, then use {@link IssListener}.
  */
-@DispatchModel(mode = DispatchMode.ASYNC, order = DispatchOrder.UNORDERED)
+@DispatchModel(mode = DispatchMode.ASYNC, order = DispatchOrder.ORDERED)
 public interface FatalIssListener extends Listener<IssNotification> {}

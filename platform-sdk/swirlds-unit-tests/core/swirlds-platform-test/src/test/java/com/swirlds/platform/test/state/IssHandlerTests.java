@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("IssHandler Tests")
 class IssHandlerTests {
-
     @Test
     @DisplayName("Other ISS Always Freeze")
     void otherIssAlwaysFreeze() {
@@ -60,7 +59,6 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
-
         final IssHandler handler =
                 new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
@@ -130,15 +128,14 @@ class IssHandlerTests {
         final IssHandler handler =
                 new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
-        final IssNotification notification = new IssNotification(1234L, IssType.SELF_ISS);
-        handler.issObserved(notification);
+        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(1, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(1234L, issRound.getValue());
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -163,15 +160,14 @@ class IssHandlerTests {
         final IssHandler handler =
                 new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
-        final IssNotification notification = new IssNotification(1234L, IssType.SELF_ISS);
-        handler.issObserved(notification);
+        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(1234L, issRound.getValue());
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -196,21 +192,20 @@ class IssHandlerTests {
         final IssHandler handler =
                 new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
-        final IssNotification notification = new IssNotification(1234L, IssType.SELF_ISS);
-        handler.issObserved(notification);
+        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.issObserved(new IssNotification(1235L, IssType.SELF_ISS));
+        handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(1234L, issRound.getValue());
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -242,7 +237,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(1234L, issRound.getValue());
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -280,7 +275,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(1234L, issRound.getValue());
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -318,6 +313,6 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(1234L, issRound.getValue());
+        assertEquals(issRound.getValue(), 1234L);
     }
 }

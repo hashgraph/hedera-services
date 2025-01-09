@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class DefaultIssHandler implements IssHandler {
     @Override
     public void issObserved(@NonNull final IssNotification issNotification) {
         switch (issNotification.getIssType()) {
-            case SELF_ISS -> selfIssObserved(issNotification);
+            case SELF_ISS -> selfIssObserved(issNotification.getRound());
             case OTHER_ISS -> otherIssObserved();
             case CATASTROPHIC_ISS -> catastrophicIssObserver(issNotification.getRound());
         }
@@ -109,16 +109,16 @@ public class DefaultIssHandler implements IssHandler {
     /**
      * This method is called when there is a self ISS.
      *
-     * @param notification the self-ISS notification
+     * @param round the round of the ISS
      */
-    private void selfIssObserved(@NonNull final IssNotification notification) {
+    private void selfIssObserved(@NonNull final Long round) {
 
         if (halted) {
             // don't take any action once halted
             return;
         }
 
-        updateIssRoundInScratchpad(notification.getRound());
+        updateIssRoundInScratchpad(round);
 
         if (stateConfig.haltOnAnyIss()) {
             haltRequestedConsumer.accept("self ISS observed");
