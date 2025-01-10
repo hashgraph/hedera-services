@@ -211,7 +211,8 @@ public class MigrationTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+    @NonNull
+    public Bytes encodeSystemTransaction(final @NonNull StateSignatureTransaction transaction) {
         return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

@@ -284,10 +284,20 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
 
     @Override
     public void preHandle(
-            @NonNull Event event,
-            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         event.forEachTransaction(transaction -> {
-            if (!transaction.isSystem() && isSystemTransaction(transaction.getApplicationTransaction())) {
+
+            // We don't want to consume deprecated EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in
+            // the callback, since it's intended to be used only
+            // for the new form of encoded system transactions in Bytes.
+            // We skip the current iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            if (isSystemTransaction(transaction.getApplicationTransaction())) {
                 consumeSystemTransaction(transaction, event, stateSignatureTransaction);
             }
         });
@@ -357,9 +367,10 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private void consumeSystemTransaction(
-            final Transaction transaction,
-            final Event event,
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         try {
             final var stateSignatureTransaction =
                     StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
