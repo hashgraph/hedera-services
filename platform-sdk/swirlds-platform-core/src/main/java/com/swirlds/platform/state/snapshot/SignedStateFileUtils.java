@@ -30,7 +30,7 @@ public final class SignedStateFileUtils {
     /**
      * The name of the file that contains the human-readable address book in the saved state
      */
-    public static final String CURRENT_ROSTER_FILE_NAME = "currentRoster.txt";
+    public static final String CURRENT_ROSTER_FILE_NAME = "currentRoster.json";
 
     /**
      * The initial version of the signature set file
