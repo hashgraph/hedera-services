@@ -310,9 +310,20 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         .gossipCaCertificate(Bytes.fromHex("0123"))
                         .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
                         .build());
+        nodes.put(
+                new EntityNumber(2L),
+                Node.newBuilder()
+                        .nodeId(2L)
+                        .weight(3L)
+                        .gossipCaCertificate(Bytes.fromHex("0123"))
+                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .build());
         stakingInfo.put(
                 new EntityNumber(0L),
                 StakingNodeInfo.newBuilder().stake(1000).weight(1).build());
+        stakingInfo.put(
+                new EntityNumber(1),
+                StakingNodeInfo.newBuilder().stake(1000).deleted(true).weight(1).build());
 
         subject.handleTxBody(state, txBody.build(), configWith(true, true, false));
         final var candidateRosterHash = state.getWritableStates(RosterService.NAME)
@@ -322,9 +333,13 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         final var candidateRoster = state.getWritableStates(RosterService.NAME)
                 .<ProtoBytes, Roster>get("ROSTERS")
                 .get(new ProtoBytes(candidateRosterHash));
-        assertEquals(candidateRoster.rosterEntries().size(), 2);
+        assertEquals(candidateRoster.rosterEntries().size(), 3);
+        // Updates the stake value for node 0 as weight in the candidate roster
         assertEquals(candidateRoster.rosterEntries().get(0).weight(), 1000);
+        // node 1 is deleted, so weight is zero
         assertEquals(candidateRoster.rosterEntries().get(1).weight(), 0);
+        // node 2 is newly added in the candidate roster, so weight will be zero
+        assertEquals(candidateRoster.rosterEntries().get(2).weight(), 0);
     }
 
     private Configuration configWith(

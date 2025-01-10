@@ -183,7 +183,7 @@ public class PlatformStateUpdates {
                     final var nodeId = entry.nodeId();
                     final var stakingInfo = stakingInfoStore.get(nodeId);
                     long weight = 0;
-                    if (stakingInfo != null) {
+                    if (stakingInfo != null && !stakingInfo.deleted()) {
                         weight = stakingInfo.stake();
                     }
                     return entry.copyBuilder().weight(weight).build();
