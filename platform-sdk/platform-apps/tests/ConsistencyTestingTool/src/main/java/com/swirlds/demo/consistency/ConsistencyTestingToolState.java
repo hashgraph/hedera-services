@@ -23,6 +23,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
@@ -253,8 +254,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             }
 
             if (isSystemTransaction(transaction)) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
                 return;
             }
             final long transactionContents =
@@ -293,8 +293,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
         round.forEachEventTransaction((ev, tx) -> {
             if (isSystemTransaction(tx)) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(ev.getCreatorId(), ev.getSoftwareVersion(), tx));
+                consumeSystemTransaction(tx, ev, stateSignatureTransaction);
             } else {
                 applyTransactionToState(tx);
             }
@@ -315,5 +314,19 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      */
     private boolean isSystemTransaction(final Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 8;
+    }
+
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 }
