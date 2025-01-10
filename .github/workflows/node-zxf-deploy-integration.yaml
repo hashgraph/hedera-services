@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2025 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ jobs:
           COMMIT_AUTHOR="$(git log -1 --pretty=format:'%an')"
           COMMIT_MSG="$(git log -1 --pretty=format:'%s')"
           COMMIT_SHA="$(git rev-parse HEAD)"
-          
+
           # Print them to the console
           echo "Commit Author: $COMMIT_AUTHOR"
           echo "Commit Message: $COMMIT_MSG"
