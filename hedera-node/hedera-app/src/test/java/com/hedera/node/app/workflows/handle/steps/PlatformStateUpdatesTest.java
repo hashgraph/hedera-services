@@ -315,8 +315,14 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 StakingNodeInfo.newBuilder().stake(1000).weight(1).build());
 
         subject.handleTxBody(state, txBody.build(), configWith(true, true, false));
-
-        final var candidateRoster = rosters.get(rosterStateBackingStore.get().candidateRosterHash());
+        final var candidateRosterHash = state.getWritableStates(RosterService.NAME)
+                .<RosterState>getSingleton("ROSTER_STATE")
+                .get()
+                .candidateRosterHash();
+        final var candidateRoster = state.getWritableStates(RosterService.NAME)
+                .<ProtoBytes, Roster>get("ROSTERS")
+                .get(new ProtoBytes(candidateRosterHash));
+        assertEquals(candidateRoster.rosterEntries().size(), 2);
         assertEquals(candidateRoster.rosterEntries().get(0).weight(), 1000);
         assertEquals(candidateRoster.rosterEntries().get(1).weight(), 0);
     }

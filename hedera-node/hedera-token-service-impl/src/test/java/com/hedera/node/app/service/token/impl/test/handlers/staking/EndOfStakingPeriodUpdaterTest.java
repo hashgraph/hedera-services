@@ -329,6 +329,48 @@ public class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
+    void doesntUpdateWeightWhenUseRosterLifecycleIsTrue() {
+        commonSetup(1_000_000_000L, STAKING_INFO_1, STAKING_INFO_2, STAKING_INFO_3);
+
+        // Assert preconditions
+        assertThat(STAKING_INFO_1.weight()).isZero();
+        assertThat(STAKING_INFO_2.weight()).isZero();
+        assertThat(STAKING_INFO_3.weight()).isZero();
+        assertThat(STAKING_INFO_1.pendingRewards()).isZero();
+        assertThat(STAKING_INFO_2.pendingRewards()).isZero();
+        assertThat(STAKING_INFO_3.pendingRewards()).isZero();
+        given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
+                .willReturn(nodeStakeUpdateRecordBuilder);
+
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, true);
+
+        assertThat(stakingRewardsStore.totalStakeRewardStart())
+                .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
+        assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(130000000000L);
+        final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1.number());
+        final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2.number());
+        final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3.number());
+        assertThat(resultStakingInfo1.stake()).isEqualTo(80000000000L);
+        assertThat(resultStakingInfo2.stake()).isEqualTo(50000000000L);
+        assertThat(resultStakingInfo3.stake()).isZero();
+        assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
+        assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
+        assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
+        assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
+        // Weight will not be updated, stake will be used as weight in roster
+        assertThat(resultStakingInfo1.weight()).isZero();
+        assertThat(resultStakingInfo2.weight()).isZero();
+        assertThat(resultStakingInfo3.weight()).isZero();
+        assertThat(resultStakingInfo1.pendingRewards()).isEqualTo(72000);
+        assertThat(resultStakingInfo2.pendingRewards()).isEqualTo(63000L);
+        assertThat(resultStakingInfo3.pendingRewards()).isEqualTo(72000L);
+    }
+
+    @Test
     void calculatesNewEndOfPeriodStakingFieldsAsExpectedWhenMaxStakeIsLessThanTotalStake() {
         commonSetup(1_000_000_000L, STAKING_INFO_1, STAKING_INFO_2, STAKING_INFO_3);
         given(context.configuration())
@@ -510,7 +552,9 @@ public class EndOfStakingPeriodUpdaterTest {
      */
     public static final EntityNumber NODE_NUM_8 =
             EntityNumber.newBuilder().number(8).build();
-    /** Staking info for node 1. */
+    /**
+     * Staking info for node 1.
+     */
     public static final StakingNodeInfo STAKING_INFO_1 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_1.number())
             .minStake(MIN_STAKE)
@@ -524,7 +568,9 @@ public class EndOfStakingPeriodUpdaterTest {
             .deleted(false)
             .weight(0)
             .build();
-    /** Staking info for node 2. */
+    /**
+     * Staking info for node 2.
+     */
     public static final StakingNodeInfo STAKING_INFO_2 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_2.number())
             .minStake(MIN_STAKE)
@@ -538,7 +584,9 @@ public class EndOfStakingPeriodUpdaterTest {
             .deleted(false)
             .weight(0)
             .build();
-    /** Staking info for node 3. */
+    /**
+     * Staking info for node 3.
+     */
     public static final StakingNodeInfo STAKING_INFO_3 = StakingNodeInfo.newBuilder()
             .nodeNumber(NODE_NUM_3.number())
             .minStake(MIN_STAKE)
