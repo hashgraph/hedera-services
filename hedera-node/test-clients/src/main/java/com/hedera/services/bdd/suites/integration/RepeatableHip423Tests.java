@@ -129,9 +129,9 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TRIGGERING_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
-import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.BASIC_XFER;
-import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.CREATE_TX;
-import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.SIGN_TX;
+import static com.hedera.services.bdd.suites.hip423.RepeatableScheduleLongTermExecutionTest.BASIC_XFER;
+import static com.hedera.services.bdd.suites.hip423.RepeatableScheduleLongTermExecutionTest.CREATE_TX;
+import static com.hedera.services.bdd.suites.hip423.RepeatableScheduleLongTermExecutionTest.SIGN_TX;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
