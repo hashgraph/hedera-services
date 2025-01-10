@@ -107,7 +107,7 @@ public class KeyFactory {
     public KeyFactory(@NonNull final HapiSpecSetup setup, @NonNull final HapiSpecRegistry registry) throws Exception {
         this.setup = requireNonNull(setup);
         this.registry = requireNonNull(registry);
-        final var genesisKey = setup.payerKey();
+        final var genesisKey = setup.payerKeyAsEd25519();
         incorporate(setup.genesisAccountName(), genesisKey, KeyShape.listSigs(ON));
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.keys;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -70,6 +71,10 @@ public final class Ed25519Utils {
         } catch (final IOException | OperatorCreationException | PKCSException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static byte[] extractEd25519PublicKey(@NonNull final EdDSAPrivateKey key) {
+        return key.getAbyte();
     }
 
     public static void writeKeyTo(final byte[] seed, final String pemLoc, final String passphrase) {

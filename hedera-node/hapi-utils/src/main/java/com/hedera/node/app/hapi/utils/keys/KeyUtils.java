@@ -27,7 +27,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.SecureRandom;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.openssl.PKCS8Generator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
@@ -38,10 +40,11 @@ import org.bouncycastle.operator.OperatorCreationException;
  * Utility class for working with algorithm-agnostic cryptographic keys
  */
 public final class KeyUtils {
+    public static final Provider BC_PROVIDER = new BouncyCastleProvider();
+    public static final ECNamedCurveParameterSpec EC_SPEC = ECNamedCurveTable.getParameterSpec("secp256k1");
     public static final String TEST_CLIENTS_PREFIX = "hedera-node" + File.separator + "test-clients" + File.separator;
 
     private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;
-    private static final Provider BC_PROVIDER = new BouncyCastleProvider();
     private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
     private static final DrbgParameters.Instantiation DRBG_INSTANTIATION =
             DrbgParameters.instantiation(256, DrbgParameters.Capability.RESEED_ONLY, null);
