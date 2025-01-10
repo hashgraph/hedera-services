@@ -7,7 +7,7 @@ migrating to a fully automated release process with CITR.
 
 ### Historical Process
 
-The release process within hedera-services has been using a release branching strategy that follows
+The release process within Hedera-Services has been using a release branching strategy that follows
 a set development cycle
 
 |                Stage                | Duration |
@@ -75,7 +75,7 @@ test/release networks.
 Beginning with release 0.59:
 
 - The following items will be restricted:
-  - Creating release branches in `hedera-services` (like release/0.59)
+  - Creating release branches in Hedera-Services (like release/0.59)
   - Creating versioned tags like (v0.59.*)
 - The following workflows will be added:
   - `zxf-trigger-semantic-release` - Generate a release tag given an XTS passing build id
