@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ import java.util.Map;
  * The core transaction encoder and decoder implementation. See below for the binary transaction format specification.
  * <p>
  * Transaction Structure:
- * ------------------------------------------------------------------------------------------------------------
- * | 8 bytes | 1 byte | 1 byte   | 4 bytes   | pklen bytes | 4 bytes | siglen bytes | 4 bytes | datalen bytes |
- * |---------|--------|----------|-----------|-------------|---------|--------------|---------|---------------|
- * | id      | signed | sigAlgId | pklen     | pk          |  siglen | sig          | datalen | data          |
- * ------------------------------------------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------------------------------------------------
+ * | 1 byte | 8 bytes | 1 byte | 1 byte   | 4 bytes   | pklen bytes | 4 bytes | siglen bytes | 4 bytes | datalen bytes |
+ * |--------|---------|--------|----------|-----------|-------------|---------|--------------|---------|---------------|
+ * | marker | id      | signed | sigAlgId | pklen     | pk          |  siglen | sig          | datalen | data          |
+ * ---------------------------------------------------------------------------------------------------------------------
  */
 final class TransactionCodec {
 
@@ -78,11 +78,14 @@ final class TransactionCodec {
 
     public static byte[] encode(
             final SigningAlgorithm algorithm, final long transactionId, final byte[] signature, final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.allocate(bufferSize(algorithm, (data != null) ? data.length : 0));
+        final ByteBuffer buffer = ByteBuffer.allocate(1 + bufferSize(algorithm, (data != null) ? data.length : 0));
         final boolean signed =
                 algorithm != null && algorithm.isAvailable() && signature != null && signature.length > 0;
-
-        buffer.putLong(transactionId)
+        // Add a 0 byte as a marker to indicate the start of an application transaction. This is used
+        // to later differentiate between application transactions and system transactions.
+        final byte marker = 0;
+        buffer.put(marker)
+                .putLong(transactionId)
                 .put((signed) ? (byte) 1 : 0)
                 .put((signed) ? algorithm.getId() : NO_ALGORITHM_PRESENT)
                 .putInt((signed) ? algorithm.getPublicKeyLength() : 0);

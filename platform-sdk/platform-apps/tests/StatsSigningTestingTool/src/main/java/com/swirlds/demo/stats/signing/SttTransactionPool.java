@@ -165,7 +165,7 @@ final class SttTransactionPool {
                     final byte[] sig = exSig.getSignature();
 
                     transactions[i] = TransactionCodec.encode(alg, transactionId, sig, data);
-                } catch (SignatureException e) {
+                } catch (final SignatureException e) {
                     // If we are unable to sign the transaction then log the failure and create an unsigned transaction
                     logger.error(
                             EXCEPTION.getMarker(),
@@ -202,7 +202,7 @@ final class SttTransactionPool {
                 if (algorithm.isAvailable()) {
                     activeAlgorithms.put(algorithm.getId(), algorithm);
                 }
-            } catch (Exception ex) {
+            } catch (final Exception ex) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Failed to Activate Signing Algorithm [ id = {}, class = {} ]",
@@ -211,9 +211,5 @@ final class SttTransactionPool {
                         ex);
             }
         }
-    }
-
-    public int getTransactionSize() {
-        return transactionSize;
     }
 }

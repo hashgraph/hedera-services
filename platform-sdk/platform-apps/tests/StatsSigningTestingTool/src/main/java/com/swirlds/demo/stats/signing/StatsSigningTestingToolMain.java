@@ -36,6 +36,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.regis
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -54,7 +55,8 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +68,6 @@ import org.apache.logging.log4j.Logger;
 public class StatsSigningTestingToolMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
 
-    public static final String STATE_SIGNATURE_MARKER = "STATE_SIGNATURE_MARKER";
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
 
     static {
@@ -322,17 +323,19 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     @Override
     @NonNull
     public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
-        final String stateSignatureMarker = STATE_SIGNATURE_MARKER;
-        final int markerSize = stateSignatureMarker.length();
-        final byte[] parsedStateSignatureTransaction =
-                StateSignatureTransaction.PROTOBUF.toBytes(transaction).toByteArray();
-        final int bufferCapacity = Integer.BYTES + markerSize + parsedStateSignatureTransaction.length;
+        final var bytes = new ByteArrayOutputStream();
+        final var out = new WritableStreamingData(bytes);
 
-        final ByteBuffer buffer = ByteBuffer.allocate(bufferCapacity);
-        buffer.putInt(markerSize);
-        buffer.put(stateSignatureMarker.getBytes());
-        buffer.put(parsedStateSignatureTransaction);
-
-        return Bytes.wrap(buffer.array());
+        // Add a 1 byte as a marker to indicate the start of a system transaction. This is used
+        // to later differentiate between application transactions and system transactions.
+        final byte marker = 1;
+        out.writeByte(marker);
+        try {
+            StateSignatureTransaction.PROTOBUF.write(transaction, out);
+            return Bytes.wrap(bytes.toByteArray());
+        } catch (final IOException e) {
+            logger.error("Failed to write StateSignatureTransaction to output stream", e);
+            return Bytes.EMPTY;
+        }
     }
 }

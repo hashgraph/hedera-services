@@ -112,7 +112,6 @@ class StatsSigningTestingToolStateTest {
                 .build();
 
         when(transactionPoolSupplier.get()).thenReturn(transactionPool);
-        when(transactionPool.getTransactionSize()).thenReturn(transactionSize);
     }
 
     @ParameterizedTest

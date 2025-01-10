@@ -48,7 +48,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -225,13 +224,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             return false;
         }
 
-        final ByteBuffer wrapper = ByteBuffer.wrap(transactionBytes.toByteArray());
-        final var markerSize = wrapper.getInt();
-
-        final var marker = new byte[markerSize];
-        wrapper.get(marker);
-
-        return StatsSigningTestingToolMain.STATE_SIGNATURE_MARKER.equals(new String(marker));
+        return transactionBytes.getByte(0) == (byte) 1;
     }
 
     private void consumeSystemTransaction(
@@ -241,31 +234,15 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
                     final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
                             stateSignatureTransactionCallback) {
         try {
-            final var stateSignatureTransaction = StateSignatureTransaction.PROTOBUF.parse(
-                    stripSystemTransactionBytes(transaction.getApplicationTransaction()));
+            final Bytes transactionBytes = transaction.getApplicationTransaction();
+            final Bytes strippedSystemTransactionBytes = transactionBytes.slice(1, transactionBytes.length() - 1);
+            final StateSignatureTransaction stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(strippedSystemTransactionBytes);
             stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
                     event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
         } catch (final ParseException e) {
             logger.error("Failed to parse StateSignatureTransaction", e);
         }
-    }
-
-    private Bytes stripSystemTransactionBytes(final Bytes transactionBytes) {
-        final byte[] transactionBytesArray = transactionBytes.toByteArray();
-        final ByteBuffer wrapper = ByteBuffer.wrap(transactionBytesArray);
-        final int transactionSize = transactionBytesArray.length;
-
-        // Get the size of the marker string
-        final int markerSize = wrapper.getInt();
-
-        // Get the marker itself
-        final var marker = new byte[markerSize];
-        wrapper.get(marker);
-
-        // Get the StateSignatureTransaction we are interested in
-        final var stateSignatureTransaction = new byte[transactionSize - (markerSize + Integer.BYTES)];
-        wrapper.get(stateSignatureTransaction);
-        return Bytes.wrap(stateSignatureTransaction);
     }
 
     private void maybeDelay() {
