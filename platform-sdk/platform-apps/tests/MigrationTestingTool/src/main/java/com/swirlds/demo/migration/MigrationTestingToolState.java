@@ -23,6 +23,7 @@ import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.MerkleNode;
@@ -50,6 +51,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -286,8 +288,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         event.forEachTransaction(transaction -> {
             if (!transaction.isSystem() && isSystemTransaction(transaction.getApplicationTransaction())) {
-                stateSignatureTransaction.accept(
-                        new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), transaction));
+                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
             }
         });
     }
@@ -310,8 +311,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
                     continue;
                 }
                 if (isSystemTransaction(trans.getApplicationTransaction())) {
-                    stateSignatureTransaction.accept(
-                            new ScopedSystemTransaction(event.getCreatorId(), event.getSoftwareVersion(), event));
+                    consumeSystemTransaction(trans, event, stateSignatureTransaction);
                     continue;
                 }
 
@@ -354,5 +354,19 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.VIRTUAL_MAP;
+    }
+
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 }
