@@ -64,16 +64,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-// Tasks - refactor following points below:
-
-// test method name convention, then revisit test names and file names again (maybe it is not a good idea to change method name, bc it would be hard to review tests)
-
-// points from my another list
-
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
-    // Constants (used in ordered and some other tests)
+    // Constants (used in ordered and some of the other tests)
 
     protected static final int SAMPLE_SIZE = 1_000_000;
     protected static final int MAX_VALID_INDEX = SAMPLE_SIZE - 1;
@@ -108,7 +102,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(1)
-    void createData() {
+    void testCreateData() {
         directMemoryUsedAtStart = getDirectMemoryUsedBytes();
         longList = createLongList();
         final long capacity = longList.capacity();
@@ -154,7 +148,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(2)
-    void checkData() {
+    void testCheckData() {
         for (int i = 0; i < SAMPLE_SIZE; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(i + 100, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + 100 + "]");
@@ -231,7 +225,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @SuppressWarnings("resource")
     @Test
-    void constructorValidatesArgs() {
+    void testConstructorValidatesArgs() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> createFullyParameterizedLongListWith(1, -1),
@@ -251,7 +245,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void chunkSizeFactoryWorks() {
+    void testChunkSizeFactoryWorks() {
         final int expectedNum = Math.toIntExact(2 * MEBIBYTES_TO_BYTES / Long.BYTES);
 
         try (final AbstractLongList<?> longList = createLongListWithChunkSizeInMb(2)) {
@@ -298,8 +292,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * @throws IOException if file operations fail.
      */
     @Test
-    void closeAndRecreateLongListMultipleTimes(@TempDir final Path tempDir) throws IOException {
-        final Path file = tempDir.resolve("closeAndRecreateLongListMultipleTimes.ll");
+    void testCloseAndRecreateLongListMultipleTimes(@TempDir final Path tempDir) throws IOException {
+        final Path file = tempDir.resolve("testCloseAndRecreateLongListMultipleTimes.ll");
         if (Files.exists(file)) {
             Files.delete(file);
         }
@@ -327,7 +321,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void testBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
+    void testBackwardCompatibilityHalfEmpty() throws URISyntaxException, IOException {
         // SAMPLE_SIZE should be 10K for this test
         final int SAMPLE_SIZE = 10_000;
         final int HALF_SAMPLE_SIZE = SAMPLE_SIZE / 2;
@@ -348,7 +342,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void testReuseOfChunks_minValidIndex() throws IOException {
+    void testReuseOfChunksMinValidIndex() throws IOException {
         // Create a LongList with the specified number of longs per chunk and max longs
         try (final LongList longList = createFullyParameterizedLongListWith(100, SAMPLE_SIZE * 2)) {
             // Populate the list with initial values and validate its contents
@@ -384,7 +378,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void testReuseOfChunks_maxValidIndex() throws IOException {
+    void testReuseOfChunksMaxValidIndex() throws IOException {
         // Create a LongList with the specified number of longs per chunk and max longs
         try (final LongList longList = createFullyParameterizedLongListWith(100, SAMPLE_SIZE * 2)) {
             // Populate the list with initial values and validate its contents
@@ -421,7 +415,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] countDivider={0}")
     @ValueSource(ints = {2, 3, 4, 5, 10, 50})
-    void minValidIndexRespectedInForEachTest(final int countDivider) throws InterruptedException {
+    void testMinValidIndexRespectedInForEach(final int countDivider) throws InterruptedException {
         // SAMPLE_SIZE is set to 10K for this test
         final int SAMPLE_SIZE = 10_000;
 
@@ -461,7 +455,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void spliteratorEdgeCasesWork() {
+    void testSpliteratorEdgeCases() {
         final LongConsumer firstConsumer = mock(LongConsumer.class);
         final LongConsumer secondConsumer = mock(LongConsumer.class);
 
@@ -594,7 +588,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void writeAndReadBackEmptyList(
+    void testWriteAndReadBackEmptyList(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             @TempDir final Path tempDir)
@@ -604,7 +598,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
         try (final LongList writerList = writerSupplier.supplier().get()) {
             // Write the empty LongList to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_empty_write_empty_%s_read_back_empty_%s.ll",
+                    "testWriteAndReadBackEmptyList_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -621,7 +615,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void writeAndReadBack(
+    void testWriteAndReadBack(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             @TempDir final Path tempDir)
@@ -635,7 +629,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_write_%s_read_back_%s.ll",
+                    "testWriteAndReadBack_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -664,7 +658,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void writeAndReadBackBigIndex(
+    void testWriteAndReadBackBigIndex(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             @TempDir final Path tempDir)
@@ -682,7 +676,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_big_index_write_%s_read_back_%s.ll",
+                    "testWriteAndReadBackBigIndex_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -714,7 +708,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_custom_long_count_write_%s_read_back_%s.ll",
+                    "testCustomNumberOfLongs_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -735,7 +729,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void testShrinkList_minValidIndex(
+    void testShrinkListMinValidIndex(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             @TempDir final Path tempDir)
@@ -769,7 +763,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the modified long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_shrink_minValidIndex_write_%s_read_back_%s.ll",
+                    "testShrinkListMinValidIndex_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -800,7 +794,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void testShrinkList_maxValidIndex(
+    void testShrinkListMaxValidIndex(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             @TempDir final Path tempDir)
@@ -835,7 +829,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the modified long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_shrink_maxValidIndex_write_%s_read_back_%s.ll",
+                    "testShrinkListMaxValidIndex_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -890,7 +884,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, First Reader={1}, Second Reader={2}")
     @MethodSource("longListWriterSecondReaderPairsProvider")
-    void updateListCreatedFromSnapshotPersistAndVerify(
+    void testUpdateListCreatedFromSnapshotPersistAndVerify(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             NamedReader secondReader,
@@ -911,7 +905,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the writer list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_write_%s_read_back_%s_read_again_%s.ll",
+                    "testUpdateListCreatedFromSnapshotPersistAndVerify_write_%s_read_back_%s_read_again_%s.ll",
                     writerSupplier,
                     reader,
                     secondReader);
@@ -949,7 +943,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, First Reader={1}, Second Reader={2}")
     @MethodSource("longListWriterSecondReaderPairsProvider")
-    void updateMinToTheLowerEnd(
+    void testUpdateMinToTheLowerEnd(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             NamedReader secondReader,
@@ -974,7 +968,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the updated list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_half_empty_write_%s_read_back_%s.ll",
+                    "testUpdateMinToTheLowerEnd_write_%s_read_back_%s.ll",
                     writerSupplier,
                     reader);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
@@ -1013,7 +1007,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
                 // Write the updated list to a new file and verify its existence
                 final String TEMP_FILE_NAME_2 = String.format(
-                        "LongList_zero_min_valid_index_write_%s_read_back_%s.ll",
+                        "testUpdateMinToTheLowerEnd_2_write_%s_read_back_%s.ll",
                         reader,
                         secondReader);
                 final Path longListFile2 = writeLongListToFileAndVerify(halfEmptyList, TEMP_FILE_NAME_2, tempDir);
@@ -1064,7 +1058,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, startIndex={2}, endIndex={3}, numLongsPerChunk={4}, maxLongs={5}")
     @MethodSource("longListWriterReaderRangePairsProvider")
-    void writeReadRangeElement(
+    void testWriteReadRangeElement(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             final int startIndex,
@@ -1086,7 +1080,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_writeReadRangeElement-%d-%d-%d-%d_write_%s_read_back_%s.ll",
+                    "testWriteReadRangeElement-%d-%d-%d-%d_write_%s_read_back_%s.ll",
                     startIndex,
                     endIndex,
                     numLongsPerChunk,
@@ -1133,7 +1127,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairsProvider")
-    void createHalfEmptyLongListInMemoryReadBack(
+    void testCreateHalfEmptyLongListInMemoryReadBack(
             NamedLongListSupplier writerSupplier,
             NamedReader reader,
             final int chunkOffset,
@@ -1152,7 +1146,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the modified "half-empty" list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_half_empty_%d_write_%s_read_back_%s.ll",
+                    "testCreateHalfEmptyLongListInMemoryReadBack_%d_write_%s_read_back_%s.ll",
                     chunkOffset,
                     writerSupplier,
                     reader);
@@ -1224,7 +1218,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the modified list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_half_empty_%d_write_%s_read_back_%s.ll",
+                    "testPersistListWithNonZeroMinValidIndex_%d_write_%s_read_back_%s.ll",
                     chunkOffset,
                     writerSupplier,
                     reader);
@@ -1276,7 +1270,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
             // Write the modified list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
-                    "LongList_half_empty_%d_write_%s_read_back_%s.ll",
+                    "testPersistShrunkList_%d_write_%s_read_back_%s.ll",
                     chunkOffset,
                     writerSupplier,
                     reader);
