@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -401,10 +401,10 @@ class PcesWriterTests {
 
     @ParameterizedTest
     @CsvSource({
-            "GENERATION_THRESHOLD, true",
-            "GENERATION_THRESHOLD, false",
-            "BIRTH_ROUND_THRESHOLD, true",
-            "BIRTH_ROUND_THRESHOLD, false"
+        "GENERATION_THRESHOLD, true",
+        "GENERATION_THRESHOLD, false",
+        "BIRTH_ROUND_THRESHOLD, true",
+        "BIRTH_ROUND_THRESHOLD, false"
     })
     @DisplayName("Discontinuity Test")
     void discontinuityTest(@NonNull final AncientMode ancientMode, final boolean truncateLastFile) throws IOException {
@@ -426,8 +426,7 @@ class PcesWriterTests {
         final List<PlatformEvent> eventsBeforeDiscontinuity = new LinkedList<>();
         final List<PlatformEvent> eventsAfterDiscontinuity = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
-            final PlatformEvent event =
-                    generator.generateEventWithoutIndex().getBaseEvent();
+            final PlatformEvent event = generator.generateEventWithoutIndex().getBaseEvent();
             if (i < numEvents / 2) {
                 eventsBeforeDiscontinuity.add(event);
             } else {
@@ -511,8 +510,8 @@ class PcesWriterTests {
 
         assertTrue(latestDurableSequenceNumber.get()
                 >= eventsAfterDiscontinuity
-                .get(eventsAfterDiscontinuity.size() - 1)
-                .getStreamSequenceNumber());
+                        .get(eventsAfterDiscontinuity.size() - 1)
+                        .getStreamSequenceNumber());
         eventsAfterDiscontinuity.forEach(
                 event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
         rejectedEvents.forEach(
@@ -522,7 +521,6 @@ class PcesWriterTests {
                 selfId, eventsBeforeDiscontinuity, platformContext, truncateLastFile ? 1 : 0, ancientMode);
 
         writer.closeCurrentMutableFile();
-
     }
 
     /**
