@@ -98,6 +98,14 @@ The DevOps-CI team will handle the following:
 - Will handle production releases
 - Note: no release branch will be created
 
+### Github CI Workflow Naming Conventions
+
+- node-* and platform-* prefix is a legacy carryover because node repo and platform repo were merged together.
+- flow-* is a standalone workflow that can be executed by a user (should have a workflow-dispatch trigger). It can also be a PR target. Anything the user interacts with starts with flow.
+- z* was to force everything to sort to the bottom of the view in the Actions tab of github. We can now pin these.
+- xf means a workflow that can be trigger by other means (workflow_run or workflow_dispatch) but are not user facing.
+- xcron is a cron job kickoff script.
+
 ### User Stories
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release

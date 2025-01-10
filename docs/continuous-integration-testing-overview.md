@@ -1,4 +1,4 @@
-# Continuous Integration Test Overview and Best Practices
+# `Continuous Integration Test Overview and Best Practices`
 
 The series of workflows that make up the Continuous Integration Testing and Release (CITR) process are intended
 to drive rapid development and release of code within the Hedera Hashgraph services and platform codebase. This
