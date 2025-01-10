@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -125,16 +124,6 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return chunkInfo(totalChunks, chunkNumber);
     }
 
-    public HapiMessageSubmit maxCustomFee(Function<HapiSpec, ConsensusCustomFee> f) {
-        maxCustomFeeList.add(f);
-        return this;
-    }
-
-    public HapiMessageSubmit acceptAllCustomFees(boolean acceptAllFees) {
-        this.acceptAllCustomFees = acceptAllFees;
-        return this;
-    }
-
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final TopicID id = resolveTopicId(spec);
@@ -146,12 +135,6 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
                             if (clearMessage) {
                                 b.clearMessage();
                             }
-                            if (!maxCustomFeeList.isEmpty()) {
-                                for (final var supplier : maxCustomFeeList) {
-                                    b.addMaxCustomFees(supplier.apply(spec).getFixedFee());
-                                }
-                            }
-                            b.setAcceptAllCustomFees(acceptAllCustomFees);
                             if (totalChunks.isPresent() && chunkNumber.isPresent()) {
                                 final ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo.newBuilder()
                                         .setInitialTransactionID(initialTransactionID.orElse(asTransactionID(

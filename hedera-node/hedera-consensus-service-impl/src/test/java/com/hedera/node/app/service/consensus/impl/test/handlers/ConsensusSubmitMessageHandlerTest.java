@@ -50,6 +50,8 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.CustomFeeLimit;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -473,14 +475,27 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     private TransactionBody newSubmitMessageTxnWithMaxFee() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var maxCustomFees = List.of(
+                // fungible token limit
+                CustomFeeLimit.newBuilder()
+                        .accountId(payerId)
+                        .amountLimit(FixedFee.newBuilder()
+                                .denominatingTokenId(fungibleTokenId)
+                                .amount(1))
+                        .build(),
+                // hbar limit
+                CustomFeeLimit.newBuilder()
+                        .accountId(payerId)
+                        .amountLimit(FixedFee.newBuilder().amount(1))
+                        .build());
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .maxCustomFees(tokenCustomFee.fixedFee(), hbarCustomFee.fixedFee())
                 .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .message(Bytes.wrap("Message for test-" + Instant.now() + "."
                         + Instant.now().getNano()));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
+                .maxCustomFees(maxCustomFees)
                 .build();
     }
 
