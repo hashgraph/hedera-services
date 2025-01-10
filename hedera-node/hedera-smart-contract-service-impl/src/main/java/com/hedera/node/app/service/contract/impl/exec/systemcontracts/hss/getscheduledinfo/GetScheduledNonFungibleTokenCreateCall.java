@@ -65,7 +65,7 @@ public class GetScheduledNonFungibleTokenCreateCall extends AbstractCall {
             return gasOnly(
                     revertResult(INVALID_SCHEDULE_ID, gasCalculator.viewGasRequirement()), INVALID_SCHEDULE_ID, true);
         }
-        // Validate that given schedule is a fungible token creation schedule
+        // Revert if the given schedule is not a nft creation schedule
         final var tokenCreation = schedule.scheduledTransaction().tokenCreation();
         if (tokenCreation.tokenType() == TokenType.FUNGIBLE_COMMON) {
             return gasOnly(
