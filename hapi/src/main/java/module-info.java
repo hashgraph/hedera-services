@@ -69,10 +69,11 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.block.stream.protoc;
     exports com.hedera.hapi.block;
     exports com.hedera.hapi.services.auxiliary.tss.legacy;
+    exports com.hedera.hapi.platform.event.legacy;
 
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive io.grpc.stub;
     requires transitive io.grpc;
     requires io.grpc.protobuf;

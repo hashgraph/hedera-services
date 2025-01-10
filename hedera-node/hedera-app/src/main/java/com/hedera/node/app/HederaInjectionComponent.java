@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamModule;
 import com.hedera.node.app.blocks.InitialStateHash;
@@ -50,7 +51,6 @@ import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -66,6 +66,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -144,9 +145,9 @@ public interface HederaInjectionComponent {
 
     StoreMetricsService storeMetricsService();
 
-    TssBaseService tssBaseService();
-
     SubmissionManager submissionManager();
+
+    AsyncFatalIssListener fatalIssListener();
 
     @Component.Builder
     interface Builder {
@@ -187,6 +188,9 @@ public interface HederaInjectionComponent {
         Builder currentPlatformStatus(CurrentPlatformStatus currentPlatformStatus);
 
         @BindsInstance
+        Builder blockHashSigner(BlockHashSigner blockHashSigner);
+
+        @BindsInstance
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
@@ -206,9 +210,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder migrationStateChanges(List<StateChanges.Builder> migrationStateChanges);
-
-        @BindsInstance
-        Builder tssBaseService(TssBaseService tssBaseService);
 
         @BindsInstance
         Builder initialStateHash(InitialStateHash initialStateHash);
