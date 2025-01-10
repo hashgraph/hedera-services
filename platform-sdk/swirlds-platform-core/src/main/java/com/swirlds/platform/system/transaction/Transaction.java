@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return the transaction
      */
     @NonNull
+    @Deprecated
     EventTransaction getTransaction();
 
     /**
@@ -61,6 +62,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
+    @Deprecated
     default boolean isSystem() {
         return TransactionUtils.isSystemTransaction(getTransaction());
     }
