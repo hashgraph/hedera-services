@@ -58,7 +58,7 @@ class LongListValidRangeTest {
     @ParameterizedTest
     @MethodSource("defaultLongListProvider")
     @DisplayName("Update min and max index to -1")
-    void testUpdateMinMaxMinuxOne(AbstractLongList<?> list) {
+    void testUpdateMinMaxMinusOne(AbstractLongList<?> list) {
         this.list = list;
         assertDoesNotThrow(() -> list.updateValidRange(-1, -1));
     }

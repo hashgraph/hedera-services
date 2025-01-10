@@ -25,67 +25,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class LongListTest {
-
-    @Test
-    void constructWithTooBigChunkSizeThrowsException() {
-        assertThrows(
-                ArithmeticException.class,
-                () -> new LongListHeap((Integer.MAX_VALUE / 8) + 1, Integer.MAX_VALUE, 0),
-                "Check that ArithmeticException of num longs per chuck is too big");
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new LongListHeap(Integer.MAX_VALUE - 1, Integer.MAX_VALUE, 0),
-                "Check that IllegalArgumentException of num longs per chuck is too big");
-    }
-
-    @Test
-    void spliteratorEdgeCasesWork() {
-        final LongConsumer firstConsumer = mock(LongConsumer.class);
-        final LongConsumer secondConsumer = mock(LongConsumer.class);
-
-        final LongListHeap list = new LongListHeap(32, 32, 0);
-        list.updateValidRange(0, 3);
-        for (int i = 1; i <= 3; i++) {
-            list.put(i, i);
-        }
-
-        final LongListSpliterator subject = new LongListSpliterator(list);
-
-        assertThrows(
-                IllegalStateException.class,
-                subject::getComparator,
-                "An unordered spliterator should not be asked to provide an ordering");
-
-        final Spliterator.OfLong firstSplit = subject.trySplit();
-        assertNotNull(firstSplit, "firstSplit should not be null");
-        assertEquals(2, subject.estimateSize(), "Splitting 4 elements should yield 2");
-        final Spliterator.OfLong secondSplit = subject.trySplit();
-        assertNotNull(secondSplit, "secondSplit should not be null");
-        assertEquals(1, subject.estimateSize(), "Splitting 2 elements should yield 1");
-        assertNull(subject.trySplit(), "Splitting 1 element should yield null");
-
-        assertTrue(firstSplit.tryAdvance(firstConsumer), "First split should yield 0 first");
-        verify(firstConsumer).accept(0);
-        assertTrue(firstSplit.tryAdvance(firstConsumer), "First split should yield 1 second");
-        verify(firstConsumer).accept(1);
-        assertFalse(firstSplit.tryAdvance(firstConsumer), "First split should be exhausted after 2 yields");
-
-        secondSplit.forEachRemaining(secondConsumer);
-        verify(secondConsumer).accept(2);
-        verifyNoMoreInteractions(secondConsumer);
-    }
+/**
+ * Provides specialized or ad hoc tests for certain edge cases in {@link LongList} implementations.
+ * These scenarios do not neatly fit into the broader, cross-compatibility tests found in
+ * {@link AbstractLongListTest}, but still warrant individual coverage for bug fixes or
+ * concurrency concerns.
+ */
+class LongListAdHocTest {
 
     @ParameterizedTest
     @MethodSource("provideLongLists")

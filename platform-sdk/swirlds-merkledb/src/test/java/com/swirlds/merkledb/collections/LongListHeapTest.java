@@ -54,14 +54,14 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
      * (heap, off-heap, and disk-based). This allows for testing whether data written by the
      * {@link LongListHeap} can be correctly read back by all supported long list implementations.
      * <p>
-     * This method builds on {@link AbstractLongListTest#longListWriterBasedPairsProvider(Supplier)} to generate
+     * This method builds on {@link AbstractLongListTest#longListWriterBasedPairsProvider} to generate
      * the specific writer-reader combinations for the {@link LongListHeap} implementation.
      *
      * @return a stream of argument pairs, each containing a {@link LongListHeap} writer
      *         and one of the supported reader implementations
      */
     static Stream<Arguments> longListWriterReaderPairsProvider() {
-        return longListWriterBasedPairsProvider(LongListHeap::new);
+        return longListWriterBasedPairsProvider(heapWriter);
     }
 
     /**

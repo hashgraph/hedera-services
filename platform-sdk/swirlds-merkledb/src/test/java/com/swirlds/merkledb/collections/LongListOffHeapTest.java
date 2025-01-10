@@ -18,31 +18,15 @@ package com.swirlds.merkledb.collections;
 
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
-import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ValueSource;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+import org.junit.jupiter.params.provider.Arguments;
+
 class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
     @Override
@@ -72,14 +56,14 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
      * (heap, off-heap, and disk-based). This allows for testing whether data written by the
      * {@link LongListOffHeap} can be correctly read back by all supported long list implementations.
      * <p>
-     * This method builds on {@link AbstractLongListTest#longListWriterBasedPairsProvider(Supplier)} to generate
+     * This method builds on {@link AbstractLongListTest#longListWriterBasedPairsProvider} to generate
      * the specific writer-reader combinations for the {@link LongListOffHeap} implementation.
      *
      * @return a stream of argument pairs, each containing a {@link LongListOffHeap} writer
      *         and one of the supported reader implementations
      */
     static Stream<Arguments> longListWriterReaderPairsProvider() {
-        return longListWriterBasedPairsProvider(LongListOffHeap::new);
+        return longListWriterBasedPairsProvider(offHeapWriter);
     }
 
     /**

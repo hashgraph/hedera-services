@@ -55,14 +55,14 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
      * (heap, off-heap, and disk-based). This allows for testing whether data written by the
      * {@link LongListDisk} can be correctly read back by all supported long list implementations.
      * <p>
-     * This method builds on {@link AbstractLongListTest#longListWriterBasedPairsProvider(Supplier)} to generate
+     * This method builds on {@link AbstractLongListTest#longListWriterBasedPairsProvider} to generate
      * the specific writer-reader combinations for the {@link LongListDisk} implementation.
      *
      * @return a stream of argument pairs, each containing a {@link LongListDisk} writer
      *         and one of the supported reader implementations
      */
     static Stream<Arguments> longListWriterReaderPairsProvider() {
-        return longListWriterBasedPairsProvider(() -> new LongListDisk(CONFIGURATION));
+        return longListWriterBasedPairsProvider(diskWriter);
     }
 
     /**
