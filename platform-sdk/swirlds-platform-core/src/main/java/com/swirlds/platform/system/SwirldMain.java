@@ -100,7 +100,7 @@ public interface SwirldMain extends Runnable {
      * @param transaction the {@link StateSignatureTransaction} to encode
      * @return {@link Bytes} representation of the transaction
      */
-    default Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
-        return Bytes.EMPTY;
+    default Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        throw new IllegalStateException("Invoke the method on the appropriate SwirldMain implementation!");
     }
 }
