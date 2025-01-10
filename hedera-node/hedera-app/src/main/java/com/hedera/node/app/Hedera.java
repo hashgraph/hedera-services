@@ -37,7 +37,7 @@ import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
@@ -653,9 +653,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         startupNetworks = startupNetworksFactory.apply(configProvider);
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
         // If the client code did not provide a disk address book, we are reconnecting; and
-        // PlatformState schemas must not try to update the current address book anyway
+        // RosterService schemas must not try to update the current address book anyway
         if (diskAddressBook != null) {
-            PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
+            RosterService.setDiskAddressBook(diskAddressBook);
         }
         this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
@@ -671,7 +671,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 metrics,
                 startupNetworks);
         this.initState = null;
-        PLATFORM_STATE_SERVICE.clearDiskAddressBook();
+        RosterService.clearDiskAddressBook();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();

@@ -50,7 +50,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
@@ -138,7 +138,7 @@ public class BlockStreamManagerBenchmark {
         loadSampleItems();
         state = new FakeState();
         addServiceSingleton(new V0560BlockStreamSchema(ignore -> {}), BlockStreamService.NAME, BlockStreamInfo.DEFAULT);
-        addServiceSingleton(new V0540PlatformStateSchema(), PlatformStateService.NAME, platformState);
+        addServiceSingleton(new V0590PlatformStateSchema(), PlatformStateService.NAME, platformState);
         subject.initLastBlockHash(ZERO_BLOCK_HASH);
     }
 

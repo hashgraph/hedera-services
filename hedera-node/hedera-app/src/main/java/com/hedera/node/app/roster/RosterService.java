@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_S
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
+import com.hedera.node.app.roster.schemas.V0590RosterSchema;
 import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -43,6 +45,13 @@ public class RosterService implements Service {
     public static final int MIGRATION_ORDER = PLATFORM_STATE_SERVICE.migrationOrder() - 1;
 
     public static final String NAME = "RosterService";
+
+    /**
+     * Temporary access to the disk address book used in upgrade or network transplant
+     * scenarios before the roster lifecycle is enabled.
+     */
+    @Deprecated
+    private static final AtomicReference<AddressBook> DISK_ADDRESS_BOOK = new AtomicReference<>();
 
     /**
      * The test to use to determine if a candidate roster may be
@@ -75,6 +84,21 @@ public class RosterService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema(canAdopt, WritableRosterStore::new, stateSupplier));
+        registry.register(
+                new V0590RosterSchema(canAdopt, WritableRosterStore::new, stateSupplier, DISK_ADDRESS_BOOK::get));
+    }
+
+    /**
+     * Sets the disk address book to the given address book.
+     */
+    public static void setDiskAddressBook(@NonNull final AddressBook addressBook) {
+        DISK_ADDRESS_BOOK.set(requireNonNull(addressBook));
+    }
+
+    /**
+     * Clears the disk address book.
+     */
+    public static void clearDiskAddressBook() {
+        DISK_ADDRESS_BOOK.set(null);
     }
 }

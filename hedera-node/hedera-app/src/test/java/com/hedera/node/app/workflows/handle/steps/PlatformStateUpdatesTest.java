@@ -22,8 +22,8 @@ import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_KEY;
+import static com.hedera.node.app.roster.schemas.V0590RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,7 +56,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.nio.file.Path;
@@ -96,7 +96,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     @BeforeEach
     void setUp() {
         freezeTimeBackingStore = new AtomicReference<>(null);
-        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
+        platformStateBackingStore = new AtomicReference<>(V0590PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
@@ -111,7 +111,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 .addService(AddressBookService.NAME, Map.of(NODES_KEY, nodes))
                 .addService(
                         PlatformStateService.NAME,
-                        Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
+                        Map.of(V0590PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
 
         subject = new PlatformStateUpdates(rosterExportHelper);
     }

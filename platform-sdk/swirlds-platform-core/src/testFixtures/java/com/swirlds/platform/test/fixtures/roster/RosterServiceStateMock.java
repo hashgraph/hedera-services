@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -118,7 +118,7 @@ public final class RosterServiceStateMock {
         final ReadableSingletonState<PlatformState> platformReadableState = mock(ReadableSingletonState.class);
         final PlatformState platformState = mock(PlatformState.class);
         when(stateMock.getReadableStates(PlatformStateService.NAME)).thenReturn(readableStates);
-        when(readableStates.<PlatformState>getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+        when(readableStates.<PlatformState>getSingleton(V0590PlatformStateSchema.PLATFORM_STATE_KEY))
                 .thenReturn(platformReadableState);
         when(platformReadableState.get()).thenReturn(platformState);
 

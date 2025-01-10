@@ -17,7 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
@@ -31,7 +31,7 @@ import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
+import com.swirlds.platform.state.service.schemas.V0590PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -230,7 +230,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
         final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
         return index == -1
-                ? V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE
+                ? V0590PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE
                 : ((SingletonNode<PlatformState>) getChild(index)).getValue();
     }
 
