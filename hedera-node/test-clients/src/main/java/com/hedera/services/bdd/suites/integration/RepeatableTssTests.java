@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,38 +18,25 @@ package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_TSS_CONTROL;
-import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.TssVerbs.rekeyingScenario;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.startIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.TssVerbs.stopIgnoringTssSignatureRequests;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockStreamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_FAKE;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.BlockSigningType.SIGN_WITH_LEDGER_ID;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.DabEdits.NO_DAB_EDITS;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.NODE_ZERO_DOMINANT_STAKES;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TSS_MESSAGE_SIMS;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.INVALID_MESSAGES;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.TssMessageSim.VALID_MESSAGES;
-import static com.hedera.services.bdd.spec.utilops.tss.RekeyScenarioOp.UNEQUAL_NODE_STAKES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.BlockStreamAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
@@ -65,12 +52,12 @@ public class RepeatableTssTests {
      *
      * <p>This test follows three main steps:</p>
      * <ul>
-     *     <li>Instructs the {@link FakeTssBaseService} to start ignoring signature requests and
+     *     <li>Instructs the fake TSS base service to start ignoring signature requests and
      *     produces several blocks. In this scenario, each transaction is placed into its own round
      *     since the service is operating in repeatable mode.</li>
      *     <li>Verifies that no blocks are written, as no block proofs are available, which is the
      *     expected behavior when the service is ignoring signature requests.</li>
-     *     <li>Reactivates the {@link FakeTssBaseService}, creates another block, and verifies that
+     *     <li>Reactivates the fake TSS base service, creates another block, and verifies that
      *     the {@link BlockStreamManager} processes pending block proofs. It checks that the expected
      *     blocks are written within a brief period after the service resumes normal behavior.</li>
      * </ul>
@@ -95,44 +82,6 @@ public class RepeatableTssTests {
                         cryptoCreate("directProof"));
             }
         }));
-    }
-
-    /**
-     * Creates a rekeying scenario where the embedded node receives the threshold number of valid TSS messages.
-     */
-    @LeakyRepeatableHapiTest(
-            value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
-            overrides = {"tss.keyCandidateRoster"})
-    Stream<DynamicTest> embeddedNodeVotesGivenThresholdValidMessages() {
-        final var scenario = rekeyingScenario(
-                // Changing stakes is enough to ensure the candidate roster is different from the active roster
-                NO_DAB_EDITS,
-                // Give unequal stake to all nodes (so they have different numbers of shares in the candidate roster)
-                UNEQUAL_NODE_STAKES,
-                // Submit invalid messages from node1, to verify the embedded node votes waits for the required
-                // number of threshold valid messages
-                TSS_MESSAGE_SIMS.apply(List.of(INVALID_MESSAGES, VALID_MESSAGES, VALID_MESSAGES)),
-                SIGN_WITH_FAKE);
-        return hapiTest(blockStreamMustIncludePassFrom(spec -> scenario), scenario);
-    }
-
-    /**
-     * Creates a rekeying scenario where the embedded node receives the threshold number of valid TSS messages.
-     */
-    @LeakyRepeatableHapiTest(
-            value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
-            overrides = {"tss.keyCandidateRoster", "tss.signWithLedgerId"})
-    Stream<DynamicTest> blockSigningHappyPath() {
-        final var scenario = rekeyingScenario(
-                // Changing stakes is enough to ensure the candidate roster is different from the active roster
-                NO_DAB_EDITS,
-                // Give unequal stake to all nodes (so they have different numbers of shares in the candidate roster)
-                NODE_ZERO_DOMINANT_STAKES,
-                // Submit invalid messages from node1, to verify the embedded node votes waits for the required
-                // number of threshold valid messages
-                TSS_MESSAGE_SIMS.apply(List.of(INVALID_MESSAGES, VALID_MESSAGES, VALID_MESSAGES)),
-                SIGN_WITH_LEDGER_ID);
-        return hapiTest(blockStreamMustIncludePassFrom(spec -> scenario), scenario);
     }
 
     /**

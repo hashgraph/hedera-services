@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.swirlds.config.extensions.sources.YamlConfigSource;
 import java.io.UncheckedIOException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class YamlConfigSourceTest {
@@ -34,7 +35,7 @@ class YamlConfigSourceTest {
     }
 
     @Test
-    void testLoadProperties() throws Exception {
+    void testLoadProperties() {
         // given
         final String existingFile = "test.yaml";
 
@@ -67,5 +68,21 @@ class YamlConfigSourceTest {
         Assertions.assertEquals("bar", randomList.get(1));
 
         Assertions.assertTrue(yamlConfigSource.isListProperty("gossip.randomListOfList"));
+    }
+
+    @Test
+    @Disabled(
+            """
+                This test is disabled because the parser has a defect, it determines the depth of parsing based on the
+                presence of lists and objects. if some fields (like lists) are not present, it will change the way it
+                interprets the values other unrelated fields""")
+    void testYamlFileWithNoList() {
+        // given
+        final String ymlFile = "withNoList.yaml";
+
+        // when
+        final YamlConfigSource yamlConfigSource = new YamlConfigSource(ymlFile, 1);
+        Assertions.assertEquals("random", yamlConfigSource.getValue("gossip.randomStringValue"));
+        Assertions.assertEquals("42", yamlConfigSource.getValue("gossip.randomIntValue"));
     }
 }
