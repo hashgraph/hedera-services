@@ -65,12 +65,12 @@ jobs:
         with:
           url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
           data: |
-            {
+            '{
               "ref": "${{ inputs.ref }}",
               "author": "${{ steps.gather-commit-info.outputs.author }}",
               "msg": "${{ steps.gather-commit-info.outputs.msg }}",
               "sha": "${{ steps.gather-commit-info.outputs.sha }}"
-            }
+            }'
 
       - name: Display Jenkins Payload
         env:
