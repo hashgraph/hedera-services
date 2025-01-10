@@ -33,6 +33,7 @@ import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -225,54 +226,12 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         }
 
         final ByteBuffer wrapper = ByteBuffer.wrap(transactionBytes.toByteArray());
-        // Advance wrapper for TransactionID
-        wrapper.getLong();
+        final var markerSize = wrapper.getInt();
 
-        // Get flag for determining signed or unsigned transaction
-        final var signed = wrapper.get();
+        final var marker = new byte[markerSize];
+        wrapper.get(marker);
 
-        if (signed != 0 && signed != 1) {
-            return true;
-        }
-
-        final var signatureAlgorithmId = wrapper.get();
-
-        // Currently we support 1 for ED25519 and 2 for ECSecP256K1 and -1 for no signature
-        if (signatureAlgorithmId != -1 && signatureAlgorithmId != 1 && signatureAlgorithmId != 2) {
-            return true;
-        }
-
-        final var pkLength = wrapper.getInt();
-
-        int sigLength;
-        int dataLength;
-        if (TransactionCodec.txIsSigned(transactionBytes)) {
-            if (pkLength == 0) {
-                return true;
-            }
-            final var pkBytes = new byte[pkLength];
-            wrapper.get(pkBytes);
-
-            sigLength = wrapper.getInt();
-
-            if (sigLength == 0) {
-                return true;
-            }
-
-            final var sigBytes = new byte[sigLength];
-            wrapper.get(sigBytes);
-        } else {
-            // Advance wrapper for sigLength
-            wrapper.getInt();
-            // Skipping pkBytes and sigBytes loading since they are not present
-        }
-
-        dataLength = wrapper.getInt();
-        final var data = new byte[dataLength];
-        wrapper.get(data);
-
-        final var transactionPool = transactionPoolSupplier.get();
-        return wrapper.hasRemaining() && dataLength != transactionPool.getTransactionSize();
+        return StatsSigningTestingToolMain.STATE_SIGNATURE_MARKER.equals(new String(marker));
     }
 
     private void consumeSystemTransaction(
@@ -280,13 +239,31 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             final Event event,
             final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         try {
-            final var stateSignatureTransaction =
-                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            final var stateSignatureTransaction = StateSignatureTransaction.PROTOBUF.parse(
+                    stripSystemTransactionBytes(transaction.getApplicationTransaction()));
             stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
                     event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
         } catch (final ParseException e) {
             logger.error("Failed to parse StateSignatureTransaction", e);
         }
+    }
+
+    private Bytes stripSystemTransactionBytes(final Bytes transactionBytes) {
+        final byte[] transactionBytesArray = transactionBytes.toByteArray();
+        final ByteBuffer wrapper = ByteBuffer.wrap(transactionBytesArray);
+        final int transactionSize = transactionBytesArray.length;
+
+        // Get the size of the marker string
+        final int markerSize = wrapper.getInt();
+
+        // Get the marker itself
+        final var marker = new byte[markerSize];
+        wrapper.get(marker);
+
+        // Get the StateSignatureTransaction we are interested in
+        final var stateSignatureTransaction = new byte[transactionSize - (markerSize + Integer.BYTES)];
+        wrapper.get(stateSignatureTransaction);
+        return Bytes.wrap(stateSignatureTransaction);
     }
 
     private void maybeDelay() {

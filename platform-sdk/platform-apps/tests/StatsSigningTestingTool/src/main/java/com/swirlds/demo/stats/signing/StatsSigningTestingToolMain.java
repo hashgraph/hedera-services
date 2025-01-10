@@ -54,6 +54,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,23 +66,25 @@ import org.apache.logging.log4j.Logger;
 public class StatsSigningTestingToolMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
 
+    public static final String STATE_SIGNATURE_MARKER = "STATE_SIGNATURE_MARKER";
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
 
     static {
         try {
             logger.info(STARTUP.getMarker(), "Registering StatsSigningTestingToolState with ConstructableRegistry");
-            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(StatsSigningTestingToolState.class, () -> {
-                        StatsSigningTestingToolState statsSigningTestingToolState = new StatsSigningTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES,
-                                version -> new BasicSoftwareVersion(version.major()),
-                                () -> null);
+                        final StatsSigningTestingToolState statsSigningTestingToolState =
+                                new StatsSigningTestingToolState(
+                                        FAKE_MERKLE_STATE_LIFECYCLES,
+                                        version -> new BasicSoftwareVersion(version.major()),
+                                        () -> null);
                         return statsSigningTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "StatsSigningTestingToolState is registered with ConstructableRegistry");
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register StatsSigningTestingToolState", e);
             throw new RuntimeException(e);
         }
@@ -259,7 +262,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             // ramp up the TPS to the expected value
-            long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+            final long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
             double rampUpTPS = 0;
             if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
                 rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
@@ -317,7 +320,19 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
-        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
+        final String stateSignatureMarker = STATE_SIGNATURE_MARKER;
+        final int markerSize = stateSignatureMarker.length();
+        final byte[] parsedStateSignatureTransaction =
+                StateSignatureTransaction.PROTOBUF.toBytes(transaction).toByteArray();
+        final int bufferCapacity = Integer.BYTES + markerSize + parsedStateSignatureTransaction.length;
+
+        final ByteBuffer buffer = ByteBuffer.allocate(bufferCapacity);
+        buffer.putInt(markerSize);
+        buffer.put(stateSignatureMarker.getBytes());
+        buffer.put(parsedStateSignatureTransaction);
+
+        return Bytes.wrap(buffer.array());
     }
 }

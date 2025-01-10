@@ -64,6 +64,7 @@ class StatsSigningTestingToolStateTest {
     private static final int transactionSize = 100;
     private Random random;
     private StatsSigningTestingToolState state;
+    private StatsSigningTestingToolMain main;
     private PlatformStateModifier platformStateModifier;
     private Round round;
     private PlatformEvent event;
@@ -74,10 +75,11 @@ class StatsSigningTestingToolStateTest {
 
     @BeforeEach
     void setUp() {
-        SttTransactionPool transactionPool = mock(SttTransactionPool.class);
-        Supplier<SttTransactionPool> transactionPoolSupplier = mock(Supplier.class);
+        final SttTransactionPool transactionPool = mock(SttTransactionPool.class);
+        final Supplier<SttTransactionPool> transactionPoolSupplier = mock(Supplier.class);
         state = new StatsSigningTestingToolState(
                 mock(StateLifecycles.class), mock(Function.class), transactionPoolSupplier);
+        main = new StatsSigningTestingToolMain();
         random = new Random();
         platformStateModifier = mock(PlatformStateModifier.class);
         event = mock(PlatformEvent.class);
@@ -136,8 +138,7 @@ class StatsSigningTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
@@ -157,8 +158,8 @@ class StatsSigningTestingToolStateTest {
                 .thenReturn(List.of(consensusTransaction, secondConsensusTransaction, thirdConsensusTransaction)
                         .iterator());
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
@@ -211,8 +212,7 @@ class StatsSigningTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         final var eventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
         final var eventCore = mock(EventCore.class);
@@ -232,8 +232,7 @@ class StatsSigningTestingToolStateTest {
         // Given
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
 
         final var eventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
