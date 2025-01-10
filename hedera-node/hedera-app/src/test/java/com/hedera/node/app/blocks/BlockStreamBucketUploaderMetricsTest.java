@@ -69,4 +69,32 @@ class BlockStreamBucketUploaderMetricsTest {
         assertThat(logCaptor.warnLogs()).contains("Received number of retained blocks: -1");
         verify(longGauge, never()).set(anyLong());
     }
+
+    @Test
+    void testUpdateBlocksUploadedCount() {
+        blockStreamBucketUploaderMetrics.updateBlocksUploadedCount(10L);
+        verify(longGauge).set(10L);
+    }
+
+    @Test
+    void testUpdateBlocksUploadedCountWithNegativeValue() {
+        blockStreamBucketUploaderMetrics.updateBlocksUploadedCount(-1L);
+
+        assertThat(logCaptor.warnLogs()).contains("Received number of uploaded blocks: -1");
+        verify(longGauge, never()).set(anyLong());
+    }
+
+    @Test
+    void testUpdateBlocksHashMismatchCount() {
+        blockStreamBucketUploaderMetrics.updateBlocksHashMismatchCount(10L);
+        verify(longGauge).set(10L);
+    }
+
+    @Test
+    void testUpdateBlockHashMismatchCountWithNegativeValue() {
+        blockStreamBucketUploaderMetrics.updateBlocksHashMismatchCount(-1L);
+
+        assertThat(logCaptor.warnLogs()).contains("Received number of hash mismatched blocks: -1");
+        verify(longGauge, never()).set(anyLong());
+    }
 }

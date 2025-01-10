@@ -30,9 +30,19 @@ public class BlockStreamBucketUploaderMetrics {
     private static final Logger log = LogManager.getLogger(BlockStreamBucketUploaderMetrics.class);
     public static final String PER_NODE_METRIC_PREFIX = "hedera.blocks.bucket.%s";
     public static final String PER_PROVIDER_PER_NODE_METRIC_PREFIX = "hedera.blocks.bucket.%s.%s";
-    private final LongGauge blocksRetained;
     private static final String BLOCKS_RETAINED = "blocks.retained";
-    private static final String BLOCKS_RETAINED_DESC = "Current number of blocks retained on disk for the node";
+    private static final String BLOCKS_RETAINED_DESC =
+            "Current number of blocks retained in root block file directory on disk for the node";
+    private static final String BLOCKS_UPLOADED = "blocks.uploaded";
+    private static final String BLOCKS_UPLOADED_DESC =
+            "Current number of blocks in uploaded directory on disk for the node";
+    private static final String BLOCKS_HASH_MISMATCH = "blocks.hashmismatch";
+    private static final String BLOCKS_HASH_MISMATCH_DESC =
+            "Current number of blocks in hashmismatch directory on disk for the node";
+
+    private final LongGauge blocksRetained;
+    private final LongGauge blocksUploaded;
+    private final LongGauge blocksHashMismatch;
 
     /**
      * Constructor for the BlockStreamBucketMetrics.
@@ -44,10 +54,16 @@ public class BlockStreamBucketUploaderMetrics {
         blocksRetained = metrics.getOrCreate(
                 new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_RETAINED)
                         .withDescription(BLOCKS_RETAINED_DESC));
+        blocksUploaded = metrics.getOrCreate(
+                new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_UPLOADED)
+                        .withDescription(BLOCKS_UPLOADED_DESC));
+        blocksHashMismatch = metrics.getOrCreate(
+                new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_HASH_MISMATCH)
+                        .withDescription(BLOCKS_HASH_MISMATCH_DESC));
     }
 
     /**
-     * Current number of blocks retained on disk.
+     * Update the metric for the current number of blocks retained in root block file directory.
      *
      * @param blocksRetainedCount current number of blocks retained on disk
      */
@@ -56,6 +72,32 @@ public class BlockStreamBucketUploaderMetrics {
             log.warn("Received number of retained blocks: {}", blocksRetainedCount);
         } else {
             blocksRetained.set(blocksRetainedCount);
+        }
+    }
+
+    /**
+     * Update the metric for the current number of blocks in uploaded directory.
+     *
+     * @param blocksUploadedCount current number of uploaded blocks on disk
+     */
+    public void updateBlocksUploadedCount(final long blocksUploadedCount) {
+        if (blocksUploadedCount < 0) {
+            log.warn("Received number of uploaded blocks: {}", blocksUploadedCount);
+        } else {
+            blocksUploaded.set(blocksUploadedCount);
+        }
+    }
+
+    /**
+     * Update the metric for the current number of blocks in hashmismatch directory.
+     *
+     * @param blocksHashMismatchCount current number of blocks with hash mismatch on disk
+     */
+    public void updateBlocksHashMismatchCount(final long blocksHashMismatchCount) {
+        if (blocksHashMismatchCount < 0) {
+            log.warn("Received number of hash mismatched blocks: {}", blocksHashMismatchCount);
+        } else {
+            blocksHashMismatch.set(blocksHashMismatchCount);
         }
     }
 }
