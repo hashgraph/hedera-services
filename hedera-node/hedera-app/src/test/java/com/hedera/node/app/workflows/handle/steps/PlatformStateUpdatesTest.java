@@ -233,6 +233,9 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         .gossipCaCertificate(Bytes.fromHex("0123"))
                         .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
                         .build());
+        stakingInfo.put(
+                new EntityNumber(0L),
+                StakingNodeInfo.newBuilder().stake(1000).weight(1).build());
 
         // when
         subject.handleTxBody(state, txBody.build(), configWith(true, true, true));

@@ -46,6 +46,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Spliterators;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -118,8 +119,18 @@ public class PlatformStateUpdates {
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
                         final var stakingInfoStore =
                                 new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));
-                        final var candidateRoster = nodeStore.snapshotOfFutureRoster();
-                        logger.info("Candidate roster is {}", candidateRoster);
+
+                        // update the candidate roster weights with weights from stakingNodeInfo map
+                        final Function<Long, Long> weightFunction = nodeId -> {
+                            final var stakingInfo = stakingInfoStore.get(nodeId);
+                            if (stakingInfo != null && !stakingInfo.deleted()) {
+                                return stakingInfo.stake();
+                            }
+                            // Default weight if no staking info is found or the node is deleted
+                            return 0L;
+                        };
+                        final var candidateRoster = nodeStore.snapshotOfFutureRoster(weightFunction);
+                        logger.info("Candidate roster with updated weights is {}", candidateRoster);
                         boolean rosterAccepted = false;
                         try {
                             rosterStore.putCandidateRoster(candidateRoster);
@@ -131,11 +142,6 @@ public class PlatformStateUpdates {
                             // If the candidate roster needs to be exported, export the file
                             if (networkAdminConfig.exportCandidateRoster()) {
                                 doExport(candidateRoster, networkAdminConfig);
-                            } else {
-                                // When the candidate roster is not exported, update the candidate
-                                // roster weights with weights from stakingNodeInfo map
-                                logger.info("Updating candidate roster weights");
-                                updateCandidateRosterWeights(candidateRoster, stakingInfoStore, rosterStore);
                             }
                         }
                     } else if (networkAdminConfig.exportCandidateRoster()) {
@@ -163,34 +169,6 @@ public class PlatformStateUpdates {
                 }
             }
         }
-    }
-
-    /**
-     * Updates the candidate roster weights with the weights from the staking info store.
-     * If the staking info is not available for a node, the weight is set to 0. The updated
-     * candidate roster is then stored in the roster store.
-     *
-     * @param candidateRoster the candidate roster
-     * @param stakingInfoStore the staking info store
-     * @param rosterStore the roster store
-     */
-    private void updateCandidateRosterWeights(
-            @NonNull final Roster candidateRoster,
-            @NonNull final ReadableStakingInfoStoreImpl stakingInfoStore,
-            @NonNull final WritableRosterStore rosterStore) {
-        final var newEntries = candidateRoster.rosterEntries().stream()
-                .map(entry -> {
-                    final var nodeId = entry.nodeId();
-                    final var stakingInfo = stakingInfoStore.get(nodeId);
-                    long weight = 0;
-                    if (stakingInfo != null && !stakingInfo.deleted()) {
-                        weight = stakingInfo.stake();
-                    }
-                    return entry.copyBuilder().weight(weight).build();
-                })
-                .toList();
-        rosterStore.putCandidateRoster(
-                candidateRoster.copyBuilder().rosterEntries(newEntries).build());
     }
 
     private void doExport(@NonNull final Roster candidateRoster, @NonNull final NetworkAdminConfig networkAdminConfig) {
