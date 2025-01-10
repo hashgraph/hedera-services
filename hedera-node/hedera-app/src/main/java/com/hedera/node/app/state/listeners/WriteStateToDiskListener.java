@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -80,7 +79,6 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                 final var readableUpgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
                 final var readableNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
                 final var readableStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-                final var readableRosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
 
                 final var upgradeActions = new ReadableFreezeUpgradeActions(
                         configProvider.getConfiguration(),

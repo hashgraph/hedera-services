@@ -128,9 +128,12 @@ public class PlatformStateUpdates {
                             logger.warn("Candidate roster was rejected", e);
                         }
                         if (rosterAccepted) {
+                            // If the candidate roster needs to be exported, export the file
                             if (networkAdminConfig.exportCandidateRoster()) {
                                 doExport(candidateRoster, networkAdminConfig);
                             } else {
+                                // When the candidate roster is not exported, update the candidate
+                                // roster weights with weights from stakingNodeInfo map
                                 logger.info("Updating candidate roster weights");
                                 updateCandidateRosterWeights(candidateRoster, stakingInfoStore, rosterStore);
                             }
@@ -162,6 +165,15 @@ public class PlatformStateUpdates {
         }
     }
 
+    /**
+     * Updates the candidate roster weights with the weights from the staking info store.
+     * If the staking info is not available for a node, the weight is set to 0. The updated
+     * candidate roster is then stored in the roster store.
+     *
+     * @param candidateRoster the candidate roster
+     * @param stakingInfoStore the staking info store
+     * @param rosterStore the roster store
+     */
     private void updateCandidateRosterWeights(
             @NonNull final Roster candidateRoster,
             @NonNull final ReadableStakingInfoStoreImpl stakingInfoStore,
@@ -170,9 +182,9 @@ public class PlatformStateUpdates {
                 .map(entry -> {
                     final var nodeId = entry.nodeId();
                     final var stakingInfo = stakingInfoStore.get(nodeId);
-                    var weight = 0;
+                    long weight = 0;
                     if (stakingInfo != null) {
-                        weight = stakingInfo.weight();
+                        weight = stakingInfo.stake();
                     }
                     return entry.copyBuilder().weight(weight).build();
                 })

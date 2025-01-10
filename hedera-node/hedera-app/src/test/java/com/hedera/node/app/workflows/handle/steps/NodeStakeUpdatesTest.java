@@ -119,7 +119,7 @@ public class NodeStakeUpdatesTest {
         subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 
         verify(stakingPeriodCalculator)
-                .updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class), false);
+                .updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class), eq(false));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
