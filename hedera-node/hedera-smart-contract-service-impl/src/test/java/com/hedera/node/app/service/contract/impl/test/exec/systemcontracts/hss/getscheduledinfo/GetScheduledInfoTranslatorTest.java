@@ -32,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signsc
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +57,9 @@ class GetScheduledInfoTranslatorTest {
     @Mock
     private SystemContractGasCalculator gasCalculator;
 
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
     private GetScheduledInfoTranslator subject;
 
     @BeforeEach
@@ -71,6 +75,7 @@ class GetScheduledInfoTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 DEFAULT_CONFIG);
 
@@ -87,6 +92,7 @@ class GetScheduledInfoTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 DEFAULT_CONFIG);
 
@@ -103,6 +109,7 @@ class GetScheduledInfoTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 DEFAULT_CONFIG);
 
