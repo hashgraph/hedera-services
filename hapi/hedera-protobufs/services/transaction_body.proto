@@ -104,6 +104,7 @@ import "node_update.proto";
 import "node_delete.proto";
 
 import "event/state_signature_transaction.proto";
+import "custom_fees.proto";
 
 /**
  * A transaction body.
@@ -561,4 +562,12 @@ message TransactionBody {
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
     }
+
+    /**
+     * A list of maximum custom fees that the users are willing to pay.
+     * <p>
+     * This field is OPTIONAL. If it is not set then users are accepting to pay any custom fee.
+     * If it is set, but the transaction doesn't support it, the transaction will fail.
+     */
+    repeated CustomFeeLimit maxCustomFees = 66;
 }

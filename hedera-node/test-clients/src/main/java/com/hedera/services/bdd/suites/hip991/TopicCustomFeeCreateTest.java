@@ -62,7 +62,7 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -538,7 +538,7 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
             return hapiTest(
                     cryptoCreate(collector),
                     createTopic(TOPIC)
-                            .withConsensusCustomFee(spec -> ConsensusCustomFee.newBuilder()
+                            .withConsensusCustomFee(spec -> FixedCustomFee.newBuilder()
                                     .setFeeCollectorAccountId(spec.registry().getAccountID(collector))
                                     .build())
                             .hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED));

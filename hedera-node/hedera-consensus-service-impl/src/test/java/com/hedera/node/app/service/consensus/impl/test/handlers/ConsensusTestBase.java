@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -114,7 +114,7 @@ public class ConsensusTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
-    protected final List<ConsensusCustomFee> customFees = List.of(ConsensusCustomFee.newBuilder()
+    protected final List<FixedCustomFee> customFees = List.of(FixedCustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(1).build())
             .feeCollectorAccountId(anotherPayer)
             .build());

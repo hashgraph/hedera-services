@@ -189,5 +189,5 @@ message ConsensusTopicInfo {
      * Custom fees defined here SHALL be assessed in addition to the base
      * network and node fees.
      */
-    repeated ConsensusCustomFee custom_fees = 12;
+    repeated FixedCustomFee custom_fees = 12;
 }
