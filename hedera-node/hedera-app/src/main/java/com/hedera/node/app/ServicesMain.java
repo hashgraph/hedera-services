@@ -236,6 +236,9 @@ public class ServicesMain implements SwirldMain {
                     EXCEPTION.getMarker(),
                     "Multiple nodes were supplied via the command line. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
+            throw new ConfigurationException();
         }
         final var platformConfig = buildPlatformConfig();
         // Determine which nodes were _requested_ to run from the command line
@@ -421,12 +424,18 @@ public class ServicesMain implements SwirldMain {
         if (nodesToRun.isEmpty()) {
             final String errorMessage = "No nodes are configured to run locally.";
             logger.error(STARTUP.getMarker(), errorMessage);
+            exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw new ConfigurationException(errorMessage);
         }
 
         if (nodesToRun.size() > 1) {
             final String errorMessage = "Multiple nodes are configured to run locally.";
             logger.error(EXCEPTION.getMarker(), errorMessage);
+            exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw new ConfigurationException(errorMessage);
         }
         return nodesToRun.getFirst();
@@ -448,6 +457,8 @@ public class ServicesMain implements SwirldMain {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
             exitSystem(CONFIGURATION_ERROR);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw e;
         }
     }
