@@ -487,9 +487,9 @@ class ReadableFreezeUpgradeActionsTest {
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);
-        given(stakingNodeInfo1.weight()).willReturn(5L);
-        given(stakingNodeInfo2.weight()).willReturn(10L);
-        given(stakingNodeInfo4.weight()).willReturn(20L);
+        given(stakingNodeInfo1.weight()).willReturn(5);
+        given(stakingNodeInfo2.weight()).willReturn(10);
+        given(stakingNodeInfo4.weight()).willReturn(20);
         given(stakingInfoStore.get(1)).willReturn(stakingNodeInfo1);
         given(stakingInfoStore.get(2)).willReturn(stakingNodeInfo2);
         given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
@@ -611,9 +611,9 @@ class ReadableFreezeUpgradeActionsTest {
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo3 = mock(StakingNodeInfo.class);
-        given(stakingNodeInfo1.weight()).willReturn(5L);
-        given(stakingNodeInfo2.weight()).willReturn(10L);
-        given(stakingNodeInfo3.weight()).willReturn(20L);
+        given(stakingNodeInfo1.weight()).willReturn(5);
+        given(stakingNodeInfo2.weight()).willReturn(10);
+        given(stakingNodeInfo3.weight()).willReturn(20);
         given(stakingInfoStore.get(0)).willReturn(stakingNodeInfo1);
         given(stakingInfoStore.get(1)).willReturn(stakingNodeInfo2);
         given(stakingInfoStore.get(2)).willReturn(stakingNodeInfo3);

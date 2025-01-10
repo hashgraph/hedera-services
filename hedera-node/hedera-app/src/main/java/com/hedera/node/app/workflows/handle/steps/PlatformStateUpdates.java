@@ -29,6 +29,8 @@ import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -71,7 +73,7 @@ public class PlatformStateUpdates {
      * Checks whether the given transaction body is a freeze transaction and eventually
      * notifies the registered facility.
      *
-     * @param state the current state
+     * @param state  the current state
      * @param txBody the transaction body
      * @param config the configuration
      */
@@ -114,6 +116,8 @@ public class PlatformStateUpdates {
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
+                        final var stakingInfoStore =
+                                new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));
                         final var candidateRoster = nodeStore.snapshotOfFutureRoster();
                         logger.info("Candidate roster is {}", candidateRoster);
                         boolean rosterAccepted = false;
@@ -123,8 +127,13 @@ public class PlatformStateUpdates {
                         } catch (Exception e) {
                             logger.warn("Candidate roster was rejected", e);
                         }
-                        if (rosterAccepted && networkAdminConfig.exportCandidateRoster()) {
-                            doExport(candidateRoster, networkAdminConfig);
+                        if (rosterAccepted) {
+                            if (networkAdminConfig.exportCandidateRoster()) {
+                                doExport(candidateRoster, networkAdminConfig);
+                            } else {
+                                logger.info("Updating candidate roster weights");
+                                updateCandidateRosterWeights(candidateRoster, stakingInfoStore, rosterStore);
+                            }
                         }
                     } else if (networkAdminConfig.exportCandidateRoster()) {
                         // Having the option to export candidate-roster.json even before using the roster
@@ -151,6 +160,25 @@ public class PlatformStateUpdates {
                 }
             }
         }
+    }
+
+    private void updateCandidateRosterWeights(
+            @NonNull final Roster candidateRoster,
+            @NonNull final ReadableStakingInfoStoreImpl stakingInfoStore,
+            @NonNull final WritableRosterStore rosterStore) {
+        final var newEntries = candidateRoster.rosterEntries().stream()
+                .map(entry -> {
+                    final var nodeId = entry.nodeId();
+                    final var stakingInfo = stakingInfoStore.get(nodeId);
+                    var weight = 0;
+                    if (stakingInfo != null) {
+                        weight = stakingInfo.weight();
+                    }
+                    return entry.copyBuilder().weight(weight).build();
+                })
+                .toList();
+        rosterStore.putCandidateRoster(
+                candidateRoster.copyBuilder().rosterEntries(newEntries).build());
     }
 
     private void doExport(@NonNull final Roster candidateRoster, @NonNull final NetworkAdminConfig networkAdminConfig) {

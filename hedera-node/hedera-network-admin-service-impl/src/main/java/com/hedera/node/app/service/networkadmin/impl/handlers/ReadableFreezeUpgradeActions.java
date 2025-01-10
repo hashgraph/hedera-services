@@ -72,7 +72,6 @@ public class ReadableFreezeUpgradeActions {
     private final ReadableUpgradeFileStore upgradeFileStore;
 
     private final ReadableNodeStore nodeStore;
-
     private final ReadableStakingInfoStore stakingInfoStore;
 
     private final Executor executor;
@@ -125,10 +124,11 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Write a marker file.
+     *
      * @param file the name of the marker file
-     *             @param now the timestamp to write to the marker file
-     *                        if null, the marker file will contain the string "✓"
-     *                        if not null, the marker file will contain the string representation of the timestamp
+     * @param now  the timestamp to write to the marker file
+     *             if null, the marker file will contain the string "✓"
+     *             if not null, the marker file will contain the string representation of the timestamp
      */
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
@@ -149,6 +149,7 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Write a marker file containing the string '✓'.
+     *
      * @param file the name of the marker file
      */
     protected void writeCheckMarker(@NonNull final String file) {
@@ -158,8 +159,9 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Write a marker file containing the string representation of the given timestamp.
+     *
      * @param file the name of the marker file
-     * @param now the timestamp to write to the marker file
+     * @param now  the timestamp to write to the marker file
      */
     protected void writeSecondMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
@@ -173,8 +175,9 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Check whether the two given hashes match.
+     *
      * @param curSpecialFilesHash the first hash
-     * @param hashFromTxnBody the second hash
+     * @param hashFromTxnBody     the second hash
      * @return true if the hashes match, false otherwise
      */
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
@@ -183,8 +186,9 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Extract the telemetry upgrade from the given archive data.
+     *
      * @param archiveData the archive data
-     * @param now the timestamp to write to the marker file
+     * @param now         the timestamp to write to the marker file
      * @return a future that completes when the extraction is done
      */
     public CompletableFuture<Void> extractTelemetryUpgrade(
@@ -195,6 +199,7 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Extract the software upgrade from the given archive data.
+     *
      * @param archiveData the archive data
      * @return a future that completes when the extraction is done
      */
@@ -205,6 +210,7 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Check whether a freeze is scheduled.
+     *
      * @param platformStateStore the platform state
      * @return true if a freeze is scheduled, false otherwise
      */

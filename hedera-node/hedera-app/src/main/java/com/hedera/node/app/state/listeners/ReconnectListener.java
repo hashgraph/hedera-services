@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
+import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
@@ -70,6 +71,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
         final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
         final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
         final var platformStateStore = readableStoreFactory.getStore(ReadablePlatformStateStore.class);
+        final var rosterStore = readableStoreFactory.getStore(ReadableRosterStore.class);
         final var upgradeActions = new ReadableFreezeUpgradeActions(
                 configProvider.getConfiguration(),
                 freezeStore,
