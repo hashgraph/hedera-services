@@ -22,6 +22,7 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
@@ -125,8 +126,7 @@ public class PcesWriterTestUtils {
             assertTrue(eventsIterator.hasNext());
             assertEquals(event, eventsIterator.next());
         }
-
-        assertFalse(eventsIterator.hasNext());
+        assertFalse(eventsIterator.hasNext(), "There should be no more events");
         assertEquals(truncatedFileCount, eventsIterator.getTruncatedFileCount());
 
         // Make sure things look good when iterating starting in the middle of the stream that was written
@@ -169,11 +169,14 @@ public class PcesWriterTestUtils {
             assertTrue(file.getUpperBound() >= previousMaximum);
             previousMaximum = file.getUpperBound();
 
-            final IOIterator<PlatformEvent> fileEvents = file.iterator(0);
-            while (fileEvents.hasNext()) {
-                final PlatformEvent event = fileEvents.next();
-                assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
-                assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
+            try (final IOIterator<PlatformEvent> fileEvents = file.iterator(0)) {
+                while (fileEvents.hasNext()) {
+                    final PlatformEvent event = fileEvents.next();
+                    assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
+                    assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
+                }
+            }catch (final IOException ignored){
+                // hasNext() can throw an IOException if the file is truncated, in this case there is nothing to do
             }
         }
     }
