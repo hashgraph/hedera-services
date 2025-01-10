@@ -218,7 +218,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the transaction to check
      * @return true if the transaction bytes are system ones, false otherwise
      */
-    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+    private boolean areTransactionBytesSystemOnes(@NonNull final Transaction transaction) {
         final var transactionBytes = transaction.getApplicationTransaction();
 
         if (transactionBytes.length() == 0) {
@@ -235,9 +235,11 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     }
 
     private void consumeSystemTransaction(
-            final Transaction transaction,
-            final Event event,
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            @NonNull final Transaction transaction,
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         try {
             final var stateSignatureTransaction = StateSignatureTransaction.PROTOBUF.parse(
                     stripSystemTransactionBytes(transaction.getApplicationTransaction()));
