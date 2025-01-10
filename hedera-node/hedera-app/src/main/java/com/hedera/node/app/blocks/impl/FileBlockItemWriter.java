@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +49,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
     private static final Logger logger = LogManager.getLogger(FileBlockItemWriter.class);
 
     /** The file extension for block files. */
-    private static final String RECORD_EXTENSION = "blk";
+    public static final String RECORD_EXTENSION = "blk";
 
     /** The suffix added to RECORD_EXTENSION when they are compressed. */
-    private static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
+    public static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
 
     /** Whether to compress the block files. */
     private final boolean compressFiles;
@@ -101,14 +101,6 @@ public class FileBlockItemWriter implements BlockItemWriter {
         // Compute directory for block files
         final Path blockDir = fileSystem.getPath(blockStreamConfig.blockFileDir());
         nodeScopedBlockDir = blockDir.resolve("block-" + asAccountString(nodeInfo.accountId()));
-
-        // Create parent directories if needed for the record file itself.
-        try {
-            Files.createDirectories(nodeScopedBlockDir);
-        } catch (final IOException e) {
-            logger.fatal("Could not create block directory {}", nodeScopedBlockDir, e);
-            throw new UncheckedIOException(e);
-        }
     }
 
     @Override
@@ -120,6 +112,9 @@ public class FileBlockItemWriter implements BlockItemWriter {
         final var blockFilePath = getBlockFilePath(blockNumber);
         OutputStream out = null;
         try {
+            if (!Files.exists(nodeScopedBlockDir)) {
+                Files.createDirectories(nodeScopedBlockDir);
+            }
             out = Files.newOutputStream(blockFilePath);
             out = new BufferedOutputStream(out, 1024 * 1024); // 1 MB
             if (compressFiles) {

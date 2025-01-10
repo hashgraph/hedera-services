@@ -32,7 +32,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;

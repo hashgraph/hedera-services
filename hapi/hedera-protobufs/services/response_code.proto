@@ -1680,14 +1680,23 @@ enum ResponseCodeEnum {
     MAX_CUSTOM_FEE_LIMIT_EXCEEDED = 381;
 
     /**
-     * No provided max custom fee, or there are no corresponding
-     * topic fees.
+     * There are no corresponding custom fees.
      */
     NO_VALID_MAX_CUSTOM_FEE = 382;
+
+    /**
+     * The provided list contains invalid max custom fee.
+     */
+    INVALID_MAX_CUSTOM_FEES = 383;
 
     /**
      * The provided max custom fee list contains fees with
      * duplicate denominations.
      */
-    DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST = 383;
+    DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST = 384;
+
+    /**
+     * Max custom fees list is not supported for this operation.
+     */
+    MAX_CUSTOM_FEES_IS_NOT_SUPPORTED = 385;
 }

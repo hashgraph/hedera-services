@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -58,8 +59,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     private Optional<String> initialTransactionPayer = Optional.empty();
     private Optional<TransactionID> initialTransactionID = Optional.empty();
     private boolean clearMessage = false;
-    private final List<Function<HapiSpec, ConsensusCustomFee>> maxCustomFeeList = new ArrayList<>();
-    private boolean acceptAllCustomFees = false;
+    private final List<Function<HapiSpec, FixedCustomFee>> maxCustomFeeList = new ArrayList<>();
 
     public HapiMessageSubmit(final String topic) {
         this.topic = Optional.ofNullable(topic);
