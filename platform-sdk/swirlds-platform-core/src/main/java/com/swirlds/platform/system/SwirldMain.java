@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public interface SwirldMain extends Runnable {
      * @param transaction the {@link StateSignatureTransaction} to encode
      * @return {@link Bytes} representation of the transaction
      */
-    default Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
-        return Bytes.EMPTY;
+    default Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        throw new IllegalStateException("Invoke the method on the appropriate SwirldMain implementation!");
     }
 }
