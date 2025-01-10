@@ -3,15 +3,15 @@
 ## Background
 
 The Release Process within Hedera-Services will be changing beginning with Release 0.59. This will be the first step in
-migrating to a fully automated release process with CITR. 
+migrating to a fully automated release process with CITR.
 
 ### Historical Process
 
 The release process within hedera-services has been using a release branching strategy that follows
 a set development cycle
 
-| Stage                               | Duration |
-|-------------------------------------|----------| 
+|                Stage                | Duration |
+|-------------------------------------|----------|
 | Planning                            | 12d      |
 | Development                         | 33d      |
 | **milestone** Create release branch | 0d       |
@@ -22,14 +22,14 @@ a set development cycle
 | Perform migration testing           | 22d      |
 | **milestone** Deploy to main net    | 7d       |
 | Release Retrospective               | 1d       |
- 
+
 Each release takes approximately one calendar quarter to complete (from planning to retrospective)
 
 ### Relevant CITR Background
 
 The continuous integration test and release process has been being executed within Hedera-Services since Q3-2023.
 As part of this process there is a minimal acceptable test suite (MATS) that runs against every pull request. Further,
-there is an extended test suite (XTS) that runs on each commit to the `default branch` in Hedera-Services (`main`). 
+there is an extended test suite (XTS) that runs on each commit to the `default branch` in Hedera-Services (`main`).
 After MATS and XTS complete successfully the commit is tagged with a **build** tag (`build-XXXXX`). This tag is the
 crux of the new release process.
 
@@ -37,8 +37,8 @@ crux of the new release process.
 
 The release process will be changing in the following areas beginning with `Release 0.59`
 
-| Stage                                                   | Duration |
-|---------------------------------------------------------|----------| 
+|                          Stage                          | Duration |
+|---------------------------------------------------------|----------|
 | Planning                                                | 12d      |
 | Development                                             | 33d      |
 | [NEW] **milestone** Select candidate commit for release | 0d       |
@@ -72,7 +72,7 @@ test/release networks.
 
 ## Impacts for Developers
 
-Beginning with release 0.59: 
+Beginning with release 0.59:
 
 - The following items will be restricted:
   - Creating release branches in `hedera-services` (like release/0.59)
