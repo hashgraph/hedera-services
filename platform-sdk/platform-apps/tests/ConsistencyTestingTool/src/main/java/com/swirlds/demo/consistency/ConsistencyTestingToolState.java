@@ -312,14 +312,15 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the transaction to check
      * @return true if the transaction is a system transaction, false otherwise
      */
-    private boolean isSystemTransaction(final Transaction transaction) {
+    private boolean isSystemTransaction(final @NonNull Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 8;
     }
 
     private void consumeSystemTransaction(
-            final Transaction transaction,
-            final Event event,
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         try {
             final var stateSignatureTransaction =
                     StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());

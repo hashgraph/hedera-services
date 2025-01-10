@@ -143,7 +143,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+    public Bytes encodeSystemTransaction(final @NonNull StateSignatureTransaction transaction) {
         return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }
