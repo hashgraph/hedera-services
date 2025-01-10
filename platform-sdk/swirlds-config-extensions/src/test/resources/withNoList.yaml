@@ -1,0 +1,3 @@
+gossip:
+  randomStringValue: "random"
+  randomIntValue: 42

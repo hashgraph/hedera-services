@@ -9,7 +9,7 @@ module com.swirlds.config.extensions {
     requires com.swirlds.base;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.dataformat.yaml;
     requires org.apache.logging.log4j;
-    requires org.yaml.snakeyaml;
     requires static transitive com.github.spotbugs.annotations;
 }
