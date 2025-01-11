@@ -79,3 +79,32 @@ jobs:
           else
             echo "Checked out branch: $(git symbolic-ref --short HEAD)"
           fi
+
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          echo "Installing semantic-release"
+          npm ci
+          npm install -g semantic-release
+
+      - name: Configure Git for Semantic Release
+        run: |
+          git config user.name "${{ secrets.SVCS_GIT_USER_NAME }}"
+          git config user.email "${{ secrets.SVCS_GIT_USER_EMAIL }}"
+          echo "Configured Git user.name: $(git config --get user.name)"
+          echo "Configured Git user.email: $(git config --get user.email)" 
+
+      - name: Run Semantic Release
+        # Inside run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+        run: |
+          echo "Running semantic-release now"
+          
+          echo "Completed semantic-release"
+          
+
