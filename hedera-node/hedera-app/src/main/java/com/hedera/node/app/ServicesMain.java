@@ -276,6 +276,10 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
+        final var merkleCryptography = MerkleCryptographyFactory.create(platformConfig, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
@@ -321,11 +325,7 @@ public class ServicesMain implements SwirldMain {
         }
         final var networkKeysAndCerts = initNodeSecurity(addressBook, platformConfig, Set.copyOf(nodesToRun));
         final var keysAndCerts = networkKeysAndCerts.get(selfId);
-        final var cryptography = CryptographyFactory.create();
-        CryptographyHolder.set(cryptography);
         cryptography.digestSync(addressBook);
-        final var merkleCryptography = MerkleCryptographyFactory.create(platformConfig, cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
         final var platformContext = PlatformContext.create(
                 platformConfig,
                 Time.getCurrent(),
