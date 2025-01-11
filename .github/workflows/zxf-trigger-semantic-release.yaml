@@ -70,3 +70,12 @@ jobs:
           fetch-depth: '0'
           ref: ${{ env.TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Display Current Branch or Tag
+        run: |
+          # Check if it's a tag
+          if git describe --exact-match --tags >/dev/null 2>&1; then
+            echo "Checked out tag: $(git describe --exact-match --tags)"
+          else
+            echo "Checked out branch: $(git symbolic-ref --short HEAD)"
+          fi
