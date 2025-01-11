@@ -22,7 +22,7 @@ on:
         description: "Build ID of the Tag"
         type: string
         required: true
-        default: "32"
+        default: "43"
 
 defaults:
   run:
@@ -57,7 +57,7 @@ jobs:
           echo "Padded number is: $padded_number"
           
           # Add "build_" prefix to the padded number
-          tag="build_$padded_number"
+          tag="build-$padded_number"
           echo "Prefixed number is: $tag"
 
           # Export as environment variable
