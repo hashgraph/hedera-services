@@ -18,11 +18,11 @@ name: "ZXF: Trigger Semantic Release"
 on:
   workflow_dispatch:
     inputs:
-      build-id:
+      number_input:
         description: "Build ID of the Tag"
         type: string
         required: true
-        default: "none"
+        default: "32"
 
 defaults:
   run:
