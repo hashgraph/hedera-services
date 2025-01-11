@@ -55,11 +55,18 @@ jobs:
           # 5-digit padding
           padded_number=$(printf "%05d" ${{ inputs.number_input }})
           echo "Padded number is: $padded_number"
+          
+          # Add "build_" prefix to the padded number
+          tag="build_$padded_number"
+          echo "Prefixed number is: $tag"
+
+          # Export as environment variable
+          echo "TAG=$tag" >> $GITHUB_ENV
 
       - name: Checkout Code
         id: checkout_code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: main
+          ref: ${{ env.TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
