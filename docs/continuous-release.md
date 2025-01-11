@@ -58,8 +58,8 @@ The XTS workflow will tag a commit with a `build-xxxxx` tag upon successful comp
 
 The release managers will pull a release candidate from this set of tags.
 
-The release managers will run the workflow `zxf-trigger-semantic-release`, specifying the build number, in order to create the
-release tagged commit (v0.59.0 or similar)
+The release managers will run the workflow `zxf-trigger-semantic-release`, specifying the build number, in order to
+create the release tagged commit (v0.59.0 or similar)
 
 **Note:** The build number is actual number described in the build tag. The tag `build-00025` has a build number `25`.
 
@@ -81,5 +81,32 @@ Beginning with release 0.59:
   - `zxf-trigger-semantic-release` - Generate a release tag given an XTS passing build id.
   - `zxf-version-roll` - Roll the version specified in `version.txt` for the current development cycle on the default
     branch.
-- Release management will need to choose a build candidate from a list of associated builds (recommendation will be the
+- Release managers will need to choose a build candidate from a list of associated builds (recommendation will be the
   latest `build-xxxxx` tag).
+
+## Creating a patch bump
+
+It is possible to create a patch bump after a build candidate has been released via the `zxf-trigger-semantic-release`
+workflow. The release managers will need to select a new build candidate from the list of available builds. The selected
+commit would need to match [semantic releases](https://semantic-release.gitbook.io/semantic-release) requirements for a
+patch bump.
+
+| Commit message                                                                                                 | Release Type                                                                                               |
+|----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| fix(pencil): stop graphite breaking when too much pressure applied                                             | Patch/Fix Release                                                                                          |
+| feat(pencil): add 'graphiteWidth' option                                                                       | Minor/Feature Release                                                                                      |
+| perf(pencil): remove graphiteWidth option<br/><br/>BREAKING CHANGE: The graphiteWidth option has been removed. | Major/Breaking Release<br/><br/>(Note that the BREAKING CHANGE: token must be in the footer of the commit) |
+[Sourced from [semantic release gitbook](https://semantic-release.gitbook.io/semantic-release#commit-message-format)]  
+
+The CI workflows use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) and semantic release to
+determine the version to roll to when the `zxf-trigger-semantic-release` workflow is called. What this means is that
+the commits on `main` between build-XXXXX (the selected build candidate) and build-YYYYY (the new build) must be `fix:`
+commits so that a new patch bump version would be triggered.
+
+(Note: **If any feature or breaking commits have been included in that timeframe, there will be a new minor/major version.**) 
+
+There are also commit types that will not affect the version at all. These commit categories are:
+
+- `chore:`
+- `docs:`
+- `ci:`
