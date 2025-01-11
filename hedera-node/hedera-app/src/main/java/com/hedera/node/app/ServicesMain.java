@@ -29,7 +29,6 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
-import static com.swirlds.platform.roster.RosterRetriever.retrieveActiveOrGenesisRoster;
 import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.roster.RosterUtils.buildRosterHistory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSignedState;
@@ -43,11 +42,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.tss.TssBlockHashSigner;
 import com.hedera.node.internal.network.Network;
 import com.swirlds.base.time.Time;
@@ -82,7 +81,7 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
-import com.swirlds.platform.state.service.ReadableRosterStore;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
@@ -313,8 +312,10 @@ public class ServicesMain implements SwirldMain {
         hedera.setInitialStateHash(reservedState.hash());
 
         // --- Create the platform context and initialize the cryptography ---
+        final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
+        final var currentRoster = requireNonNull(rosterStore.getActiveRoster());
         // For now we convert to a legacy representation of the roster for convenience
-        final var addressBook = requireNonNull(buildAddressBook(retrieveActiveOrGenesisRoster(state)));
+        final var addressBook = requireNonNull(buildAddressBook(currentRoster));
         if (!addressBook.contains(selfId)) {
             throw new IllegalStateException("Self node id " + selfId + " is not in the address book");
         }
@@ -337,7 +338,6 @@ public class ServicesMain implements SwirldMain {
         // --- Now build the platform and start it ---
         final RosterHistory rosterHistory;
         if (hedera.isRosterLifecycleEnabled()) {
-            final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
             rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         } else {
             // This constructor both does extensive validation and has the side effect of
