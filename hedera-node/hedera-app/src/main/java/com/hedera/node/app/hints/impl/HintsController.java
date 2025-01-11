@@ -17,6 +17,7 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
@@ -29,7 +30,6 @@ import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
-import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.RosterTransitionWeights;
@@ -46,14 +46,12 @@ import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.IntStream;
 
 /**
  * Manages the process objects and work needed to advance toward completion of a hinTS construction.
  */
-public class HintsConstructionController {
-    private final int k;
-    private final int m;
+public class HintsController {
+    private final int numParties;
     private final long selfId;
     private final Urgency urgency;
     private final Executor executor;
@@ -113,7 +111,7 @@ public class HintsConstructionController {
      */
     private record Validation(int partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
 
-    public HintsConstructionController(
+    public HintsController(
             final long selfId,
             @NonNull final HintsConstruction construction,
             @NonNull final RosterTransitionWeights weights,
@@ -131,8 +129,7 @@ public class HintsConstructionController {
         this.urgency = requireNonNull(urgency);
         this.hintKeysWaitTime = requireNonNull(hintKeysWaitTime);
         this.weights = requireNonNull(weights);
-        this.m = HintsService.partySizeForRosterNodeCount(weights.targetRosterSize());
-        this.k = Integer.numberOfTrailingZeros(m);
+        this.numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
         this.executor = requireNonNull(executor);
         this.signingContext = requireNonNull(signingContext);
         this.submissions = requireNonNull(submissions);
@@ -152,8 +149,8 @@ public class HintsConstructionController {
     /**
      * Returns whether the construction has the given party size.
      */
-    public boolean hasPartySize(final int m) {
-        return this.m == m;
+    public boolean hasNumParties(final int numParties) {
+        return this.numParties == numParties;
     }
 
     /**
@@ -172,10 +169,10 @@ public class HintsConstructionController {
                 aggregationFuture = startAggregateFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
             }
         } else {
-            switch (recommendAggregationBehavior(now)) {
+            switch (recommendPreprocessingChoice(now)) {
                 case RESCHEDULE_CHECKPOINT -> construction = hintsStore.reschedulePreprocessingCheckpoint(
                         construction.constructionId(), now.plus(hintKeysWaitTime));
-                case AGGREGATE_NOW -> {
+                case START_NOW -> {
                     construction = hintsStore.setPreprocessingStartTime(construction.constructionId(), now);
                     aggregationFuture = startAggregateFuture(now);
                 }
@@ -203,26 +200,27 @@ public class HintsConstructionController {
 
     /**
      * If the construction is not already complete, incorporates a preprocessing outputs vote into the controller's
-     * state, updating network state with the winning output if one is found.
+     * state. <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also
+     * updates network state with that output.
      * @param nodeId the node ID
      * @param vote the preprocessing outputs vote
      * @param hintsStore the hints store
      */
-    public void incorporateAggregationVote(
+    public void addPreprocessingVote(
             final long nodeId, @NonNull final PreprocessingVote vote, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(vote);
         requireNonNull(hintsStore);
         if (!construction.hasPreprocessedKeys()) {
             votes.put(nodeId, vote);
-            final var aggregationWeights = votes.entrySet().stream()
+            final var outputWeights = votes.entrySet().stream()
                     .collect(groupingBy(
                             entry -> entry.getValue().preprocessedKeysOrThrow(),
                             summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
-            final var maybeWinningAggregation = aggregationWeights.entrySet().stream()
+            final var maybeWinningOutputs = outputWeights.entrySet().stream()
                     .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
                     .map(Map.Entry::getKey)
                     .findFirst();
-            maybeWinningAggregation.ifPresent(keys -> {
+            maybeWinningOutputs.ifPresent(keys -> {
                 construction = hintsStore.setPreprocessingOutput(construction.constructionId(), keys, nodePartyIds);
                 if (hintsStore.getActiveConstruction().constructionId() == construction.constructionId()) {
                     signingContext.setConstruction(construction);
@@ -262,16 +260,6 @@ public class HintsConstructionController {
     }
 
     /**
-     * Returns the next available party id.
-     */
-    public int nextPartyId() {
-        return IntStream.range(0, m)
-                .filter(partyId -> !partyNodeIds.containsKey(partyId))
-                .findFirst()
-                .orElseThrow();
-    }
-
-    /**
      * Returns the source roster hash of the hinTS construction that this controller is managing.
      */
     @Nullable
@@ -288,13 +276,13 @@ public class HintsConstructionController {
     }
 
     /**
-     * The possible recommendations the controller's aggregation policy may make.
+     * The choices the controller's preprocessing policy can make.
      */
-    private enum Recommendation {
+    private enum PreprocessingChoice {
         /**
          * Schedule the construction's key aggregation using valid hinTS published up to now.
          */
-        AGGREGATE_NOW,
+        START_NOW,
         /**
          * Revisit the question again at the next opportunity.
          */
@@ -311,22 +299,22 @@ public class HintsConstructionController {
      * @param now the current consensus time
      * @return the recommendation
      */
-    private Recommendation recommendAggregationBehavior(@NonNull final Instant now) {
+    private PreprocessingChoice recommendPreprocessingChoice(@NonNull final Instant now) {
         // If every node in the target roster has published a hinTS key, schedule the final aggregation at this time.
         // Note that if even here, a strong minority of weight _still_ has not published valid hinTS, the signatures
         // produced by this construction will never reach the weight threshold---but such a condition would imply the
         // network was already in an unusable state
-        if (validationFutures.size() == weights.targetRosterSize()) {
-            return Recommendation.AGGREGATE_NOW;
+        if (validationFutures.size() == weights.numTargetNodesInSourceRoster()) {
+            return PreprocessingChoice.START_NOW;
         }
         if (now.isBefore(asInstant(construction.preprocessingCheckpointTimeOrThrow()))) {
-            return Recommendation.COME_BACK_LATER;
+            return PreprocessingChoice.COME_BACK_LATER;
         } else {
             return switch (urgency) {
                 case HIGH -> validWeightAt(now) >= weights.targetWeightThreshold()
-                        ? Recommendation.AGGREGATE_NOW
-                        : Recommendation.COME_BACK_LATER;
-                case LOW -> Recommendation.RESCHEDULE_CHECKPOINT;
+                        ? PreprocessingChoice.START_NOW
+                        : PreprocessingChoice.COME_BACK_LATER;
+                case LOW -> PreprocessingChoice.RESCHEDULE_CHECKPOINT;
             };
         }
     }
@@ -347,7 +335,7 @@ public class HintsConstructionController {
                     final var aggregatedWeights = nodePartyIds.entrySet().stream()
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
-                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, m);
+                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, numParties);
                     final var body = HintsPreprocessingVoteTransactionBody.newBuilder()
                             .constructionId(construction.constructionId())
                             .vote(PreprocessingVote.newBuilder()
@@ -386,7 +374,7 @@ public class HintsConstructionController {
     private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final HintsKey hintsKey) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var isValid = operations.validateHintsKey(hintsKey, m);
+                    final var isValid = operations.validateHintsKey(hintsKey, numParties);
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);
@@ -401,10 +389,10 @@ public class HintsConstructionController {
             final int selfPartyId = nodePartyIds.get(selfId);
             publicationFuture = CompletableFuture.runAsync(
                     () -> {
-                        final var hints = operations.computeHints(blsKeyPair.privateKey(), selfPartyId, m);
+                        final var hints = operations.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
                         final var hintsKey =
                                 new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
-                        final var body = new HintsKeyPublicationTransactionBody(k, hintsKey);
+                        final var body = new HintsKeyPublicationTransactionBody(selfPartyId, numParties, hintsKey);
                         submissions.submitHintsKey(body).join();
                     },
                     executor);

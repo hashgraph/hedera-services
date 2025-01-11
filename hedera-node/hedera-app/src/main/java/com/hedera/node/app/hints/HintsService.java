@@ -21,7 +21,7 @@ import com.hedera.cryptography.bls.SignatureSchema;
 import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
-import com.hedera.node.app.hints.impl.HintsConstructionController;
+import com.hedera.node.app.hints.impl.HintsController;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -92,15 +92,15 @@ public interface HintsService extends Service, BlockHashSigner {
      * Given active rosters with a source/target transition, this method will,
      * <ol>
      *     <Li>Do nothing if a completed construction for the transition already exists in {@link HintsService}.</Li>
-     *     <Li>If there is no active {@link HintsConstructionController} for the transition, create one based
+     *     <Li>If there is no active {@link HintsController} for the transition, create one based
      *     on the given consensus time and {@link HintsService} states; and save the created construction in
      *     network state if this is the first time the network ever began reconciling a hinTS construction for
      *     the transition.</Li>
-     *     <Li>For the resolved {@link HintsConstructionController} for the transition, invoke its
-     *     {@link HintsConstructionController#advanceConstruction(Instant, WritableHintsStore)} method.</li>
+     *     <Li>For the resolved {@link HintsController} for the transition, invoke its
+     *     {@link HintsController#advanceConstruction(Instant, WritableHintsStore)} method.</li>
      * </ol>
      * <p>
-     * <b>IMPORTANT:</b> Note that whether a new {@link HintsConstructionController} object is created, or an
+     * <b>IMPORTANT:</b> Note that whether a new {@link HintsController} object is created, or an
      * appropriate one already exists, its subsequent behavior will be a deterministic function of the given
      * consensus time and {@link HintsService} states. That is, controllers are persistent objects <i>only</i>
      * due to performance considerations, but are <i>logically</i> functions of just the network state and

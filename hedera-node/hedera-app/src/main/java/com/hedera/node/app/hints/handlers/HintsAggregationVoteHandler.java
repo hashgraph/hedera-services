@@ -56,7 +56,7 @@ public class HintsAggregationVoteHandler implements TransactionHandler {
         final var op = context.body().hintsAggregationVoteOrThrow();
         controllers.getInProgressById(op.constructionId()).ifPresent(controller -> {
             final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
-            controller.incorporateAggregationVote(context.creatorInfo().nodeId(), op.voteOrThrow(), hintsStore);
+            controller.addPreprocessingVote(context.creatorInfo().nodeId(), op.voteOrThrow(), hintsStore);
         });
     }
 }

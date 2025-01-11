@@ -37,33 +37,28 @@ option java_multiple_files = true;
 
 /**
  * A transaction body to publish a node's hinTS key for a certain
- * maximum universe size. A hinTS key is an "extended" public key;
- * that is, a BLS public key combined with hints a signature
- * aggregator can use to prove its aggregate public key by a SNARK
- * for the aggregate secret key.
- * <p>
- * This transaction is the only way a node can set its hinTS key
- * for use in hinTS constructions for rosters with node counts
- * in the range [2^(k-1), 2^k). As a result, this transaction's
- * handler is the place in the protocol that assigns a node a
- * hinTS party id for a certain universe size.
+ * party id and number of parties. A hinTS key is an extended
+ * public key; that is, a BLS public key combined with "hints"
+ * derived from the matching private key that a signature
+ * aggregator can use to prove well-formedness of an aggregate
+ * public key by an efficiently verifiable SNARK.
  */
 message HintsKeyPublicationTransactionBody {
   /**
-   * The base-2 logarithm "k" of the maximum universe size for this
-   * publication.
+   * The party id for which the hinTS key is being published;
+   * must be in the range [0, num_parties).
    * <p>
-   * This value MUST be set to a positive integer.<br/>
+   * This value MUST be set to a non-negative integer.<br/>
    */
-  uint32 max_size_log_2 = 1;
+  uint32 party_id = 1;
 
   /**
-   * The creating node's hinTS key to use in subsequent constructions
-   * targeting rosters with node counts in the range [2^(k-1), 2^k).
-   * <p>
-   * This value MUST be set.<br/>
-   * This value MUST NOT be empty.<br/>
-   * This value MUST contain a valid hinTS key.
+   * The number of parties in the hinTS scheme.
    */
-  com.hedera.hapi.node.state.hints.HintsKey hints_key = 2;
+  uint32 num_parties = 2;
+
+  /**
+   * The party's hinTS key.
+   */
+  com.hedera.hapi.node.state.hints.HintsKey hints_key = 3;
 }

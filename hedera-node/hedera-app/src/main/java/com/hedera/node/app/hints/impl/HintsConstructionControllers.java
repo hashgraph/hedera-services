@@ -17,8 +17,8 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
-import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.HIGH;
-import static com.hedera.node.app.hints.impl.HintsConstructionController.Urgency.LOW;
+import static com.hedera.node.app.hints.impl.HintsController.Urgency.HIGH;
+import static com.hedera.node.app.hints.impl.HintsController.Urgency.LOW;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -47,10 +47,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Logic to get or create a {@link HintsConstructionController} for source/target roster hashes
+ * Logic to get or create a {@link HintsController} for source/target roster hashes
  * relative to the current {@link HintsService} state and consensus time. We only support one
  * controller at a time, so if this class detects that a new controller is needed, it will cancel
- * any existing controller via {@link HintsConstructionController#cancelPendingWork()} and release its
+ * any existing controller via {@link HintsController#cancelPendingWork()} and release its
  * reference to the cancelled controller.
  */
 @Singleton
@@ -70,7 +70,7 @@ public class HintsConstructionControllers {
      * construction implied by its roster store.
      */
     @Nullable
-    private HintsConstructionController controller;
+    private HintsController controller;
 
     @Inject
     public HintsConstructionControllers(
@@ -97,7 +97,7 @@ public class HintsConstructionControllers {
      * @param construction the hinTS construction
      * @return the result of the operation
      */
-    public @NonNull HintsConstructionController getOrCreateFor(
+    public @NonNull HintsController getOrCreateFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
             @NonNull final ReadableHintsStore hintsStore) {
@@ -120,7 +120,7 @@ public class HintsConstructionControllers {
      * @param rosterStore the store to source rosters from
      * @return the result of the operation
      */
-    public @NonNull HintsConstructionController getOrCreateControllerFor(
+    public @NonNull HintsController getOrCreateControllerFor(
             @NonNull final HintsConstruction construction,
             @NonNull final ReadableHintsStore hintsStore,
             @NonNull final ReadableRosterStore rosterStore) {
@@ -141,9 +141,9 @@ public class HintsConstructionControllers {
      * @param constructionId the ID of the hinTS construction
      * @return the controller, if it exists
      */
-    public Optional<HintsConstructionController> getInProgressById(final long constructionId) {
+    public Optional<HintsController> getInProgressById(final long constructionId) {
         return currentConstructionId() == constructionId
-                ? Optional.ofNullable(controller).filter(HintsConstructionController::isStillInProgress)
+                ? Optional.ofNullable(controller).filter(HintsController::isStillInProgress)
                 : Optional.empty();
     }
 
@@ -153,11 +153,11 @@ public class HintsConstructionControllers {
      * @param m the log2 of the universe size
      * @return the controller, if it exists
      */
-    public Optional<HintsConstructionController> getInProgressByPartySize(final int m) {
-        return Optional.ofNullable(controller).filter(c -> c.hasPartySize(m));
+    public Optional<HintsController> getInProgressForNumParties(final int m) {
+        return Optional.ofNullable(controller).filter(c -> c.hasNumParties(m));
     }
 
-    private HintsConstructionController newControllerFor(
+    private HintsController newControllerFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
             @NonNull final ReadableHintsStore hintsStore) {
@@ -169,13 +169,13 @@ public class HintsConstructionControllers {
                     case LOW -> networkAdminConfig.relaxedHintsKeysWaitPeriod();
                 };
         final var weights = activeRosters.transitionWeights();
-        final int k = Integer.numberOfTrailingZeros(partySizeForRosterNodeCount(weights.targetRosterSize()));
+        final var numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
         final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
         final var votes = hintsStore.votesFor(
                 construction.constructionId(), weights.sourceNodeWeights().keySet());
         final var publications = hintsStore.getNodeHintsKeyPublications(
-                weights.targetNodeWeights().keySet(), k);
-        return new HintsConstructionController(
+                weights.targetNodeWeights().keySet(), numParties);
+        return new HintsController(
                 selfNodeInfoSupplier.get().nodeId(),
                 construction,
                 weights,
@@ -190,7 +190,7 @@ public class HintsConstructionControllers {
                 signingContext);
     }
 
-    private HintsConstructionController newControllerFor(
+    private HintsController newControllerFor(
             @NonNull final HintsConstruction construction,
             @NonNull final ReadableHintsStore hintsStore,
             @NonNull final ReadableRosterStore rosterStore) {
@@ -211,7 +211,7 @@ public class HintsConstructionControllers {
         final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
         final var publications = hintsStore.getNodeHintsKeyPublications(targetNodeWeights.keySet(), k);
         final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
-        return new HintsConstructionController(
+        return new HintsController(
                 selfNodeInfoSupplier.get().nodeId(),
                 construction,
                 new RosterTransitionWeights(sourceNodeWeights, targetNodeWeights),

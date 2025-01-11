@@ -19,8 +19,10 @@ package com.hedera.node.app.roster;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -41,8 +43,8 @@ public record RosterTransitionWeights(
         this(
                 requireNonNull(sourceNodeWeights),
                 requireNonNull(targetNodeWeights),
-                strongMinorityWeightFor(sourceNodeWeights),
-                strongMinorityWeightFor(targetNodeWeights));
+                atLeastOneThirdOfTotal(sourceNodeWeights),
+                atLeastOneThirdOfTotal(targetNodeWeights));
     }
 
     /**
@@ -114,13 +116,31 @@ public record RosterTransitionWeights(
     }
 
     /**
+     * Returns the number of target node ids in the source roster.
+     * @return the number of target node ids in the source roster
+     */
+    public int numTargetNodesInSourceRoster() {
+        return numTargetNodesIn(sourceNodeWeights.keySet());
+    }
+
+    /**
+     * Returns the number of target node ids in a given set of node ids.
+     * @param nodeIds the set of node ids
+     * @return the number of target node ids in the set
+     */
+    public int numTargetNodesIn(@NonNull final Set<Long> nodeIds) {
+        return targetNodeWeights.keySet().stream().filter(nodeIds::contains).mapToInt(i -> 1).sum();
+    }
+
+    /**
      * Returns the weight that would constitute a strong minority of the network weight for a roster.
      *
      * @param weights the weights of the nodes in the roster
      * @return the weight required for a strong minority
      */
-    public static long strongMinorityWeightFor(@NonNull final Map<Long, Long> weights) {
-        return strongMinorityWeightFor(
+    public static long atLeastOneThirdOfTotal(@NonNull final Map<Long, Long> weights) {
+        requireNonNull(weights);
+        return moreThanTwoThirdsOfTotal(
                 weights.values().stream().mapToLong(Long::longValue).sum());
     }
 
@@ -129,7 +149,7 @@ public record RosterTransitionWeights(
      * @param totalWeight the total weight of the network
      * @return the weight required for a strong minority
      */
-    public static long strongMinorityWeightFor(final long totalWeight) {
+    public static long moreThanTwoThirdsOfTotal(final long totalWeight) {
         // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
         // ensures it the conclusion overlaps with the weight held by at least one honest node
         return (totalWeight + 2) / 3;

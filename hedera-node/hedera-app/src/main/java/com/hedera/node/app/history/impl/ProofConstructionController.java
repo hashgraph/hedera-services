@@ -295,11 +295,11 @@ public class ProofConstructionController {
      * @return the recommendation
      */
     private Recommendation recommendAssemblyBehavior(@NonNull final Instant now) {
-        // If every node in the target roster has published a proof key, schedule the final assembly at this time.
-        // Note that if even here, a strong minority of weight _still_ has not published valid proof keys, the
-        // signatures produced by this construction will never reach the weight threshold---but such a condition
-        // would imply the network was already in an unusable state
-        if (targetProofKeys.size() == weights.targetRosterSize()) {
+        // If every active node in the target roster has published a proof key, schedule statement assembly
+        // at this time. Note that if even here, a strong minority of weight _still_ has not published valid
+        // proof keys, the signatures produced by this construction will never reach the weight threshold---
+        // but such a condition would imply the network was already in an unusable state
+        if (targetProofKeys.size() == weights.numTargetNodesInSourceRoster()) {
             return Recommendation.ASSEMBLE_NOW;
         }
         if (now.isBefore(asInstant(construction.nextAssemblyCheckpointOrThrow()))) {

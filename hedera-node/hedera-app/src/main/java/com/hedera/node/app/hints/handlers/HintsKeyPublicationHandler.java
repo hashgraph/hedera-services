@@ -33,6 +33,8 @@ import javax.inject.Singleton;
 
 @Singleton
 public class HintsKeyPublicationHandler implements TransactionHandler {
+    private static final int INVALID_PARTY_ID = -1;
+
     private final HintsConstructionControllers controllers;
 
     @Inject
@@ -54,14 +56,18 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         final var op = context.body().hintsKeyPublicationOrThrow();
-        controllers.getInProgressByPartySize(op.maxSizeLog2()).ifPresent(controller -> {
+        final var numParties = op.numParties();
+        controllers.getInProgressForNumParties(numParties).ifPresent(controller -> {
             final long nodeId = context.creatorInfo().nodeId();
-            final var partyId = controller.partyIdOf(nodeId).orElseGet(controller::nextPartyId);
-            final var hintsKey = op.hintsKeyOrThrow();
-            final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
-            final var adoptionTime = context.consensusNow();
-            if (hintsStore.setHintsKey(nodeId, partyId, op.maxSizeLog2(), hintsKey, adoptionTime)) {
-                controller.incorporateHintsKey(new HintsKeyPublication(nodeId, hintsKey, partyId, adoptionTime));
+            final int partyId = controller.partyIdOf(nodeId).orElse(INVALID_PARTY_ID);
+            // Ignore hinTS keys that nodes publish with party ids other than their consensus party id
+            if (op.partyId() == partyId) {
+                final var hintsKey = op.hintsKeyOrThrow();
+                final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
+                final var adoptionTime = context.consensusNow();
+                if (hintsStore.setHintsKey(nodeId, partyId, numParties, hintsKey, adoptionTime)) {
+                    controller.incorporateHintsKey(new HintsKeyPublication(nodeId, hintsKey, partyId, adoptionTime));
+                }
             }
         });
     }
