@@ -51,11 +51,11 @@ jobs:
             exit 1
           fi
           echo "Input is a valid integer: $(( ${{ inputs.number_input }} ))"
-          
+
           # 5-digit padding
           padded_number=$(printf "%05d" ${{ inputs.number_input }})
           echo "Padded number is: $padded_number"
-          
+
           # Add "build_" prefix to the padded number
           build_tag="build-$padded_number"
           echo "Prefixed number is: $build_tag"
@@ -111,7 +111,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           echo "Running semantic-release now"
-          
-          echo "Completed semantic-release"
-          
 
+          echo "Completed semantic-release"
