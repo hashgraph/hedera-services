@@ -34,16 +34,13 @@ option java_package = "com.hedera.hapi.services.auxiliary.history.legacy";
 option java_multiple_files = true;
 
 /**
- * A transaction body to publish a node's metadata proof key.
+ * A transaction body to publish a node's history proof key.
  */
 message HistoryProofKeyPublicationTransactionBody {
   /**
-   * The creating node's proof key to use in subsequent constructions
-   * of metadata proofs during roster transitions.
-   * <p>
-   * This value MUST be set.<br/>
-   * This value MUST NOT be empty.<br/>
-   * This value MUST contain a valid proof key.
+   * The proof key the submitting node intends to use when
+   * contributing signatures for use in proving history
+   * belongs to the chain of trust for the ledger id.
    */
   bytes proof_key = 1;
 }

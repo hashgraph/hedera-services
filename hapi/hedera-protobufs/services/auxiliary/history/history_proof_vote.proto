@@ -36,21 +36,17 @@ option java_package = "com.hedera.hapi.services.auxiliary.history.legacy";
 option java_multiple_files = true;
 
 /**
- * A transaction body to publish a node's vote on a particular
- * metadata proof for a specified construction id.
+ * A transaction body to publish a node's vote for a
+ * proof of history associated to a construction id.
  */
 message HistoryProofVoteTransactionBody {
   /**
-   * The id of the proof construction this vote is for.Because the
-   * network only ever performs one construction a time, this is
-   * somewhat redundant, but included to detect any strange edge
-   * cases where a node is so far behind it signs for the wrong
-   * construction.
+   * The id of the proof construction this vote is for.
    */
   uint64 construction_id = 1;
 
   /**
-   * This node's vote on the metadata proof.
+   * The submitting node's vote on the history proof.
    */
-  com.hedera.hapi.node.state.history.MetadataProofVote vote = 2;
+  com.hedera.hapi.node.state.history.HistoryProofVote vote = 2;
 }

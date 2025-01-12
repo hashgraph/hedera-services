@@ -36,22 +36,19 @@ option java_package = "com.hedera.hapi.services.auxiliary.history.legacy";
 option java_multiple_files = true;
 
 /**
- * A transaction body to publish a node's signature on a particular
- * assembly of metadata and proof roster hash for a specified
- * construction id.
+ * A transaction body to publish a node's signature on a computed
+ * history of address book hash and associated metadata. This
+ * signature can contribute to a proof that the history belongs to
+ * to the chain of trust for the ledger id.
  */
 message HistoryProofSignatureTransactionBody {
   /**
    * The id of the proof construction this signature is contributing to.
-   * Because the network only ever performs one construction a time, this
-   * is somewhat redundant, but included to detect any strange
-   * edge cases where a node is so far behind it signs for the wrong
-   * construction.
    */
   uint64 construction_id = 1;
 
   /**
-   * This node's signature on the history assembly.
+   * This node's signature on its computed history.
    */
   com.hedera.hapi.node.state.history.HistorySignature signature = 2;
 }

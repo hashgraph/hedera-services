@@ -19,8 +19,8 @@ package com.hedera.node.app.history.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProofVote;
 import com.hedera.hapi.node.state.history.HistorySignature;
-import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody;
@@ -74,7 +74,7 @@ public class HistorySubmissions extends TssSubmissions {
      */
     public CompletableFuture<Void> submitProofVote(final long constructionId, @NonNull final HistoryProof proof) {
         requireNonNull(proof);
-        final var vote = MetadataProofVote.newBuilder().metadataProof(proof).build();
+        final var vote = HistoryProofVote.newBuilder().proof(proof).build();
         return submit(b -> b.historyProofVote(new HistoryProofVoteTransactionBody(constructionId, vote)), onFailure);
     }
 

@@ -28,8 +28,8 @@ import com.hedera.hapi.node.state.history.HistoryAddressBook;
 import com.hedera.hapi.node.state.history.HistoryAddressBookEntry;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.hapi.node.state.history.HistoryProofVote;
 import com.hedera.hapi.node.state.history.HistorySignature;
-import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ReadableHistoryStore.AssemblySignaturePublication;
@@ -73,7 +73,7 @@ public class HistoryProofController {
     private final HistorySubmissions submissions;
     private final RosterTransitionWeights weights;
     private final Consumer<HistoryProof> proofConsumer;
-    private final Map<Long, MetadataProofVote> votes = new HashMap<>();
+    private final Map<Long, HistoryProofVote> votes = new HashMap<>();
     private final Map<Long, Bytes> targetProofKeys = new HashMap<>();
     private final Set<Long> signingNodeIds = new HashSet<>();
     private final NavigableMap<Instant, CompletableFuture<Verification>> verificationFutures = new TreeMap<>();
@@ -128,15 +128,15 @@ public class HistoryProofController {
     }
 
     /**
-     * A party's validated signature on its assembly.
+     * A party's verified signature on some new history.
      *
      * @param nodeId the node's id
-     * @param assemblySignature its assembly signature
+     * @param historySignature its history signature
      * @param isValid whether the signature is valid
      */
-    private record Verification(long nodeId, @NonNull HistorySignature assemblySignature, boolean isValid) {
-        public @NonNull History assembly() {
-            return assemblySignature.assemblyOrThrow();
+    private record Verification(long nodeId, @NonNull HistorySignature historySignature, boolean isValid) {
+        public @NonNull History history() {
+            return historySignature.historyOrThrow();
         }
     }
 
@@ -244,15 +244,13 @@ public class HistoryProofController {
      * @param historyStore the history store
      */
     public void incorporateProofVote(
-            final long nodeId,
-            @NonNull final MetadataProofVote vote,
-            @NonNull final WritableHistoryStore historyStore) {
+            final long nodeId, @NonNull final HistoryProofVote vote, @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(vote);
         if (!construction.hasTargetProof() && !votes.containsKey(nodeId)) {
             votes.put(nodeId, vote);
             final var proofWeights = votes.entrySet().stream()
                     .collect(groupingBy(
-                            entry -> entry.getValue().metadataProofOrThrow(),
+                            entry -> entry.getValue().proofOrThrow(),
                             summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
             final var maybeWinningProof = proofWeights.entrySet().stream()
                     .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
@@ -362,8 +360,8 @@ public class HistoryProofController {
         final var choice = requireNonNull(firstSufficientSignatures());
         final var signatures = verificationFutures.headMap(choice.cutoff(), true).values().stream()
                 .map(CompletableFuture::join)
-                .filter(v -> choice.assembly().equals(v.assembly()) && v.isValid())
-                .collect(toMap(Verification::nodeId, v -> v.assemblySignature().signature()));
+                .filter(v -> choice.assembly().equals(v.history()) && v.isValid())
+                .collect(toMap(Verification::nodeId, v -> v.historySignature().signature()));
         final Bytes sourceProof;
         final Map<Long, Bytes> sourceProofKeys;
         if (construction.hasSourceProof()) {
@@ -425,9 +423,9 @@ public class HistoryProofController {
             final var verification = entry.getValue().join();
             if (verification.isValid()) {
                 final long weight = assemblyWeights.merge(
-                        verification.assembly(), weights.sourceWeightOf(verification.nodeId()), Long::sum);
+                        verification.history(), weights.sourceWeightOf(verification.nodeId()), Long::sum);
                 if (weight >= weights.sourceWeightThreshold()) {
-                    return new Signatures(verification.assembly(), entry.getKey());
+                    return new Signatures(verification.history(), entry.getKey());
                 }
             }
         }
@@ -475,7 +473,7 @@ public class HistoryProofController {
             final long nodeId, @NonNull final HistorySignature historySignature) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var message = messageFor(historySignature.assemblyOrThrow());
+                    final var message = messageFor(historySignature.historyOrThrow());
                     final var proofKey = requireNonNull(targetProofKeys.get(nodeId));
                     final var isValid = library.verifyHistorySignature(proofKey, message, historySignature.signature());
                     return new Verification(nodeId, historySignature, isValid);
@@ -484,7 +482,7 @@ public class HistoryProofController {
     }
 
     private Bytes messageFor(@NonNull final History history) {
-        return messageFor(history.proofRosterHash(), history.metadata());
+        return messageFor(history.addressBookHash(), history.metadata());
     }
 
     /**

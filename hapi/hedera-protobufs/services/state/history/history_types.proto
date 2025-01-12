@@ -88,11 +88,9 @@ message ProofKeySet {
 }
 
 /**
- * A Schnorr key used to contribute to a recursive SNARK that proves
-  * certain metadata was derived from the ledger id in a manner that
-  * can trusted throughout any period the network's aBFT security was
-  * not compromised; no matter how nodes were added, removed, or
-  * updated during that period.
+ * A key a node will use to contribute its signature to proofs
+ * that certain history (that is, address book with associated
+ * metadata) belongs to the chain of trust for a ledger id.
  */
 message ProofKey {
   /**
@@ -199,63 +197,65 @@ message ConstructionNodeId {
 }
 
 /**
- * A node's vote for a particular proof roster assembly of a certain
- * construction; either by explicitly giving the tagged proof roster, or
- * by identifying a node that already voted the same way.
+ * A node's vote for a particular history proof; either by explicitly
+ * giving the proof, or by identifying a node that already voted for it.
  */
-message MetadataProofVote {
+message HistoryProofVote {
   oneof vote {
     /**
-     * The proof roster and metadata this node is voting for.
+     * The history proof the submitting node is voting for.
      */
-    HistoryProof metadata_proof = 1;
+    HistoryProof proof = 1;
     /**
-     * The id of any node that already voted for the exact tagged proof roster
-     * this node is voting for.
+     * The id of another node that already voted for the exact proof
+     * the submitting node is voting for.
      */
     uint64 congruent_node_id = 2;
   }
 }
 
 /**
- * A particular assembly of new history for the next proof roster and metadata.
+ * An assembly of new history in the form of an address book hash and
+ * associated metadata.
  */
 message History {
   /**
-   * The proof roster hash the node is signing the assembly of.
+   * The address book hash of the new history.
    */
-  bytes proof_roster_hash = 1;
+  bytes address_book_hash = 1;
   /**
-   * The metadata associated to the proof roster the the assembly is for.
+   * The metadata associated to the address book.
    */
   bytes metadata = 2;
 }
 
 /**
- * A node's signature on a particular assembly of metadata and proof roster
- * hash for a specified.
+ * A node's signature blessing some new history.
  */
 message HistorySignature {
   /**
-   * The assembly the node is signing.
+   * The new history the node is signing.
    */
-  History assembly = 1;
+  History history = 1;
   /**
-   * The node's signature on the hash of the concatenation of the proof
-   * roster hash and the metadata.
+   * The node's signature on the canonical serialization of
+   * the new history.
    */
   bytes signature = 2;
 }
 
-message RecordedHistoryAssemblySignature {
+/**
+ * A signature on some new history recorded at a certain time.
+ */
+message RecordedHistorySignature {
   /**
    * The time at which the signature was recorded.
    */
   proto.Timestamp signing_time = 1;
 
   /**
-   * The signature.
+   * The signature on some new history.
    */
-  HistorySignature signature = 2;
+  HistorySignature history_signature = 2;
 }
 
