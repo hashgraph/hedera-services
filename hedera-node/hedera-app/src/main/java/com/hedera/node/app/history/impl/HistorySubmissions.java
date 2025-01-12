@@ -72,11 +72,9 @@ public class HistorySubmissions extends TssSubmissions {
      * @param proof history proof to vote for
      * @return a future that completes with the submission
      */
-    public CompletableFuture<Void> submitProofVote(
-            final long constructionId, @NonNull final HistoryProof proof) {
+    public CompletableFuture<Void> submitProofVote(final long constructionId, @NonNull final HistoryProof proof) {
         requireNonNull(proof);
-        final var vote =
-                MetadataProofVote.newBuilder().metadataProof(proof).build();
+        final var vote = MetadataProofVote.newBuilder().metadataProof(proof).build();
         return submit(b -> b.historyProofVote(new HistoryProofVoteTransactionBody(constructionId, vote)), onFailure);
     }
 

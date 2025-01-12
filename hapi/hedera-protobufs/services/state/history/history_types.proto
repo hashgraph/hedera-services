@@ -148,20 +148,21 @@ message HistoryProofConstruction {
    */
   bytes source_roster_hash = 2;
   /**
-   * If not null, the proof that the source proof roster was derived from
-   * the ledger id (if empty, the source roster *is* the ledger id).
+   * If set, the proof that the address book of the source roster belongs
+   * to the the ledger id's chain of trust; if not set, the source roster's
+   * address book must *be* the ledger id.
    */
   HistoryProof source_proof = 3;
   /**
    * The hash of the roster whose weights are used to assess progress
-   * toward obtaining Schnorr keys for parties that hold at least a
+   * toward obtaining proof keys for parties that hold at least a
    * strong minority of the stake in that roster.
    */
   bytes target_roster_hash = 4;
   /**
-   * If the network is still gathering Schnorr keys for this
+   * If the network is still gathering proof keys for this
    * construction, the next time at which nodes should evaluate the
-   * Schnorr keys and metadata scoped to the target roster for
+   * proof keys and metadata scoped to the target roster for
    * sufficient valid weight to assemble the proof roster.
    */
   proto.Timestamp next_assembly_checkpoint = 5;
