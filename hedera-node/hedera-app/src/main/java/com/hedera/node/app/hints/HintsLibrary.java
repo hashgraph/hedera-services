@@ -38,7 +38,7 @@ import java.util.Map;
  *   <li><b>Verifying partial signatures</b> ({@code PartialVerify}) - Implemented by using
  *   {@link HintsLibrary#verifyPartial(Bytes, BlsSignature, BlsPublicKey)} with public keys extracted from the
  *   aggregation key in the active hinTS scheme via {@link HintsLibrary#extractPublicKey(Bytes, long)}.</li>
- *   <li><b>Signature aggregation</b> ({@code SignAggr}) - Implemented by {@link HintsLibrary#aggregateSignatures(Bytes, Map)}
+ *   <li><b>Signature aggregation</b> ({@code SignAggr}) - Implemented by {@link HintsLibrary#signAggregate(Bytes, Map)}
  *   with partial signatures verified as above with weights extracted from the aggregation key in the active hinTS
  *   scheme via {@link HintsLibrary#extractWeight(Bytes, long)} and {@link HintsLibrary#extractTotalWeight(Bytes)}.</li>
  *   <li><b>Verifying aggregate signatures</b> ({@code Verify}) - Implemented by
@@ -74,13 +74,14 @@ public interface HintsLibrary {
      * Runs the hinTS preprocessing algorithm on the given validated hint keys and party weights for the given number
      * of parties. The output includes,
      * <ol>
-     *     <li>The linear size aggregation key for use in combining partial signatures on a message, committing to the
-     *     parties that signed (and their weight)..</li>
+     *     <li>The linear size aggregation key to use in combining partial signatures on a message with a provably
+     *     well-formed aggregate public key.</li>
+     *     <li>The succinct verification key to use when verifying an aggregate signature.</li>
      * </ol>
-     * @param hintKeys the valid hint keys by party id
+     * @param hintKeys the valid hinTS keys by party id
      * @param weights the weights by party id
      * @param n the number of parties
-     * @return the aggregated keys
+     * @return the preprocessed keys
      */
     PreprocessedKeys preprocess(@NonNull Map<Integer, HintsKey> hintKeys, @NonNull Map<Integer, Long> weights, int n);
 
@@ -129,7 +130,7 @@ public interface HintsLibrary {
      * @param aggregationKey the aggregation key
      * @return the aggregated signature
      */
-    Bytes aggregateSignatures(@NonNull Bytes aggregationKey, @NonNull Map<Long, BlsSignature> partialSignatures);
+    Bytes signAggregate(@NonNull Bytes aggregationKey, @NonNull Map<Long, BlsSignature> partialSignatures);
 
     /**
      * Verifies the aggregate signature and its claimed threshold weight for the given message and verification key.

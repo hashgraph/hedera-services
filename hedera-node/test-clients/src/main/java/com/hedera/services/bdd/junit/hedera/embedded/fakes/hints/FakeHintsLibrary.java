@@ -57,8 +57,7 @@ public class FakeHintsLibrary implements HintsLibrary {
     }
 
     @Override
-    public Bytes aggregateSignatures(
-            @NonNull final Bytes aggregationKey, @NonNull final Map<Long, BlsSignature> signatures) {
+    public Bytes signAggregate(@NonNull final Bytes aggregationKey, @NonNull final Map<Long, BlsSignature> signatures) {
         requireNonNull(aggregationKey);
         requireNonNull(signatures);
         throw new AssertionError("Not implemented");

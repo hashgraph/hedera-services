@@ -39,7 +39,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -57,7 +56,7 @@ import java.util.function.Consumer;
 /**
  * Manages the process objects and work needed to advance toward completion of a metadata proof.
  */
-public class HistoryProofController {
+public class ProofController {
     private static final Comparator<ProofKey> PROOF_KEY_COMPARATOR = Comparator.comparingLong(ProofKey::nodeId);
 
     private final long selfId;
@@ -65,8 +64,6 @@ public class HistoryProofController {
     @Nullable
     private final Bytes ledgerId;
 
-    private final Urgency urgency;
-    private final Duration proofKeysWaitTime;
     private final Executor executor;
     private final SchnorrKeyPair schnorrKeyPair;
     private final HistoryLibrary library;
@@ -109,25 +106,6 @@ public class HistoryProofController {
     private CompletableFuture<Void> proofFuture;
 
     /**
-     * Whether this construction must succeed as quickly as possible, even at the cost of some overhead on
-     * the {@code handleTransaction} thread when validating assembly signatures; or even at the cost of
-     * omitting some nodes' Schnorr keys from the target proof roster, preventing them from contributing
-     * signatures in the next roster transition.
-     */
-    public enum Urgency {
-        /**
-         * The construction is urgent; some overhead is acceptable to ensure the construction completes
-         * as soon as possible if nodes are slow to publish their hints.
-         */
-        HIGH,
-        /**
-         * The construction is not urgent; the construction can take as long as necessary to complete,
-         * and should minimize overhead on the handle thread.
-         */
-        LOW,
-    }
-
-    /**
      * A party's verified signature on some new history.
      *
      * @param nodeId the node's id
@@ -142,28 +120,26 @@ public class HistoryProofController {
 
     /**
      * A summary of the signatures to be used in a proof.
-     * @param assembly the assembly with the signatures
+     *
+     * @param history the assembly with the signatures
      * @param cutoff the time at which the signatures were sufficient
      */
-    private record Signatures(@NonNull History assembly, @NonNull Instant cutoff) {}
+    private record Signatures(@NonNull History history, @NonNull Instant cutoff) {}
 
-    public HistoryProofController(
+    public ProofController(
             final long selfId,
+            @NonNull final HistoryProofConstruction construction,
             @Nullable final Bytes ledgerId,
-            @NonNull final Urgency urgency,
+            @NonNull final RosterTransitionWeights weights,
             @NonNull final Executor executor,
             @Nullable final Bytes metadata,
-            @NonNull final HistoryProofConstruction construction,
-            @NonNull final Duration proofKeysWaitTime,
             @NonNull final SchnorrKeyPair schnorrKeyPair,
             @NonNull final HistoryLibrary library,
             @NonNull final HistorySubmissions submissions,
-            @NonNull final RosterTransitionWeights weights,
             @NonNull final Consumer<HistoryProof> proofConsumer) {
         this.selfId = selfId;
         this.ledgerId = ledgerId;
         this.metadata = metadata;
-        this.urgency = requireNonNull(urgency);
         this.executor = requireNonNull(executor);
         this.library = requireNonNull(library);
         this.submissions = requireNonNull(submissions);
@@ -171,7 +147,6 @@ public class HistoryProofController {
         this.construction = requireNonNull(construction);
         this.proofConsumer = requireNonNull(proofConsumer);
         this.schnorrKeyPair = requireNonNull(schnorrKeyPair);
-        this.proofKeysWaitTime = requireNonNull(proofKeysWaitTime);
     }
 
     /**
@@ -196,17 +171,11 @@ public class HistoryProofController {
                 }
             }
         } else {
-            switch (recommendAssemblyBehavior(now)) {
-                case RESCHEDULE_CHECKPOINT -> {
-                    construction = historyStore.rescheduleAssemblyCheckpoint(
-                            construction.constructionId(), now.plus(proofKeysWaitTime));
-                    ensureProofKeyPublished();
-                }
-                case ASSEMBLE_NOW -> {
-                    construction = historyStore.setAssemblyTime(construction.constructionId(), now);
-                    signingFuture = startSigningFuture();
-                }
-                case COME_BACK_LATER -> ensureProofKeyPublished();
+            if (shouldAssemble(now)) {
+                construction = historyStore.setAssemblyTime(construction.constructionId(), now);
+                signingFuture = startSigningFuture();
+            } else {
+                ensureProofKeyPublished();
             }
         }
     }
@@ -214,6 +183,7 @@ public class HistoryProofController {
     /**
      * Incorporates the proof key published by the given node, if this construction has not already "locked in"
      * its assembled target roster.
+     *
      * @param nodeId the node ID
      * @param proofKey the proof key
      */
@@ -227,6 +197,7 @@ public class HistoryProofController {
     /**
      * Incorporates the assembly signature published by the given node, if this construction still needs a
      * proof and the
+     *
      * @param publication the proof key publication
      */
     public void addProofSignature(@NonNull final AssemblySignaturePublication publication) {
@@ -239,6 +210,7 @@ public class HistoryProofController {
 
     /**
      * Incorporates the metadata proof vote published by the given node, if this construction still needs a proof.
+     *
      * @param nodeId the node ID
      * @param vote the vote
      * @param historyStore the history store
@@ -292,23 +264,16 @@ public class HistoryProofController {
      * @param now the current consensus time
      * @return the recommendation
      */
-    private Recommendation recommendAssemblyBehavior(@NonNull final Instant now) {
-        // If every active node in the target roster has published a proof key, schedule statement assembly
-        // at this time. Note that if even here, a strong minority of weight _still_ has not published valid
-        // proof keys, the signatures produced by this construction will never reach the weight threshold---
-        // but such a condition would imply the network was already in an unusable state
+    private boolean shouldAssemble(@NonNull final Instant now) {
+        // If every active node in the target roster has published a proof key,
+        // assemble the new history now; there is nothing else to wait for
         if (targetProofKeys.size() == weights.numTargetNodesInSource()) {
-            return Recommendation.ASSEMBLE_NOW;
+            return true;
         }
         if (now.isBefore(asInstant(construction.gracePeriodEndTimeOrThrow()))) {
-            return Recommendation.COME_BACK_LATER;
+            return false;
         } else {
-            return switch (urgency) {
-                case HIGH -> publishedWeight() >= weights.targetWeightThreshold()
-                        ? Recommendation.ASSEMBLE_NOW
-                        : Recommendation.COME_BACK_LATER;
-                case LOW -> Recommendation.RESCHEDULE_CHECKPOINT;
-            };
+            return publishedWeight() >= weights.targetWeightThreshold();
         }
     }
 
@@ -360,7 +325,7 @@ public class HistoryProofController {
         final var choice = requireNonNull(firstSufficientSignatures());
         final var signatures = verificationFutures.headMap(choice.cutoff(), true).values().stream()
                 .map(CompletableFuture::join)
-                .filter(v -> choice.assembly().equals(v.history()) && v.isValid())
+                .filter(v -> choice.history().equals(v.history()) && v.isValid())
                 .collect(toMap(Verification::nodeId, v -> v.historySignature().signature()));
         final Bytes sourceProof;
         final Map<Long, Bytes> sourceProofKeys;
@@ -418,11 +383,11 @@ public class HistoryProofController {
      */
     @Nullable
     private Signatures firstSufficientSignatures() {
-        final Map<History, Long> assemblyWeights = new HashMap<>();
+        final Map<History, Long> historyWeights = new HashMap<>();
         for (final var entry : verificationFutures.entrySet()) {
             final var verification = entry.getValue().join();
             if (verification.isValid()) {
-                final long weight = assemblyWeights.merge(
+                final long weight = historyWeights.merge(
                         verification.history(), weights.sourceWeightOf(verification.nodeId()), Long::sum);
                 if (weight >= weights.sourceWeightThreshold()) {
                     return new Signatures(verification.history(), entry.getKey());
@@ -443,6 +408,7 @@ public class HistoryProofController {
 
     /**
      * Returns the proof keys used for the given proof.
+     *
      * @param proof the proof
      * @return the proof keys
      */
@@ -452,6 +418,7 @@ public class HistoryProofController {
 
     /**
      * Returns a list of proof keys from the given map.
+     *
      * @param proofKeys the proof keys in a map
      * @return the list of proof keys
      */
@@ -466,7 +433,6 @@ public class HistoryProofController {
      * Returns a future that completes to a verification of the given assembly signature.
      *
      * @param nodeId the node ID
-     *
      * @return the future
      */
     private CompletableFuture<Verification> verificationFuture(
@@ -487,6 +453,7 @@ public class HistoryProofController {
 
     /**
      * Returns the message to be signed for the given address book hash and metadata.
+     *
      * @param addressBookHash the address book hash
      * @param metadata the metadata
      * @return the message

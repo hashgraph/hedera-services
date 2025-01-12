@@ -78,7 +78,7 @@ public class HintsSigning {
                 signatures.put(nodeId, signature);
                 final var weight = operations.extractWeight(aggregationKey, partyIds.get(nodeId));
                 if (weightOfSignatures.addAndGet(weight) >= thresholdWeight) {
-                    future.complete(operations.aggregateSignatures(aggregationKey, signatures));
+                    future.complete(operations.signAggregate(aggregationKey, signatures));
                 }
             }
         }
