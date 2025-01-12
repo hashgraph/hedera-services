@@ -17,8 +17,6 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
-import static com.hedera.node.app.hints.impl.HintsController.Urgency.HIGH;
-import static com.hedera.node.app.hints.impl.HintsController.Urgency.LOW;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
@@ -31,15 +29,12 @@ import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
-import com.hedera.node.app.roster.RosterTransitionWeights;
-import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -114,28 +109,6 @@ public class HintsConstructionControllers {
     }
 
     /**
-     * Creates a new controller for the given hinTS construction, sourcing its rosters from the given store.
-     *
-     * @param construction the hinTS construction
-     * @param rosterStore the store to source rosters from
-     * @return the result of the operation
-     */
-    public @NonNull HintsController getOrCreateControllerFor(
-            @NonNull final HintsConstruction construction,
-            @NonNull final ReadableHintsStore hintsStore,
-            @NonNull final ReadableRosterStore rosterStore) {
-        requireNonNull(construction);
-        requireNonNull(rosterStore);
-        if (currentConstructionId() != construction.constructionId()) {
-            if (controller != null) {
-                controller.cancelPendingWork();
-            }
-            controller = newControllerFor(construction, hintsStore, rosterStore);
-        }
-        return requireNonNull(controller);
-    }
-
-    /**
      * Returns the in-progress controller for the hinTS construction with the given ID, if it exists.
      *
      * @param constructionId the ID of the hinTS construction
@@ -157,68 +130,30 @@ public class HintsConstructionControllers {
         return Optional.ofNullable(controller).filter(c -> c.hasNumParties(m));
     }
 
+    /**
+     * Returns a new controller for the given active rosters and in-progress construction.
+     * @param activeRosters the active rosters
+     * @param construction the hinTS construction
+     * @param hintsStore the hints store
+     * @return the controller
+     */
     private HintsController newControllerFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
             @NonNull final ReadableHintsStore hintsStore) {
-        final var urgency = activeRosters.phase() == BOOTSTRAP ? HIGH : LOW;
-        final var networkAdminConfig = configSupplier.get().getConfigData(NetworkAdminConfig.class);
-        final var hintKeysWaitTime =
-                switch (urgency) {
-                    case HIGH -> networkAdminConfig.urgentHintsKeysWaitPeriod();
-                    case LOW -> networkAdminConfig.relaxedHintsKeysWaitPeriod();
-                };
         final var weights = activeRosters.transitionWeights();
         final var numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
-        final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
-        final var votes = hintsStore.votesFor(
-                construction.constructionId(), weights.sourceNodeWeights().keySet());
         final var publications = hintsStore.getNodeHintsKeyPublications(
                 weights.targetNodeWeights().keySet(), numParties);
+        final var votes = hintsStore.votesFor(
+                construction.constructionId(), weights.sourceNodeWeights().keySet());
+        final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
         return new HintsController(
                 selfNodeInfoSupplier.get().nodeId(),
                 construction,
                 weights,
-                urgency,
                 executor,
                 blsKeyPair,
-                hintKeysWaitTime,
-                operations,
-                publications,
-                votes,
-                submissions,
-                signingContext);
-    }
-
-    private HintsController newControllerFor(
-            @NonNull final HintsConstruction construction,
-            @NonNull final ReadableHintsStore hintsStore,
-            @NonNull final ReadableRosterStore rosterStore) {
-        final var isGenesisController =
-                Objects.equals(construction.sourceRosterHash(), construction.targetRosterHash());
-        final var urgency = isGenesisController ? HIGH : LOW;
-        final var networkAdminConfig = configSupplier.get().getConfigData(NetworkAdminConfig.class);
-        final var hintKeysWaitTime =
-                switch (urgency) {
-                    case HIGH -> networkAdminConfig.urgentHintsKeysWaitPeriod();
-                    case LOW -> networkAdminConfig.relaxedHintsKeysWaitPeriod();
-                };
-        final var sourceNodeWeights = weightsFrom(requireNonNull(rosterStore.get(construction.sourceRosterHash())));
-        final var targetNodeWeights = isGenesisController
-                ? sourceNodeWeights
-                : weightsFrom(requireNonNull(rosterStore.get(construction.targetRosterHash())));
-        final int k = Integer.numberOfTrailingZeros(partySizeForRosterNodeCount(targetNodeWeights.size()));
-        final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
-        final var publications = hintsStore.getNodeHintsKeyPublications(targetNodeWeights.keySet(), k);
-        final var votes = hintsStore.votesFor(construction.constructionId(), sourceNodeWeights.keySet());
-        return new HintsController(
-                selfNodeInfoSupplier.get().nodeId(),
-                construction,
-                new RosterTransitionWeights(sourceNodeWeights, targetNodeWeights),
-                urgency,
-                executor,
-                blsKeyPair,
-                hintKeysWaitTime,
                 operations,
                 publications,
                 votes,

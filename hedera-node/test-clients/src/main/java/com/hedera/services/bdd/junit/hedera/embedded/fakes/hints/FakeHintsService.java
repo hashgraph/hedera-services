@@ -22,6 +22,7 @@ import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -64,8 +65,9 @@ public class FakeHintsService implements HintsService {
     public void reconcile(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now) {
-        delegate.reconcile(activeRosters, hintsStore, now);
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
+        delegate.reconcile(activeRosters, hintsStore, now, tssConfig);
     }
 
     @Override

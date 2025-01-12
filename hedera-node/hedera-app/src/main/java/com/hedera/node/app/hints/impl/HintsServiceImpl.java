@@ -26,6 +26,7 @@ import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -102,13 +103,15 @@ public class HintsServiceImpl implements HintsService {
     public void reconcile(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now) {
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
         requireNonNull(now);
         requireNonNull(activeRosters);
         requireNonNull(hintsStore);
+        requireNonNull(tssConfig);
         switch (activeRosters.phase()) {
             case BOOTSTRAP, TRANSITION -> {
-                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now);
+                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
                 if (!construction.hasPreprocessedKeys()) {
                     final var controller =
                             component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
@@ -117,6 +120,8 @@ public class HintsServiceImpl implements HintsService {
             }
             case HANDOFF -> {
                 if (hintsStore.purgeStateAfterHandoff(activeRosters)) {
+                    // If there was out-of-date state to purge, this is the first round in
+                    // the handoff phase, and we should also update the signing context
                     component
                             .signingContext()
                             .setConstruction(requireNonNull(hintsStore.getConstructionFor(activeRosters)));

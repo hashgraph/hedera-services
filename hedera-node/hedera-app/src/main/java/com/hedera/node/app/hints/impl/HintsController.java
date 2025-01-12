@@ -36,7 +36,7 @@ import com.hedera.node.app.roster.RosterTransitionWeights;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -53,10 +53,8 @@ import java.util.concurrent.Executor;
 public class HintsController {
     private final int numParties;
     private final long selfId;
-    private final Urgency urgency;
     private final Executor executor;
     private final BlsKeyPair blsKeyPair;
-    private final Duration hintKeysWaitTime;
     private final HintsLibrary operations;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
@@ -72,10 +70,10 @@ public class HintsController {
     private HintsConstruction construction;
 
     /**
-     * If not null, a future that resolves when this node completes the aggregation work for this construction.
+     * If not null, a future that resolves when this node completes the preprocessing stage of this construction.
      */
     @Nullable
-    private CompletableFuture<Void> aggregationFuture;
+    private CompletableFuture<Void> preprocessingVoteFuture;
 
     /**
      * If not null, the future performing the hinTS key publication for this node.
@@ -115,10 +113,8 @@ public class HintsController {
             final long selfId,
             @NonNull final HintsConstruction construction,
             @NonNull final RosterTransitionWeights weights,
-            @NonNull final Urgency urgency,
             @NonNull final Executor executor,
             @NonNull final BlsKeyPair blsKeyPair,
-            @NonNull final Duration hintKeysWaitTime,
             @NonNull final HintsLibrary operations,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final Map<Long, PreprocessingVote> votes,
@@ -126,8 +122,6 @@ public class HintsController {
             @NonNull final HintsSigningContext signingContext) {
         this.selfId = selfId;
         this.blsKeyPair = requireNonNull(blsKeyPair);
-        this.urgency = requireNonNull(urgency);
-        this.hintKeysWaitTime = requireNonNull(hintKeysWaitTime);
         this.weights = requireNonNull(weights);
         this.numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
         this.executor = requireNonNull(executor);
@@ -165,18 +159,16 @@ public class HintsController {
             return;
         }
         if (construction.hasPreprocessingStartTime()) {
-            if (!votes.containsKey(selfId) && aggregationFuture == null) {
-                aggregationFuture = startAggregateFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
+            if (!votes.containsKey(selfId) && preprocessingVoteFuture == null) {
+                preprocessingVoteFuture = startPreprocessingVoteFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
             }
         } else {
             switch (recommendPreprocessingChoice(now)) {
-                case RESCHEDULE_CHECKPOINT -> construction = hintsStore.reschedulePreprocessingCheckpoint(
-                        construction.constructionId(), now.plus(hintKeysWaitTime));
-                case START_NOW -> {
+                case YES -> {
                     construction = hintsStore.setPreprocessingStartTime(construction.constructionId(), now);
-                    aggregationFuture = startAggregateFuture(now);
+                    preprocessingVoteFuture = startPreprocessingVoteFuture(now);
                 }
-                case COME_BACK_LATER -> ensureHintsKeyPublished();
+                case NO -> ensureHintsKeyPublished();
             }
         }
     }
@@ -236,8 +228,8 @@ public class HintsController {
         if (publicationFuture != null) {
             publicationFuture.cancel(true);
         }
-        if (aggregationFuture != null) {
-            aggregationFuture.cancel(true);
+        if (preprocessingVoteFuture != null) {
+            preprocessingVoteFuture.cancel(true);
         }
         validationFutures.values().forEach(future -> future.cancel(true));
     }
@@ -278,44 +270,33 @@ public class HintsController {
     /**
      * The choices the controller's preprocessing policy can make.
      */
-    private enum PreprocessingChoice {
+    private enum StartPreprocessing {
         /**
          * Schedule the construction's key aggregation using valid hinTS published up to now.
          */
-        START_NOW,
+        YES,
         /**
          * Revisit the question again at the next opportunity.
          */
-        COME_BACK_LATER,
-        /**
-         * Reschedule the next aggregation checkpoint to reduce overhead.
-         */
-        RESCHEDULE_CHECKPOINT,
+        NO,
     }
 
     /**
-     * Applies a deterministic policy to recommend an aggregation behavior at the given time.
+     * Applies a deterministic policy to choose a preprocessing behavior at the given time.
      *
      * @param now the current consensus time
-     * @return the recommendation
+     * @return the choice of preprocessing behavior
      */
-    private PreprocessingChoice recommendPreprocessingChoice(@NonNull final Instant now) {
-        // If every node in the target roster has published a hinTS key, schedule the final aggregation at this time.
-        // Note that if even here, a strong minority of weight _still_ has not published valid hinTS, the signatures
-        // produced by this construction will never reach the weight threshold---but such a condition would imply the
-        // network was already in an unusable state
+    private StartPreprocessing recommendPreprocessingChoice(@NonNull final Instant now) {
+        // If every active node in the target roster has published a hinTS key,
+        // start preprocessing now; there is nothing else to wait for
         if (validationFutures.size() == weights.numTargetNodesInSourceRoster()) {
-            return PreprocessingChoice.START_NOW;
+            return StartPreprocessing.YES;
         }
-        if (now.isBefore(asInstant(construction.preprocessingCheckpointTimeOrThrow()))) {
-            return PreprocessingChoice.COME_BACK_LATER;
+        if (now.isBefore(asInstant(construction.gracePeriodEndTimeOrThrow()))) {
+            return StartPreprocessing.NO;
         } else {
-            return switch (urgency) {
-                case HIGH -> validWeightAt(now) >= weights.targetWeightThreshold()
-                        ? PreprocessingChoice.START_NOW
-                        : PreprocessingChoice.COME_BACK_LATER;
-                case LOW -> PreprocessingChoice.RESCHEDULE_CHECKPOINT;
-            };
+            return weightOfValidHintsKeysAt(now) >= weights.targetWeightThreshold() ? StartPreprocessing.YES : StartPreprocessing.NO;
         }
     }
 
@@ -325,7 +306,7 @@ public class HintsController {
      *
      * @return the future
      */
-    private CompletableFuture<Void> startAggregateFuture(@NonNull final Instant cutoff) {
+    private CompletableFuture<Void> startPreprocessingVoteFuture(@NonNull final Instant cutoff) {
         return CompletableFuture.runAsync(
                 () -> {
                     final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
@@ -356,7 +337,7 @@ public class HintsController {
      * @param now the time up to which to consider hinTS keys
      * @return the weight of the nodes with valid hinTS keys
      */
-    private long validWeightAt(@NonNull final Instant now) {
+    private long weightOfValidHintsKeysAt(@NonNull final Instant now) {
         return validationFutures.headMap(now, true).values().stream()
                 .map(CompletableFuture::join)
                 .filter(Validation::isValid)

@@ -22,6 +22,7 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCT
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
+import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
@@ -36,11 +37,14 @@ import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -71,16 +75,21 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     @NonNull
     @Override
     public HintsConstruction getOrCreateConstruction(
-            @NonNull final ActiveRosters activeRosters, @NonNull final Instant now) {
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
         requireNonNull(activeRosters);
         requireNonNull(now);
+        requireNonNull(tssConfig);
         var construction = getConstructionFor(activeRosters);
         if (construction == null) {
+            final var gracePeriod = activeRosters.phase() == BOOTSTRAP ? tssConfig.bootstrapHintsKeyGracePeriod() : tssConfig.transitionHintsKeyGracePeriod();
             construction = newConstruction(
                     activeRosters.sourceRosterHash(),
                     activeRosters.targetRosterHash(),
                     activeRosters::findRelatedRoster,
-                    now);
+                    now,
+                    gracePeriod);
         }
         return construction;
     }
@@ -126,12 +135,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public HintsConstruction reschedulePreprocessingCheckpoint(final long constructionId, @NonNull final Instant then) {
-        requireNonNull(then);
-        return updateOrThrow(constructionId, b -> b.preprocessingCheckpointTime(asTimestamp(then)));
-    }
-
-    @Override
     public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
         if (activeRosters.phase() != HANDOFF) {
             throw new IllegalArgumentException("Not in handoff phase");
@@ -171,7 +174,8 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             @NonNull final Bytes sourceRosterHash,
             @NonNull final Bytes targetRosterHash,
             @NonNull final Function<Bytes, Roster> lookup,
-            @NonNull final Instant now) {
+            @NonNull final Instant now,
+            @NonNull final Duration gracePeriod) {
         final var currentConstruction = requireNonNull(activeConstruction.get());
         final var candidateConstruction = requireNonNull(nextConstruction.get());
         final long nextConstructionId =
@@ -180,6 +184,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                 .constructionId(nextConstructionId)
                 .sourceRosterHash(sourceRosterHash)
                 .targetRosterHash(targetRosterHash)
+                .gracePeriodEndTime(asTimestamp(now.plus(gracePeriod)))
                 .build();
         if (currentConstruction.equals(HintsConstruction.DEFAULT)) {
             if (!sourceRosterHash.equals(targetRosterHash)) {
@@ -212,7 +217,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         final int numParties =
                 partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
         final var adoptionTime = asTimestamp(now);
-        for (long partyId = 0; partyId < numParties; partyId++) {
+        for (int partyId = 0; partyId < numParties; partyId++) {
             final var hintsId = new HintsPartyId(partyId, numParties);
             final var keySet = hintsKeys.get(hintsId);
             if (keySet != null && keySet.hasNextKey()) {

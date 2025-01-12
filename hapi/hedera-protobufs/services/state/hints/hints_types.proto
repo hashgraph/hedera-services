@@ -34,7 +34,7 @@ message HintsPartyId {
   /**
    * The party id in the range [0, M) for a hinTS scheme of size M.
    */
-  uint64 party_id = 1;
+  uint32 party_id = 1;
   /**
    * The number of parties in the hinTS scheme.
    */
@@ -180,10 +180,11 @@ message HintsConstruction {
   oneof preprocessing_time {
     /**
      * If the network is still gathering hinTS keys for this construction,
-     * the next time at which honest nodes should apply the consensus policy
-     * to decide whether to begin the preprocessing stage.
+     * the time at which honest nodes should stop waiting for tardy
+     * publications and begin preprocessing as soon as there are valid
+     * hinTS keys for nodes with >2/3 weight in the target roster.
      */
-    proto.Timestamp preprocessing_checkpoint_time = 4;
+    proto.Timestamp grace_period_end_time = 4;
     /**
      * If the network has gathered enough hinTS keys for this construction
      * to begin preprocessing, the cutoff time at those keys must have been

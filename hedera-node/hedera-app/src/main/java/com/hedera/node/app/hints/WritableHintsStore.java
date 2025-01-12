@@ -20,6 +20,7 @@ import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.node.config.data.TssConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Map;
@@ -32,7 +33,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
      */
     @NonNull
-    HintsConstruction getOrCreateConstruction(@NonNull ActiveRosters activeRosters, @NonNull Instant now);
+    HintsConstruction getOrCreateConstruction(@NonNull ActiveRosters activeRosters, @NonNull Instant now, @NonNull TssConfig tssConfig);
 
     /**
      * Includes the given hints key for the given node and party IDs relative to a party size, assigning
@@ -63,15 +64,6 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @return the updated construction
      */
     HintsConstruction setPreprocessingStartTime(long constructionId, @NonNull Instant now);
-
-    /**
-     * Reschedules the next preprocessing checkpoint for the construction with the given ID and returns the
-     * updated construction.
-     * @param constructionId the construction ID
-     * @param then the next preprocessing checkpoint
-     * @return the updated construction
-     */
-    HintsConstruction reschedulePreprocessingCheckpoint(long constructionId, @NonNull Instant then);
 
     /**
      * Purges any state no longer needed after a given handoff.
