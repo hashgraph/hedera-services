@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package com.swirlds.config.extensions.sources;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,11 +35,12 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  * A config source that reads properties from a YAML file.
@@ -65,9 +67,9 @@ public class YamlConfigSource implements ConfigSource {
     private static final Logger logger = LogManager.getLogger(YamlConfigSource.class);
 
     /**
-     * The {@link ObjectMapper} used to convert maps to JSON.
+     * The {@link ObjectMapper} used to read YAML.
      */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
     /**
      * The map that contains all not-list properties.
@@ -106,13 +108,13 @@ public class YamlConfigSource implements ConfigSource {
         this.listProperties = new HashMap<>();
         this.ordinal = ordinal;
 
-        try (InputStream resource =
+        try (final InputStream resource =
                 Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName)) {
             if (resource == null) {
                 throw new UncheckedIOException(new IOException("Resource not found: " + fileName));
             }
-            convertYamlToMaps(resource);
-        } catch (IOException e) {
+            processYamlFile(resource);
+        } catch (final IOException e) {
             throw new UncheckedIOException("Failed to read YAML file " + fileName, e);
         }
     }
@@ -144,78 +146,56 @@ public class YamlConfigSource implements ConfigSource {
             return;
         }
 
-        try (InputStream resource = Files.newInputStream(filePath)) {
-            convertYamlToMaps(resource);
-        } catch (IOException e) {
+        try (final InputStream resource = Files.newInputStream(filePath)) {
+            processYamlFile(resource);
+        } catch (final IOException e) {
             throw new UncheckedIOException("Failed to read YAML file " + filePath, e);
         }
     }
 
-    private void convertYamlToMaps(@NonNull final InputStream resource) {
+    private void processYamlFile(@NonNull final InputStream resource) throws IOException {
         Objects.requireNonNull(resource, "resource must not be null");
-        final Yaml yaml = new Yaml();
-        final Object rawData = yaml.load(resource);
-        processYamlNode("", rawData, properties, listProperties);
+        processNode(YAML_MAPPER.readTree(resource), "");
     }
 
-    @SuppressWarnings("unchecked")
-    private void processYamlNode(
-            @NonNull final String prefix,
-            @NonNull final Object node,
-            @NonNull final Map<String, String> simpleProps,
-            @NonNull final Map<String, List<String>> listProps) {
-
-        if (!(node instanceof Map)) {
+    private void processNode(@NonNull final JsonNode node, @NonNull final String prefix) {
+        // if it's a simple field we parse the value
+        if (node.isValueNode()) {
+            properties.put(prefix, toValueString(node));
+            return;
+        }
+        // if it's an array we parse the values and put them in a list
+        if (node.isArray()) {
+            final List<String> list = StreamSupport.stream(
+                            Spliterators.spliteratorUnknownSize(node.elements(), 0), false)
+                    .map(this::toValueString)
+                    .toList();
+            listProperties.put(prefix, list);
             return;
         }
 
-        final Map<String, Object> map = (Map<String, Object>) node;
-        for (final Map.Entry<String, Object> entry : map.entrySet()) {
+        // if it's an object we iterate over the fields to check if they are all value nodes
+        final boolean allValueNodes = StreamSupport.stream(Spliterators.spliteratorUnknownSize(node.fields(), 0), false)
+                .allMatch(e -> e.getValue().isValueNode());
+        // if all the fields are value nodes we store the raw string representation
+        if (allValueNodes) {
+            properties.put(prefix, node.toString());
+            return;
+        }
+        // if none of these criteria are met, we process the children
+        node.fields().forEachRemaining(entry -> {
             final String newPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
-            final Object value = entry.getValue();
-
-            try {
-                switch (value) {
-                    case final List<?> list -> handleList(listProps, list, newPrefix);
-                    case final Map<?, ?> mapValue -> handleMap(simpleProps, listProps, mapValue, newPrefix);
-                    case null -> simpleProps.put(newPrefix, null);
-                    default -> simpleProps.put(newPrefix, value.toString());
-                }
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Failed to convert map to JSON for key: " + newPrefix, e);
-            }
-        }
+            processNode(entry.getValue(), newPrefix);
+        });
     }
 
-    private void handleMap(
-            final @NonNull Map<String, String> simpleProps,
-            final @NonNull Map<String, List<String>> listProps,
-            final Map<?, ?> mapValue,
-            final String newPrefix)
-            throws JsonProcessingException {
-        if (mapValue.values().stream().noneMatch(v -> v instanceof Map || v instanceof List)) {
-            simpleProps.put(newPrefix, OBJECT_MAPPER.writeValueAsString(mapValue));
-        } else {
-            processYamlNode(newPrefix, mapValue, simpleProps, listProps);
+    private String toValueString(@NonNull final JsonNode node) {
+        // if it's a simple field we parse the value
+        if (node.isValueNode()) {
+            return node.asText();
         }
-    }
-
-    private void handleList(
-            final @NonNull Map<String, List<String>> listProps, final List<?> list, final String newPrefix) {
-        if (!list.isEmpty() && list.getFirst() instanceof Map) {
-            final List<String> jsonList = list.stream()
-                    .map(item -> {
-                        try {
-                            return OBJECT_MAPPER.writeValueAsString(item);
-                        } catch (JsonProcessingException e) {
-                            throw new IllegalStateException("Failed to convert map to JSON", e);
-                        }
-                    })
-                    .toList();
-            listProps.put(newPrefix, jsonList);
-        } else {
-            listProps.put(newPrefix, list.stream().map(Object::toString).toList());
-        }
+        // if it's an object we don't parse it, we just return the raw string representation
+        return node.toString();
     }
 
     /** {@inheritDoc} */
@@ -229,7 +209,7 @@ public class YamlConfigSource implements ConfigSource {
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public String getValue(@NonNull String propertyName) throws NoSuchElementException {
+    public String getValue(@NonNull final String propertyName) throws NoSuchElementException {
         requireNonNull(propertyName, "propertyName must not be null");
         if (isListProperty(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is a list property");

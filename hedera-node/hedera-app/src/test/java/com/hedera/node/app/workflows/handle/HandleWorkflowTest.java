@@ -175,7 +175,7 @@ class HandleWorkflowTest {
 
         givenSubjectWith(RECORDS, emptyList());
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();
@@ -192,7 +192,7 @@ class HandleWorkflowTest {
         givenSubjectWith(BOTH, builders);
         given(blockStreamManager.blockTimestamp()).willReturn(BLOCK_TIME);
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         builders.forEach(builder -> verify(blockStreamManager)
                 .writeItem(BlockItem.newBuilder()

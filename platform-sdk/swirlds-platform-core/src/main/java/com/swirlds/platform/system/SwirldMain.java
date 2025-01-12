@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -91,4 +93,14 @@ public interface SwirldMain extends Runnable {
      */
     @NonNull
     SoftwareVersion getSoftwareVersion();
+
+    /**
+     * Encodes a system transaction to {@link Bytes} representation of a {@link com.hedera.hapi.node.base.Transaction}.
+     *
+     * @param transaction the {@link StateSignatureTransaction} to encode
+     * @return {@link Bytes} representation of the transaction
+     */
+    default Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        throw new IllegalStateException("Invoke the method on the appropriate SwirldMain implementation!");
+    }
 }
