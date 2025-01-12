@@ -101,6 +101,11 @@ jobs:
         run: |
           echo $new_version > version.txt
 
+      # TODO: Remove the "publishTestRelease=true" arg
+      - name: Publish to Maven Central
+        run: |
+          ./gradlew versionAsSpecified -PnewVersion=$new_version -PpublishTestRelease=true
+
       - name: Add & Commit
         uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
