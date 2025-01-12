@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
@@ -14,8 +29,9 @@ import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.config.data.NetworkAdminConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -30,6 +46,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Spliterators;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -57,7 +74,7 @@ public class PlatformStateUpdates {
      * Checks whether the given transaction body is a freeze transaction and eventually
      * notifies the registered facility.
      *
-     * @param state the current state
+     * @param state  the current state
      * @param txBody the transaction body
      * @param config the configuration
      */
@@ -93,14 +110,27 @@ public class PlatformStateUpdates {
                     final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
                     // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
-                    if (config.getConfigData(AddressBookConfig.class).useRosterLifecycle()
-                            && !config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-                        logger.info("Creating candidate roster at PREPARE_UPGRADE since TSS is inactive");
+                    final var addressBookConfig = config.getConfigData(AddressBookConfig.class);
+                    if (addressBookConfig.useRosterLifecycle()
+                            && addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
+                        logger.info("Creating candidate roster at PREPARE_UPGRADE");
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
-                        final var candidateRoster = nodeStore.snapshotOfFutureRoster();
-                        logger.info("Candidate roster is {}", candidateRoster);
+                        final var stakingInfoStore =
+                                new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));
+
+                        // update the candidate roster weights with weights from stakingNodeInfo map
+                        final Function<Long, Long> weightFunction = nodeId -> {
+                            final var stakingInfo = stakingInfoStore.get(nodeId);
+                            if (stakingInfo != null && !stakingInfo.deleted()) {
+                                return stakingInfo.stake();
+                            }
+                            // Default weight if no staking info is found or the node is deleted
+                            return 0L;
+                        };
+                        final var candidateRoster = nodeStore.snapshotOfFutureRoster(weightFunction);
+                        logger.info("Candidate roster with updated weights is {}", candidateRoster);
                         boolean rosterAccepted = false;
                         try {
                             rosterStore.putCandidateRoster(candidateRoster);
@@ -108,8 +138,11 @@ public class PlatformStateUpdates {
                         } catch (Exception e) {
                             logger.warn("Candidate roster was rejected", e);
                         }
-                        if (rosterAccepted && networkAdminConfig.exportCandidateRoster()) {
-                            doExport(candidateRoster, networkAdminConfig);
+                        if (rosterAccepted) {
+                            // If the candidate roster needs to be exported, export the file
+                            if (networkAdminConfig.exportCandidateRoster()) {
+                                doExport(candidateRoster, networkAdminConfig);
+                            }
                         }
                     } else if (networkAdminConfig.exportCandidateRoster()) {
                         // Having the option to export candidate-roster.json even before using the roster

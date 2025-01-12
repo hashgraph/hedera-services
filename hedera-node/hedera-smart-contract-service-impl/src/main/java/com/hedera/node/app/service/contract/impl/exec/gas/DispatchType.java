@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,7 +174,13 @@ public enum DispatchType {
     /**
      * Dispatch for Hedera schedule sign functionality with default resource prices.
      */
-    SCHEDULE_SIGN(HederaFunctionality.SCHEDULE_SIGN, DEFAULT);
+    SCHEDULE_SIGN(HederaFunctionality.SCHEDULE_SIGN, DEFAULT),
+    /**
+     * Dispatch for Hedera schedule create functionality with default resource prices.
+     */
+    SCHEDULE_CREATE(HederaFunctionality.SCHEDULE_CREATE, DEFAULT),
+
+    SCHEDULE_GET_INFO(HederaFunctionality.SCHEDULE_GET_INFO, DEFAULT);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;

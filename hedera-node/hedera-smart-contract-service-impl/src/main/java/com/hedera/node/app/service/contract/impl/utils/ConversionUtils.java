@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
@@ -164,6 +165,31 @@ public class ConversionUtils {
         final var integralAddress = contractId.hasContractNum()
                 ? asEvmAddress(contractId.contractNumOrThrow())
                 : contractId.evmAddressOrThrow().toByteArray();
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
+     * Given a {@link ScheduleID}, returns its address as a headlong address.
+     *
+     * @param scheduleID the schedule id
+     * @return the headlong address
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final ScheduleID scheduleID) {
+        requireNonNull(scheduleID);
+        final var integralAddress = asEvmAddress(scheduleID.scheduleNum());
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
+     * Given a {@link ScheduleID}, returns its address as a headlong address.
+     *
+     * @param scheduleID the schedule id
+     * @return the headlong address
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(
+            @NonNull final com.hederahashgraph.api.proto.java.ScheduleID scheduleID) {
+        requireNonNull(scheduleID);
+        final var integralAddress = asEvmAddress(scheduleID.getScheduleNum());
         return asHeadlongAddress(integralAddress);
     }
 
@@ -486,6 +512,25 @@ public class ConversionUtils {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
         return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.ScheduleID asScheduleId(
+            @NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
+        return com.hederahashgraph.api.proto.java.ScheduleID.newBuilder()
+                .setScheduleNum(address.value().longValueExact())
+                .build();
+    }
+
+    public static ScheduleID addressToScheduleID(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
+        return ScheduleID.newBuilder()
+                .scheduleNum(address.value().longValueExact())
+                .build();
     }
 
     /**
