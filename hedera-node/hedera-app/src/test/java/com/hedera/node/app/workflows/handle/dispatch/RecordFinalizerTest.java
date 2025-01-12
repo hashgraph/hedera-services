@@ -96,7 +96,7 @@ public class RecordFinalizerTest {
             .build();
     private static final TransactionBody TX_BODY = asTxn(TRANSFER_BODY, PAYER_ID, CONSENSUS_NOW);
     private static final TransactionInfo TXN_INFO = new TransactionInfo(
-            Transaction.newBuilder().body(TX_BODY).build(),
+            Transaction.newBuilder().build(),
             TX_BODY,
             SignatureMap.DEFAULT,
             Bytes.EMPTY,

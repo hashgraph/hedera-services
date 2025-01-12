@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,20 @@ import javax.inject.Singleton;
 public class UtilHandlers {
 
     private final UtilPrngHandler prngHandler;
+    private final AtomicBatchHandler atomicBatchHandler;
 
     @Inject
-    public UtilHandlers(@NonNull final UtilPrngHandler prngHandler) {
+    public UtilHandlers(
+            @NonNull final UtilPrngHandler prngHandler, @NonNull final AtomicBatchHandler atomicBatchHandler) {
         this.prngHandler = Objects.requireNonNull(prngHandler, "prngHandler must not be null");
+        this.atomicBatchHandler = Objects.requireNonNull(atomicBatchHandler, "atomicBatchHandler must not be null");
     }
 
     public UtilPrngHandler prngHandler() {
         return prngHandler;
+    }
+
+    public AtomicBatchHandler atomicBatchHandler() {
+        return atomicBatchHandler;
     }
 }

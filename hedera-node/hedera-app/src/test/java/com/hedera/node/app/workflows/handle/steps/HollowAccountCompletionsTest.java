@@ -221,7 +221,7 @@ public class HollowAccountCompletionsTest {
                 .ethereumTransaction(EthereumTransactionBody.DEFAULT)
                 .build();
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txnBody).build(),
+                Transaction.newBuilder().build(),
                 txnBody,
                 SignatureMap.DEFAULT,
                 transactionBytes,
@@ -253,7 +253,7 @@ public class HollowAccountCompletionsTest {
                 .ethereumTransaction(EthereumTransactionBody.DEFAULT)
                 .build();
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txnBody).build(),
+                Transaction.newBuilder().build(),
                 txnBody,
                 SignatureMap.DEFAULT,
                 transactionBytes,

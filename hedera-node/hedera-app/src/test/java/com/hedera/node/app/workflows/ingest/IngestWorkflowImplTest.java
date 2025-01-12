@@ -134,7 +134,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         // TODO Mock out the metrics to return objects we can inspect later
 
         // Mock out the onset to always return a valid parsed object
-        transaction = Transaction.newBuilder().body(transactionBody).build();
+        transaction = Transaction.newBuilder().build();
         when(transactionChecker.parse(requestBuffer)).thenReturn(transaction);
         final var transactionInfo = new TransactionInfo(
                 transaction,

@@ -37,7 +37,6 @@ import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -61,9 +60,9 @@ public class BlockStreamBuilderTest {
     public static final int ENTROPY_NUMBER = 87372879;
     public static final String MEMO = "Yo Memo";
     private Transaction transaction = Transaction.newBuilder()
-            .body(TransactionBody.newBuilder()
-                    .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().build())
-                    .build())
+            //            .body(TransactionBody.newBuilder()
+            //                    .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().build())
+            //                    .build())
             .build();
     private @Mock TransactionID transactionID;
     private final Bytes transactionBytes = Bytes.wrap("Hello Tester");
