@@ -34,60 +34,64 @@ public interface HistoryLibrary {
     SchnorrKeyPair newSchnorrKeyPair();
 
     /**
-     * Signs the given message with the given Schnorr private key.
-     * @param message the message
+     * Signs the given history with the given Schnorr private key.
+     * @param history the message
      * @param privateKey the Schnorr private key
      * @return the signature
      */
-    Bytes signSchnorr(@NonNull Bytes message, @NonNull Bytes privateKey);
+    Bytes signHistory(@NonNull Bytes history, @NonNull Bytes privateKey);
 
     /**
      * Validates the Schnorr signature for the given message and public key.
-     * @param publicKey the public key
-     * @param message the message
-     * @return true if the hints are valid; false otherwise
+     *
+     * @param publicKey the Schnorr public key
+     * @param history the history
+     * @param signature the signature
+     * @return true if the signature is valid; false otherwise
      */
-    boolean verifySchnorr(@NonNull Bytes publicKey, @NonNull Bytes message);
+    boolean verifyHistorySignature(@NonNull Bytes publicKey, @NonNull Bytes history, @NonNull Bytes signature);
 
     /**
-     * Hashes the given proof roster.
-     * @param roster the proof roster
-     * @return the hash of the proof roster
+     * Hashes the given address book.
+     * @param addressBook the address book
+     * @return the hash of the address book
      */
-    Bytes hashProofRoster(@NonNull HistoryAddressBook roster);
+    Bytes hashAddressBook(@NonNull HistoryAddressBook addressBook);
 
     /**
-     * Returns a SNARK recursively proving the derivation of the target roster and metadata from the
-     * ledger id (unless the source roster hash <i>is</i> the ledger id, which is the base case of
-     * the recursion).
+     * Returns a SNARK recursively proving the target address book and associated metadata belong to the given ledger
+     * id's chain of trust that includes the given source address book, based on its own proof of belonging. (Unless the
+     * source address book hash <i>is</i> the ledger id, which is the base case of the recursion).
+     *
      * @param ledgerId the ledger id
-     * @param sourceProof if not null, the proof the source roster was derived from the ledger id
-     * @param sourceHistoryAddressBook the source roster
-     * @param targetHistoryAddressBookHash the hash of the target roster
-     * @param targetMetadata the metadata of the target roster
-     * @param sourceSignatures the signatures by node id in the source roster on the target roster hash and its metadata
-     * @return the SNARK proving the derivation of the target roster and metadata from the ledger id
+     * @param sourceProof if not null, the proof the source address book is in the ledger id's chain of trust
+     * @param sourceAddressBook the source roster
+     * @param sourceSignatures the source address book signatures on the target address book hash and its metadata
+     * @param targetAddressBookHash the hash of the target address book
+     * @param targetMetadata the metadata of the target address book
+     * @return the SNARK proving the target address book and metadata belong to the ledger id's chain of trust
      */
     @NonNull
-    Bytes proveTransition(
+    Bytes proveChainOfTrust(
             @NonNull Bytes ledgerId,
             @Nullable Bytes sourceProof,
-            @NonNull HistoryAddressBook sourceHistoryAddressBook,
-            @NonNull Bytes targetHistoryAddressBookHash,
-            @NonNull Bytes targetMetadata,
-            @NonNull Map<Long, Bytes> sourceSignatures);
+            @NonNull HistoryAddressBook sourceAddressBook,
+            @NonNull Map<Long, Bytes> sourceSignatures,
+            @NonNull Bytes targetAddressBookHash,
+            @NonNull Bytes targetMetadata);
 
     /**
-     * Verifies the given SNARK proves a set of roster transitions from the ledger id to the target roster and metadata.
+     * Verifies the given SNARK proves the given address book hash and associated metadata belong to the given
+     * ledger id's chain of trust
      * @param ledgerId the ledger id
-     * @param targetHistoryAddressBookHash the hash of the target roster
-     * @param targetMetadata the metadata of the target roster
-     * @param proof the SNARK
+     * @param addressBookHash the hash of the address book
+     * @param metadata the metadata associated to the address book
+     * @param proof the SNARK proving the address book hash and metadata belong to the ledger id's chain of trust
      * @return true if the proof is valid; false otherwise
      */
-    boolean verifyTransitionProof(
+    boolean verifyChainOfTrust(
             @NonNull Bytes ledgerId,
-            @NonNull Bytes targetHistoryAddressBookHash,
-            @NonNull Bytes targetMetadata,
+            @NonNull Bytes addressBookHash,
+            @NonNull Bytes metadata,
             @NonNull Bytes proof);
 }

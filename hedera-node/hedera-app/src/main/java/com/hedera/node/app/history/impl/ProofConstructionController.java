@@ -338,14 +338,14 @@ public class ProofConstructionController {
                 .toList());
         return CompletableFuture.runAsync(
                 () -> {
-                    final var targetRosterHash = library.hashProofRoster(targetRoster);
+                    final var targetRosterHash = library.hashAddressBook(targetRoster);
                     final var buffer = ByteBuffer.allocate((int) (targetRosterHash.length() + metadata.length()));
                     targetRosterHash.writeTo(buffer);
                     metadata.writeTo(buffer);
                     final var message = noThrowSha384HashOf(Bytes.wrap(buffer.array()));
                     final var signature = new HistorySignature(
                             new History(targetRosterHash, metadata),
-                            library.signSchnorr(message, schnorrKeyPair.privateKey()));
+                            library.signHistory(message, schnorrKeyPair.privateKey()));
                     submissions
                             .submitAssemblySignature(construction.constructionId(), signature)
                             .join();
@@ -383,16 +383,16 @@ public class ProofConstructionController {
                             .map(node -> new ProofRosterEntry(
                                     node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
                             .toList());
-                    final var proof = library.proveTransition(
-                            Optional.ofNullable(ledgerId).orElseGet(() -> library.hashProofRoster(sourceRoster)),
+                    final var proof = library.proveChainOfTrust(
+                            Optional.ofNullable(ledgerId).orElseGet(() -> library.hashAddressBook(sourceRoster)),
                             sourceProof,
                             sourceRoster,
-                            library.hashProofRoster(targetRoster),
-                            proofMetadata,
-                            signatures);
+                            signatures, library.hashAddressBook(targetRoster),
+                            proofMetadata
+                    );
                     final var metadataProof = MetadataProof.newBuilder()
-                            .sourceProofRosterHash(library.hashProofRoster(sourceRoster))
-                            .targetProofRosterHash(library.hashProofRoster(targetRoster))
+                            .sourceProofRosterHash(library.hashAddressBook(sourceRoster))
+                            .targetProofRosterHash(library.hashAddressBook(targetRoster))
                             .proof(proof)
                             .proofKeys(proofKeyListFrom(targetProofKeys))
                             .metadata(proofMetadata)
@@ -471,19 +471,19 @@ public class ProofConstructionController {
      * @return the future
      */
     private CompletableFuture<Verification> verificationFuture(
-            final long nodeId, @NonNull final HistorySignature signature) {
+            final long nodeId, @NonNull final HistorySignature historySignature) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var message = messageFor(signature.assemblyOrThrow());
+                    final var message = messageFor(historySignature.assemblyOrThrow());
                     final var proofKey = requireNonNull(targetProofKeys.get(nodeId));
-                    final var isValid = library.verifySchnorr(proofKey, message);
-                    return new Verification(nodeId, signature, isValid);
+                    final var isValid = library.verifyHistorySignature(proofKey, message, historySignature.signature());
+                    return new Verification(nodeId, historySignature, isValid);
                 },
                 executor);
     }
 
-    private Bytes messageFor(@NonNull final History assembly) {
-        return messageFor(assembly.proofRosterHash(), assembly.metadata());
+    private Bytes messageFor(@NonNull final History history) {
+        return messageFor(history.proofRosterHash(), history.metadata());
     }
 
     /**

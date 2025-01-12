@@ -41,7 +41,7 @@ public class ProofKeysAccessorImpl implements ProofKeysAccessor {
 
     @Override
     public Bytes signWithSchnorrPrivateKey(final long constructionId, @NonNull final Bytes message) {
-        return operations.signSchnorr(message, FAKE_SCHNORR_PRIVATE_KEY);
+        return operations.signHistory(message, FAKE_SCHNORR_PRIVATE_KEY);
     }
 
     @Override

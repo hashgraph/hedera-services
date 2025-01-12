@@ -35,49 +35,51 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     }
 
     @Override
-    public Bytes hashProofRoster(@NonNull final HistoryAddressBook roster) {
-        requireNonNull(roster);
+    public Bytes hashAddressBook(@NonNull final HistoryAddressBook addressBook) {
+        requireNonNull(addressBook);
         return Bytes.EMPTY;
     }
 
     @Override
-    public Bytes signSchnorr(@NonNull final Bytes message, @NonNull final Bytes privateKey) {
-        requireNonNull(message);
+    public Bytes signHistory(@NonNull final Bytes history, @NonNull final Bytes privateKey) {
+        requireNonNull(history);
         requireNonNull(privateKey);
         return Bytes.EMPTY;
     }
 
     @Override
-    public boolean verifySchnorr(@NonNull final Bytes publicKey, @NonNull final Bytes message) {
+    public boolean verifyHistorySignature(@NonNull final Bytes publicKey, @NonNull final Bytes history, @NonNull final Bytes signature) {
+        requireNonNull(publicKey);
+        requireNonNull(history);
+        requireNonNull(signature);
         return true;
     }
 
     @NonNull
     @Override
-    public Bytes proveTransition(
+    public Bytes proveChainOfTrust(
             @NonNull Bytes ledgerId,
             @Nullable final Bytes sourceProof,
-            @NonNull final HistoryAddressBook sourceHistoryAddressBook,
-            @NonNull final Bytes targetHistoryAddressBookHash,
-            @NonNull final Bytes targetMetadata,
-            @NonNull final Map<Long, Bytes> sourceSignatures) {
+            @NonNull final HistoryAddressBook sourceAddressBook,
+            @NonNull final Map<Long, Bytes> sourceSignatures, @NonNull final Bytes targetAddressBookHash,
+            @NonNull final Bytes targetMetadata) {
         requireNonNull(ledgerId);
-        requireNonNull(sourceHistoryAddressBook);
-        requireNonNull(targetHistoryAddressBookHash);
+        requireNonNull(sourceAddressBook);
+        requireNonNull(targetAddressBookHash);
         requireNonNull(targetMetadata);
         requireNonNull(sourceSignatures);
         return Bytes.EMPTY;
     }
 
     @Override
-    public boolean verifyTransitionProof(
+    public boolean verifyChainOfTrust(
             @NonNull final Bytes ledgerId,
-            @NonNull final Bytes targetHistoryAddressBookHash,
-            @NonNull final Bytes targetMetadata,
+            @NonNull final Bytes addressBookHash,
+            @NonNull final Bytes metadata,
             @NonNull final Bytes proof) {
         requireNonNull(ledgerId);
-        requireNonNull(targetHistoryAddressBookHash);
-        requireNonNull(targetMetadata);
+        requireNonNull(addressBookHash);
+        requireNonNull(metadata);
         requireNonNull(proof);
         return false;
     }
