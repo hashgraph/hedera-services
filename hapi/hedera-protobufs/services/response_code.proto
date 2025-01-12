@@ -1640,4 +1640,19 @@ enum ResponseCodeEnum {
      * approximately four million times with typical network configuration.)
      */
     RECURSIVE_SCHEDULING_LIMIT_REACHED = 374;
+
+    /**
+    * The list of batch transactions is empty
+    */
+  BATCH_LIST_EMPTY = 375;
+
+    /**
+    * The list of batch transactions contains duplicated transactions
+    */
+  BATCH_LIST_CONTAINS_DUPLICATES = 376;
+
+    /**
+    * The list of batch transactions contains null values
+    */
+  BATCH_LIST_CONTAINS_NULL_VALUES = 377;
 }

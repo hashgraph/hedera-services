@@ -98,6 +98,7 @@ import "schedule_sign.proto";
 
 import "node_stake_update.proto";
 import "util_prng.proto";
+import "atomic_batch.proto";
 
 import "node_create.proto";
 import "node_update.proto";
@@ -193,6 +194,13 @@ message TransactionBody {
      * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 6;
+
+    /**
+* The <b>entire public key</b> of the trusted batch assembler.
+*
+* Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
+*/
+    Key batchKey = 66;
 
     // The fields here are ordered in strictly ascending field ordinal
     // order due to limitations in PBJ.
@@ -560,5 +568,7 @@ message TransactionBody {
          * A transaction body for signature of a state root hash gossiped to other nodes
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
+
+        AtomicBatchTransactionBody atomicBatch = 67;
     }
 }

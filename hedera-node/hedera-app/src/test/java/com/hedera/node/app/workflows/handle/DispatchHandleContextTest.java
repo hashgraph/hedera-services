@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,12 +274,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo txnInfo = new TransactionInfo(
-            Transaction.newBuilder().body(txBody).build(),
-            txBody,
-            SignatureMap.DEFAULT,
-            Bytes.EMPTY,
-            CRYPTO_TRANSFER,
-            null);
+            Transaction.newBuilder().build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
 
     private static final TransactionBody MISSING_PAYER_ID =
             TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
@@ -752,12 +747,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txBody).build(),
-                txBody,
-                SignatureMap.DEFAULT,
-                Bytes.EMPTY,
-                function,
-                null);
+                Transaction.newBuilder().build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function, null);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
                 creatorInfo,

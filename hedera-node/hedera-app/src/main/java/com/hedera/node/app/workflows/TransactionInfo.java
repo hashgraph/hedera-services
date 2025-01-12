@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * of this class, so we don't have to parse it all again later.</p>
  *
  * @param transaction   The transaction itself
- * @param txBody        the deserialized {@link TransactionBody} (either from the {@link Transaction#body()} or
- *                      from the {@link Transaction#signedTransactionBytes()}).
+ * @param txBody        the deserialized {@link TransactionBody} (from the {@link Transaction#signedTransactionBytes()}).
  * @param transactionID the validated {@link TransactionID} extracted from {@link #txBody}
  * @param payerID       the validated {@link AccountID} of the payer extracted from {@link #transactionID}
  * @param signatureMap  the {@link SignatureMap} (either from {@link Transaction#sigMap()} or

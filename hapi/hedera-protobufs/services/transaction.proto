@@ -35,7 +35,6 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "basic_types.proto";
-import "transaction_body.proto";
 
 /**
  * A wrapper around signed transaction bytes.<br/>
@@ -52,10 +51,13 @@ import "transaction_body.proto";
  */
 message Transaction {
     /**
+     * TransactionBody body = 1 [deprecated = true];
      * Replaced with `signedTransactionBytes`.<br/>
      * The body of the transaction.
      */
-    TransactionBody body = 1 [deprecated = true];
+    // FUTURE - Uncomment when https://github.com/hashgraph/pbj/issues/339 is fixed;
+    // currently the PBJ-generated unit tests fail when using reserved ordinals
+//    reserved 1;
 
     /**
      * Replaced with `signedTransactionBytes`.<br/>

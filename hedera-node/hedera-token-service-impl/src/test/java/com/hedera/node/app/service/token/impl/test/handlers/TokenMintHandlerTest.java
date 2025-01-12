@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -293,7 +293,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenMint(builder.build())
                 .build();
 
-        final var txn = Transaction.newBuilder().body(txnBody).build();
+        final var txn = Transaction.DEFAULT;
         recordBuilder.transaction(txn);
 
         given(handleContext.body()).willReturn(txnBody);

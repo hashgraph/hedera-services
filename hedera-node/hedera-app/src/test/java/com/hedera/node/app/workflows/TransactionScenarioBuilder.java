@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,6 @@ public class TransactionScenarioBuilder implements Scenarios {
         final var signedTx =
                 SignedTransaction.newBuilder().bodyBytes(signedbytes).build();
         final var tx = Transaction.newBuilder()
-                .body(body)
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
         return new TransactionInfo(tx, body, SignatureMap.DEFAULT, signedbytes, function, null);

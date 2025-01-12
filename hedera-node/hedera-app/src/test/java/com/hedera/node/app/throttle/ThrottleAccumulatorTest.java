@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1610,7 +1610,8 @@ class ThrottleAccumulatorTest {
                 .transactionID(TransactionID.newBuilder().accountID(PAYER_ID).build())
                 .scheduleCreate(schedule)
                 .build();
-        final var txn = Transaction.newBuilder().body(body).build();
+        final var txn = Transaction.newBuilder().build();
+        //        final var txn = Schedule.newBuilder().originalCreateTransaction(body).build();
         return new TransactionInfo(
                 txn,
                 body,
@@ -1628,7 +1629,7 @@ class ThrottleAccumulatorTest {
                 .transactionID(TransactionID.newBuilder().accountID(PAYER_ID).build())
                 .scheduleSign(schedule)
                 .build();
-        final var txn = Transaction.newBuilder().body(body).build();
+        final var txn = Transaction.newBuilder().build();
         return new TransactionInfo(
                 txn,
                 body,
