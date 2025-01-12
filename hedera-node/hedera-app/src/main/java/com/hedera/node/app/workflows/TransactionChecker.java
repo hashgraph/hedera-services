@@ -279,7 +279,7 @@ public class TransactionChecker {
         // as long as the transaction ALSO has either #2 or #3 populated. This seems really odd, and ideally
         // we would be able to remove support for #1 entirely. To do this, we need metrics to see if anyone
         // is using #1 in any way.
-        if (tx.hasBody() || tx.hasSigs()) {
+        if (tx.hasSigs()) {
             superDeprecatedCounter.increment();
         }
 

@@ -1711,4 +1711,19 @@ enum ResponseCodeEnum {
      * Max custom fees list is not supported for this operation.
      */
     MAX_CUSTOM_FEES_IS_NOT_SUPPORTED = 387;
+
+    /**
+    * The list of batch transactions is empty
+    */
+  BATCH_LIST_EMPTY = 388;
+
+    /**
+    * The list of batch transactions contains duplicated transactions
+    */
+  BATCH_LIST_CONTAINS_DUPLICATES = 389;
+
+    /**
+    * The list of batch transactions contains null values
+    */
+  BATCH_LIST_CONTAINS_NULL_VALUES = 390;
 }

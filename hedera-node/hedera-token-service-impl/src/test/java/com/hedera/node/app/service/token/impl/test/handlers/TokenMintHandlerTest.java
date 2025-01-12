@@ -299,7 +299,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenMint(builder.build())
                 .build();
 
-        final var txn = Transaction.newBuilder().body(txnBody).build();
+        final var txn = Transaction.DEFAULT;
         recordBuilder.transaction(txn);
 
         given(handleContext.body()).willReturn(txnBody);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class RecordFinalizerTest {
             .build();
     private static final TransactionBody TX_BODY = asTxn(TRANSFER_BODY, PAYER_ID, CONSENSUS_NOW);
     private static final TransactionInfo TXN_INFO = new TransactionInfo(
-            Transaction.newBuilder().body(TX_BODY).build(),
+            Transaction.newBuilder().build(),
             TX_BODY,
             SignatureMap.DEFAULT,
             Bytes.EMPTY,

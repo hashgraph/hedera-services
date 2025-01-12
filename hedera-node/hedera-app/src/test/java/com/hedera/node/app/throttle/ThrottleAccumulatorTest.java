@@ -1792,7 +1792,8 @@ class ThrottleAccumulatorTest {
                 .transactionID(TransactionID.newBuilder().accountID(PAYER_ID).build())
                 .scheduleCreate(schedule)
                 .build();
-        final var txn = Transaction.newBuilder().body(body).build();
+        final var txn = Transaction.newBuilder().build();
+        //        final var txn = Schedule.newBuilder().originalCreateTransaction(body).build();
         return new TransactionInfo(
                 txn,
                 body,
@@ -1810,7 +1811,7 @@ class ThrottleAccumulatorTest {
                 .transactionID(TransactionID.newBuilder().accountID(PAYER_ID).build())
                 .scheduleSign(schedule)
                 .build();
-        final var txn = Transaction.newBuilder().body(body).build();
+        final var txn = Transaction.newBuilder().build();
         return new TransactionInfo(
                 txn,
                 body,

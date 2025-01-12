@@ -1,7 +1,9 @@
 /**
- * # Transaction
- * A (mostly legacy) wrapper around the bytes of a
- * serialized `SignedTransaction` message.
+ * # Transaction Body
+ * The body of a transaction, this message is serialized and signed.
+ *
+ * All of the entries in the `data` `oneof` are fully specified elsewhere;
+ * we only include a short summary here.
  *
  * ### Keywords
  * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -15,7 +17,7 @@ syntax = "proto3";
 package proto;
 
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +33,8 @@ package proto;
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.transaction">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
-
-import "basic_types.proto";
 
 import "system_delete.proto";
 import "system_undelete.proto";
@@ -60,6 +61,7 @@ import "file_delete.proto";
 import "file_update.proto";
 
 import "duration.proto";
+import "basic_types.proto";
 import "contract_delete.proto";
 
 import "consensus_create_topic.proto";
@@ -96,74 +98,13 @@ import "schedule_sign.proto";
 
 import "node_stake_update.proto";
 import "util_prng.proto";
+import "atomic_batch.proto";
 
 import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
 
-import "custom_fees.proto";
 import "event/state_signature_transaction.proto";
-
-import "auxiliary/hints/hints_key_publication.proto";
-import "auxiliary/hints/hints_preprocessing_vote.proto";
-import "auxiliary/hints/hints_partial_signature.proto";
-import "auxiliary/hints/crs_publication.proto";
-
-import "auxiliary/history/history_proof_signature.proto";
-import "auxiliary/history/history_proof_key_publication.proto";
-import "auxiliary/history/history_proof_vote.proto";
-
-/**
- * A wrapper around signed transaction bytes.<br/>
- * This was originally a transaction with body, signatures, and/or bytes,
- * but is not only a wrapper around a byte array containing signed transction
- * bytes.
- *
- * The `signedTransactionBytes` field is REQUIRED and MUST contain a valid,
- * serialized, `SignedTransaction` message.<br/>
- * All other fields are deprecated and MUST NOT be set.
- *
- * #### Additional Notes
- * The four deprecated fields will be removed and reserved in a future release.
- */
-message Transaction {
-    // <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
-    /**
-     * TransactionBody body = 1 [deprecated = true];
-     * Replaced with `signedTransactionBytes`.<br/>
-     * The body of the transaction.
-     */
-    // FUTURE - Uncomment when https://github.com/hashgraph/pbj/issues/339 is fixed;
-    // currently the PBJ-generated unit tests fail when using reserved ordinals
-//    reserved 1;
-
-    /**
-     * Replaced with `signedTransactionBytes`.<br/>
-     * The signatures on the body.
-     */
-    SignatureList sigs = 2 [deprecated = true];
-
-    /**
-     * Replaced with `signedTransactionBytes`.<br/>
-     * The signatures on the body with a newer format.
-     */
-    SignatureMap sigMap = 3 [deprecated = true];
-
-    /**
-     * Replaced with `signedTransactionBytes`.<br/>
-     * TransactionBody serialized into bytes.
-     */
-    bytes bodyBytes = 4 [deprecated = true];
-
-    /**
-     * A valid, serialized, `SignedTransaction` message.
-     * <p>
-     * This field MUST be present.
-     * This field MUST NOT exceed the current network transaction size limit
-     * (currently 6144 bytes).
-     */
-    bytes signedTransactionBytes = 5;
-}
 
 /**
  * A transaction body.
@@ -179,7 +120,6 @@ message Transaction {
  * various parameters required to process a transaction.
  */
 message TransactionBody {
-    // <<<pbj.java_package = "com.hedera.hapi.node.transaction">>> This comment is special code for setting PBJ Compiler java package
     reserved 30, 61, 62, 63, 64;
 
     reserved "tssMessage", "tssVote", "tssShareSignature", "tssEncryptionKey";
@@ -254,6 +194,13 @@ message TransactionBody {
      * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 6;
+
+    /**
+* The <b>entire public key</b> of the trusted batch assembler.
+*
+* Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
+*/
+    Key batchKey = 66;
 
     // The fields here are ordered in strictly ascending field ordinal
     // order due to limitations in PBJ.
@@ -622,48 +569,6 @@ message TransactionBody {
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
 
-        /**
-         * A transaction body for voting on hinTS aggregation keys.
-         */
-        com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody hints_preprocessing_vote = 66;
-
-        /**
-         * A transaction body for publishing a node's hintTS key.
-         */
-        com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody hints_key_publication = 67;
-
-        /**
-         * A transaction body for broadcasting a node's hintTS partial signature on a message.
-         */
-        com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody hints_partial_signature = 68;
-
-        /**
-         * A transaction body for contributed a signature with a node's proof key to a history proof.
-         */
-        com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody history_proof_signature = 69;
-
-        /**
-         * A transaction body for publishing a node's metadata proof key.
-         */
-        com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody history_proof_key_publication = 70;
-
-        /**
-         * A transaction body for voting on a metadata proof descending from the ledger id.
-         */
-        com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
-
-        /**
-         * A transaction body for broadcasting a node's crs publication
-         */
-        com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody crs_publication = 72;
+        AtomicBatchTransactionBody atomicBatch = 67;
     }
-
-    /**
-     * A list of maximum custom fees that the users are willing to pay.
-     * <p>
-     * This field is OPTIONAL.<br/>
-     * If left empty, the users are accepting to pay any custom fee.<br/>
-     * If used with a transaction type that does not support custom fee limits, the transaction will fail.
-     */
-    repeated CustomFeeLimit max_custom_fees = 1001;
 }
