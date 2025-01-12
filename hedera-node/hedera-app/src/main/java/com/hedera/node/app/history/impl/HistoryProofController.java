@@ -26,9 +26,9 @@ import static java.util.stream.Collectors.toMap;
 import com.hedera.hapi.node.state.history.History;
 import com.hedera.hapi.node.state.history.HistoryAddressBook;
 import com.hedera.hapi.node.state.history.HistoryAddressBookEntry;
+import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistorySignature;
-import com.hedera.hapi.node.state.history.MetadataProof;
-import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.node.app.history.HistoryLibrary;
@@ -57,7 +57,7 @@ import java.util.function.Consumer;
 /**
  * Manages the process objects and work needed to advance toward completion of a metadata proof.
  */
-public class ProofConstructionController {
+public class HistoryProofController {
     private static final Comparator<ProofKey> PROOF_KEY_COMPARATOR = Comparator.comparingLong(ProofKey::nodeId);
 
     private final long selfId;
@@ -72,7 +72,7 @@ public class ProofConstructionController {
     private final HistoryLibrary library;
     private final HistorySubmissions submissions;
     private final RosterTransitionWeights weights;
-    private final Consumer<MetadataProof> proofConsumer;
+    private final Consumer<HistoryProof> proofConsumer;
     private final Map<Long, MetadataProofVote> votes = new HashMap<>();
     private final Map<Long, Bytes> targetProofKeys = new HashMap<>();
     private final Set<Long> signingNodeIds = new HashSet<>();
@@ -87,7 +87,7 @@ public class ProofConstructionController {
     /**
      * The ongoing construction, updated each time the controller advances the construction in state.
      */
-    private MetadataProofConstruction construction;
+    private HistoryProofConstruction construction;
 
     /**
      * If not null, the future that resolves when this node publishes its Schnorr key for this construction.
@@ -147,19 +147,19 @@ public class ProofConstructionController {
      */
     private record Signatures(@NonNull History assembly, @NonNull Instant cutoff) {}
 
-    public ProofConstructionController(
+    public HistoryProofController(
             final long selfId,
             @Nullable final Bytes ledgerId,
             @NonNull final Urgency urgency,
             @NonNull final Executor executor,
             @Nullable final Bytes metadata,
-            @NonNull final MetadataProofConstruction construction,
+            @NonNull final HistoryProofConstruction construction,
             @NonNull final Duration proofKeysWaitTime,
             @NonNull final SchnorrKeyPair schnorrKeyPair,
             @NonNull final HistoryLibrary library,
             @NonNull final HistorySubmissions submissions,
             @NonNull final RosterTransitionWeights weights,
-            @NonNull final Consumer<MetadataProof> proofConsumer) {
+            @NonNull final Consumer<HistoryProof> proofConsumer) {
         this.selfId = selfId;
         this.ledgerId = ledgerId;
         this.metadata = metadata;
@@ -263,7 +263,7 @@ public class ProofConstructionController {
                 if (historyStore.getActiveConstruction().constructionId() == construction.constructionId()) {
                     proofConsumer.accept(proof);
                     if (ledgerId == null) {
-                        historyStore.setLedgerId(proof.sourceProofRosterHash());
+                        historyStore.setLedgerId(proof.sourceAddressBookHash());
                     }
                 }
             });
@@ -391,9 +391,9 @@ public class ProofConstructionController {
                             signatures,
                             library.hashAddressBook(targetRoster),
                             proofMetadata);
-                    final var metadataProof = MetadataProof.newBuilder()
-                            .sourceProofRosterHash(library.hashAddressBook(sourceRoster))
-                            .targetProofRosterHash(library.hashAddressBook(targetRoster))
+                    final var metadataProof = HistoryProof.newBuilder()
+                            .sourceAddressBookHash(library.hashAddressBook(sourceRoster))
+                            .targetAddressBookHash(library.hashAddressBook(targetRoster))
                             .proof(proof)
                             .proofKeys(proofKeyListFrom(targetProofKeys))
                             .metadata(proofMetadata)
@@ -448,7 +448,7 @@ public class ProofConstructionController {
      * @param proof the proof
      * @return the proof keys
      */
-    private static Map<Long, Bytes> proofKeyMapFrom(@NonNull final MetadataProof proof) {
+    private static Map<Long, Bytes> proofKeyMapFrom(@NonNull final HistoryProof proof) {
         return proof.proofKeys().stream().collect(toMap(ProofKey::nodeId, ProofKey::key));
     }
 

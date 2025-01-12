@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.hapi.node.state.history.MetadataProof;
-import com.hedera.hapi.node.state.history.MetadataProofConstruction;
+import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -30,7 +30,7 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
      * @param then the next assembly checkpoint
      * @return the updated construction
      */
-    MetadataProofConstruction rescheduleAssemblyCheckpoint(long constructionId, @NonNull Instant then);
+    HistoryProofConstruction rescheduleAssemblyCheckpoint(long constructionId, @NonNull Instant then);
 
     /**
      * Sets the assembly time for the construction with the given ID and returns the
@@ -39,7 +39,7 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
      * @param now the aggregation time
      * @return the updated construction
      */
-    MetadataProofConstruction setAssemblyTime(long constructionId, @NonNull Instant now);
+    HistoryProofConstruction setAssemblyTime(long constructionId, @NonNull Instant now);
 
     /**
      * Completes the proof for the construction with the given ID and returns the updated construction.
@@ -47,7 +47,7 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
      * @param proof the proof
      * @return the updated construction
      */
-    MetadataProofConstruction completeProof(long constructionId, @NonNull MetadataProof proof);
+    HistoryProofConstruction completeProof(long constructionId, @NonNull HistoryProof proof);
 
     /**
      * Sets the ledger ID to the given bytes.

@@ -18,8 +18,8 @@ package com.hedera.node.app.history;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistorySignature;
-import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -44,5 +44,5 @@ public interface ReadableHistoryStore {
     /**
      * Returns the active construction.
      */
-    MetadataProofConstruction getActiveConstruction();
+    HistoryProofConstruction getActiveConstruction();
 }

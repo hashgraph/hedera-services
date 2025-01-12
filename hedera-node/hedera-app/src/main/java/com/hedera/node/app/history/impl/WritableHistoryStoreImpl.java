@@ -18,8 +18,8 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.MetadataProof;
-import com.hedera.hapi.node.state.history.MetadataProofConstruction;
+import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,20 +30,20 @@ import java.time.Instant;
  */
 public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implements WritableHistoryStore {
     @Override
-    public MetadataProofConstruction rescheduleAssemblyCheckpoint(
+    public HistoryProofConstruction rescheduleAssemblyCheckpoint(
             final long constructionId, @NonNull final Instant then) {
         requireNonNull(then);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public MetadataProofConstruction setAssemblyTime(final long constructionId, @NonNull final Instant now) {
+    public HistoryProofConstruction setAssemblyTime(final long constructionId, @NonNull final Instant now) {
         requireNonNull(now);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public MetadataProofConstruction completeProof(final long constructionId, @NonNull final MetadataProof proof) {
+    public HistoryProofConstruction completeProof(final long constructionId, @NonNull final HistoryProof proof) {
         requireNonNull(proof);
         throw new AssertionError("Not implemented");
     }

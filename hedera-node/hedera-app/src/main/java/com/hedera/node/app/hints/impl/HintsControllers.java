@@ -47,7 +47,7 @@ public class HintsControllers {
 
     private final Executor executor;
     private final HintsKeyAccessor keyLoader;
-    private final HintsLibrary operations;
+    private final HintsLibrary library;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
@@ -63,14 +63,14 @@ public class HintsControllers {
     public HintsControllers(
             @NonNull final Executor executor,
             @NonNull final HintsKeyAccessor keyLoader,
-            @NonNull final HintsLibrary operations,
+            @NonNull final HintsLibrary library,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsSigningContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier) {
         this.executor = requireNonNull(executor);
         this.keyLoader = requireNonNull(keyLoader);
         this.signingContext = signingContext;
-        this.operations = requireNonNull(operations);
+        this.library = requireNonNull(library);
         this.submissions = requireNonNull(submissions);
         this.selfNodeInfoSupplier = requireNonNull(selfNodeInfoSupplier);
     }
@@ -146,7 +146,7 @@ public class HintsControllers {
                     weights,
                     executor,
                     blsKeyPair,
-                    operations,
+                    library,
                     publications,
                     votes,
                     submissions,

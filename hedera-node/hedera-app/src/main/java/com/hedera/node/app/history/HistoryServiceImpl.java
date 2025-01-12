@@ -18,7 +18,8 @@ package com.hedera.node.app.history;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.MetadataProof;
+import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -35,14 +36,14 @@ import java.util.function.Consumer;
 /**
  * Default implementation of the {@link HistoryService}.
  */
-public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProof> {
+public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof> {
     private final HistoryServiceComponent component;
 
     /**
      * If not null, the proof of the metadata scoped to the current roster.
      */
     @Nullable
-    private MetadataProof metadataProof;
+    private HistoryProof metadataProof;
 
     public HistoryServiceImpl(
             @NonNull final Metrics metrics,
@@ -92,5 +93,5 @@ public class HistoryServiceImpl implements HistoryService, Consumer<MetadataProo
     }
 
     @Override
-    public void accept(@NonNull final MetadataProof construction) {}
+    public void accept(@NonNull final HistoryProof construction) {}
 }

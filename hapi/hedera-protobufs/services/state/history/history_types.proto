@@ -106,30 +106,28 @@ message ProofKey {
 }
 
 /**
- * A proof that some metadata was derived from the ledger id in a
- * manner that can trusted throughout any period the network's aBFT
- * security was not compromised; no matter how nodes were added,
- * removed, or updated during that period.
+ * A proof that some address book history belongs to a ledger id's
+ * chain of trust.
  */
-message MetadataProof {
+message HistoryProof {
   /**
-   * The hash of the source proof roster.
+   * The hash of the source address book.
    */
-  bytes source_proof_roster_hash = 1;
+  bytes source_address_book_hash = 1;
   /**
-   * The hash of the target proof roster.
+   * The hash of the target address book.
    */
-  bytes target_proof_roster_hash = 2;
+  bytes target_address_book_hash = 2;
   /**
-   * The metadata tagged to the target proof roster.
+   * The metadata tagged to the target address book.
    */
   bytes metadata = 3;
   /**
-   * The proof keys for the source roster.
+   * The proof keys for the source address book.
    */
   repeated ProofKey proof_keys = 4;
   /**
-   * The recursive SNARK that proves the metadata derivation.
+   * The recursive SNARK that proves the chain of trust.
    */
   bytes proof = 5;
 }
@@ -139,7 +137,7 @@ message MetadataProof {
  * ensure deterministic construction ending in a roster with sufficient
  * weight to enact its own constructions.
  */
-message MetadataProofConstruction {
+message HistoryProofConstruction {
   /**
    * The construction id.
    */
@@ -153,7 +151,7 @@ message MetadataProofConstruction {
    * If not null, the proof that the source proof roster was derived from
    * the ledger id (if empty, the source roster *is* the ledger id).
    */
-  MetadataProof source_proof = 3;
+  HistoryProof source_proof = 3;
   /**
    * The hash of the roster whose weights are used to assess progress
    * toward obtaining Schnorr keys for parties that hold at least a
@@ -177,7 +175,7 @@ message MetadataProofConstruction {
    * When this construction is complete, the recursive proof that
    * certain metadata was derived from the ledger id.
    */
-  MetadataProof metadata_proof = 7;
+  HistoryProof metadata_proof = 7;
 }
 
 /**
@@ -205,7 +203,7 @@ message MetadataProofVote {
     /**
      * The proof roster and metadata this node is voting for.
      */
-    MetadataProof metadata_proof = 1;
+    HistoryProof metadata_proof = 1;
     /**
      * The id of any node that already voted for the exact tagged proof roster
      * this node is voting for.

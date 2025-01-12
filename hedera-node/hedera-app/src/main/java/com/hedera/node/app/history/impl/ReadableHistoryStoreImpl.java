@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.history.impl;
 
-import com.hedera.hapi.node.state.history.MetadataProofConstruction;
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.node.app.history.ReadableHistoryStore;
 
 public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
     @Override
-    public MetadataProofConstruction getActiveConstruction() {
+    public HistoryProofConstruction getActiveConstruction() {
         throw new AssertionError("Not implemented");
     }
 }

@@ -55,7 +55,7 @@ public class ActiveHintsController implements HintsController {
     private final long selfId;
     private final Executor executor;
     private final BlsKeyPair blsKeyPair;
-    private final HintsLibrary operations;
+    private final HintsLibrary library;
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
@@ -96,7 +96,7 @@ public class ActiveHintsController implements HintsController {
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Executor executor,
             @NonNull final BlsKeyPair blsKeyPair,
-            @NonNull final HintsLibrary operations,
+            @NonNull final HintsLibrary library,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final Map<Long, PreprocessingVote> votes,
             @NonNull final HintsSubmissions submissions,
@@ -108,7 +108,7 @@ public class ActiveHintsController implements HintsController {
         this.executor = requireNonNull(executor);
         this.signingContext = requireNonNull(signingContext);
         this.submissions = requireNonNull(submissions);
-        this.operations = requireNonNull(operations);
+        this.library = requireNonNull(library);
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
         publications.forEach(this::addHintsKeyPublication);
@@ -254,7 +254,7 @@ public class ActiveHintsController implements HintsController {
                     final var aggregatedWeights = nodePartyIds.entrySet().stream()
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
-                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, numParties);
+                    final var keys = library.preprocess(hintKeys, aggregatedWeights, numParties);
                     final var body = HintsPreprocessingVoteTransactionBody.newBuilder()
                             .constructionId(construction.constructionId())
                             .vote(PreprocessingVote.newBuilder()
@@ -293,7 +293,7 @@ public class ActiveHintsController implements HintsController {
     private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final HintsKey hintsKey) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var isValid = operations.validateHintsKey(hintsKey, numParties);
+                    final var isValid = library.validateHintsKey(hintsKey, numParties);
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);
@@ -308,7 +308,7 @@ public class ActiveHintsController implements HintsController {
             final int selfPartyId = expectedPartyId(selfId);
             publicationFuture = CompletableFuture.runAsync(
                     () -> {
-                        final var hints = operations.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
+                        final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
                         final var hintsKey =
                                 new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
                         final var body = new HintsKeyPublicationTransactionBody(selfPartyId, numParties, hintsKey);

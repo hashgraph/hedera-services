@@ -19,8 +19,8 @@ package com.hedera.node.app.history.schemas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.history.MetadataProof;
-import com.hedera.hapi.node.state.history.MetadataProofConstruction;
+import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKeySet;
 import com.hedera.hapi.node.state.history.RecordedHistoryAssemblySignature;
@@ -40,11 +40,11 @@ import java.util.function.Consumer;
  * <ul>
  *     <li>A singleton with the ledger id (that is, the hash of the genesis
  *     proof roster).</li>
- *     <li>A singleton with the active {@link MetadataProofConstruction}; must
+ *     <li>A singleton with the active {@link HistoryProofConstruction}; must
  *     be at least ongoing once the network is active (and until complete, the
  *     history service will not be able to prove the metadata scoped to the
  *     current roster is derived from the ledger id).</li>
- *     <li>A singleton with the next {@link MetadataProofConstruction}; may or
+ *     <li>A singleton with the next {@link HistoryProofConstruction}; may or
  *     may not be ongoing, as there may not be a candidate roster set.</li>
  *     <li>A map from node id to the node's timestamped proof key; and,
  *     if applicable, the key it wants to start using for all constructions
@@ -71,9 +71,9 @@ public class V059HistorySchema extends Schema {
     public static final String ASSEMBLY_SIGNATURES_KEY = "ASSEMBLY_SIGNATURES";
     public static final String PROOF_VOTES_KEY = "PROOF_VOTES";
 
-    private final Consumer<MetadataProof> proofConsumer;
+    private final Consumer<HistoryProof> proofConsumer;
 
-    public V059HistorySchema(@NonNull final Consumer<MetadataProof> proofConsumer) {
+    public V059HistorySchema(@NonNull final Consumer<HistoryProof> proofConsumer) {
         super(VERSION);
         this.proofConsumer = requireNonNull(proofConsumer);
     }
@@ -82,8 +82,8 @@ public class V059HistorySchema extends Schema {
     public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.singleton(LEDGER_ID_KEY, ProtoBytes.PROTOBUF),
-                StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, MetadataProofConstruction.PROTOBUF),
-                StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, MetadataProofConstruction.PROTOBUF),
+                StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
+                StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
                 StateDefinition.onDisk(PROOF_KEYS_KEY, NodeId.PROTOBUF, ProofKeySet.PROTOBUF, MAX_PROOF_KEYS),
                 StateDefinition.onDisk(
                         ASSEMBLY_SIGNATURES_KEY,
@@ -98,15 +98,15 @@ public class V059HistorySchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         final var states = ctx.newStates();
         states.<ProtoBytes>getSingleton(LEDGER_ID_KEY).put(ProtoBytes.DEFAULT);
-        states.<MetadataProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY).put(MetadataProofConstruction.DEFAULT);
-        states.<MetadataProofConstruction>getSingleton(NEXT_CONSTRUCTION_KEY).put(MetadataProofConstruction.DEFAULT);
+        states.<HistoryProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY).put(HistoryProofConstruction.DEFAULT);
+        states.<HistoryProofConstruction>getSingleton(NEXT_CONSTRUCTION_KEY).put(HistoryProofConstruction.DEFAULT);
     }
 
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
         final var states = ctx.previousStates();
         final var activeConstruction =
-                requireNonNull(states.<MetadataProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY)
+                requireNonNull(states.<HistoryProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY)
                         .get());
         if (activeConstruction.hasMetadataProof()) {
             proofConsumer.accept(activeConstruction.metadataProofOrThrow());
