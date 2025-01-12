@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.hapi.node.state.history.ProofRoster;
+import com.hedera.hapi.node.state.history.HistoryAddressBook;
 import com.hedera.node.app.history.impl.SchnorrKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,7 +54,7 @@ public interface HistoryLibrary {
      * @param roster the proof roster
      * @return the hash of the proof roster
      */
-    Bytes hashProofRoster(@NonNull ProofRoster roster);
+    Bytes hashProofRoster(@NonNull HistoryAddressBook roster);
 
     /**
      * Returns a SNARK recursively proving the derivation of the target roster and metadata from the
@@ -62,8 +62,8 @@ public interface HistoryLibrary {
      * the recursion).
      * @param ledgerId the ledger id
      * @param sourceProof if not null, the proof the source roster was derived from the ledger id
-     * @param sourceProofRoster the source roster
-     * @param targetProofRosterHash the hash of the target roster
+     * @param sourceHistoryAddressBook the source roster
+     * @param targetHistoryAddressBookHash the hash of the target roster
      * @param targetMetadata the metadata of the target roster
      * @param sourceSignatures the signatures by node id in the source roster on the target roster hash and its metadata
      * @return the SNARK proving the derivation of the target roster and metadata from the ledger id
@@ -72,22 +72,22 @@ public interface HistoryLibrary {
     Bytes proveTransition(
             @NonNull Bytes ledgerId,
             @Nullable Bytes sourceProof,
-            @NonNull ProofRoster sourceProofRoster,
-            @NonNull Bytes targetProofRosterHash,
+            @NonNull HistoryAddressBook sourceHistoryAddressBook,
+            @NonNull Bytes targetHistoryAddressBookHash,
             @NonNull Bytes targetMetadata,
             @NonNull Map<Long, Bytes> sourceSignatures);
 
     /**
      * Verifies the given SNARK proves a set of roster transitions from the ledger id to the target roster and metadata.
      * @param ledgerId the ledger id
-     * @param targetProofRosterHash the hash of the target roster
+     * @param targetHistoryAddressBookHash the hash of the target roster
      * @param targetMetadata the metadata of the target roster
      * @param proof the SNARK
      * @return true if the proof is valid; false otherwise
      */
     boolean verifyTransitionProof(
             @NonNull Bytes ledgerId,
-            @NonNull Bytes targetProofRosterHash,
+            @NonNull Bytes targetHistoryAddressBookHash,
             @NonNull Bytes targetMetadata,
             @NonNull Bytes proof);
 }

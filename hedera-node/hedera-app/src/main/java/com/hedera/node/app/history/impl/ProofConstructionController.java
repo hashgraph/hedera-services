@@ -29,7 +29,7 @@ import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKey;
-import com.hedera.hapi.node.state.history.ProofRoster;
+import com.hedera.hapi.node.state.history.HistoryAddressBook;
 import com.hedera.hapi.node.state.history.ProofRosterEntry;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ReadableHistoryStore.AssemblySignaturePublication;
@@ -69,7 +69,7 @@ public class ProofConstructionController {
     private final Duration proofKeysWaitTime;
     private final Executor executor;
     private final SchnorrKeyPair schnorrKeyPair;
-    private final HistoryLibrary operations;
+    private final HistoryLibrary library;
     private final HistorySubmissions submissions;
     private final RosterTransitionWeights weights;
     private final Consumer<MetadataProof> proofConsumer;
@@ -156,7 +156,7 @@ public class ProofConstructionController {
             @NonNull final MetadataProofConstruction construction,
             @NonNull final Duration proofKeysWaitTime,
             @NonNull final SchnorrKeyPair schnorrKeyPair,
-            @NonNull final HistoryLibrary operations,
+            @NonNull final HistoryLibrary library,
             @NonNull final HistorySubmissions submissions,
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Consumer<MetadataProof> proofConsumer) {
@@ -165,7 +165,7 @@ public class ProofConstructionController {
         this.metadata = metadata;
         this.urgency = requireNonNull(urgency);
         this.executor = requireNonNull(executor);
-        this.operations = requireNonNull(operations);
+        this.library = requireNonNull(library);
         this.submissions = requireNonNull(submissions);
         this.weights = requireNonNull(weights);
         this.construction = requireNonNull(construction);
@@ -333,19 +333,19 @@ public class ProofConstructionController {
      */
     private CompletableFuture<Void> startSigningFuture() {
         requireNonNull(metadata);
-        final var targetRoster = new ProofRoster(weights.orderedTargetWeights()
+        final var targetRoster = new HistoryAddressBook(weights.orderedTargetWeights()
                 .map(node -> new ProofRosterEntry(node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
                 .toList());
         return CompletableFuture.runAsync(
                 () -> {
-                    final var targetRosterHash = operations.hashProofRoster(targetRoster);
+                    final var targetRosterHash = library.hashProofRoster(targetRoster);
                     final var buffer = ByteBuffer.allocate((int) (targetRosterHash.length() + metadata.length()));
                     targetRosterHash.writeTo(buffer);
                     metadata.writeTo(buffer);
                     final var message = noThrowSha384HashOf(Bytes.wrap(buffer.array()));
                     final var signature = new HistorySignature(
                             new History(targetRosterHash, metadata),
-                            operations.signSchnorr(message, schnorrKeyPair.privateKey()));
+                            library.signSchnorr(message, schnorrKeyPair.privateKey()));
                     submissions
                             .submitAssemblySignature(construction.constructionId(), signature)
                             .join();
@@ -375,24 +375,24 @@ public class ProofConstructionController {
         final var proofMetadata = requireNonNull(metadata);
         return CompletableFuture.runAsync(
                 () -> {
-                    final var sourceRoster = new ProofRoster(weights.orderedSourceWeights()
+                    final var sourceRoster = new HistoryAddressBook(weights.orderedSourceWeights()
                             .map(node -> new ProofRosterEntry(
                                     node.nodeId(), node.weight(), sourceProofKeys.get(node.nodeId())))
                             .toList());
-                    final var targetRoster = new ProofRoster(weights.orderedTargetWeights()
+                    final var targetRoster = new HistoryAddressBook(weights.orderedTargetWeights()
                             .map(node -> new ProofRosterEntry(
                                     node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
                             .toList());
-                    final var proof = operations.proveTransition(
-                            Optional.ofNullable(ledgerId).orElseGet(() -> operations.hashProofRoster(sourceRoster)),
+                    final var proof = library.proveTransition(
+                            Optional.ofNullable(ledgerId).orElseGet(() -> library.hashProofRoster(sourceRoster)),
                             sourceProof,
                             sourceRoster,
-                            operations.hashProofRoster(targetRoster),
+                            library.hashProofRoster(targetRoster),
                             proofMetadata,
                             signatures);
                     final var metadataProof = MetadataProof.newBuilder()
-                            .sourceProofRosterHash(operations.hashProofRoster(sourceRoster))
-                            .targetProofRosterHash(operations.hashProofRoster(targetRoster))
+                            .sourceProofRosterHash(library.hashProofRoster(sourceRoster))
+                            .targetProofRosterHash(library.hashProofRoster(targetRoster))
                             .proof(proof)
                             .proofKeys(proofKeyListFrom(targetProofKeys))
                             .metadata(proofMetadata)
@@ -476,7 +476,7 @@ public class ProofConstructionController {
                 () -> {
                     final var message = messageFor(signature.assemblyOrThrow());
                     final var proofKey = requireNonNull(targetProofKeys.get(nodeId));
-                    final var isValid = operations.verifySchnorr(proofKey, message);
+                    final var isValid = library.verifySchnorr(proofKey, message);
                     return new Verification(nodeId, signature, isValid);
                 },
                 executor);

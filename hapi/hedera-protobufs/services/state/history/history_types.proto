@@ -31,7 +31,7 @@ option java_multiple_files = true;
  * was not compromised; no matter how nodes were added, removed, or
  * updated during that period.
  */
-message ProofRoster {
+message HistoryAddressBook {
   repeated ProofRosterEntry proof_roster_entries = 1;
 }
 

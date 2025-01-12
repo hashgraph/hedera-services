@@ -18,7 +18,7 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.ProofRoster;
+import com.hedera.hapi.node.state.history.HistoryAddressBook;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +35,7 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     }
 
     @Override
-    public Bytes hashProofRoster(@NonNull final ProofRoster roster) {
+    public Bytes hashProofRoster(@NonNull final HistoryAddressBook roster) {
         requireNonNull(roster);
         return Bytes.EMPTY;
     }
@@ -57,13 +57,13 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     public Bytes proveTransition(
             @NonNull Bytes ledgerId,
             @Nullable final Bytes sourceProof,
-            @NonNull final ProofRoster sourceProofRoster,
-            @NonNull final Bytes targetProofRosterHash,
+            @NonNull final HistoryAddressBook sourceHistoryAddressBook,
+            @NonNull final Bytes targetHistoryAddressBookHash,
             @NonNull final Bytes targetMetadata,
             @NonNull final Map<Long, Bytes> sourceSignatures) {
         requireNonNull(ledgerId);
-        requireNonNull(sourceProofRoster);
-        requireNonNull(targetProofRosterHash);
+        requireNonNull(sourceHistoryAddressBook);
+        requireNonNull(targetHistoryAddressBookHash);
         requireNonNull(targetMetadata);
         requireNonNull(sourceSignatures);
         return Bytes.EMPTY;
@@ -72,11 +72,11 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     @Override
     public boolean verifyTransitionProof(
             @NonNull final Bytes ledgerId,
-            @NonNull final Bytes targetProofRosterHash,
+            @NonNull final Bytes targetHistoryAddressBookHash,
             @NonNull final Bytes targetMetadata,
             @NonNull final Bytes proof) {
         requireNonNull(ledgerId);
-        requireNonNull(targetProofRosterHash);
+        requireNonNull(targetHistoryAddressBookHash);
         requireNonNull(targetMetadata);
         requireNonNull(proof);
         return false;
