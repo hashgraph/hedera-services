@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       number_input:
-        description: "Build ID of the Tag"
+        description: "Build ID of the Tag (example: 43 = build_00043)"
         type: string
         required: true
         default: "43"
@@ -106,7 +106,7 @@ jobs:
           git config user.email "${{ secrets.SVCS_GIT_USER_EMAIL }}"
 
       - name: Run Semantic Release
-        # Inside run: npx semantic-release
+        # TODO: inside run, add: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
