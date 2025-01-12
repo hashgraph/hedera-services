@@ -166,6 +166,13 @@ public class ActiveRosters {
     }
 
     /**
+     * Returns the current roster.
+     */
+    public @NonNull Roster currentRoster() {
+        return lookup.apply(currentRosterHash());
+    }
+
+    /**
      * Assuming the {@link RosterService} is in a transition phase, returns the transition weights
      * from the source roster to the target roster.
      *

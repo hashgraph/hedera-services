@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.hints;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.cryptography.bls.GroupAssignment;
 import com.hedera.cryptography.bls.SignatureSchema;
 import com.hedera.cryptography.pairings.api.Curve;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.ActiveHintsController;
@@ -135,6 +138,15 @@ public interface HintsService extends Service, BlockHashSigner {
 
     @Override
     void registerSchemas(@NonNull SchemaRegistry registry);
+
+    /**
+     * Returns the party size for the given roster.
+     * @param roster the roster
+     */
+    static int partySizeForRoster(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        return partySizeForRosterNodeCount(roster.rosterEntries().size());
+    }
 
     /**
      * Returns the party size {@code M=2^k} such that the given roster node count

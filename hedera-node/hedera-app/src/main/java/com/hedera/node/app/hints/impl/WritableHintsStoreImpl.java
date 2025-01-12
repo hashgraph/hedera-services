@@ -17,7 +17,7 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
+import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
@@ -85,7 +85,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             final var gracePeriod = activeRosters.phase() == BOOTSTRAP
                     ? tssConfig.bootstrapHintsKeyGracePeriod()
                     : tssConfig.transitionHintsKeyGracePeriod();
-            construction = newConstruction(
+            construction = updateForNewConstruction(
                     activeRosters.sourceRosterHash(),
                     activeRosters.targetRosterHash(),
                     activeRosters::findRelatedRoster,
@@ -141,7 +141,12 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             throw new IllegalArgumentException("Not in handoff phase");
         }
         if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(activeRosters.currentRosterHash())) {
+            // The next construction is becoming the active one; so purge votes that were for active
             purgeVotes(requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
+            // If the active construction's party size was different than the current roster's, purge its hinTS keys
+            final int newActiveSize = partySizeForRoster(activeRosters.currentRoster());
+            purgeHintsKeysIfNotForPartySize(
+                    newActiveSize, requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
             activeConstruction.put(nextConstruction.get());
             nextConstruction.put(HintsConstruction.DEFAULT);
             return true;
@@ -171,52 +176,35 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         return construction;
     }
 
-    private HintsConstruction newConstruction(
+    /**
+     * Updates the store for a new construction.
+     * @param sourceRosterHash the source roster hash
+     * @param targetRosterHash the target roster hash
+     * @param lookup the roster lookup
+     * @param now the current time
+     * @param gracePeriod the grace period
+     * @return the new construction
+     */
+    private HintsConstruction updateForNewConstruction(
             @NonNull final Bytes sourceRosterHash,
             @NonNull final Bytes targetRosterHash,
             @NonNull final Function<Bytes, Roster> lookup,
             @NonNull final Instant now,
             @NonNull final Duration gracePeriod) {
-        final var currentConstruction = requireNonNull(activeConstruction.get());
-        final var candidateConstruction = requireNonNull(nextConstruction.get());
-        final long nextConstructionId =
-                Math.max(currentConstruction.constructionId(), candidateConstruction.constructionId()) + 1;
         final var construction = HintsConstruction.newBuilder()
-                .constructionId(nextConstructionId)
+                .constructionId(newConstructionId())
                 .sourceRosterHash(sourceRosterHash)
                 .targetRosterHash(targetRosterHash)
                 .gracePeriodEndTime(asTimestamp(now.plus(gracePeriod)))
                 .build();
-        if (currentConstruction.equals(HintsConstruction.DEFAULT)) {
-            if (!sourceRosterHash.equals(targetRosterHash)) {
-                log.warn(
-                        "Setting bootstrap construction with different source/target roster hashes ({} to {})",
-                        sourceRosterHash,
-                        targetRosterHash);
-            }
-            if (!candidateConstruction.equals(HintsConstruction.DEFAULT)) {
-                log.warn(
-                        "Purging next construction {} before setting active construction ({} to {})",
-                        candidateConstruction,
-                        sourceRosterHash,
-                        targetRosterHash);
-                purgeVotes(candidateConstruction, lookup);
-            }
+        if (requireNonNull(activeConstruction.get()).equals(HintsConstruction.DEFAULT)) {
             activeConstruction.put(construction);
         } else {
-            if (!currentConstruction.targetRosterHash().equals(construction.sourceRosterHash())) {
-                log.warn(
-                        "Setting next construction ({} to {}) with with active target {}",
-                        sourceRosterHash,
-                        targetRosterHash,
-                        currentConstruction.targetRosterHash());
-            }
             nextConstruction.put(construction);
         }
         // Rotate any hint keys requested to be used in the next construction
         final var targetRoster = requireNonNull(lookup.apply(targetRosterHash));
-        final int numParties =
-                partySizeForRosterNodeCount(targetRoster.rosterEntries().size());
+        final int numParties = partySizeForRoster(targetRoster);
         final var adoptionTime = asTimestamp(now);
         for (int partyId = 0; partyId < numParties; partyId++) {
             final var hintsId = new HintsPartyId(partyId, numParties);
@@ -234,7 +222,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     /**
-     * Purges the votes for the given construction relative to the given roster store.
+     * Purges the votes for the given construction relative to the given roster lookup.
      *
      * @param construction the construction
      * @param lookup the roster lookup
@@ -247,6 +235,38 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                 .forEach(entry -> votes.remove(new PreprocessingVoteId(construction.constructionId(), entry.nodeId())));
     }
 
+    /**
+     * Purges any hinTS keys for the given construction if it was not for the given party size.
+     * @param m the party size
+     * @param construction the construction
+     * @param lookup the roster lookup
+     */
+    private void purgeHintsKeysIfNotForPartySize(
+            final int m, @NonNull final HintsConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
+        final var targetRoster = requireNonNull(lookup.apply(construction.targetRosterHash()));
+        if (partySizeForRoster(targetRoster) != m) {
+            for (int partyId = 0; partyId < m; partyId++) {
+                final var hintsId = new HintsPartyId(partyId, m);
+                hintsKeys.remove(hintsId);
+            }
+        }
+    }
+
+    /**
+     * Returns a new construction ID.
+     */
+    private long newConstructionId() {
+        return Math.max(
+                        requireNonNull(activeConstruction.get()).constructionId(),
+                        requireNonNull(nextConstruction.get()).constructionId())
+                + 1;
+    }
+
+    /**
+     * Internal helper to convert a map of node IDs to party IDs to a list of node party IDs.
+     * @param nodePartyIds the map
+     * @return the list
+     */
     private List<NodePartyId> asList(@NonNull final Map<Long, Integer> nodePartyIds) {
         return nodePartyIds.entrySet().stream()
                 .map(entry -> new NodePartyId(entry.getKey(), entry.getValue()))

@@ -164,12 +164,14 @@ public class ActiveHintsController implements HintsController {
     @Override
     public void addHintsKeyPublication(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
+        // Ignore hinTS keys published after the construction
         if (construction.hasPreprocessingStartTime()) {
             return;
         }
         final long nodeId = publication.nodeId();
+        // Ignore hinTS keys from nodes not in the target roster
         if (!weights.targetIncludes(nodeId)) {
-            throw new IllegalArgumentException("Node #" + nodeId + " is not in the target roster");
+            return;
         }
         final int partyId = publication.partyId();
         final int expectedPartyId = expectedPartyId(nodeId);
