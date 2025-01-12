@@ -48,7 +48,8 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     }
 
     @Override
-    public boolean verifyHistorySignature(@NonNull final Bytes publicKey, @NonNull final Bytes history, @NonNull final Bytes signature) {
+    public boolean verifyHistorySignature(
+            @NonNull final Bytes publicKey, @NonNull final Bytes history, @NonNull final Bytes signature) {
         requireNonNull(publicKey);
         requireNonNull(history);
         requireNonNull(signature);
@@ -61,7 +62,8 @@ public class HistoryLibraryImpl implements HistoryLibrary {
             @NonNull Bytes ledgerId,
             @Nullable final Bytes sourceProof,
             @NonNull final HistoryAddressBook sourceAddressBook,
-            @NonNull final Map<Long, Bytes> sourceSignatures, @NonNull final Bytes targetAddressBookHash,
+            @NonNull final Map<Long, Bytes> sourceSignatures,
+            @NonNull final Bytes targetAddressBookHash,
             @NonNull final Bytes targetMetadata) {
         requireNonNull(ledgerId);
         requireNonNull(sourceAddressBook);

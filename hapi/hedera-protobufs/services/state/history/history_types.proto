@@ -32,7 +32,7 @@ option java_multiple_files = true;
  * updated during that period.
  */
 message HistoryAddressBook {
-  repeated ProofRosterEntry proof_roster_entries = 1;
+  repeated HistoryAddressBookEntry address_book_entries = 1;
 }
 
 /**
@@ -42,7 +42,7 @@ message HistoryAddressBook {
  * security was not compromised; no matter how nodes were added,
  * removed, or updated during that period.
  */
-message ProofRosterEntry {
+message HistoryAddressBookEntry {
   /**
    * The node id.
    */
@@ -52,7 +52,7 @@ message ProofRosterEntry {
    */
   uint64 weight = 2;
   /**
-   * A Schnorr key used to contribute to a recursive SNARK that proves
+   * A public key used to contribute to a recursive SNARK that proves
    * certain metadata was derived from the ledger id in a manner that
    * can trusted throughout any period the network's aBFT security
    * was not compromised; no matter how nodes were added, removed, or

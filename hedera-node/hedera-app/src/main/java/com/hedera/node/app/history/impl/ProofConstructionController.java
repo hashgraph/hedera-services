@@ -24,13 +24,13 @@ import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.history.History;
+import com.hedera.hapi.node.state.history.HistoryAddressBook;
+import com.hedera.hapi.node.state.history.HistoryAddressBookEntry;
 import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKey;
-import com.hedera.hapi.node.state.history.HistoryAddressBook;
-import com.hedera.hapi.node.state.history.ProofRosterEntry;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ReadableHistoryStore.AssemblySignaturePublication;
 import com.hedera.node.app.history.WritableHistoryStore;
@@ -334,7 +334,8 @@ public class ProofConstructionController {
     private CompletableFuture<Void> startSigningFuture() {
         requireNonNull(metadata);
         final var targetRoster = new HistoryAddressBook(weights.orderedTargetWeights()
-                .map(node -> new ProofRosterEntry(node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
+                .map(node ->
+                        new HistoryAddressBookEntry(node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
                 .toList());
         return CompletableFuture.runAsync(
                 () -> {
@@ -376,20 +377,20 @@ public class ProofConstructionController {
         return CompletableFuture.runAsync(
                 () -> {
                     final var sourceRoster = new HistoryAddressBook(weights.orderedSourceWeights()
-                            .map(node -> new ProofRosterEntry(
+                            .map(node -> new HistoryAddressBookEntry(
                                     node.nodeId(), node.weight(), sourceProofKeys.get(node.nodeId())))
                             .toList());
                     final var targetRoster = new HistoryAddressBook(weights.orderedTargetWeights()
-                            .map(node -> new ProofRosterEntry(
+                            .map(node -> new HistoryAddressBookEntry(
                                     node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
                             .toList());
                     final var proof = library.proveChainOfTrust(
                             Optional.ofNullable(ledgerId).orElseGet(() -> library.hashAddressBook(sourceRoster)),
                             sourceProof,
                             sourceRoster,
-                            signatures, library.hashAddressBook(targetRoster),
-                            proofMetadata
-                    );
+                            signatures,
+                            library.hashAddressBook(targetRoster),
+                            proofMetadata);
                     final var metadataProof = MetadataProof.newBuilder()
                             .sourceProofRosterHash(library.hashAddressBook(sourceRoster))
                             .targetProofRosterHash(library.hashAddressBook(targetRoster))
@@ -487,14 +488,14 @@ public class ProofConstructionController {
     }
 
     /**
-     * Returns the message to be signed for the given proof roster hash and metadata.
-     * @param proofRosterHash the proof roster hash
+     * Returns the message to be signed for the given address book hash and metadata.
+     * @param addressBookHash the address book hash
      * @param metadata the metadata
      * @return the message
      */
-    private Bytes messageFor(@NonNull final Bytes proofRosterHash, @NonNull final Bytes metadata) {
-        final var buffer = ByteBuffer.allocate((int) (proofRosterHash.length() + metadata.length()));
-        proofRosterHash.writeTo(buffer);
+    private Bytes messageFor(@NonNull final Bytes addressBookHash, @NonNull final Bytes metadata) {
+        final var buffer = ByteBuffer.allocate((int) (addressBookHash.length() + metadata.length()));
+        addressBookHash.writeTo(buffer);
         metadata.writeTo(buffer);
         return noThrowSha384HashOf(Bytes.wrap(buffer.array()));
     }

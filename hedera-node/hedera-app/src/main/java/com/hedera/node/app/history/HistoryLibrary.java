@@ -90,8 +90,5 @@ public interface HistoryLibrary {
      * @return true if the proof is valid; false otherwise
      */
     boolean verifyChainOfTrust(
-            @NonNull Bytes ledgerId,
-            @NonNull Bytes addressBookHash,
-            @NonNull Bytes metadata,
-            @NonNull Bytes proof);
+            @NonNull Bytes ledgerId, @NonNull Bytes addressBookHash, @NonNull Bytes metadata, @NonNull Bytes proof);
 }
