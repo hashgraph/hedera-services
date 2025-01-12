@@ -159,24 +159,29 @@ message HistoryProofConstruction {
    * strong minority of the stake in that roster.
    */
   bytes target_roster_hash = 4;
-  /**
-   * If the network is still gathering proof keys for this
-   * construction, the next time at which nodes should evaluate the
-   * proof keys and metadata scoped to the target roster for
-   * sufficient valid weight to assemble the proof roster.
-   */
-  proto.Timestamp next_assembly_checkpoint = 5;
-  /**
-   * If the network has gathered enough Schnorr keys for this
-   * construction to be assembled, the cutoff time at which those
-   * keys must have been adopted to be included in the final roster.
-   */
-  proto.Timestamp assembly_time = 6;
+
+  oneof assembly_time {
+    /**
+     * If the network is still gathering proof keys for this
+     * construction, the next time at which nodes should stop waiting
+     * for tardy proof keys and assembly the history to be proven as
+     * soon as it has the associated metadata and proof keys for nodes
+     * with >2/3 weight in the target roster.
+     */
+    proto.Timestamp grace_period_end_time = 5;
+    /**
+     * If the network has gathered enough proof keys to assemble the
+     * history for this construction, the cutoff time at which those
+     * keys must have been adopted to be included in the final history.
+     */
+    proto.Timestamp assembly_start_time = 6;
+  }
   /**
    * When this construction is complete, the recursive proof that
-   * certain metadata was derived from the ledger id.
+   * the target roster's address book and associated metadata belong
+   * to the ledger id's chain of trust.
    */
-  HistoryProof metadata_proof = 7;
+  HistoryProof target_proof = 7;
 }
 
 /**

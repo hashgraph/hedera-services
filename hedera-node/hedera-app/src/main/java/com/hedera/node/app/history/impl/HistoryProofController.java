@@ -182,12 +182,12 @@ public class HistoryProofController {
      * @param historyStore the history store, in case the controller is able to complete the construction
      */
     public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHistoryStore historyStore) {
-        if (construction.hasMetadataProof()) {
+        if (construction.hasTargetProof()) {
             return;
         }
         if (metadata == null) {
             ensureProofKeyPublished();
-        } else if (construction.hasAssemblyTime()) {
+        } else if (construction.hasAssemblyStartTime()) {
             if (!votes.containsKey(selfId) && proofFuture == null) {
                 if (hasSufficientSignatures()) {
                     proofFuture = startProofFuture();
@@ -219,7 +219,7 @@ public class HistoryProofController {
      */
     public void incorporateProofKey(final long nodeId, @NonNull final Bytes proofKey) {
         requireNonNull(proofKey);
-        if (!construction.hasAssemblyTime()) {
+        if (!construction.hasAssemblyStartTime()) {
             targetProofKeys.put(nodeId, proofKey);
         }
     }
@@ -231,7 +231,7 @@ public class HistoryProofController {
      */
     public void addProofSignature(@NonNull final AssemblySignaturePublication publication) {
         requireNonNull(publication);
-        if (!construction.hasMetadataProof() && targetProofKeys.containsKey(publication.nodeId())) {
+        if (!construction.hasTargetProof() && targetProofKeys.containsKey(publication.nodeId())) {
             verificationFutures.put(
                     publication.at(), verificationFuture(publication.nodeId(), publication.signature()));
         }
@@ -248,7 +248,7 @@ public class HistoryProofController {
             @NonNull final MetadataProofVote vote,
             @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(vote);
-        if (!construction.hasMetadataProof() && !votes.containsKey(nodeId)) {
+        if (!construction.hasTargetProof() && !votes.containsKey(nodeId)) {
             votes.put(nodeId, vote);
             final var proofWeights = votes.entrySet().stream()
                     .collect(groupingBy(
@@ -302,7 +302,7 @@ public class HistoryProofController {
         if (targetProofKeys.size() == weights.numTargetNodesInSource()) {
             return Recommendation.ASSEMBLE_NOW;
         }
-        if (now.isBefore(asInstant(construction.nextAssemblyCheckpointOrThrow()))) {
+        if (now.isBefore(asInstant(construction.gracePeriodEndTimeOrThrow()))) {
             return Recommendation.COME_BACK_LATER;
         } else {
             return switch (urgency) {

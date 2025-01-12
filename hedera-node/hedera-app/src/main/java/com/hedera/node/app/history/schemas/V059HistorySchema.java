@@ -108,8 +108,8 @@ public class V059HistorySchema extends Schema {
         final var activeConstruction =
                 requireNonNull(states.<HistoryProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY)
                         .get());
-        if (activeConstruction.hasMetadataProof()) {
-            proofConsumer.accept(activeConstruction.metadataProofOrThrow());
+        if (activeConstruction.hasTargetProof()) {
+            proofConsumer.accept(activeConstruction.targetProofOrThrow());
         }
     }
 }
