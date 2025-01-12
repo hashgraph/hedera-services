@@ -86,6 +86,8 @@ dynamic address book changes and HBAR stake adjustments. This initiates a transi
 reconciliation loop to derive its primary state for the candidate roster, at the same time it is doing tasks scoped to
 the current roster.
 
+![RCS transition schematic](assets/rcs-transition-schematic.png)
+
 #### A note on performance
 
 In the first release of Hiero TSS, revisions to the candidate roster only happened at consensus midnight; and roster
@@ -101,8 +103,6 @@ key for that size.
 - A node new to the network could immediately publish its Schnorr key when going `ACTIVE`.
 
 But these optimizations were not necessary in the first release of Hiero TSS.
-
-![RCS transition schematic](assets/rcs-transition-schematic.png)
 
 ### The `HintsService` as a `RosterCompanionService`
 
@@ -129,13 +129,13 @@ would not require any change to the structure of a `HistoryService` proof constr
 The `HintsService` **secondary state** is everything else needed to facilitate deterministic progress on a
 construction; in particular, for nodes that reconnect during the construction. Main types of secondary state are
 items such as,
-1. _Per construction size $M = 2^k$_ : For as many parties as possible, for a party with id $i \in [0, M)$, the
+1. _Per construction size `M = 2^k`_ : For as many parties as possible, for a party with id $i \in [0, M)$, the
 party's hinTS key; the node id that submitted that hinTS key; the consensus time the hinTS key was adopted in the
 ongoing construction; and, if applicable, a revised hinTS key the same node wishes to use in subsequent constructions
 of size $M$. (A node operator might wish to rotate their key for security reasons and trigger such a revision.)
 Note that a node's assigned party id for a particular construction size never changes; so this implies such secondary
 state is fully purged before reusing a party id for a new node id.
-2. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of
+2. _Per construction id `c`_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of
 construction $c$ accounting for at least 1/3 of its weight, their consensus vote for a particular preprocessing
 output with aggregation and verification keys for construction $c$.
 
@@ -147,7 +147,7 @@ use in the next construction of that size (or an ongoing construction of that si
 publication for the node). In general, storing node's hinTS keys for multiple party sizes may lead to some mild
 duplication of information about the node's public BLS key; but this will be rounding error compared to the size of
 the hints, which are proportional to the number of parties.
-2. `HintsAggregationVote` - a transaction publishing the node's vote for a particular preprocessing output for
+2. `HintsPreprocessingVote` - a transaction publishing the node's vote for a particular preprocessing output for
 a certain construction id; that is, the `(aggregation key, verification key)` output of the hinTS preprocessing
 algorithm.
 
@@ -176,19 +176,20 @@ metadata for the roster. The main features of a proof construction are items suc
 
 The **secondary state** of the `HistoryService` is everything needed to facilitate deterministic progress on a
 construction; in particular, for nodes that reconnect during the construction. This includes items such as,
-1. _Per node id $i$_ : The node's Schnorr key; the node's consensus time for the Schnorr key; and, if applicable, a
+1. _Per node id `i`_ : The node's Schnorr key; the node's consensus time for the Schnorr key; and, if applicable, a
 revised Schnorr key the same node wishes to use in subsequent constructions.
-2. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
+2. _Per construction id `c`_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
 $c$ accounting for at least 1/3 of its weight, their signatures on a particular metadata and roster derivation for
 construction $c$.
-3. _Per construction id $c$_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
+3. _Per construction id `c`_ : For a subset of node ids $\{ i_1, \ldots, i_n \}$ in the source roster of construction
 $c$ accounting for at least 1/3 of its weight, their consensus vote for a particular proof output for construction $c$.
 
 The **reconciliation loop** of the `HistoryService` evolves this secondary state by a combination of scheduling
 expensive cryptographic operations to run off the `handleTransaction` thread, and gossiping the results of these
 operations (or votes on those results) to other nodes. These node operations likely include,
-1. `HistorySchnorrKeyPublication` - a transaction publishing the node's Schnorr key for use in the next construction.
-2. `HistoryMessageSignature` - a transaction publishing the node's signature on the serialization of a
+1. `HistoryProofKeyPublication` - a transaction publishing the node's Schnorr key for use in the next construction.
+2. `HistoryProofSignature` - a transaction publishing the node's signature for the proof of a particular history (that
+is, address book and associated metadata).
 metadata and roster concatenation for a certain construction id.
 3. `HistoryProofVote` - a transaction publishing the node's vote for a particular proof output for a certain
 construction id.
