@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.history.impl;
 
-import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.history.HistoryAssemblySignature;
 import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
@@ -29,35 +27,31 @@ import com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTran
 import com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody;
 import com.hedera.node.app.history.ProofKeysAccessor;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.app.tss.TssSubmissions;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class HistorySubmissions {
+public class HistorySubmissions extends TssSubmissions {
     private static final Logger logger = LogManager.getLogger(HistorySubmissions.class);
 
-    private final Executor executor;
-    private final AppContext appContext;
     private final ProofKeysAccessor keyAccessor;
+    private final BiConsumer<TransactionBody, String> onFailure =
+            (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason);
 
     @Inject
     public HistorySubmissions(
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
             @NonNull final ProofKeysAccessor keyAccessor) {
-        this.executor = requireNonNull(executor);
-        this.appContext = requireNonNull(appContext);
+        super(executor, appContext);
         this.keyAccessor = requireNonNull(keyAccessor);
     }
 
@@ -69,10 +63,7 @@ public class HistorySubmissions {
     public CompletableFuture<Void> submitProofKeyPublication(@NonNull final Bytes proofKey) {
         requireNonNull(proofKey);
         return submit(
-                b -> b.historyProofKeyPublication(new HistoryProofKeyPublicationTransactionBody(proofKey)),
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().accountId(),
-                appContext.instantSource().instant());
+                b -> b.historyProofKeyPublication(new HistoryProofKeyPublicationTransactionBody(proofKey)), onFailure);
     }
 
     /**
@@ -86,11 +77,7 @@ public class HistorySubmissions {
         requireNonNull(metadataProof);
         final var vote =
                 MetadataProofVote.newBuilder().metadataProof(metadataProof).build();
-        return submit(
-                b -> b.historyProofVote(new HistoryProofVoteTransactionBody(constructionId, vote)),
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().accountId(),
-                appContext.instantSource().instant());
+        return submit(b -> b.historyProofVote(new HistoryProofVoteTransactionBody(constructionId, vote)), onFailure);
     }
 
     /**
@@ -102,29 +89,6 @@ public class HistorySubmissions {
         requireNonNull(signature);
         return submit(
                 b -> b.historyAssemblySignature(new HistoryAssemblySignatureTransactionBody(constructionId, signature)),
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().accountId(),
-                appContext.instantSource().instant());
-    }
-
-    private CompletableFuture<Void> submit(
-            @NonNull final Consumer<TransactionBody.Builder> spec,
-            @NonNull final Configuration config,
-            @NonNull final AccountID selfId,
-            @NonNull final Instant consensusNow) {
-        final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        return appContext
-                .gossip()
-                .submitFuture(
-                        selfId,
-                        consensusNow,
-                        java.time.Duration.of(hederaConfig.transactionMaxValidDuration(), SECONDS),
-                        spec,
-                        executor,
-                        adminConfig.timesToTrySubmission(),
-                        adminConfig.distinctTxnIdsToTry(),
-                        adminConfig.retryDelay(),
-                        (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason));
+                onFailure);
     }
 }

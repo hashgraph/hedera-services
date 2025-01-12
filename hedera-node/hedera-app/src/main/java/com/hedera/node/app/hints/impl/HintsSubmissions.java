@@ -16,38 +16,33 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.app.tss.TssSubmissions;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class HintsSubmissions {
+public class HintsSubmissions extends TssSubmissions {
     private static final Logger logger = LogManager.getLogger(HintsSubmissions.class);
 
-    private final Executor executor;
-    private final AppContext appContext;
     private final HintsKeyAccessor keyAccessor;
     private final HintsSigningContext signingContext;
+    private final BiConsumer<TransactionBody, String> onFailure =
+            (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason);
 
     @Inject
     public HintsSubmissions(
@@ -55,9 +50,8 @@ public class HintsSubmissions {
             @NonNull final AppContext appContext,
             @NonNull final HintsKeyAccessor keyAccessor,
             @NonNull final HintsSigningContext signingContext) {
-        this.executor = requireNonNull(executor);
+        super(executor, appContext);
         this.keyAccessor = requireNonNull(keyAccessor);
-        this.appContext = requireNonNull(appContext);
         this.signingContext = requireNonNull(signingContext);
     }
 
@@ -68,11 +62,7 @@ public class HintsSubmissions {
      */
     public CompletableFuture<Void> submitHintsKey(@NonNull final HintsKeyPublicationTransactionBody body) {
         requireNonNull(body);
-        return submit(
-                b -> b.hintsKeyPublication(body),
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().accountId(),
-                appContext.instantSource().instant());
+        return submit(b -> b.hintsKeyPublication(body), onFailure);
     }
 
     /**
@@ -82,11 +72,7 @@ public class HintsSubmissions {
      */
     public CompletableFuture<Void> submitHintsVote(@NonNull final HintsPreprocessingVoteTransactionBody body) {
         requireNonNull(body);
-        return submit(
-                b -> b.hintsAggregationVote(body),
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().accountId(),
-                appContext.instantSource().instant());
+        return submit(b -> b.hintsAggregationVote(body), onFailure);
     }
 
     /**
@@ -103,29 +89,6 @@ public class HintsSubmissions {
                     b.hintsPartialSignature(
                             new HintsPartialSignatureTransactionBody(constructionId, message, signature));
                 },
-                appContext.configSupplier().get(),
-                appContext.selfNodeInfoSupplier().get().accountId(),
-                appContext.instantSource().instant());
-    }
-
-    private CompletableFuture<Void> submit(
-            @NonNull final Consumer<TransactionBody.Builder> spec,
-            @NonNull final Configuration config,
-            @NonNull final AccountID selfId,
-            @NonNull final Instant consensusNow) {
-        final var adminConfig = config.getConfigData(NetworkAdminConfig.class);
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        return appContext
-                .gossip()
-                .submitFuture(
-                        selfId,
-                        consensusNow,
-                        java.time.Duration.of(hederaConfig.transactionMaxValidDuration(), SECONDS),
-                        spec,
-                        executor,
-                        adminConfig.timesToTrySubmission(),
-                        adminConfig.distinctTxnIdsToTry(),
-                        adminConfig.retryDelay(),
-                        (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason));
+                onFailure);
     }
 }

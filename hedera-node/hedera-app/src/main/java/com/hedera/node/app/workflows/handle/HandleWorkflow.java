@@ -268,7 +268,9 @@ public class HandleWorkflow {
                 final var hintsWritableStates = state.getWritableStates(HintsService.NAME);
                 final var hintsStore = new WritableHintsStoreImpl(hintsWritableStates);
                 doStreamingKVChanges(
-                        hintsWritableStates, now, () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig));
+                        hintsWritableStates,
+                        now,
+                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig));
             }
             if (tssConfig.historyEnabled()) {
                 final Bytes currentMetadata;

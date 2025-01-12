@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
-import com.hedera.node.app.hints.impl.HintsConstructionControllers;
+import com.hedera.node.app.hints.impl.HintsControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -35,10 +35,10 @@ import javax.inject.Singleton;
 public class HintsKeyPublicationHandler implements TransactionHandler {
     private static final int INVALID_PARTY_ID = -1;
 
-    private final HintsConstructionControllers controllers;
+    private final HintsControllers controllers;
 
     @Inject
-    public HintsKeyPublicationHandler(@NonNull final HintsConstructionControllers controllers) {
+    public HintsKeyPublicationHandler(@NonNull final HintsControllers controllers) {
         this.controllers = requireNonNull(controllers);
     }
 
@@ -66,7 +66,7 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
                 final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
                 final var adoptionTime = context.consensusNow();
                 if (hintsStore.setHintsKey(nodeId, partyId, numParties, hintsKey, adoptionTime)) {
-                    controller.incorporateHintsKey(new HintsKeyPublication(nodeId, hintsKey, partyId, adoptionTime));
+                    controller.addHintsKeyPublication(new HintsKeyPublication(nodeId, hintsKey, partyId, adoptionTime));
                 }
             }
         });

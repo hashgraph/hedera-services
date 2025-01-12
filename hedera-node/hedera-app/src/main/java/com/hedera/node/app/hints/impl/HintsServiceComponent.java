@@ -46,7 +46,7 @@ public interface HintsServiceComponent {
 
     HintsSigningContext signingContext();
 
-    HintsConstructionControllers controllers();
+    HintsControllers controllers();
 
     ConcurrentMap<Bytes, HintsSigning> signings();
 }

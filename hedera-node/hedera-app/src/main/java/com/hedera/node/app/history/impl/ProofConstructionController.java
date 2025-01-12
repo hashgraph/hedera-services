@@ -299,7 +299,7 @@ public class ProofConstructionController {
         // at this time. Note that if even here, a strong minority of weight _still_ has not published valid
         // proof keys, the signatures produced by this construction will never reach the weight threshold---
         // but such a condition would imply the network was already in an unusable state
-        if (targetProofKeys.size() == weights.numTargetNodesInSourceRoster()) {
+        if (targetProofKeys.size() == weights.numTargetNodesInSource()) {
             return Recommendation.ASSEMBLE_NOW;
         }
         if (now.isBefore(asInstant(construction.nextAssemblyCheckpointOrThrow()))) {
@@ -318,7 +318,7 @@ public class ProofConstructionController {
      * Ensures this node has published its proof key.
      */
     private void ensureProofKeyPublished() {
-        if (publicationFuture == null && weights.hasTargetWeightOf(selfId) && !targetProofKeys.containsKey(selfId)) {
+        if (publicationFuture == null && weights.targetIncludes(selfId) && !targetProofKeys.containsKey(selfId)) {
             publicationFuture = CompletableFuture.runAsync(
                     () -> submissions
                             .submitProofKeyPublication(schnorrKeyPair.publicKey())

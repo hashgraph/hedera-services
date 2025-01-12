@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,367 +16,72 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.hapi.util.HapiUtils.asInstant;
-import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
-import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.summingLong;
-import static java.util.stream.Collectors.toMap;
-
-import com.hedera.cryptography.bls.BlsKeyPair;
-import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
-import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
-import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
-import com.hedera.node.app.hints.HintsLibrary;
-import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
+import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
-import com.hedera.node.app.roster.RosterTransitionWeights;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
 import java.util.OptionalInt;
-import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 /**
- * Manages the process objects and work needed to advance toward completion of a hinTS construction.
+ * Manages the work needed to advance toward completion of a hinTS construction, if this completion is possible.
  */
-public class HintsController {
-    private final int numParties;
-    private final long selfId;
-    private final Executor executor;
-    private final BlsKeyPair blsKeyPair;
-    private final HintsLibrary operations;
-    private final HintsSubmissions submissions;
-    private final HintsSigningContext signingContext;
-    private final Map<Long, Integer> nodePartyIds = new HashMap<>();
-    private final Map<Integer, Long> partyNodeIds = new HashMap<>();
-    private final RosterTransitionWeights weights;
-    private final Map<Long, PreprocessingVote> votes = new HashMap<>();
-    private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
+public interface HintsController {
+    /**
+     * Returns the ID of the hinTS construction that this controller is managing.
+     */
+    long constructionId();
 
     /**
-     * The ongoing construction, updated each time the controller advances the construction in state.
+     * Returns if the construction is still in progress.
      */
-    private HintsConstruction construction;
-
-    /**
-     * If not null, a future that resolves when this node completes the preprocessing stage of this construction.
-     */
-    @Nullable
-    private CompletableFuture<Void> preprocessingVoteFuture;
-
-    /**
-     * If not null, the future performing the hinTS key publication for this node.
-     */
-    @Nullable
-    private CompletableFuture<Void> publicationFuture;
-
-    /**
-     * Whether this construction must succeed as quickly as possible, even at the cost of some overhead on
-     * the {@code handleTransaction} thread when validating hints; or even at the cost of omitting some
-     * nodes' hinTS keys from the construction if they are too slow to publish them, excluding these nodes
-     * from contributing partial signatures after the roster transition.
-     */
-    public enum Urgency {
-        /**
-         * The construction is urgent; some overhead is acceptable to ensure the construction completes
-         * as soon as possible if nodes are slow to publish their hints.
-         */
-        HIGH,
-        /**
-         * The construction is not urgent; the construction can take as long as necessary to complete,
-         * and should minimize overhead on the handle thread.
-         */
-        LOW,
-    }
-
-    /**
-     * A party's validated hinTS key, including the key itself and whether it is valid.
-     *
-     * @param partyId the party ID
-     * @param hintsKey the hinTS key
-     * @param isValid whether the key is valid
-     */
-    private record Validation(int partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
-
-    public HintsController(
-            final long selfId,
-            @NonNull final HintsConstruction construction,
-            @NonNull final RosterTransitionWeights weights,
-            @NonNull final Executor executor,
-            @NonNull final BlsKeyPair blsKeyPair,
-            @NonNull final HintsLibrary operations,
-            @NonNull final List<HintsKeyPublication> publications,
-            @NonNull final Map<Long, PreprocessingVote> votes,
-            @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsSigningContext signingContext) {
-        this.selfId = selfId;
-        this.blsKeyPair = requireNonNull(blsKeyPair);
-        this.weights = requireNonNull(weights);
-        this.numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
-        this.executor = requireNonNull(executor);
-        this.signingContext = requireNonNull(signingContext);
-        this.submissions = requireNonNull(submissions);
-        this.operations = requireNonNull(operations);
-        this.construction = requireNonNull(construction);
-        this.votes.putAll(votes);
-        publications.forEach(this::incorporateHintsKey);
-    }
-
-    /**
-     * Returns whether the construction is still in progress.
-     */
-    public boolean isStillInProgress() {
-        return !construction.hasPreprocessedKeys();
-    }
+    boolean isStillInProgress();
 
     /**
      * Returns whether the construction has the given party size.
      */
-    public boolean hasNumParties(final int numParties) {
-        return this.numParties == numParties;
-    }
+    boolean hasNumParties(int numParties);
 
     /**
      * Acts relative to the given state to let this node help advance the ongoing hinTS construction toward a
-     * deterministic completion.
+     * deterministic completion, if possible.
      *
      * @param now the current consensus time
      * @param hintsStore the hints store, in case the controller is able to complete the construction
      */
-    public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
-        if (construction.hasPreprocessedKeys()) {
-            return;
-        }
-        if (construction.hasPreprocessingStartTime()) {
-            if (!votes.containsKey(selfId) && preprocessingVoteFuture == null) {
-                preprocessingVoteFuture = startPreprocessingVoteFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
-            }
-        } else {
-            switch (recommendPreprocessingChoice(now)) {
-                case YES -> {
-                    construction = hintsStore.setPreprocessingStartTime(construction.constructionId(), now);
-                    preprocessingVoteFuture = startPreprocessingVoteFuture(now);
-                }
-                case NO -> ensureHintsKeyPublished();
-            }
-        }
-    }
+    void advanceConstruction(@NonNull Instant now, @NonNull WritableHintsStore hintsStore);
 
     /**
-     * Incorporates a new hint key publication into the controller's state.
-     *
-     * @param publication the hint key publication
-     */
-    public void incorporateHintsKey(@NonNull final HintsKeyPublication publication) {
-        requireNonNull(publication);
-        // Note that even though the controller ignores keys published after start of preprocessing phase, the
-        // handler will still be remembering them for use in future constructions
-        if (!construction.hasPreprocessingStartTime()) {
-            nodePartyIds.put(publication.nodeId(), publication.partyId());
-            partyNodeIds.put(publication.partyId(), publication.nodeId());
-            validationFutures.put(
-                    publication.adoptionTime(), validationFuture(publication.partyId(), publication.hintsKey()));
-        }
-    }
-
-    /**
-     * If the construction is not already complete, incorporates a preprocessing outputs vote into the controller's
-     * state. <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also
-     * updates network state with that output.
-     * @param nodeId the node ID
-     * @param vote the preprocessing outputs vote
-     * @param hintsStore the hints store
-     */
-    public void addPreprocessingVote(
-            final long nodeId, @NonNull final PreprocessingVote vote, @NonNull final WritableHintsStore hintsStore) {
-        requireNonNull(vote);
-        requireNonNull(hintsStore);
-        if (!construction.hasPreprocessedKeys()) {
-            votes.put(nodeId, vote);
-            final var outputWeights = votes.entrySet().stream()
-                    .collect(groupingBy(
-                            entry -> entry.getValue().preprocessedKeysOrThrow(),
-                            summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
-            final var maybeWinningOutputs = outputWeights.entrySet().stream()
-                    .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
-                    .map(Map.Entry::getKey)
-                    .findFirst();
-            maybeWinningOutputs.ifPresent(keys -> {
-                construction = hintsStore.setPreprocessingOutput(construction.constructionId(), keys, nodePartyIds);
-                if (hintsStore.getActiveConstruction().constructionId() == construction.constructionId()) {
-                    signingContext.setConstruction(construction);
-                }
-            });
-        }
-    }
-
-    /**
-     * Cancels any pending work that this controller has scheduled.
-     */
-    public void cancelPendingWork() {
-        if (publicationFuture != null) {
-            publicationFuture.cancel(true);
-        }
-        if (preprocessingVoteFuture != null) {
-            preprocessingVoteFuture.cancel(true);
-        }
-        validationFutures.values().forEach(future -> future.cancel(true));
-    }
-
-    /**
-     * Returns the ID of the hinTS construction that this controller is managing.
-     */
-    public long constructionId() {
-        return construction.constructionId();
-    }
-
-    /**
-     * Returns the party id for the given node id, if available.
+     * Returns the expected party id for the given node id, if available.
      *
      * @param nodeId the node ID
      * @return the party ID, if available
      */
-    public OptionalInt partyIdOf(final long nodeId) {
-        return nodePartyIds.containsKey(nodeId) ? OptionalInt.of(nodePartyIds.get(nodeId)) : OptionalInt.empty();
-    }
-
-    /**
-     * Returns the source roster hash of the hinTS construction that this controller is managing.
-     */
-    @Nullable
-    public Bytes sourceRosterHash() {
-        return construction.sourceRosterHash();
-    }
-
-    /**
-     * Returns the target roster hash of the hinTS construction that this controller is managing.
-     */
     @NonNull
-    public Bytes targetRosterHash() {
-        return construction.targetRosterHash();
-    }
+    OptionalInt partyIdOf(long nodeId);
 
     /**
-     * The choices the controller's preprocessing policy can make.
-     */
-    private enum StartPreprocessing {
-        /**
-         * Schedule the construction's key aggregation using valid hinTS published up to now.
-         */
-        YES,
-        /**
-         * Revisit the question again at the next opportunity.
-         */
-        NO,
-    }
-
-    /**
-     * Applies a deterministic policy to choose a preprocessing behavior at the given time.
+     * Adds a new hinTS key publication to the controller's state, if it is relevant to the
+     * ongoing construction.
      *
-     * @param now the current consensus time
-     * @return the choice of preprocessing behavior
+     * @param publication the hint key publication
      */
-    private StartPreprocessing recommendPreprocessingChoice(@NonNull final Instant now) {
-        // If every active node in the target roster has published a hinTS key,
-        // start preprocessing now; there is nothing else to wait for
-        if (validationFutures.size() == weights.numTargetNodesInSourceRoster()) {
-            return StartPreprocessing.YES;
-        }
-        if (now.isBefore(asInstant(construction.gracePeriodEndTimeOrThrow()))) {
-            return StartPreprocessing.NO;
-        } else {
-            return weightOfValidHintsKeysAt(now) >= weights.targetWeightThreshold() ? StartPreprocessing.YES : StartPreprocessing.NO;
-        }
-    }
+    void addHintsKeyPublication(@NonNull ReadableHintsStore.HintsKeyPublication publication);
 
     /**
-     * Returns a future that completes to the aggregated hinTS keys for this construction for
-     * all valid published hinTS keys.
-     *
-     * @return the future
+     * If the construction is not already complete, adds a preprocessing outputs vote to the <i>controller's</i>
+     * state.
+     * <p>
+     * <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also
+     * updates <i>network</i> state with the winning output.
+     * @param nodeId the node ID
+     * @param vote the preprocessing outputs vote
+     * @param hintsStore the hints store
      */
-    private CompletableFuture<Void> startPreprocessingVoteFuture(@NonNull final Instant cutoff) {
-        return CompletableFuture.runAsync(
-                () -> {
-                    final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
-                            .map(CompletableFuture::join)
-                            .filter(Validation::isValid)
-                            .collect(toMap(Validation::partyId, Validation::hintsKey));
-                    final var aggregatedWeights = nodePartyIds.entrySet().stream()
-                            .filter(entry -> hintKeys.containsKey(entry.getValue()))
-                            .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
-                    final var keys = operations.preprocess(hintKeys, aggregatedWeights, numParties);
-                    final var body = HintsPreprocessingVoteTransactionBody.newBuilder()
-                            .constructionId(construction.constructionId())
-                            .vote(PreprocessingVote.newBuilder()
-                                    .preprocessedKeys(keys)
-                                    .build())
-                            .build();
-                    submissions.submitHintsVote(body).join();
-                },
-                executor);
-    }
+    void addPreprocessingVote(long nodeId, @NonNull PreprocessingVote vote, @NonNull WritableHintsStore hintsStore);
 
     /**
-     * Returns the weight of the nodes in the target roster that have published valid hinTS keys up to the given time.
-     * This is blocking because if we are reduced to checking this, we are trying to finish an {@link Urgency#HIGH}
-     * construction after the initially scheduled aggregation checkpoint; and then it is worth doing validation even
-     * on the {@code handleTransaction} thread.
-     *
-     * @param now the time up to which to consider hinTS keys
-     * @return the weight of the nodes with valid hinTS keys
+     * Cancels any pending work that this controller has scheduled.
      */
-    private long weightOfValidHintsKeysAt(@NonNull final Instant now) {
-        return validationFutures.headMap(now, true).values().stream()
-                .map(CompletableFuture::join)
-                .filter(Validation::isValid)
-                .mapToLong(validation -> weights.targetWeightOf(partyNodeIds.get(validation.partyId())))
-                .sum();
-    }
-
-    /**
-     * Returns a future that completes to a validation of the given hints key.
-     *
-     * @param partyId the party ID
-     * @param hintsKey the hints key
-     * @return the future
-     */
-    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final HintsKey hintsKey) {
-        return CompletableFuture.supplyAsync(
-                () -> {
-                    final var isValid = operations.validateHintsKey(hintsKey, numParties);
-                    return new Validation(partyId, hintsKey, isValid);
-                },
-                executor);
-    }
-
-    /**
-     * If this node is part of the target construction and has not yet published (and is not currently publishing) its
-     * hinTS key, then starts publishing it.
-     */
-    private void ensureHintsKeyPublished() {
-        if (publicationFuture != null && weights.hasTargetWeightOf(selfId) && !nodePartyIds.containsKey(selfId)) {
-            final int selfPartyId = nodePartyIds.get(selfId);
-            publicationFuture = CompletableFuture.runAsync(
-                    () -> {
-                        final var hints = operations.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
-                        final var hintsKey =
-                                new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
-                        final var body = new HintsKeyPublicationTransactionBody(selfPartyId, numParties, hintsKey);
-                        submissions.submitHintsKey(body).join();
-                    },
-                    executor);
-        }
-    }
+    void cancelPendingWork();
 }

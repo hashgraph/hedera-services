@@ -19,7 +19,7 @@ package com.hedera.node.app.roster;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +44,7 @@ public record RosterTransitionWeights(
                 requireNonNull(sourceNodeWeights),
                 requireNonNull(targetNodeWeights),
                 atLeastOneThirdOfTotal(sourceNodeWeights),
-                atLeastOneThirdOfTotal(targetNodeWeights));
+                moreThanTwoThirdsOfTotal(targetNodeWeights));
     }
 
     /**
@@ -59,6 +59,33 @@ public record RosterTransitionWeights(
         public int compareTo(@NonNull final NodeWeight that) {
             return NODE_ID_COMPARATOR.compare(this, that);
         }
+    }
+
+    /**
+     * Returns the source node ids in the target roster.
+     * @return the source node ids in the target roster
+     */
+    public Set<Long> sourceNodeIds() {
+        return sourceNodeWeights.keySet();
+    }
+
+    /**
+     * Returns the target node ids in the source roster.
+     * @return the target node ids in the source roster
+     */
+    public Set<Long> targetNodeIds() {
+        return targetNodeWeights.keySet();
+    }
+
+    /**
+     * Returns whether the source roster has a strict majority of weight in the target roster.
+     */
+    public boolean sourceNodesHaveTargetThreshold() {
+        return sourceNodeWeights.keySet().stream()
+                        .filter(targetNodeWeights::containsKey)
+                        .mapToLong(targetNodeWeights::get)
+                        .sum()
+                >= targetWeightThreshold;
     }
 
     /**
@@ -95,7 +122,7 @@ public record RosterTransitionWeights(
      * @param nodeId the ID of the node
      * @return whether the node has an explicit weight
      */
-    public boolean hasTargetWeightOf(final long nodeId) {
+    public boolean targetIncludes(final long nodeId) {
         return targetNodeWeights.containsKey(nodeId);
     }
 
@@ -119,7 +146,7 @@ public record RosterTransitionWeights(
      * Returns the number of target node ids in the source roster.
      * @return the number of target node ids in the source roster
      */
-    public int numTargetNodesInSourceRoster() {
+    public int numTargetNodesInSource() {
         return numTargetNodesIn(sourceNodeWeights.keySet());
     }
 
@@ -129,7 +156,10 @@ public record RosterTransitionWeights(
      * @return the number of target node ids in the set
      */
     public int numTargetNodesIn(@NonNull final Set<Long> nodeIds) {
-        return targetNodeWeights.keySet().stream().filter(nodeIds::contains).mapToInt(i -> 1).sum();
+        return targetNodeWeights.keySet().stream()
+                .filter(nodeIds::contains)
+                .mapToInt(i -> 1)
+                .sum();
     }
 
     /**
@@ -140,18 +170,46 @@ public record RosterTransitionWeights(
      */
     public static long atLeastOneThirdOfTotal(@NonNull final Map<Long, Long> weights) {
         requireNonNull(weights);
+        return atLeastOneThirdOfTotal(
+                weights.values().stream().mapToLong(Long::longValue).sum());
+    }
+
+    /**
+     * Returns a weight that, assuming no corruption beyond the Byzantine threshold, guarantees agreement
+     * from an honest node holding at non-zero weight.
+     * @param totalWeight the total weight of the network
+     * @return the weight required to guarantee agreement with an honest node holding non-zero weight
+     */
+    public static long atLeastOneThirdOfTotal(final long totalWeight) {
+        // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
+        // ensures it the conclusion overlaps with the weight held by at least one honest node
+        return (totalWeight + 2) / 3;
+    }
+
+    /**
+     * Returns the weight that, assuming no corruption beyond the Byzantine threshold, guarantees sufficient
+     * honest nodes to reach agreement backed by at least 1/3 of the total network weight.
+     * @param weights the weights of the nodes in the roster
+     * @return the weight required for consensus progress even with maximum Byzantine faults
+     */
+    public static long moreThanTwoThirdsOfTotal(@NonNull final Map<Long, Long> weights) {
+        requireNonNull(weights);
         return moreThanTwoThirdsOfTotal(
                 weights.values().stream().mapToLong(Long::longValue).sum());
     }
 
     /**
-     * Returns the weight that would constitute a strong minority of the network weight for a given total weight.
+     * Returns the weight that, assuming no corruption beyond the Byzantine threshold, guarantees sufficient
+     * honest nodes to reach agreement backed by at least 1/3 of the total network weight.
      * @param totalWeight the total weight of the network
-     * @return the weight required for a strong minority
+     * @return the weight required for consensus progress even with maximum Byzantine faults
      */
     public static long moreThanTwoThirdsOfTotal(final long totalWeight) {
-        // Since aBFT is unachievable with n/3 malicious weight, using the conclusion of n/3 weight
-        // ensures it the conclusion overlaps with the weight held by at least one honest node
-        return (totalWeight + 2) / 3;
+        // Calculate (2 * totalWeight) / 3 + 1 with BigInteger
+        return BigInteger.valueOf(totalWeight)
+                .multiply(BigInteger.TWO)
+                .divide(BigInteger.valueOf(3))
+                .add(BigInteger.ONE)
+                .longValueExact();
     }
 }

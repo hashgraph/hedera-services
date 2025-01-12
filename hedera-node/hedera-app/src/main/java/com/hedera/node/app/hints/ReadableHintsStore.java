@@ -95,5 +95,5 @@ public interface ReadableHintsStore {
      * @return the {@link HintsKeyPublication}s
      */
     @NonNull
-    List<HintsKeyPublication> getNodeHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties);
+    List<HintsKeyPublication> getHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties);
 }

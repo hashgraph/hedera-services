@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hints.WritableHintsStore;
-import com.hedera.node.app.hints.impl.HintsConstructionControllers;
+import com.hedera.node.app.hints.impl.HintsControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -33,10 +33,10 @@ import javax.inject.Singleton;
 @Singleton
 public class HintsAggregationVoteHandler implements TransactionHandler {
     @NonNull
-    final HintsConstructionControllers controllers;
+    final HintsControllers controllers;
 
     @Inject
-    public HintsAggregationVoteHandler(@NonNull final HintsConstructionControllers controllers) {
+    public HintsAggregationVoteHandler(@NonNull final HintsControllers controllers) {
         this.controllers = requireNonNull(controllers);
     }
 

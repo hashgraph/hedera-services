@@ -35,9 +35,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages key pairs scoped to points in an integer sequence; for example, scoped to a hinTS construction ids.
+ * Manages key pairs scoped to points in an integer sequence; for example, scoped to hinTS construction ids.
  * <p>
- * Stores the key pair created for sequence value {@code N} in a subdirectory with that number as name.
+ * Stores the key pair created for sequence value {@code n} in a subdirectory with that number as name.
  *
  * @param <R> the type of the private key
  * @param <U> the type of the public key

@@ -124,7 +124,7 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public @NonNull List<HintsKeyPublication> getNodeHintsKeyPublications(
+    public @NonNull List<HintsKeyPublication> getHintsKeyPublications(
             @NonNull final Set<Long> nodeIds, final int numParties) {
         requireNonNull(nodeIds);
         final List<HintsKeyPublication> publications = new ArrayList<>();

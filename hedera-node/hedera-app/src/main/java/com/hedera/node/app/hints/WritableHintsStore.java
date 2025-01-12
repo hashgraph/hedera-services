@@ -33,7 +33,8 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
      */
     @NonNull
-    HintsConstruction getOrCreateConstruction(@NonNull ActiveRosters activeRosters, @NonNull Instant now, @NonNull TssConfig tssConfig);
+    HintsConstruction getOrCreateConstruction(
+            @NonNull ActiveRosters activeRosters, @NonNull Instant now, @NonNull TssConfig tssConfig);
 
     /**
      * Includes the given hints key for the given node and party IDs relative to a party size, assigning
@@ -54,7 +55,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * updated construction.
      * @return the updated construction
      */
-    HintsConstruction setPreprocessingOutput(
+    HintsConstruction setPreprocessedKeys(
             long constructionId, @NonNull PreprocessedKeys keys, @NonNull Map<Long, Integer> nodePartyIds);
 
     /**

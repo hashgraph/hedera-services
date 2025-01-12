@@ -57,9 +57,11 @@ class ActiveRostersTest {
     private static final Roster B_ROSTER = new Roster(B_ROSTER_WEIGHTS.entrySet().stream()
             .map(entry -> new RosterEntry(entry.getKey(), entry.getValue(), Bytes.EMPTY, List.of()))
             .toList());
-    private static final long A_ROSTER_STRONG_MINORITY_WEIGHT = RosterTransitionWeights.moreThanTwoThirdsOfTotal(
+    private static final long A_ROSTER_STRONG_MINORITY_WEIGHT = RosterTransitionWeights.atLeastOneThirdOfTotal(
             A_ROSTER_WEIGHTS.values().stream().mapToLong(Long::longValue).sum());
-    private static final long B_ROSTER_STRONG_MINORITY_WEIGHT = RosterTransitionWeights.moreThanTwoThirdsOfTotal(
+    private static final long A_ROSTER_STRICT_MAJORITY_WEIGHT = RosterTransitionWeights.moreThanTwoThirdsOfTotal(
+            A_ROSTER_WEIGHTS.values().stream().mapToLong(Long::longValue).sum());
+    private static final long B_ROSTER_STRICT_MAJORITY_WEIGHT = RosterTransitionWeights.moreThanTwoThirdsOfTotal(
             B_ROSTER_WEIGHTS.values().stream().mapToLong(Long::longValue).sum());
 
     @Mock
@@ -82,14 +84,17 @@ class ActiveRostersTest {
         assertEquals(A_ROSTER_WEIGHTS, weights.sourceNodeWeights());
         assertEquals(A_ROSTER_WEIGHTS, weights.targetNodeWeights());
         assertEquals(A_ROSTER_STRONG_MINORITY_WEIGHT, weights.sourceWeightThreshold());
-        assertEquals(A_ROSTER_STRONG_MINORITY_WEIGHT, weights.targetWeightThreshold());
+        assertEquals(A_ROSTER_STRICT_MAJORITY_WEIGHT, weights.targetWeightThreshold());
         assertEquals(A_ROSTER_NODE_WEIGHTS, weights.orderedSourceWeights().toList());
         assertEquals(A_ROSTER_NODE_WEIGHTS, weights.orderedTargetWeights().toList());
         assertTrue(A_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.sourceWeightOf(nw.nodeId()) == nw.weight()));
         assertTrue(A_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.targetWeightOf(nw.nodeId()) == nw.weight()));
-        assertTrue(A_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.hasTargetWeightOf(nw.nodeId())));
+        assertTrue(A_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.targetIncludes(nw.nodeId())));
         assertEquals(A_ROSTER.rosterEntries().size(), weights.numTargetNodesIn(A_ROSTER_WEIGHTS.keySet()));
-        assertEquals(1, weights.numTargetNodesIn(Set.of(A_ROSTER_WEIGHTS.keySet().iterator().next())));
+        assertEquals(
+                1,
+                weights.numTargetNodesIn(
+                        Set.of(A_ROSTER_WEIGHTS.keySet().iterator().next())));
         assertEquals(0L, weights.sourceWeightOf(MISSING_NODE_ID));
         assertEquals(0L, weights.targetWeightOf(MISSING_NODE_ID));
     }
@@ -130,12 +135,12 @@ class ActiveRostersTest {
         assertEquals(A_ROSTER_WEIGHTS, weights.sourceNodeWeights());
         assertEquals(B_ROSTER_WEIGHTS, weights.targetNodeWeights());
         assertEquals(A_ROSTER_STRONG_MINORITY_WEIGHT, weights.sourceWeightThreshold());
-        assertEquals(B_ROSTER_STRONG_MINORITY_WEIGHT, weights.targetWeightThreshold());
+        assertEquals(B_ROSTER_STRICT_MAJORITY_WEIGHT, weights.targetWeightThreshold());
         assertEquals(A_ROSTER_NODE_WEIGHTS, weights.orderedSourceWeights().toList());
         assertEquals(B_ROSTER_NODE_WEIGHTS, weights.orderedTargetWeights().toList());
         assertTrue(A_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.sourceWeightOf(nw.nodeId()) == nw.weight()));
         assertTrue(B_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.targetWeightOf(nw.nodeId()) == nw.weight()));
-        assertTrue(B_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.hasTargetWeightOf(nw.nodeId())));
+        assertTrue(B_ROSTER_NODE_WEIGHTS.stream().allMatch(nw -> weights.targetIncludes(nw.nodeId())));
         final var allNodeIds = B_ROSTER_WEIGHTS.keySet().stream().toList();
         final var someNodeIds = Set.copyOf(allNodeIds.subList(1, allNodeIds.size()));
         assertEquals(B_ROSTER.rosterEntries().size() - 1, weights.numTargetNodesIn(someNodeIds));

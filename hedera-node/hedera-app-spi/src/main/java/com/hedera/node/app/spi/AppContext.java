@@ -88,7 +88,7 @@ public interface AppContext {
          * @param timesToTry the number of times to try submitting the transaction
          * @param distinctTxnIdsPerTry the number of distinct transaction ids to try per attempt
          * @param retryDelay the delay between retries
-         * @param onFailedSubmission the consumer to call when a submission fails
+         * @param onFailure the consumer to call when a submission attempt fails
          * @return a future that will complete when the transaction is submitted
          */
         default CompletableFuture<Void> submitFuture(
@@ -100,7 +100,7 @@ public interface AppContext {
                 final int timesToTry,
                 final int distinctTxnIdsPerTry,
                 @NonNull final Duration retryDelay,
-                @NonNull final BiConsumer<TransactionBody, String> onFailedSubmission) {
+                @NonNull final BiConsumer<TransactionBody, String> onFailure) {
             final var attemptsLeft = new AtomicInteger(timesToTry);
             final var validStartTime = new AtomicReference<>(consensusNow);
             final var txnIdValidDuration = new com.hedera.hapi.node.base.Duration(validDuration.toSeconds());
@@ -136,7 +136,7 @@ public interface AppContext {
                                     break;
                                 }
                             } while (txnIdsLeft-- > 1);
-                            onFailedSubmission.accept(body, failureReason);
+                            onFailure.accept(body, failureReason);
                             try {
                                 MILLISECONDS.sleep(retryDelay.toMillis());
                             } catch (InterruptedException e) {

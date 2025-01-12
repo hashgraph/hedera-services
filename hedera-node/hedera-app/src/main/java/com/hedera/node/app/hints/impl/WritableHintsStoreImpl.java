@@ -43,7 +43,6 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -83,7 +82,9 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         requireNonNull(tssConfig);
         var construction = getConstructionFor(activeRosters);
         if (construction == null) {
-            final var gracePeriod = activeRosters.phase() == BOOTSTRAP ? tssConfig.bootstrapHintsKeyGracePeriod() : tssConfig.transitionHintsKeyGracePeriod();
+            final var gracePeriod = activeRosters.phase() == BOOTSTRAP
+                    ? tssConfig.bootstrapHintsKeyGracePeriod()
+                    : tssConfig.transitionHintsKeyGracePeriod();
             construction = newConstruction(
                     activeRosters.sourceRosterHash(),
                     activeRosters.targetRosterHash(),
@@ -119,7 +120,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public HintsConstruction setPreprocessingOutput(
+    public HintsConstruction setPreprocessedKeys(
             final long constructionId,
             @NonNull final PreprocessedKeys keys,
             @NonNull final Map<Long, Integer> nodePartyIds) {
@@ -189,7 +190,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         if (currentConstruction.equals(HintsConstruction.DEFAULT)) {
             if (!sourceRosterHash.equals(targetRosterHash)) {
                 log.warn(
-                        "Setting genesis construction with different source/target roster hashes ({} to {})",
+                        "Setting bootstrap construction with different source/target roster hashes ({} to {})",
                         sourceRosterHash,
                         targetRosterHash);
             }

@@ -17,24 +17,17 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
-import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
-import com.hedera.node.config.data.TssConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -49,7 +42,7 @@ import javax.inject.Singleton;
  * reference to the cancelled controller.
  */
 @Singleton
-public class HintsConstructionControllers {
+public class HintsControllers {
     private static final long NO_CONSTRUCTION_ID = -1L;
 
     private final Executor executor;
@@ -58,7 +51,6 @@ public class HintsConstructionControllers {
     private final HintsSubmissions submissions;
     private final HintsSigningContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
-    private final Supplier<Configuration> configSupplier;
 
     /**
      * May be null if the node has just started, or if the network has completed the most up-to-date
@@ -68,20 +60,18 @@ public class HintsConstructionControllers {
     private HintsController controller;
 
     @Inject
-    public HintsConstructionControllers(
+    public HintsControllers(
             @NonNull final Executor executor,
             @NonNull final HintsKeyAccessor keyLoader,
             @NonNull final HintsLibrary operations,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsSigningContext signingContext,
-            @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier,
-            @NonNull final Supplier<Configuration> configSupplier) {
+            @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier) {
         this.executor = requireNonNull(executor);
         this.keyLoader = requireNonNull(keyLoader);
         this.signingContext = signingContext;
         this.operations = requireNonNull(operations);
         this.submissions = requireNonNull(submissions);
-        this.configSupplier = requireNonNull(configSupplier);
         this.selfNodeInfoSupplier = requireNonNull(selfNodeInfoSupplier);
     }
 
@@ -131,7 +121,7 @@ public class HintsConstructionControllers {
     }
 
     /**
-     * Returns a new controller for the given active rosters and in-progress construction.
+     * Returns a new controller for the given active rosters and hinTS construction.
      * @param activeRosters the active rosters
      * @param construction the hinTS construction
      * @param hintsStore the hints store
@@ -142,30 +132,32 @@ public class HintsConstructionControllers {
             @NonNull final HintsConstruction construction,
             @NonNull final ReadableHintsStore hintsStore) {
         final var weights = activeRosters.transitionWeights();
-        final var numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
-        final var publications = hintsStore.getNodeHintsKeyPublications(
-                weights.targetNodeWeights().keySet(), numParties);
-        final var votes = hintsStore.votesFor(
-                construction.constructionId(), weights.sourceNodeWeights().keySet());
-        final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
-        return new HintsController(
-                selfNodeInfoSupplier.get().nodeId(),
-                construction,
-                weights,
-                executor,
-                blsKeyPair,
-                operations,
-                publications,
-                votes,
-                submissions,
-                signingContext);
+        if (!weights.sourceNodesHaveTargetThreshold()) {
+            return new InertHintsController(construction.constructionId());
+        } else {
+            final var numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
+            final var publications = hintsStore.getHintsKeyPublications(weights.targetNodeIds(), numParties);
+            final var votes = hintsStore.votesFor(construction.constructionId(), weights.sourceNodeIds());
+            final var selfId = selfNodeInfoSupplier.get().nodeId();
+            final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
+            return new ActiveHintsController(
+                    selfId,
+                    construction,
+                    weights,
+                    executor,
+                    blsKeyPair,
+                    operations,
+                    publications,
+                    votes,
+                    submissions,
+                    signingContext);
+        }
     }
 
+    /**
+     * Returns the ID of the current hinTS construction, or {@link #NO_CONSTRUCTION_ID} if there is none.
+     */
     private long currentConstructionId() {
         return controller != null ? controller.constructionId() : NO_CONSTRUCTION_ID;
-    }
-
-    private static @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {
-        return requireNonNull(roster).rosterEntries().stream().collect(toMap(RosterEntry::nodeId, RosterEntry::weight));
     }
 }

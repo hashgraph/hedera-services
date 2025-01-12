@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.node.app.roster.RosterTransitionWeights.moreThanTwoThirdsOfTotal;
+import static com.hedera.node.app.roster.RosterTransitionWeights.atLeastOneThirdOfTotal;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
@@ -98,7 +98,7 @@ public class HintsSigningContext {
         final var aggregationKey =
                 requireNonNull(construction).preprocessedKeysOrThrow().aggregationKey();
         return new HintsSigning(
-                moreThanTwoThirdsOfTotal(operations.extractTotalWeight(aggregationKey)),
+                atLeastOneThirdOfTotal(operations.extractTotalWeight(aggregationKey)),
                 construction.constructionId(),
                 blockHash,
                 aggregationKey,
