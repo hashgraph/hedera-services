@@ -19,12 +19,12 @@ package com.hedera.node.app.history.schemas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.history.ConstructionNodeId;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.state.history.ProofKeySet;
 import com.hedera.hapi.node.state.history.RecordedHistoryAssemblySignature;
-import com.hedera.hapi.node.state.history.ScopedNodeId;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.node.app.history.HistoryService;
@@ -87,11 +87,11 @@ public class V059HistorySchema extends Schema {
                 StateDefinition.onDisk(PROOF_KEYS_KEY, NodeId.PROTOBUF, ProofKeySet.PROTOBUF, MAX_PROOF_KEYS),
                 StateDefinition.onDisk(
                         ASSEMBLY_SIGNATURES_KEY,
-                        ScopedNodeId.PROTOBUF,
+                        ConstructionNodeId.PROTOBUF,
                         RecordedHistoryAssemblySignature.PROTOBUF,
                         MAX_ASSEMBLY_SIGNATURES),
                 StateDefinition.onDisk(
-                        PROOF_VOTES_KEY, ScopedNodeId.PROTOBUF, MetadataProofVote.PROTOBUF, MAX_PROOF_VOTES));
+                        PROOF_VOTES_KEY, ConstructionNodeId.PROTOBUF, MetadataProofVote.PROTOBUF, MAX_PROOF_VOTES));
     }
 
     @Override

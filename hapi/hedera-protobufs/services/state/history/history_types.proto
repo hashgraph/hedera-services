@@ -187,14 +187,13 @@ message HistoryProofConstruction {
 /**
  * A construction-scoped node id.
  */
-message ScopedNodeId {
+message ConstructionNodeId {
   /**
-   * The unique identifier for the proof roster construction that this
-   * vote is associated with.
+   * The unique id of a history proof construction.
    */
   uint64 construction_id = 1;
   /**
-   * The id of the node that submitted the vote.
+   * The unique id of a node.
    */
   uint64 node_id = 2;
 }
