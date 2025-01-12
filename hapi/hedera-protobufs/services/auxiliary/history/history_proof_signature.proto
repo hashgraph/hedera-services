@@ -40,7 +40,7 @@ option java_multiple_files = true;
  * assembly of metadata and proof roster hash for a specified
  * construction id.
  */
-message HistoryAssemblySignatureTransactionBody {
+message HistoryProofSignatureTransactionBody {
   /**
    * The id of the proof construction this signature is contributing to.
    * Because the network only ever performs one construction a time, this
@@ -53,5 +53,5 @@ message HistoryAssemblySignatureTransactionBody {
   /**
    * This node's signature on the history assembly.
    */
-  com.hedera.hapi.node.state.history.HistoryAssemblySignature signature = 2;
+  com.hedera.hapi.node.state.history.HistorySignature signature = 2;
 }

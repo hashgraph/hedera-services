@@ -27,7 +27,8 @@ import java.util.OptionalInt;
 
 /**
  * A {@link HintsController} that does nothing; the right implementation if an {@link ActiveHintsController} cannot
- * be constructed. (For example, because the current roster holds <= 2/3 weight in the candidate roster.)
+ * be constructed. (For example, because the current roster does have strictly greater than 2/3 weight in the
+ * candidate roster.)
  */
 public class InertHintsController implements HintsController {
     private final long constructionId;

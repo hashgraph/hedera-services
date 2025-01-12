@@ -217,7 +217,7 @@ message MetadataProofVote {
 /**
  * A particular assembly of new history for the next proof roster and metadata.
  */
-message HistoryAssembly {
+message History {
   /**
    * The proof roster hash the node is signing the assembly of.
    */
@@ -232,11 +232,11 @@ message HistoryAssembly {
  * A node's signature on a particular assembly of metadata and proof roster
  * hash for a specified.
  */
-message HistoryAssemblySignature {
+message HistorySignature {
   /**
    * The assembly the node is signing.
    */
-  HistoryAssembly assembly = 1;
+  History assembly = 1;
   /**
    * The node's signature on the hash of the concatenation of the proof
    * roster hash and the metadata.
@@ -253,6 +253,6 @@ message RecordedHistoryAssemblySignature {
   /**
    * The signature.
    */
-  HistoryAssemblySignature signature = 2;
+  HistorySignature signature = 2;
 }
 

@@ -18,12 +18,12 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.HistoryAssemblySignature;
+import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.history.HistoryAssemblySignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody;
+import com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody;
 import com.hedera.node.app.history.ProofKeysAccessor;
 import com.hedera.node.app.spi.AppContext;
@@ -85,10 +85,10 @@ public class HistorySubmissions extends TssSubmissions {
      * @return a future that completes with the submission
      */
     public CompletableFuture<Void> submitAssemblySignature(
-            final long constructionId, @NonNull final HistoryAssemblySignature signature) {
+            final long constructionId, @NonNull final HistorySignature signature) {
         requireNonNull(signature);
         return submit(
-                b -> b.historyAssemblySignature(new HistoryAssemblySignatureTransactionBody(constructionId, signature)),
+                b -> b.historyProofSignature(new HistoryProofSignatureTransactionBody(constructionId, signature)),
                 onFailure);
     }
 }

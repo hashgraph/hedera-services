@@ -109,7 +109,7 @@ import "auxiliary/hints/hints_key_publication.proto";
 import "auxiliary/hints/hints_preprocessing_vote.proto";
 import "auxiliary/hints/hints_partial_signature.proto";
 
-import "auxiliary/history/history_assembly_signature.proto";
+import "auxiliary/history/history_proof_signature.proto";
 import "auxiliary/history/history_proof_key_publication.proto";
 import "auxiliary/history/history_proof_vote.proto";
 
@@ -585,9 +585,9 @@ message TransactionBody {
         com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody hints_partial_signature = 68;
 
         /**
-         * A transaction body for signing a particular history assembly.
+         * A transaction body for contributed a signature with a node's proof key to a history proof.
          */
-        com.hedera.hapi.services.auxiliary.history.HistoryAssemblySignatureTransactionBody history_assembly_signature = 69;
+        com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody history_proof_signature = 69;
 
         /**
          * A transaction body for publishing a node's metadata proof key.

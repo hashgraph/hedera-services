@@ -241,7 +241,7 @@ public class HapiUtils {
             case HINTS_AGGREGATION_VOTE -> HederaFunctionality.HINTS_AGGREGATION_VOTE;
             case HINTS_KEY_PUBLICATION -> HederaFunctionality.HINTS_KEY_PUBLICATION;
             case HINTS_PARTIAL_SIGNATURE -> HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
-            case HISTORY_ASSEMBLY_SIGNATURE -> HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
+            case HISTORY_PROOF_SIGNATURE -> HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
             case HISTORY_PROOF_KEY_PUBLICATION -> HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
             case HISTORY_PROOF_VOTE -> HederaFunctionality.HISTORY_PROOF_VOTE;
             case UNSET -> throw new UnknownHederaFunctionality();

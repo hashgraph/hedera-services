@@ -23,8 +23,8 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.hapi.node.state.history.HistoryAssembly;
-import com.hedera.hapi.node.state.history.HistoryAssemblySignature;
+import com.hedera.hapi.node.state.history.History;
+import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.MetadataProof;
 import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import com.hedera.hapi.node.state.history.MetadataProofVote;
@@ -134,8 +134,8 @@ public class ProofConstructionController {
      * @param assemblySignature its assembly signature
      * @param isValid whether the signature is valid
      */
-    private record Verification(long nodeId, @NonNull HistoryAssemblySignature assemblySignature, boolean isValid) {
-        public @NonNull HistoryAssembly assembly() {
+    private record Verification(long nodeId, @NonNull HistorySignature assemblySignature, boolean isValid) {
+        public @NonNull History assembly() {
             return assemblySignature.assemblyOrThrow();
         }
     }
@@ -145,7 +145,7 @@ public class ProofConstructionController {
      * @param assembly the assembly with the signatures
      * @param cutoff the time at which the signatures were sufficient
      */
-    private record Signatures(@NonNull HistoryAssembly assembly, @NonNull Instant cutoff) {}
+    private record Signatures(@NonNull History assembly, @NonNull Instant cutoff) {}
 
     public ProofConstructionController(
             final long selfId,
@@ -229,7 +229,7 @@ public class ProofConstructionController {
      * proof and the
      * @param publication the proof key publication
      */
-    public void incorporateAssemblySignature(@NonNull final AssemblySignaturePublication publication) {
+    public void addProofSignature(@NonNull final AssemblySignaturePublication publication) {
         requireNonNull(publication);
         if (!construction.hasMetadataProof() && targetProofKeys.containsKey(publication.nodeId())) {
             verificationFutures.put(
@@ -343,8 +343,8 @@ public class ProofConstructionController {
                     targetRosterHash.writeTo(buffer);
                     metadata.writeTo(buffer);
                     final var message = noThrowSha384HashOf(Bytes.wrap(buffer.array()));
-                    final var signature = new HistoryAssemblySignature(
-                            new HistoryAssembly(targetRosterHash, metadata),
+                    final var signature = new HistorySignature(
+                            new History(targetRosterHash, metadata),
                             operations.signSchnorr(message, schnorrKeyPair.privateKey()));
                     submissions
                             .submitAssemblySignature(construction.constructionId(), signature)
@@ -419,7 +419,7 @@ public class ProofConstructionController {
      */
     @Nullable
     private Signatures firstSufficientSignatures() {
-        final Map<HistoryAssembly, Long> assemblyWeights = new HashMap<>();
+        final Map<History, Long> assemblyWeights = new HashMap<>();
         for (final var entry : verificationFutures.entrySet()) {
             final var verification = entry.getValue().join();
             if (verification.isValid()) {
@@ -471,7 +471,7 @@ public class ProofConstructionController {
      * @return the future
      */
     private CompletableFuture<Verification> verificationFuture(
-            final long nodeId, @NonNull final HistoryAssemblySignature signature) {
+            final long nodeId, @NonNull final HistorySignature signature) {
         return CompletableFuture.supplyAsync(
                 () -> {
                     final var message = messageFor(signature.assemblyOrThrow());
@@ -482,7 +482,7 @@ public class ProofConstructionController {
                 executor);
     }
 
-    private Bytes messageFor(@NonNull final HistoryAssembly assembly) {
+    private Bytes messageFor(@NonNull final History assembly) {
         return messageFor(assembly.proofRosterHash(), assembly.metadata());
     }
 

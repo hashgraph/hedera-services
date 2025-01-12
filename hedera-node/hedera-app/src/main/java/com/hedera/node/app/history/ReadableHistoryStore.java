@@ -18,7 +18,7 @@ package com.hedera.node.app.history;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.HistoryAssemblySignature;
+import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.MetadataProofConstruction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -34,7 +34,7 @@ public interface ReadableHistoryStore {
      * @param signature the assembly signature
      * @param at the time at which the signature was published
      */
-    record AssemblySignaturePublication(long nodeId, @NonNull HistoryAssemblySignature signature, @NonNull Instant at) {
+    record AssemblySignaturePublication(long nodeId, @NonNull HistorySignature signature, @NonNull Instant at) {
         public AssemblySignaturePublication {
             requireNonNull(signature);
             requireNonNull(at);
