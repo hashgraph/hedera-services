@@ -17,13 +17,18 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.node.app.annotations.NodeSelfId;
+import com.swirlds.common.metrics.DurationGauge;
+import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -49,6 +54,8 @@ public class BlockStreamBucketUploaderMetrics {
     private static final String UPLOADS_FAILURE_DESC = "Number of failed block uploads per provider per node";
     public static final String HASH_MISMATCH = "hash.mismatch";
     private static final String HASH_MISMATCH_DESC = "Number of hash validation failures per provider per node";
+    public static final String UPLOAD_LATENCY_LATEST = "upload.latency.latest";
+    public static final String UPLOAD_LATENCY_AVG = "upload.latency.avg";
 
     private final LongGauge blocksRetained;
     private final LongGauge blocksUploaded;
@@ -57,6 +64,11 @@ public class BlockStreamBucketUploaderMetrics {
     private final Map<String, Counter> successfulUploads = new HashMap<>();
     private final Map<String, Counter> failedUploads = new HashMap<>();
     private final Map<String, Counter> hashMismatches = new HashMap<>();
+
+    private record UploadLatencyMetric(DurationGauge latest, IntegerPairAccumulator<Integer> avg) {}
+
+    private static final BinaryOperator<Integer> AVERAGE = (sum, count) -> count == 0 ? 0 : sum / count;
+    private final Map<String, UploadLatencyMetric> uploadLatencies = new HashMap<>();
 
     /**
      * Constructor for the BlockStreamBucketMetrics.
@@ -92,6 +104,20 @@ public class BlockStreamBucketUploaderMetrics {
                     provider,
                     metrics.getOrCreate(new Counter.Config(perProviderPerNodeMetricCategory, HASH_MISMATCH)
                             .withDescription(HASH_MISMATCH_DESC)));
+
+            uploadLatencies.put(
+                    provider,
+                    new UploadLatencyMetric(
+                            metrics.getOrCreate(new DurationGauge.Config(
+                                            perProviderPerNodeMetricCategory, UPLOAD_LATENCY_LATEST, ChronoUnit.MILLIS)
+                                    .withDescription("Latest upload latency for " + provider + " bucket")),
+                            metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
+                                            perProviderPerNodeMetricCategory,
+                                            UPLOAD_LATENCY_AVG,
+                                            Integer.class,
+                                            AVERAGE)
+                                    .withDescription("Average upload latency for " + provider + " bucket")
+                                    .withUnit("ms"))));
         }
     }
 
@@ -170,6 +196,22 @@ public class BlockStreamBucketUploaderMetrics {
             log.warn("Bucket provider {} not found for {} metric", provider, HASH_MISMATCH);
         } else {
             hashMismatches.get(provider).increment();
+        }
+    }
+
+    /**
+     * Update the metrics for the upload latency for a bucket provider.
+     *
+     * @param provider the provider of the bucket
+     * @param latency the latest upload latency
+     */
+    public void updateUploadLatency(final String provider, final Duration latency) {
+        if (!uploadLatencies.containsKey(provider)) {
+            log.warn("Bucket provider {} not found for upload latency metrics", provider);
+        } else {
+            final var metric = uploadLatencies.get(provider);
+            metric.latest().set(latency);
+            metric.avg().update((int) latency.toMillis(), 1);
         }
     }
 }

@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.utils.TestUtils;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -192,5 +193,49 @@ class BlockStreamBucketUploaderMetricsTest {
         assertThat(logCaptor.warnLogs())
                 .contains("Bucket provider " + invalidProvider + " not found for "
                         + BlockStreamBucketUploaderMetrics.HASH_MISMATCH + " metric");
+    }
+
+    @Test
+    void testUpdateUploadLatency() {
+        final var providers = List.of("aws", "gcp");
+        final var latencies = List.of(Duration.ofMillis(1234), Duration.ofMillis(567));
+        for (final var provider : providers) {
+            for (final var latency : latencies) {
+                blockStreamBucketUploaderMetrics.updateUploadLatency(provider, latency);
+            }
+        }
+
+        final int expectedLatestLatencyMs = (int) latencies.getLast().toMillis();
+        final int expectedAverageLatencyMs =
+                (int) latencies.stream().mapToLong(Duration::toMillis).average().orElse(0);
+        for (final var provider : providers) {
+            final var metricCategory = String.format(
+                    BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, provider);
+            final var uploadLatencyLatest =
+                    metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOAD_LATENCY_LATEST);
+            final var uploadLatencyAvg =
+                    metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOAD_LATENCY_AVG);
+            assertEquals(
+                    expectedLatestLatencyMs, ((Double) uploadLatencyLatest.get(Metric.ValueType.VALUE)).intValue());
+            assertEquals(expectedAverageLatencyMs, uploadLatencyAvg.get(Metric.ValueType.VALUE));
+        }
+    }
+
+    @Test
+    void testUpdateUploadLatencyWithInvalidProvider() {
+        final var invalidProvider = "invalid";
+        blockStreamBucketUploaderMetrics.updateUploadLatency(invalidProvider, Duration.ofMillis(1234));
+
+        final var metricCategory = String.format(
+                BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, invalidProvider);
+        final var uploadLatencyLatest =
+                metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOAD_LATENCY_LATEST);
+        final var uploadLatencyAvg =
+                metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOAD_LATENCY_AVG);
+
+        assertNull(uploadLatencyLatest);
+        assertNull(uploadLatencyAvg);
+        assertThat(logCaptor.warnLogs())
+                .contains("Bucket provider " + invalidProvider + " not found for upload latency metrics");
     }
 }
