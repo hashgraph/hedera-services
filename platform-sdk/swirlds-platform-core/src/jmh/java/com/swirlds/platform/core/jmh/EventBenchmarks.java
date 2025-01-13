@@ -17,15 +17,12 @@
 package com.swirlds.platform.core.jmh;
 
 import com.hedera.hapi.platform.event.GossipEvent;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.hashing.PbjStreamHasher;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -78,9 +75,6 @@ public class EventBenchmarks {
                 .setSelfParent(new TestingEventBuilder(random).build())
                 .setOtherParent(new TestingEventBuilder(random).build())
                 .build();
-        StaticSoftwareVersion.setSoftwareVersion(
-                new BasicSoftwareVersion(event.getSoftwareVersion().major()));
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
         final PipedInputStream inputStream = new PipedInputStream();
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);
         outStream = new MerkleDataOutputStream(outputStream);

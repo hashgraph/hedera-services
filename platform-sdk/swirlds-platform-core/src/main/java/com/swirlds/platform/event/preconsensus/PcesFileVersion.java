@@ -22,8 +22,6 @@ import java.util.Arrays;
  * The version of the file format used to serialize preconsensus events.
  */
 public enum PcesFileVersion {
-    /** The original version of the file format. */
-    ORIGINAL(1),
     /** The version of the file format that serializes events as protobuf. */
     PROTOBUF_EVENTS(2);
 

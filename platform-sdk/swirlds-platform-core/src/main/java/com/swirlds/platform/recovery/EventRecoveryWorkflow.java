@@ -61,7 +61,6 @@ import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.CesEvent;
@@ -153,9 +152,6 @@ public final class EventRecoveryWorkflow {
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
                         platformContext.getConfiguration(), signedStateFile)
                 .reservedSignedState()) {
-            StaticSoftwareVersion.setSoftwareVersion(
-                    initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
-
             logger.info(
                     STARTUP.getMarker(),
                     "State from round {} loaded.",
