@@ -192,6 +192,11 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
      */
     private boolean areTransactionBytesSystemOnes(@NonNull final Transaction transaction) {
         final var transactionBytes = transaction.getApplicationTransaction();
+
+        if (transactionBytes.length() == 0) {
+            return false;
+        }
+
         return transactionBytes.getByte(0) != 1;
     }
 
