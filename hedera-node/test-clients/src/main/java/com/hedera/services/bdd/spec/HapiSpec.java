@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
@@ -61,6 +62,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.roster.RosterService;
@@ -517,6 +519,17 @@ public class HapiSpec implements Runnable, Executable {
     public @NonNull WritableKVState<com.hedera.hapi.node.base.TokenID, Token> embeddedTokensOrThrow() {
         final var state = embeddedStateOrThrow();
         return state.getWritableStates(TokenService.NAME).get(TOKENS_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's tokens, if this spec is targeting an embedded network.
+     *
+     * @return the embedded tokens state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableKVState<EntityNumber, StakingNodeInfo> embeddedStakingInfosOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(TokenService.NAME).get(STAKING_INFO_KEY);
     }
 
     /**

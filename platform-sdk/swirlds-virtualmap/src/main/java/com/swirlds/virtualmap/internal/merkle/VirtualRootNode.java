@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1552,6 +1552,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             snapshotCache.prepareForFlush();
             flush(snapshotCache, originalMap.state, this.dataSource);
 
+            // I assume an empty node cache can be used below rather than snapshotCache, since all the
+            // cache entries are flushed to the data source anyway. However, using snapshotCache may
+            // be slightly faster, because it's in memory
             return new RecordAccessorImpl<>(reconnectState, snapshotCache, keySerializer, valueSerializer, dataSource);
         });
 

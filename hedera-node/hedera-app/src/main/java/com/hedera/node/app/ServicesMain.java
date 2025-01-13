@@ -34,7 +34,6 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSig
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
@@ -73,6 +72,7 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.builder.PlatformBuilder;
+import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -80,6 +80,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
@@ -209,7 +210,7 @@ public class ServicesMain implements SwirldMain {
      * </ol>
      *  Now, note that {@link Hedera#newMerkleStateRoot()} returns {@link PlatformMerkleStateRoot}
      *  instances that delegate their lifecycle methods to an injected instance of
-     *  {@link com.swirlds.platform.state.MerkleStateLifecycles}---and the implementation of that
+     *  {@link StateLifecycles}---and the implementation of that
      *  injected by {@link Hedera#newMerkleStateRoot()} delegates these calls back to the Hedera
      *  instance itself.
      *  <p>
@@ -231,13 +232,23 @@ public class ServicesMain implements SwirldMain {
                     EXCEPTION.getMarker(),
                     "Multiple nodes were supplied via the command line. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
+            throw new ConfigurationException();
         }
-        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, commandLineArgs.localNodesToStart());
-        checkNodesToRun(nodesToRun);
-        final var selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
         final var platformConfig = buildPlatformConfig();
+        // Determine which nodes were _requested_ to run from the command line
+        final var cliNodesToRun = commandLineArgs.localNodesToStart();
+        // Determine which nodes are _configured_ to run from the config file(s)
+        final var configNodesToRun =
+                platformConfig.getConfigData(BasicConfig.class).nodesToRun();
+        // Using the requested nodes to run from the command line, the nodes configured to run, and now the
+        // address book on disk, reconcile the list of nodes to run
+        final List<NodeId> nodesToRun = getNodesToRun(diskAddressBook, cliNodesToRun, configNodesToRun);
+        // Finally, verify that the reconciliation of above node IDs yields exactly one node to run
+        final var selfId = ensureSingleNode(nodesToRun);
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
-        final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig);
+        final var networkKeysAndCerts = initNodeSecurity(diskAddressBook, platformConfig, Set.copyOf(nodesToRun));
         final var keysAndCerts = networkKeysAndCerts.get(selfId);
         setupGlobalMetrics(platformConfig);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
@@ -387,6 +398,7 @@ public class ServicesMain implements SwirldMain {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
+
         rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
                 configurationBuilder,
                 getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME),
@@ -397,44 +409,34 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
-     * Selects the node to run locally from either the command line arguments or the address book.
+     * Ensures there is exactly 1 node to run.
      *
-     * @param nodesToRun        the list of nodes configured to run based on the address book.
-     * @param localNodesToStart the node ids specified on the command line.
+     * @param nodesToRun        the list of nodes configured to run.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
      */
-    private static NodeId ensureSingleNode(
-            @NonNull final List<NodeId> nodesToRun, @NonNull final Set<NodeId> localNodesToStart) {
+    private static NodeId ensureSingleNode(@NonNull final List<NodeId> nodesToRun) {
         requireNonNull(nodesToRun);
-        requireNonNull(localNodesToStart);
-        // If no node is specified on the command line and detection by AB IP address is ambiguous, exit.
-        if (nodesToRun.size() > 1 && localNodesToStart.isEmpty()) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Multiple nodes are configured to run. Only one node can be started per java process.");
-            exitSystem(NODE_ADDRESS_MISMATCH);
-            throw new ConfigurationException(
-                    "Multiple nodes are configured to run. Only one node can be started per java process.");
+
+        logger.info(STARTUP.getMarker(), "The following nodes {} are set to run locally", nodesToRun);
+        if (nodesToRun.isEmpty()) {
+            final String errorMessage = "No nodes are configured to run locally.";
+            logger.error(STARTUP.getMarker(), errorMessage);
+            exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
+            throw new ConfigurationException(errorMessage);
         }
 
-        // If a node is specified on the command line, use that node.
-        final NodeId requestedNodeId = localNodesToStart.stream().findFirst().orElse(null);
-
-        // If a node is specified on the command line but does not have a matching local IP address in the AB, exit.
-        if (nodesToRun.size() > 1 && !nodesToRun.contains(requestedNodeId)) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "The requested node id {} is not configured to run. Please check the address book.",
-                    requestedNodeId);
-            exitSystem(NODE_ADDRESS_MISMATCH);
-            throw new ConfigurationException(String.format(
-                    "The requested node id %s is not configured to run. Please check the address book.",
-                    requestedNodeId));
+        if (nodesToRun.size() > 1) {
+            final String errorMessage = "Multiple nodes are configured to run locally.";
+            logger.error(EXCEPTION.getMarker(), errorMessage);
+            exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
+            throw new ConfigurationException(errorMessage);
         }
-
-        // Return either the node requested via the command line or the only matching node from the AB.
-        return requestedNodeId != null ? requestedNodeId : nodesToRun.get(0);
+        return nodesToRun.getFirst();
     }
 
     /**
@@ -453,6 +455,8 @@ public class ServicesMain implements SwirldMain {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
             exitSystem(CONFIGURATION_ERROR);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw e;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -29,6 +31,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.merkle.MerkleStateRoot;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MerkleStateLifecyclesImplTest extends MerkleTestBase {
+class StateLifecyclesImplTest extends MerkleTestBase {
     @Mock
     private Hedera hedera;
 
@@ -55,25 +58,27 @@ class MerkleStateLifecyclesImplTest extends MerkleTestBase {
     @Mock
     private MerkleStateRoot merkleStateRoot;
 
-    private MerkleStateLifecyclesImpl subject;
+    private StateLifecyclesImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new MerkleStateLifecyclesImpl(hedera);
+        subject = new StateLifecyclesImpl(hedera);
     }
 
     @Test
     void delegatesOnPreHandle() {
-        subject.onPreHandle(event, merkleStateRoot);
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> callback = txns -> {};
+        subject.onPreHandle(event, merkleStateRoot, callback);
 
-        verify(hedera).onPreHandle(event, merkleStateRoot);
+        verify(hedera).onPreHandle(event, merkleStateRoot, callback);
     }
 
     @Test
     void delegatesOnHandleConsensusRound() {
-        subject.onHandleConsensusRound(round, merkleStateRoot);
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> callback = txns -> {};
+        subject.onHandleConsensusRound(round, merkleStateRoot, callback);
 
-        verify(hedera).onHandleConsensusRound(round, merkleStateRoot);
+        verify(hedera).onHandleConsensusRound(round, merkleStateRoot, callback);
     }
 
     @Test
