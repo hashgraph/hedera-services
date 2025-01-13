@@ -26,7 +26,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface ReadableHintsStore {
     /**
      * Returns the verification key for the given roster hash, if it exists.
-     * @param rosterHash the hash of the roster for which the verification key is requested
+     * @param rosterHash the roster hash
+     * @return the verification key, or null if it does not exist
      */
     @Nullable
     Bytes getVerificationKeyFor(@NonNull Bytes rosterHash);

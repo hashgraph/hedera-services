@@ -25,7 +25,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * The cryptographic operations required by the {@link HintsService}.
+ * The cryptographic operations required by the {@link HintsService}. The relationship between the hinTS algorithms
+ * and these operations are as follows:
+ * <ul>
+ *   <li><b>Key generation</b> ({@code KGen}) - Implemented by {@link HintsLibrary#newBlsKeyPair()}.</li>
+ *   <li><b>Hint generation</b> ({@code HintGen}) - Implemented by {@link HintsLibrary#computeHints(BlsPrivateKey, int, int)}.</li>
+ *   <li><b>Preprocessing</b> ({@code Preprocess}) - Implemented by using {@link HintsLibrary#preprocess(Map, Map, int)}
+ *   to select the hinTS keys to use as input to {@link HintsLibrary#preprocess(Map, Map, int)}.</li>
+ *   <li><b>Partial signatures</b> ({@code Sign}) - Implemented by {@link HintsLibrary#signPartial(Bytes, BlsPrivateKey)}.</li>
+ *   <li><b>Verifying partial signatures</b> ({@code PartialVerify}) - Implemented by using
+ *   {@link HintsLibrary#verifyPartial(Bytes, BlsSignature, BlsPublicKey)} with public keys extracted from the
+ *   aggregation key in the active hinTS scheme via {@link HintsLibrary#extractPublicKey(Bytes, long)}.</li>
+ *   <li><b>Signature aggregation</b> ({@code SignAggr}) - Implemented by {@link HintsLibrary#signAggregate(Bytes, Map)}
+ *   with partial signatures verified as above with weights extracted from the aggregation key in the active hinTS
+ *   scheme via {@link HintsLibrary#extractWeight(Bytes, long)} and {@link HintsLibrary#extractTotalWeight(Bytes)}.</li>
+ *   <li><b>Verifying aggregate signatures</b> ({@code Verify}) - Implemented by
+ *   {@link HintsLibrary#verifyAggregate(Bytes, Bytes, long, Bytes)}.</li>
+ * </ul>
  */
 public interface HintsLibrary {
     /**
@@ -33,6 +49,39 @@ public interface HintsLibrary {
      * @return the key pair
      */
     BlsKeyPair newBlsKeyPair();
+
+    /**
+     * Computes the hints for the given public key and number of parties.
+     *
+     * @param privateKey the private key
+     * @param partyId the party id
+     * @param n the number of parties
+     * @return the hints
+     */
+    Bytes computeHints(@NonNull BlsPrivateKey privateKey, int partyId, int n);
+
+    /**
+     * Validates the hinTS public key for the given number of parties.
+     *
+     * @param n the number of parties
+     * @return true if the hints are valid; false otherwise
+     */
+    boolean validateHintsKey(@NonNull Bytes hintsKey, int n);
+
+    /**
+     * Runs the hinTS preprocessing algorithm on the given validated hint keys and party weights for the given number
+     * of parties. The output includes,
+     * <ol>
+     *     <li>The linear size aggregation key to use in combining partial signatures on a message with a provably
+     *     well-formed aggregate public key.</li>
+     *     <li>The succinct verification key to use when verifying an aggregate signature.</li>
+     * </ol>
+     * @param hintKeys the valid hinTS keys by party id
+     * @param weights the weights by party id
+     * @param n the number of parties
+     * @return the preprocessed keys
+     */
+    Bytes preprocess(@NonNull Map<Integer, Bytes> hintKeys, @NonNull Map<Integer, Long> weights, int n);
 
     /**
      * Signs the given message with the given private key.
@@ -43,6 +92,14 @@ public interface HintsLibrary {
     BlsSignature signPartial(@NonNull Bytes message, @NonNull BlsPrivateKey key);
 
     /**
+     * Extracts the public key for the given party id from the given aggregation key.
+     * @param aggregationKey the aggregation key
+     * @param partyId the party id
+     * @return the public key
+     */
+    BlsPublicKey extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
+
+    /**
      * Verifies the given signature for the given message and public key.
      * @param message the message
      * @param signature the signature
@@ -50,21 +107,6 @@ public interface HintsLibrary {
      * @return true if the signature is valid; false otherwise
      */
     boolean verifyPartial(@NonNull Bytes message, @NonNull BlsSignature signature, @NonNull BlsPublicKey publicKey);
-
-    /**
-     * Aggregates the signatures for the given party ids with the given aggregation key.
-     * @param aggregationKey the aggregation key
-     * @return the aggregated signature
-     */
-    Bytes aggregateSignatures(@NonNull Bytes aggregationKey, @NonNull Map<Long, BlsSignature> signatures);
-
-    /**
-     * Extracts the public key for the given party id from the given aggregation key.
-     * @param aggregationKey the aggregation key
-     * @param partyId the party id
-     * @return the public key
-     */
-    BlsPublicKey extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
 
     /**
      * Extracts the weight of the given party id from the given aggregation key.
@@ -82,27 +124,20 @@ public interface HintsLibrary {
     long extractTotalWeight(@NonNull Bytes aggregationKey);
 
     /**
-     * Computes the hints for the given public key and number of parties.
-     * @param privateKey the private key
-     * @param n the number of parties
-     * @return the hints
+     * Aggregates the signatures for the given party ids with the given aggregation key.
+     * @param aggregationKey the aggregation key
+     * @return the aggregated signature
      */
-    Bytes computeHints(@NonNull BlsPrivateKey privateKey, int n);
+    Bytes signAggregate(@NonNull Bytes aggregationKey, @NonNull Map<Long, BlsSignature> partialSignatures);
 
     /**
-     * Validates the hinTS public key for the given number of parties.
-     *
-     * @param n the number of parties
-     * @return true if the hints are valid; false otherwise
+     * Verifies the aggregate signature and its claimed threshold weight for the given message and verification key.
+     * @param message the message
+     * @param signature the aggregate signature
+     * @param threshold the threshold weight
+     * @param verificationKey the verification key
+     * @return the aggregated signature
      */
-    boolean validate(@NonNull Bytes hintsKey, int n);
-
-    /**
-     * Aggregates the given validated hint keys and party weights into preprocessed keys.
-     * @param hintKeys the valid hint keys by party id
-     * @param weights the weights by party id
-     * @param n the number of parties
-     * @return the aggregated keys
-     */
-    Bytes preprocess(@NonNull Map<Long, Bytes> hintKeys, @NonNull Map<Long, Long> weights, int n);
+    boolean verifyAggregate(
+            @NonNull Bytes message, @NonNull Bytes signature, long threshold, @NonNull Bytes verificationKey);
 }
