@@ -28,8 +28,6 @@ package com.swirlds.demo.stress;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -46,9 +44,10 @@ import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This testing tool simulates configurable processing times for both preHandling and handling for stress testing
@@ -57,6 +56,8 @@ import java.util.function.Function;
 @ConstructableIgnored
 public class StressTestingToolState extends PlatformMerkleStateRoot {
     private static final long CLASS_ID = 0x79900efa3127b6eL;
+
+    private static final Logger logger = LogManager.getLogger(StressTestingToolState.class);
 
     // The length of a system transaction:
     // 1 byte - encoded field position +
@@ -134,10 +135,9 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
                 return;
             }
 
-            final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
-            stateSignatureTransaction.ifPresent(
-                    signatureTransaction -> stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
-                            event.getCreatorId(), event.getSoftwareVersion(), signatureTransaction)));
+            if (areTransactionBytesSystemOnes(transaction)) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+            }
         });
 
         busyWait(config.preHandleTime());
@@ -168,11 +168,8 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
                     return;
                 }
 
-                final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
-
-                if (stateSignatureTransaction.isPresent()) {
-                    stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
-                            event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction.get()));
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                 } else {
                     handleTransaction(transaction);
                 }
@@ -187,30 +184,36 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     }
 
     /**
-     * Tries to parse the transaction bytes to a {@link StateSignatureTransaction}.
+     * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4.
+     * System transactions will be always bigger than that.
      *
-     * @param transaction the transaction to parse
-     * @return optional of the {@link StateSignatureTransaction} containing the parsed system transaction
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
      */
-    @NonNull
-    private Optional<StateSignatureTransaction> getStateSignatureTransaction(@NonNull final Transaction transaction) {
+    private boolean areTransactionBytesSystemOnes(@NonNull final Transaction transaction) {
         final var transactionBytes = transaction.getApplicationTransaction();
-
-        // If the transaction does not have marker byte for an application transaction, then it should be a system one
-        if (transactionBytes.getByte(0) != 1) {
-            return tryToParseSystemTransaction(transactionBytes.toReadableSequentialData());
-        } else {
-            return Optional.empty();
-        }
+        return transactionBytes.getByte(0) != 1;
     }
 
-    @NonNull
-    private Optional<StateSignatureTransaction> tryToParseSystemTransaction(
-            @NonNull final ReadableSequentialData transactionBytes) {
+    /**
+     * Converts a transaction to a {@link StateSignatureTransaction} and then consumes it into a callback.
+     *
+     * @param transaction the transaction to consume
+     * @param event the event that contains the transaction
+     * @param stateSignatureTransactionCallback the callback to call with the system transaction
+     */
+    private void consumeSystemTransaction(
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         try {
-            return Optional.of(StateSignatureTransaction.PROTOBUF.parseStrict(transactionBytes));
-        } catch (final ParseException e) {
-            return Optional.empty();
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final com.hedera.pbj.runtime.ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
         }
     }
 

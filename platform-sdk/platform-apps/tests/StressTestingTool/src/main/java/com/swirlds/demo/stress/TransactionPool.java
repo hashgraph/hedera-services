@@ -23,6 +23,9 @@ import java.util.Random;
  * Provides pre-generated random transactions.
  */
 final class TransactionPool {
+
+    public static final byte APPLICATION_TRANSACTION_MARKER = 1;
+
     /**
      * the array of transactions
      */
@@ -55,13 +58,12 @@ final class TransactionPool {
         // the fixed size of each transaction
         this.transactions = new byte[poolSize][];
 
-        // Add a 1 byte as a marker to indicate the start of an application transaction. This is used
-        // to later differentiate between application transactions and system transactions.
-        final byte marker = 1;
         for (int i = 0; i < transactions.length; i++) {
             final byte[] data = new byte[transactionSize];
             random.nextBytes(data);
-            data[0] = marker;
+            // Add byte with value of 1 as a marker to indicate the start of an application transaction. This is used
+            // to later differentiate between application transactions and system transactions.
+            data[0] = APPLICATION_TRANSACTION_MARKER;
             transactions[i] = data;
         }
     }
