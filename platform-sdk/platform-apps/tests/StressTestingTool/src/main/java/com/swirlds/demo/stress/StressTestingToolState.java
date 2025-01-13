@@ -59,18 +59,6 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
 
     private static final Logger logger = LogManager.getLogger(StressTestingToolState.class);
 
-    // The length of a system transaction:
-    // 1 byte - encoded field position +
-    // (varying length up to 10 bytes) round number long +
-    // 1 byte - encoded field position +
-    // 2 bytes - encoded size +
-    // 384 bytes - signature
-    // 1 byte - encoded field position +
-    // 1 byte - encoded size +
-    // 48 bytes - hash
-    private static final int MIN_SYSTEM_TRANSACTION_LENGTH = 437;
-    private static final int MAX_SYSTEM_TRANSACTION_LENGTH = 448;
-
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
