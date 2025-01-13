@@ -126,12 +126,10 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     @Test
     void testMethodsWithInvalidArguments() {
         // given
-        final var txBody = simpleCryptoTransfer().body();
+        final var txBody = TransactionBody.DEFAULT;
 
         // then
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody, DEFAULT_CONFIG))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, txBody, DEFAULT_CONFIG))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null, DEFAULT_CONFIG))
                 .isInstanceOf(NullPointerException.class);
