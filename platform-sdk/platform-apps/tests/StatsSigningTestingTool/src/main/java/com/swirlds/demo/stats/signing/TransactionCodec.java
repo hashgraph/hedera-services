@@ -38,6 +38,7 @@ import java.util.Map;
  */
 final class TransactionCodec {
 
+    public static final byte APPLICATION_TRANSACTION_MARKER = 1;
     public static final byte NO_ALGORITHM_PRESENT = -1;
 
     private static final int PREAMBLE_SIZE = Long.BYTES + (Byte.BYTES * 2);
@@ -81,10 +82,10 @@ final class TransactionCodec {
         final ByteBuffer buffer = ByteBuffer.allocate(1 + bufferSize(algorithm, (data != null) ? data.length : 0));
         final boolean signed =
                 algorithm != null && algorithm.isAvailable() && signature != null && signature.length > 0;
-        // Add a 0 byte as a marker to indicate the start of an application transaction. This is used
+
+        // Add a marker byte in the very beginning to indicate the start of an application transaction. This is used
         // to later differentiate between application transactions and system transactions.
-        final byte marker = 0;
-        buffer.put(marker)
+        buffer.put(APPLICATION_TRANSACTION_MARKER)
                 .putLong(transactionId)
                 .put((signed) ? (byte) 1 : 0)
                 .put((signed) ? algorithm.getId() : NO_ALGORITHM_PRESENT)

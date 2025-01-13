@@ -68,6 +68,7 @@ import org.apache.logging.log4j.Logger;
 public class StatsSigningTestingToolMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
 
+    public static final byte SYSTEM_TRANSACTION_MARKER = 0;
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
 
     static {
@@ -326,16 +327,14 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         final var bytes = new ByteArrayOutputStream();
         final var out = new WritableStreamingData(bytes);
 
-        // Add a 1 byte as a marker to indicate the start of a system transaction. This is used
+        // Add a marker to indicate the start of a system transaction. This is used
         // to later differentiate between application transactions and system transactions.
-        final byte marker = 1;
-        out.writeByte(marker);
+        out.writeByte(SYSTEM_TRANSACTION_MARKER);
         try {
             StateSignatureTransaction.PROTOBUF.write(transaction, out);
             return Bytes.wrap(bytes.toByteArray());
         } catch (final IOException e) {
-            logger.error("Failed to write StateSignatureTransaction to output stream", e);
-            return Bytes.EMPTY;
+            throw new IllegalStateException("Failed to encode a system transaction.", e);
         }
     }
 }

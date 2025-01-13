@@ -27,6 +27,7 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.demo.stats.signing.StatsSigningTestingToolMain.SYSTEM_TRANSACTION_MARKER;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
@@ -224,7 +225,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
             return false;
         }
 
-        return transactionBytes.getByte(0) == (byte) 1;
+        return transactionBytes.getByte(0) == SYSTEM_TRANSACTION_MARKER;
     }
 
     private void consumeSystemTransaction(
