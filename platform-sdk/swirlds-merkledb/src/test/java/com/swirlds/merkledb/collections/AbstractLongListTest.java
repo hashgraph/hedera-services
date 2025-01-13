@@ -1071,7 +1071,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
         // Create a writer LongList with the specified number of longs per chunk and max longs
         try (final LongList writerList = createFullyParameterizedLongListWith(numLongsPerChunk, maxLongs)) {
             // Update the valid range to include only the specified range of indices
-            writerList.updateValidRange(startIndex, endIndex);
+            writerList.updateValidRange(0, endIndex);
 
             // Populate the range with values
             for (int i = startIndex; i <= endIndex; i++) {
