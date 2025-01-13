@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -125,13 +127,14 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var storeFactory = context.storeFactory();
         final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var entityIdStore = storeFactory.readableStore(ReadableEntityIdStore.class);
         final var tokenRelationStore = storeFactory.writableStore(WritableTokenRelationStore.class);
 
         final var recordBuilder = context.savepointStack().getBaseBuilder(TokenCreateStreamBuilder.class);
 
         /* Validate if the current token can be created */
         validateTrue(
-                tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(),
+                entityIdStore.numTokens() + 1 <= tokensConfig.maxNumber(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         // validate fields in the transaction body that involves checking with
@@ -139,7 +142,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
 
         // build a new token
-        final var newTokenNum = context.entityNumGenerator().newEntityNum();
+        final var newTokenNum = context.entityNumGenerator().newEntityNum(EntityType.TOKEN);
         final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
         final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
 

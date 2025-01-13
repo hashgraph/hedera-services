@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -345,11 +345,11 @@ class DependencyMigrationTest extends MerkleTestBase {
             registry.register(new Schema(SemanticVersion.newBuilder().major(2).build()) {
                 public void migrate(@NonNull final MigrationContext ctx) {
                     final WritableStates dsWritableStates = ctx.newStates();
-                    final var newEntityNum1 = ctx.newEntityNum();
+                    final var newEntityNum1 = ctx.newEntityNumForAccount();
                     dsWritableStates
                             .get(STATE_KEY)
                             .put(new EntityNumber(newEntityNum1), new ProtoString("newly-added 1"));
-                    final var newEntityNum2 = ctx.newEntityNum();
+                    final var newEntityNum2 = ctx.newEntityNumForAccount();
                     dsWritableStates
                             .get(STATE_KEY)
                             .put(new EntityNumber(newEntityNum2), new ProtoString("newly-added 2"));

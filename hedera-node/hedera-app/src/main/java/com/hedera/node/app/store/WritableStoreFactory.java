@@ -19,7 +19,7 @@ package com.hedera.node.app.store;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -101,8 +101,9 @@ public class WritableStoreFactory {
                 new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
         // EntityIdService
         newMap.put(
-                WritableEntityIdStore.class,
-                new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
+                WritableEntityIdStoreImpl.class,
+                new StoreEntry(
+                        EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStoreImpl(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         // Roster Service

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
@@ -315,7 +315,7 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class),
+                mock(WritableEntityIdStoreImpl.class),
                 new HashMap<>(),
                 migrationStateChanges,
                 startupNetworks);
@@ -338,7 +338,7 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class),
+                mock(WritableEntityIdStoreImpl.class),
                 new HashMap<>(),
                 migrationStateChanges,
                 startupNetworks);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.validation;
+package com.hedera.node.app.spi.ids;
 
-/**
- * Various entity types in all services
- */
-public enum EntityType {
-    ACCOUNT,
-    ALIAS,
-    TOKEN,
-    TOKEN_ASSOCIATION,
-    NFT,
-    AIRDROP,
-    TOPIC,
-    NODE,
-    FILE,
-    SCHEDULE,
-    CONTRACT_BYTECODE,
-    CONTRACT_STORAGE,
-    STAKING_INFO
+public interface ReadableEntityIdStore {
+    long peekAtNextNumber();
+
+    long numAccounts();
+
+    long numTokens();
+
+    long numFiles();
+
+    long numTopics();
+
+    long numContractBytecodes();
+
+    long numContractStorageSlots();
+
+    long numNfts();
+
+    long numTokenRelations();
+
+    long numAliases();
+
+    long numSchedules();
 }

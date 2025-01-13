@@ -32,7 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EntityNumGeneratorImplTest {
 
     @Mock
-    private WritableEntityIdStore entityIdStore;
+    private WritableEntityIdStoreImpl entityIdStore;
 
     private EntityNumGeneratorImpl subject;
 

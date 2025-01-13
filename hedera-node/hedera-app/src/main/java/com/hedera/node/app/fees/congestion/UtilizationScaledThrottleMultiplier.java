@@ -28,10 +28,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.*;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -174,8 +175,8 @@ public class UtilizationScaledThrottleMultiplier {
         final var maxNumOfTokens =
                 configuration.getConfigData(TokensConfig.class).maxNumber();
 
-        final var tokenStore = storeFactory.getStore(ReadableTokenStore.class);
-        final var numOfTokens = tokenStore.sizeOfState();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStore.class);
+        final var numOfTokens = entityIdStore.numTokens();
 
         return maxNumOfTokens == 0 ? 100 : (int) ((100 * numOfTokens) / maxNumOfTokens);
     }
@@ -185,8 +186,8 @@ public class UtilizationScaledThrottleMultiplier {
         final var maxNumOfTokenRels =
                 configuration.getConfigData(TokensConfig.class).maxAggregateRels();
 
-        final var tokenRelStore = storeFactory.getStore(ReadableTokenRelationStore.class);
-        final var numOfTokensRels = tokenRelStore.sizeOfState();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStore.class);
+        final var numOfTokensRels = entityIdStore.numTokenRelations();
 
         return maxNumOfTokenRels == 0 ? 100 : (int) ((100 * numOfTokensRels) / maxNumOfTokenRels);
     }
@@ -196,8 +197,8 @@ public class UtilizationScaledThrottleMultiplier {
         final var maxNumberOfTopics =
                 configuration.getConfigData(TopicsConfig.class).maxNumber();
 
-        final var topicStore = storeFactory.getStore(ReadableTopicStore.class);
-        final var numOfTopics = topicStore.sizeOfState();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStoreImpl.class);
+        final var numOfTopics = entityIdStore.numTopics();
 
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);
     }

@@ -28,10 +28,10 @@ import javax.inject.Inject;
  */
 public class EntityNumGeneratorImpl implements EntityNumGenerator {
 
-    private final WritableEntityIdStore entityIdStore;
+    private final WritableEntityIdStoreImpl entityIdStore;
 
     @Inject
-    public EntityNumGeneratorImpl(@NonNull final WritableEntityIdStore entityIdStore) {
+    public EntityNumGeneratorImpl(@NonNull final WritableEntityIdStoreImpl entityIdStore) {
         this.entityIdStore = requireNonNull(entityIdStore);
     }
 

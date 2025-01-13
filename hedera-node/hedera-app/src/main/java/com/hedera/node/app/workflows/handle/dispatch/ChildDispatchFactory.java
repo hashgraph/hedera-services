@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
 import com.hedera.node.app.service.token.api.FeeStreamBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -258,7 +258,7 @@ public class ChildDispatchFactory {
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStore.class));
+                        .getStore(WritableEntityIdStoreImpl.class));
         final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(

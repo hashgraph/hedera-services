@@ -20,6 +20,7 @@ import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STAT
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
@@ -34,13 +35,13 @@ class WritableEntityIdStoreTest {
             new WritableSingletonStateBase<>(ENTITY_ID_STATE_KEY, nextEntityNumber::get, nextEntityNumber::set);
     private final WritableStates writableStates = new MapWritableStates(Map.of(ENTITY_ID_STATE_KEY, entityIdState));
 
-    private final WritableEntityIdStore subject = new WritableEntityIdStore(writableStates);
+    private final WritableEntityIdStoreImpl subject = new WritableEntityIdStoreImpl(writableStates);
 
     @Test
     void peeksAndIncrementsAsExpected() {
         assertEquals(1, subject.peekAtNextNumber());
-        assertEquals(1, subject.incrementAndGet(entityType));
+        assertEquals(1, subject.incrementAndGet(EntityType.ACCOUNT));
         assertEquals(2, subject.peekAtNextNumber());
-        assertEquals(2, subject.incrementAndGet(entityType));
+        assertEquals(2, subject.incrementAndGet(EntityType.ACCOUNT));
     }
 }

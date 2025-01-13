@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
@@ -81,7 +81,7 @@ final class V0490TokenSchemaTest {
     private WritableStates newStates;
     private Configuration config;
     private NetworkInfo networkInfo;
-    private WritableEntityIdStore entityIdStore;
+    private WritableEntityIdStoreImpl entityIdStore;
 
     @Mock
     private StartupNetworks startupNetworks;
@@ -96,7 +96,7 @@ final class V0490TokenSchemaTest {
                 MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
                 newWritableEntityIdState());
 
-        entityIdStore = new WritableEntityIdStore(newStates);
+        entityIdStore = new WritableEntityIdStoreImpl(newStates);
 
         networkInfo = new FakeNetworkInfo();
 

@@ -30,7 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A writeable store for entity ids.
  */
-public class WritableEntityIdStore {
+public class WritableEntityIdStoreImpl extends ReadableEntityIdStoreImpl {
     /**
      * The underlying data storage class that holds the entity id data.
      */
@@ -39,11 +39,12 @@ public class WritableEntityIdStore {
     private final WritableSingletonState<EntityCounts> entityCountsState;
 
     /**
-     * Create a new {@link WritableEntityIdStore} instance.
+     * Create a new {@link WritableEntityIdStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public WritableEntityIdStore(@NonNull final WritableStates states) {
+    public WritableEntityIdStoreImpl(@NonNull final WritableStates states) {
+        super(states);
         requireNonNull(states);
         this.entityIdState = states.getSingleton(ENTITY_ID_STATE_KEY);
         this.entityCountsState = states.getSingleton(ENTITY_COUNTS_KEY);
@@ -76,6 +77,7 @@ public class WritableEntityIdStore {
         final var newEntityCounts = entityCounts.copyBuilder();
         switch (entityType) {
             case ACCOUNT -> newEntityCounts.numAccounts(entityCounts.numAccounts() + 1);
+            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() + 1);
             case TOKEN -> newEntityCounts.numTokens(entityCounts.numTokens() + 1);
             case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() + 1);
             case TOPIC -> newEntityCounts.numTopics(entityCounts.numTopics() + 1);
@@ -87,7 +89,7 @@ public class WritableEntityIdStore {
             case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() + 1);
             case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() + 1);
             case NODE -> newEntityCounts.numNodes(entityCounts.numNodes() + 1);
-            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() + 1);
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entityType);
         }
         return newEntityCounts.build();
     }

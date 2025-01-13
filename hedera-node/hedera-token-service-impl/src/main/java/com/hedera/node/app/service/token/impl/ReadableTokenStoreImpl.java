@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,15 +107,6 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
     private Optional<Token> getTokenLeaf(final TokenID tokenId) {
         final var token = tokenState.get(tokenId);
         return Optional.ofNullable(token);
-    }
-
-    /**
-     * Returns the number of tokens in the state.
-     * @return the number of tokens in the state
-     */
-    @Override
-    public long sizeOfState() {
-        return tokenState.size();
     }
 
     @Override

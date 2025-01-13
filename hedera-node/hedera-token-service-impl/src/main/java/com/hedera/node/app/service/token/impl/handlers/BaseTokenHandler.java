@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenKey;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -323,11 +324,13 @@ public class BaseTokenHandler {
     /**
      * Creates a new {@link TokenRelation} with the account and token. This is called when there is
      * no association yet, but have open slots for maxAutoAssociations on the account.
-     * @param accountId the accountId to link the tokens to
-     * @param token the token to link to the account
-     * @param accountStore the account store
+     *
+     * @param accountId     the accountId to link the tokens to
+     * @param token         the token to link to the account
+     * @param accountStore  the account store
      * @param tokenRelStore the token relation store
-     * @param config the configuration
+     * @param config        the configuration
+     * @param entityIdStore the entity id store
      * @return the new token relation added
      */
     protected TokenRelation autoAssociate(
@@ -335,7 +338,8 @@ public class BaseTokenHandler {
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final Configuration config) {
+            @NonNull final Configuration config,
+            final ReadableEntityIdStore entityIdStore) {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
@@ -344,7 +348,7 @@ public class BaseTokenHandler {
         final var existingRel = tokenRelStore.get(accountId, tokenId);
         validateTrue(existingRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
-                tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
+                entityIdStore.numTokenRelations() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         final var account = accountStore.get(accountId);

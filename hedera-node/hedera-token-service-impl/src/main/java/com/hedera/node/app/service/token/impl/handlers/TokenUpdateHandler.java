@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -144,6 +145,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var entityIdStore = storeFactory.readableStore(ReadableEntityIdStore.class);
         final var config = context.configuration();
         final var tokensConfig = config.getConfigData(TokensConfig.class);
 
@@ -163,7 +165,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If not fail
             if (newTreasuryRel == null) {
                 final var newRelation = autoAssociate(
-                        newTreasuryAccount.accountIdOrThrow(), token, accountStore, tokenRelStore, config);
+                        newTreasuryAccount.accountIdOrThrow(),
+                        token,
+                        accountStore,
+                        tokenRelStore,
+                        config,
+                        entityIdStore);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
                 newTreasuryAccount = requireNonNull(accountStore.getForModify(newTreasury));

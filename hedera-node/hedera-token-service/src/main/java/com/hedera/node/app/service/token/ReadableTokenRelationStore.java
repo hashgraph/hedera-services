@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,6 @@ public interface ReadableTokenRelationStore {
      */
     @Nullable
     TokenRelation get(@NonNull AccountID accountId, @NonNull TokenID tokenId);
-
-    /**
-     * Returns the number of tokens in the state.
-     * @return the number of tokens in the state
-     */
-    long sizeOfState();
 
     /**
      * Warms the system by preloading a token relationship into memory

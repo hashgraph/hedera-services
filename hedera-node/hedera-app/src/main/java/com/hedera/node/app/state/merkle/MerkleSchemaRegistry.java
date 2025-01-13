@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -193,7 +193,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Configuration platformConfig,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
-            @Nullable final WritableEntityIdStore entityIdStore,
+            @Nullable final WritableEntityIdStoreImpl entityIdStore,
             @NonNull final Map<String, Object> sharedValues,
             @NonNull final MigrationStateChanges migrationStateChanges,
             @NonNull final StartupNetworks startupNetworks) {

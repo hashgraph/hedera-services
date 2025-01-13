@@ -19,7 +19,8 @@ package com.hedera.node.app.services;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -50,7 +51,7 @@ public record MigrationContextImpl(
         @NonNull Configuration appConfig,
         @NonNull Configuration platformConfig,
         @Nullable NetworkInfo genesisNetworkInfo,
-        @Nullable WritableEntityIdStore writableEntityIdStore,
+        @Nullable WritableEntityIdStoreImpl writableEntityIdStore,
         @Nullable SemanticVersion previousVersion,
         long roundNumber,
         @NonNull Map<String, Object> sharedValues,
@@ -64,9 +65,9 @@ public record MigrationContextImpl(
     }
 
     @Override
-    public long newEntityNum() {
+    public long newEntityNumForAccount() {
         return requireNonNull(writableEntityIdStore, "Entity ID store needs to exist first")
-                .incrementAndGet(entityType);
+                .incrementAndGet(EntityType.ACCOUNT);
     }
 
     @Override

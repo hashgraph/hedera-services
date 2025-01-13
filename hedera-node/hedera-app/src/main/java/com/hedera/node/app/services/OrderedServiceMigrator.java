@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.ids.WritableEntityIdStoreImpl;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -125,7 +125,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
         // this entity ID writable states instance into the MigrationContext below, to enable generation of
         // entity IDs through an appropriate API.
         final var entityIdWritableStates = state.getWritableStates(EntityIdService.NAME);
-        final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
+        final var entityIdStore = new WritableEntityIdStoreImpl(entityIdWritableStates);
 
         // Now that the Entity ID Service is migrated, migrate the remaining services in the order
         // determined by the service registry (this ordering can be critical for migrations with

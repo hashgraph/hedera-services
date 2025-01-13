@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,15 +91,6 @@ class ReadableTokenRelationStoreImplTest {
         final var result =
                 subject.get(ACCOUNT_20_ID, TokenID.newBuilder().tokenNum(-1L).build());
         Assertions.assertThat(result).isNull();
-    }
-
-    @Test
-    void testSizeOfState() {
-        final var expectedSize = 3L;
-        given(tokenRelState.size()).willReturn(expectedSize);
-
-        final var result = subject.sizeOfState();
-        Assertions.assertThat(result).isEqualTo(expectedSize);
     }
 
     @Test
