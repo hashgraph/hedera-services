@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,20 +59,37 @@ public class PcesMultiFileIterator implements IOIterator<PlatformEvent> {
      * Find the next event that should be returned.
      */
     private void findNext() throws IOException {
-        while (next == null) {
-            if (currentIterator == null || !currentIterator.hasNext()) {
-                if (currentIterator != null && currentIterator.hasPartialEvent()) {
-                    truncatedFileCount++;
-                }
-
-                if (!fileIterator.hasNext()) {
-                    break;
-                }
-
+        if (currentIterator == null) { // on first call
+            if (fileIterator.hasNext()) {
                 currentIterator = new PcesFileIterator(fileIterator.next(), lowerBound, fileType);
             } else {
-                next = currentIterator.next();
+                return;
             }
+        }
+
+        while (next == null) {
+
+            boolean hasNextEvent = false;
+            try {
+                hasNextEvent = currentIterator.hasNext();
+            } catch (final IOException ignored) {
+                // ignore the exception and move on to the next file if there is one
+            }
+
+            if (hasNextEvent) {
+                next = currentIterator.next();
+                return;
+            }
+
+            if (currentIterator.hasPartialEvent()) {
+                truncatedFileCount++;
+            }
+
+            if (!fileIterator.hasNext()) {
+                return;
+            }
+
+            currentIterator = new PcesFileIterator(fileIterator.next(), lowerBound, fileType);
         }
     }
 

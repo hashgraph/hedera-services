@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
@@ -50,19 +52,22 @@ public class ContractServiceImpl implements ContractService {
      * @param appContext the current application context
      */
     public ContractServiceImpl(@NonNull final AppContext appContext) {
-        this(appContext, null, null);
+        this(appContext, null, null, Set.of());
     }
 
     /**
      * @param appContext the current application context
      * @param verificationStrategies the current verification strategy used
      * @param addOnTracers all operation tracer callbacks
+     * @param customOps any additional custom operations to use when constructing the EVM
      */
     public ContractServiceImpl(
             @NonNull final AppContext appContext,
             @Nullable final VerificationStrategies verificationStrategies,
-            @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
+            @Nullable final Supplier<List<OperationTracer>> addOnTracers,
+            @NonNull final Set<Operation> customOps) {
         requireNonNull(appContext);
+        requireNonNull(customOps);
         final var metricsSupplier = requireNonNull(appContext.metricsSupplier());
         final Supplier<ContractsConfig> contractsConfigSupplier =
                 () -> appContext.configSupplier().get().getConfigData(ContractsConfig.class);
@@ -75,7 +80,8 @@ public class ContractServiceImpl implements ContractService {
                         appContext.signatureVerifier(),
                         Optional.ofNullable(verificationStrategies).orElseGet(DefaultVerificationStrategies::new),
                         addOnTracers,
-                        contractMetrics);
+                        contractMetrics,
+                        customOps);
     }
 
     @Override
