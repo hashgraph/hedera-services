@@ -21,7 +21,6 @@ import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -61,14 +60,14 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
      *         and one of the supported reader implementations
      */
     static Stream<Arguments> longListWriterReaderPairsProvider() {
-        return longListWriterBasedPairsProvider(heapWriter);
+        return longListWriterBasedPairsProvider(heapWriterFactory);
     }
 
     /**
      * Provides a stream of writer paired with two reader implementations for testing
      * cross-compatibility.
      * <p>
-     * Used for {@link AbstractLongListTest#updateMinToTheLowerEnd}
+     * Used for {@link AbstractLongListTest#testUpdateMinToTheLowerEnd}
      *
      * @return a stream of arguments containing a writer and two readers.
      */
@@ -79,7 +78,7 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
     /**
      * Provides writer-reader pairs combined with range configurations for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#writeReadRangeElement}
+     * Used for {@link AbstractLongListTest#testWriteReadRangeElement}
      *
      * @return a stream of arguments for range-based parameterized tests
      */
@@ -90,7 +89,7 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
     /**
      * Provides writer-reader pairs combined with chunk offset configurations (first set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */
@@ -101,7 +100,7 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
     /**
      * Provides writer-reader pairs combined with chunk offset configurations (second set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */

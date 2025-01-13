@@ -495,10 +495,11 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     // Parametrized tests to test cross compatibility between the Long List implementations
 
     /**
-     * Represents a named supplier for creating instances of {@link AbstractLongList}.
-     * The name is used for test parameter descriptions and debugging.
+     * A named factory for producing new {@link AbstractLongList} instances, used primarily as a "writer"
+     * in parameterized tests. The {@code name} field is for logging or display in test output, and
+     * {@code createInstance} is the function that constructs a new {@link AbstractLongList}.
      */
-    public record NamedLongListSupplier(String name, Supplier<AbstractLongList<?>> supplier) {
+    public record LongListWriterFactory(String name, Supplier<AbstractLongList<?>> createInstance) {
         @Override
         public String toString() {
             return name;
@@ -506,38 +507,39 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     /**
-     * Represents a named reader function for reconstructing {@link AbstractLongList} from a file.
-     * The name is used for test parameter descriptions and debugging.
+     * A named factory for reconstructing {@link AbstractLongList} instances from a file, serving as a "reader"
+     * in parameterized tests. The {@code name} field is for test output identification, and
+     * {@code createFromFile} is a function that loads a {@link AbstractLongList} given a {@link Path}
+     * and {@link Configuration}.
      */
-    public record NamedReader(String name,
-                              BiFunction<Path, Configuration, AbstractLongList<?>> reader) {
+    public record LongListReaderFactory(String name,
+                                        BiFunction<Path, Configuration, AbstractLongList<?>> createFromFile) {
         @Override
         public String toString() {
             return name;
         }
     }
 
-    /**
-     * Named suppliers for creating different {@link AbstractLongList} implementations.
-     */
-    static NamedLongListSupplier heapWriter = new NamedLongListSupplier(
-            "LongListHeap",
+    /** Factories (named suppliers) for creating different {@link AbstractLongList} implementations. */
+    static LongListWriterFactory heapWriterFactory = new LongListWriterFactory(
+            LongListHeap.class.getSimpleName(),
             LongListHeap::new
     );
-    static NamedLongListSupplier offHeapWriter = new NamedLongListSupplier(
-            "LongListOffHeap",
+    static LongListWriterFactory offHeapWriterFactory = new LongListWriterFactory(
+            LongListOffHeap.class.getSimpleName(),
             LongListOffHeap::new
     );
-    static NamedLongListSupplier diskWriter = new NamedLongListSupplier(
-            "LongListDisk",
+    static LongListWriterFactory diskWriterFactory = new LongListWriterFactory(
+            LongListDisk.class.getSimpleName(),
             () -> new LongListDisk(CONFIGURATION)
     );
 
     /**
-     * Named readers for reconstructing different {@link AbstractLongList} implementations from files.
+     * Factories (named BiFunctions) for reconstructing different {@link AbstractLongList}
+     * implementations from files.
      */
-    static NamedReader heapReader = new NamedReader(
-            "LongListHeap",
+    static LongListReaderFactory heapReaderFactory = new LongListReaderFactory(
+            LongListHeap.class.getSimpleName(),
             (file, config) -> {
                 try {
                     return new LongListHeap(file, config);
@@ -546,8 +548,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 }
             }
     );
-    static NamedReader offHeapReader = new NamedReader(
-            "LongListOffHeap",
+    static LongListReaderFactory offHeapReaderFactory = new LongListReaderFactory(
+            LongListOffHeap.class.getSimpleName(),
             (file, config) -> {
                 try {
                     return new LongListOffHeap(file, config);
@@ -556,8 +558,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 }
             }
     );
-    static NamedReader diskReader = new NamedReader(
-            "LongListDisk",
+    static LongListReaderFactory diskReaderFactory = new LongListReaderFactory(
+            LongListDisk.class.getSimpleName(),
             (file, config) -> {
                 try {
                     return new LongListDisk(file, config);
@@ -576,34 +578,34 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * This method is used internally to support the creation of specific writer-reader pairs
      * for different test configurations.
      *
-     * @param writerSupplier a supplier providing the writer long list implementation
+     * @param writerFactory a supplier providing the writer long list implementation
      * @return a stream of arguments containing the writer and its corresponding readers
      */
-    protected static Stream<Arguments> longListWriterBasedPairsProvider(NamedLongListSupplier writerSupplier) {
+    protected static Stream<Arguments> longListWriterBasedPairsProvider(final LongListWriterFactory writerFactory) {
         return Stream.of(
-                Arguments.of(writerSupplier, heapReader),
-                Arguments.of(writerSupplier, offHeapReader),
-                Arguments.of(writerSupplier, diskReader));
+                Arguments.of(writerFactory, heapReaderFactory),
+                Arguments.of(writerFactory, offHeapReaderFactory),
+                Arguments.of(writerFactory, diskReaderFactory));
     }
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
     void testWriteAndReadBackEmptyList(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
         // Create a writer LongList
-        try (final LongList writerList = writerSupplier.supplier().get()) {
+        try (final LongList writerList = writerFactory.createInstance().get()) {
             // Write the empty LongList to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testWriteAndReadBackEmptyList_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate the reconstructed list's attributes
                 assertEquals(writerList.capacity(), readerList.capacity(), "Capacity mismatch in reconstructed list.");
                 assertEquals(writerList.size(), readerList.size(), "Size mismatch in reconstructed list.");
@@ -616,13 +618,13 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
     void testWriteAndReadBack(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
         // Create a writer LongList
-        try (final LongList writerList = writerSupplier.supplier().get()) {
+        try (final LongList writerList = writerFactory.createInstance().get()) {
             // Populate the long list with initial values and validate its contents
             populateList(writerList);
             checkData(writerList);
@@ -630,8 +632,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testWriteAndReadBack_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
             // Check that the file size matches the expected data size
@@ -643,8 +645,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                             + (FILE_HEADER_SIZE_V2 + (Long.BYTES * (SAMPLE_SIZE)))
                             + "]");
 
-            // Create reader long list, i.e. reconstruct the long list from file
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate the reconstructed list's attributes
                 assertEquals(writerList.capacity(), readerList.capacity(), "Capacity mismatch in reconstructed list.");
                 assertEquals(writerList.size(), readerList.size(), "Size mismatch in reconstructed list.");
@@ -659,13 +661,13 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
     void testWriteAndReadBackBigIndex(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
         // Create a writer LongList
-        try (final LongList writerList = writerSupplier.supplier().get()) {
+        try (final LongList writerList = writerFactory.createInstance().get()) {
             // Use a large index to test beyond the typical Integer.MAX_VALUE range
             long bigIndex = Integer.MAX_VALUE + 1L;
             writerList.updateValidRange(bigIndex, bigIndex);
@@ -677,12 +679,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testWriteAndReadBackBigIndex_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
-            // Read the long list back from the file using the specified reader implementation
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate that the large index is correctly reconstructed
                 assertEquals(1, readerList.get(bigIndex), "Value mismatch for the large index after reconstruction.");
             } finally {
@@ -695,13 +697,13 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
     void testCustomNumberOfLongs(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
         // Create a writer LongList
-        try (final AbstractLongList<?> writerList = writerSupplier.supplier().get()) {
+        try (final AbstractLongList<?> writerList = writerFactory.createInstance().get()) {
             // Populate the long list with initial values and validate its contents
             populateList(writerList);
             checkData(writerList);
@@ -709,12 +711,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testCustomNumberOfLongs_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
-            // Reconstruct the long list from the file using the specified reader implementation
-            try (final AbstractLongList<?> readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final AbstractLongList<?> readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate that the number of chunks matches between the writer and reader lists
                 assertEquals(
                         writerList.dataCopy().size(),
@@ -730,8 +732,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
     void testShrinkListMinValidIndex(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
@@ -764,8 +766,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the modified long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testShrinkListMinValidIndex_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
             // If using LongListDisk, verify that the file size reflects the shrink operation
@@ -776,8 +778,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                         "File size after shrinking does not match expected reduction.");
             }
 
-            // Reconstruct the long list from the file using the specified reader implementation
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate that all entries in the reconstructed list match the writer list
                 for (int i = 0; i < SAMPLE_SIZE; i++) {
                     assertEquals(
@@ -795,8 +797,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
     void testShrinkListMaxValidIndex(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
@@ -830,8 +832,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the modified long list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testShrinkListMaxValidIndex_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
             // If using LongListDisk, verify that the file size reflects the shrink operation
@@ -842,8 +844,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                         "File size after shrinking does not match expected reduction.");
             }
 
-            // Reconstruct the long list from the file using the specified reader implementation
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate that all entries in the reconstructed list match the writer list
                 for (int i = 0; i < SAMPLE_SIZE; i++) {
                     assertEquals(
@@ -859,25 +861,25 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     /**
-     * Takes a stream of (writerSupplier, firstReader) pairs,
-     * and for each pair, returns multiple (writerSupplier, firstReader, secondReader) triples.
+     * Takes a stream of (writerFactory, readerFactory) pairs,
+     * and for each pair, returns multiple (writerFactory, readerFactory, secondReaderFactory) triples.
      *
-     * @param writerReaderPairs a stream of (writerSupplier, firstReader) pairs
-     * @return a stream of argument triples (writerSupplier, firstReader, secondReader)
+     * @param writerReaderPairs a stream of (writerFactory, readerFactory) pairs
+     * @return a stream of argument triples (writerFactory, readerFactory, secondReaderFactory)
      */
     protected static Stream<Arguments> longListWriterSecondReaderPairsProviderBase(
             final Stream<Arguments> writerReaderPairs) {
-        // “Expand” each (writerSupplier, firstReader) into (writerSupplier, firstReader, secondReader).
+        // “Expand” each (writerFactory, readerFactory) into (writerFactory, readerFactory, secondReaderFactory).
         return writerReaderPairs.flatMap(pair -> {
-            // The existing pair is [writerSupplier, firstReader].
-            final Object writerSupplier = pair.get()[0];
-            final Object firstReader   = pair.get()[1];
+            // The existing pair is [writerFactory, readerFactory].
+            final Object writerFactory = pair.get()[0];
+            final Object readerFactory   = pair.get()[1];
 
             // Now, produce multiple outputs, each with a different secondReader:
             return Stream.of(
-                    Arguments.of(writerSupplier, firstReader, heapReader),
-                    Arguments.of(writerSupplier, firstReader, offHeapReader),
-                    Arguments.of(writerSupplier, firstReader, diskReader)
+                    Arguments.of(writerFactory, readerFactory, heapReaderFactory),
+                    Arguments.of(writerFactory, readerFactory, offHeapReaderFactory),
+                    Arguments.of(writerFactory, readerFactory, diskReaderFactory)
             );
         });
     }
@@ -885,9 +887,9 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, First Reader={1}, Second Reader={2}")
     @MethodSource("longListWriterSecondReaderPairsProvider")
     void testUpdateListCreatedFromSnapshotPersistAndVerify(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
-            NamedReader secondReader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
+            final LongListReaderFactory secondReaderFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
@@ -906,13 +908,13 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the writer list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testUpdateListCreatedFromSnapshotPersistAndVerify_write_%s_read_back_%s_read_again_%s.ll",
-                    writerSupplier,
-                    reader,
-                    secondReader);
+                    writerFactory,
+                    readerFactory,
+                    secondReaderFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
             // Reconstruct the list from the file using the first reader implementation
-            try (final LongList longListFromFile = reader.reader().apply(longListFile, CONFIGURATION)) {
+            try (final LongList longListFromFile = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
 
                 // Validate that the reconstructed list matches the writer list
                 for (int i = 0; i < longListFromFile.size(); i++) {
@@ -927,7 +929,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 longListFromFile.writeToFile(longListFile);
 
                 // Reconstruct the list again using the second reader implementation
-                try (final LongList longListFromFile2 = secondReader.reader().apply(longListFile, CONFIGURATION)) {
+                try (final LongList longListFromFile2 = secondReaderFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
 
                     // Validate that the second reconstruction matches the writer list
                     for (int i = 0; i < longListFromFile2.size(); i++) {
@@ -944,9 +946,9 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, First Reader={1}, Second Reader={2}")
     @MethodSource("longListWriterSecondReaderPairsProvider")
     void testUpdateMinToTheLowerEnd(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
-            NamedReader secondReader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
+            final LongListReaderFactory secondReaderFactory,
             @TempDir final Path tempDir)
             throws IOException {
 
@@ -969,12 +971,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             // Write the updated list to a file and verify its existence
             final String TEMP_FILE_NAME = String.format(
                     "testUpdateMinToTheLowerEnd_write_%s_read_back_%s.ll",
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
             // Reconstruct the list from the file using the first reader
-            try (final LongList halfEmptyList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            try (final LongList halfEmptyList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
 
                 // Verify that long list is half-empty
                 checkEmptyUpToIndex(halfEmptyList, newMinValidIndex);
@@ -1008,12 +1010,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 // Write the updated list to a new file and verify its existence
                 final String TEMP_FILE_NAME_2 = String.format(
                         "testUpdateMinToTheLowerEnd_2_write_%s_read_back_%s.ll",
-                        reader,
-                        secondReader);
+                        readerFactory,
+                        secondReaderFactory);
                 final Path longListFile2 = writeLongListToFileAndVerify(halfEmptyList, TEMP_FILE_NAME_2, tempDir);
 
                 // Reconstruct the list again using the second reader
-                try (final LongList zeroMinValidIndexList = secondReader.reader().apply(longListFile2, CONFIGURATION)) {
+                try (final LongList zeroMinValidIndexList = secondReaderFactory.createFromFile().apply(longListFile2, CONFIGURATION)) {
                     // Verify that indices up to the new offset are empty
                     checkEmptyUpToIndex(zeroMinValidIndexList, belowMinValidIndex2 - INDEX_OFFSET);
 
@@ -1042,25 +1044,25 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * @param writerReaderPairs a stream of writer-reader pairs
      * @return a stream of arguments combining writer-reader pairs with range parameters
      */
-    protected static Stream<Arguments> longListWriterReaderRangePairsProviderBase(Stream<Arguments> writerReaderPairs) {
+    protected static Stream<Arguments> longListWriterReaderRangePairsProviderBase(final Stream<Arguments> writerReaderPairs) {
         return writerReaderPairs.flatMap(pair -> {
-            Object writerSupplier = pair.get()[0];
-            Object readerFunction = pair.get()[1];
+            Object writerFactory = pair.get()[0];
+            Object readerFactory = pair.get()[1];
 
             return Stream.of(
-                    // writerSupplier, readerFunction, startIndex, endIndex, numLongsPerChunk, maxLongs
-                    Arguments.of(writerSupplier, readerFunction, 1, 1, 100, 1000),
-                    Arguments.of(writerSupplier, readerFunction, 1, 5, 100, 1000),
-                    Arguments.of(writerSupplier, readerFunction, 150, 150, 100, 1000),
-                    Arguments.of(writerSupplier, readerFunction, 150, 155, 100, 1000));
+                    // writerFactory, readerFactory, startIndex, endIndex, numLongsPerChunk, maxLongs
+                    Arguments.of(writerFactory, readerFactory, 1, 1, 100, 1000),
+                    Arguments.of(writerFactory, readerFactory, 1, 5, 100, 1000),
+                    Arguments.of(writerFactory, readerFactory, 150, 150, 100, 1000),
+                    Arguments.of(writerFactory, readerFactory, 150, 155, 100, 1000));
         });
     }
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, startIndex={2}, endIndex={3}, numLongsPerChunk={4}, maxLongs={5}")
     @MethodSource("longListWriterReaderRangePairsProvider")
     void testWriteReadRangeElement(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             final int startIndex,
             final int endIndex,
             final int numLongsPerChunk,
@@ -1085,12 +1087,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                     endIndex,
                     numLongsPerChunk,
                     maxLongs,
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
             // Reconstruct the long list from the file using the reader
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate that the reconstructed list has the same capacity and size
                 assertEquals(writerList.capacity(), readerList.capacity(), "Capacity mismatch in reconstructed list.");
                 assertEquals(writerList.size(), readerList.size(), "Size mismatch in reconstructed list.");
@@ -1113,29 +1115,29 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * @return a stream of arguments combining writer-reader pairs with chunk offset parameters
      */
     protected static Stream<Arguments> longListWriterReaderOffsetPairsProviderBase(
-            Stream<Arguments> writerReaderPairs) {
+            final Stream<Arguments> writerReaderPairs) {
         return writerReaderPairs.flatMap(pair -> {
-            Object writerSupplier = pair.get()[0];
-            Object readerFunction = pair.get()[1];
+            Object writerFactory = pair.get()[0];
+            Object readerFactory = pair.get()[1];
 
             return Stream.of(
-                    // writerSupplier, readerFunction, chunkOffset
-                    Arguments.of(writerSupplier, readerFunction, 0),
-                    Arguments.of(writerSupplier, readerFunction, 5));
+                    // writerFactory, readerFactory, chunkOffset
+                    Arguments.of(writerFactory, readerFactory, 0),
+                    Arguments.of(writerFactory, readerFactory, 5));
         });
     }
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairsProvider")
     void testCreateHalfEmptyLongListInMemoryReadBack(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             final int chunkOffset,
             @TempDir final Path tempDir)
             throws IOException {
 
         // Create a writer LongList
-        try (final LongList writerList = writerSupplier.supplier().get()) {
+        try (final LongList writerList = writerFactory.createInstance().get()) {
             // Populate the list with sample data and validate its initial state
             populateList(writerList);
             checkData(writerList);
@@ -1148,12 +1150,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             final String TEMP_FILE_NAME = String.format(
                     "testCreateHalfEmptyLongListInMemoryReadBack_%d_write_%s_read_back_%s.ll",
                     chunkOffset,
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
-            // Reconstruct the LongList from the file using the supplied reader
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Verify the reconstructed list retains the expected capacity and size
                 assertEquals(writerList.capacity(), readerList.capacity(), "Capacity mismatch in reconstructed list.");
                 assertEquals(writerList.size(), readerList.size(), "Size mismatch in reconstructed list.");
@@ -1177,26 +1179,26 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * @return a stream of arguments combining writer-reader pairs with chunk offset parameters
      */
     protected static Stream<Arguments> longListWriterReaderOffsetPairs2ProviderBase(
-            Stream<Arguments> writerReaderPairs) {
+            final Stream<Arguments> writerReaderPairs) {
         return writerReaderPairs.flatMap(pair -> {
-            Object writerSupplier = pair.get()[0];
-            Object readerFunction = pair.get()[1];
+            Object writerFactory = pair.get()[0];
+            Object readerFactory = pair.get()[1];
 
             return Stream.of(
-                    // writerSupplier, readerFunction, chunkOffset
-                    Arguments.of(writerSupplier, readerFunction, 0),
-                    Arguments.of(writerSupplier, readerFunction, 1),
-                    Arguments.of(writerSupplier, readerFunction, 5_000),
-                    Arguments.of(writerSupplier, readerFunction, 9_999),
-                    Arguments.of(writerSupplier, readerFunction, 10_000));
+                    // writerFactory, readerFactory, chunkOffset
+                    Arguments.of(writerFactory, readerFactory, 0),
+                    Arguments.of(writerFactory, readerFactory, 1),
+                    Arguments.of(writerFactory, readerFactory, 5_000),
+                    Arguments.of(writerFactory, readerFactory, 9_999),
+                    Arguments.of(writerFactory, readerFactory, 10_000));
         });
     }
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairs2Provider")
     void testPersistListWithNonZeroMinValidIndex(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             final int chunkOffset,
             @TempDir final Path tempDir)
             throws IOException {
@@ -1220,12 +1222,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             final String TEMP_FILE_NAME = String.format(
                     "testPersistListWithNonZeroMinValidIndex_%d_write_%s_read_back_%s.ll",
                     chunkOffset,
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
-            // Reconstruct the LongList from the file using the supplied reader
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate the reconstructed list's capacity and size
                 assertEquals(writerList.capacity(), readerList.capacity(), "Capacity mismatch in reconstructed list.");
                 assertEquals(writerList.size(), readerList.size(), "Size mismatch in reconstructed list.");
@@ -1247,8 +1249,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairs2Provider")
     void testPersistShrunkList(
-            NamedLongListSupplier writerSupplier,
-            NamedReader reader,
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
             final int chunkOffset,
             @TempDir final Path tempDir)
             throws IOException {
@@ -1272,12 +1274,12 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             final String TEMP_FILE_NAME = String.format(
                     "testPersistShrunkList_%d_write_%s_read_back_%s.ll",
                     chunkOffset,
-                    writerSupplier,
-                    reader);
+                    writerFactory,
+                    readerFactory);
             final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
 
-            // Reconstruct the LongList from the file using the supplied reader
-            try (final LongList readerList = reader.reader().apply(longListFile, CONFIGURATION)) {
+            // Reconstruct the LongList from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Validate the reconstructed list's capacity and size
                 assertEquals(writerList.capacity(), readerList.capacity(), "Capacity mismatch in reconstructed list.");
                 assertEquals(writerList.size(), readerList.size(), "Size mismatch in reconstructed list.");
