@@ -126,7 +126,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.config.internal;
     exports com.swirlds.platform.roster;
 
-    requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.base;
