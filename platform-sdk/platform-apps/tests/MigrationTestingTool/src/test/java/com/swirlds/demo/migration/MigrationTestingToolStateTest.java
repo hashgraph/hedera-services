@@ -51,8 +51,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-public class MigrationTestingToolStateTest {
-    private static MigrationTestingToolState state;
+class MigrationTestingToolStateTest {
+    private MigrationTestingToolState state;
     private Random random;
     private PlatformStateModifier platformStateModifier;
     private Round round;

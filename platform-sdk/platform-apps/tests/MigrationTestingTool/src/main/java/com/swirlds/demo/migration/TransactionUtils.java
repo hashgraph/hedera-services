@@ -30,7 +30,10 @@ public class TransactionUtils {
      * Parse a {@link MigrationTestingToolTransaction} from a {@link Bytes}.
      */
     public static @NonNull MigrationTestingToolTransaction parseTransaction(@NonNull final Bytes bytes) {
-        final SerializableDataInputStream in = new SerializableDataInputStream(bytes.toInputStream());
+        // Remove the first byte, which is marker added to distinguish application transactions from system ones in
+        // TransactionGenerator
+        final Bytes slicedBytes = bytes.slice(1, bytes.length() - 1);
+        final SerializableDataInputStream in = new SerializableDataInputStream(slicedBytes.toInputStream());
 
         try {
             return in.readSerializable(false, MigrationTestingToolTransaction::new);
@@ -40,14 +43,7 @@ public class TransactionUtils {
     }
 
     public static boolean isSystemTransaction(@NonNull final Bytes bytes) {
-        final SerializableDataInputStream in = new SerializableDataInputStream(bytes.toInputStream());
-
-        try {
-            MigrationTestingToolTransaction transaction =
-                    in.readSerializable(false, MigrationTestingToolTransaction::new);
-            return false;
-        } catch (final IOException e) {
-            return true;
-        }
+        byte firstByte = bytes.getByte(0);
+        return firstByte != 1;
     }
 }
