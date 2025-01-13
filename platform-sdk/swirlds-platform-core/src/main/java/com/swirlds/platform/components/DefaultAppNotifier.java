@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
@@ -84,5 +86,10 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
     @Override
     public void sendIssNotification(@NonNull final IssNotification notification) {
         notificationEngine.dispatch(IssListener.class, notification);
+
+        if (IssType.CATASTROPHIC_ISS == notification.getIssType() || IssType.SELF_ISS == notification.getIssType()) {
+            // Forward notification to application
+            notificationEngine.dispatch(AsyncFatalIssListener.class, notification);
+        }
     }
 }

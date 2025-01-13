@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 
 package com.hedera.services.bdd.spec.utilops.embedded;
 
-import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
@@ -32,17 +30,23 @@ import java.util.function.Consumer;
  * Allows the test author to mutate the node staking info.
  */
 public class MutateStakingInfosOp extends UtilOp {
-    private final Consumer<WritableKVState<EntityNumber, StakingNodeInfo>> mutation;
+    private final String node;
+    private final Consumer<StakingNodeInfo.Builder> mutation;
 
-    public MutateStakingInfosOp(@NonNull final Consumer<WritableKVState<EntityNumber, StakingNodeInfo>> mutation) {
+    public MutateStakingInfosOp(@NonNull final String node, @NonNull final Consumer<StakingNodeInfo.Builder> mutation) {
+        this.node = requireNonNull(node);
         this.mutation = requireNonNull(mutation);
     }
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         requireNonNull(spec);
-        final var state = spec.embeddedStateOrThrow();
-        mutation.accept(state.getWritableStates(TokenService.NAME).get(STAKING_INFO_KEY));
+        final var nodes = spec.embeddedStakingInfosOrThrow();
+        final var targetId = toPbj(TxnUtils.asNodeId(node, spec));
+        final var node = requireNonNull(nodes.get(targetId));
+        final var builder = node.copyBuilder();
+        mutation.accept(builder);
+        nodes.put(targetId, builder.build());
         spec.commitEmbeddedState();
         return false;
     }
