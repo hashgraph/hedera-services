@@ -26,6 +26,8 @@ import java.io.UncheckedIOException;
  * Utility methods for migration testing tool transactions
  */
 public class TransactionUtils {
+    private static final byte APPLICATION_TRANSACTION_MARKER = 1;
+
     /**
      * Parse a {@link MigrationTestingToolTransaction} from a {@link Bytes}.
      */
@@ -43,6 +45,6 @@ public class TransactionUtils {
     }
 
     public static boolean isSystemTransaction(@NonNull final Bytes bytes) {
-        return bytes.getByte(0) != 1;
+        return bytes.getByte(0) != APPLICATION_TRANSACTION_MARKER;
     }
 }
