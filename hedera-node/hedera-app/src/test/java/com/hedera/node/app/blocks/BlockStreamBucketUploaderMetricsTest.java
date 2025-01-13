@@ -123,6 +123,36 @@ class BlockStreamBucketUploaderMetricsTest {
     }
 
     @Test
+    void testIncrementFailedUploads() {
+        final var providers = List.of("aws", "gcp");
+        for (final var provider : providers) {
+            blockStreamBucketUploaderMetrics.incrementFailedUploads(provider);
+        }
+
+        for (final var provider : providers) {
+            final var metricCategory = String.format(
+                    BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, provider);
+            final var metric = metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOADS_FAILURE);
+            assertEquals(1L, metric.get(Metric.ValueType.VALUE));
+        }
+    }
+
+    @Test
+    void testIncrementHashMismatches() {
+        final var providers = List.of("aws", "gcp");
+        for (final var provider : providers) {
+            blockStreamBucketUploaderMetrics.incrementHashMismatchedBlocks(provider);
+        }
+
+        for (final var provider : providers) {
+            final var metricCategory = String.format(
+                    BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, provider);
+            final var metric = metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.HASH_MISMATCH);
+            assertEquals(1L, metric.get(Metric.ValueType.VALUE));
+        }
+    }
+
+    @Test
     void testIncrementSuccessfulUploadsWithInvalidProvider() {
         final var invalidProvider = "invalid";
         blockStreamBucketUploaderMetrics.incrementSuccessfulUploads(invalidProvider);
@@ -131,6 +161,36 @@ class BlockStreamBucketUploaderMetricsTest {
                 BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, invalidProvider);
         final var metric = metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOADS_SUCCESS);
         assertNull(metric);
-        assertThat(logCaptor.warnLogs()).contains("Bucket provider " + invalidProvider + " not found");
+        assertThat(logCaptor.warnLogs())
+                .contains("Bucket provider " + invalidProvider + " not found for "
+                        + BlockStreamBucketUploaderMetrics.UPLOADS_SUCCESS + " metric");
+    }
+
+    @Test
+    void testIncrementFailedUploadsWithInvalidProvider() {
+        final var invalidProvider = "invalid";
+        blockStreamBucketUploaderMetrics.incrementFailedUploads(invalidProvider);
+
+        final var metricCategory = String.format(
+                BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, invalidProvider);
+        final var metric = metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.UPLOADS_FAILURE);
+        assertNull(metric);
+        assertThat(logCaptor.warnLogs())
+                .contains("Bucket provider " + invalidProvider + " not found for "
+                        + BlockStreamBucketUploaderMetrics.UPLOADS_FAILURE + " metric");
+    }
+
+    @Test
+    void testIncrementHashMismatchesWithInvalidProvider() {
+        final var invalidProvider = "invalid";
+        blockStreamBucketUploaderMetrics.incrementHashMismatchedBlocks(invalidProvider);
+
+        final var metricCategory = String.format(
+                BlockStreamBucketUploaderMetrics.PER_PROVIDER_PER_NODE_METRIC_PREFIX, SELF_NODE_ID, invalidProvider);
+        final var metric = metrics.getMetric(metricCategory, BlockStreamBucketUploaderMetrics.HASH_MISMATCH);
+        assertNull(metric);
+        assertThat(logCaptor.warnLogs())
+                .contains("Bucket provider " + invalidProvider + " not found for "
+                        + BlockStreamBucketUploaderMetrics.HASH_MISMATCH + " metric");
     }
 }

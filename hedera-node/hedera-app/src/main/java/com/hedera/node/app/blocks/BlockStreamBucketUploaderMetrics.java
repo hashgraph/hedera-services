@@ -45,12 +45,18 @@ public class BlockStreamBucketUploaderMetrics {
             "Current number of blocks in hashmismatch directory on disk for the node";
     public static final String UPLOADS_SUCCESS = "uploads.success";
     private static final String UPLOADS_SUCCESS_DESC = "Number of successful block uploads per provider per node";
+    public static final String UPLOADS_FAILURE = "uploads.failure";
+    private static final String UPLOADS_FAILURE_DESC = "Number of failed block uploads per provider per node";
+    public static final String HASH_MISMATCH = "hash.mismatch";
+    private static final String HASH_MISMATCH_DESC = "Number of hash validation failures per provider per node";
 
     private final LongGauge blocksRetained;
     private final LongGauge blocksUploaded;
     private final LongGauge blocksHashMismatch;
 
     private final Map<String, Counter> successfulUploads = new HashMap<>();
+    private final Map<String, Counter> failedUploads = new HashMap<>();
+    private final Map<String, Counter> hashMismatches = new HashMap<>();
 
     /**
      * Constructor for the BlockStreamBucketMetrics.
@@ -61,23 +67,31 @@ public class BlockStreamBucketUploaderMetrics {
     public BlockStreamBucketUploaderMetrics(@NonNull final Metrics metrics, @NodeSelfId final long selfNodeId) {
         List<String> bucketProviders = List.of("aws", "gcp"); // TODO: get providers from config
 
+        final var perNodeMetricCategory = String.format(PER_NODE_METRIC_PREFIX, selfNodeId);
         blocksRetained = metrics.getOrCreate(
-                new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_RETAINED)
-                        .withDescription(BLOCKS_RETAINED_DESC));
+                new LongGauge.Config(perNodeMetricCategory, BLOCKS_RETAINED).withDescription(BLOCKS_RETAINED_DESC));
         blocksUploaded = metrics.getOrCreate(
-                new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_UPLOADED)
-                        .withDescription(BLOCKS_UPLOADED_DESC));
-        blocksHashMismatch = metrics.getOrCreate(
-                new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_HASH_MISMATCH)
-                        .withDescription(BLOCKS_HASH_MISMATCH_DESC));
+                new LongGauge.Config(perNodeMetricCategory, BLOCKS_UPLOADED).withDescription(BLOCKS_UPLOADED_DESC));
+        blocksHashMismatch = metrics.getOrCreate(new LongGauge.Config(perNodeMetricCategory, BLOCKS_HASH_MISMATCH)
+                .withDescription(BLOCKS_HASH_MISMATCH_DESC));
 
         for (final var provider : bucketProviders) {
+            final var perProviderPerNodeMetricCategory =
+                    String.format(PER_PROVIDER_PER_NODE_METRIC_PREFIX, selfNodeId, provider);
             successfulUploads.put(
                     provider,
-                    metrics.getOrCreate(new Counter.Config(
-                                    String.format(PER_PROVIDER_PER_NODE_METRIC_PREFIX, selfNodeId, provider),
-                                    UPLOADS_SUCCESS)
+                    metrics.getOrCreate(new Counter.Config(perProviderPerNodeMetricCategory, UPLOADS_SUCCESS)
                             .withDescription(UPLOADS_SUCCESS_DESC)));
+
+            failedUploads.put(
+                    provider,
+                    metrics.getOrCreate(new Counter.Config(perProviderPerNodeMetricCategory, UPLOADS_FAILURE)
+                            .withDescription(UPLOADS_FAILURE_DESC)));
+
+            hashMismatches.put(
+                    provider,
+                    metrics.getOrCreate(new Counter.Config(perProviderPerNodeMetricCategory, HASH_MISMATCH)
+                            .withDescription(HASH_MISMATCH_DESC)));
         }
     }
 
@@ -127,9 +141,35 @@ public class BlockStreamBucketUploaderMetrics {
      */
     public void incrementSuccessfulUploads(final String provider) {
         if (!successfulUploads.containsKey(provider)) {
-            log.warn("Bucket provider {} not found", provider);
+            log.warn("Bucket provider {} not found for {} metric", provider, UPLOADS_SUCCESS);
         } else {
             successfulUploads.get(provider).increment();
+        }
+    }
+
+    /**
+     * Update the metric for the number of failed block uploads per bucket provider.
+     *
+     * @param provider the provider of the bucket
+     */
+    public void incrementFailedUploads(final String provider) {
+        if (!failedUploads.containsKey(provider)) {
+            log.warn("Bucket provider {} not found for {} metric", provider, UPLOADS_FAILURE);
+        } else {
+            failedUploads.get(provider).increment();
+        }
+    }
+
+    /**
+     * Update the metric for the number of hash mismatched blocks per bucket provider.
+     *
+     * @param provider the provider of the bucket
+     */
+    public void incrementHashMismatchedBlocks(final String provider) {
+        if (!hashMismatches.containsKey(provider)) {
+            log.warn("Bucket provider {} not found for {} metric", provider, HASH_MISMATCH);
+        } else {
+            hashMismatches.get(provider).increment();
         }
     }
 }
