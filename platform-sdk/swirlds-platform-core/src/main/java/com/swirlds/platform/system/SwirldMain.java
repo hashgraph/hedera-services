@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
@@ -99,4 +101,14 @@ public interface SwirldMain<T extends PlatformMerkleStateRoot> extends Runnable 
      */
     @NonNull
     SoftwareVersion getSoftwareVersion();
+
+    /**
+     * Encodes a system transaction to {@link Bytes} representation of a {@link com.hedera.hapi.node.base.Transaction}.
+     *
+     * @param transaction the {@link StateSignatureTransaction} to encode
+     * @return {@link Bytes} representation of the transaction
+     */
+    default Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        throw new IllegalStateException("Invoke the method on the appropriate SwirldMain implementation!");
+    }
 }

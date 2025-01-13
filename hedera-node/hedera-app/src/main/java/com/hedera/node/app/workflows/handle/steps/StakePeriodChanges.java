@@ -35,6 +35,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -111,6 +112,8 @@ public class StakePeriodChanges {
                 stack.rollbackFullStack();
             }
             final var config = tokenContext.configuration();
+            final var useRosterLifecycle =
+                    config.getConfigData(AddressBookConfig.class).useRosterLifecycle();
             try {
                 final var nodeStore = newWritableNodeStore(stack, config);
                 final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
@@ -119,7 +122,7 @@ public class StakePeriodChanges {
                         .weight(weight)
                         .build());
                 final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
-                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates);
+                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates, useRosterLifecycle);
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }

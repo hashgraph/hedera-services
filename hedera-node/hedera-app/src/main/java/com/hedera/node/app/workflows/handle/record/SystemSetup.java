@@ -135,7 +135,8 @@ public class SystemSetup {
      */
     public void doGenesisSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
-        fileService.createSystemEntities(systemContext);
+        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+        fileService.createSystemEntities(systemContext, nodeStore);
     }
 
     /**
