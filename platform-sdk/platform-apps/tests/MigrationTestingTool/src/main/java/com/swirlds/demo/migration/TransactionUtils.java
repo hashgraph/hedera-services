@@ -43,7 +43,6 @@ public class TransactionUtils {
     }
 
     public static boolean isSystemTransaction(@NonNull final Bytes bytes) {
-        byte firstByte = bytes.getByte(0);
-        return firstByte != 1;
+        return bytes.getByte(0) != 1;
     }
 }
