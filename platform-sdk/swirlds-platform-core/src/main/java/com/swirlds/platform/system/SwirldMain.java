@@ -47,7 +47,7 @@ public interface SwirldMain<T extends PlatformMerkleStateRoot> extends Runnable 
      * </p>
      *
      * <p>
-     * Any changes necessary to initialize {@link StateEventHandler} should be made in
+     * Any changes necessary to initialize {@link PlatformMerkleStateRoot} should be made in
      * {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
      * </p>
      *

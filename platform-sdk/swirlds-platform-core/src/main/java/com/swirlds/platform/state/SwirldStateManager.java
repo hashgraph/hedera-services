@@ -27,13 +27,13 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.metrics.StateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.uptime.UptimeTracker;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -41,14 +41,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * Manages all interactions with the state object required by {@link StateEventHandler}.
+ * Manages all interactions with the state object required by {@link StateLifecycles}.
  */
 public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
-     * Stats relevant to StateEventHandler operations.
+     * Stats relevant to the state operations.
      */
-    private final SwirldStateMetrics stats;
+    private final StateMetrics stats;
 
     /**
      * reference to the state that reflects all known consensus transactions
@@ -85,7 +85,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param selfId                this node's id
      * @param statusActionSubmitter enables submitting platform status actions
      * @param softwareVersion       the current software version
-     * @param stateLifecycles
+     * @param stateLifecycles       the state lifecycles
      */
     public SwirldStateManager(
             @NonNull final PlatformContext platformContext,
@@ -100,7 +100,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
         requireNonNull(stateLifecycles);
 
         this.stateLifecycles = stateLifecycles;
-        this.stats = new SwirldStateMetrics(platformContext.getMetrics());
+        this.stats = new StateMetrics(platformContext.getMetrics());
         requireNonNull(statusActionSubmitter);
         this.softwareVersion = requireNonNull(softwareVersion);
         this.transactionHandler = new TransactionHandler(selfId, stats);
@@ -113,7 +113,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param state the initial state
      */
-    public void setInitialState(@NonNull PlatformMerkleStateRoot state) {
+    public void setInitialState(@NonNull final PlatformMerkleStateRoot state) {
         requireNonNull(state);
 
         state.throwIfDestroyed("state must not be destroyed");
@@ -131,7 +131,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking
-     * {@link StateEventHandler#handleConsensusRound(Round, Consumer<ScopedSystemTransaction<StateSignatureTransaction>>)}.
+     * {@link StateLifecycles#onHandleConsensusRound(Round, MerkleStateRoot, Consumer)} .
      *
      * @param round the round to handle
      */
@@ -142,7 +142,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
         transactionHandler.handleRound(round, stateLifecycles, state);
 
         // TODO update this logic to return the transactions from the callback consumer passed in
-        // state.getStateRoot().handleConsensusRound, when it is implemented
+        // stateLifecycles.onHandleConsensusRound, when it is implemented
         return extractFromRound(round, StateSignatureTransaction.class);
     }
 

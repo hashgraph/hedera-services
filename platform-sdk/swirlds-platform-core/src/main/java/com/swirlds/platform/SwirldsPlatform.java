@@ -76,7 +76,6 @@ import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
@@ -135,11 +134,6 @@ public class SwirldsPlatform implements Platform {
      * new state is created, before it is hashed.
      */
     private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
-
-    /**
-     * Handles all interaction with {@link StateEventHandler}
-     */
-    private final SwirldStateManager swirldStateManager;
 
     /**
      * For passing notifications between the platform and the application.
@@ -253,7 +247,10 @@ public class SwirldsPlatform implements Platform {
         initializeState(this, platformContext, initialState, stateLifecycles);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
-        swirldStateManager = blocks.swirldStateManager();
+        /**
+         * Handles all interaction with {@link StateLifecycles}
+         */
+        SwirldStateManager swirldStateManager = blocks.swirldStateManager();
         swirldStateManager.setInitialState(initialState.getState());
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();

@@ -73,7 +73,7 @@ public class ReconnectStateLoader {
      * @param latestImmutableStateNexus holds the latest immutable state
      * @param savedStateController      manages how states are saved
      * @param roster                    the current roster
-     * @param stateLifecycles
+     * @param stateLifecycles           state lifecycle event handler
      */
     public ReconnectStateLoader(
             @NonNull final Platform platform,
@@ -83,7 +83,7 @@ public class ReconnectStateLoader {
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final SavedStateController savedStateController,
             @NonNull final Roster roster,
-            @NonNull StateLifecycles stateLifecycles) {
+            @NonNull final StateLifecycles stateLifecycles) {
         this.platform = Objects.requireNonNull(platform);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.platformWiring = Objects.requireNonNull(platformWiring);
@@ -111,7 +111,7 @@ public class ReconnectStateLoader {
             final Hash reconnectHash = signedState.getState().getHash();
             SoftwareVersion creationSoftwareVersion =
                     signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
-            signedState.init(platform);
+            signedState.init(platformContext);
             stateLifecycles.onStateInitialized(
                     signedState.getState(), platform, InitTrigger.RECONNECT, creationSoftwareVersion);
 

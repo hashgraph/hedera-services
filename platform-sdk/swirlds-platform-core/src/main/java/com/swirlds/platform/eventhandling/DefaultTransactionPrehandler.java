@@ -103,7 +103,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
                 stateLifecycles.onPreHandle(event, latestImmutableState.get().getState(), NO_OP_CONSUMER);
             } catch (final Throwable t) {
                 logger.error(
-                        EXCEPTION.getMarker(), "error invoking StateEventHandler.preHandle() for event {}", event, t);
+                        EXCEPTION.getMarker(), "error invoking StateLifecycles.onPreHandle() for event {}", event, t);
             }
         } finally {
             event.signalPrehandleCompletion();
@@ -112,7 +112,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             preHandleTime.update(startTime, time.nanoTime());
         }
 
-        // TODO adapt this logic to read transactions directly from the callback passed in StateEventHandler.preHandle()
+        // TODO adapt this logic to read transactions directly from the callback passed in StateLifecycles.onOreHandle()
         // when
         // implemented
         return extractFromEvent(event, StateSignatureTransaction.class);

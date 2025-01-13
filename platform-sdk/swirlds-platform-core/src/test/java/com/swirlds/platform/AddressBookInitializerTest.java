@@ -448,7 +448,6 @@ class AddressBookInitializerTest {
      * Creates a mock swirld state with the given scenario.
      *
      * @param scenario The scenario to load.
-     * @return A StateEventHandler which behaves according to the input scenario.
      */
     private void configureUpdateWeightForStateLifecycles(int scenario) {
 

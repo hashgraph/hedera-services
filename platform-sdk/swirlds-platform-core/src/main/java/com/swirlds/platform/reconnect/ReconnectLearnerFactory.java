@@ -22,7 +22,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.StateLifecycles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -34,7 +33,6 @@ public class ReconnectLearnerFactory {
     private final Roster roster;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
-    private final StateLifecycles stateLifecycles;
     private final ThreadManager threadManager;
     private final PlatformContext platformContext;
 
@@ -50,14 +48,12 @@ public class ReconnectLearnerFactory {
             @NonNull final ThreadManager threadManager,
             @NonNull final Roster roster,
             @NonNull final Duration reconnectSocketTimeout,
-            @NonNull final ReconnectMetrics statistics,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final ReconnectMetrics statistics) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.roster = Objects.requireNonNull(roster);
         this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.statistics = Objects.requireNonNull(statistics);
-        this.stateLifecycles = stateLifecycles;
     }
 
     /**
@@ -69,13 +65,6 @@ public class ReconnectLearnerFactory {
      */
     public ReconnectLearner create(final Connection conn, final PlatformMerkleStateRoot workingState) {
         return new ReconnectLearner(
-                platformContext,
-                threadManager,
-                conn,
-                roster,
-                workingState,
-                reconnectSocketTimeout,
-                statistics,
-                stateLifecycles);
+                platformContext, threadManager, conn, roster, workingState, reconnectSocketTimeout, statistics);
     }
 }

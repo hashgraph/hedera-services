@@ -40,7 +40,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -107,9 +106,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
      */
     private final boolean waitForPrehandle;
 
-    @NonNull
-    private final StateLifecycles stateLifecycles;
-
     /**
      * Constructor
      *
@@ -122,8 +118,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
@@ -137,7 +132,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
         this.handlerMetrics = new RoundHandlingMetrics(platformContext);
 
         previousRoundLegacyRunningEventHash = platformContext.getCryptography().getNullHash();
-        this.stateLifecycles = stateLifecycles;
 
         final PlatformSchedulersConfig schedulersConfig =
                 platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
@@ -214,7 +208,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
             return createSignedState(consensusRound, systemTransactions);
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
+            logger.error(EXCEPTION.getMarker(), "onHandleConsensusRound interrupted");
             Thread.currentThread().interrupt();
 
             return null;

@@ -29,7 +29,6 @@ import com.swirlds.platform.state.service.SnapshotPlatformStateAccessor;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -40,9 +39,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 
 /**
- * An implementation of {@link StateEventHandler} and {@link State}. The Hashgraph Platform
+ * An implementation of {@link State}. The Hashgraph Platform
  * communicates with the application through {@link SwirldMain} and {@link
- * StateEventHandler}. The Hedera application, after startup, only needs the ability to get {@link
+ * StateLifecycles}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
  *
  * <p>Among {@link MerkleStateRoot}'s child nodes are the various {@link

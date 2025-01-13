@@ -728,7 +728,7 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         state.throwIfImmutable();
         if (!initialized.get()) {
-            throw new IllegalStateException("handleConsensusRound() called before init()");
+            throw new IllegalStateException("onHandleConsensusRound() called before init()");
         }
         delay(state);
         updateTransactionCounters(state);
@@ -771,7 +771,7 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         } catch (final InterruptedException e) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
-                    "handleConsensusRound Interrupted [ nodeId = {}, round = {} ]. "
+                    "onHandleConsensusRound Interrupted [ nodeId = {}, round = {} ]. "
                             + "This should happen only during a reconnect",
                     platform.getSelfId().id(),
                     roundNum);

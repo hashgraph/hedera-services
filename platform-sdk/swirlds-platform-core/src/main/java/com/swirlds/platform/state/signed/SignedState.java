@@ -43,7 +43,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -214,8 +213,7 @@ public class SignedState implements SignedStateInfo {
         this.pcesRound = pcesRound;
     }
 
-    public void init(@NonNull Platform platform) {
-        final PlatformContext platformContext = platform.getContext();
+    public void init(@NonNull PlatformContext platformContext) {
         state.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
     }
 

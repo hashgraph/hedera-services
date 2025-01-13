@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateToDisk;
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -174,8 +173,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        FAKE_MERKLE_STATE_LIFECYCLES)
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         assertNull(loadedState);
@@ -204,8 +202,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        FAKE_MERKLE_STATE_LIFECYCLES)
+                        new BasicSoftwareVersion(1))
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -238,8 +235,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        FAKE_MERKLE_STATE_LIFECYCLES)
+                        new BasicSoftwareVersion(1))
                 .get());
     }
 
@@ -284,8 +280,7 @@ public class StartupStateUtilsTests {
                         selfId,
                         mainClassName,
                         swirldName,
-                        new BasicSoftwareVersion(1),
-                        FAKE_MERKLE_STATE_LIFECYCLES)
+                        new BasicSoftwareVersion(1))
                 .getNullable();
 
         if (latestUncorruptedState != null) {

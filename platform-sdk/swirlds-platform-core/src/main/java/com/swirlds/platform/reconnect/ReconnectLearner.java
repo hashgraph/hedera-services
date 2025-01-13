@@ -31,7 +31,6 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -63,9 +62,6 @@ public class ReconnectLearner {
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
 
-    @NonNull
-    private final StateLifecycles stateLifecycles;
-
     private SigSet sigSet;
     private final PlatformContext platformContext;
     /**
@@ -96,9 +92,7 @@ public class ReconnectLearner {
             @NonNull final Roster roster,
             @NonNull final PlatformMerkleStateRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
-            @NonNull final ReconnectMetrics statistics,
-            @NonNull final StateLifecycles stateLifecycles) {
-        this.stateLifecycles = stateLifecycles;
+            @NonNull final ReconnectMetrics statistics) {
 
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
         currentState.throwIfDestroyed("Can not perform reconnect with destroyed state");

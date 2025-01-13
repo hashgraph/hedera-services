@@ -298,7 +298,6 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                             diskAddressBook);
                     return genesisState;
                 },
-                stateLifecycles,
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId);
@@ -482,12 +481,11 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<PlatformMerkleStateRoot> stateRootSupplier,
-            @NonNull final StateLifecycles stateLifecycles,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId) {
         final var loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, stateLifecycles);
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
         try (loadedState) {
             if (loadedState.isNotNull()) {
                 logger.info(

@@ -313,7 +313,7 @@ public final class EventRecoveryWorkflow {
         StateLifecycles stateLifecycles = appMain.newStateLifecycles();
         SoftwareVersion softwareVersion =
                 initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion();
-        initialState.get().init(platform);
+        initialState.get().init(platformContext);
         final var notificationEngine = platform.getNotificationEngine();
         notificationEngine.register(
                 NewRecoveredStateListener.class,

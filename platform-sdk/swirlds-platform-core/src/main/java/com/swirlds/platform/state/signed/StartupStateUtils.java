@@ -39,7 +39,6 @@ import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
@@ -87,7 +86,6 @@ public final class StartupStateUtils {
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Supplier<PlatformMerkleStateRoot> genesisStateBuilder,
-            @NonNull final StateLifecycles<?> stateLifecycles,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -101,7 +99,7 @@ public final class StartupStateUtils {
         requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, stateLifecycles);
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -141,8 +139,7 @@ public final class StartupStateUtils {
             @NonNull final NodeId selfId,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final SoftwareVersion currentSoftwareVersion) {
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -158,7 +155,7 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState state =
-                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles, stateLifecycles);
+                loadLatestState(configuration, recycleBin, currentSoftwareVersion, savedStateFiles);
         return state;
     }
 
@@ -220,8 +217,7 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final List<SavedStateInfo> savedStateFiles,
-            @NonNull final StateLifecycles stateLifecycles)
+            @NonNull final List<SavedStateInfo> savedStateFiles)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");

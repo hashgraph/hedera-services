@@ -22,7 +22,7 @@ import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.metrics.StateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -36,21 +36,22 @@ public class TransactionHandler {
     /** The id of this node. */
     private final NodeId selfId;
 
-    /** Stats relevant to StateEventHandler operations. */
-    private final SwirldStateMetrics stats;
+    /** Stats relevant to the state operations. */
+    private final StateMetrics stats;
 
-    public TransactionHandler(final NodeId selfId, final SwirldStateMetrics stats) {
+    public TransactionHandler(final NodeId selfId, final StateMetrics stats) {
         this.selfId = selfId;
         this.stats = stats;
     }
 
     /**
-     * Applies a consensus round to StateEventHandler, handles any exceptions gracefully, and updates relevant statistics.
+     * Applies a consensus round to the state, handles any exceptions gracefully, and updates relevant statistics.
      *
      * @param round
      * 		the round to apply
      * @param stateLifecycles
      * 		the stateLifecycles to apply {@code round} to
+     * @param stateRoot the state root to apply {@code round} to
      */
     public <T extends PlatformMerkleStateRoot> void handleRound(
             final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
@@ -74,7 +75,7 @@ public class TransactionHandler {
         } catch (final Throwable t) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "error invoking StateEventHandler.handleConsensusRound() [ nodeId = {} ] with round {}",
+                    "error invoking StateLifecycles.onHandleConsensusRound() [ nodeId = {} ] with round {}",
                     selfId,
                     round.getRoundNum(),
                     t);

@@ -111,7 +111,7 @@ public class AddressBookInitializer {
 
     /**
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
-     * the StateEventHandler on upgrade.
+     * the state on upgrade.
      *
      * @param selfId The id of this node.
      * @param currentVersion The current version of the application.

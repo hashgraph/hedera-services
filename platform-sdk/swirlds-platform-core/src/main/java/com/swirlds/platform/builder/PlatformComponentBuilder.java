@@ -1072,8 +1072,7 @@ public class PlatformComponentBuilder {
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
-                    blocks.intakeEventCounter(),
-                    blocks.stateLifecycles());
+                    blocks.intakeEventCounter());
         }
         return gossip;
     }
@@ -1303,8 +1302,7 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.swirldStateManager(),
                     blocks.statusActionSubmitterReference().get(),
-                    blocks.appVersion(),
-                    blocks.stateLifecycles());
+                    blocks.appVersion());
         }
         return transactionHandler;
     }

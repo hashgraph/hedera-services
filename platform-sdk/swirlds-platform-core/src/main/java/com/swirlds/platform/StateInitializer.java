@@ -82,7 +82,7 @@ public final class StateInitializer {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
 
-        signedState.init(platform);
+        signedState.init(platformContext);
         stateLifecycles.onStateInitialized(signedState.getState(), platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(

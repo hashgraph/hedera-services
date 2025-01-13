@@ -18,7 +18,6 @@ package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.system.StateEventHandler;
 import java.time.Instant;
 
 /**
@@ -38,7 +37,7 @@ public class ReconnectCompleteNotification extends AbstractNotification {
     }
 
     /**
-     * get round number from the {@link StateEventHandler}
+     * get round number from the {@link PlatformMerkleStateRoot}
      *
      * @return round number
      */
@@ -56,9 +55,9 @@ public class ReconnectCompleteNotification extends AbstractNotification {
     }
 
     /**
-     * get the {@link StateEventHandler} instance
+     * get the {@link PlatformMerkleStateRoot} instance
      *
-     * @return StateEventHandler
+     * @return PlatformMerkleStateRoot
      */
     public PlatformMerkleStateRoot getState() {
         return state;

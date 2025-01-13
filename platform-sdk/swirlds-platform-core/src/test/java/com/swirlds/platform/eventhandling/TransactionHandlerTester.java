@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
@@ -35,7 +34,6 @@ import com.swirlds.platform.state.service.PlatformStateValueAccumulator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
@@ -85,11 +83,7 @@ public class TransactionHandlerTester {
                 stateLifecycles);
         swirldStateManager.setInitialState(consensusState);
         defaultTransactionHandler = new DefaultTransactionHandler(
-                platformContext,
-                swirldStateManager,
-                statusActionSubmitter,
-                mock(SoftwareVersion.class),
-                FAKE_MERKLE_STATE_LIFECYCLES);
+                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
     }
 
     /**
@@ -114,7 +108,7 @@ public class TransactionHandlerTester {
     }
 
     /**
-     * @return a list of all {@link Round}s that have been provided to the {@link StateEventHandler} for handling
+     * @return a list of all {@link Round}s that have been provided to the {@link PlatformMerkleStateRoot} for handling
      */
     public List<Round> getHandledRounds() {
         return handledRounds;

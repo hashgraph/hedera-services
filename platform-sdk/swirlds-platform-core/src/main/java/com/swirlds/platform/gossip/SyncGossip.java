@@ -76,7 +76,6 @@ import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -172,8 +171,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), intakeEventCounter);
 
@@ -274,12 +272,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
-                        platformContext,
-                        threadManager,
-                        roster,
-                        reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics,
-                        stateLifecycles),
+                        platformContext, threadManager, roster, reconnectConfig.asyncStreamTimeout(), reconnectMetrics),
                 stateConfig);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 

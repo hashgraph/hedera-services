@@ -285,7 +285,6 @@ public class Browser {
                     recycleBin,
                     appMain.getSoftwareVersion(),
                     appMain::newMerkleStateRoot,
-                    stateLifecycles,
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     nodeId,
