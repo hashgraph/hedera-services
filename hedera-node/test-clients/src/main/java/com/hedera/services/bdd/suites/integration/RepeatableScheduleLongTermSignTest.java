@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.hip423;
+package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
@@ -89,7 +89,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
-@Order(6)
+@Order(5)
 @Tag(INTEGRATION)
 @HapiTestLifecycle
 @TargetEmbeddedMode(REPEATABLE)
