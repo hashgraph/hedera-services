@@ -566,8 +566,9 @@ message TransactionBody {
     /**
      * A list of maximum custom fees that the users are willing to pay.
      * <p>
-     * This field is OPTIONAL. If it is not set then users are accepting to pay any custom fee.
-     * If it is set, but the transaction doesn't support it, the transaction will fail.
+     * This field is OPTIONAL.<br/>
+     * If left empty, the users are accepting to pay any custom fee.<br/>
+     * If used with a transaction type that does not support custom fee limits, the transaction will fail.
      */
     repeated CustomFeeLimit maxCustomFees = 66;
 }
