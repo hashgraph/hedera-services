@@ -41,6 +41,7 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
+import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.gui.WindowConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.health.OSHealthChecker;
@@ -372,11 +373,13 @@ public final class BootstrapUtils {
 
         for (final NodeId nodeId : nodesToRun) {
             if (!addressBook.contains(nodeId)) {
+                final String errorMessage = "Node " + nodeId + " is not in the address book and cannot be started.";
                 // all nodes to start must exist in the address book
-                logger.error(
-                        EXCEPTION.getMarker(), "Node {} is not in the address book and cannot be started.", nodeId);
-                exitSystem(
-                        NODE_ADDRESS_MISMATCH, "Node " + nodeId + " is not in the address book and cannot be started.");
+                logger.error(EXCEPTION.getMarker(), errorMessage);
+                exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+                // the following throw is not reachable in production,
+                // but reachable in testing with static mocked system exit calls.
+                throw new ConfigurationException(errorMessage);
             }
         }
 
