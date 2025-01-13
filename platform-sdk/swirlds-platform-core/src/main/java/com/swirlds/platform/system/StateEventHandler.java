@@ -20,12 +20,10 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.state.Mutable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -36,31 +34,7 @@ import java.util.function.Consumer;
 public interface StateEventHandler extends Mutable {
 
     /**
-     * <p>
-     * Initialize a state. Called exactly once each time a node creates/recreates a state (e.g. restart, reconnect,
-     * genesis).
-     * </p>
-     *
-     * <p>
-     * If applicable, the application should check to see if the address book has changed, and if so those changes
-     * should be handled (in the future the address book will not be changed in this method). It may also be convenient
-     * for the application to initialize internal data structures at this time.
-     * </p>
-     *
-     * @param platform                the Platform that instantiated this state
-     * @param trigger                 describes the reason why the state was created/recreated
-     * @param previousSoftwareVersion the previous version of the software, {@link SoftwareVersion#NO_VERSION} if this
-     *                                is genesis or if migrating from code from before the concept of an application
-     *                                software version
-     */
-    default void init(
-            @NonNull final Platform platform,
-            @NonNull final InitTrigger trigger,
-            @Nullable final SoftwareVersion previousSoftwareVersion) {
-        // Override if needed
-    }
-
-    /**
+     * /**
      * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
      * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify the
      * {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing signatures,
@@ -116,12 +90,4 @@ public interface StateEventHandler extends Mutable {
         Objects.requireNonNull(context, "context must not be null");
         return configAddressBook;
     }
-
-    /**
-     * Returns a new instance of the {@link StateEventHandler} with the given {@link PlatformMerkleStateRoot}.
-     * @param stateRoot the new state root
-     * @return the new state event handler
-     */
-    @NonNull
-    StateEventHandler withNewStateRoot(@NonNull final PlatformMerkleStateRoot stateRoot);
 }

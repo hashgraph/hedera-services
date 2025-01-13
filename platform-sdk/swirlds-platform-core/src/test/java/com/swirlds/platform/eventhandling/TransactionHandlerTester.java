@@ -21,10 +21,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -35,7 +33,6 @@ import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.service.PlatformStateValueAccumulator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.PlatformStateEventHandler;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StateEventHandler;
@@ -72,7 +69,6 @@ public class TransactionHandlerTester {
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.getReadablePlatformState()).thenReturn(platformState);
         when(consensusState.getWritablePlatformState()).thenReturn(platformState);
-        final StateEventHandler stateEventHandler = spy(new PlatformStateEventHandler(consensusState, stateLifecycles));
         doAnswer(i -> {
                     handledRounds.add(i.getArgument(0));
                     return null;
@@ -85,8 +81,9 @@ public class TransactionHandlerTester {
                 RosterRetriever.buildRoster(addressBook),
                 NodeId.FIRST_NODE_ID,
                 statusActionSubmitter,
-                new BasicSoftwareVersion(1));
-        swirldStateManager.setInitialHandlerAndState(Pair.of(stateEventHandler, consensusState));
+                new BasicSoftwareVersion(1),
+                stateLifecycles);
+        swirldStateManager.setInitialState(consensusState);
         defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext,
                 swirldStateManager,

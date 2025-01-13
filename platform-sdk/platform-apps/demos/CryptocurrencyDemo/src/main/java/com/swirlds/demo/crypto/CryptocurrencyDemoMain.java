@@ -41,7 +41,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -56,7 +55,7 @@ import java.util.Random;
  * ask or a bid on a stock, offering to sell or buy, respectively, a single share at a random price between 1 and 127
  * cents (inclusive).
  */
-public class CryptocurrencyDemoMain implements SwirldMain {
+public class CryptocurrencyDemoMain implements SwirldMain<CryptocurrencyDemoState> {
 
     static {
         try {
@@ -205,8 +204,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state =
+    public CryptocurrencyDemoState newMerkleStateRoot() {
+        final CryptocurrencyDemoState state =
                 new CryptocurrencyDemoState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
@@ -217,7 +216,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public StateLifecycles newStateLifecycles() {
+    public StateLifecycles<CryptocurrencyDemoState> newStateLifecycles() {
         return new CryptocurrencyDemoStateLifecycles();
     }
 

@@ -24,7 +24,6 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -41,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A testing app for guaranteeing proper handling of transactions after a restart
  */
-public class ConsistencyTestingToolMain implements SwirldMain {
+public class ConsistencyTestingToolMain implements SwirldMain<ConsistencyTestingToolState> {
 
     private static final Logger logger = LogManager.getLogger(ConsistencyTestingToolMain.class);
 
@@ -114,8 +113,8 @@ public class ConsistencyTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state =
+    public ConsistencyTestingToolState newMerkleStateRoot() {
+        final ConsistencyTestingToolState state =
                 new ConsistencyTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
 

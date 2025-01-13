@@ -47,7 +47,6 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -61,7 +60,7 @@ import org.apache.logging.log4j.Logger;
  * also saves them to disk in a comma separated value (.csv) file. Each transaction is 100 random bytes. So
  * StatsSigningDemoState.handleTransaction doesn't actually do anything.
  */
-public class StatsSigningTestingToolMain implements SwirldMain {
+public class StatsSigningTestingToolMain implements SwirldMain<StatsSigningTestingToolState> {
     // the first four come from the parameters in the config.txt file
 
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
@@ -296,15 +295,15 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new StatsSigningTestingToolState(
+    public StatsSigningTestingToolState newMerkleStateRoot() {
+        final StatsSigningTestingToolState state = new StatsSigningTestingToolState(
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 
     @Override
-    public StateLifecycles newStateLifecycles() {
+    public StateLifecycles<StatsSigningTestingToolState> newStateLifecycles() {
         return new StatsSigningTestingToolStateLifecycles(() -> sttTransactionPool);
     }
 

@@ -86,7 +86,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -128,7 +127,7 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file.
  * Each transaction consists of an optional sequence number and random bytes.
  */
-public class PlatformTestingToolMain implements SwirldMain {
+public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolState> {
 
     /**
      * use this for all logging
@@ -868,8 +867,8 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state =
+    public PlatformTestingToolState newMerkleStateRoot() {
+        final PlatformTestingToolState state =
                 new PlatformTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;

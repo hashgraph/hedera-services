@@ -23,7 +23,6 @@ import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.system.StateEventHandler;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -50,15 +49,16 @@ public class TransactionHandler {
      *
      * @param round
      * 		the round to apply
-     * @param eventHandler
-     * 		the eventHandler to apply {@code round} to
+     * @param stateLifecycles
+     * 		the stateLifecycles to apply {@code round} to
      */
-    public void handleRound(final ConsensusRound round, final StateEventHandler eventHandler) {
+    public <T extends PlatformMerkleStateRoot> void handleRound(
+            final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            eventHandler.handleConsensusRound(round, NO_OP_CONSUMER);
+            stateLifecycles.onHandleConsensusRound(round, stateRoot, NO_OP_CONSUMER);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 

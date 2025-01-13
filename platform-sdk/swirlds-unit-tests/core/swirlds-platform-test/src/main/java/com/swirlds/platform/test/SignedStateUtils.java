@@ -44,7 +44,6 @@ public class SignedStateUtils {
                 CryptoStatic::verifySignature,
                 root,
                 "test",
-                FAKE_MERKLE_STATE_LIFECYCLES,
                 shouldSaveToDisk,
                 false,
                 false);

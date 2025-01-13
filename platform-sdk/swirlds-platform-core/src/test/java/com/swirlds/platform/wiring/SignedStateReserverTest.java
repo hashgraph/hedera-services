@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,7 +53,6 @@ class SignedStateReserverTest {
                 Mockito.mock(SignatureVerifier.class),
                 Mockito.mock(PlatformMerkleStateRoot.class),
                 "create",
-                FAKE_MERKLE_STATE_LIFECYCLES,
                 false,
                 false,
                 false);

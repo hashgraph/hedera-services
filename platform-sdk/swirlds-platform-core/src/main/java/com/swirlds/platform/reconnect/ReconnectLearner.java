@@ -217,7 +217,6 @@ public class ReconnectLearner {
                 CryptoStatic::verifySignature,
                 state,
                 "ReconnectLearner.reconnect()",
-                stateLifecycles,
                 false,
                 false,
                 false);

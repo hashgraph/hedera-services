@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -92,7 +91,6 @@ class StateTest {
                 CryptoStatic::verifySignature,
                 merkleStateRoot,
                 "test",
-                FAKE_MERKLE_STATE_LIFECYCLES,
                 shouldSaveToDisk,
                 false,
                 false);

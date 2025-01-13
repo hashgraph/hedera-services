@@ -28,7 +28,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -57,7 +56,7 @@ import org.apache.logging.log4j.Logger;
  * </li>
  * </ol>
  */
-public class AddressBookTestingToolMain implements SwirldMain {
+public class AddressBookTestingToolMain implements SwirldMain<AddressBookTestingToolState> {
 
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
@@ -125,8 +124,8 @@ public class AddressBookTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new AddressBookTestingToolState(
+    public AddressBookTestingToolState newMerkleStateRoot() {
+        final AddressBookTestingToolState state = new AddressBookTestingToolState(
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;

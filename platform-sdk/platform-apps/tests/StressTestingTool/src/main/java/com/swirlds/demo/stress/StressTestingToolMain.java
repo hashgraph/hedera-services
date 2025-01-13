@@ -44,7 +44,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -58,7 +57,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A testing tool which generates a number of transactions per second, and simulates handling them
  */
-public class StressTestingToolMain implements SwirldMain {
+public class StressTestingToolMain implements SwirldMain<StressTestingToolState> {
     private static final Logger logger = LogManager.getLogger(StressTestingToolMain.class);
     private static final BasicSoftwareVersion SOFTWARE_VERSION = new BasicSoftwareVersion(1);
 
@@ -252,8 +251,8 @@ public class StressTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state =
+    public StressTestingToolState newMerkleStateRoot() {
+        final StressTestingToolState state =
                 new StressTestingToolState(version -> new BasicSoftwareVersion(SOFTWARE_VERSION.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;

@@ -110,15 +110,15 @@ public final class StartupStateUtils {
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
 
-                return copyInitialSignedState(configuration, loadedState.get(), stateLifecycles);
+                return copyInitialSignedState(configuration, loadedState.get());
             }
         }
 
-        final ReservedSignedState genesisState = buildGenesisState(
-                configuration, configAddressBook, softwareVersion, genesisStateBuilder.get(), stateLifecycles);
+        final ReservedSignedState genesisState =
+                buildGenesisState(configuration, configAddressBook, softwareVersion, genesisStateBuilder.get());
 
         try (genesisState) {
-            return copyInitialSignedState(configuration, genesisState.get(), stateLifecycles);
+            return copyInitialSignedState(configuration, genesisState.get());
         }
     }
 
@@ -171,9 +171,7 @@ public final class StartupStateUtils {
      * @return a copy of the initial signed state
      */
     public static @NonNull HashedReservedSignedState copyInitialSignedState(
-            @NonNull final Configuration configuration,
-            @NonNull final SignedState initialSignedState,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final Configuration configuration, @NonNull final SignedState initialSignedState) {
         requireNonNull(configuration);
         requireNonNull(initialSignedState);
 
@@ -183,7 +181,6 @@ public final class StartupStateUtils {
                 CryptoStatic::verifySignature,
                 stateCopy,
                 "StartupStateUtils: copy initial state",
-                stateLifecycles,
                 false,
                 false,
                 false);
@@ -231,7 +228,7 @@ public final class StartupStateUtils {
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             final ReservedSignedState state =
-                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile, stateLifecycles);
+                    loadStateFile(configuration, recycleBin, currentSoftwareVersion, savedStateFile);
             if (state != null) {
                 return state;
             }
@@ -253,15 +250,14 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final SavedStateInfo savedStateFile,
-            @NonNull final StateLifecycles stateLifecycles)
+            @NonNull final SavedStateInfo savedStateFile)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile(), stateLifecycles);
+            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile());
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 
@@ -334,22 +330,14 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final PlatformMerkleStateRoot stateRoot,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final PlatformMerkleStateRoot stateRoot) {
 
         if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
             initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
         }
 
         final SignedState signedState = new SignedState(
-                configuration,
-                CryptoStatic::verifySignature,
-                stateRoot,
-                "genesis state",
-                stateLifecycles,
-                false,
-                false,
-                false);
+                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 

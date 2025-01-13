@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.state.NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadata.NO_NODE_ID;
 import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
@@ -79,7 +78,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(configuration, statePath, NO_OP_STATE_LIFECYCLES);
+                SignedStateFileReader.readStateFile(configuration, statePath);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             final PlatformStateModifier platformState =
                     reservedSignedState.get().getState().getWritablePlatformState();

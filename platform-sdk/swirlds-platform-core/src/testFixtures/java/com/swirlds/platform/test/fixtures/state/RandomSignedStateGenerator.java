@@ -229,7 +229,6 @@ public class RandomSignedStateGenerator {
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
-                FAKE_MERKLE_STATE_LIFECYCLES,
                 freezeStateInstance,
                 deleteOnBackgroundThread,
                 pcesRound);

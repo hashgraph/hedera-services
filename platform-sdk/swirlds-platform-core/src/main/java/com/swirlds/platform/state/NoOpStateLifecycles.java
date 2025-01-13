@@ -25,7 +25,6 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
@@ -34,13 +33,13 @@ import java.util.function.Consumer;
  * A no-op implementation of {@link StateLifecycles} that does nothing.
  * It's useful for auxiliary code that doesn't handle new transactions (State Editor, State commands, Event Recovery workflow, etc.).
  */
-public enum NoOpStateLifecycles implements StateLifecycles<MerkleStateRoot> {
+public enum NoOpStateLifecycles implements StateLifecycles<PlatformMerkleStateRoot> {
     NO_OP_STATE_LIFECYCLES;
 
     @Override
     public void onPreHandle(
             @NonNull Event event,
-            @NonNull MerkleStateRoot state,
+            @NonNull PlatformMerkleStateRoot state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
     }
@@ -48,19 +47,19 @@ public enum NoOpStateLifecycles implements StateLifecycles<MerkleStateRoot> {
     @Override
     public void onHandleConsensusRound(
             @NonNull Round round,
-            @NonNull MerkleStateRoot state,
+            @NonNull PlatformMerkleStateRoot state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull MerkleStateRoot state) {
+    public void onSealConsensusRound(@NonNull Round round, @NonNull PlatformMerkleStateRoot state) {
         // no-op
     }
 
     @Override
     public void onStateInitialized(
-            @NonNull MerkleStateRoot state,
+            @NonNull PlatformMerkleStateRoot state,
             @NonNull Platform platform,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion) {
@@ -69,12 +68,14 @@ public enum NoOpStateLifecycles implements StateLifecycles<MerkleStateRoot> {
 
     @Override
     public void onUpdateWeight(
-            @NonNull MerkleStateRoot state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
+            @NonNull PlatformMerkleStateRoot state,
+            @NonNull AddressBook configAddressBook,
+            @NonNull PlatformContext context) {
         // no-op
     }
 
     @Override
-    public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
+    public void onNewRecoveredState(@NonNull PlatformMerkleStateRoot recoveredState) {
         // no-op
     }
 }

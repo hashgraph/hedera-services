@@ -160,7 +160,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         return new AutoCloseableWrapper<>(
                 reservedSignedState.isNull()
                         ? null
-                        : (T) reservedSignedState.get().getStateEventHandler(),
+                        : (T) reservedSignedState.get().getState(),
                 reservedSignedState::close);
     }
 

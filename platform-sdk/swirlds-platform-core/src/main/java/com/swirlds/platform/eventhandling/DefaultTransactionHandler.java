@@ -296,7 +296,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
                 CryptoStatic::verifySignature,
                 immutableStateCons,
                 "TransactionHandler.createSignedState()",
-                stateLifecycles,
                 freezeRoundReceived,
                 true,
                 consensusRound.isPcesRound());

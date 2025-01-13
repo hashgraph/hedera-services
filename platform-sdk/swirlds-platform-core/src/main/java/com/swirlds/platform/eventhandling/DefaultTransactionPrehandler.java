@@ -25,6 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,6 +56,8 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      */
     private final AverageTimeStat preHandleTime;
 
+    private final StateLifecycles stateLifecycles;
+
     private final Time time;
 
     /**
@@ -63,10 +66,12 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * @param platformContext     the platform context
      * @param latestStateSupplier provides access to the latest immutable state, may return null (implementation detail
      *                            of locking mechanism within the supplier)
+     * @param stateLifecycles    the state lifecycles
      */
     public DefaultTransactionPrehandler(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Supplier<ReservedSignedState> latestStateSupplier) {
+            @NonNull final Supplier<ReservedSignedState> latestStateSupplier,
+            @NonNull StateLifecycles<?> stateLifecycles) {
         this.time = platformContext.getTime();
         this.latestStateSupplier = Objects.requireNonNull(latestStateSupplier);
 
@@ -76,6 +81,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
                 INTERNAL_CATEGORY,
                 "preHandleMicros",
                 "average time it takes to perform preHandle (in microseconds)");
+        this.stateLifecycles = stateLifecycles;
     }
 
     /**
@@ -94,7 +100,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                latestImmutableState.get().getStateEventHandler().preHandle(event, NO_OP_CONSUMER);
+                stateLifecycles.onPreHandle(event, latestImmutableState.get().getState(), NO_OP_CONSUMER);
             } catch (final Throwable t) {
                 logger.error(
                         EXCEPTION.getMarker(), "error invoking StateEventHandler.preHandle() for event {}", event, t);

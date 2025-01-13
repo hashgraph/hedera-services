@@ -41,7 +41,6 @@ import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -55,7 +54,7 @@ import java.nio.charset.StandardCharsets;
  * into a busy loop (checking once a second) to see when the state gets the transaction. When it does, it
  * prints it, too.
  */
-public class HelloSwirldDemoMain implements SwirldMain {
+public class HelloSwirldDemoMain implements SwirldMain<HelloSwirldDemoState> {
 
     static {
         try {
@@ -130,8 +129,8 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
     @NonNull
     @Override
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state =
+    public HelloSwirldDemoState newMerkleStateRoot() {
+        final HelloSwirldDemoState state =
                 new HelloSwirldDemoState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;

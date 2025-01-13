@@ -53,6 +53,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -85,8 +86,7 @@ public final class PlatformBuilder {
     private final SoftwareVersion softwareVersion;
     private final ReservedSignedState initialState;
 
-    @NonNull
-    private final StateLifecycles stateLifecycles;
+    private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
 
     private final NodeId selfId;
     private final String swirldName;
@@ -433,7 +433,8 @@ public final class PlatformBuilder {
                 currentRoster,
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
-                softwareVersion);
+                softwareVersion,
+                stateLifecycles);
 
         if (model == null) {
             final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);

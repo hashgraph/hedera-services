@@ -235,7 +235,6 @@ class SignedStateTests {
                 mock(SignatureVerifier.class),
                 state,
                 "test",
-                FAKE_MERKLE_STATE_LIFECYCLES,
                 false,
                 false,
                 false);

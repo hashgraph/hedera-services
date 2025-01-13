@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.base.utility.Pair;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -33,7 +32,6 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.PlatformStateEventHandler;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
@@ -43,7 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class StateEventHandlerManagerTests {
+class SwirldsStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
     private PlatformMerkleStateRoot initialState;
@@ -59,9 +57,13 @@ class StateEventHandlerManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         swirldStateManager = new SwirldStateManager(
-                platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
-        swirldStateManager.setInitialHandlerAndState(
-                Pair.of(new PlatformStateEventHandler(initialState, FAKE_MERKLE_STATE_LIFECYCLES), initialState));
+                platformContext,
+                roster,
+                NodeId.of(0L),
+                mock(StatusActionSubmitter.class),
+                new BasicSoftwareVersion(1),
+                FAKE_MERKLE_STATE_LIFECYCLES);
+        swirldStateManager.setInitialState(initialState);
     }
 
     @AfterEach

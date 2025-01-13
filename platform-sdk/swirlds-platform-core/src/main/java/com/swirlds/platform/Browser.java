@@ -298,7 +298,8 @@ public class Browser {
                     appMain.getSoftwareVersion(),
                     initialState,
                     appDefinition.getConfigAddressBook(),
-                    platformContext);
+                    platformContext,
+                    stateLifecycles);
 
             // Build the platform with the given values
             final PlatformBuilder builder = PlatformBuilder.create(

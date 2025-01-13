@@ -17,7 +17,7 @@
 package com.swirlds.platform.system.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.system.StateEventHandler;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import java.time.Instant;
 
 /**
@@ -28,32 +28,30 @@ import java.time.Instant;
  */
 public class NewRecoveredStateNotification extends AbstractNotification {
 
-    private final StateEventHandler stateEventHandler;
+    private final PlatformMerkleStateRoot state;
     private final long round;
     private final Instant consensusTimestamp;
 
     /**
      * Create a notification for a state created as a result of event recovery.
      *
-     * @param stateEventHandler        the swirld state from the recovered state
+     * @param state        the swirld state from the recovered state
      * @param round              the round of the recovered state
      * @param consensusTimestamp the consensus timestamp of the recovered state round
      */
     public NewRecoveredStateNotification(
-            final StateEventHandler stateEventHandler, final long round, final Instant consensusTimestamp) {
-
-        this.stateEventHandler = stateEventHandler;
+            final PlatformMerkleStateRoot state, final long round, final Instant consensusTimestamp) {
+        this.state = state;
         this.round = round;
         this.consensusTimestamp = consensusTimestamp;
     }
 
     /**
-     * Get the swirld state from the recovered state. Guaranteed to hold a reservation in the scope of this
+     * Get the state from the recovered state. Guaranteed to hold a reservation in the scope of this
      * notification.
      */
-    @SuppressWarnings("unchecked")
-    public <T extends StateEventHandler> T getSwirldState() {
-        return (T) stateEventHandler;
+    public PlatformMerkleStateRoot getState() {
+        return state;
     }
 
     /**

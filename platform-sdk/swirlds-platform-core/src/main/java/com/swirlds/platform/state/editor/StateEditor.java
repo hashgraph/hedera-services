@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.editor;
 
-import static com.swirlds.platform.state.NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
@@ -67,7 +66,7 @@ public class StateEditor {
         platformContext = PlatformContext.create(configuration);
 
         final DeserializedSignedState deserializedSignedState =
-                SignedStateFileReader.readStateFile(configuration, statePath, NO_OP_STATE_LIFECYCLES);
+                SignedStateFileReader.readStateFile(configuration, statePath);
 
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.println("\nLoading state from " + statePath);
@@ -207,7 +206,6 @@ public class StateEditor {
                     CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
-                    NO_OP_STATE_LIFECYCLES,
                     reservedSignedState.get().isFreezeState(),
                     false,
                     false);

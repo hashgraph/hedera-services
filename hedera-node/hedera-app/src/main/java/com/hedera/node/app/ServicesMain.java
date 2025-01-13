@@ -86,7 +86,6 @@ import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -106,7 +105,7 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This class simply delegates to {@link Hedera}.
  */
-public class ServicesMain implements SwirldMain {
+public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
@@ -184,7 +183,7 @@ public class ServicesMain implements SwirldMain {
      *     and the working directory <i>settings.txt</i>, providing the same
      *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
      *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
-     *     {@link StateEventHandler#init(Platform, InitTrigger, SoftwareVersion)}
+     *     {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
      *     on a {@link MerkleStateRoot} instance that delegates the call back to our
      *     Hedera instance.)</li>
      *     <li>Call {@link Hedera#init(Platform, NodeId)} to complete startup phase
@@ -281,6 +280,7 @@ public class ServicesMain implements SwirldMain {
         // We want to be able to see the schema migration logs, so init logging here
         initLogging();
         logger.info("Starting node {} with version {}", selfId, version);
+        StateLifecycles<PlatformMerkleStateRoot> stateLifecycles = hedera.newStateLifecycles();
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
@@ -298,7 +298,7 @@ public class ServicesMain implements SwirldMain {
                             diskAddressBook);
                     return genesisState;
                 },
-                hedera.newStateLifecycles(),
+                stateLifecycles,
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId);
@@ -325,7 +325,8 @@ public class ServicesMain implements SwirldMain {
                     detectSoftwareUpgrade(version, initialState.get()),
                     initialState.get(),
                     diskAddressBook.copy(),
-                    platformContext);
+                    platformContext,
+                    stateLifecycles);
             rosterHistory = buildRosterHistory(initialState.get().getState());
         }
         final var platformBuilder = PlatformBuilder.create(
@@ -333,7 +334,7 @@ public class ServicesMain implements SwirldMain {
                         Hedera.SWIRLD_NAME,
                         version,
                         initialState,
-                        hedera.newStateLifecycles(),
+                        stateLifecycles,
                         selfId,
                         canonicalEventStreamLoc(selfId.id(), stateRoot),
                         rosterHistory)
@@ -493,22 +494,15 @@ public class ServicesMain implements SwirldMain {
                         STARTUP.getMarker(),
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-                return copyInitialSignedState(configuration, loadedState.get(), stateLifecycles);
+                return copyInitialSignedState(configuration, loadedState.get());
             }
         }
         final var stateRoot = stateRootSupplier.get();
         final var signedState = new SignedState(
-                configuration,
-                CryptoStatic::verifySignature,
-                stateRoot,
-                "genesis state",
-                stateLifecycles,
-                false,
-                false,
-                false);
+                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
         final var reservedSignedState = signedState.reserve("initial reservation on genesis state");
         try (reservedSignedState) {
-            return copyInitialSignedState(configuration, reservedSignedState.get(), stateLifecycles);
+            return copyInitialSignedState(configuration, reservedSignedState.get());
         }
     }
 

@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,9 +41,9 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.StateEventHandler;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import java.io.IOException;
@@ -107,8 +108,6 @@ class EventRecoveryWorkflowTests {
     @Test
     @DisplayName("applyTransactions() Test")
     void applyTransactionsTest() {
-        final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
-
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             events.add(mock(PlatformEvent.class));
@@ -120,38 +119,39 @@ class EventRecoveryWorkflowTests {
         final List<PlatformEvent> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
-        final StateEventHandler immutableState = mock(StateEventHandler.class);
+        final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles = mock(StateLifecycles.class);
+        final PlatformMerkleStateRoot immutableState = mock(PlatformMerkleStateRoot.class);
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should not have been handled yet");
                     preHandleList.add(invocation.getArgument(0));
                     return null;
                 })
-                .when(immutableState)
-                .preHandle(any(), any());
+                .when(stateLifecycles)
+                .onPreHandle(any(), same(immutableState), any());
         doAnswer(invocation -> {
                     fail("mutable state should handle transactions");
                     return null;
                 })
-                .when(immutableState)
-                .handleConsensusRound(any(), any());
+                .when(stateLifecycles)
+                .onHandleConsensusRound(any(), same(immutableState), any());
 
-        final StateEventHandler mutableState = mock(StateEventHandler.class);
+        final PlatformMerkleStateRoot mutableState = mock(PlatformMerkleStateRoot.class);
         doAnswer(invocation -> {
                     fail("immutable state should pre-handle transactions");
                     return null;
                 })
-                .when(mutableState)
-                .preHandle(any(), any());
+                .when(stateLifecycles)
+                .onPreHandle(any(), same(mutableState), any());
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should only be handled once");
                     assertSame(round, invocation.getArgument(0), "unexpected round");
                     roundHandled.set(true);
                     return null;
                 })
-                .when(mutableState)
-                .handleConsensusRound(any(), any());
+                .when(stateLifecycles)
+                .onHandleConsensusRound(any(), same(mutableState), any());
 
-        EventRecoveryWorkflow.applyTransactions(immutableState, mutableState, platformState, round);
+        EventRecoveryWorkflow.applyTransactions(stateLifecycles, immutableState, mutableState, round);
 
         assertEquals(events.size(), preHandleList.size(), "incorrect number of pre-handle calls");
         for (int index = 0; index < events.size(); index++) {

@@ -26,11 +26,12 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StateEventHandler;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +39,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates the logic for calling
- * {@link StateEventHandler#init(Platform, InitTrigger, SoftwareVersion)}
+ * {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
  * startup time.
  */
 public final class StateInitializer {
@@ -57,7 +58,8 @@ public final class StateInitializer {
     public static void initializeState(
             @NonNull final Platform platform,
             @NonNull final PlatformContext platformContext,
-            @NonNull final SignedState signedState) {
+            @NonNull final SignedState signedState,
+            @NonNull final StateLifecycles stateLifecycles) {
 
         final SoftwareVersion previousSoftwareVersion;
         final InitTrigger trigger;
@@ -71,7 +73,6 @@ public final class StateInitializer {
             trigger = RESTART;
         }
 
-        final StateEventHandler initialStateEvenHandler = signedState.getStateEventHandler();
         final PlatformMerkleStateRoot initialState = signedState.getState();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
@@ -81,7 +82,8 @@ public final class StateInitializer {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
 
-        initialStateEvenHandler.init(platform, trigger, previousSoftwareVersion);
+        signedState.init(platform);
+        stateLifecycles.onStateInitialized(signedState.getState(), platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(
                 () -> {

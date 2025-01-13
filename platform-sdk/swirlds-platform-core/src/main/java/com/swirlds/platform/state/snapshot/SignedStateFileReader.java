@@ -30,7 +30,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema;
@@ -87,8 +86,7 @@ public final class SignedStateFileReader {
      * @throws IOException if there is any problems with reading from a file
      */
     public static @NonNull DeserializedSignedState readStateFile(
-            @NonNull final Configuration configuration, @NonNull final Path stateFile, StateLifecycles stateLifecycles)
-            throws IOException {
+            @NonNull final Configuration configuration, @NonNull final Path stateFile) throws IOException {
 
         Objects.requireNonNull(configuration);
         Objects.requireNonNull(stateFile);
@@ -110,7 +108,6 @@ public final class SignedStateFileReader {
                 CryptoStatic::verifySignature,
                 (PlatformMerkleStateRoot) data.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
-                stateLifecycles,
                 false,
                 false,
                 false);
