@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: '0'
-          ref: 14967-semantic-release-workflow-update
+          ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Import GPG Key
@@ -101,10 +101,9 @@ jobs:
         run: |
           echo $new_version > version.txt
 
-      # TODO: Remove the "publishTestRelease=true" arg
       - name: Publish to Maven Central
         run: |
-          ./gradlew versionAsSpecified -PnewVersion=$new_version -PpublishTestRelease=true
+          ./gradlew versionAsSpecified -PnewVersion=$new_version
 
       - name: Add & Commit
         uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4

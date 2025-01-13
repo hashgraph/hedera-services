@@ -22,7 +22,7 @@ on:
         description: "Build ID of the Tag (example: 43 = build_00043)"
         type: string
         required: true
-        default: "43"
+        default: ""
 
 defaults:
   run:
@@ -106,10 +106,9 @@ jobs:
           git config user.email "${{ secrets.SVCS_GIT_USER_EMAIL }}"
 
       - name: Run Semantic Release
-        # TODO: inside run, add: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           echo "Running semantic-release now"
-
+          npx semantic-release
           echo "Completed semantic-release"
