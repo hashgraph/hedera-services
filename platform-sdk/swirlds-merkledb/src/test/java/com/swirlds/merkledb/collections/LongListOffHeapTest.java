@@ -23,7 +23,6 @@ import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.params.provider.Arguments;
 
 class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
