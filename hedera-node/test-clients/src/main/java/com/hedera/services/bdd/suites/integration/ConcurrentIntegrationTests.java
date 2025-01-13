@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateStakingInfos;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateToken;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewMappedValue;
@@ -222,6 +223,9 @@ public class ConcurrentIntegrationTests {
                         .description(CLASSIC_NODE_NAMES[4])
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 mutateNode("4", node -> node.weight(123)),
+                // Let few nodes have non-zero stake
+                mutateStakingInfos("0", node -> node.stake(ONE_HUNDRED_HBARS)),
+                mutateStakingInfos("1", node -> node.stake(ONE_HUNDRED_HBARS)),
                 // Submit a valid FREEZE_UPGRADE
                 buildUpgradeZipFrom(FAKE_ASSETS_LOC),
                 sourcing(() -> updateSpecialFile(
@@ -238,7 +242,7 @@ public class ConcurrentIntegrationTests {
                         .seconds()
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
                         .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC))),
-                // Verify the candidate roster is set as part of handling the FREEZE_UPGRADE
+                // Verify the candidate roster is set as part of handling the PREPARE_UPGRADE
                 viewSingleton(
                         RosterService.NAME,
                         ROSTER_STATES_KEY,
