@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ public class EventMigrationTest {
     }
 
     public static Stream<Arguments> migrationTestArguments() {
-        return Stream.of(
-                Arguments.of("eventFiles/testnet-57/2025-01-10T00_00_00.016538241Z.events", 532, 3));
+        return Stream.of(Arguments.of("eventFiles/testnet-57/2025-01-10T00_00_00.016538241Z.events", 532, 3));
     }
 
     /**
