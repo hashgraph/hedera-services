@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,13 @@ public final class FileServiceImpl implements FileService {
     }
 
     /**
-     * Creates the system files in the given genesis context.
+     * Creates the system files in the given genesis context and the nodeStore data.
      *
      * @param context the genesis context
+     * @param nodeStore the ReadableNodeStore
      */
-    public void createSystemEntities(@NonNull final SystemContext context) {
-        fileSchema.createGenesisAddressBookAndNodeDetails(context);
+    public void createSystemEntities(@NonNull final SystemContext context, @NonNull final ReadableNodeStore nodeStore) {
+        fileSchema.createGenesisAddressBookAndNodeDetails(context, nodeStore);
         fileSchema.createGenesisFeeSchedule(context);
         fileSchema.createGenesisExchangeRate(context);
         fileSchema.createGenesisNetworkProperties(context);
