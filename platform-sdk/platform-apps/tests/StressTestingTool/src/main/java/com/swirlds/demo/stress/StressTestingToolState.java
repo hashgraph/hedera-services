@@ -26,8 +26,6 @@ package com.swirlds.demo.stress;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.hedera.pbj.runtime.ProtoParserTools.readInt64;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
@@ -132,7 +130,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
             // transactions in Bytes.Thus, we can directly skip the current
             // iteration, if it processes a deprecated system transaction with the
             // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
-            if (!transaction.isSystem()) {
+            if (transaction.isSystem()) {
                 return;
             }
 
@@ -198,20 +196,11 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     private Optional<StateSignatureTransaction> getStateSignatureTransaction(@NonNull final Transaction transaction) {
         final var transactionBytes = transaction.getApplicationTransaction();
 
-        if (transactionBytes.length() == 0
-                || (transactionBytes.length() < MIN_SYSTEM_TRANSACTION_LENGTH
-                        || transactionBytes.length() > MAX_SYSTEM_TRANSACTION_LENGTH)) {
-            return Optional.empty();
-        }
-
-        final var readableData = transactionBytes.toReadableSequentialData();
-        readableData.readVarInt(false);
-        final var maybeRound = readInt64(readableData);
-
-        if (maybeRound < 0) {
-            return Optional.empty();
+        // If the transaction does not have marker byte for an application transaction, then it should be a system one
+        if (transactionBytes.getByte(0) != 1) {
+            return tryToParseSystemTransaction(transactionBytes.toReadableSequentialData());
         } else {
-            return tryToParseSystemTransaction(readableData);
+            return Optional.empty();
         }
     }
 

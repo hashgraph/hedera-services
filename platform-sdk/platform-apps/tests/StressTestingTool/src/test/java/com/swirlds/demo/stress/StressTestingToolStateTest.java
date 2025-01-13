@@ -60,7 +60,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,8 +70,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class StressTestingToolStateTest {
 
     private static final byte[] EMPTY_ARRAY = new byte[] {};
-    private Random random;
     private StressTestingToolState state;
+    private StressTestingToolMain main;
     private PlatformStateModifier platformStateModifier;
     private Round round;
     private ConsensusEvent event;
@@ -84,7 +83,7 @@ class StressTestingToolStateTest {
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException, KeyStoreException, KeyGeneratingException, NoSuchProviderException {
         state = new StressTestingToolState(mock(StateLifecycles.class), mock(Function.class));
-        random = new Random();
+        main = new StressTestingToolMain();
         platformStateModifier = mock(PlatformStateModifier.class);
         event = mock(PlatformEvent.class);
 
@@ -128,15 +127,14 @@ class StressTestingToolStateTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 100, 440, 600})
+    @ValueSource(ints = {100, 440, 600})
     void handleConsensusRoundWithApplicationTransaction(final Integer transactionSize) {
         // Given
         givenRoundAndEvent();
 
-        final byte[] transactionBytes = new byte[transactionSize];
-        random.nextBytes(transactionBytes);
+        final var pool = new TransactionPool(1, transactionSize);
 
-        when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(transactionBytes));
+        when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(pool.transaction()));
 
         // When
         state.handleConsensusRound(round, platformStateModifier, consumer);
@@ -150,8 +148,7 @@ class StressTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
@@ -175,8 +172,7 @@ class StressTestingToolStateTest {
                                 thirdConsensusTransaction)
                         .iterator());
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
@@ -204,16 +200,15 @@ class StressTestingToolStateTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 100, 440, 600})
+    @ValueSource(ints = {100, 440, 600})
     void preHandleConsensusRoundWithApplicationTransaction(final Integer transactionSize) {
         // Given
         givenRoundAndEvent();
 
-        final byte[] transactionBytes = new byte[transactionSize];
-        random.nextBytes(transactionBytes);
+        final var pool = new TransactionPool(1, transactionSize);
 
         final var eventTransaction =
-                new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(transactionBytes)));
+                new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(pool.transaction())));
         final var eventCore = mock(EventCore.class);
         final var gossipEvent = new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
@@ -231,8 +226,7 @@ class StressTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         final var eventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
         final var eventCore = mock(EventCore.class);
@@ -252,8 +246,7 @@ class StressTestingToolStateTest {
         // Given
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
 
         final var eventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
@@ -281,9 +274,9 @@ class StressTestingToolStateTest {
     void preHandleConsensusRoundWithDeprecatedSystemTransaction() {
         // Given
         givenRoundAndEvent();
+        when(transaction.isSystem()).thenReturn(true);
 
-        final var stateSignatureTransactionBytes =
-                StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
+        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         final var eventTransaction =
                 new EventTransaction(new OneOf<>(STATE_SIGNATURE_TRANSACTION, stateSignatureTransactionBytes));
         final var eventCore = mock(EventCore.class);

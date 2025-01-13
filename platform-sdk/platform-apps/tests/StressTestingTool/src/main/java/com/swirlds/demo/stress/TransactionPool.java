@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,9 +55,13 @@ final class TransactionPool {
         // the fixed size of each transaction
         this.transactions = new byte[poolSize][];
 
+        // Add a 1 byte as a marker to indicate the start of an application transaction. This is used
+        // to later differentiate between application transactions and system transactions.
+        final byte marker = 1;
         for (int i = 0; i < transactions.length; i++) {
             final byte[] data = new byte[transactionSize];
             random.nextBytes(data);
+            data[0] = marker;
             transactions[i] = data;
         }
     }
