@@ -54,6 +54,8 @@ import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -81,7 +83,6 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     private static AbstractLongList<?> longList;
 
-    // TODO: can validate this using beforeall and afterall
     /**
      * Keep track of initial direct memory used already, so we can check if we leek over and above what we started with
      */
@@ -98,12 +99,31 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     protected abstract T createLongListFromFile(final Path file) throws IOException;
 
+    @BeforeAll
+    static void beforeAll() {
+        directMemoryUsedAtStart = getDirectMemoryUsedBytes();
+    }
+
+    @AfterAll
+    static void afterAll() {
+        // Check all memory is freed after DB is closed, but skip for LongListDisk
+        // as LongListDisk use file-based operations (FileChannel#write in LongListDisk#closeChunk)
+        // that don't immediately free memory due to OS-level caching
+        if (!(longList instanceof LongListDisk)) {
+            assertTrue(
+                    checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
+                    "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
+                            + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES) + "MB and is now "
+                            + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
+                            + "MB");
+        }
+    }
+
     // Ordered tests
 
     @Test
     @Order(1)
     void createData() {
-        directMemoryUsedAtStart = getDirectMemoryUsedBytes();
         longList = createLongList();
         final long capacity = longList.capacity();
 
@@ -204,20 +224,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @Test
     @Order(5)
     void close() {
-        // Close the Long List
         if (longList != null) {
             longList.close();
-        }
-        // Check all memory is freed after DB is closed, but skip for LongListDisk
-        // as LongListDisk use file-based operations (FileChannel#write in LongListDisk#closeChunk)
-        // that don't immediately free memory due to OS-level caching
-        if (!(longList instanceof LongListDisk)) {
-            assertTrue(
-                    checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
-                    "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                            + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES) + "MB and is now "
-                            + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
-                            + "MB");
         }
     }
 
