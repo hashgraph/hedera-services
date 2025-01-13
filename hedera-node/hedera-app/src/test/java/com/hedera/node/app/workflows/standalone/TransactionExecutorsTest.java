@@ -50,7 +50,10 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
@@ -283,8 +286,10 @@ public class TransactionExecutorsTest {
                 NO_OP_METRICS,
                 startupNetworks);
         final var writableStates = state.getWritableStates(FileService.NAME);
+        final var readableStates = state.getReadableStates(AddressBookService.NAME);
+        final var nodeStore = new ReadableNodeStoreImpl(readableStates);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(networkInfo, config).forEach((fileNum, provider) -> {
+        genesisContentProviders(nodeStore, config).forEach((fileNum, provider) -> {
             final var fileId = createFileID(fileNum, config);
             files.put(
                     fileId,
@@ -299,12 +304,12 @@ public class TransactionExecutorsTest {
     }
 
     private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
-            @NonNull final NetworkInfo networkInfo, @NonNull final Configuration config) {
+            @NonNull final ReadableNodeStore nodeStore, @NonNull final Configuration config) {
         final var genesisSchema = new V0490FileSchema();
         final var filesConfig = config.getConfigData(FilesConfig.class);
         return Map.of(
-                filesConfig.addressBook(), ignore -> genesisSchema.genesisAddressBook(networkInfo),
-                filesConfig.nodeDetails(), ignore -> genesisSchema.genesisNodeDetails(networkInfo),
+                filesConfig.addressBook(), ignore -> genesisSchema.nodeStoreAddressBook(nodeStore),
+                filesConfig.nodeDetails(), ignore -> genesisSchema.nodeStoreNodeDetails(nodeStore),
                 filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
                 filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates,
                 filesConfig.networkProperties(), genesisSchema::genesisNetworkProperties,
