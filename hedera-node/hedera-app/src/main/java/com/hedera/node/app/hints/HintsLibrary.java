@@ -22,6 +22,7 @@ import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 
 /**
@@ -95,8 +96,9 @@ public interface HintsLibrary {
      * Extracts the public key for the given party id from the given aggregation key.
      * @param aggregationKey the aggregation key
      * @param partyId the party id
-     * @return the public key
+     * @return the public key, or null if the party id is not present
      */
+    @Nullable
     BlsPublicKey extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
 
     /**
