@@ -29,6 +29,8 @@ import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
@@ -44,6 +46,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Spliterators;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -71,7 +74,7 @@ public class PlatformStateUpdates {
      * Checks whether the given transaction body is a freeze transaction and eventually
      * notifies the registered facility.
      *
-     * @param state the current state
+     * @param state  the current state
      * @param txBody the transaction body
      * @param config the configuration
      */
@@ -114,8 +117,20 @@ public class PlatformStateUpdates {
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
-                        final var candidateRoster = nodeStore.snapshotOfFutureRoster();
-                        logger.info("Candidate roster is {}", candidateRoster);
+                        final var stakingInfoStore =
+                                new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));
+
+                        // update the candidate roster weights with weights from stakingNodeInfo map
+                        final Function<Long, Long> weightFunction = nodeId -> {
+                            final var stakingInfo = stakingInfoStore.get(nodeId);
+                            if (stakingInfo != null && !stakingInfo.deleted()) {
+                                return stakingInfo.stake();
+                            }
+                            // Default weight if no staking info is found or the node is deleted
+                            return 0L;
+                        };
+                        final var candidateRoster = nodeStore.snapshotOfFutureRoster(weightFunction);
+                        logger.info("Candidate roster with updated weights is {}", candidateRoster);
                         boolean rosterAccepted = false;
                         try {
                             rosterStore.putCandidateRoster(candidateRoster);
@@ -123,8 +138,11 @@ public class PlatformStateUpdates {
                         } catch (Exception e) {
                             logger.warn("Candidate roster was rejected", e);
                         }
-                        if (rosterAccepted && networkAdminConfig.exportCandidateRoster()) {
-                            doExport(candidateRoster, networkAdminConfig);
+                        if (rosterAccepted) {
+                            // If the candidate roster needs to be exported, export the file
+                            if (networkAdminConfig.exportCandidateRoster()) {
+                                doExport(candidateRoster, networkAdminConfig);
+                            }
                         }
                     } else if (networkAdminConfig.exportCandidateRoster()) {
                         // Having the option to export candidate-roster.json even before using the roster

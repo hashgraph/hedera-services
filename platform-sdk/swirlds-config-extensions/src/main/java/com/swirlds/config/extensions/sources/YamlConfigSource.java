@@ -45,7 +45,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * A config source that reads properties from a YAML file.
  * <br>
- * The config source reads the properties from the YAML file.
+ * The config source reads the properties from the YAML file.<br>
+ * <strong>Notice:</strong> We assume that the YAML file is having only one level of nesting, meaning that the first level describes
+ * the config record and the second level describes the properties.
  * <br>
  * The keys of the properties are the full path of the property in the YAML file, separated by dots.
  * For example:
@@ -54,7 +56,7 @@ import org.apache.logging.log4j.Logger;
  *       b:
  *          c: value
  * </code>
- * For the above YAML file, the key for the property would be "a.b.c" to retrieve the "value". This complies with the way the
+ * For the above YAML file, the key for the property would be "a.b" to retrieve the "{c:"value"}". This complies with the way the
  * properties are stored and accessed in the {@link ConfigSource} interface.
  * <br>
  * All list elements are stored as JSON strings and can be deserialized in an {@link com.swirlds.config.api.converter.ConfigConverter}
@@ -155,37 +157,38 @@ public class YamlConfigSource implements ConfigSource {
 
     private void processYamlFile(@NonNull final InputStream resource) throws IOException {
         Objects.requireNonNull(resource, "resource must not be null");
-        processNode(YAML_MAPPER.readTree(resource), "");
-    }
+        final JsonNode rootNode = YAML_MAPPER.readTree(resource);
 
-    private void processNode(@NonNull final JsonNode node, @NonNull final String prefix) {
-        // if it's a simple field we parse the value
-        if (node.isValueNode()) {
-            properties.put(prefix, toValueString(node));
-            return;
-        }
-        // if it's an array we parse the values and put them in a list
-        if (node.isArray()) {
-            final List<String> list = StreamSupport.stream(
-                            Spliterators.spliteratorUnknownSize(node.elements(), 0), false)
-                    .map(this::toValueString)
-                    .toList();
-            listProperties.put(prefix, list);
-            return;
+        if (!rootNode.isObject()) {
+            throw new IllegalArgumentException("Root YAML node must be an object");
         }
 
-        // if it's an object we iterate over the fields to check if they are all value nodes
-        final boolean allValueNodes = StreamSupport.stream(Spliterators.spliteratorUnknownSize(node.fields(), 0), false)
-                .allMatch(e -> e.getValue().isValueNode());
-        // if all the fields are value nodes we store the raw string representation
-        if (allValueNodes) {
-            properties.put(prefix, node.toString());
-            return;
-        }
-        // if none of these criteria are met, we process the children
-        node.fields().forEachRemaining(entry -> {
-            final String newPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
-            processNode(entry.getValue(), newPrefix);
+        // Process first level (config sections)
+        rootNode.fields().forEachRemaining(configEntry -> {
+            final String configName = configEntry.getKey();
+            final JsonNode configNode = configEntry.getValue();
+
+            if (!configNode.isObject()) {
+                throw new IllegalArgumentException("Config section '" + configName + "' must be an object");
+            }
+
+            // Process second level (properties)
+            configNode.fields().forEachRemaining(propertyEntry -> {
+                final String propertyName = configName + "." + propertyEntry.getKey();
+                final JsonNode propertyValue = propertyEntry.getValue();
+
+                if (propertyValue.isArray()) {
+                    // Handle array values
+                    List<String> values = StreamSupport.stream(
+                                    Spliterators.spliteratorUnknownSize(propertyValue.elements(), 0), false)
+                            .map(this::toValueString)
+                            .toList();
+                    listProperties.put(propertyName, values);
+                } else {
+                    // Handle single values and objects (stored as raw JSON string)
+                    properties.put(propertyName, toValueString(propertyValue));
+                }
+            });
         });
     }
 

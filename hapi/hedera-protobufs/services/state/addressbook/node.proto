@@ -125,8 +125,11 @@ message Node {
      * of HBAR staked to that node.<br/>
      * Consensus SHALL be calculated based on agreement of greater than `2/3`
      * of the total `weight` value of all nodes on the network.
+     * <p>
+     * This field is deprecated and SHALL NOT be used when RosterLifecycle
+     * is enabled.
      */
-    uint64 weight = 8;
+    uint64 weight = 8 [deprecated = true];
 
     /**
      * A flag indicating this node is deleted.
