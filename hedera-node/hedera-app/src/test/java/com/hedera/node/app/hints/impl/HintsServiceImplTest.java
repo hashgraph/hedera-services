@@ -24,6 +24,7 @@ import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
@@ -39,6 +40,9 @@ class HintsServiceImplTest {
 
     @Mock
     private AppContext appContext;
+
+    @Mock
+    private TssConfig tssConfig;
 
     @Mock
     private ActiveRosters activeRosters;
@@ -65,7 +69,8 @@ class HintsServiceImplTest {
     @Test
     void nothingSupportedExceptRegisteringSchemas() {
         assertThrows(
-                UnsupportedOperationException.class, () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW));
+                UnsupportedOperationException.class,
+                () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig));
         assertThrows(UnsupportedOperationException.class, subject::isReady);
         assertThrows(UnsupportedOperationException.class, subject::currentVerificationKeyOrThrow);
         assertThrows(UnsupportedOperationException.class, () -> subject.signFuture(Bytes.EMPTY));

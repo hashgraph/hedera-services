@@ -26,6 +26,7 @@ import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -43,6 +44,8 @@ import java.util.function.Function;
  * </ol>
  */
 public class ActiveRosters {
+    private static final int HEX_PREFIX_LENGTH = 6;
+
     private final Phase phase;
 
     @Nullable
@@ -163,6 +166,13 @@ public class ActiveRosters {
     }
 
     /**
+     * Returns the current roster.
+     */
+    public @NonNull Roster currentRoster() {
+        return lookup.apply(currentRosterHash());
+    }
+
+    /**
      * Assuming the {@link RosterService} is in a transition phase, returns the transition weights
      * from the source roster to the target roster.
      *
@@ -174,6 +184,20 @@ public class ActiveRosters {
                     weightsFrom(lookup.apply(sourceRosterHash)), weightsFrom(lookup.apply(targetRosterHash)));
             case HANDOFF -> throw new IllegalStateException("No target roster in handoff phase");
         };
+    }
+
+    @Override
+    public String toString() {
+        return "ActiveRosters{" + "phase="
+                + phase + ", source="
+                + Optional.ofNullable(sourceRosterHash)
+                        .map(ActiveRosters::toHex)
+                        .orElse("<NONE>") + ", target="
+                + toHex(targetRosterHash) + '}';
+    }
+
+    private static String toHex(@NonNull final Bytes bytes) {
+        return bytes.toHex().substring(0, HEX_PREFIX_LENGTH) + "...";
     }
 
     private static @NonNull Map<Long, Long> weightsFrom(@NonNull final Roster roster) {

@@ -20,6 +20,7 @@ import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -84,12 +85,16 @@ public interface HintsService extends Service, BlockHashSigner {
      * behavior will be a deterministic function of the given consensus time and {@link HintsService} states. That is,
      * controllers are persistent objects <i>only</i>due to performance considerations, but are <i>logically</i>
      * functions of just the network state and consensus time.
-     *
-     * @param activeRosters the active rosters
+     *  @param activeRosters the active rosters
      * @param hintsStore the hints store, for recording progress if needed
      * @param now the current consensus time
+     * @param tssConfig the TSS configuration
      */
-    void reconcile(@NonNull ActiveRosters activeRosters, @NonNull WritableHintsStore hintsStore, @NonNull Instant now);
+    void reconcile(
+            @NonNull ActiveRosters activeRosters,
+            @NonNull WritableHintsStore hintsStore,
+            @NonNull Instant now,
+            @NonNull TssConfig tssConfig);
 
     /**
      * Returns the current verification key for the active hinTS construction, or throws if it is incomplete.
