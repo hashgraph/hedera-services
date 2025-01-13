@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.platform.event;
+package com.swirlds.platform.event;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
@@ -53,8 +52,6 @@ public class EventMigrationTest {
      * hashes of old events can still be calculated when the code changes. This is done by calculating the hashes of the
      * events that are read and matching them to the parent descriptors inside the events. The parents of most events
      * will be present in the file, except for a few events at the beginning of the file.
-     * <p>
-     * TODO: This test should be moved to the platform
      */
     @ParameterizedTest
     @MethodSource("migrationTestArguments")
