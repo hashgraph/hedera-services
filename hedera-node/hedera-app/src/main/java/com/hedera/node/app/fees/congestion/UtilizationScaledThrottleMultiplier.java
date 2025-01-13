@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.node.app.fees.congestion;
 
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.AIRDROP;
-import static com.hedera.node.config.types.EntityType.CONTRACT;
+import static com.hedera.node.config.types.EntityType.CONTRACT_BYTECODE;
 import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.NFT;
 import static com.hedera.node.config.types.EntityType.TOKEN;
@@ -93,7 +93,7 @@ public class UtilizationScaledThrottleMultiplier {
                     .scaleForNew(ACCOUNT, roundedAccountPercentUtil(storeFactory))
                     .scaling((int) throttleMultiplier);
             case CONTRACT_CREATE -> entityScaleFactors
-                    .scaleForNew(CONTRACT, roundedContractPercentUtil(storeFactory))
+                    .scaleForNew(CONTRACT_BYTECODE, roundedContractPercentUtil(storeFactory))
                     .scaling((int) throttleMultiplier);
             case FILE_CREATE -> entityScaleFactors
                     .scaleForNew(FILE, roundedFilePercentUtil(storeFactory))

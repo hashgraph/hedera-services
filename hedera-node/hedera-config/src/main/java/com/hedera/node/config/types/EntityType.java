@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.node.config.types;
 
 public enum EntityType {
     ACCOUNT,
-    CONTRACT,
+    CONTRACT_BYTECODE,
     FILE,
     NFT,
     SCHEDULE,
@@ -27,4 +27,5 @@ public enum EntityType {
     TOPIC,
     AIRDROP,
     NODE,
+    CONTRACT_STORAGE_SLOT
 }

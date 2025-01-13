@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,11 @@ public interface ReadableKVState<K, V> {
     /**
      * Gets the number of keys in the {@link ReadableKVState}.
      * @return number of keys in the {@link ReadableKVState}.
+     * @deprecated This method is deprecated from 0.59.0. It should only be used in the 0.59.0 release for updating
+     * the entity counts in the entity id store. All the entity counts are maintained in the entity id store.
+     * This method will be removed in a future release.
      */
+    @Deprecated
     long size();
 
     /**

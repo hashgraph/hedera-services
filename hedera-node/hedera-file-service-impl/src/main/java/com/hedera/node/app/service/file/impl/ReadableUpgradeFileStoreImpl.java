@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.UPGRADE_DATA_KEY;
-import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.UPGRADE_FILE_KEY;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
@@ -61,11 +60,6 @@ public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
     @NonNull
     public String getStateKey() {
         return UPGRADE_DATA_KEY;
-    }
-
-    @NonNull
-    public String getFileStateKey() {
-        return UPGRADE_FILE_KEY;
     }
 
     @Override

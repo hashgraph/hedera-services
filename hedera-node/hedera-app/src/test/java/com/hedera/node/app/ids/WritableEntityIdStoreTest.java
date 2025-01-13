@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ class WritableEntityIdStoreTest {
     @Test
     void peeksAndIncrementsAsExpected() {
         assertEquals(1, subject.peekAtNextNumber());
-        assertEquals(1, subject.incrementAndGet());
+        assertEquals(1, subject.incrementAndGet(entityType));
         assertEquals(2, subject.peekAtNextNumber());
-        assertEquals(2, subject.incrementAndGet());
+        assertEquals(2, subject.incrementAndGet(entityType));
     }
 }
