@@ -18,12 +18,13 @@ package com.hedera.services.bdd.suites.hip869;
 
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -32,6 +33,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -46,8 +48,6 @@ import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -61,7 +61,7 @@ public class NodeDeleteTest {
     private static List<X509Certificate> gossipCertificates;
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+    static void beforeAll() {
         gossipCertificates = generateX509Certificates(1);
     }
 
@@ -80,40 +80,36 @@ public class NodeDeleteTest {
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("validateFees")
-                .given(
-                        newKeyNamed("testKey"),
-                        newKeyNamed("randomAccount"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("node100")
-                                .description(description)
-                                .fee(ONE_HBAR)
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded()),
-                        // Submit to a different node so ingest check is skipped
-                        nodeDelete("node100")
-                                .setNode("0.0.5")
-                                .payingWith("payer")
-                                .hasKnownStatus(INVALID_SIGNATURE)
-                                .via("failedDeletion"))
-                .when()
-                .then(
-                        getTxnRecord("failedDeletion").logged(),
-                        // The fee is charged here because the payer is not privileged
-                        validateChargedUsdWithin("failedDeletion", 0.001, 3.0),
+        return hapiTest(
+                newKeyNamed("testKey"),
+                newKeyNamed("randomAccount"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                nodeCreate("node100")
+                        .description(description)
+                        .fee(ONE_HBAR)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                // Submit to a different node so ingest check is skipped
+                nodeDelete("node100")
+                        .setNode("0.0.5")
+                        .payingWith("payer")
+                        .hasKnownStatus(INVALID_SIGNATURE)
+                        .via("failedDeletion"),
+                getTxnRecord("failedDeletion").logged(),
+                // The fee is charged here because the payer is not privileged
+                validateChargedUsdWithin("failedDeletion", 0.001, 3.0),
 
-                        // Submit with several signatures and the price should increase
-                        nodeDelete("node100")
-                                .setNode("0.0.5")
-                                .payingWith("payer")
-                                .signedBy("payer", "randomAccount", "testKey")
-                                .hasKnownStatus(INVALID_SIGNATURE)
-                                .via("multipleSigsDeletion"),
-                        validateChargedUsdWithin("multipleSigsDeletion", 0.0011276316, 3.0),
-                        nodeDelete("node100").via("deleteNode"),
-                        getTxnRecord("deleteNode").logged(),
-                        // The fee is not charged here because the payer is privileged
-                        validateChargedUsdWithin("deleteNode", 0.0, 3.0));
+                // Submit with several signatures and the price should increase
+                nodeDelete("node100")
+                        .setNode("0.0.5")
+                        .payingWith("payer")
+                        .signedBy("payer", "randomAccount", "testKey")
+                        .hasKnownStatus(INVALID_SIGNATURE)
+                        .via("multipleSigsDeletion"),
+                validateChargedUsdWithin("multipleSigsDeletion", 0.0011276316, 3.0),
+                nodeDelete("node100").via("deleteNode"),
+                getTxnRecord("deleteNode").logged(),
+                // The fee is not charged here because the payer is privileged
+                validateChargedUsdWithin("deleteNode", 0.0, 3.0));
     }
 
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
@@ -150,21 +146,17 @@ public class NodeDeleteTest {
     @HapiTest
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() throws CertificateEncodingException {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
-                .given(
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("ntb")
-                                .description(description)
-                                .fee(ONE_HBAR)
-                                .gossipCaCertificate(
-                                        gossipCertificates.getFirst().getEncoded()),
-                        nodeDelete("ntb")
-                                .payingWith("payer")
-                                .fee(ONE_HBAR)
-                                .hasKnownStatus(INVALID_SIGNATURE)
-                                .via("failedDeletion"))
-                .when()
-                .then();
+        return hapiTest(
+                cryptoCreate("payer").balance(10_000_000_000L),
+                nodeCreate("ntb")
+                        .description(description)
+                        .fee(ONE_HBAR)
+                        .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
+                nodeDelete("ntb")
+                        .payingWith("payer")
+                        .fee(ONE_HBAR)
+                        .hasKnownStatus(INVALID_SIGNATURE)
+                        .via("failedDeletion"));
     }
 
     @HapiTest
@@ -266,11 +258,13 @@ public class NodeDeleteTest {
     final Stream<DynamicTest> deleteNodeWorkWithAddressBookAdminPayer() throws CertificateEncodingException {
         return hapiTest(
                 newKeyNamed("adminKey"),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, ONE_HUNDRED_HBARS))
+                        .fee(ONE_HBAR),
                 nodeCreate("testNode")
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 viewNode("testNode", node -> assertFalse(node.deleted(), "Node should not be deleted")),
-                nodeDelete("testNode").signedBy(ADDRESS_BOOK_CONTROL),
+                nodeDelete("testNode").payingWith(ADDRESS_BOOK_CONTROL),
                 viewNode("testNode", node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 

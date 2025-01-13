@@ -16,7 +16,7 @@
 #########################
 
 /hapi/                                          @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
-/hapi/hedera-protobufs/services                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds
+/hapi/hedera-protobufs/services                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core @jsync-swirlds @hashgraph/mirror-node
 
 
 #########################
@@ -47,6 +47,9 @@
 /hedera-node/hedera-util*/                      @hashgraph/hedera-services
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-services
 /hedera-node/test-clients/                      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
+
+# Documentation
+/hedera-node/docs/design/services/smart-contract-service    @hashgraph/hedera-smart-contracts-core
 
 ###############################
 ##### Hedera Cryptography #####

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package com.hedera.node.app.platform;
 
 import com.hedera.node.app.annotations.CommonExecutor;
+import com.hedera.node.app.state.listeners.FatalIssListenerImpl;
 import com.hedera.node.app.state.listeners.ReconnectListener;
 import com.hedera.node.app.state.listeners.WriteStateToDiskListener;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -68,4 +70,8 @@ public interface PlatformModule {
     @Binds
     @Singleton
     StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(WriteStateToDiskListener writeStateToDiskListener);
+
+    @Binds
+    @Singleton
+    AsyncFatalIssListener bindFatalIssListener(FatalIssListenerImpl listener);
 }

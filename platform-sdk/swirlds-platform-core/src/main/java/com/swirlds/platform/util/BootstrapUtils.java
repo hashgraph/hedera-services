@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.export.ConfigExport;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
-import com.swirlds.logging.legacy.payload.NodeAddressMismatchPayload;
+import com.swirlds.config.extensions.sources.YamlConfigSource;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.platform.ApplicationDefinition;
 import com.swirlds.platform.JVMPauseDetectorThread;
@@ -41,15 +41,14 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
+import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.gui.WindowConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
-import com.swirlds.platform.network.Network;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
@@ -93,7 +92,7 @@ public final class BootstrapUtils {
     private BootstrapUtils() {}
 
     /**
-     * Load the configuration for the platform.
+     * Load the configuration for the platform without overrides.
      *
      * @param configurationBuilder the configuration builder to setup
      * @param settingsPath         the path to the settings.txt file
@@ -102,11 +101,31 @@ public final class BootstrapUtils {
     public static void setupConfigBuilder(
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
             throws IOException {
+        setupConfigBuilder(configurationBuilder, settingsPath, null);
+    }
+
+    /**
+     * Load the configuration for the platform.
+     *
+     * @param configurationBuilder the configuration builder to setup
+     * @param settingsPath         the path to the settings.txt file
+     * @param nodeOverridesPath    the path to the node-overrides.yaml file
+     * @throws IOException if there is a problem reading the configuration files
+     */
+    public static void setupConfigBuilder(
+            @NonNull final ConfigurationBuilder configurationBuilder,
+            @NonNull final Path settingsPath,
+            @Nullable final Path nodeOverridesPath)
+            throws IOException {
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-
         configurationBuilder.autoDiscoverExtensions().withSource(mappedSettingsConfigSource);
+
+        if (nodeOverridesPath != null) {
+            final ConfigSource yamlConfigSource = new YamlConfigSource(nodeOverridesPath);
+            configurationBuilder.withSource(yamlConfigSource);
+        }
     }
 
     /**
@@ -155,6 +174,7 @@ public final class BootstrapUtils {
 
     /**
      * Add classes to the constructable registry which need the configuration.
+     *
      * @param configuration configuration
      */
     public static void setupConstructableRegistryWithConfiguration(Configuration configuration)
@@ -213,7 +233,7 @@ public final class BootstrapUtils {
         if (loadedSignedState == null) {
             loadedSoftwareVersion = null;
         } else {
-            MerkleRoot state = loadedSignedState.getState();
+            PlatformMerkleStateRoot state = loadedSignedState.getState();
             loadedSoftwareVersion = state.getReadablePlatformState().getCreationSoftwareVersion();
         }
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
@@ -316,43 +336,54 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Determine which nodes should be run locally
+     * Determine which nodes should be run locally. The nodes specified on the commandline override the nodes specified
+     * through the system environment.   If no nodes are specified on the commandline or through the system environment,
+     * all nodes in the address book are returned to run locally.
      *
-     * @param addressBook       the address book
-     * @param localNodesToStart local nodes specified to start by the user
-     * @return the nodes to run locally
+     * @param addressBook   the address book
+     * @param cliNodesToRun nodes specified to start by the user on the command line
+     * @param configNodesToRun nodes specified to start by the user in configuration
+     * @return A non-empty list of nodes to run locally
+     * @throws IllegalArgumentException if a node to run is not in the address book or the list of nodes to run is
+     *                                  empty
      */
     public static @NonNull List<NodeId> getNodesToRun(
-            @NonNull final AddressBook addressBook, @NonNull final Set<NodeId> localNodesToStart) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final Set<NodeId> cliNodesToRun,
+            @NonNull final List<NodeId> configNodesToRun) {
         Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(localNodesToStart);
+        Objects.requireNonNull(cliNodesToRun);
+        Objects.requireNonNull(configNodesToRun);
+
         final List<NodeId> nodesToRun = new ArrayList<>();
-        for (final Address address : addressBook) {
-            // if the local nodes to start are not specified, start all local nodes. Otherwise, start specified.
-            if (AddressBookNetworkUtils.isLocal(address)
-                    && (localNodesToStart.isEmpty() || localNodesToStart.contains(address.getNodeId()))) {
-                nodesToRun.add(address.getNodeId());
+        final Set<NodeId> addressBookNodeIds = addressBook.getNodeIdSet();
+
+        if (cliNodesToRun.isEmpty()) {
+            if (configNodesToRun.isEmpty()) {
+                // if no node ids are provided by cli or config, run all nodes from the address book.
+                return new ArrayList<>(addressBookNodeIds);
+            } else {
+                // CLI did not provide any nodes to run, so use the node ids from the config
+                nodesToRun.addAll(configNodesToRun);
+            }
+        } else {
+            // CLI provided nodes override environment provided nodes to run
+            nodesToRun.addAll(cliNodesToRun);
+        }
+
+        for (final NodeId nodeId : nodesToRun) {
+            if (!addressBook.contains(nodeId)) {
+                final String errorMessage = "Node " + nodeId + " is not in the address book and cannot be started.";
+                // all nodes to start must exist in the address book
+                logger.error(EXCEPTION.getMarker(), errorMessage);
+                exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+                // the following throw is not reachable in production,
+                // but reachable in testing with static mocked system exit calls.
+                throw new ConfigurationException(errorMessage);
             }
         }
 
         return nodesToRun;
-    }
-
-    /**
-     * Checks the nodes to run and exits if there are no nodes to run
-     *
-     * @param nodesToRun the nodes to run
-     */
-    public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun) {
-        // if the local machine did not match any address in the address book then we should log an error and exit
-        if (nodesToRun.isEmpty()) {
-            final String externalIpAddress = Network.getExternalIpAddress().getIpAddress();
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
-            exitSystem(NODE_ADDRESS_MISMATCH);
-        }
-        logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", nodesToRun.size());
     }
 
     /**

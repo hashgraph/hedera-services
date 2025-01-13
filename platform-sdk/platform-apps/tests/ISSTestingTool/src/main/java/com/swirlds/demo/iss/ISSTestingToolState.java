@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -45,16 +46,18 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.scratchpad.Scratchpad;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -90,7 +93,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     }
 
     static {
-        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        FakeStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     private static final long CLASS_ID = 0xf059378c7764ef47L;
@@ -134,7 +137,7 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     private Scratchpad<IssTestingToolScratchpad> scratchPad;
 
     public ISSTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
     }
@@ -193,11 +196,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             writeObjectByChildIndex(PLANNED_ISS_LIST_INDEX, plannedIssList);
             writeObjectByChildIndex(PLANNED_LOG_ERROR_LIST_INDEX, plannedLogErrorList);
         } else {
-            StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
+            final StringLeaf runningSumLeaf = getChild(RUNNING_SUM_INDEX);
             if (runningSumLeaf != null) {
                 runningSum = Long.parseLong(runningSumLeaf.getLabel());
             }
-            StringLeaf genesisTimestampLeaf = getChild(GENESIS_TIMESTAMP_INDEX);
+            final StringLeaf genesisTimestampLeaf = getChild(GENESIS_TIMESTAMP_INDEX);
             if (genesisTimestampLeaf != null) {
                 genesisTimestamp = Instant.parse(genesisTimestampLeaf.getLabel());
             }
@@ -210,14 +213,14 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
                 Scratchpad.create(platform.getContext(), selfId, IssTestingToolScratchpad.class, "ISSTestingTool");
     }
 
-    <T extends SelfSerializable> List<T> readObjectByChildIndex(int index, Supplier<T> factory) {
-        StringLeaf stringValue = getChild(index);
+    <T extends SelfSerializable> List<T> readObjectByChildIndex(final int index, final Supplier<T> factory) {
+        final StringLeaf stringValue = getChild(index);
         if (stringValue != null) {
             try {
-                SerializableDataInputStream in = new SerializableDataInputStream(
+                final SerializableDataInputStream in = new SerializableDataInputStream(
                         new ByteArrayInputStream(stringValue.getLabel().getBytes(StandardCharsets.UTF_8)));
                 return in.readSerializableList(1024, false, factory);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         } else {
@@ -225,15 +228,40 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
-    <T extends SelfSerializable> void writeObjectByChildIndex(int index, List<T> list) {
+    <T extends SelfSerializable> void writeObjectByChildIndex(final int index, final List<T> list) {
         try {
-            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-            SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
+            final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
             out.writeSerializableList(list, false, true);
             setChild(index, new StringLeaf(byteOut.toString(StandardCharsets.UTF_8)));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        event.forEachTransaction(transaction -> {
+            // We are not interested in pre-handling any system transactions, as they are
+            // specific for the platform only.We also don't want to consume deprecated
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+            // callback,since it's intended to be used only for the new form of encoded system
+            // transactions in Bytes.Thus, we can directly skip the current
+            // iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            // We should consume in the callback the new form of system transactions in Bytes
+            if (areTransactionBytesSystemOnes(transaction)) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+            }
+        });
     }
 
     /**
@@ -244,15 +272,33 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
             @NonNull final Round round,
             @NonNull final PlatformStateModifier platformState,
             @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         throwIfImmutable();
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
         while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
+            final var event = eventIterator.next();
             captureTimestamp(event);
-            event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                // We are not interested in handling any system transactions, as they are specific
+                // for the platform only.We also don't want to consume deprecated
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+                // callback,since it's intended to be used only for the new form of encoded system
+                // transactions in Bytes.Thus, we can directly skip the current
+                // iteration, if it processes a deprecated system transaction with the
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+                if (transaction.isSystem()) {
+                    return;
+                }
+
+                // We should consume in the callback the new form of system transactions in Bytes
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+                } else {
+                    handleTransaction(transaction);
+                }
+            });
             if (!eventIterator.hasNext()) {
                 final Instant currentTimestamp = event.getConsensusTimestamp();
                 final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
@@ -293,13 +339,35 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the transaction to apply
      */
     private void handleTransaction(final ConsensusTransaction transaction) {
-        if (transaction.isSystem()) {
-            return;
-        }
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         runningSum += delta;
         setChild(RUNNING_SUM_INDEX, new StringLeaf(Long.toString(runningSum)));
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones. The test creates application transactions
+     * with max length of 4. System transactions will be always bigger than that.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 4;
+    }
+
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 
     /**

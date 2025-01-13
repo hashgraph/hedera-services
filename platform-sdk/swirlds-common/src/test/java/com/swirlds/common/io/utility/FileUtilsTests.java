@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -200,9 +201,14 @@ class FileUtilsTests {
         assertEquals(isDirectory(treeA), isDirectory(treeB), "files should be the same type");
 
         if (isDirectory(treeA)) {
-            final List<Path> childrenA = Files.list(treeA).toList();
-            final List<Path> childrenB = Files.list(treeB).toList();
-
+            final List<Path> childrenA;
+            final List<Path> childrenB;
+            try (Stream<Path> list = Files.list(treeA)) {
+                childrenA = list.toList();
+            }
+            try (Stream<Path> list = Files.list(treeB)) {
+                childrenB = list.toList();
+            }
             assertEquals(childrenA.size(), childrenB.size(), "directories have a different number of files¬");
 
             final Map<String, Path> mapA = new HashMap<>();

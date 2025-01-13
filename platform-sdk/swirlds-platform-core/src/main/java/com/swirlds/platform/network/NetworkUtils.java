@@ -19,7 +19,6 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.config.api.Configuration;
@@ -154,12 +153,9 @@ public final class NetworkUtils {
         Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(configuration);
 
-        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
-        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
-
         try {
             return new TlsFactory(
-                    keysAndCerts.agrCert(), keysAndCerts.agrKeyPair().getPrivate(), peers, socketConfig, cryptoConfig);
+                    keysAndCerts.agrCert(), keysAndCerts.agrKeyPair().getPrivate(), peers, selfId, configuration);
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException

@@ -1,3 +1,18 @@
+/**
+ * # Query
+ * This is the parent message for all queries, and this message is
+ * serialized and signed, with the signature included in the QueryHeader.
+ *
+ * All of the entries in the `query` `oneof` are fully specified elsewhere;
+ * we only include a short summary here.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
@@ -58,136 +73,173 @@ import "token_get_nft_infos.proto";
 import "get_account_details.proto";
 
 /**
- * A single query, which is sent from the client to a node. This includes all possible queries. Each
- * Query should not have more than 50 levels.
+ * A query transaction.<br/>
+ * This message is serialized to bytes and those bytes are signed by the
+ * submitter, with the signature included in the QueryHeader for the query
+ * request.
  */
 message Query {
     oneof query {
         /**
-         * Get all entities associated with a given key
+         * Get all entities associated with a given key.
          */
         GetByKeyQuery getByKey = 1;
 
         /**
-         * Get the IDs in the format used in transactions, given the format used in Solidity
+         * Get an Hedera identifier associated with an identifier in EVM
+         * "Solidity" form.<br/>
+         * Most often used in smart contracts to find an Hedera account,
+         * file, or contract identifier to pass to a system contract or
+         * precompile.
          */
         GetBySolidityIDQuery getBySolidityID = 2;
 
         /**
-         * Call a function of a smart contract instance
+         * Call a function of a smart contract.<br/>
+         * This call is executed exclusively on the node to which it is
+         * submitted, and is much less expensive than a `contractCall`
+         * transaction.
          */
         ContractCallLocalQuery contractCallLocal = 3;
 
         /**
-         * Get information about a smart contract instance
+         * Get information about a smart contract.
          */
         ContractGetInfoQuery contractGetInfo = 4;
 
         /**
-         * Get runtime code used by a smart contract instance
+         * Get runtime bytecode used by a smart contract.
          */
         ContractGetBytecodeQuery contractGetBytecode = 5;
 
         /**
-         * Get Records of the contract instance
+         * This query is unsupported and SHALL fail.<br/>
+         * Requests for this information MUST be directed to a mirror node.
+         * <p>
+         * Get Records of a smart contract.
          */
-        ContractGetRecordsQuery ContractGetRecords = 6;
-
+        ContractGetRecordsQuery ContractGetRecords = 6 [deprecated = true];
 
         /**
-         * Get the current balance in a cryptocurrency account
+         * Get the current HBAR balance of an Hedera account or smart contract.
          */
         CryptoGetAccountBalanceQuery cryptogetAccountBalance = 7;
 
         /**
-         * Get all the records that currently exist for transactions involving an account
+         * Get records of all "recent" transactions for which a specified
+         * account is the effective payer.
          */
         CryptoGetAccountRecordsQuery cryptoGetAccountRecords = 8;
 
         /**
-         * Get all information about an account
+         * Get information about an account, including the balance.<br/>
+         * This does not get the list of account records.
          */
         CryptoGetInfoQuery cryptoGetInfo = 9;
 
         /**
-         * Get a single livehash from a single account, if present
+         * This query is unsupported and SHALL fail.<br/>
+         * Requests for this information MUST be directed to a mirror node.
+         * <p>
+         * Get a single livehash from a single account, if present.
          */
-        CryptoGetLiveHashQuery cryptoGetLiveHash = 10;
+        CryptoGetLiveHashQuery cryptoGetLiveHash = 10 [deprecated = true];
 
         /**
-         * Get all the accounts that proxy stake to a given account, and how much they proxy stake
-         * (not yet implemented in the current API)
+         * This query is unsupported and SHALL fail.<br/>
+         * Requests for this information MUST be directed to a mirror node.
+         * <p>
+         * Get all the accounts that are proxy staking to this account.
          */
-        CryptoGetStakersQuery cryptoGetProxyStakers = 11;
+        CryptoGetStakersQuery cryptoGetProxyStakers = 11 [deprecated = true];
 
         /**
-         * Get the contents of a file (the bytes stored in it)
+         * Get the content of a file.
          */
         FileGetContentsQuery fileGetContents = 12;
 
         /**
-         * Get information about a file, such as its expiration date
+         * Get metadata for a file.
          */
         FileGetInfoQuery fileGetInfo = 13;
 
         /**
-         * Get a receipt for a transaction (lasts 180 seconds)
+         * Get a receipt for a transaction.<br/>
+         * This only returns a receipt if the transaction is "recent", which
+         * is typically within the previous 180 seconds (3 minutes).
          */
         TransactionGetReceiptQuery transactionGetReceipt = 14;
 
         /**
-         * Get a record for a transaction
+         * Get a record for a transaction.
+         * This only returns a record if the transaction is "available", which
+         * is typically within the previous 1 hour.
          */
         TransactionGetRecordQuery transactionGetRecord = 15;
 
         /**
-         * Get a record for a transaction (lasts 180 seconds)
+         * Get a record for a transaction.
+         * This only returns a record if the transaction is "recent", which
+         * is typically within the previous 180 seconds (3 minutes).
          */
         TransactionGetFastRecordQuery transactionGetFastRecord = 16;
 
         /**
-         * Get the parameters of and state of a consensus topic.
+         * Get metadata for a consensus topic.
          */
         ConsensusGetTopicInfoQuery consensusGetTopicInfo = 50;
 
         /**
-         * Get the versions of the HAPI protobuf and Hedera Services software deployed on the
-         * responding node.
+         * Get the versions of Hedera Services and the HAPI API deployed on
+         * the responding consensus node.
          */
         NetworkGetVersionInfoQuery networkGetVersionInfo = 51;
 
         /**
-         * Get all information about a token
+         * Get metadata for a token.
          */
         TokenGetInfoQuery tokenGetInfo = 52;
 
         /**
-         * Get all information about a scheduled entity
+         * Get metadata for a schedule.<br/>
+         * A schedule is a request to execute a transaction at a future
+         * time.
          */
         ScheduleGetInfoQuery scheduleGetInfo = 53;
 
         /**
-         * Get a list of NFTs associated with the account
+         * This query is unsupported and SHALL fail.<br/>
+         * Requests for this information MUST be directed to a mirror node.
+         * <p>
+         * Get a list of non-fungible/unique tokens associated with an account.
          */
-        TokenGetAccountNftInfosQuery tokenGetAccountNftInfos = 54;
+        TokenGetAccountNftInfosQuery tokenGetAccountNftInfos = 54 [deprecated = true];
 
         /**
-         * Get all information about a NFT
+         * Get metadata for a specific, serial numbered, non-fungible/unique
+         * token (NFT).
          */
         TokenGetNftInfoQuery tokenGetNftInfo = 55;
 
         /**
-         * Get a list of NFTs for the token
+         * This query is unsupported and SHALL fail.<br/>
+         * Requests for this information MUST be directed to a mirror node.
+         * <p>
+         * Get metadata for all non-fungible/unique tokens (NFTs) of a single
+         * type within a range of indices (0-based count of minted tokens).
          */
-        TokenGetNftInfosQuery tokenGetNftInfos = 56;
+        TokenGetNftInfosQuery tokenGetNftInfos = 56 [deprecated = true];
 
         /**
-         * Gets <tt>handleTransaction</tt> times for one or more "sufficiently recent" TransactionIDs
+         * This query is unsupported and SHALL fail.<br/>
+         * Requests for this information MUST be directed to a mirror node.
+         * <p>
+         * Get the execution time for a recent transaction.
          */
-        NetworkGetExecutionTimeQuery networkGetExecutionTime = 57;
+        NetworkGetExecutionTimeQuery networkGetExecutionTime = 57 [deprecated = true];
 
         /**
-         * Gets all information about an account including allowances granted by the account
+         * Get detail metadata for an account.
          */
         GetAccountDetailsQuery accountDetails = 58;
     }

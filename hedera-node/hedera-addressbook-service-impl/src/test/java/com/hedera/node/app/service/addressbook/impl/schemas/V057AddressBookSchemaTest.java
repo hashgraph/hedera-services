@@ -1,28 +1,17 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.WITH_ROSTER_LIFECYCLE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -42,7 +31,7 @@ class V057AddressBookSchemaTest {
                     NodeMetadata.newBuilder()
                             .node(Node.newBuilder().nodeId(1L).description("A"))
                             .build(),
-                    NodeMetadata.DEFAULT,
+                    NodeMetadata.newBuilder().node(Node.DEFAULT).build(),
                     NodeMetadata.newBuilder()
                             .node(Node.newBuilder().nodeId(2L).description("B"))
                             .build())
@@ -63,33 +52,52 @@ class V057AddressBookSchemaTest {
     private final V057AddressBookSchema subject = new V057AddressBookSchema();
 
     @Test
-    void returnsIfGenesisNodeMetadataUnavailable() {
-        given(ctx.isGenesis()).willReturn(true);
-        given(ctx.startupNetworks()).willReturn(startupNetworks);
-        given(startupNetworks.genesisNetworkOrThrow()).willThrow(IllegalStateException.class);
+    void migrationIsNoOpIfRosterLifecycleNotEnabled() {
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
 
         subject.restart(ctx);
 
-        verifyNoInteractions(writableStates);
+        verifyNoMoreInteractions(ctx);
     }
 
     @Test
     void usesGenesisNodeMetadataIfPresent() {
+        final var bootstrapAdminKey = Key.newBuilder()
+                .ed25519(DEFAULT_CONFIG.getConfigData(BootstrapConfig.class).genesisPublicKey())
+                .build();
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
-        given(startupNetworks.genesisNetworkOrThrow()).willReturn(NETWORK);
+        given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(NETWORK);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
+        given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodes);
 
-        subject.restart(ctx);
+        subject.migrate(ctx);
 
         verify(nodes)
-                .put(new EntityNumber(1L), NETWORK.nodeMetadata().getFirst().nodeOrThrow());
-        verify(nodes).put(new EntityNumber(2L), NETWORK.nodeMetadata().getLast().nodeOrThrow());
+                .put(
+                        new EntityNumber(1L),
+                        NETWORK.nodeMetadata()
+                                .getFirst()
+                                .nodeOrThrow()
+                                .copyBuilder()
+                                .adminKey(bootstrapAdminKey)
+                                .build());
+        verify(nodes)
+                .put(
+                        new EntityNumber(2L),
+                        NETWORK.nodeMetadata()
+                                .getLast()
+                                .nodeOrThrow()
+                                .copyBuilder()
+                                .adminKey(bootstrapAdminKey)
+                                .build());
     }
 
     @Test
     void usesOverrideMetadataIfPresent() {
+        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.overrideNetworkFor(0L)).willReturn(Optional.of(NETWORK));
         given(ctx.newStates()).willReturn(writableStates);

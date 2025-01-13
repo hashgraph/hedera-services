@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,13 @@ package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
@@ -56,7 +59,8 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime,
+        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NodeId> nodesToRun) {
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

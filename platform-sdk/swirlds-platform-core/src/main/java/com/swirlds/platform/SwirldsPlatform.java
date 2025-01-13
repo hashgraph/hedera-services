@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
@@ -211,6 +211,7 @@ public class SwirldsPlatform implements Platform {
         initialPcesFiles = blocks.initialPcesFiles();
         notificationEngine = blocks.notificationEngine();
 
+        logger.info(STARTUP.getMarker(), "Starting with roster history:\n{}", blocks.rosterHistory());
         currentRoster = blocks.rosterHistory().getCurrentRoster();
 
         platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
@@ -365,7 +366,7 @@ public class SwirldsPlatform implements Platform {
             return null;
         }
 
-        final MerkleRoot state = initialState.getState();
+        final PlatformMerkleStateRoot state = initialState.getState();
         final PlatformStateAccessor platformState = state.getReadablePlatformState();
 
         return new DefaultBirthRoundMigrationShim(
@@ -515,6 +516,6 @@ public class SwirldsPlatform implements Platform {
         final ReservedSignedState wrapper = latestImmutableStateNexus.getState(reason);
         return wrapper == null
                 ? AutoCloseableWrapper.empty()
-                : new AutoCloseableWrapper<>((T) wrapper.get().getState().getSwirldState(), wrapper::close);
+                : new AutoCloseableWrapper<>((T) wrapper.get().getState(), wrapper::close);
     }
 }

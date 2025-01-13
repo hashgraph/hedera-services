@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
@@ -34,7 +19,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runBackgroundTraffi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetworkWithReassignedPorts;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
@@ -80,7 +65,7 @@ public interface LifecycleTest {
      * @param versionSupplier the supplier of the expected version
      * @return the operation
      */
-    default HapiSpecOperation assertExpectedConfigVersion(@NonNull final Supplier<SemanticVersion> versionSupplier) {
+    default HapiSpecOperation assertGetVersionInfoMatches(@NonNull final Supplier<SemanticVersion> versionSupplier) {
         return sourcing(() -> getVersionInfo()
                 .hasProtoServicesVersion(fromBaseAndConfig(versionSupplier.get(), CURRENT_CONFIG_VERSION.get())));
     }
@@ -136,7 +121,7 @@ public interface LifecycleTest {
      * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
      * @return the operation
      */
-    default SpecOperation restartAtNextConfigVersion() {
+    static SpecOperation restartAtNextConfigVersion() {
         return blockingOrder(
                 freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
                 // Immediately submit a transaction in the same round to ensure freeze time is only
@@ -144,23 +129,32 @@ public interface LifecycleTest {
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
                 sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
-                waitForActiveNetwork(RESTART_TIMEOUT));
+                waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT));
     }
 
     /**
      * Returns an operation that upgrades the network with disabled node operator port to the next configuration version using a fake upgrade ZIP.
      * @return the operation
      */
-    default SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+    static SpecOperation restartWithDisabledNodeOperatorGrpcPort() {
+        return restartAtNextConfigVersionVia(sourcing(
+                () -> FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())));
+    }
+
+    /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    static SpecOperation restartAtNextConfigVersionVia(@NonNull final SpecOperation restartOp) {
+        requireNonNull(restartOp);
         return blockingOrder(
                 freezeOnly().startingIn(5).seconds().payingWith(GENESIS).deferStatusResolution(),
                 // Immediately submit a transaction in the same round to ensure freeze time is only
                 // reset when last frozen time matches it (i.e., in a post-upgrade transaction)
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
                 confirmFreezeAndShutdown(),
-                sourcing(() ->
-                        FakeNmt.restartNetworkWithDisabledNodeOperatorPort(CURRENT_CONFIG_VERSION.incrementAndGet())),
-                waitForActiveNetwork(RESTART_TIMEOUT));
+                restartOp,
+                waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT));
     }
 
     /**
@@ -204,7 +198,7 @@ public interface LifecycleTest {
                 blockingOrder(preRestartOps),
                 FakeNmt.restartNetwork(version),
                 doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
-                waitForActiveNetwork(RESTART_TIMEOUT),
+                waitForActiveNetworkWithReassignedPorts(RESTART_TIMEOUT),
                 cryptoCreate("postUpgradeAccount"),
                 // Ensure we have a post-upgrade transaction in a new period to trigger
                 // system file exports while still streaming records
@@ -215,7 +209,7 @@ public interface LifecycleTest {
      * Returns an operation that confirms the network has been frozen and shut down.
      * @return the operation
      */
-    default HapiSpecOperation confirmFreezeAndShutdown() {
+    static HapiSpecOperation confirmFreezeAndShutdown() {
         return blockingOrder(
                 waitForFrozenNetwork(FREEZE_TIMEOUT),
                 // Shut down all nodes, since the platform doesn't automatically go back to ACTIVE status

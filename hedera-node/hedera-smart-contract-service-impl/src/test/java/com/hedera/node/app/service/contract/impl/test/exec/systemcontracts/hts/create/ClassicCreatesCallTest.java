@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.readableRevertReason;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -371,6 +373,35 @@ public class ClassicCreatesCallTest extends CallTestBase {
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(readableRevertReason(recordBuilder.status()), result.getOutput());
+    }
+
+    @Test
+    void isSchedulableDispatchInFailsWithNullBody() {
+        // given
+        subject =
+                new ClassicCreatesCall(gasCalculator, mockEnhancement(), null, verificationStrategy, A_NEW_ACCOUNT_ID);
+
+        // when/then
+        assertThatExceptionOfType(UnsupportedOperationException.class)
+                .isThrownBy(() -> subject.asSchedulableDispatchIn())
+                .withMessage("Needs scheduleNative() support");
+    }
+
+    @Test
+    void isSchedulableDispatchInHappyPath() {
+        // given
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+                .build();
+        final var expectedBody = SchedulableTransactionBody.newBuilder()
+                .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+                .build();
+        subject = new ClassicCreatesCall(
+                gasCalculator, mockEnhancement(), txnBody, verificationStrategy, A_NEW_ACCOUNT_ID);
+
+        // when/then
+        final var response = subject.asSchedulableDispatchIn();
+        assertEquals(expectedBody, response);
     }
 
     private void commonGivens() {

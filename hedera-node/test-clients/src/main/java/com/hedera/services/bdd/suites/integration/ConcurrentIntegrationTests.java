@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.hedera.services.bdd.suites.integration;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MANIPULATES_EVENT_VERSION;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
 import static com.hedera.services.bdd.junit.TestTags.INTEGRATION;
@@ -37,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateStakingInfos;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateToken;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewMappedValue;
@@ -64,8 +67,6 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -76,7 +77,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.services.bdd.junit.BootstrapOverride;
+import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -209,7 +210,7 @@ public class ConcurrentIntegrationTests {
                                 Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)));
     }
 
-    @GenesisHapiTest(bootstrapOverrides = {@BootstrapOverride(key = "addressBook.useRosterLifecycle", value = "true")})
+    @GenesisHapiTest(bootstrapOverrides = {@ConfigOverride(key = "addressBook.useRosterLifecycle", value = "true")})
     @DisplayName("freeze upgrade with roster lifecycle sets candidate roster")
     final Stream<DynamicTest> freezeUpgradeWithRosterLifecycleSetsCandidateRoster()
             throws CertificateEncodingException {
@@ -222,6 +223,9 @@ public class ConcurrentIntegrationTests {
                         .description(CLASSIC_NODE_NAMES[4])
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 mutateNode("4", node -> node.weight(123)),
+                // Let few nodes have non-zero stake
+                mutateStakingInfos("0", node -> node.stake(ONE_HUNDRED_HBARS)),
+                mutateStakingInfos("1", node -> node.stake(ONE_HUNDRED_HBARS)),
                 // Submit a valid FREEZE_UPGRADE
                 buildUpgradeZipFrom(FAKE_ASSETS_LOC),
                 sourcing(() -> updateSpecialFile(
@@ -238,7 +242,7 @@ public class ConcurrentIntegrationTests {
                         .seconds()
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
                         .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC))),
-                // Verify the candidate roster is set as part of handling the FREEZE_UPGRADE
+                // Verify the candidate roster is set as part of handling the PREPARE_UPGRADE
                 viewSingleton(
                         RosterService.NAME,
                         ROSTER_STATES_KEY,

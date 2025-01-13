@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -120,6 +121,8 @@ class DispatchProcessorTest {
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL, null);
     private static final TransactionInfo ETH_TXN_INFO = new TransactionInfo(
             Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, ETHEREUM_TRANSACTION, null);
+    private static final TransactionInfo NODE_CREATE_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, NODE_CREATE, null);
 
     @Mock
     private EthereumTransactionHandler ethereumTransactionHandler;
@@ -614,6 +617,27 @@ class DispatchProcessorTest {
         verify(recordBuilder).status(DUPLICATE_TRANSACTION);
         verifyNoInteractions(dispatcher);
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
+        assertFinished();
+    }
+
+    @Test
+    void unauthorizedNodeCreateWhenPayerNotTreasurySysAdminAddressBookAdmin() {
+        given(dispatchValidator.validationReportFor(dispatch)).willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(NODE_CREATE_TXN_INFO);
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, NODE_CREATE_TXN_INFO.functionality()))
+                .willReturn(false);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.txnCategory()).willReturn(USER);
+
+        subject.processDispatch(dispatch);
+
+        verifyTrackedFeePayments();
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(UNAUTHORIZED);
+        verify(opWorkflowMetrics, never()).incrementThrottled(any());
+
         assertFinished();
     }
 

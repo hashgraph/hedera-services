@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,9 @@ import static java.util.stream.Collectors.toList;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -52,6 +54,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
+import com.hedera.services.bdd.spec.verification.Condition;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -73,10 +76,12 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -119,6 +124,21 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     protected Optional<EnumSet<ResponseCodeEnum>> permissiblePrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
     protected Optional<EnumSet<ResponseCodeEnum>> retryPrechecks = Optional.empty();
+
+    protected List<Condition> conditions = new ArrayList<>();
+
+    public T satisfies(@NonNull final Condition condition) {
+        conditions.add(condition);
+        return self();
+    }
+
+    public T satisfies(@NonNull final BooleanSupplier condition, @NonNull final Supplier<String> errorMessage) {
+        return satisfies(new Condition(condition, errorMessage));
+    }
+
+    public T satisfies(@NonNull final BooleanSupplier condition, @NonNull final String errorMessage) {
+        return satisfies(new Condition(condition, () -> errorMessage));
+    }
 
     /**
      * A strategy for submitting a transaction of the given function and type to a network node with the given id.
@@ -212,7 +232,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                                         + "possibly network connection lost.",
                                 TxnUtils.toReadableString(txn),
                                 e);
-                        throw new HapiTxnCheckStateException("Unable to resolve txn status!");
+                        if (spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork) {
+                            log.error(
+                                    "gRPC ports mappings were {}",
+                                    subProcessNetwork.nodes().stream()
+                                            .collect(Collectors.toMap(HederaNode::getNodeId, HederaNode::getGrpcPort)));
+                        }
+                        throw new HapiTxnCheckStateException("Unable to resolve txn status");
                     }
                 }
             }
@@ -291,6 +317,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
         if (requiresFinalization(spec)) {
             spec.offerFinisher(new DelegatingOpFinisher(this));
+        }
+
+        for (final var condition : conditions) {
+            if (!condition.condition().getAsBoolean()) {
+                throw new HapiTxnCheckStateException("Condition failed: " + condition.errorMessage());
+            }
         }
 
         return !deferStatusResolution;

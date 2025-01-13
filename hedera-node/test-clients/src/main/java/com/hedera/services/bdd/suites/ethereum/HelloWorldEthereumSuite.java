@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -110,6 +109,7 @@ public class HelloWorldEthereumSuite {
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
+    private static final String BLOCKQUERIES_CONTRACT = "BlockQueries";
     private static final String DEPOSIT = "deposit";
 
     @HapiTest
@@ -120,82 +120,78 @@ public class HelloWorldEthereumSuite {
         final AtomicReference<byte[]> adminKey = new AtomicReference<>();
         final AtomicReference<AccountCreationDetails> creationDetails = new AtomicReference<>();
 
-        return defaultHapiSpec("canCreateTokenWithCryptoAdminKeyOnlyIfHasTopLevelSig")
-                .given(
-                        // Deploy our test contract
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(5_000_000L),
+        return hapiTest(
+                // Deploy our test contract
+                uploadInitCode(contract),
+                contractCreate(contract).gas(5_000_000L),
 
-                        // Create an ECDSA key
-                        newKeyNamed(cryptoKey)
-                                .shape(SECP256K1_ON)
-                                .exposingKeyTo(
-                                        k -> adminKey.set(k.getECDSASecp256K1().toByteArray())),
-                        // Create an account with an EVM address derived from this key
-                        cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, cryptoKey, 2 * ONE_HUNDRED_HBARS))
-                                .via("creation"),
-                        // Get its EVM address for later use in the contract call
-                        getTxnRecord("creation")
-                                .exposingCreationDetailsTo(allDetails -> creationDetails.set(allDetails.getFirst())),
-                        // Update key to a threshold key authorizing our contract use this account as a token treasury
-                        newKeyNamed(thresholdKey)
-                                .shape(threshOf(1, PREDEFINED_SHAPE, CONTRACT).signedWith(sigs(cryptoKey, contract))),
-                        sourcing(() -> cryptoUpdate(
-                                        asAccountString(creationDetails.get().createdId()))
+                // Create an ECDSA key
+                newKeyNamed(cryptoKey)
+                        .shape(SECP256K1_ON)
+                        .exposingKeyTo(k -> adminKey.set(k.getECDSASecp256K1().toByteArray())),
+                // Create an account with an EVM address derived from this key
+                cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, cryptoKey, 2 * ONE_HUNDRED_HBARS))
+                        .via("creation"),
+                // Get its EVM address for later use in the contract call
+                getTxnRecord("creation")
+                        .exposingCreationDetailsTo(allDetails -> creationDetails.set(allDetails.getFirst())),
+                // Update key to a threshold key authorizing our contract use this account as a token treasury
+                newKeyNamed(thresholdKey)
+                        .shape(threshOf(1, PREDEFINED_SHAPE, CONTRACT).signedWith(sigs(cryptoKey, contract))),
+                sourcing(
+                        () -> cryptoUpdate(asAccountString(creationDetails.get().createdId()))
                                 .key(thresholdKey)
-                                .signedBy(DEFAULT_PAYER, cryptoKey)))
-                .when(
-                        // First verify we fail to create without the admin key's top-level signature
-                        sourcing(() -> contractCall(
-                                        contract,
-                                        "createFungibleTokenWithSECP256K1AdminKeyPublic",
-                                        // Treasury is the EVM address
-                                        creationDetails.get().evmAddress(),
-                                        // Admin key is the ECDSA key
-                                        adminKey.get())
-                                .via("creationWithoutTopLevelSig")
-                                .gas(5_000_000L)
-                                .sending(100 * ONE_HBAR)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        // Next verify we succeed when using the top-level SignatureMap to
-                        // sign with the admin key
-                        sourcing(() -> contractCall(
-                                        contract,
-                                        "createFungibleTokenWithSECP256K1AdminKeyPublic",
-                                        creationDetails.get().evmAddress(),
-                                        adminKey.get())
-                                .via("creationActivatingAdminKeyViaSigMap")
-                                .gas(5_000_000L)
-                                .sending(100 * ONE_HBAR)
-                                // This is the important change, include a top-level signature with the admin key
-                                .alsoSigningWithFullPrefix(cryptoKey)),
-                        // Finally confirm we ALSO succeed when providing the admin key's
-                        // signature via an EthereumTransaction signature
-                        cryptoCreate(RELAYER).balance(10 * THOUSAND_HBAR),
-                        sourcing(() -> ethereumCall(
-                                        contract,
-                                        "createFungibleTokenWithSECP256K1AdminKeyPublic",
-                                        creationDetails.get().evmAddress(),
-                                        adminKey.get())
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .nonce(0)
-                                .signingWith(cryptoKey)
-                                .payingWith(RELAYER)
-                                .sending(50 * ONE_HBAR)
-                                .maxGasAllowance(ONE_HBAR * 10)
-                                .gasLimit(5_000_000L)
-                                .via("creationActivatingAdminKeyViaEthTxSig")))
-                .then(
-                        childRecordsCheck(
-                                "creationWithoutTopLevelSig",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        getTxnRecord("creationActivatingAdminKeyViaSigMap")
-                                .exposingTokenCreationsTo(createdIds ->
-                                        assertFalse(createdIds.isEmpty(), "Top-level sig map creation failed")),
-                        getTxnRecord("creationActivatingAdminKeyViaEthTxSig")
-                                .exposingTokenCreationsTo(
-                                        createdIds -> assertFalse(createdIds.isEmpty(), "EthTx sig creation failed")));
+                                .signedBy(DEFAULT_PAYER, cryptoKey)),
+                // First verify we fail to create without the admin key's top-level signature
+                sourcing(() -> contractCall(
+                                contract,
+                                "createFungibleTokenWithSECP256K1AdminKeyPublic",
+                                // Treasury is the EVM address
+                                creationDetails.get().evmAddress(),
+                                // Admin key is the ECDSA key
+                                adminKey.get())
+                        .via("creationWithoutTopLevelSig")
+                        .gas(5_000_000L)
+                        .sending(100 * ONE_HBAR)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                // Next verify we succeed when using the top-level SignatureMap to
+                // sign with the admin key
+                sourcing(() -> contractCall(
+                                contract,
+                                "createFungibleTokenWithSECP256K1AdminKeyPublic",
+                                creationDetails.get().evmAddress(),
+                                adminKey.get())
+                        .via("creationActivatingAdminKeyViaSigMap")
+                        .gas(5_000_000L)
+                        .sending(100 * ONE_HBAR)
+                        // This is the important change, include a top-level signature with the admin key
+                        .alsoSigningWithFullPrefix(cryptoKey)),
+                // Finally confirm we ALSO succeed when providing the admin key's
+                // signature via an EthereumTransaction signature
+                cryptoCreate(RELAYER).balance(10 * THOUSAND_HBAR),
+                sourcing(() -> ethereumCall(
+                                contract,
+                                "createFungibleTokenWithSECP256K1AdminKeyPublic",
+                                creationDetails.get().evmAddress(),
+                                adminKey.get())
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .nonce(0)
+                        .signingWith(cryptoKey)
+                        .payingWith(RELAYER)
+                        .sending(50 * ONE_HBAR)
+                        .maxGasAllowance(ONE_HBAR * 10)
+                        .gasLimit(5_000_000L)
+                        .via("creationActivatingAdminKeyViaEthTxSig")),
+                childRecordsCheck(
+                        "creationWithoutTopLevelSig",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                getTxnRecord("creationActivatingAdminKeyViaSigMap")
+                        .exposingTokenCreationsTo(
+                                createdIds -> assertFalse(createdIds.isEmpty(), "Top-level sig map creation failed")),
+                getTxnRecord("creationActivatingAdminKeyViaEthTxSig")
+                        .exposingTokenCreationsTo(
+                                createdIds -> assertFalse(createdIds.isEmpty(), "EthTx sig creation failed")));
     }
 
     @HapiTest
@@ -362,6 +358,45 @@ public class HelloWorldEthereumSuite {
                                         .ethereumHash(ByteString.copyFrom(
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))),
                 getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> customizedEvmValuesAreCustomized() {
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via("autoAccount"),
+                getTxnRecord("autoAccount").andAllChildRecords(),
+                uploadInitCode(BLOCKQUERIES_CONTRACT),
+                contractCreate(BLOCKQUERIES_CONTRACT).adminKey(THRESHOLD),
+                // Blobbasefee set correctly initially:
+                ethereumCall(BLOCKQUERIES_CONTRACT, "getBlobBaseFee")
+                        .via("callTxn1")
+                        .hasKnownStatus(SUCCESS),
+                // Blobbasefee propagates to child frames correctly:
+                ethereumCall(BLOCKQUERIES_CONTRACT, "getBlobBaseFeeR", BigInteger.TEN)
+                        .via("callTxn2")
+                        .hasKnownStatus(SUCCESS),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("callTxn1")
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder(logWith()
+                                                        .longAtBytes(1L /* i.e., 1 Wei */, 24)
+                                                        .withTopicsInOrder(
+                                                                List.of(eventSignatureOf("Info(uint256)"))))))),
+                        getTxnRecord("callTxn2")
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder(logWith()
+                                                        .longAtBytes(1L /* i.e., 1 Wei */, 24)
+                                                        .withTopicsInOrder(
+                                                                List.of(eventSignatureOf("Info(uint256)"))))))))));
     }
 
     @HapiTest

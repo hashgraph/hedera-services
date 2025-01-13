@@ -125,35 +125,5 @@
         "ed25519": "CqjiEGTGHquG4qnBZFZbTnqaQUYQbgps0DqMOVoRDpI="
       }
     }
-  }],
-  "tssMessages": [{
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "9",
-    "tssMessage": "VkFMSUQ5"
-  }, {
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "8",
-    "tssMessage": "VkFMSUQ4"
-  }, {
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "3",
-    "tssMessage": "VkFMSUQz"
-  }, {
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "2",
-    "tssMessage": "VkFMSUQy"
-  }, {
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "7",
-    "tssMessage": "VkFMSUQ3"
-  }, {
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "5",
-    "tssMessage": "VkFMSUQ1"
-  }, {
-    "targetRosterHash": "x59s9F7BvXzYVRKj6jYJq9qMuzV8pgchc053L920tMaWeGNzXoBXhW1x25snK0by",
-    "shareIndex": "10",
-    "tssMessage": "VkFMSUQxMA=="
-  }],
-  "ledgerId": "Lw=="
+  }]
 }

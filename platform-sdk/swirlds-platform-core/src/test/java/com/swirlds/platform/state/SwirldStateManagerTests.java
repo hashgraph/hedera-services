@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
 class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private MerkleRoot initialState;
+    private PlatformMerkleStateRoot initialState;
 
     @BeforeEach
     void setup() {
@@ -125,7 +125,7 @@ class SwirldStateManagerTests {
                         + "decremented.");
     }
 
-    private static MerkleRoot newState() {
+    private static PlatformMerkleStateRoot newState() {
         final PlatformMerkleStateRoot state = new PlatformMerkleStateRoot(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
