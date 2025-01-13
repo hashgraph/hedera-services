@@ -25,6 +25,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.AtomicBatchConfig;
+import com.hedera.node.config.data.UtilPrngConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -68,5 +70,8 @@ public class AtomicBatchHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
         // TODO
+        if (!handleContext.configuration().getConfigData(AtomicBatchConfig.class).isEnabled()) {
+            return;
+        }
     }
 }
