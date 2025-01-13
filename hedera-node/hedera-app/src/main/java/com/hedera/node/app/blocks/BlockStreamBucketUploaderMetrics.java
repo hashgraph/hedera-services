@@ -17,9 +17,13 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.node.app.annotations.NodeSelfId;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -30,19 +34,23 @@ public class BlockStreamBucketUploaderMetrics {
     private static final Logger log = LogManager.getLogger(BlockStreamBucketUploaderMetrics.class);
     public static final String PER_NODE_METRIC_PREFIX = "hedera.blocks.bucket.%s";
     public static final String PER_PROVIDER_PER_NODE_METRIC_PREFIX = "hedera.blocks.bucket.%s.%s";
-    private static final String BLOCKS_RETAINED = "blocks.retained";
+    public static final String BLOCKS_RETAINED = "blocks.retained";
     private static final String BLOCKS_RETAINED_DESC =
             "Current number of blocks retained in root block file directory on disk for the node";
-    private static final String BLOCKS_UPLOADED = "blocks.uploaded";
+    public static final String BLOCKS_UPLOADED = "blocks.uploaded";
     private static final String BLOCKS_UPLOADED_DESC =
             "Current number of blocks in uploaded directory on disk for the node";
-    private static final String BLOCKS_HASH_MISMATCH = "blocks.hashmismatch";
+    public static final String BLOCKS_HASH_MISMATCH = "blocks.hashmismatch";
     private static final String BLOCKS_HASH_MISMATCH_DESC =
             "Current number of blocks in hashmismatch directory on disk for the node";
+    public static final String UPLOADS_SUCCESS = "uploads.success";
+    private static final String UPLOADS_SUCCESS_DESC = "Number of successful block uploads per provider per node";
 
     private final LongGauge blocksRetained;
     private final LongGauge blocksUploaded;
     private final LongGauge blocksHashMismatch;
+
+    private final Map<String, Counter> successfulUploads = new HashMap<>();
 
     /**
      * Constructor for the BlockStreamBucketMetrics.
@@ -51,6 +59,8 @@ public class BlockStreamBucketUploaderMetrics {
      */
     @Inject
     public BlockStreamBucketUploaderMetrics(@NonNull final Metrics metrics, @NodeSelfId final long selfNodeId) {
+        List<String> bucketProviders = List.of("aws", "gcp"); // TODO: get providers from config
+
         blocksRetained = metrics.getOrCreate(
                 new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_RETAINED)
                         .withDescription(BLOCKS_RETAINED_DESC));
@@ -60,6 +70,15 @@ public class BlockStreamBucketUploaderMetrics {
         blocksHashMismatch = metrics.getOrCreate(
                 new LongGauge.Config(String.format(PER_NODE_METRIC_PREFIX, selfNodeId), BLOCKS_HASH_MISMATCH)
                         .withDescription(BLOCKS_HASH_MISMATCH_DESC));
+
+        for (final var provider : bucketProviders) {
+            successfulUploads.put(
+                    provider,
+                    metrics.getOrCreate(new Counter.Config(
+                                    String.format(PER_PROVIDER_PER_NODE_METRIC_PREFIX, selfNodeId, provider),
+                                    UPLOADS_SUCCESS)
+                            .withDescription(UPLOADS_SUCCESS_DESC)));
+        }
     }
 
     /**
@@ -98,6 +117,19 @@ public class BlockStreamBucketUploaderMetrics {
             log.warn("Received number of hash mismatched blocks: {}", blocksHashMismatchCount);
         } else {
             blocksHashMismatch.set(blocksHashMismatchCount);
+        }
+    }
+
+    /**
+     * Update the metric for the number of successful block uploads per bucket provider.
+     *
+     * @param provider the provider of the bucket
+     */
+    public void incrementSuccessfulUploads(final String provider) {
+        if (!successfulUploads.containsKey(provider)) {
+            log.warn("Bucket provider {} not found", provider);
+        } else {
+            successfulUploads.get(provider).increment();
         }
     }
 }
