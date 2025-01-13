@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,15 +156,6 @@ class WritableTokenRelationStoreTest {
         final var result =
                 subject.getForModify(AccountID.newBuilder().accountNum(-2L).build(), TOKEN_10_ID);
         Assertions.assertThat(result).isNull();
-    }
-
-    @Test
-    void testSizeOfState() {
-        final var expectedSize = 3L;
-        given(tokenRelState.size()).willReturn(expectedSize);
-
-        final var result = subject.sizeOfState();
-        Assertions.assertThat(result).isEqualTo(expectedSize);
     }
 
     @Test

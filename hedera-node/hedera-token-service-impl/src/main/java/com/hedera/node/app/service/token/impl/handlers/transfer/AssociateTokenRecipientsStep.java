@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -189,6 +190,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var tokenRel = tokenRelStore.get(account.accountIdOrThrow(), tokenId);
         final var config = context.configuration();
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
+        final var entityIdStore = context.storeFactory().readableStore(ReadableEntityIdStore.class);
 
         if (tokenRel == null && account.maxAutoAssociations() != 0) {
             boolean validAssociations = hasUnlimitedAutoAssociations(account, entitiesConfig)
@@ -210,8 +212,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                     }
                 }
             }
-            final var newRelation =
-                    autoAssociate(account.accountIdOrThrow(), token, accountStore, tokenRelStore, config);
+            final var newRelation = autoAssociate(
+                    account.accountIdOrThrow(), token, accountStore, tokenRelStore, config, entityIdStore);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTes
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import java.util.Collections;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -96,16 +94,5 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         assertTrue(writableTokenState.contains(tokenId));
         final var writtenToken = writableTokenState.get(tokenId);
         assertEquals(token, writtenToken);
-    }
-
-    @Test
-    void getsSizeOfState() {
-        token = createToken();
-        assertEquals(0, writableTokenStore.sizeOfState());
-        assertEquals(Collections.EMPTY_SET, writableTokenStore.modifiedTokens());
-        writableTokenStore.put(token);
-
-        assertEquals(1, writableTokenStore.sizeOfState());
-        assertEquals(Set.of(tokenId), writableTokenStore.modifiedTokens());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -101,6 +102,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var entityIdStore = storeFactory.readableStore(ReadableEntityIdStore.class);
         final var validated = validateSemantics(
                 tokenIds,
                 op.accountOrThrow(),
@@ -109,7 +111,8 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
                 accountStore,
                 tokenStore,
                 tokenRelStore,
-                context.expiryValidator());
+                context.expiryValidator(),
+                entityIdStore);
 
         // Now that we've validated we can link all the new token IDs to the account,
         // create the corresponding token relations and update the account
@@ -141,13 +144,14 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             @NonNull final WritableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final ExpiryValidator expiryValidator) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ReadableEntityIdStore entityIdStore) {
         requireNonNull(tokenConfig);
         requireNonNull(entitiesConfig);
 
         // Check that the system hasn't reached its limit of token associations
         validateTrue(
-                isTotalNumTokenRelsWithinMax(tokenIds.size(), tokenRelStore, tokenConfig.maxAggregateRels()),
+                isTotalNumTokenRelsWithinMax(tokenIds.size(), entityIdStore, tokenConfig.maxAggregateRels()),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         // Check that the account is usable
@@ -177,8 +181,8 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     }
 
     private boolean isTotalNumTokenRelsWithinMax(
-            final int numNewTokenRels, WritableTokenRelationStore tokenRelStore, long maxNumTokenRels) {
-        return tokenRelStore.sizeOfState() + numNewTokenRels <= maxNumTokenRels;
+            final int numNewTokenRels, ReadableEntityIdStore entityIdStore, long maxNumTokenRels) {
+        return entityIdStore.numTokenRelations() + numNewTokenRels <= maxNumTokenRels;
     }
 
     /**
