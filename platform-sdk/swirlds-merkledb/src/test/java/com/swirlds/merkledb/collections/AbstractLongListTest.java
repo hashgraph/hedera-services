@@ -1310,11 +1310,11 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     // Utility methods
 
     @SuppressWarnings("UnusedReturnValue")
-    private static <T extends LongList> T populateList(T longList) {
+    static <T extends LongList> T populateList(T longList) {
         return populateList(longList, SAMPLE_SIZE);
     }
 
-    private static <T extends LongList> T populateList(T longList, int sampleSize) {
+    static <T extends LongList> T populateList(T longList, int sampleSize) {
         longList.updateValidRange(0, sampleSize - 1);
         for (int i = 0; i < sampleSize; i++) {
             longList.put(i, i + 100);
@@ -1322,18 +1322,18 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
         return longList;
     }
 
-    private static void checkData(final LongList longList) {
+    static void checkData(final LongList longList) {
         checkData(longList, 0, SAMPLE_SIZE);
     }
 
-    private static void checkData(final LongList longList, final int startIndex, final int endIndex) {
+    static void checkData(final LongList longList, final int startIndex, final int endIndex) {
         for (int i = startIndex; i < endIndex; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(i + 100, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + 100 + "]");
         }
     }
 
-    private static void checkEmptyUpToIndex(LongList longList, int index) {
+    static void checkEmptyUpToIndex(LongList longList, int index) {
         for (int i = 0; i < index; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(0, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + 0 + "]");
@@ -1341,7 +1341,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static void checkEmptyFromIndex(LongList longList, int fromIndex, int toIndex) {
+    static void checkEmptyFromIndex(LongList longList, int fromIndex, int toIndex) {
         for (int i = fromIndex; i < toIndex; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(0, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + 0 + "]");
@@ -1357,7 +1357,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * @return the path to the created file
      * @throws IOException if an I/O error occurs
      */
-    private static Path writeLongListToFileAndVerify(final LongList longList, final String fileName, final Path tempDir) throws IOException {
+    static Path writeLongListToFileAndVerify(final LongList longList, final String fileName, final Path tempDir) throws IOException {
         final Path file = tempDir.resolve(fileName);
 
         if (Files.exists(file)) {

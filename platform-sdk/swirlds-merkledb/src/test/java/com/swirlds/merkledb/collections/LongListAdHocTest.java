@@ -16,7 +16,11 @@
 
 package com.swirlds.merkledb.collections;
 
+import static com.swirlds.merkledb.collections.AbstractLongListTest.SAMPLE_SIZE;
+import static com.swirlds.merkledb.collections.AbstractLongListTest.checkData;
+import static com.swirlds.merkledb.collections.AbstractLongListTest.populateList;
 import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_BUFFER_LENGTH;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,10 +30,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -70,5 +76,56 @@ class LongListAdHocTest {
         return Stream.of(
                 new LongListHeap(numLongsPerChunk, maxLongs, 0),
                 new LongListOffHeap(numLongsPerChunk, maxLongs, DEFAULT_RESERVED_BUFFER_LENGTH));
+    }
+
+    // Tests https://github.com/hashgraph/hedera-services/issues/16860
+    @Test
+    void testReallocateThreadLocalBufferWhenMemoryChunkSizeChanges_10K() throws IOException {
+        // SAMPLE_SIZE should be 10K for this test
+        final int SAMPLE_SIZE = 10_000;
+
+        // Create two long lists with different memory chunk sizes
+        var largeMemoryChunkList = new LongListDisk(100, SAMPLE_SIZE * 2, 0, CONFIGURATION);
+        var smallMemoryChunkList = new LongListDisk(10, SAMPLE_SIZE * 2, 0, CONFIGURATION);
+
+        // Populate both long lists with sample data and validate
+        populateList(largeMemoryChunkList, SAMPLE_SIZE);
+        checkData(largeMemoryChunkList, 0, SAMPLE_SIZE);
+        populateList(smallMemoryChunkList, SAMPLE_SIZE);
+        checkData(smallMemoryChunkList, 0, SAMPLE_SIZE);
+
+        // Capture the original file channel sizes before closing chunks
+        final long originalLargeListChannelSize =
+                largeMemoryChunkList.getCurrentFileChannel().size();
+        final long originalSmallListChannelSize =
+                smallMemoryChunkList.getCurrentFileChannel().size();
+
+        // Close all chunks in long lists
+        for (int i = 0; i < largeMemoryChunkList.chunkList.length(); i++) {
+            final Long chunk = largeMemoryChunkList.chunkList.get(i);
+            if (chunk != null) {
+                largeMemoryChunkList.closeChunk(chunk);
+            }
+        }
+        for (int i = 0; i < smallMemoryChunkList.chunkList.length(); i++) {
+            final Long chunk = smallMemoryChunkList.chunkList.get(i);
+            if (chunk != null) {
+                smallMemoryChunkList.closeChunk(chunk);
+            }
+        }
+
+        // Ensure that file channel sizes have not inadvertently grown
+        assertEquals(
+                originalLargeListChannelSize,
+                largeMemoryChunkList.getCurrentFileChannel().size());
+        assertEquals(
+                originalSmallListChannelSize,
+                smallMemoryChunkList.getCurrentFileChannel().size());
+
+        // Tear down
+        largeMemoryChunkList.close();
+        largeMemoryChunkList.resetTransferBuffer();
+        smallMemoryChunkList.close();
+        smallMemoryChunkList.resetTransferBuffer();
     }
 }
