@@ -68,7 +68,7 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
      * Provides a stream of writer paired with two reader implementations for testing
      * cross-compatibility.
      * <p>
-     * Used for {@link AbstractLongListTest#testUpdateMinToTheLowerEnd}
+     * Used for {@link AbstractLongListTest#updateMinToTheLowerEnd_10K}
      *
      * @return a stream of arguments containing a writer and two readers.
      */
@@ -79,7 +79,7 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
     /**
      * Provides writer-reader pairs combined with range configurations for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#testWriteReadRangeElement}
+     * Used for {@link AbstractLongListTest#writeReadRangeElement}
      *
      * @return a stream of arguments for range-based parameterized tests
      */
@@ -90,7 +90,7 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
     /**
      * Provides writer-reader pairs combined with chunk offset configurations (first set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */
@@ -101,7 +101,7 @@ public class LongListDiskTest extends AbstractLongListTest<LongListDisk> {
     /**
      * Provides writer-reader pairs combined with chunk offset configurations (second set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */
