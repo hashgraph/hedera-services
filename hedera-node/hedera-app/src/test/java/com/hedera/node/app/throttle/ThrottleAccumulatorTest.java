@@ -1611,7 +1611,6 @@ class ThrottleAccumulatorTest {
                 .scheduleCreate(schedule)
                 .build();
         final var txn = Transaction.newBuilder().build();
-        //        final var txn = Schedule.newBuilder().originalCreateTransaction(body).build();
         return new TransactionInfo(
                 txn,
                 body,
