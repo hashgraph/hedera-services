@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
+import java.util.function.Function;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -35,9 +36,11 @@ public interface ReadableNodeStore {
      * Constructs a new {@link Roster} object using the current info for each node defined in state.
      * Accordingly, be warned that <b>this method iterates over all nodes.</b>
      *
+     * @param weightFunction the function to use to determine the weight of each node
+     *                       from stakingNodeInfo
      * @return a new roster, representing the most current node configurations available
      */
-    Roster snapshotOfFutureRoster();
+    Roster snapshotOfFutureRoster(Function<Long, Long> weightFunction);
 
     /**
      * Returns the node needed. If the node doesn't exist returns failureReason. If the

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,27 +24,21 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
-import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.WritableStoreFactory;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.service.WritableRosterStore;
+import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -65,18 +59,15 @@ public class StakePeriodChanges {
 
     private final EndOfStakingPeriodUpdater endOfStakingPeriodUpdater;
     private final ExchangeRateManager exchangeRateManager;
-    private final TssBaseService tssBaseService;
     private final StoreMetricsService storeMetricsService;
 
     @Inject
     public StakePeriodChanges(
             @NonNull final EndOfStakingPeriodUpdater endOfStakingPeriodUpdater,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TssBaseService tssBaseService,
             @NonNull final StoreMetricsService storeMetricsService) {
         this.endOfStakingPeriodUpdater = requireNonNull(endOfStakingPeriodUpdater);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
-        this.tssBaseService = requireNonNull(tssBaseService);
         this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
@@ -121,6 +112,8 @@ public class StakePeriodChanges {
                 stack.rollbackFullStack();
             }
             final var config = tokenContext.configuration();
+            final var useRosterLifecycle =
+                    config.getConfigData(AddressBookConfig.class).useRosterLifecycle();
             try {
                 final var nodeStore = newWritableNodeStore(stack, config);
                 final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
@@ -129,17 +122,13 @@ public class StakePeriodChanges {
                         .weight(weight)
                         .build());
                 final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
-                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates);
+                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates, useRosterLifecycle);
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }
             } catch (Exception e) {
                 logger.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 stack.rollbackFullStack();
-            }
-            if (config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-                tssBaseService.regenerateKeyMaterial(stack);
-                startKeyingCandidateRoster(dispatch.handleContext(), newWritableRosterStore(stack, config));
             }
         }
         return !isGenesis && isStakePeriodBoundary;
@@ -184,24 +173,6 @@ public class StakePeriodChanges {
             final var periodMs = stakingPeriod * MINUTES_TO_MILLISECONDS;
             return getPeriod(currentConsensusTime, periodMs) > getPeriod(previousConsensusTime, periodMs);
         }
-    }
-
-    private void startKeyingCandidateRoster(
-            @NonNull final HandleContext handleContext, @NonNull final WritableRosterStore rosterStore) {
-        final var storeFactory = handleContext.storeFactory();
-        final var nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
-        final var roster = nodeStore.snapshotOfFutureRoster();
-        if (!Objects.equals(roster, rosterStore.getCandidateRoster())
-                && !Objects.equals(roster, rosterStore.getActiveRoster())) {
-            rosterStore.putCandidateRoster(roster);
-            tssBaseService.setCandidateRoster(roster, handleContext);
-        }
-    }
-
-    private WritableRosterStore newWritableRosterStore(
-            @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
-        final var writableFactory = new WritableStoreFactory(stack, RosterService.NAME, config, storeMetricsService);
-        return writableFactory.getStore(WritableRosterStore.class);
     }
 
     private WritableNodeStore newWritableNodeStore(

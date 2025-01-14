@@ -181,5 +181,5 @@ message ConsensusUpdateTopicTransactionBody {
      * custom_fees list SHALL NOT contain more than
      * `MAX_CUSTOM_FEE_ENTRIES_FOR_TOPICS` entries.
      */
-    ConsensusCustomFeeList custom_fees = 12;
+    FixedCustomFeeList custom_fees = 12;
 }

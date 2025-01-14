@@ -130,7 +130,6 @@ message StakingNodeInfo {
      * This is recomputed based on the `stake` of this node at midnight UTC of
      * each day. If the `stake` of this node at that time is less than
      * `min_stake`, then the weight SHALL be 0.<br/>
-     * The sum of all weights of nodes in the network SHALL be less than 500.
      * <p>
      * Given the following:
      * <ul>
@@ -143,10 +142,11 @@ message StakingNodeInfo {
      *   <li>The `effective network stake` SHALL be calculated as ∑(`effective
      *       stake` of each node) for all nodes in the network address book.</li>
      * </ul>
-     * The actual consensus weight for this node SHALL be calculated as
-     * __(500 * (`effective stake`/`effective network stake`))__
+     * <p>
+     * This field is deprecated and SHALL NOT be used when RosterLifecycle
+     * is enabled. The weight SHALL be same as the `effective_stake` described above.
      */
-    int32 weight = 10;
+    int32 weight = 10 [deprecated = true];
 
     /**
      * The total staking rewards in tinybars that MAY be collected by all

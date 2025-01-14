@@ -32,7 +32,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -64,7 +64,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     private Optional<Key> feeScheduleKey = Optional.empty();
     private Optional<String> feeScheduleKeyName = Optional.empty();
     private Optional<KeyShape> feeScheduleKeyShape = Optional.empty();
-    private final List<Function<HapiSpec, ConsensusCustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private final List<Function<HapiSpec, FixedCustomFee>> feeScheduleSuppliers = new ArrayList<>();
     private Optional<List<Function<HapiSpec, Key>>> feeExemptKeyNamesList = Optional.empty();
     private Optional<List<Key>> feeExemptKeyList = Optional.empty();
 
@@ -113,7 +113,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return self();
     }
 
-    public HapiTopicCreate withConsensusCustomFee(final Function<HapiSpec, ConsensusCustomFee> supplier) {
+    public HapiTopicCreate withConsensusCustomFee(final Function<HapiSpec, FixedCustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
     }

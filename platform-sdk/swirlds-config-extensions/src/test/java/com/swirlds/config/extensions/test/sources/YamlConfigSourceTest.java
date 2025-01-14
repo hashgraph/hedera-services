@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ class YamlConfigSourceTest {
     }
 
     @Test
-    void testLoadProperties() throws Exception {
+    void testLoadProperties() {
         // given
         final String existingFile = "test.yaml";
 
@@ -67,5 +67,34 @@ class YamlConfigSourceTest {
         Assertions.assertEquals("bar", randomList.get(1));
 
         Assertions.assertTrue(yamlConfigSource.isListProperty("gossip.randomListOfList"));
+    }
+
+    @Test
+    void testYamlFileWithNoList() {
+        // given
+        final String ymlFile = "withNoList.yaml";
+
+        // when
+        final YamlConfigSource yamlConfigSource = new YamlConfigSource(ymlFile, 1);
+
+        // then
+        Assertions.assertEquals("random", yamlConfigSource.getValue("gossip.randomStringValue"));
+        Assertions.assertEquals("42", yamlConfigSource.getValue("gossip.randomIntValue"));
+        Assertions.assertEquals("random2", yamlConfigSource.getValue("other.randomStringValue"));
+        Assertions.assertEquals("43", yamlConfigSource.getValue("other.randomIntValue"));
+        Assertions.assertEquals("random3", yamlConfigSource.getValue("a.b.randomStringValue"));
+        Assertions.assertEquals("44", yamlConfigSource.getValue("a.b.randomIntValue"));
+    }
+
+    @Test
+    void testYamlFileWithMoreThanTwoLevels() {
+        // given
+        final String ymlFile = "moreThanTwoLevels.yaml";
+
+        // when
+        final YamlConfigSource yamlConfigSource = new YamlConfigSource(ymlFile, 1);
+
+        // then
+        Assertions.assertEquals("{\"c\":1337}", yamlConfigSource.getValue("a.b"));
     }
 }

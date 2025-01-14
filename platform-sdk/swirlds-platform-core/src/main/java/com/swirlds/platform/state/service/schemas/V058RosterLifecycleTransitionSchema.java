@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,15 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -79,18 +83,44 @@ public class V058RosterLifecycleTransitionSchema extends Schema {
         requireNonNull(ctx);
         final var addressBookConfig = ctx.appConfig().getConfigData(AddressBookConfig.class);
         if (!addressBookConfig.useRosterLifecycle() && !ctx.isGenesis()) {
-            final boolean addressBookChanged = ctx.isUpgrade(
-                            config -> new Semver(appVersionFn.apply(config).getPbjSemanticVersion()), Semver::new)
-                    || addressBookConfig.forceUseOfConfigAddressBook();
+            final boolean isOverride = addressBookConfig.forceUseOfConfigAddressBook();
+            final boolean addressBookChanged = isOverride
+                    || ctx.isUpgrade(
+                            config -> new Semver(appVersionFn.apply(config).getPbjSemanticVersion()), Semver::new);
             if (addressBookChanged) {
                 final var stateStore = platformStateStoreFn.apply(ctx.newStates());
                 final var currentBook = stateStore.getAddressBook();
+                final var diskBook = requireNonNull(addressBook.get()).copy();
+                final var nextBook = isOverride ? withExtantNodeWeights(diskBook, currentBook) : diskBook;
                 stateStore.bulkUpdate(v -> {
                     v.setPreviousAddressBook(currentBook == null ? null : currentBook.copy());
-                    v.setAddressBook(requireNonNull(addressBook.get()).copy());
+                    v.setAddressBook(nextBook);
                 });
             }
         }
+    }
+
+    /**
+     * If there are weights to copy to the first address book from the (possibly null) second address book,
+     * then does so and returns a new address book with the result.
+     * @param to the address book to copy weights to
+     * @param from the address book to copy weights from
+     * @return a address book with any weights copied by matching node id
+     */
+    private AddressBook withExtantNodeWeights(@NonNull final AddressBook to, @Nullable final AddressBook from) {
+        if (from == null) {
+            return to;
+        }
+        final List<Address> addresses = new ArrayList<>();
+        for (final var toAddress : to) {
+            if (from.contains(toAddress.getNodeId())) {
+                final var fromAddress = from.getAddress(toAddress.getNodeId());
+                addresses.add(toAddress.copySetWeight(fromAddress.getWeight()));
+            } else {
+                addresses.add(toAddress);
+            }
+        }
+        return new AddressBook(addresses);
     }
 
     /**
