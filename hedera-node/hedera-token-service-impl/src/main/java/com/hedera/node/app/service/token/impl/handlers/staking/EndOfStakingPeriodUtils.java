@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -21,10 +21,10 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
