@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.consistency;
 
-import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.Objects.requireNonNull;
@@ -135,10 +134,8 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
                 state.consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                 return;
             }
-            final long transactionContents =
-                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
-            state.processPrehandle(transactionContents);
+            state.processPrehandle(transaction);
         });
     }
 

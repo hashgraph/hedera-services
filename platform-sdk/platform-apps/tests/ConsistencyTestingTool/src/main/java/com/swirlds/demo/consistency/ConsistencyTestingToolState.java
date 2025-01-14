@@ -207,11 +207,11 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             }
         });
 
-        round.forEachTransaction(this::applyTransactionToState);
         processRound(round);
     }
 
-    void processPrehandle(long transactionContents) {
+    void processPrehandle(Transaction transaction) {
+        final long transactionContents = getTransactionContents(transaction);
         if (!transactionsAwaitingPostHandle.add(transactionContents)) {
             logger.error(EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
         }
@@ -229,8 +229,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             return;
         }
 
-        final long transactionContents =
-                byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
+        final long transactionContents = getTransactionContents(transaction);
 
         if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
             logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
@@ -238,6 +237,10 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
         stateLong = NonCryptographicHashing.hash64(stateLong, transactionContents);
         setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
+    }
+
+    private static long getTransactionContents(Transaction transaction) {
+        return byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
     }
 
     /**
