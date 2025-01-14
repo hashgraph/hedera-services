@@ -129,11 +129,9 @@ public class UtilizationScaledThrottleMultiplier {
         final var maxNumOfAccounts =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
 
-        final var accountsStore = storeFactory.getStore(ReadableAccountStore.class);
-        final var numAccountsAndContracts = accountsStore.sizeOfAccountState();
-
-        final var contractsStore = storeFactory.getStore(ContractStateStore.class);
-        final var numContracts = contractsStore.getNumBytecodes();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStore.class);
+        final var numAccountsAndContracts = entityIdStore.numAccounts();
+        final var numContracts = entityIdStore.numContractBytecodes();
         final var numAccounts = numAccountsAndContracts - numContracts;
 
         return maxNumOfAccounts == 0 ? 100 : (int) ((100 * numAccounts) / maxNumOfAccounts);
@@ -164,8 +162,8 @@ public class UtilizationScaledThrottleMultiplier {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfNfts = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
 
-        final var nftStore = storeFactory.getStore(ReadableNftStore.class);
-        final var numOfNfts = nftStore.sizeOfState();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStore.class);
+        final var numOfNfts = entityIdStore.numNfts();
 
         return maxNumOfNfts == 0 ? 100 : (int) ((100 * numOfNfts) / maxNumOfNfts);
     }
@@ -208,8 +206,8 @@ public class UtilizationScaledThrottleMultiplier {
         final var maxNumAirdrops =
                 configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
 
-        final var airdropStore = storeFactory.getStore(ReadableAirdropStore.class);
-        final var numPendingAirdrops = airdropStore.sizeOfState();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStore.class);
+        final var numPendingAirdrops = entityIdStore.numAirdrops();
 
         return maxNumAirdrops == 0 ? 100 : (int) ((100 * numPendingAirdrops) / maxNumAirdrops);
     }

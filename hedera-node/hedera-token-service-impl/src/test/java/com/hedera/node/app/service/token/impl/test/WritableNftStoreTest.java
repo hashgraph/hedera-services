@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.state.spi.WritableKVState;
-import java.util.Collections;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,20 +115,6 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         assertTrue(writableNftState.contains(id));
         final var writtenToken = writableNftState.get(id);
         assertEquals(nft, writtenToken);
-    }
-
-    @Test
-    void getsSizeOfState() {
-        final var id =
-                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
-        final var nft = givenNft(id);
-
-        assertEquals(0, writableNftStore.sizeOfState());
-        assertEquals(Collections.EMPTY_SET, writableNftStore.modifiedNfts());
-        writableNftStore.put(nft);
-
-        assertEquals(1, writableNftStore.sizeOfState());
-        assertEquals(Set.of(id), writableNftStore.modifiedNfts());
     }
 
     @Test

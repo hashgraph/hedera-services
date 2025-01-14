@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -113,12 +114,13 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var tokenId = op.tokenOrThrow();
         final var storeFactory = context.storeFactory();
         final var nftStore = storeFactory.writableStore(WritableNftStore.class);
+        final var entityIdStore = storeFactory.readableStore(ReadableEntityIdStore.class);
 
         validateSemantics(context, op);
 
         // Wrap in Set to de-duplicate serial numbers
         final var nftSerialNums = new LinkedHashSet<>(op.serialNumbers());
-        validateTrue(nftSerialNums.size() <= nftStore.sizeOfState(), INVALID_NFT_ID);
+        validateTrue(nftSerialNums.size() <= entityIdStore.numNfts(), INVALID_NFT_ID);
         updateNftMetadata(nftSerialNums, nftStore, tokenId, op);
     }
 

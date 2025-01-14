@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -191,17 +190,6 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertTrue(writableAccounts.contains(id));
         final var writtenaccount = writableAccounts.get(id);
         assertThat(account).isEqualTo(writtenaccount);
-    }
-
-    @Test
-    void getsSizeOfState() {
-        assertThat(writableStore.sizeOfAliasesState()).isZero();
-        assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Collections.EMPTY_SET);
-
-        writableStore.put(account);
-        assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
-        assertThat(writableStore.modifiedAccountsInState())
-                .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));
     }
 
     private Account contractWith(final AccountID id, final long nonce) {

@@ -38,4 +38,6 @@ public interface ReadableEntityIdStore {
     long numAliases();
 
     long numSchedules();
+
+    long numAirdrops();
 }

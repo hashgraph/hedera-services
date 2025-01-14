@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -257,12 +256,6 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(accountId).isEqualTo(id);
         final var accountId2 = subject.getAccountIDByAlias(Bytes.wrap("test"));
         assertThat(accountId2).isNull();
-    }
-
-    @Test
-    void getSizeOfState() {
-        final var store = new ReadableAccountStoreImpl(readableStates);
-        assertEquals(readableStates.get(ACCOUNTS).size(), store.sizeOfAccountState());
     }
 
     @Test

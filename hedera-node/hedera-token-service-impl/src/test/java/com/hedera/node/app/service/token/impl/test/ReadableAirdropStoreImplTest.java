@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,17 +94,6 @@ class ReadableAirdropStoreImplTest extends StateBuilderUtil {
     @Test
     void testConstructorCallWithNull() {
         assertThatThrownBy(() -> subject = new ReadableAirdropStoreImpl(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void testSizeOfState() {
-        airdrops = emptyReadableAirdropStateBuilder()
-                .value(getNonFungibleAirDrop(), accountAirdropWith(null))
-                .build();
-        given(readableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
-                .willReturn(airdrops);
-        subject = new ReadableAirdropStoreImpl(readableStates);
-        assertThat(readableStates.get(StateBuilderUtil.AIRDROPS).size()).isEqualTo(subject.sizeOfState());
     }
 
     @Test

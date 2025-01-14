@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -131,6 +132,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
+        final var entityIdStore = context.storeFactory().readableStore(ReadableEntityIdStore.class);
         var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropStreamBuilder.class);
         var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
@@ -160,7 +162,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // - one list for executing the transfer and one list for adding to pending state
                 final var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
                 validateTrue(
-                        pendingStore.sizeOfState()
+                        entityIdStore.numAirdrops()
                                         + fungibleLists.pendingFungibleAmounts().size()
                                 <= tokensConfig.maxAllowedPendingAirdrops(),
                         MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
@@ -206,7 +208,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
                 validateTrue(
-                        pendingStore.sizeOfState() + nftLists.pendingNftList().size()
+                        entityIdStore.numAirdrops() + nftLists.pendingNftList().size()
                                 <= tokensConfig.maxAllowedPendingAirdrops(),
                         MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 // there is no performant way to find if another serial of the same NFT is already in the pending state

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,14 +50,6 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
     public Nft get(@NonNull final NftID nftId) {
         requireNonNull(nftId);
         return nftState.get(nftId);
-    }
-
-    /**
-     * Returns the number of nfts in the state.
-     * @return the number of nfts in the state
-     */
-    public long sizeOfState() {
-        return nftState.size();
     }
 
     @Override
