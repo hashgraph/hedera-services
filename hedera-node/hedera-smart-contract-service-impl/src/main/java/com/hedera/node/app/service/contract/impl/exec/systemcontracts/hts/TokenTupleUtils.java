@@ -120,7 +120,7 @@ public class TokenTupleUtils {
 
     @SuppressWarnings("DataFlowIssue")
     @NonNull
-    private static List<Tuple> fixedFeesTupleListFor(@NonNull final TokenCreateTransactionBody token) {
+    private static List<? extends Tuple> fixedFeesTupleListFor(@NonNull final TokenCreateTransactionBody token) {
         //
         assert token.customFees() != null;
         return token.customFees().stream()
@@ -163,7 +163,7 @@ public class TokenTupleUtils {
 
     @SuppressWarnings("DataFlowIssue")
     @NonNull
-    private static List<Tuple> fractionalFeesTupleListFor(@NonNull final TokenCreateTransactionBody token) {
+    private static List<? extends Tuple> fractionalFeesTupleListFor(@NonNull final TokenCreateTransactionBody token) {
         // array of struct FractionalFee { uint32 numerator; uint32 denominator; uint32 minimumAmount; uint32
         // maximumAmount; bool netOfTransfers; address feeCollector; }
         return token.customFees().stream()
@@ -223,7 +223,7 @@ public class TokenTupleUtils {
 
     @SuppressWarnings("DataFlowIssue")
     @NonNull
-    private static List<Tuple> royaltyFeesTupleListFor(@NonNull final TokenCreateTransactionBody token) {
+    private static List<? extends Tuple> royaltyFeesTupleListFor(@NonNull final TokenCreateTransactionBody token) {
         // array of struct RoyaltyFee { uint32 numerator; uint32 denominator; uint32 amount; address tokenId; bool
         // useHbarsForPayment; address feeCollector; }
         return token.customFees().stream()
@@ -289,7 +289,7 @@ public class TokenTupleUtils {
 
         final var hederaToken = version == 1 ? hederaTokenTupleFor(token) : hederaTokenTupleForV2(token);
 
-        return Tuple.of(
+        return Tuple.from(
                 hederaToken,
                 token.initialSupply(),
                 false,
@@ -416,7 +416,7 @@ public class TokenTupleUtils {
 
     @NonNull
     private static Tuple hederaTokenTupleFor(@NonNull final TokenCreateTransactionBody token) {
-        return Tuple.of(
+        return Tuple.from(
                 token.name(),
                 token.symbol(),
                 headlongAddressOf(token.treasuryOrElse(ZERO_ACCOUNT_ID)),
@@ -483,7 +483,7 @@ public class TokenTupleUtils {
     private static Tuple hederaTokenTupleForV2(@NonNull final TokenCreateTransactionBody token) {
         final var tokenMetaData =
                 token.metadata().length() > 0 ? token.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
-        return Tuple.of(
+        return Tuple.from(
                 token.name(),
                 token.symbol(),
                 headlongAddressOf(token.treasuryOrElse(ZERO_ACCOUNT_ID)),
