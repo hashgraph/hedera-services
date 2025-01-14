@@ -26,6 +26,8 @@ package com.swirlds.demo.stress;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import static com.swirlds.demo.stress.TransactionPool.APPLICATION_TRANSACTION_MARKER;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -185,7 +187,7 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
             return false;
         }
 
-        return transactionBytes.getByte(0) != 1;
+        return transactionBytes.getByte(0) != APPLICATION_TRANSACTION_MARKER;
     }
 
     /**
