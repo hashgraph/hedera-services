@@ -223,8 +223,8 @@ public abstract class AbstractLongList<C> implements LongList {
                 maxLongs = headerBuffer.getLong();
                 if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {
                     minValidIndex.set(headerBuffer.getLong());
-                    if (minValidIndex.get() == -1) {
-                        // list is empty
+                    if (minValidIndex.get() < 0) {
+                        // Empty list, nothing to read
                         size.set(0);
                     } else {
                         // "inflating" the size by number of indices that are to the left of the min valid index
@@ -255,17 +255,14 @@ public abstract class AbstractLongList<C> implements LongList {
             return;
         }
 
-        final int totalNumberOfChunks = calculateNumberOfChunks(size.get());
-        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        final int firstChunkIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        final int lastChunkIndex = toIntExact(maxValidIndex.get() / numLongsPerChunk);
         final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
+        final int maxValidIndexInChunk = toIntExact(maxValidIndex.get() % numLongsPerChunk);
 
-        for (int chunkIndex = firstChunkWithDataIndex; chunkIndex < totalNumberOfChunks; chunkIndex++) {
-            final int startIndexInChunk = (chunkIndex == firstChunkWithDataIndex) ? minValidIndexInChunk : 0;
-            final long dataIndex = (long) chunkIndex * numLongsPerChunk;
-            final long dataStartIndex = dataIndex + startIndexInChunk;
-            final long dataEndCalculatedIndex = dataIndex + numLongsPerChunk - 1;
-            final long dataEndIndex = Math.min(dataEndCalculatedIndex, maxValidIndex.get());
-            final int endIndexInChunk = startIndexInChunk + toIntExact(dataEndIndex - dataStartIndex);
+        for (int chunkIndex = firstChunkIndex; chunkIndex <= lastChunkIndex; chunkIndex++) {
+            final int startIndexInChunk = (chunkIndex == firstChunkIndex) ? minValidIndexInChunk : 0;
+            final int endIndexInChunk = (chunkIndex == lastChunkIndex) ? (maxValidIndexInChunk + 1) : numLongsPerChunk;
 
             C chunk = readChunkData(fileChannel, chunkIndex, startIndexInChunk, endIndexInChunk);
             setChunk(chunkIndex, chunk, startIndexInChunk, endIndexInChunk);
@@ -280,8 +277,8 @@ public abstract class AbstractLongList<C> implements LongList {
      *
      * @param fileChannel the file channel to read from
      * @param chunkIndex the index of the chunk to store the read data
-     * @param startIndex the starting position within the chunk
-     * @param endIndex the ending position within the chunk
+     * @param startIndex the starting index (inclusive) within the chunk
+     * @param endIndex the ending index (exclusive) within the chunk
      * @return a chunk (byte buffer, array or long that represents an offset of the chunk)
      * @throws IOException if there is an error reading the file
      */
@@ -294,8 +291,8 @@ public abstract class AbstractLongList<C> implements LongList {
      *
      * @param chunkIndex the index where the chunk is to be stored
      * @param chunk      the chunk to store
-     * @param startIndex the starting position within the chunk to write data
-     * @param endIndex   the ending position within the chunk
+     * @param startIndex the starting index (inclusive) within the chunk to write data
+     * @param endIndex   the ending index (exclusive) within the chunk
      * @throws IOException if an I/O error occurs, when overridden by a subclass
      */
     protected void setChunk(int chunkIndex, C chunk, int startIndex, int endIndex) throws IOException {
@@ -311,8 +308,8 @@ public abstract class AbstractLongList<C> implements LongList {
      *
      * @param fileChannel the file channel to read data from
      * @param chunkIndex the index of the chunk being read
-     * @param startIndex the starting index within the chunk of the first element to read
-     * @param endIndex the ending index within the chunk of the last element to read
+     * @param startIndex the starting index (inclusive) within the chunk of the first element to read
+     * @param endIndex the ending index (exclusive) within the chunk of the last element to read
      * @param buffer the buffer into which data will be read
      * @throws IOException if an error occurs while reading from the file,
      * or if the number of bytes read does not match the expected size
@@ -325,7 +322,7 @@ public abstract class AbstractLongList<C> implements LongList {
             final ByteBuffer buffer)
             throws IOException {
         final int startOffset = startIndex * Long.BYTES;
-        final int endOffset = (endIndex + 1) * Long.BYTES;
+        final int endOffset = endIndex * Long.BYTES;
 
         buffer.position(startOffset);
         buffer.limit(endOffset);

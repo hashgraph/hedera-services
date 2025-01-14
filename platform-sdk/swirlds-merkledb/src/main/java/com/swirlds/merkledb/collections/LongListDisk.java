@@ -53,13 +53,14 @@ public class LongListDisk extends AbstractLongList<Long> {
     /** A temp byte buffer for reading and writing longs */
     private static final ThreadLocal<ByteBuffer> TEMP_LONG_BUFFER_THREAD_LOCAL;
 
+    /** This file channel is to work with the temporary file which is initialized
+     * in {@link LongListDisk#readBodyFromFileChannelOnInit}.
+     */
+    private FileChannel initFileChannel;
+
     /** This file channel is to work with the temporary file.
      */
     private final FileChannel currentFileChannel;
-
-    /** This file channel is to work with the temporary file which is initialized in {@link LongListDisk#readBodyFromFileChannelOnInit}.
-     */
-    private FileChannel tempFileChannel;
 
     /**
      * Path to the temporary file used to store the data.
@@ -166,11 +167,11 @@ public class LongListDisk extends AbstractLongList<Long> {
             // ensure that the amount of disk space is enough
             // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
             rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
-            this.tempFileChannel = rf.getChannel();
+            this.initFileChannel = rf.getChannel();
             super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
         } finally {
-            if (this.tempFileChannel != null && this.tempFileChannel.isOpen()) {
-                this.tempFileChannel.close();
+            if (this.initFileChannel != null && this.initFileChannel.isOpen()) {
+                this.initFileChannel.close();
             }
         }
     }
@@ -184,8 +185,8 @@ public class LongListDisk extends AbstractLongList<Long> {
 
         readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, transferBuffer);
 
-        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
-        return (long) (chunkIndex - firstChunkWithDataIndex) * memoryChunkSize;
+        final int firstChunkIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        return (long) (chunkIndex - firstChunkIndex) * memoryChunkSize;
     }
 
     /** {@inheritDoc} */
@@ -194,13 +195,13 @@ public class LongListDisk extends AbstractLongList<Long> {
         final ByteBuffer transferBuffer = TRANSFER_BUFFER_THREAD_LOCAL.get();
 
         int startOffset = startIndex * Long.BYTES;
-        int endOffset = (endIndex + 1) * Long.BYTES;
+        int endOffset = endIndex * Long.BYTES;
 
         transferBuffer.position(startOffset);
         transferBuffer.limit(endOffset);
 
         int bytesToWrite = endOffset - startOffset;
-        long bytesWritten = MerkleDbFileUtils.completelyWrite(tempFileChannel, transferBuffer, chunk + startOffset);
+        long bytesWritten = MerkleDbFileUtils.completelyWrite(initFileChannel, transferBuffer, chunk + startOffset);
         if (bytesWritten != bytesToWrite) {
             throw new IOException("Failed to write long list (disk) chunks, chunkIndex=" + chunkIndex + " expected="
                     + bytesToWrite + " actual=" + bytesWritten);

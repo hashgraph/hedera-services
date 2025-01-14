@@ -52,8 +52,8 @@ import java.util.concurrent.atomic.AtomicLongArray;
 @SuppressWarnings("unused")
 public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
-    /** A temp buffer for reading chunk data from the file during initialization. */
-    private ByteBuffer tempReadBuffer;
+    /** A buffer for reading chunk data from the file only during the initialization. */
+    private ByteBuffer initReadBuffer;
 
     /** Construct a new LongListHeap with the default number of longs per chunk. */
     public LongListHeap() {
@@ -93,13 +93,15 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     @Override
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
-        tempReadBuffer = ByteBuffer.allocateDirect(DEFAULT_NUM_LONGS_PER_CHUNK * Long.BYTES)
-                .order(ByteOrder.nativeOrder());
+        initReadBuffer = ByteBuffer.allocateDirect(memoryChunkSize * Long.BYTES).order(ByteOrder.nativeOrder());
 
         super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
 
-        MemoryUtils.closeDirectByteBuffer(tempReadBuffer);
-        tempReadBuffer = null;
+        try {
+            MemoryUtils.closeDirectByteBuffer(initReadBuffer);
+        } finally {
+            initReadBuffer = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -108,12 +110,12 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
             throws IOException {
         AtomicLongArray chunk = createChunk();
 
-        readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, tempReadBuffer);
-        tempReadBuffer.flip();
+        readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, initReadBuffer);
+        initReadBuffer.flip();
 
         int index = 0;
-        while (tempReadBuffer.hasRemaining()) {
-            chunk.set(index++, tempReadBuffer.getLong());
+        while (initReadBuffer.hasRemaining()) {
+            chunk.set(index++, initReadBuffer.getLong());
         }
 
         return chunk;
