@@ -208,13 +208,12 @@ jobs:
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport --continue
 
-
       - name: Publish Unit Test Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: Unit Test Results'
-          json_thousands_separator: ','
+          check_name: "Node: Unit Test Results"
+          json_thousands_separator: ","
           junit_files: "**/build/test-results/test/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -235,8 +234,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: Timing Sensitive Unit Test Results'
-          json_thousands_separator: ','
+          check_name: "Node: Timing Sensitive Unit Test Results"
+          json_thousands_separator: ","
           junit_files: "**/build/test-results/timingSensitive/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -257,8 +256,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-time-consuming-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: Time Consuming Unit Test Results'
-          json_thousands_separator: ','
+          check_name: "Node: Time Consuming Unit Test Results"
+          json_thousands_separator: ","
           junit_files: "**/build/test-results/timeConsuming/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -279,8 +278,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hammer-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: Hammer Test Results'
-          json_thousands_separator: ','
+          check_name: "Node: Hammer Test Results"
+          json_thousands_separator: ","
           junit_files: "**/build/test-results/hammer/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -305,8 +304,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-misc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Misc) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Misc) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/**/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -339,8 +338,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-crypto && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Crypto) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Crypto) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -373,8 +372,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-token && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Token) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Token) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -407,8 +406,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-smart-contract && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Smart Contract) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Smart Contract) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -441,8 +440,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-time-consuming && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Time Consuming) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Time Consuming) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -475,8 +474,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-restart && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Restart) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Restart) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
@@ -510,8 +509,8 @@ jobs:
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
         if: ${{ inputs.enable-hapi-tests-nd-reconnect && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: 'Node: HAPI Test (Node Death Reconnect) Results'
-          json_thousands_separator: ','
+          check_name: "Node: HAPI Test (Node Death Reconnect) Results"
+          json_thousands_separator: ","
           junit_files: "**/test-clients/build/test-results/testSubprocess/TEST-*.xml"
           comment_mode: errors # only comment if we could not find or parse the JUnit XML files
 
