@@ -393,7 +393,9 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> submitMessageAfterUpdate() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
             final var updatedFee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var updatedFeeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
             return hapiTest(
                     newKeyNamed("adminKey"),
                     newKeyNamed("feeScheduleKey"),
@@ -404,7 +406,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .adminKeyName("adminKey")
                             .feeScheduleKeyName("feeScheduleKey"),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
+                            .maxCustomFee(feeLimit)
                             .message("TEST")
                             .payingWith(SUBMITTER)
                             .via("submit"),
@@ -413,7 +415,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .withConsensusCustomFee(updatedFee)
                             .signedByPayerAnd("adminKey", "feeScheduleKey"),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(updatedFee)
+                            .maxCustomFee(updatedFeeLimit)
                             .message("TEST")
                             .payingWith(SUBMITTER)
                             .via("submit2"),
@@ -426,6 +428,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> submitMessageAfterFEKLisRemoved() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
             return hapiTest(
                     newKeyNamed("adminKey"),
                     cryptoCreate(collector).balance(ONE_HBAR),
@@ -438,7 +441,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
                     updateTopic(TOPIC).feeExemptKeys().signedByPayerAnd("adminKey"),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
+                            .maxCustomFee(feeLimit)
                             .message("TEST")
                             .payingWith(SUBMITTER)
                             .via("submit2"),
@@ -451,6 +454,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> submitMessageAfterFeeIsAdded() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
             return hapiTest(
                     newKeyNamed("adminKey"),
                     newKeyNamed("feeScheduleKey"),
@@ -461,7 +465,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
                     updateTopic(TOPIC).withConsensusCustomFee(fee).signedByPayerAnd("adminKey", "feeScheduleKey"),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
+                            .maxCustomFee(feeLimit)
                             .message("TEST")
                             .payingWith(SUBMITTER)
                             .via("submit2"),
