@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -39,6 +40,8 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.RecordAccessor;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode.ClassVersion;
 import com.swirlds.virtualmap.test.fixtures.DummyVirtualStateAccessor;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
@@ -48,6 +51,8 @@ import com.swirlds.virtualmap.test.fixtures.TestKeySerializer;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.TestValueSerializer;
 import com.swirlds.virtualmap.test.fixtures.VirtualTestBase;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -55,6 +60,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -233,8 +240,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void testSerializeDeserialize() throws IOException {
         String fileName = "rootNode.bin";
         serializeRoot(fileName);
-        final VirtualRootNode<TestKey, TestValue> root2 = createRoot();
-
         deserializeRootNodeAndVerify(
                 new FileInputStream(tempDir.resolve(fileName).toFile()), ClassVersion.CURRENT_VERSION);
     }
@@ -245,9 +250,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
         try (SerializableDataInputStream input = new SerializableDataInputStream(resourceAsStream)) {
             root.deserialize(input, tempDir, version);
             root.postInit(new DummyVirtualStateAccessor());
+            final VirtualNodeCache<TestKey, TestValue> cache = root.getCache();
             for (int i = 0; i < 100; i++) {
+                final TestKey key = new TestKey(i);
+                if (version >= ClassVersion.VERSION_3_NO_NODE_CACHE) {
+                    // Cache must be empty, all values must be in the data source
+                    assertNull(cache.lookupLeafByKey(key, false));
+                }
                 if (i % 7 != 0) {
-                    assertEquals(new TestValue(i), root.get(new TestKey(i)));
+                    assertEquals(new TestValue(i), root.get(key));
                 } else {
                     assertNull(root.get(new TestKey(i)));
                 }
@@ -335,11 +346,10 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
-    @DisplayName("Detach Test")
-    void detachTest() {
+    @DisplayName("Snapshot Test")
+    void snapshotTest() throws IOException {
         final List<Path> paths = new LinkedList<>();
         paths.add(Path.of("asdf"));
-        paths.add(null);
         for (final Path destination : paths) {
             final VirtualMap<TestKey, TestValue> original = new VirtualMap<>(
                     "test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder(), CONFIGURATION);
@@ -347,12 +357,82 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
             final VirtualRootNode<TestKey, TestValue> root = original.getChild(1);
             root.getHash(); // forces copy to become hashed
-            root.getPipeline().detachCopy(root, destination);
+            root.getPipeline().pausePipelineAndRun("snapshot", () -> {
+                root.snapshot(destination);
+                return null;
+            });
             assertTrue(root.isDetached(), "root should be detached");
 
             original.release();
             copy.release();
         }
+    }
+
+    @Test
+    @DisplayName("Snapshot and restore")
+    void snapshotAndRestore() throws IOException {
+        final VirtualDataSourceBuilder dsBuilder = new InMemoryBuilder();
+        final List<VirtualMap<TestKey, TestValue>> copies = new LinkedList<>();
+        final VirtualMap<TestKey, TestValue> copy0 =
+                new VirtualMap<>("test", new TestKeySerializer(), new TestValueSerializer(), dsBuilder, CONFIGURATION);
+        copies.add(copy0);
+        for (int i = 1; i <= 10; i++) {
+            final VirtualMap<TestKey, TestValue> prevCopy = copies.get(i - 1);
+            final VirtualMap<TestKey, TestValue> copy = prevCopy.copy();
+            // i-th copy contains TestKey(i)
+            copy.put(new TestKey(i), new TestValue(i + 100));
+            copies.add(copy);
+        }
+        for (VirtualMap<TestKey, TestValue> copy : copies) {
+            // Force virtual map / root node hashing
+            copy.getRight().getHash();
+        }
+        // Take a snapshot of copy 5
+        final VirtualMap<TestKey, TestValue> copy5 = copies.get(5);
+        final Path snapshotPath =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotAndRestore", CONFIGURATION);
+        try (final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                final SerializableDataOutputStream out = new SerializableDataOutputStream(bout)) {
+            copy5.serialize(out, snapshotPath);
+            try (final ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
+                    final SerializableDataInputStream in = new SerializableDataInputStream(bin)) {
+                final VirtualMap<TestKey, TestValue> restored = new VirtualMap<>(CONFIGURATION);
+                restored.deserialize(in, snapshotPath, copy0.getVersion());
+                // All keys 1 to 5 should be in the snapshot
+                for (int i = 1; i < 6; i++) {
+                    final TestKey key = new TestKey(i);
+                    assertTrue(restored.containsKey(key), "Key " + i + " not found");
+                    assertEquals(new TestValue(i + 100), restored.get(key));
+                }
+                // All keys 6 to 10 should not be there
+                for (int i = 6; i < 10; i++) {
+                    final TestKey key = new TestKey(i);
+                    assertFalse(restored.containsKey(key), "Key " + i + " found");
+                    assertNull(restored.get(key));
+                }
+            }
+        } finally {
+            copies.forEach(VirtualMap::release);
+        }
+    }
+
+    @Test
+    @DisplayName("Detach Test")
+    void detachTest() throws IOException {
+        final VirtualMap<TestKey, TestValue> original = new VirtualMap<>(
+                "test", new TestKeySerializer(), new TestValueSerializer(), new InMemoryBuilder(), CONFIGURATION);
+        final VirtualMap<TestKey, TestValue> copy = original.copy();
+
+        final VirtualRootNode<TestKey, TestValue> root = original.getChild(1);
+        root.getHash(); // forces copy to become hashed
+        final RecordAccessor<TestKey, TestValue> detachedCopy =
+                root.getPipeline().pausePipelineAndRun("copy", root::detach);
+        assertTrue(root.isDetached(), "root should be detached");
+        assertNotNull(detachedCopy);
+
+        original.release();
+        copy.release();
+        detachedCopy.getDataSource().close();
     }
 
     @Test
@@ -505,6 +585,65 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 assertNull(leafRec);
             }
         }
+    }
+
+    @Test
+    void inMemoryManyAddManyRemoveNoFlushTest() throws InterruptedException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
+
+        final VirtualRootNode<TestKey, TestValue> copy0 = root;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+
+        final int nCopies = 100;
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+
+        // Here is the test: every elemement is added in one copy and then removed in the
+        // next copy. Every copy will contain no more than 500 elements, therefore its
+        // effective size will be small, so none of the copies should be flushed to disk
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            root.release();
+            root = copy;
+            final int N = 1000;
+            final List<Integer> l = new ArrayList<>(N);
+            for (int i = 0; i < N; i++) {
+                l.add(i);
+            }
+            Collections.shuffle(l);
+            for (int i = 0; i < N; i++) {
+                final int keyIndex = l.get(i);
+                final TestKey key = new TestKey(keyIndex);
+                if (i % 2 == copyNo % 2) { // add
+                    final TestValue value = new TestValue(1000000 + keyIndex);
+                    root.put(key, value);
+                } else { // remove
+                    root.remove(key);
+                }
+            }
+        }
+
+        // The last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 0; i < nCopies - 2; i++) {
+            final VirtualRootNode<TestKey, TestValue> copy = copies[i];
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(() -> copy.isMerged(), Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
+
+        root.release();
     }
 
     @Test
@@ -750,7 +889,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     void getVersion() {
-        assertEquals(2, createRoot().getVersion());
+        assertEquals(3, createRoot().getVersion());
     }
 
     @Test

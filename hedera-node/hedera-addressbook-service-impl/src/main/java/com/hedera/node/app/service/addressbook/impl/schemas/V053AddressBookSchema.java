@@ -90,7 +90,7 @@ public class V053AddressBookSchema extends Schema {
         // explicit that the override admin keys apply only at genesis
         final Map<Long, Key> nodeAdminKeys = ctx.isGenesis()
                 ? parseEd25519NodeAdminKeysFrom(
-                        ctx.configuration().getConfigData(BootstrapConfig.class).nodeAdminKeysPath())
+                        ctx.appConfig().getConfigData(BootstrapConfig.class).nodeAdminKeysPath())
                 : emptyMap();
         final var networkInfo = ctx.genesisNetworkInfo();
         if (networkInfo == null) {
@@ -98,7 +98,7 @@ public class V053AddressBookSchema extends Schema {
         }
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
-        final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+        final var bootstrapConfig = ctx.appConfig().getConfigData(BootstrapConfig.class);
 
         log.info("Started migrating nodes from address book");
         final var adminKey = getAccountAdminKey(ctx);
@@ -121,7 +121,7 @@ public class V053AddressBookSchema extends Schema {
                     .description(formatNodeName(nodeInfo.nodeId()))
                     .gossipEndpoint(nodeInfo.gossipEndpoints())
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
-                    .weight(nodeInfo.stake())
+                    .weight(nodeInfo.weight())
                     .adminKey(nodeAdminKey);
             if (nodeDetailMap != null) {
                 nodeDetail = nodeDetailMap.get(nodeInfo.nodeId());
@@ -141,7 +141,7 @@ public class V053AddressBookSchema extends Schema {
     private Key getAccountAdminKey(@NonNull final MigrationContext ctx) {
         var adminKey = Key.DEFAULT;
 
-        final var accountConfig = ctx.configuration().getConfigData(AccountsConfig.class);
+        final var accountConfig = ctx.appConfig().getConfigData(AccountsConfig.class);
         ReadableKVState<AccountID, Account> readableAccounts = null;
 
         try {
@@ -163,7 +163,7 @@ public class V053AddressBookSchema extends Schema {
     private Map<Long, NodeAddress> getNodeAddressMap(@NonNull final MigrationContext ctx) {
         Map<Long, NodeAddress> nodeDetailMap = null;
 
-        final var fileConfig = ctx.configuration().getConfigData(FilesConfig.class);
+        final var fileConfig = ctx.appConfig().getConfigData(FilesConfig.class);
         ReadableKVState<FileID, File> readableFiles = null;
         try {
             readableFiles = ctx.newStates().get(FILES_KEY);

@@ -65,8 +65,7 @@ public class VirtualMerkleTransactionHandlerTest {
                         merkleDbConfig.maxNumOfKeys(),
                         merkleDbConfig.hashesRamToDiskThreshold())
                 .maxNumberOfKeys(maximumNumberOfKeyValuePairsCreation)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskIndices(false);
+                .hashesRamToDiskThreshold(0);
         final MerkleDbDataSourceBuilder dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
 
         smartContract =
@@ -82,8 +81,7 @@ public class VirtualMerkleTransactionHandlerTest {
                         merkleDbConfig.maxNumOfKeys(),
                         merkleDbConfig.hashesRamToDiskThreshold())
                 .maxNumberOfKeys(totalSmartContractCreations)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskIndices(false);
+                .hashesRamToDiskThreshold(0);
         final MerkleDbDataSourceBuilder dataSourceBuilder2 = new MerkleDbDataSourceBuilder(tableConfig2, CONFIGURATION);
 
         smartContractByteCodeVM = new VirtualMap<>(

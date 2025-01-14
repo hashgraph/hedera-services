@@ -27,14 +27,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -51,6 +55,7 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
@@ -67,6 +72,7 @@ import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -201,7 +207,8 @@ public class EndOfStakingPeriodUpdaterTest {
     }
 
     @Test
-    void deletedNodesGetsZeroPendingRewards() {
+    void deletedNodesGetsZeroPendingRewards() throws ParseException {
+        final var captor = ArgumentCaptor.forClass(Transaction.class);
         commonSetup(
                 1_000_000_000L,
                 STAKING_INFO_1.copyBuilder().deleted(true).build(),
@@ -218,6 +225,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.transaction(captor.capture())).willReturn(nodeStakeUpdateRecordBuilder);
 
         subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
@@ -248,6 +256,18 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 1 is now [6, 6, 5]");
         assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 2 is now [101, 1, 1]");
         assertThat(logCaptor.infoLogs()).contains("Non-zero reward sum history for node number 3 is now [3, 3, 1]");
+
+        // Doesn't export deleted nodes nodeStakeUpdates
+        verify(context).addPrecedingChildRecordBuilder(NodeStakeUpdateStreamBuilder.class, NODE_STAKE_UPDATE);
+        final var transaction = captor.getValue();
+        final var nodeStakeUpdate = TransactionBody.PROTOBUF
+                .parse(SignedTransaction.PROTOBUF
+                        .parse(transaction.signedTransactionBytes())
+                        .bodyBytes())
+                .nodeStakeUpdate();
+        final var nodeStakes = nodeStakeUpdate.nodeStake();
+        assertThat(nodeStakes).hasSize(1);
+        assertThat(nodeStakes.get(0).nodeId()).isEqualTo(NODE_NUM_2.number());
     }
 
     @Test

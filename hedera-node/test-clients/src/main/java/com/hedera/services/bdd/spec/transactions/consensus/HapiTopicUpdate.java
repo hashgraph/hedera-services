@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFeeList;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeExemptKeyList;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFeeList;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -63,7 +63,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     private Optional<String> newAutoRenewAccount = Optional.empty();
     private Optional<Key> feeScheduleKey = Optional.empty();
     private Optional<String> feeScheduleKeyName = Optional.empty();
-    private final List<Function<HapiSpec, ConsensusCustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private final List<Function<HapiSpec, FixedCustomFee>> feeScheduleSuppliers = new ArrayList<>();
     private Optional<List<Function<HapiSpec, Key>>> feeExemptKeyNamesList = Optional.empty();
     private Optional<List<Key>> freeMessageKeyList = Optional.empty();
     private boolean emptyCustomFee = false;
@@ -126,7 +126,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
         return this;
     }
 
-    public HapiTopicUpdate withConsensusCustomFee(final Function<HapiSpec, ConsensusCustomFee> supplier) {
+    public HapiTopicUpdate withConsensusCustomFee(final Function<HapiSpec, FixedCustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
     }
@@ -197,7 +197,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                             newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
                             newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
                             if (emptyFeeScheduleKey) {
-                                b.setFeeScheduleKey(Key.newBuilder().build());
+                                b.setFeeScheduleKey(EMPTY_KEY);
                             } else {
                                 feeScheduleKey.ifPresent(b::setFeeScheduleKey);
                             }
@@ -207,14 +207,13 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                                 b.setFeeExemptKeyList(FeeExemptKeyList.newBuilder());
                             }
                             if (!feeScheduleSuppliers.isEmpty()) {
-                                var consensusCustomFeeList = ConsensusCustomFeeList.newBuilder();
+                                var consensusCustomFeeList = FixedCustomFeeList.newBuilder();
                                 for (final var supplier : feeScheduleSuppliers) {
                                     consensusCustomFeeList.addFees(supplier.apply(spec));
                                 }
                                 b.setCustomFees(consensusCustomFeeList.build());
                             } else if (emptyCustomFee) {
-                                b.setCustomFees(
-                                        ConsensusCustomFeeList.newBuilder().build());
+                                b.setCustomFees(FixedCustomFeeList.newBuilder().build());
                             }
                         });
         return b -> b.setConsensusUpdateTopic(opBody);

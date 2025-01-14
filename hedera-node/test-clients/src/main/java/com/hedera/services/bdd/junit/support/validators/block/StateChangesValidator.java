@@ -20,15 +20,14 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBookWithDeterministicCerts;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUtils.hashesByName;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
-import static com.swirlds.platform.state.GenesisStateBuilder.initGenesisPlatformState;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,47 +46,32 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
-import com.hedera.node.app.Hedera;
+import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
-import com.hedera.node.app.services.OrderedServiceMigrator;
-import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssLibraryImpl;
-import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.config.converter.BytesConverter;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -96,13 +80,12 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SplittableRandom;
 import java.util.TreeMap;
-import java.util.concurrent.ForkJoinPool;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -114,20 +97,26 @@ import org.junit.jupiter.api.Assertions;
  */
 public class StateChangesValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(StateChangesValidator.class);
+    private static final SplittableRandom RANDOM = new SplittableRandom(System.currentTimeMillis());
     private static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
 
     private static final int HASH_SIZE = 48;
     private static final int VISUALIZATION_HASH_DEPTH = 5;
+    /**
+     * The probability that the validator will verify an intermediate block proof; we always verify the first and last.
+     */
+    private static final double PROOF_VERIFICATION_PROB = 0.05;
+
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
     private static final Pattern CHILD_STATE_PATTERN = Pattern.compile("\\s+\\d+ \\w+\\s+(\\S+)\\s+.+\\s+(.+)");
 
+    private final Hash genesisStateHash;
     private final Path pathToNode0SwirldsLog;
     private final Bytes expectedRootHash;
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
     private PlatformMerkleStateRoot state;
-    private Hash genesisStateHash;
 
     public static void main(String[] args) {
         final var node0Dir = Paths.get("hedera-node/test-clients")
@@ -136,11 +125,11 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "65374e72c2572aaaca17fe3a0e879841c0f5ae919348fc18231f8167bd28e326438c6f93a07a45eda7888b69e9812c4d"),
+                        "912d5cf1478f1585f0d23ff8c7ecb05860b8a6c8c1f1d1ffe91d0fa45b642a98d54487d41f5966721a613ca646b28652"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
-                Bytes.fromHex("03"));
+                node0Dir.resolve("data/config"));
         final var blocks =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(node0Dir.resolve("data/blockStreams/block-0.0.3"));
         validator.validateBlocks(blocks);
@@ -189,8 +178,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     node0.getExternalPath(SWIRLDS_LOG),
                     genesisConfigTxt,
                     node0.getExternalPath(APPLICATION_PROPERTIES),
-                    requireNonNull(new BytesConverter()
-                            .convert(spec.startupProperties().get("ledger.id"))));
+                    node0.getExternalPath(DATA_CONFIG_DIR));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -201,50 +189,32 @@ public class StateChangesValidator implements BlockStreamValidator {
             @NonNull final Path pathToNode0SwirldsLog,
             @NonNull final Path pathToAddressBook,
             @NonNull final Path pathToOverrideProperties,
-            @NonNull final Bytes ledgerId) {
+            @NonNull final Path pathToUpgradeSysFilesLoc) {
         this.expectedRootHash = requireNonNull(expectedRootHash);
         this.pathToNode0SwirldsLog = requireNonNull(pathToNode0SwirldsLog);
 
-        // Ensure the bootstrap config sees our blockStream.streamMode=BOTH override
-        // and registers the BlockStreamService schemas
         System.setProperty(
                 "hedera.app.properties.path",
                 pathToOverrideProperties.toAbsolutePath().toString());
+        System.setProperty(
+                "networkAdmin.upgradeSysFilesLoc",
+                pathToUpgradeSysFilesLoc.toAbsolutePath().toString());
+        unarchiveGenesisNetworkJson(pathToUpgradeSysFilesLoc);
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         final var versionConfig = bootstrapConfig.getConfigData(VersionConfig.class);
         final var servicesVersion = versionConfig.servicesVersion();
-        final var addressBook = loadAddressBookWithDeterministicCerts(pathToAddressBook);
-        final var configVersion =
-                bootstrapConfig.getConfigData(HederaConfig.class).configVersion();
-        final var currentVersion = new ServicesSoftwareVersion(servicesVersion, configVersion);
+        final var addressBook = loadLegacyBookWithGeneratedCerts(pathToAddressBook);
         final var metrics = new NoOpMetrics();
-        final var hedera = new Hedera(
-                ConstructableRegistry.getInstance(),
-                ServicesRegistryImpl::new,
-                new OrderedServiceMigrator(),
-                InstantSource.system(),
-                appContext -> new TssBaseServiceImpl(
-                        appContext,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool(),
-                        new TssLibraryImpl(appContext),
-                        ForkJoinPool.commonPool(),
-                        metrics),
-                DiskStartupNetworks::new,
-                NodeId.of(0L));
-        this.state = (PlatformMerkleStateRoot) hedera.newMerkleStateRoot();
-        final Configuration platformConfig = ConfigurationBuilder.create()
-                .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(TransactionConfig.class)
-                .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(BasicConfig.class)
-                .withConfigDataType(VirtualMapConfig.class)
-                .withConfigDataType(MerkleDbConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
-                .build();
-        hedera.initializeStatesApi(state, metrics, InitTrigger.GENESIS, addressBook, platformConfig);
-        initGenesisPlatformState(platformConfig, this.state.getWritablePlatformState(), addressBook, currentVersion);
+        final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics);
+        this.state = hedera.newMerkleStateRoot();
+        final var platformConfig = ServicesMain.buildPlatformConfig();
+        hedera.initializeStatesApi(
+                state,
+                metrics,
+                InitTrigger.GENESIS,
+                DiskStartupNetworks.fromLegacyAddressBook(addressBook),
+                platformConfig,
+                addressBook);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
@@ -259,9 +229,11 @@ public class StateChangesValidator implements BlockStreamValidator {
         var previousBlockHash = BlockStreamManager.ZERO_BLOCK_HASH;
         var startOfStateHash = requireNonNull(genesisStateHash).getBytes();
 
-        for (int i = 0; i < blocks.size(); i++) {
+        final int n = blocks.size();
+        for (int i = 0; i < n; i++) {
             final var block = blocks.get(i);
-            if (i != 0) {
+            final var shouldVerifyProof = i == 0 || i == n - 1 || RANDOM.nextDouble() < PROOF_VERIFICATION_PROB;
+            if (i != 0 && shouldVerifyProof) {
                 final var stateToBeCopied = state;
                 this.state = stateToBeCopied.copy();
                 startOfStateHash = CRYPTO.digestTreeSync(stateToBeCopied).getBytes();
@@ -270,7 +242,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
             for (final var item : block.items()) {
                 servicesWritten.clear();
-                hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
+                if (shouldVerifyProof) {
+                    hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
+                }
                 if (item.hasStateChanges()) {
                     applyStateChanges(item.stateChangesOrThrow());
                 }
@@ -284,10 +258,20 @@ public class StateChangesValidator implements BlockStreamValidator {
                     blockProof.previousBlockRootHash(),
                     "Previous block hash mismatch for block " + blockProof.block());
 
-            final var expectedBlockHash =
-                    computeBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
-            validateBlockProof(blockProof, expectedBlockHash);
-            previousBlockHash = expectedBlockHash;
+            if (shouldVerifyProof) {
+                final var expectedBlockHash =
+                        computeBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
+                validateBlockProof(blockProof, expectedBlockHash);
+                previousBlockHash = expectedBlockHash;
+            } else {
+                previousBlockHash = i < n - 1
+                        ? blocks.get(i + 1)
+                                .items()
+                                .getFirst()
+                                .blockHeaderOrThrow()
+                                .previousBlockHash()
+                        : Bytes.EMPTY;
+            }
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
         CRYPTO.digestTreeSync(state);
@@ -407,6 +391,28 @@ public class StateChangesValidator implements BlockStreamValidator {
                     queueState.poll();
                     stateChangesSummary.countQueuePop(serviceName, stateKey);
                 }
+            }
+        }
+    }
+
+    /**
+     * If the given path does not contain the genesis network JSON, recovers it from the archive directory.
+     * @param path the path to the network directory
+     * @throws IllegalStateException if the genesis network JSON cannot be found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    private void unarchiveGenesisNetworkJson(@NonNull final Path path) {
+        final var desiredPath = path.resolve(DiskStartupNetworks.GENESIS_NETWORK_JSON);
+        if (!desiredPath.toFile().exists()) {
+            final var archivedPath =
+                    path.resolve(DiskStartupNetworks.ARCHIVE).resolve(DiskStartupNetworks.GENESIS_NETWORK_JSON);
+            if (!archivedPath.toFile().exists()) {
+                throw new IllegalStateException("No archived genesis network JSON found at " + archivedPath);
+            }
+            try {
+                Files.move(archivedPath, desiredPath);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
     }
@@ -591,7 +597,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
-            case TSS_STATUS_STATE_VALUE -> singletonUpdateChange.tssStatusStateValueOrThrow();
         };
     }
 
@@ -649,7 +654,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case ROSTER_VALUE -> mapChangeValue.rosterValueOrThrow();
             case SCHEDULED_COUNTS_VALUE -> mapChangeValue.scheduledCountsValueOrThrow();
             case THROTTLE_USAGE_SNAPSHOTS_VALUE -> mapChangeValue.throttleUsageSnapshotsValue();
-            case TSS_ENCRYPTION_KEY_VALUE -> mapChangeValue.tssEncryptionKeyValueOrThrow();
+            case TSS_ENCRYPTION_KEYS_VALUE -> mapChangeValue.tssEncryptionKeysValue();
             case TSS_MESSAGE_VALUE -> mapChangeValue.tssMessageValueOrThrow();
             case TSS_VOTE_VALUE -> mapChangeValue.tssVoteValueOrThrow();
         };
@@ -657,5 +662,23 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private static EntityIDPair pairFrom(@NonNull final TokenAssociation tokenAssociation) {
         return new EntityIDPair(tokenAssociation.accountId(), tokenAssociation.tokenId());
+    }
+
+    /**
+     * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
+     * to set its gossip certificates to the same certificates used by nodes in a test network.
+     * @param path the path to the address book file
+     * @return the loaded address book
+     */
+    private static AddressBook loadLegacyBookWithGeneratedCerts(@NonNull final Path path) {
+        requireNonNull(path);
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
+        try {
+            final var addressBook = configFile.getAddressBook();
+            CryptoStatic.generateKeysAndCerts(addressBook);
+            return addressBook;
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating keys and certs", e);
+        }
     }
 }

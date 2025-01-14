@@ -2,11 +2,8 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
-    uses com.hedera.cryptography.pairings.api.PairingFriendlyCurve;
-
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
-    requires transitive com.hedera.node.app.service.addressbook;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
@@ -19,16 +16,13 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.state.impl;
-    requires transitive com.hedera.cryptography.bls;
-    requires transitive com.hedera.cryptography.pairings.api;
-    requires transitive com.hedera.cryptography.tss;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
     requires transitive javax.inject;
@@ -36,6 +30,7 @@ module com.hedera.node.app {
     requires transitive org.hyperledger.besu.datatypes;
     requires transitive org.hyperledger.besu.evm;
     requires com.hedera.node.app.hapi.fees;
+    requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;
@@ -57,7 +52,6 @@ module com.hedera.node.app {
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
-    requires java.annotation;
     requires org.apache.commons.lang3;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
@@ -104,9 +98,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
     exports com.hedera.node.app.tss;
-    exports com.hedera.node.app.tss.api;
-    exports com.hedera.node.app.tss.handlers;
-    exports com.hedera.node.app.tss.stores;
     exports com.hedera.node.app.statedumpers;
     exports com.hedera.node.app.workflows.handle.stack;
     exports com.hedera.node.app.fees.congestion;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_101
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
@@ -30,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signsc
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,9 @@ class HssCallAttemptTest extends CallTestBase {
 
     @Mock
     private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
 
     private List<CallTranslator<HssCallAttempt>> callTranslators;
 
@@ -62,6 +67,7 @@ class HssCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
@@ -79,9 +85,28 @@ class HssCallAttemptTest extends CallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 callTranslators,
                 false);
         assertNull(subject.asExecutableCall());
+    }
+
+    @Test
+    void isOnlyDelegatableContractKeysActiveTest() {
+        final var input = TestHelpers.bytesForRedirectAccount(new byte[4], NON_SYSTEM_LONG_ZERO_ADDRESS);
+        final var subject = new HssCallAttempt(
+                input,
+                EIP_1014_ADDRESS,
+                true,
+                mockEnhancement(),
+                DEFAULT_CONFIG,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                callTranslators,
+                false);
+        assertTrue(subject.isOnlyDelegatableContractKeysActive());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -124,18 +124,18 @@ public class ConsensusTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
-    protected final ConsensusCustomFee tokenCustomFee = ConsensusCustomFee.newBuilder()
+    protected final FixedCustomFee tokenCustomFee = FixedCustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder()
                     .denominatingTokenId(fungibleTokenId)
                     .amount(1)
                     .build())
             .feeCollectorAccountId(anotherPayer)
             .build();
-    protected final ConsensusCustomFee hbarCustomFee = ConsensusCustomFee.newBuilder()
+    protected final FixedCustomFee hbarCustomFee = FixedCustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(1).build())
             .feeCollectorAccountId(anotherPayer)
             .build();
-    protected final List<ConsensusCustomFee> customFees = List.of(tokenCustomFee, hbarCustomFee);
+    protected final List<FixedCustomFee> customFees = List.of(tokenCustomFee, hbarCustomFee);
 
     protected Topic topic;
 

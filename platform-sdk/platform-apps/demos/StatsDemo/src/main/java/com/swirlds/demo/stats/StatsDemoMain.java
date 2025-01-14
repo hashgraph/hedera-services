@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ package com.swirlds.demo.stats;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -96,7 +96,6 @@ public class StatsDemoMain implements SwirldMain {
             constructableRegistry.registerConstructable(new ClassConstructorPair(StatsDemoState.class, () -> {
                 StatsDemoState statsDemoState = new StatsDemoState(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                FAKE_MERKLE_STATE_LIFECYCLES.initStates(statsDemoState);
                 return statsDemoState;
             }));
             registerMerkleStateRootClassIds();

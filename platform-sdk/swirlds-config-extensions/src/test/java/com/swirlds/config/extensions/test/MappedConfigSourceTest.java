@@ -19,6 +19,7 @@ package com.swirlds.config.extensions.test;
 import com.swirlds.config.extensions.sources.MappedConfigSource;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
@@ -48,7 +49,7 @@ class MappedConfigSourceTest {
         final var mappedConfigSource = new MappedConfigSource(configSource);
 
         // when
-        final var properties = mappedConfigSource.getProperties();
+        final var properties = getObjectObjectHashMap(mappedConfigSource);
 
         // then
         Assertions.assertNotNull(properties);
@@ -65,7 +66,7 @@ class MappedConfigSourceTest {
 
         // when
         mappedConfigSource.addMapping("b", "a");
-        final var properties = mappedConfigSource.getProperties();
+        final var properties = getObjectObjectHashMap(mappedConfigSource);
 
         // then
         Assertions.assertNotNull(properties);
@@ -97,7 +98,7 @@ class MappedConfigSourceTest {
         mappedConfigSource.addMapping("b", "not-available");
 
         // then
-        Assertions.assertEquals(1, mappedConfigSource.getProperties().size());
+        Assertions.assertEquals(1, mappedConfigSource.getPropertyNames().size());
         Assertions.assertEquals(Set.of("a"), mappedConfigSource.getPropertyNames());
     }
 
@@ -177,12 +178,18 @@ class MappedConfigSourceTest {
 
         // when
         mappedConfigSource.addMapping("foo.a", "a");
-        final var properties = mappedConfigSource.getProperties();
+        final var properties = getObjectObjectHashMap(mappedConfigSource);
 
         // then
         Assertions.assertNotNull(properties);
         Assertions.assertEquals(2, properties.keySet().size());
         Assertions.assertEquals("1", properties.get("a"));
         Assertions.assertEquals("2", properties.get("foo.a"));
+    }
+
+    private static HashMap<Object, Object> getObjectObjectHashMap(final MappedConfigSource mappedConfigSource) {
+        final var properties = new HashMap<>();
+        mappedConfigSource.getPropertyNames().forEach(p -> properties.put(p, mappedConfigSource.getValue(p)));
+        return properties;
     }
 }

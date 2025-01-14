@@ -75,8 +75,7 @@ class VirtualMerkleLeafHasherTest {
                         merkleDbConfig.maxNumOfKeys(),
                         merkleDbConfig.hashesRamToDiskThreshold())
                 .maxNumberOfKeys(50_000_000)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskIndices(false);
+                .hashesRamToDiskThreshold(0);
         dataSourceBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
     }
 
