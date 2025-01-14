@@ -182,11 +182,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     associateAllTokensToCollectors(),
                     // create topic with 10 multilayer fees - 9 HTS + 1 HBAR
                     createTopicWith10Different2layerFees(),
-                    submitMessageTo(TOPIC)
-                            .acceptAllCustomFees(true)
-                            .message("TEST")
-                            .payingWith(SUBMITTER)
-                            .via("submit"),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
 
                     // validate 0 child records
                     withOpContext((spec, log) -> {
