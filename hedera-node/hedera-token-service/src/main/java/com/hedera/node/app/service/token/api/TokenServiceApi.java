@@ -31,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Defines mutations that can't be expressed as a {@link com.hedera.hapi.node.transaction.TransactionBody} dispatch.
+ * Defines mutations that can't be expressed as a {@link com.hedera.hapi.node.base.TransactionBody} dispatch.
  *
  * <p>Only exported to the contract service at this time, as it is the only service that currently needs such a thing.
  * If, for example, we extract a {@code StakingService}, this API would likely need to expand.

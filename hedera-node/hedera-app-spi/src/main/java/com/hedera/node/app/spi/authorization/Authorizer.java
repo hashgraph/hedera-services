@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.authorization;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

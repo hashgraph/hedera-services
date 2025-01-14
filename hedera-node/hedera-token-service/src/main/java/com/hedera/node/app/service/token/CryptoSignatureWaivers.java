@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.spi.SigWaivers;
 
 /** Signature waivers needed for transactions in {@link TokenService}. */

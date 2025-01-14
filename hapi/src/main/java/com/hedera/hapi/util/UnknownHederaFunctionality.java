@@ -18,7 +18,7 @@ package com.hedera.hapi.util;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 
 /**
  * Exception raised when mapping from {@link TransactionBody} or {@link Query} to {@link HederaFunctionality}

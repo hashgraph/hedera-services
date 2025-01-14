@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

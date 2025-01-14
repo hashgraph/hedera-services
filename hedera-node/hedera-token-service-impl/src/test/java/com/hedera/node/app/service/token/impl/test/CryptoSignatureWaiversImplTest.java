@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.authorization.AuthorizerImpl;
 import com.hedera.node.app.authorization.PrivilegesVerifier;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;

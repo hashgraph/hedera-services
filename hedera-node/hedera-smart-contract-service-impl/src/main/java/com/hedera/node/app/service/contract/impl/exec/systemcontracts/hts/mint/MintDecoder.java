@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;

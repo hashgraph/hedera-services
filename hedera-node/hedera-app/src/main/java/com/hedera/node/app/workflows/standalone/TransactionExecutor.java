@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;

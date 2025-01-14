@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;

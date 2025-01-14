@@ -25,7 +25,7 @@ import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody.Builder;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public final class ScheduledTransactionFactory {

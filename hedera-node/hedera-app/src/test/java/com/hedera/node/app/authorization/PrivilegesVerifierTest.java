@@ -65,7 +65,7 @@ class PrivilegesVerifierTest {
     private record TestCase(
             com.hedera.hapi.node.base.AccountID payerId,
             com.hedera.hapi.node.base.HederaFunctionality function,
-            com.hedera.hapi.node.transaction.TransactionBody txn) {
+            com.hedera.hapi.node.base.TransactionBody txn) {
         public TestCase withPayerId(com.hedera.hapi.node.base.AccountID newPayerId) {
             return new TestCase(newPayerId, function, txn);
         }
@@ -90,12 +90,12 @@ class PrivilegesVerifierTest {
             final var fileID = com.hedera.hapi.node.base.FileID.newBuilder()
                     .fileNum(fileNum)
                     .build();
-            final var fileUpdateTxBody = com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+            final var fileUpdateTxBody = com.hedera.hapi.node.base.TransactionBody.newBuilder()
                     .fileUpdate(com.hedera.hapi.node.file.FileUpdateTransactionBody.newBuilder()
                             .fileID(fileID)
                             .build())
                     .build();
-            final var fileAppendTxBody = com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+            final var fileAppendTxBody = com.hedera.hapi.node.base.TransactionBody.newBuilder()
                     .fileAppend(com.hedera.hapi.node.file.FileAppendTransactionBody.newBuilder()
                             .fileID(fileID)
                             .build())

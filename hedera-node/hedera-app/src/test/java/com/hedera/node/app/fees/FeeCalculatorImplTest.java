@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.store.ReadableStoreFactory;
