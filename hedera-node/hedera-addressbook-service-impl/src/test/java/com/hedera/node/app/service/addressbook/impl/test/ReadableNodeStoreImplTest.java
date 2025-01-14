@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,8 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
         given(readableStates.<EntityNumber, Node>get(anyString())).willReturn(nodesState);
 
         subject = new ReadableNodeStoreImpl(readableStates);
-        final var result = subject.snapshotOfFutureRoster();
+        final var result = subject.snapshotOfFutureRoster(nodeId ->
+                nodesState.get(EntityNumber.newBuilder().number(nodeId).build()).weight());
         org.assertj.core.api.Assertions.assertThat(result.rosterEntries())
                 .containsExactlyInAnyOrder(ROSTER_NODE_1, ROSTER_NODE_2, ROSTER_NODE_3);
     }
