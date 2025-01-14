@@ -414,12 +414,12 @@ jobs:
       - name: Gradle Assemble
         id: gradle-build
         working-directory: ${{ github.workspace }}
-        run: ./gradlew assemble :test-clients:shadowJar --scan
+        run: ./gradlew assemble :test-clients:shadowJar
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
         working-directory: ${{ github.workspace }}/platform-sdk/regression
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble
 
       - name: Compute Actual Branch Name
         id: branch

@@ -193,20 +193,20 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
+        run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
-        run: ${GRADLE_EXEC} spotlessCheck --scan
+        run: ${GRADLE_EXEC} spotlessCheck
 
       - name: Gradle Dependency Scopes Check
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} checkAllModuleInfo validatePomFiles --scan --continue
+        run: ${GRADLE_EXEC} checkAllModuleInfo validatePomFiles --continue
 
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport --continue --scan
+        run: ${GRADLE_EXEC} :aggregation:testCodeCoverageReport --continue
 
 
       - name: Publish Unit Test Report
@@ -229,7 +229,7 @@ jobs:
       - name: Timing Sensitive Tests
         id: gradle-timing-sensitive
         if: ${{ inputs.enable-timing-sensitive-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} timingSensitive --continue --scan
+        run: ${GRADLE_EXEC} timingSensitive --continue
 
       - name: Publish Unit Test (Timing Sensitive) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -251,7 +251,7 @@ jobs:
       - name: Time Consuming Tests
         id: gradle-time-consuming
         if: ${{ inputs.enable-time-consuming-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} timeConsuming --continue --scan
+        run: ${GRADLE_EXEC} timeConsuming --continue
 
       - name: Publish Unit Test (Time Consuming) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -273,7 +273,7 @@ jobs:
       - name: Hammer Tests
         id: gradle-hammer-tests
         if: ${{ inputs.enable-hammer-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} hammer --continue --scan
+        run: ${GRADLE_EXEC} hammer --continue
 
       - name: Publish Hammer Test Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -299,7 +299,7 @@ jobs:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
         # Run each tasks in isolation because we dynamically reconfigure Log4j for each mode
-        run: ${GRADLE_EXEC} hapiTestMisc --scan --no-daemon && ${GRADLE_EXEC} hapiEmbeddedMisc --scan --no-daemon && ${GRADLE_EXEC} hapiRepeatableMisc --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestMisc --no-daemon && ${GRADLE_EXEC} hapiEmbeddedMisc --no-daemon && ${GRADLE_EXEC} hapiRepeatableMisc --no-daemon
 
       - name: Publish HAPI Test (Misc) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -333,7 +333,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestCrypto --scan
+        run: ${GRADLE_EXEC} hapiTestCrypto
 
       - name: Publish HAPI Test (Crypto) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -367,7 +367,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestToken --scan
+        run: ${GRADLE_EXEC} hapiTestToken
 
       - name: Publish HAPI Test (Token) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -401,7 +401,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestSmartContract --scan
+        run: ${GRADLE_EXEC} hapiTestSmartContract
 
       - name: Publish HAPI Test (Smart Contract) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -435,7 +435,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestTimeConsuming --scan
+        run: ${GRADLE_EXEC} hapiTestTimeConsuming
 
       - name: Publish HAPI Test (Time Consuming) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -469,7 +469,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestRestart --scan
+        run: ${GRADLE_EXEC} hapiTestRestart
 
       - name: Publish HAPI Test (Restart) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0
@@ -504,7 +504,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestNDReconnect --scan
+        run: ${GRADLE_EXEC} hapiTestNDReconnect
 
       - name: Publish HAPI Test (Node Death Reconnect) Report
         uses: step-security/publish-unit-test-result-action@cc82caac074385ae176d39d2d143ad05e1130b2d # v2.18.0

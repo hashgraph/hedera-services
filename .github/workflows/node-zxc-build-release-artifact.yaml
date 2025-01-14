@@ -191,11 +191,11 @@ jobs:
 
       - name: Gradle Update Version (As Specified)
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
-        run: ./gradlew versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+        run: ./gradlew versionAsSpecified -PnewVersion=${{ inputs.new-version }}
 
       - name: Gradle Update Version (Branch Commit)
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        run: ./gradlew versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
+        run: ./gradlew versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }}
 
       - name: Compute Final Effective Version
         id: effective-version
@@ -309,10 +309,10 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble
 
       - name: Gradle Version Summary
-        run: ./gradlew githubVersionSummary --scan
+        run: ./gradlew githubVersionSummary
 
       - name: Stage Artifact Build Folder
         id: artifact-staging
@@ -732,10 +732,10 @@ jobs:
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Assemble
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble
 
       - name: Gradle Version Summary
-        run: ./gradlew githubVersionSummary --scan
+        run: ./gradlew githubVersionSummary
 
       - name: Stage SDK Release Archives
         working-directory: platform-sdk
@@ -814,14 +814,14 @@ jobs:
         env:
           NEXUS_USERNAME: ${{ secrets.sdk-ossrh-username }}
           NEXUS_PASSWORD: ${{ secrets.sdk-ossrh-password }}
-        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --scan --no-configuration-cache
+        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds -Ps01SonatypeHost=true -PpublishSigningEnabled=true --no-configuration-cache
 
       - name: Gradle Publish Services to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
         if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           NEXUS_USERNAME: ${{ secrets.svcs-ossrh-username }}
           NEXUS_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --scan --no-configuration-cache
+        run: ./gradlew release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --no-configuration-cache
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}

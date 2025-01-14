@@ -220,7 +220,7 @@ jobs:
 
       - name: Build Gradle Artifacts
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble
 
       - name: Prepare for Docker Build
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
