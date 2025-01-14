@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.platform;
 
-import static com.hedera.pbj.runtime.ProtoParserTools.readInt64;
 import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
@@ -37,7 +36,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.constructable.*;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -93,7 +92,11 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.StateLifecycles;
-import com.swirlds.platform.system.*;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
@@ -239,16 +242,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
     private Set<MapKey> accountsWithExpiringRecords;
     // last timestamp purging records
     private long lastPurgeTimestamp = 0;
-    // The length of a system transaction:
-    // 1 byte - encoded field position +
-    // (varying length up to 10 bytes) round number long +
-    // 1 byte - encoded field position +
-    // 2 bytes - encoded size +
-    // 384 bytes - signature
-    // 1 byte - encoded field position +
-    // 1 byte - encoded size +
-    // 48 bytes - hash
-    private static final int[] SYSTEM_TRANSACTION_LENGTH_RANGE = new int[] {437, 448};
+
     /**
      * The instant of the previously handled transaction. Null if no transactions have yet been handled by this state
      * instance. Used to verify that each transaction happens at a later instant than its predecessor.
@@ -1066,58 +1060,39 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
             return;
         }
 
-        final var stateSignatureTransaction = getStateSignatureTransaction(transaction);
-
-        if (stateSignatureTransaction.signature() != Bytes.EMPTY) {
-            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
-                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
-        } else {
-            expandSignatures(transaction);
-        }
-    }
-
-    /**
-     * Checks if the transaction bytes are system ones.
-     *
-     * @param transaction the consensus transaction to check
-     * @return true if the transaction bytes are system ones, false otherwise
-     */
-    private StateSignatureTransaction getStateSignatureTransaction(final Transaction transaction) {
-        final var transactionBytes = transaction.getApplicationTransaction();
-
-        if (transactionBytes.length() == 0
-                || (transactionBytes.length() < SYSTEM_TRANSACTION_LENGTH_RANGE[0]
-                        || transactionBytes.length() > SYSTEM_TRANSACTION_LENGTH_RANGE[1])) {
-            return StateSignatureTransaction.DEFAULT;
-        }
-
-        final var readableData = transactionBytes.toReadableSequentialData();
-        readableData.readVarInt(false);
-        final var maybeRound = readInt64(readableData);
-
-        if (maybeRound < 0) {
-            return StateSignatureTransaction.DEFAULT;
-        } else {
-            return tryToParseSystemTransaction(transaction);
-        }
-    }
-
-    private StateSignatureTransaction tryToParseSystemTransaction(final Transaction transaction) {
         try {
-            final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(
-                    transaction.getApplicationTransaction().toByteArray());
+            final byte[] payloadBytes = transaction.getApplicationTransaction().toByteArray();
+            final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(payloadBytes);
             final byte[] testTransactionRawBytes =
                     testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
             final TestTransaction testTransaction = TestTransaction.parseFrom(testTransactionRawBytes);
 
             if (testTransaction.getBodyCase() == STATESIGNATURETRANSACTION) {
-                return convertStateSignatureTransaction(testTransaction.getStateSignatureTransaction());
+                consumeSystemTransaction(
+                        testTransaction,
+                        event.getCreatorId(),
+                        event.getSoftwareVersion(),
+                        stateSignatureTransactionCallback);
             } else {
-                return StateSignatureTransaction.DEFAULT;
+                expandSignatures(transaction, testTransactionWrapper);
             }
-        } catch (final InvalidProtocolBufferException e) {
-            return StateSignatureTransaction.DEFAULT;
+        } catch (final InvalidProtocolBufferException ex) {
+            exceptionRateLimiter.handle(
+                    ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
         }
+    }
+
+    private void consumeSystemTransaction(
+            @NonNull final TestTransaction transaction,
+            @NonNull final NodeId creator,
+            @NonNull final SemanticVersion semanticVersion,
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        final var stateSignatureTransaction =
+                convertStateSignatureTransactionFromTestToSourceType(transaction.getStateSignatureTransaction());
+        stateSignatureTransactionCallback.accept(
+                new ScopedSystemTransaction<>(creator, semanticVersion, stateSignatureTransaction));
     }
 
     @Override
@@ -1224,10 +1199,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
                 boolean expectingInvalidSignature = false;
                 final TestTransaction testTransaction = TestTransaction.parseFrom(testTransactionRawBytes);
                 if (testTransaction.getBodyCase() == STATESIGNATURETRANSACTION) {
-                    final var stateSignatureTransaction =
-                            convertStateSignatureTransaction(testTransaction.getStateSignatureTransaction());
-                    stateSignatureTransactionCallback.accept(
-                            new ScopedSystemTransaction<>(id, semanticVersion, stateSignatureTransaction));
+                    consumeSystemTransaction(testTransaction, id, semanticVersion, stateSignatureTransactionCallback);
                     return;
                 }
 
@@ -1315,10 +1287,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
                 handleVirtualMerkleTransaction(testTransaction.get().getVirtualMerkleTransaction(), id, timeCreated);
                 break;
             case STATESIGNATURETRANSACTION:
-                final var stateSignatureTransaction =
-                        convertStateSignatureTransaction(testTransaction.get().getStateSignatureTransaction());
-                stateSignatureTransactionCallback.accept(
-                        new ScopedSystemTransaction<>(id, semanticVersion, stateSignatureTransaction));
+                consumeSystemTransaction(testTransaction.get(), id, semanticVersion, stateSignatureTransactionCallback);
                 break;
             default:
                 logger.error(EXCEPTION.getMarker(), "Unrecognized transaction!");
@@ -1345,7 +1314,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
-    private StateSignatureTransaction convertStateSignatureTransaction(
+    private StateSignatureTransaction convertStateSignatureTransactionFromTestToSourceType(
             final com.swirlds.demo.platform.fs.stresstest.proto.StateSignatureTransaction stateSignatureTransaction) {
         return StateSignatureTransaction.newBuilder()
                 .round(stateSignatureTransaction.getRound())
@@ -1427,10 +1396,10 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("KECCAK-256");
-        } catch (NoSuchAlgorithmException ignored) {
+        } catch (final NoSuchAlgorithmException ignored) {
             try {
                 digest = MessageDigest.getInstance("SHA3-256");
-            } catch (NoSuchAlgorithmException e) {
+            } catch (final NoSuchAlgorithmException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -1444,54 +1413,45 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
         return keccakDigest.digest();
     }
 
-    private void expandSignatures(final Transaction trans) {
+    private void expandSignatures(final Transaction trans, final TestTransactionWrapper testTransactionWrapper) {
         if (getConfig().isAppendSig()) {
-            try {
-                final byte[] payloadBytes = trans.getApplicationTransaction().toByteArray();
-                final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(payloadBytes);
-                final byte[] testTransactionRawBytes =
-                        testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
-                final byte[] publicKey =
-                        testTransactionWrapper.getPublicKeyRawBytes().toByteArray();
-                final byte[] signature =
-                        testTransactionWrapper.getSignaturesRawBytes().toByteArray();
-                final AppTransactionSignatureType AppSignatureType = testTransactionWrapper.getSignatureType();
+            final byte[] testTransactionRawBytes =
+                    testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
+            final byte[] publicKey =
+                    testTransactionWrapper.getPublicKeyRawBytes().toByteArray();
+            final byte[] signature =
+                    testTransactionWrapper.getSignaturesRawBytes().toByteArray();
+            final AppTransactionSignatureType AppSignatureType = testTransactionWrapper.getSignatureType();
 
-                final SignatureType signatureType;
-                byte[] signaturePayload = testTransactionRawBytes;
+            final SignatureType signatureType;
+            byte[] signaturePayload = testTransactionRawBytes;
 
-                if (AppSignatureType == AppTransactionSignatureType.ED25519) {
-                    signatureType = SignatureType.ED25519;
-                } else if (AppSignatureType == AppTransactionSignatureType.ECDSA_SECP256K1) {
-                    signatureType = SignatureType.ECDSA_SECP256K1;
-                    signaturePayload = keccak256(testTransactionRawBytes);
-                } else if (AppSignatureType == AppTransactionSignatureType.RSA) {
-                    signatureType = SignatureType.RSA;
-                } else {
-                    throw new UnsupportedOperationException("Unknown application signature type " + AppSignatureType);
-                }
-
-                final int msgLen = signaturePayload.length;
-                final int sigOffset = msgLen + publicKey.length;
-
-                // concatenate payload with public key and signature
-                final byte[] contents = ByteBuffer.allocate(
-                                signaturePayload.length + publicKey.length + signature.length)
-                        .put(signaturePayload)
-                        .put(publicKey)
-                        .put(signature)
-                        .array();
-
-                final TransactionSignature transactionSignature = new TransactionSignature(
-                        contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
-                trans.setMetadata(transactionSignature);
-
-                CryptographyHolder.get().verifySync(List.of(transactionSignature));
-
-            } catch (final InvalidProtocolBufferException ex) {
-                exceptionRateLimiter.handle(
-                        ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
+            if (AppSignatureType == AppTransactionSignatureType.ED25519) {
+                signatureType = SignatureType.ED25519;
+            } else if (AppSignatureType == AppTransactionSignatureType.ECDSA_SECP256K1) {
+                signatureType = SignatureType.ECDSA_SECP256K1;
+                signaturePayload = keccak256(testTransactionRawBytes);
+            } else if (AppSignatureType == AppTransactionSignatureType.RSA) {
+                signatureType = SignatureType.RSA;
+            } else {
+                throw new UnsupportedOperationException("Unknown application signature type " + AppSignatureType);
             }
+
+            final int msgLen = signaturePayload.length;
+            final int sigOffset = msgLen + publicKey.length;
+
+            // concatenate payload with public key and signature
+            final byte[] contents = ByteBuffer.allocate(signaturePayload.length + publicKey.length + signature.length)
+                    .put(signaturePayload)
+                    .put(publicKey)
+                    .put(signature)
+                    .array();
+
+            final TransactionSignature transactionSignature = new TransactionSignature(
+                    contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
+            trans.setMetadata(transactionSignature);
+
+            CryptographyHolder.get().verifySync(List.of(transactionSignature));
         }
     }
 
