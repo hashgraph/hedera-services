@@ -66,6 +66,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -145,6 +146,8 @@ public interface HederaInjectionComponent {
     StoreMetricsService storeMetricsService();
 
     SubmissionManager submissionManager();
+
+    AsyncFatalIssListener fatalIssListener();
 
     @Component.Builder
     interface Builder {

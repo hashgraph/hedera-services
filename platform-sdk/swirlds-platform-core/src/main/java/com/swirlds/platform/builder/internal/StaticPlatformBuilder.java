@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,22 @@ public final class StaticPlatformBuilder {
 
     private StaticPlatformBuilder() {}
 
+    public static void initLogging() {
+        final var log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
+        try {
+            Log4jSetup.startLoggingFramework(log4jPath).await();
+
+            // Now that we have a logger, we can start using it for further messages
+            logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
+            logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
+        } catch (final InterruptedException e) {
+            // since the logging framework has not been instantiated, also log to stderr
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
+        }
+    }
+
     /**
      * Setup global metrics.
      *
@@ -90,21 +106,6 @@ public final class StaticPlatformBuilder {
             return false;
         }
         staticSetupCompleted = true;
-
-        // Setup logging
-        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            // since the logging framework has not been instantiated, also log to stderr
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
-        }
-
-        // Now that we have a logger, we can start using it for further messages
-        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
-        logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
         BootstrapUtils.performHealthChecks(configPath, configuration);
         writeSettingsUsed(configuration);

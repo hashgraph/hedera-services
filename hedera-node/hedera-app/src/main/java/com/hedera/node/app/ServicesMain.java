@@ -24,8 +24,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.initLogging;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
@@ -57,7 +57,6 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -218,6 +217,7 @@ public class ServicesMain implements SwirldMain {
      * @param args optionally, what node id to run; required if the address book is ambiguous
      */
     public static void main(final String... args) throws Exception {
+        initLogging();
         // --- Configure platform infrastructure and context from the command line and environment ---
         BootstrapUtils.setupConstructableRegistry();
         final var diskAddressBook = loadAddressBook(DEFAULT_CONFIG_FILE_NAME);
@@ -227,6 +227,9 @@ public class ServicesMain implements SwirldMain {
                     EXCEPTION.getMarker(),
                     "Multiple nodes were supplied via the command line. Only one node can be started per java process.");
             exitSystem(NODE_ADDRESS_MISMATCH);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
+            throw new ConfigurationException();
         }
         final var platformConfig = buildPlatformConfig();
         // Determine which nodes were _requested_ to run from the command line
@@ -266,8 +269,6 @@ public class ServicesMain implements SwirldMain {
         hedera = newHedera(selfId, metrics);
         final var version = hedera.getSoftwareVersion();
         final var isGenesis = new AtomicBoolean(false);
-        // We want to be able to see the schema migration logs, so init logging here
-        initLogging();
         logger.info("Starting node {} with version {}", selfId, version);
         final var reservedState = loadInitialState(
                 platformConfig,
@@ -345,18 +346,6 @@ public class ServicesMain implements SwirldMain {
         return accountId.shardNum() + "." + accountId.realmNum() + "." + accountId.accountNumOrThrow();
     }
 
-    private static void initLogging() {
-        final var log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            // since the logging framework has not been instantiated, also log to stderr
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
-        }
-    }
-
     /**
      * Creates a canonical {@link Hedera} instance for the given node id and metrics.
      *
@@ -410,12 +399,18 @@ public class ServicesMain implements SwirldMain {
         if (nodesToRun.isEmpty()) {
             final String errorMessage = "No nodes are configured to run locally.";
             logger.error(STARTUP.getMarker(), errorMessage);
+            exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw new ConfigurationException(errorMessage);
         }
 
         if (nodesToRun.size() > 1) {
             final String errorMessage = "Multiple nodes are configured to run locally.";
             logger.error(EXCEPTION.getMarker(), errorMessage);
+            exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw new ConfigurationException(errorMessage);
         }
         return nodesToRun.getFirst();
@@ -437,6 +432,8 @@ public class ServicesMain implements SwirldMain {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Error loading address book", e);
             exitSystem(CONFIGURATION_ERROR);
+            // the following throw is not reachable in production,
+            // but reachable in testing with static mocked system exit calls.
             throw e;
         }
     }

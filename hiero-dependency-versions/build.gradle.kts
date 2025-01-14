@@ -60,6 +60,9 @@ dependencies.constraints {
     api("com.fasterxml.jackson.core:jackson-databind:$jackson") {
         because("com.fasterxml.jackson.databind")
     }
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackson") {
+        because("com.fasterxml.jackson.dataformat")
+    }
     api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
     api("com.github.spotbugs:spotbugs-annotations:4.8.6") {
@@ -71,7 +74,7 @@ dependencies.constraints {
     api("com.google.auto.service:auto-service:$autoService") {
         because("com.google.auto.service.processor")
     }
-    api("com.google.guava:guava:33.3.1-jre") { because("com.google.common") }
+    api("com.google.guava:guava:33.4.0-jre") { because("com.google.common") }
     api("com.google.j2objc:j2objc-annotations:3.0.0") { because("com.google.j2objc.annotations") }
     api("com.google.jimfs:jimfs:1.3.0") { because("com.google.common.jimfs") }
     api("com.google.protobuf:protobuf-java:$protobuf") { because("com.google.protobuf") }
@@ -125,7 +128,7 @@ dependencies.constraints {
         because("org.hyperledger.besu.nativelib.secp256k1")
     }
     api("org.jetbrains:annotations:26.0.1") { because("org.jetbrains.annotations") }
-    api("org.json:json:20231013") { because("org.json") }
+    api("org.json:json:20250107") { because("org.json") }
     api("org.junit.jupiter:junit-jupiter-api:$junit5") { because("org.junit.jupiter.api") }
     api("org.junit.jupiter:junit-jupiter-engine:$junit5") { because("org.junit.jupiter.engine") }
     api("org.junit-pioneer:junit-pioneer:2.3.0") { because("org.junitpioneer") }
