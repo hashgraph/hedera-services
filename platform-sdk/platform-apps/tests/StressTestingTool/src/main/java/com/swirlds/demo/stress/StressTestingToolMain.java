@@ -34,6 +34,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -64,13 +66,19 @@ public class StressTestingToolMain implements SwirldMain<StressTestingToolState>
     static {
         try {
             logger.info(STARTUP.getMarker(), "Registering StressTestingToolState with ConstructableRegistry");
+            final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            constructableRegistry.registerConstructable(new ClassConstructorPair(StressTestingToolState.class, () -> {
+                final StressTestingToolState stressTestingToolState = new StressTestingToolState(
+                        version -> new BasicSoftwareVersion(version.major()));
+                return stressTestingToolState;
+            }));
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     StressTestingToolState.class,
                     () -> new StressTestingToolState(version -> new BasicSoftwareVersion(version.major()))));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "StressTestingToolState is registered with ConstructableRegistry");
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register StressTestingToolState", e);
             throw new RuntimeException(e);
         }
@@ -216,7 +224,7 @@ public class StressTestingToolMain implements SwirldMain<StressTestingToolState>
         }
 
         // ramp up the TPS to the expected value
-        long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+        final long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
         final double rampUpTPS;
         if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
             rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
@@ -269,5 +277,10 @@ public class StressTestingToolMain implements SwirldMain<StressTestingToolState>
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
         return SOFTWARE_VERSION;
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }
