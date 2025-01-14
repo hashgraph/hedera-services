@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -94,7 +97,12 @@ class HevmStaticTransactionFactoryTest {
 
     @Test
     void fromQueryWorkWithNoSender() {
-        final var queryHeader = QueryHeader.newBuilder().build();
+        final var transactionID =
+                TransactionID.newBuilder().accountID(SENDER_ID).build();
+        final var txBody =
+                TransactionBody.newBuilder().transactionID(transactionID).build();
+        final var payment = Transaction.newBuilder().body(txBody).build();
+        final var queryHeader = QueryHeader.newBuilder().payment(payment).build();
         given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         final var query = Query.newBuilder()

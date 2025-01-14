@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @Test
     void testMethodsWithInvalidArguments() {
         // given
-        final var txBody = TransactionBody.DEFAULT;
+        final var txBody = simpleCryptoTransfer().body();
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdates(null, exchangeRateManager, feeManager, throttleServiceManager))
@@ -119,6 +119,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

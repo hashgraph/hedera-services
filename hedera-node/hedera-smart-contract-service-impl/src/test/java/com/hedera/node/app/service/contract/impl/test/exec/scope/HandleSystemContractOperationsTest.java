@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -189,7 +190,11 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void externalizeSuccessfulResultWithTransactionBodyTest() {
-        var transaction = Transaction.newBuilder().build();
+        var transaction = Transaction.newBuilder()
+                .body(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.DEFAULT)
+                        .build())
+                .build();
         var contractFunctionResult = SystemContractUtils.successResultOfZeroValueTraceable(
                 0,
                 org.apache.tuweni.bytes.Bytes.EMPTY,
