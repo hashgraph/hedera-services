@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,12 +41,6 @@ public interface ReadableAirdropStore {
      * @return true if the airdrop exists, false otherwise
      */
     boolean exists(@NonNull PendingAirdropId airdropId);
-
-    /**
-     * Returns the number of entities in the pending airdrops state.
-     * @return the size of the pending airdrops state
-     */
-    long sizeOfState();
 
     /**
      * Warms the system by preloading a token into memory

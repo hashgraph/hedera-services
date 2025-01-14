@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,12 +119,6 @@ public interface ReadableAccountStore {
         final var account = getAliasedAccountById(builder.build());
         return account == null || !account.smartContract() ? null : account;
     }
-
-    /**
-     * Returns the number of entities in the account state.
-     * @return the size of the account state
-     */
-    long sizeOfAccountState();
 
     /**
      * Warms the system by preloading an account into memory

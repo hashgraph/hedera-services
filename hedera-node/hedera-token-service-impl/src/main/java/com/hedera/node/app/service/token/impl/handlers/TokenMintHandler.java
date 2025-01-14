@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenMintStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -153,10 +154,12 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var maxAllowedMints = tokensConfig.nftsMaxAllowedMints();
             final var nftStore = storeFactory.writableStore(WritableNftStore.class);
+            final var entityIdStore = storeFactory.readableStore(ReadableEntityIdStore.class);
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(
-                    nftStore.sizeOfState() + meta.size() <= maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+                    entityIdStore.numNfts() + meta.size() <= maxAllowedMints,
+                    MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
             // mint nft
             final var mintedSerials = mintNonFungible(
                     token,
