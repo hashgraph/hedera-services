@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromRound;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.hedera.hapi.node.state.roster.Roster;
@@ -131,11 +130,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
         final PlatformMerkleStateRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round);
-        transactionHandler.handleRound(round, state);
-
-        // TODO update this logic to return the transactions from the callback consumer passed in
-        // state.getSwirldState().handleConsensusRound, when it is implemented
-        return extractFromRound(round, StateSignatureTransaction.class);
+        return transactionHandler.handleRound(round, state);
     }
 
     /**

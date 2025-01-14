@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,16 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO_OP_CONSUMER;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,12 +55,14 @@ public class TransactionHandler {
      * @param state
      * 		the state to apply {@code round} to
      */
-    public void handleRound(final ConsensusRound round, final PlatformMerkleStateRoot state) {
+    public List<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
+            final ConsensusRound round, final PlatformMerkleStateRoot state) {
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.handleConsensusRound(round, state.getWritablePlatformState(), NO_OP_CONSUMER);
+            state.handleConsensusRound(round, state.getWritablePlatformState(), scopedSystemTransactions::add);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 
@@ -78,5 +83,6 @@ public class TransactionHandler {
                     round.getRoundNum(),
                     t);
         }
+        return scopedSystemTransactions;
     }
 }
