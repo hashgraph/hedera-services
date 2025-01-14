@@ -66,12 +66,6 @@ public class StressTestingToolMain implements SwirldMain<StressTestingToolState>
     static {
         try {
             logger.info(STARTUP.getMarker(), "Registering StressTestingToolState with ConstructableRegistry");
-            final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-            constructableRegistry.registerConstructable(new ClassConstructorPair(StressTestingToolState.class, () -> {
-                final StressTestingToolState stressTestingToolState = new StressTestingToolState(
-                        version -> new BasicSoftwareVersion(version.major()));
-                return stressTestingToolState;
-            }));
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     StressTestingToolState.class,

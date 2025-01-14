@@ -31,8 +31,6 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -53,8 +51,8 @@ import org.mockito.Mockito;
 
 class MigrationTestingToolStateTest {
     private MigrationTestingToolState state;
+    private MigrationTestToolStateLifecycles stateLifecycles;
     private Random random;
-    private PlatformStateModifier platformStateModifier;
     private Round round;
     private ConsensusEvent event;
     private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedTransactions;
@@ -64,7 +62,8 @@ class MigrationTestingToolStateTest {
 
     @BeforeEach
     void setUp() {
-        state = new MigrationTestingToolState(mock(StateLifecycles.class), mock(Function.class));
+        state = new MigrationTestingToolState(mock(Function.class));
+        stateLifecycles = new MigrationTestToolStateLifecycles();
         random = new Random();
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
@@ -97,7 +96,7 @@ class MigrationTestingToolStateTest {
             MigrationTestingToolTransaction migrationTestingToolTransaction = Mockito.spy(tr);
             utilities.when(() -> TransactionUtils.parseTransaction(any())).thenReturn(migrationTestingToolTransaction);
             Mockito.doNothing().when(migrationTestingToolTransaction).applyTo(state);
-            state.handleConsensusRound(round, platformStateModifier, consumer);
+            stateLifecycles.onHandleConsensusRound(round, state, consumer);
         }
 
         assertThat(consumedTransactions).isEmpty();
@@ -110,7 +109,7 @@ class MigrationTestingToolStateTest {
                 StateSignatureTransaction.PROTOBUF.toBytes(stateSignatureTransaction);
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).hasSize(1);
     }
@@ -134,7 +133,7 @@ class MigrationTestingToolStateTest {
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).hasSize(3);
     }
@@ -145,7 +144,7 @@ class MigrationTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.EMPTY);
         when(transaction.isSystem()).thenReturn(true);
 
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).isEmpty();
     }
@@ -177,7 +176,7 @@ class MigrationTestingToolStateTest {
                 .thenReturn(List.of(eventTransaction, secondEventTransaction, thirdEventTransaction));
         event = new PlatformEvent(gossipEvent);
 
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).hasSize(3);
     }
@@ -202,7 +201,7 @@ class MigrationTestingToolStateTest {
         when(eventTransaction.transaction()).thenReturn(systemTransactionWithType);
         event = new PlatformEvent(gossipEvent);
 
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).hasSize(1);
     }
@@ -214,7 +213,7 @@ class MigrationTestingToolStateTest {
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         when(transaction.isSystem()).thenReturn(true);
 
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).isEmpty();
     }

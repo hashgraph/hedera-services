@@ -17,9 +17,11 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
+import static com.swirlds.demo.migration.TransactionUtils.isSystemTransaction;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.merkle.map.MerkleMap;
@@ -33,6 +35,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -98,6 +101,11 @@ public class MigrationTestToolStateLifecycles implements StateLifecycles<Migrati
                 if (trans.isSystem()) {
                     continue;
                 }
+                if (isSystemTransaction(trans.getApplicationTransaction())) {
+                    consumeSystemTransaction(trans, event, stateSignatureTransactionCallback);
+                    continue;
+                }
+
                 final MigrationTestingToolTransaction mTrans =
                         TransactionUtils.parseTransaction(trans.getApplicationTransaction());
                 mTrans.applyTo(state);
@@ -110,7 +118,21 @@ public class MigrationTestToolStateLifecycles implements StateLifecycles<Migrati
             @NonNull Event event,
             @NonNull MigrationTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
-        // no-op
+        event.forEachTransaction(transaction -> {
+
+            // We don't want to consume deprecated EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in
+            // the callback, since it's intended to be used only
+            // for the new form of encoded system transactions in Bytes.
+            // We skip the current iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            if (isSystemTransaction(transaction.getApplicationTransaction())) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+            }
+        });
     }
 
     @Override
@@ -129,5 +151,20 @@ public class MigrationTestToolStateLifecycles implements StateLifecycles<Migrati
     @Override
     public void onNewRecoveredState(@NonNull MigrationTestingToolState recoveredState) {
         // no-op
+    }
+
+    private void consumeSystemTransaction(
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 }
