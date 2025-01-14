@@ -19,8 +19,6 @@ package com.hedera.node.app.hints.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.cryptography.bls.BlsPublicKey;
-import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
@@ -54,19 +52,22 @@ class HintsContextTest {
     private HintsLibrary library;
 
     @Mock
-    private BlsSignature signature;
+    private HintsLibraryCodec codec;
 
     @Mock
-    private BlsPublicKey badKey;
+    private Bytes signature;
 
     @Mock
-    private BlsPublicKey goodKey;
+    private Bytes badKey;
+
+    @Mock
+    private Bytes goodKey;
 
     private HintsContext subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HintsContext(library);
+        subject = new HintsContext(library, codec);
     }
 
     @Test
@@ -85,26 +86,27 @@ class HintsContextTest {
 
     @Test
     void signingWorksAsExpectedFor() {
-        given(library.extractPublicKey(AGGREGATION_KEY, A_NODE_PARTY_ID.partyId()))
+        given(codec.extractPublicKey(AGGREGATION_KEY, A_NODE_PARTY_ID.partyId()))
                 .willReturn(badKey);
-        given(library.extractPublicKey(AGGREGATION_KEY, B_NODE_PARTY_ID.partyId()))
+        given(codec.extractPublicKey(AGGREGATION_KEY, B_NODE_PARTY_ID.partyId()))
                 .willReturn(null);
-        given(library.extractPublicKey(AGGREGATION_KEY, C_NODE_PARTY_ID.partyId()))
+        given(codec.extractPublicKey(AGGREGATION_KEY, C_NODE_PARTY_ID.partyId()))
                 .willReturn(goodKey);
-        given(library.extractPublicKey(AGGREGATION_KEY, D_NODE_PARTY_ID.partyId()))
+        given(codec.extractPublicKey(AGGREGATION_KEY, D_NODE_PARTY_ID.partyId()))
                 .willReturn(goodKey);
-        given(library.verifyPartial(BLOCK_HASH, signature, badKey)).willReturn(false);
-        given(library.verifyPartial(BLOCK_HASH, signature, goodKey)).willReturn(true);
+        given(library.verifyBls(signature, BLOCK_HASH, badKey)).willReturn(false);
+        given(library.verifyBls(signature, BLOCK_HASH, goodKey)).willReturn(true);
         final long cWeight = 1L;
         final long dWeight = 2L;
-        given(library.extractTotalWeight(AGGREGATION_KEY)).willReturn(3 * (cWeight + dWeight));
-        given(library.extractWeight(AGGREGATION_KEY, C_NODE_PARTY_ID.partyId())).willReturn(cWeight);
-        given(library.extractWeight(AGGREGATION_KEY, D_NODE_PARTY_ID.partyId())).willReturn(dWeight);
-        final Map<Long, BlsSignature> expectedSignatures = Map.of(
-                C_NODE_PARTY_ID.nodeId(), signature,
-                D_NODE_PARTY_ID.nodeId(), signature);
+        given(codec.extractTotalWeight(VERIFICATION_KEY)).willReturn(3 * (cWeight + dWeight));
+        given(codec.extractWeight(AGGREGATION_KEY, C_NODE_PARTY_ID.partyId())).willReturn(cWeight);
+        given(codec.extractWeight(AGGREGATION_KEY, D_NODE_PARTY_ID.partyId())).willReturn(dWeight);
+        final Map<Integer, Bytes> expectedSignatures = Map.of(
+                C_NODE_PARTY_ID.partyId(), signature,
+                D_NODE_PARTY_ID.partyId(), signature);
         final var aggregateSignature = Bytes.wrap("AS");
-        given(library.signAggregate(AGGREGATION_KEY, expectedSignatures)).willReturn(aggregateSignature);
+        given(library.aggregateSignatures(AGGREGATION_KEY, VERIFICATION_KEY, expectedSignatures))
+                .willReturn(aggregateSignature);
 
         subject.setConstruction(CONSTRUCTION);
 
