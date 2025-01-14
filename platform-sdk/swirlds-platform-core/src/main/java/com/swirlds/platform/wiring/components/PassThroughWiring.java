@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.wiring.components;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.function.Function;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.schedulers.TaskScheduler;
 import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
 import org.hiero.wiring.framework.wires.input.BindableInputWire;
 import org.hiero.wiring.framework.wires.input.InputWire;
 import org.hiero.wiring.framework.wires.output.OutputWire;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * PassThrough Component Wiring, useful for wiring no-op components with the given scheduler type.

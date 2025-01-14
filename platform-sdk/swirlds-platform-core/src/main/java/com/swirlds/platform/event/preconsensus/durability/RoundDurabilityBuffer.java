@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.event.preconsensus.durability;
 
-import org.hiero.wiring.framework.component.InputWireLabel;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * This component performs a logical "join" operation between states ready to be handled and events that are known to be

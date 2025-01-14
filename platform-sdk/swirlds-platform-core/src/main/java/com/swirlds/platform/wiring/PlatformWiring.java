@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,17 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
+import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static org.hiero.wiring.framework.wires.SolderType.INJECT;
 import static org.hiero.wiring.framework.wires.SolderType.OFFER;
-import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
-import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import org.hiero.wiring.framework.component.ComponentWiring;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
-import org.hiero.wiring.framework.transformers.RoutableData;
-import org.hiero.wiring.framework.transformers.WireFilter;
-import org.hiero.wiring.framework.transformers.WireTransformer;
-import org.hiero.wiring.framework.wires.input.InputWire;
-import org.hiero.wiring.framework.wires.output.OutputWire;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -108,6 +99,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import org.hiero.event.creator.impl.EventCreationConfig;
+import org.hiero.wiring.framework.component.ComponentWiring;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
+import org.hiero.wiring.framework.transformers.RoutableData;
+import org.hiero.wiring.framework.transformers.WireFilter;
+import org.hiero.wiring.framework.transformers.WireTransformer;
+import org.hiero.wiring.framework.wires.input.InputWire;
+import org.hiero.wiring.framework.wires.output.OutputWire;
+import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.

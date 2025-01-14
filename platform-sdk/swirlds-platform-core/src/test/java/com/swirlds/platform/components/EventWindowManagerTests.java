@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.internal.ConsensusRound;
+import java.util.concurrent.atomic.AtomicReference;
 import org.hiero.wiring.framework.component.ComponentWiring;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.model.WiringModelBuilder;
 import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
-import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.internal.ConsensusRound;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 public class EventWindowManagerTests {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,6 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
-import org.hiero.wiring.framework.model.diagram.ModelEdgeSubstitution;
-import org.hiero.wiring.framework.model.diagram.ModelGroup;
-import org.hiero.wiring.framework.model.diagram.ModelManualLink;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
-import org.hiero.wiring.framework.wires.SolderType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
@@ -35,6 +27,14 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.model.WiringModelBuilder;
+import org.hiero.wiring.framework.model.diagram.ModelEdgeSubstitution;
+import org.hiero.wiring.framework.model.diagram.ModelGroup;
+import org.hiero.wiring.framework.model.diagram.ModelManualLink;
+import org.hiero.wiring.framework.schedulers.TaskScheduler;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
+import org.hiero.wiring.framework.wires.SolderType;
 import picocli.CommandLine;
 
 @CommandLine.Command(

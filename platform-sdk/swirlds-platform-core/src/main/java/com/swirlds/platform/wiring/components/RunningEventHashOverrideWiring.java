@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ import static org.hiero.wiring.framework.model.diagram.HyperlinkBuilder.platform
 import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.schedulers.TaskScheduler;
 import org.hiero.wiring.framework.wires.input.BindableInputWire;
 import org.hiero.wiring.framework.wires.input.InputWire;
 import org.hiero.wiring.framework.wires.output.OutputWire;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A wiring object for distributing {@link RunningEventHashOverride}s

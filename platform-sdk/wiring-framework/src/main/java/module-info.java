@@ -16,6 +16,18 @@
 
 module org.hiero.wiring.framework {
     exports org.hiero.wiring.framework;
+    exports org.hiero.wiring.framework.model.diagram;
+    exports org.hiero.wiring.framework.component;
+    exports org.hiero.wiring.framework.counters;
+    exports org.hiero.wiring.framework.model;
+    exports org.hiero.wiring.framework.schedulers;
+    exports org.hiero.wiring.framework.schedulers.builders;
+    exports org.hiero.wiring.framework.schedulers.internal;
+    exports org.hiero.wiring.framework.tasks;
+    exports org.hiero.wiring.framework.transformers;
+    exports org.hiero.wiring.framework.wires;
+    exports org.hiero.wiring.framework.wires.input;
+    exports org.hiero.wiring.framework.wires.output;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

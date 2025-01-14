@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,6 @@ import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
-import org.hiero.wiring.framework.model.diagram.ModelEdgeSubstitution;
-import org.hiero.wiring.framework.model.diagram.ModelGroup;
-import org.hiero.wiring.framework.model.diagram.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;
@@ -38,6 +33,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.model.WiringModelBuilder;
+import org.hiero.wiring.framework.model.diagram.ModelEdgeSubstitution;
+import org.hiero.wiring.framework.model.diagram.ModelGroup;
+import org.hiero.wiring.framework.model.diagram.ModelManualLink;
 import picocli.CommandLine;
 
 @CommandLine.Command(

@@ -29,8 +29,6 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import org.hiero.wiring.framework.model.DeterministicWiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.builder.PlatformBuilder;
@@ -49,6 +47,8 @@ import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
+import org.hiero.wiring.framework.model.DeterministicWiringModel;
+import org.hiero.wiring.framework.model.WiringModelBuilder;
 
 /**
  * Encapsulates a single node running in a TURTLE network.

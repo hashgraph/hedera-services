@@ -27,8 +27,6 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.platform.NodeIdConverter;
-import org.hiero.wiring.framework.WiringConfig;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -50,6 +48,8 @@ import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.hiero.event.creator.impl.EventCreationConfig;
+import org.hiero.wiring.framework.WiringConfig;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
 
 /**
  * Registers configuration types for the platform.

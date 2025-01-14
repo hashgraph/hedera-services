@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package com.swirlds.platform.pool;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import org.hiero.wiring.framework.component.InputWireLabel;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Coordinates and manages a pool of transactions waiting to be submitted.
