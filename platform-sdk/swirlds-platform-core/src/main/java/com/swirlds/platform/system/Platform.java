@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -71,7 +72,7 @@ public interface Platform {
      * @return a wrapper around the most recent immutable state
      */
     @NonNull
-    <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason);
+    <T extends MerkleStateRoot> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason);
 
     /**
      * This method can be called to create a new transaction. If accepted by this method, the newly-created transaction
