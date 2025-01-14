@@ -104,7 +104,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
     @Test
     void testMethodsWithInvalidArguments() {
         // given
-        final var txBody = TransactionBody.DEFAULT;
+        final var txBody = simpleCryptoTransfer().body();
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdates(null, exchangeRateManager, feeManager, throttleServiceManager))
@@ -119,6 +119,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

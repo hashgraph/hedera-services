@@ -274,7 +274,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
     private static final TransactionInfo txnInfo = new TransactionInfo(
-            Transaction.newBuilder().build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER, null);
+            Transaction.newBuilder().body(txBody).build(),
+            txBody,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CRYPTO_TRANSFER,
+            null);
 
     private static final TransactionBody MISSING_PAYER_ID =
             TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
@@ -747,7 +752,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         final TransactionInfo txnInfo = new TransactionInfo(
-                Transaction.newBuilder().build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function, null);
+                Transaction.newBuilder().body(txBody).build(),
+                txBody,
+                SignatureMap.DEFAULT,
+                Bytes.EMPTY,
+                function,
+                null);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
                 creatorInfo,
