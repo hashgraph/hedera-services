@@ -465,20 +465,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .message("TEST")
                             .payingWith(SUBMITTER));
         }
-    }
-
-    @HapiTest
-    @DisplayName("Max custom fee is supported only on consensus message submit")
-    final Stream<DynamicTest> maxCustomFeesIsSupportedOnlyWithMsgSubmit() {
-        final var sender = "sender";
-        final var receiver = "receiver";
-        final var feeLimit = maxCustomFee(sender, 2);
-        return hapiTest(
-                cryptoCreate(sender).balance(ONE_HBAR),
-                cryptoCreate(receiver),
-                cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
-                        .maxCustomFee(feeLimit)
-                        .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
 
         @HapiTest
         // TOPIC_FEE_177
@@ -501,13 +487,13 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
                     // Create a topic without alice in the fee exempt key list and verify that she pays
                     createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(topicAdmin),
-                    submitMessageTo(TOPIC).message("TEST").payingWith(alice).acceptAllCustomFees(true),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
                     getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0),
 
                     // Add alice to the fee exempt key list and verify that she doesn't pay
                     updateTopic(TOPIC).feeExemptKeys(alice).signedByPayerAnd(topicAdmin),
                     // even though alice doesn't have any tokens, the transaction should still be successful
-                    submitMessageTo(TOPIC).message("TEST").payingWith(alice).acceptAllCustomFees(true),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
                     getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
         }
 
@@ -540,7 +526,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
                     // Remove alice from the fee exempt key list and verify that she pays
                     updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(topicAdmin),
-                    submitMessageTo(TOPIC).message("TEST").payingWith(alice).acceptAllCustomFees(true),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
                     getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
         }
     }
@@ -570,5 +556,19 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     deleteTopic(TOPIC).signedByPayerAnd(admin),
                     submitMessageTo(TOPIC).message("TEST").hasKnownStatus(ResponseCodeEnum.INVALID_TOPIC_ID));
         }
+    }
+
+    @HapiTest
+    @DisplayName("Max custom fee is supported only on consensus message submit")
+    final Stream<DynamicTest> maxCustomFeesIsSupportedOnlyWithMsgSubmit() {
+        final var sender = "sender";
+        final var receiver = "receiver";
+        final var feeLimit = maxCustomFee(sender, 2);
+        return hapiTest(
+                cryptoCreate(sender).balance(ONE_HBAR),
+                cryptoCreate(receiver),
+                cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
+                        .maxCustomFee(feeLimit)
+                        .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
     }
 }
