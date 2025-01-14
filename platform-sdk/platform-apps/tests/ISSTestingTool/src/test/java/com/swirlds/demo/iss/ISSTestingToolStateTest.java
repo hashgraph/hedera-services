@@ -33,7 +33,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -47,6 +46,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +55,7 @@ class ISSTestingToolStateTest {
     private static final int RUNNING_SUM_INDEX = 3;
     private ISSTestingToolMain main;
     private ISSTestingToolState state;
-    private PlatformStateModifier platformStateModifier;
+    private ISSTestingToolStateLifecycles stateLifecycles;
     private Round round;
     private ConsensusEvent event;
     private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedTransactions;
@@ -65,10 +65,10 @@ class ISSTestingToolStateTest {
 
     @BeforeEach
     void setUp() {
-        state = new ISSTestingToolState(mock(StateLifecycles.class), mock(Function.class));
+        state = new ISSTestingToolState(mock(Function.class));
+        stateLifecycles = new ISSTestingToolStateLifecycles();
         main = mock(ISSTestingToolMain.class);
         final var random = new Random();
-        platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
 
@@ -96,7 +96,7 @@ class ISSTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(bytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -119,7 +119,7 @@ class ISSTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -152,7 +152,7 @@ class ISSTestingToolStateTest {
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -172,7 +172,7 @@ class ISSTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -196,7 +196,7 @@ class ISSTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -221,7 +221,7 @@ class ISSTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -268,7 +268,7 @@ class ISSTestingToolStateTest {
         when(thirdEventTransaction.applicationTransaction()).thenReturn(transactionBytes);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).hasSize(3);
@@ -302,7 +302,7 @@ class ISSTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(transactionBytes);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).hasSize(1);
@@ -317,7 +317,7 @@ class ISSTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event,state, consumer);
 
         // Then
         assertThat(consumedTransactions).isEmpty();
@@ -350,7 +350,7 @@ class ISSTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(transactionBytes);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).isEmpty();

@@ -25,6 +25,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
@@ -40,6 +41,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -109,9 +111,27 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
         while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
+            final var event = eventIterator.next();
             state.captureTimestamp(event);
-            event.consensusTransactionIterator().forEachRemaining(v -> handleTransaction(state, v));
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                // We are not interested in handling any system transactions, as they are specific
+                // for the platform only.We also don't want to consume deprecated
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+                // callback,since it's intended to be used only for the new form of encoded system
+                // transactions in Bytes.Thus, we can directly skip the current
+                // iteration, if it processes a deprecated system transaction with the
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+                if (transaction.isSystem()) {
+                    return;
+                }
+
+                // We should consume in the callback the new form of system transactions in Bytes
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+                } else {
+                    handleTransaction(state, transaction);
+                }
+            });
             if (!eventIterator.hasNext()) {
                 final Instant currentTimestamp = event.getConsensusTimestamp();
                 final Duration elapsedSinceGenesis = Duration.between(state.getGenesisTimestamp(), currentTimestamp);
@@ -307,8 +327,50 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
             @NonNull Event event,
             @NonNull ISSTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
-        // no-op
+        event.forEachTransaction(transaction -> {
+            // We are not interested in pre-handling any system transactions, as they are
+            // specific for the platform only.We also don't want to consume deprecated
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+            // callback,since it's intended to be used only for the new form of encoded system
+            // transactions in Bytes.Thus, we can directly skip the current
+            // iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            // We should consume in the callback the new form of system transactions in Bytes
+            if (areTransactionBytesSystemOnes(transaction)) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+            }
+        });
     }
+
+    /**
+     * Checks if the transaction bytes are system ones. The test creates application transactions
+     * with max length of 4. System transactions will be always bigger than that.
+     *
+     * @param transaction the consensus transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 4;
+    }
+
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
+    }
+
 
     @Override
     public void onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {

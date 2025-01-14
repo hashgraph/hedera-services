@@ -28,8 +28,10 @@ import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
@@ -194,8 +196,18 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
     }
 
-    void processTransactions(Round round) {
+    void processTransactions(Round round,
+                             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         incrementRoundsHandled();
+
+        round.forEachEventTransaction((ev, tx) -> {
+            if (isSystemTransaction(tx)) {
+                consumeSystemTransaction(tx, ev, stateSignatureTransaction);
+            } else {
+                applyTransactionToState(tx);
+            }
+        });
+
         round.forEachTransaction(this::applyTransactionToState);
         processRound(round);
     }
@@ -230,82 +242,16 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
     }
 
     /**
-     * Keeps track of which transactions have been prehandled.
-     */
-    @Override
-    public void preHandle(
-            @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        event.forEachTransaction(transaction -> {
-            if (transaction.isSystem()) {
-                return;
-            }
-
-            if (isSystemTransaction(transaction)) {
-                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
-                return;
-            }
-            final long transactionContents =
-                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
-
-            if (!transactionsAwaitingPostHandle.add(transactionContents)) {
-                logger.error(
-                        EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
-            }
-        });
-    }
-
-    /**
-     * Modifies the state based on each transaction in the round
-     * <p>
-     * Writes the round and its contents to a log on disk
-     */
-    @Override
-    public void handleConsensusRound(
-            final @NonNull Round round,
-            final @NonNull PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        Objects.requireNonNull(round);
-        Objects.requireNonNull(platformState);
-
-        if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
-            // This is the first round after genesis.
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Setting freeze time to {} seconds after genesis.",
-                    freezeAfterGenesis.getSeconds());
-            platformState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
-        }
-
-        roundsHandled++;
-
-        round.forEachEventTransaction((ev, tx) -> {
-            if (isSystemTransaction(tx)) {
-                consumeSystemTransaction(tx, ev, stateSignatureTransaction);
-            } else {
-                applyTransactionToState(tx);
-            }
-        });
-        stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
-
-        transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
-
-        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
-        setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
-    }
-
-
-    /**
      * Determines if the given transaction is a system transaction for this app.
      *
      * @param transaction the transaction to check
      * @return true if the transaction is a system transaction, false otherwise
      */
-    private boolean isSystemTransaction(final @NonNull Transaction transaction) {
+    boolean isSystemTransaction(final @NonNull Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 8;
     }
 
-    private void consumeSystemTransaction(
+    void consumeSystemTransaction(
             final @NonNull Transaction transaction,
             final @NonNull Event event,
             final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>

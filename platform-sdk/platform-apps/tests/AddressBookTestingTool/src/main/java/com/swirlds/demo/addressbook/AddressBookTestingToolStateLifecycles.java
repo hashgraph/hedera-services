@@ -50,6 +50,7 @@ import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -152,11 +153,26 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
 
         state.incrementRoundsHandled();
 
-        final Iterator<ConsensusEvent> eventIterator = round.iterator();
+        for (final var event : round) {
+            event.consensusTransactionIterator().forEachRemaining(transaction -> {
+                // We are not interested in handling any system transactions, as they are
+                // specific for the platform only.We also don't want to consume deprecated
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+                // callback, since it's intended to be used only for the new form of encoded system
+                // transactions in Bytes. Thus, we can directly skip the current
+                // iteration, if it processes a deprecated system transaction with the
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+                if (transaction.isSystem()) {
+                    return;
+                }
 
-        while (eventIterator.hasNext()) {
-            final ConsensusEvent event = eventIterator.next();
-            event.consensusTransactionIterator().forEachRemaining(v -> handleTransaction(v, state));
+                // We should consume in the callback the new form of system transactions in Bytes
+                if (state.areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+                } else {
+                    handleTransaction(transaction, state);
+                }
+            });
         }
 
         if (!validationPerformed.getAndSet(true)) {
@@ -787,7 +803,43 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
             @NonNull Event event,
             @NonNull AddressBookTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
-        // no-op
+        event.transactionIterator().forEachRemaining(transaction -> {
+            // We are not interested in pre-handling any system transactions, as they are
+            // specific for the platform only.We also don't want to consume deprecated
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+            // callback,since it's intended to be used only for the new form of encoded system
+            // transactions in Bytes. Thus, we can directly skip the current
+            // iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            // We should consume in the callback the new form of system transactions in Bytes
+            if (state.areTransactionBytesSystemOnes(transaction)) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+            }
+        });
+    }
+
+    /**
+     * Converts a transaction to a {@link StateSignatureTransaction} and then consumes it into a callback.
+     *
+     * @param transaction                       the transaction to consume
+     * @param event                             the event that contains the transaction
+     * @param stateSignatureTransactionCallback the callback to call with the system transaction
+     */
+    private void consumeSystemTransaction(final Transaction transaction,
+                                          final Event event,
+                                          final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final com.hedera.pbj.runtime.ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 
     @Override

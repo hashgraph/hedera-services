@@ -29,8 +29,12 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
@@ -49,6 +53,7 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,8 +82,8 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
 
     /**
      * The number of rounds handled by this app. Is incremented each time
-     * {@link AddressBookTestingToolStateLifecycles#onHandleConsensusRound(Round, AddressBookTestingToolState)} is called. Note that this may not actually equal the round
-     * number, since we don't call {@link AddressBookTestingToolStateLifecycles#onHandleConsensusRound(Round, AddressBookTestingToolState)} for rounds with no events.
+     * {@link AddressBookTestingToolStateLifecycles#onHandleConsensusRound(Round, AddressBookTestingToolState, Consumer)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link AddressBookTestingToolStateLifecycles#onHandleConsensusRound(Round, AddressBookTestingToolState, Consumer)} for rounds with no events.
      *
      * <p>
      * Affects the hash of this node.
@@ -130,29 +135,6 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         return roundsHandled;
     }
 
-    @Override
-    public void preHandle(
-            @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        event.transactionIterator().forEachRemaining(transaction -> {
-            // We are not interested in pre-handling any system transactions, as they are
-            // specific for the platform only.We also don't want to consume deprecated
-            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
-            // callback,since it's intended to be used only for the new form of encoded system
-            // transactions in Bytes. Thus, we can directly skip the current
-            // iteration, if it processes a deprecated system transaction with the
-            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
-            if (transaction.isSystem()) {
-                return;
-            }
-
-            // We should consume in the callback the new form of system transactions in Bytes
-            if (areTransactionBytesSystemOnes(transaction)) {
-                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
-            }
-        });
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -163,63 +145,6 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
         return new AddressBookTestingToolState(this);
     }
 
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        Objects.requireNonNull(round, "the round cannot be null");
-        Objects.requireNonNull(platformState, "the platform state cannot be null");
-        throwIfImmutable();
-
-        if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
-            // This is the first round after genesis.
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Setting freeze time to {} seconds after genesis.",
-                    freezeAfterGenesis.getSeconds());
-            platformState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
-        }
-
-        roundsHandled++;
-        setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
-
-        for (final var event : round) {
-            event.consensusTransactionIterator().forEachRemaining(transaction -> {
-                // We are not interested in handling any system transactions, as they are
-                // specific for the platform only.We also don't want to consume deprecated
-                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
-                // callback, since it's intended to be used only for the new form of encoded system
-                // transactions in Bytes. Thus, we can directly skip the current
-                // iteration, if it processes a deprecated system transaction with the
-                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
-                if (transaction.isSystem()) {
-                    return;
-                }
-
-                // We should consume in the callback the new form of system transactions in Bytes
-                if (areTransactionBytesSystemOnes(transaction)) {
-                    consumeSystemTransaction(transaction, event, stateSignatureTransaction);
-                } else {
-                    handleTransaction(transaction);
-                }
-            });
-        }
-
-        if (!validationPerformed.getAndSet(true)) {
-            String testScenario = testingToolConfig.testScenario();
-            if (validateTestScenario()) {
-                logger.info(STARTUP.getMarker(), "Test scenario {}: finished without errors.", testScenario);
-            } else {
-                logger.error(EXCEPTION.getMarker(), "Test scenario {}: validation failed with errors.", testScenario);
-            }
-        }
-    }
-
     /**
      * Checks if the transaction bytes are system ones. The test creates application transactions with max length of 4.
      * System transactions will be always bigger than that.
@@ -227,30 +152,10 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the consensus transaction to check
      * @return true if the transaction bytes are system ones, false otherwise
      */
-    private boolean areTransactionBytesSystemOnes(final Transaction transaction) {
+    boolean areTransactionBytesSystemOnes(final Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 4;
     }
 
-    /**
-     * Converts a transaction to a {@link StateSignatureTransaction} and then consumes it into a callback.
-     *
-     * @param transaction the transaction to consume
-     * @param event the event that contains the transaction
-     * @param stateSignatureTransactionCallback the callback to call with the system transaction
-     */
-    private void consumeSystemTransaction(
-            final Transaction transaction,
-            final Event event,
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
-        try {
-            final var stateSignatureTransaction =
-                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
-            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
-                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
-        } catch (final com.hedera.pbj.runtime.ParseException e) {
-            logger.error("Failed to parse StateSignatureTransaction", e);
-        }
-    }
 
     /**
      * Apply a transaction to the state.

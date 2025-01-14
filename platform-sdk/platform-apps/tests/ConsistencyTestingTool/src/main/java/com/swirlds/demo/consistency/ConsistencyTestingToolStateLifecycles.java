@@ -115,7 +115,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
             platformState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
         }
 
-        state.processTransactions(round);
+        state.processTransactions(round, stateSignatureTransactionCallback);
     }
 
     /**
@@ -128,6 +128,11 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         event.forEachTransaction(transaction -> {
             if (transaction.isSystem()) {
+                return;
+            }
+
+            if (state.isSystemTransaction(transaction)) {
+                state.consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                 return;
             }
             final long transactionContents =
