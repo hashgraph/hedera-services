@@ -17,34 +17,27 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
 
 /**
- * A test implementation of {@link PlatformMerkleStateRoot} and {@link SwirldState} state for SignedStateManager unit tests.
+ * A test implementation of {@link PlatformMerkleStateRoot} state for SignedStateManager unit tests.
  * Node that some of the {@link PlatformMerkleStateRoot} methods are intentionally not implemented. If a test needs these methods,
  * {@link MerkleStateRoot} should be used instead.
  */
-public class BlockingSwirldState extends PlatformMerkleStateRoot {
+public class BlockingState extends PlatformMerkleStateRoot {
 
     static {
         try {
@@ -66,26 +59,18 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
     private final BlockingStringLeaf value;
 
     /**
-     * Constructs a new instance of {@link BlockingSwirldState}.
+     * Constructs a new instance of {@link BlockingState}.
      */
-    public BlockingSwirldState() {
-        super(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+    public BlockingState() {
+        super(version -> new BasicSoftwareVersion(version.major()));
         value = new BlockingStringLeaf();
         setChild(1, value);
     }
 
-    private BlockingSwirldState(final BlockingSwirldState that) {
+    private BlockingState(final BlockingState that) {
         super(that);
         this.value = that.value;
         setChild(1, value);
-    }
-
-    @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        // intentionally does nothing
     }
 
     /**
@@ -93,10 +78,10 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
      */
     @NonNull
     @Override
-    public BlockingSwirldState copy() {
+    public BlockingState copy() {
         throwIfImmutable();
         setImmutable(true);
-        return new BlockingSwirldState(this);
+        return new BlockingState(this);
     }
 
     /**
@@ -107,7 +92,7 @@ public class BlockingSwirldState extends PlatformMerkleStateRoot {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof final BlockingSwirldState that)) {
+        if (!(obj instanceof final BlockingState that)) {
             return false;
         }
         return Objects.equals(this.getReadablePlatformState(), that.getReadablePlatformState());

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,9 @@ class DefaultTransactionHandlerTests {
                 pcesRound,
                 handlerOutput.reservedSignedState().get().isPcesRound(),
                 "the state should match the PCES boolean");
-        verify(tester.getSwirldStateManager().getConsensusState()).sealConsensusRound(consensusRound);
+        verify(tester.getStateLifecycles())
+                .onSealConsensusRound(
+                        consensusRound, tester.getSwirldStateManager().getConsensusState());
     }
 
     @Test
