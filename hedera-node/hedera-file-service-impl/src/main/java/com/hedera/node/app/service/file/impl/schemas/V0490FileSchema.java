@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -64,6 +65,7 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -202,36 +204,31 @@ public class V0490FileSchema extends Schema {
     }
 
     public Bytes genesisAddressBook(@NonNull final NetworkInfo networkInfo) {
-        final var nodeAddresses = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeAddresses.add(NodeAddress.newBuilder()
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
-                    .serviceEndpoint(
-                            // we really don't have grpc proxy name and port for now. Temporary values are set.
-                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
-                            // here.
-                            V053AddressBookSchema.endpointFor("1.0.0.0", 1))
-                    .build());
-        }
+        final var nodeAddresses = networkInfo.addressBook().stream()
+                .sorted(Comparator.comparingLong(NodeInfo::nodeId))
+                .map(nodeInfo -> NodeAddress.newBuilder()
+                        .nodeId(nodeInfo.nodeId())
+                        .nodeAccountId(nodeInfo.accountId())
+                        .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                        .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
+                        .build())
+                .toList();
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build());
     }
 
     public Bytes genesisNodeDetails(@NonNull final NetworkInfo networkInfo) {
-        final var nodeDetails = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeDetails.add(NodeAddress.newBuilder()
-                    .stake(nodeInfo.weight())
-                    .nodeAccountId(nodeInfo.accountId())
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    // we really don't have grpc proxy name and port for now.Temporary values are set.
-                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
-                    .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
-                    .build());
-        }
+        final var nodeDetails = networkInfo.addressBook().stream()
+                .sorted(Comparator.comparingLong(NodeInfo::nodeId))
+                .map(nodeInfo -> NodeAddress.newBuilder()
+                        .stake(nodeInfo.weight())
+                        .nodeAccountId(nodeInfo.accountId())
+                        .nodeId(nodeInfo.nodeId())
+                        .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                        .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
+                        .build())
+                .toList();
+
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
@@ -271,6 +268,7 @@ public class V0490FileSchema extends Schema {
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
+                .sorted(Comparator.comparingLong(Node::nodeId))
                 .forEach(node -> nodeDetails.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
                         .nodeAccountId(node.accountId())
@@ -296,6 +294,7 @@ public class V0490FileSchema extends Schema {
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
+                .sorted(Comparator.comparingLong(Node::nodeId))
                 .forEach(node -> nodeAddresses.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
                         .nodeCertHash(getHexStringBytesFromBytes(node.grpcCertificateHash()))

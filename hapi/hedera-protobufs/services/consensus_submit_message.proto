@@ -34,7 +34,6 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 import "basic_types.proto";
-import "custom_fees.proto";
 
 /**
  * Consensus message "chunk" detail.<br/>
@@ -108,14 +107,4 @@ message ConsensusSubmitMessageTransactionBody {
      * field SHOULD NOT be set.
      */
     ConsensusMessageChunkInfo chunkInfo = 3;
-
-    /**
-     * The maximum custom fee that the user is willing to pay for the message. This field will be ignored if `accept_all_custom_fees` is set to `true`.
-     */
-    repeated FixedFee max_custom_fees = 4;
-
-    /**
-     * If set to true, the transaction will accept all custom fees from the topic id
-     */
-    bool accept_all_custom_fees = 5;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.Set;
@@ -94,6 +95,9 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
     @Mock
     private ContractsConfig contractsConfig;
 
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
     private CreateTranslator createTranslator;
 
     private ScheduleNativeTranslator subject;
@@ -120,9 +124,12 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 configuration);
         // when/then
+        // we need to fill in the create translator map for this test to work.
+        new CreateTranslator(new CreateDecoder());
         assertTrue(subject.matches(attempt));
     }
 
@@ -135,6 +142,7 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 mockEnhancement(),
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
                 DEFAULT_CONFIG);
 

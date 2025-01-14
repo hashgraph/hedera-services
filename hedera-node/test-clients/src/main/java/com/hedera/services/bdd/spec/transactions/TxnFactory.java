@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
+import com.hedera.hapi.platform.event.legacy.StateSignatureTransaction;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
@@ -353,6 +354,10 @@ public class TxnFactory {
     }
 
     public Consumer<FileUpdateTransactionBody.Builder> defaultDefFileUpdateTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<StateSignatureTransaction.Builder> defaultDefStateSignatureTransaction() {
         return builder -> {};
     }
 
