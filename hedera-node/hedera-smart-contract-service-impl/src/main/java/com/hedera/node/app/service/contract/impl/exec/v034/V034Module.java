@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.processors.Processo
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
+import com.hedera.node.app.service.contract.impl.annotations.CustomOps;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -128,11 +129,13 @@ public interface V034Module {
     static EVM provideEVM(
             @ServicesV034 @NonNull final Set<Operation> customOperations,
             @NonNull final EvmConfiguration evmConfiguration,
-            @NonNull final GasCalculator gasCalculator) {
+            @NonNull final GasCalculator gasCalculator,
+            @CustomOps @NonNull final Set<Operation> customOps) {
         // Use Paris EVM with 0.34 custom operations and 0x00 chain id (set at runtime)
         final var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
+        customOps.forEach(operationRegistry::put);
         return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.PARIS);
     }
 

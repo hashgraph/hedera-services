@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,25 @@ package com.swirlds.demo.consistency;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -114,7 +116,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * Constructor
      */
     public ConsistencyTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
         logger.info(STARTUP.getMarker(), "New State Constructed.");
@@ -250,6 +252,11 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
             if (transaction.isSystem()) {
                 return;
             }
+
+            if (isSystemTransaction(transaction)) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
+                return;
+            }
             final long transactionContents =
                     byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0);
 
@@ -284,12 +291,43 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
         roundsHandled++;
 
-        round.forEachTransaction(this::applyTransactionToState);
+        round.forEachEventTransaction((ev, tx) -> {
+            if (isSystemTransaction(tx)) {
+                consumeSystemTransaction(tx, ev, stateSignatureTransaction);
+            } else {
+                applyTransactionToState(tx);
+            }
+        });
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());
 
         transactionHandlingHistory.processRound(ConsistencyTestingToolRound.fromRound(round, stateLong));
 
         setChild(ROUND_HANDLED_INDEX, new StringLeaf(Long.toString(roundsHandled)));
         setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
+    }
+
+    /**
+     * Determines if the given transaction is a system transaction for this app.
+     *
+     * @param transaction the transaction to check
+     * @return true if the transaction is a system transaction, false otherwise
+     */
+    private boolean isSystemTransaction(final @NonNull Transaction transaction) {
+        return transaction.getApplicationTransaction().length() > 8;
+    }
+
+    private void consumeSystemTransaction(
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 }

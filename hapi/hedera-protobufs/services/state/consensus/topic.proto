@@ -190,5 +190,5 @@ message Topic {
      * If this list is not empty, custom fees defined here SHALL be
      * charged _in addition to_ the base network and node fees.
      */
-    repeated ConsensusCustomFee custom_fees = 13;
+    repeated FixedCustomFee custom_fees = 13;
 }

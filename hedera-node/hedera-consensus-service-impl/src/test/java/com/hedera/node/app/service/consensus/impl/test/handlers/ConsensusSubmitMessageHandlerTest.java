@@ -27,8 +27,10 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -48,6 +50,8 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.CustomFeeLimit;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -76,6 +80,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -106,6 +112,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private ConsensusCustomFeeAssessor customFeeAssessor;
 
     private ConsensusSubmitMessageHandler subject;
+
+    private static final Key ED25519KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
+
+    private static final Key ECDSAKEY = Key.newBuilder()
+            .ecdsaSecp256k1((Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101")))
+            .build();
 
     @BeforeEach
     void setUp() {
@@ -395,6 +409,43 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
                 expectedTopic.runningHash().toString());
     }
 
+    @Test
+    void testSimpleKeyVerifierFromWithEd25519Key() {
+        List<Key> signatories = List.of(ED25519KEY);
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertTrue(verifier.test(ED25519KEY));
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithEcdsaSecp256k1Key() {
+
+        List<Key> signatories = List.of(ECDSAKEY);
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertTrue(verifier.test(ECDSAKEY));
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithNonSignatoryKey() {
+        List<Key> signatories = List.of(ED25519KEY);
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertFalse(verifier.test(ECDSAKEY));
+    }
+
+    @Test
+    void testSimpleKeyVerifierFromWithEmptySignatories() {
+        List<Key> signatories = List.of();
+
+        Predicate<Key> verifier = ConsensusSubmitMessageHandler.simpleKeyVerifierFrom(signatories);
+
+        assertFalse(verifier.test(ED25519KEY));
+    }
+
     /* ----------------- Helper Methods ------------------- */
 
     private Key mockPayerLookup() {
@@ -424,14 +475,27 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     private TransactionBody newSubmitMessageTxnWithMaxFee() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var maxCustomFees = List.of(
+                // fungible token limit
+                CustomFeeLimit.newBuilder()
+                        .accountId(payerId)
+                        .amountLimit(FixedFee.newBuilder()
+                                .denominatingTokenId(fungibleTokenId)
+                                .amount(1))
+                        .build(),
+                // hbar limit
+                CustomFeeLimit.newBuilder()
+                        .accountId(payerId)
+                        .amountLimit(FixedFee.newBuilder().amount(1))
+                        .build());
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .maxCustomFees(tokenCustomFee.fixedFee(), hbarCustomFee.fixedFee())
                 .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .message(Bytes.wrap("Message for test-" + Instant.now() + "."
                         + Instant.now().getNano()));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
+                .maxCustomFees(maxCustomFees)
                 .build();
     }
 

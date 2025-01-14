@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,4 @@ public enum StartupAssets {
      * A network override with only the network roster is present.
      */
     ROSTER_ONLY,
-    /**
-     * A network override with both the roster and the encryption keys are present.
-     */
-    ROSTER_AND_ENCRYPTION_KEYS,
-    /**
-     * A network override with both the network roster and all TSS key material,
-     * including the ledger id, is present.
-     */
-    ROSTER_AND_FULL_TSS_KEY_MATERIAL,
 }

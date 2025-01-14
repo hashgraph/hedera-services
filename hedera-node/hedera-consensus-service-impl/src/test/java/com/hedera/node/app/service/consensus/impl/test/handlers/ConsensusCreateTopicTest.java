@@ -45,7 +45,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -121,7 +121,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
             Key adminKey,
             Key submitKey,
             boolean hasAutoRenewAccount,
-            List<ConsensusCustomFee> customFees,
+            List<FixedCustomFee> customFees,
             List<Key> feeExemptKeyList) {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var createTopicBuilder = ConsensusCreateTopicTransactionBody.newBuilder();
@@ -481,7 +481,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Handle works as expected wit custom fees and FEKL")
     void validatedCustomFees() {
-        final var customFees = List.of(ConsensusCustomFee.newBuilder()
+        final var customFees = List.of(FixedCustomFee.newBuilder()
                 .fixedFee(FixedFee.newBuilder().amount(1).build())
                 .feeCollectorAccountId(AccountID.DEFAULT)
                 .build());
@@ -542,7 +542,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Handle fail with invalid custom fee amount")
     void failWithInvalidFeeAmount() {
-        final var customFees = List.of(ConsensusCustomFee.newBuilder()
+        final var customFees = List.of(FixedCustomFee.newBuilder()
                 .fixedFee(FixedFee.newBuilder().amount(-1).build())
                 .feeCollectorAccountId(AccountID.DEFAULT)
                 .build());
@@ -565,7 +565,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Handle fail with invalid collector")
     void failWithInvalidCollector() {
-        final var customFees = List.of(ConsensusCustomFee.newBuilder()
+        final var customFees = List.of(FixedCustomFee.newBuilder()
                 .fixedFee(FixedFee.newBuilder().amount(1).build())
                 .feeCollectorAccountId(AccountID.DEFAULT)
                 .build());

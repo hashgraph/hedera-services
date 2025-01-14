@@ -346,7 +346,7 @@ message AssessedCustomFee {
  * Only "fixed" fee definitions are supported because there is no basis for
  * a fractional fee on a consensus submit transaction.
  */
-message ConsensusCustomFee {
+message FixedCustomFee {
   /**
    * A fixed custom fee.
    * <p>
@@ -374,12 +374,12 @@ message ConsensusCustomFee {
  * A _set_ field of this type with an empty `fees` list SHALL remove any
  *  existing values.
  */
-message ConsensusCustomFeeList {
+message FixedCustomFeeList {
   /**
    * A set of custom fee definitions.<br/>
    * These are fees to be assessed for each submit to a topic.
    */
-  repeated ConsensusCustomFee fees = 1;
+  repeated FixedCustomFee fees = 1;
 }
 
 /**
@@ -401,4 +401,22 @@ message FeeExemptKeyList {
    * custom fees SHALL NOT be charged for that transaction.
    */
    repeated Key keys = 1;
+}
+
+/**
+ * A maximum custom fee that the user is willing to pay.
+ * <p>
+ * This message is used to specify the maximum custom fee that given user is
+ * willing to pay.
+ */
+message CustomFeeLimit {
+    /**
+     * A payer account identifier.
+     */
+    AccountID account_id = 1;
+
+    /**
+     * A custom fee amount limit.
+     */
+    FixedFee amount_limit = 2;
 }

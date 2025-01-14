@@ -126,7 +126,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.config.internal;
     exports com.swirlds.platform.roster;
 
-    requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.base;
@@ -142,7 +141,6 @@ module com.swirlds.platform.core {
     requires transitive com.fasterxml.jackson.databind;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
-    requires com.hedera.cryptography.pairings.api;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;

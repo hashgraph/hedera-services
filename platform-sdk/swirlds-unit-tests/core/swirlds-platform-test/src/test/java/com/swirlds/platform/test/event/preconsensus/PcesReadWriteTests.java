@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -100,7 +99,7 @@ class PcesReadWriteTests {
         return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
     }
 
-    protected static Stream<Arguments> ancientAndWriterTypeArguments() {
+    protected static Stream<Arguments> ancientAndBoolanArguments() {
         return Stream.of(
                 Arguments.of(GENERATION_THRESHOLD, false),
                 Arguments.of(BIRTH_ROUND_THRESHOLD, false),
@@ -109,7 +108,7 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("ancientAndWriterTypeArguments")
+    @MethodSource("ancientAndBoolanArguments")
     @DisplayName("Write Then Read Test")
     void writeThenReadTest(@NonNull final AncientMode ancientMode, final boolean useFileChannelWriter)
             throws IOException {
@@ -213,13 +212,7 @@ class PcesReadWriteTests {
         iterator.forEachRemaining(deserializedEvents::add);
 
         // We don't want any events with an ancient indicator less than the middle
-        final Iterator<PlatformEvent> it = events.iterator();
-        while (it.hasNext()) {
-            final PlatformEvent event = it.next();
-            if (event.getAncientIndicator(ancientMode) < middle) {
-                it.remove();
-            }
-        }
+        events.removeIf(event -> event.getAncientIndicator(ancientMode) < middle);
 
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
@@ -250,72 +243,79 @@ class PcesReadWriteTests {
     }
 
     @ParameterizedTest
-    @MethodSource("ancientModeArguments")
+    @MethodSource("ancientAndBoolanArguments")
     @DisplayName("Truncated Event Test")
-    void truncatedEventTest(@NonNull final AncientMode ancientMode) throws IOException {
-        for (final boolean truncateOnBoundary : List.of(true, false)) {
-            final Random random = RandomUtils.getRandomPrintSeed();
+    void truncatedEventTest(@NonNull final AncientMode ancientMode, final boolean truncateOnBoundary)
+            throws IOException {
+        final Random random = RandomUtils.getRandomPrintSeed();
 
-            final int numEvents = 100;
+        final int numEvents = 100;
 
-            final StandardGraphGenerator generator = new StandardGraphGenerator(
-                    ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
-                    random.nextLong(),
-                    new StandardEventSource(),
-                    new StandardEventSource(),
-                    new StandardEventSource(),
-                    new StandardEventSource());
+        final StandardGraphGenerator generator = new StandardGraphGenerator(
+                ancientMode == GENERATION_THRESHOLD ? DEFAULT_PLATFORM_CONTEXT : BIRTH_ROUND_PLATFORM_CONTEXT,
+                random.nextLong(),
+                new StandardEventSource(),
+                new StandardEventSource(),
+                new StandardEventSource(),
+                new StandardEventSource());
 
-            final List<PlatformEvent> events = new ArrayList<>();
-            for (int i = 0; i < numEvents; i++) {
-                events.add(generator.generateEvent().getBaseEvent());
-            }
+        final List<PlatformEvent> events = new ArrayList<>();
+        for (int i = 0; i < numEvents; i++) {
+            events.add(generator.generateEvent().getBaseEvent());
+        }
 
-            long upperBound = Long.MIN_VALUE;
-            for (final PlatformEvent event : events) {
-                upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
-            }
+        long upperBound = Long.MIN_VALUE;
+        for (final PlatformEvent event : events) {
+            upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
+        }
 
-            upperBound += random.nextInt(0, 10);
+        upperBound += random.nextInt(0, 10);
 
-            final PcesFile file = PcesFile.of(
-                    ancientMode,
-                    RandomUtils.randomInstant(random),
-                    random.nextInt(0, 100),
-                    0,
-                    upperBound,
-                    upperBound,
-                    testDirectory);
+        final PcesFile file = PcesFile.of(
+                ancientMode,
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                upperBound,
+                upperBound,
+                testDirectory);
 
-            final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
+        final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
-            final PcesMutableFile mutableFile = file.getMutableFile();
-            for (int i = 0; i < events.size(); i++) {
-                final PlatformEvent event = events.get(i);
-                mutableFile.writeEvent(event);
-                byteBoundaries.put(i, (int) mutableFile.fileSize());
-            }
+        final PcesMutableFile mutableFile = file.getMutableFile();
+        for (int i = 0; i < events.size(); i++) {
+            final PlatformEvent event = events.get(i);
+            mutableFile.writeEvent(event);
+            byteBoundaries.put(i, (int) mutableFile.fileSize());
+        }
 
-            mutableFile.close();
+        mutableFile.close();
 
-            final int lastEventIndex =
-                    random.nextInt(0, events.size() - 2 /* make sure we always truncate at least one event */);
+        final int lastEventIndex =
+                random.nextInt(0, events.size() - 2 /* make sure we always truncate at least one event */);
 
-            final int truncationPosition = byteBoundaries.get(lastEventIndex) + (truncateOnBoundary ? 0 : 1);
+        final int truncationPosition = byteBoundaries.get(lastEventIndex) + (truncateOnBoundary ? 0 : 1);
 
-            truncateFile(file.getPath(), truncationPosition);
+        truncateFile(file.getPath(), truncationPosition);
 
-            final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
-            final List<PlatformEvent> deserializedEvents = new ArrayList<>();
+        final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
+        final List<PlatformEvent> deserializedEvents = new ArrayList<>();
+
+        if (truncateOnBoundary) {
             iterator.forEachRemaining(deserializedEvents::add);
+        } else {
+            assertThrows(
+                    IOException.class,
+                    () -> iterator.forEachRemaining(deserializedEvents::add),
+                    "A partial event should have been detected and an IOException should have been thrown");
+        }
 
-            assertEquals(truncateOnBoundary, !iterator.hasPartialEvent());
+        assertEquals(truncateOnBoundary, !iterator.hasPartialEvent());
 
-            assertEquals(lastEventIndex + 1, deserializedEvents.size());
+        assertEquals(lastEventIndex + 1, deserializedEvents.size());
 
-            for (int i = 0; i < deserializedEvents.size(); i++) {
-                assertEquals(events.get(i), deserializedEvents.get(i));
-            }
+        for (int i = 0; i < deserializedEvents.size(); i++) {
+            assertEquals(events.get(i), deserializedEvents.get(i));
         }
     }
 
@@ -593,8 +593,9 @@ class PcesReadWriteTests {
         assertTrue(path.toFile().createNewFile());
         assertTrue(Files.exists(path));
 
-        final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
-        assertFalse(iterator.hasNext());
-        assertThrows(NoSuchElementException.class, iterator::next);
+        try (final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE)) {
+            assertFalse(iterator.hasNext());
+            assertThrows(NoSuchElementException.class, iterator::next);
+        }
     }
 }

@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.integration;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -114,9 +129,9 @@ import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.SENDER
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.TRIGGERING_TXN;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.transferListCheck;
 import static com.hedera.services.bdd.suites.hip423.LongTermScheduleUtils.triggerSchedule;
-import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.BASIC_XFER;
-import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.CREATE_TX;
-import static com.hedera.services.bdd.suites.hip423.ScheduleLongTermExecutionTest.SIGN_TX;
+import static com.hedera.services.bdd.suites.integration.RepeatableScheduleLongTermExecutionTest.BASIC_XFER;
+import static com.hedera.services.bdd.suites.integration.RepeatableScheduleLongTermExecutionTest.CREATE_TX;
+import static com.hedera.services.bdd.suites.integration.RepeatableScheduleLongTermExecutionTest.SIGN_TX;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -1643,6 +1658,16 @@ public class RepeatableHip423Tests {
                         .expiringIn(2)
                         .via("createTxn"),
                 getScheduleInfo("one").isExecuted().hasRelativeExpiry("createTxn", 1));
+    }
+
+    @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
+    final Stream<DynamicTest> scheduleCreateDefaultLifetimeIs30Min() {
+        final var lastSecond = new AtomicLong();
+        return hapiTest(
+                cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L),
+                scheduleCreate("one", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, RECEIVER, 1L))),
+                exposeSpecSecondTo(lastSecond::set),
+                sourcing(() -> getScheduleInfo("one").hasExpiry(lastSecond.get() + 1800)));
     }
 
     @RepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)

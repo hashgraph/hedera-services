@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,12 +55,12 @@ public class ConsensusCustomFeeAssessor {
      * @return List of synthetic crypto transfer transaction bodies
      */
     public List<CryptoTransferTransactionBody> assessCustomFee(
-            @NonNull final List<ConsensusCustomFee> customFees, @NonNull final AccountID payer) {
+            @NonNull final List<FixedCustomFee> customFees, @NonNull final AccountID payer) {
         final List<CryptoTransferTransactionBody> transactionBodies = new ArrayList<>();
 
         // build crypto transfer bodies for the first layer of custom fees,
         // if there is a second or third layer it will be assessed in crypto transfer handler
-        for (ConsensusCustomFee fee : customFees) {
+        for (FixedCustomFee fee : customFees) {
             final var tokenTransfers = new ArrayList<TokenTransferList>();
             List<AccountAmount> hbarTransfers = new ArrayList<>();
 

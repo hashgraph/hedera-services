@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PENDING_AIRDROP_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
@@ -44,7 +44,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerTestBase {
+class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerTestBase {
 
     private static final AccountID ACCOUNT_SENDER = asAccount(4444);
     private static final AccountID ACCOUNT_RECEIVER = asAccount(3333);
@@ -110,7 +110,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_ACCOUNT_ID));
+                .has(responseCode(INVALID_PENDING_AIRDROP_ID));
     }
 
     @Test
@@ -124,7 +124,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_ACCOUNT_ID));
+                .has(responseCode(INVALID_PENDING_AIRDROP_ID));
     }
 
     @Test

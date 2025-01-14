@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,11 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
-import com.hedera.services.bdd.junit.hedera.TssKeyMaterial;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.TargetNetworkType;
@@ -48,12 +45,8 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -113,23 +106,18 @@ public class EmbeddedNetwork extends AbstractNetwork {
      */
     public void restart(@NonNull final FakeState state, @NonNull final Map<String, String> bootstrapOverrides) {
         requireNonNull(state);
-        startVia(hedera -> hedera.restart(state), bootstrapOverrides, nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
+        startVia(hedera -> hedera.restart(state), bootstrapOverrides);
     }
 
     @Override
     public void start() {
-        startWith(emptyMap(), nodeId -> Bytes.EMPTY, nodes -> Optional.empty());
+        startWith(emptyMap());
     }
 
     @Override
-    public void startWith(
-            @NonNull final Map<String, String> bootstrapOverrides,
-            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+    public void startWith(@NonNull final Map<String, String> bootstrapOverrides) {
         requireNonNull(bootstrapOverrides);
-        requireNonNull(tssEncryptionKeyFn);
-        requireNonNull(tssKeyMaterialFn);
-        startVia(EmbeddedHedera::start, bootstrapOverrides, tssEncryptionKeyFn, tssKeyMaterialFn);
+        startVia(EmbeddedHedera::start, bootstrapOverrides);
     }
 
     @Override
@@ -206,12 +194,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     private void startVia(
-            @NonNull final Consumer<EmbeddedHedera> start,
-            @NonNull final Map<String, String> bootstrapOverrides,
-            @NonNull final LongFunction<Bytes> tssEncryptionKeyFn,
-            @NonNull final Function<List<RosterEntry>, Optional<TssKeyMaterial>> tssKeyMaterialFn) {
+            @NonNull final Consumer<EmbeddedHedera> start, @NonNull final Map<String, String> bootstrapOverrides) {
         // Initialize the working directory
-        embeddedNode.initWorkingDir(configTxt, tssEncryptionKeyFn, tssKeyMaterialFn);
+        embeddedNode.initWorkingDir(configTxt);
         if (!bootstrapOverrides.isEmpty()) {
             updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
         }
