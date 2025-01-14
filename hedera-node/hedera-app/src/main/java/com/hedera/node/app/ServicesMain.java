@@ -247,6 +247,13 @@ public class ServicesMain implements SwirldMain {
             throw new ConfigurationException();
         }
         final var platformConfig = buildPlatformConfig();
+        // Immediately initialize the cryptography and merkle cryptography factories
+        // to avoid using default behavior instead of that defined in platformConfig
+        final var cryptography = CryptographyFactory.create();
+        CryptographyHolder.set(cryptography);
+        final var merkleCryptography = MerkleCryptographyFactory.create(platformConfig, cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
         // Determine which nodes were _requested_ to run from the command line
         final var cliNodesToRun = commandLineArgs.localNodesToStart();
         // Determine which nodes are _configured_ to run from the config file(s)
@@ -274,10 +281,6 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
-        final var cryptography = CryptographyFactory.create();
-        CryptographyHolder.set(cryptography);
-        final var merkleCryptography = MerkleCryptographyFactory.create(platformConfig, cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
