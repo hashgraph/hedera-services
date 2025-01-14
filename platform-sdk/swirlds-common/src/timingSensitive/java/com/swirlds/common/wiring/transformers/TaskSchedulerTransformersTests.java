@@ -23,11 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.TestWiringModelBuilder;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.SolderType;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.schedulers.TaskScheduler;
+import org.hiero.wiring.framework.transformers.AdvancedTransformation;
+import org.hiero.wiring.framework.wires.SolderType;
+import org.hiero.wiring.framework.wires.input.BindableInputWire;
+import org.hiero.wiring.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;

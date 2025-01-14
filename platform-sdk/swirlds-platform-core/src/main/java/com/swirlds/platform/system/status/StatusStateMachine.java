@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.status;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
+import org.hiero.wiring.framework.component.InputWireLabel;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

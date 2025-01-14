@@ -19,8 +19,8 @@ package com.swirlds.common.wiring.schedulers;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.wiring.schedulers.internal.Squelcher;
-import com.swirlds.common.wiring.schedulers.internal.ThrowingSquelcher;
+import org.hiero.wiring.framework.schedulers.internal.Squelcher;
+import org.hiero.wiring.framework.schedulers.internal.ThrowingSquelcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

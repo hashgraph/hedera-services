@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.counters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.hiero.wiring.framework.counters.NoOpObjectCounter;
 import org.junit.jupiter.api.Test;
 
 class NoOpObjectCounterTests {

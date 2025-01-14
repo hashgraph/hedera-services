@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.model.WiringModelBuilder;
+import org.hiero.wiring.framework.transformers.RoutableData;
+import org.hiero.wiring.framework.transformers.WireRouter;
+import org.hiero.wiring.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;

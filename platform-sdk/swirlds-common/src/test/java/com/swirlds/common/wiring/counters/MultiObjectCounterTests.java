@@ -27,6 +27,10 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.hiero.wiring.framework.counters.BackpressureObjectCounter;
+import org.hiero.wiring.framework.counters.MultiObjectCounter;
+import org.hiero.wiring.framework.counters.ObjectCounter;
+import org.hiero.wiring.framework.counters.StandardObjectCounter;
 import org.junit.jupiter.api.Test;
 
 class MultiObjectCounterTests {

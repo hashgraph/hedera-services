@@ -17,16 +17,17 @@
 package com.swirlds.common.wiring.component;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.DIRECT_CONFIGURATION;
+import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.transformers.RoutableData;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import org.hiero.wiring.framework.component.ComponentWiring;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.model.WiringModelBuilder;
+import org.hiero.wiring.framework.transformers.RoutableData;
+import org.hiero.wiring.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

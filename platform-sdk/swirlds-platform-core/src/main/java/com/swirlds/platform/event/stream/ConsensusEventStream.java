@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.stream;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.component.InputWireLabel;
+import org.hiero.wiring.framework.component.InputWireLabel;
 import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

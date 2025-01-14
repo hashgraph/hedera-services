@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.schedulers.TaskScheduler;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
+import org.hiero.wiring.framework.wires.input.BindableInputWire;
+import org.hiero.wiring.framework.wires.input.InputWire;
+import org.hiero.wiring.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;

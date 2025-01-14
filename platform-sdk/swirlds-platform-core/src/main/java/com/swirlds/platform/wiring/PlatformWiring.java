@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
-import static com.swirlds.common.wiring.wires.SolderType.INJECT;
-import static com.swirlds.common.wiring.wires.SolderType.OFFER;
+import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
+import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
+import static org.hiero.wiring.framework.wires.SolderType.INJECT;
+import static org.hiero.wiring.framework.wires.SolderType.OFFER;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
@@ -27,15 +27,15 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.swirlds.common.wiring.transformers.RoutableData;
-import com.swirlds.common.wiring.transformers.WireFilter;
-import com.swirlds.common.wiring.transformers.WireTransformer;
-import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import org.hiero.wiring.framework.component.ComponentWiring;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
+import org.hiero.wiring.framework.transformers.RoutableData;
+import org.hiero.wiring.framework.transformers.WireFilter;
+import org.hiero.wiring.framework.transformers.WireTransformer;
+import org.hiero.wiring.framework.wires.input.InputWire;
+import org.hiero.wiring.framework.wires.output.OutputWire;
+import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;

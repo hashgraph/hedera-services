@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.wiring.components;
 
-import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static org.hiero.wiring.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.schedulers.TaskScheduler;
+import org.hiero.wiring.framework.wires.input.BindableInputWire;
+import org.hiero.wiring.framework.wires.input.InputWire;
+import org.hiero.wiring.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

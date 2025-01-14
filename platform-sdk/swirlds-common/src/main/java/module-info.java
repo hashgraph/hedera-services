@@ -62,16 +62,16 @@ module com.swirlds.common {
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
     exports com.swirlds.common.wiring;
-    exports com.swirlds.common.wiring.component;
-    exports com.swirlds.common.wiring.counters;
-    exports com.swirlds.common.wiring.model;
-    exports com.swirlds.common.wiring.schedulers;
-    exports com.swirlds.common.wiring.schedulers.builders;
-    exports com.swirlds.common.wiring.tasks;
-    exports com.swirlds.common.wiring.transformers;
-    exports com.swirlds.common.wiring.wires;
-    exports com.swirlds.common.wiring.wires.input;
-    exports com.swirlds.common.wiring.wires.output;
+    exports org.hiero.wiring.framework.component;
+    exports org.hiero.wiring.framework.counters;
+    exports org.hiero.wiring.framework.model;
+    exports org.hiero.wiring.framework.schedulers;
+    exports org.hiero.wiring.framework.schedulers.builders;
+    exports org.hiero.wiring.framework.tasks;
+    exports org.hiero.wiring.framework.transformers;
+    exports org.hiero.wiring.framework.wires;
+    exports org.hiero.wiring.framework.wires.input;
+    exports org.hiero.wiring.framework.wires.output;
 
     /* Targeted exports */
     exports com.swirlds.common.crypto.internal to
@@ -140,9 +140,10 @@ module com.swirlds.common {
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
-    exports com.swirlds.common.wiring.model.diagram;
+    exports org.hiero.wiring.framework.model.diagram;
     exports com.swirlds.common.concurrent;
     exports com.swirlds.common.merkle.synchronization.stats;
+    exports org.hiero.wiring.framework;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

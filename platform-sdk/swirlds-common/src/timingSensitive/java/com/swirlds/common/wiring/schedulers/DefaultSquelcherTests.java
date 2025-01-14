@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.wiring.schedulers.internal.DefaultSquelcher;
-import com.swirlds.common.wiring.schedulers.internal.Squelcher;
+import org.hiero.wiring.framework.schedulers.internal.DefaultSquelcher;
+import org.hiero.wiring.framework.schedulers.internal.Squelcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

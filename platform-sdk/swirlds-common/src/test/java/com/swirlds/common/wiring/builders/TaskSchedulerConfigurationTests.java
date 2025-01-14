@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.hashlogger;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
+import org.hiero.wiring.framework.component.InputWireLabel;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

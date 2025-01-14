@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event.stale;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.common.wiring.transformers.RoutableData;
+import org.hiero.wiring.framework.component.InputWireLabel;
+import org.hiero.wiring.framework.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;

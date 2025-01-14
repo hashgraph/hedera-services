@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import org.hiero.wiring.framework.model.WiringModel;
+import org.hiero.wiring.framework.wires.input.BindableInputWire;
+import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.status.PlatformStatus;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.events;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
+import org.hiero.wiring.framework.component.InputWireLabel;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
