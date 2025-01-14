@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.processors.Processo
 import static org.hyperledger.besu.evm.MainnetEVMs.registerCancunOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
+import com.hedera.node.app.service.contract.impl.annotations.CustomOps;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV050;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -138,7 +139,8 @@ public interface V050Module {
     static EVM provideEVM(
             @ServicesV050 @NonNull final Set<Operation> customOperations,
             @NonNull final EvmConfiguration evmConfiguration,
-            @NonNull final GasCalculator gasCalculator) {
+            @NonNull final GasCalculator gasCalculator,
+            @CustomOps @NonNull final Set<Operation> customOps) {
 
         oneTimeEVMModuleInitialization();
 
@@ -146,6 +148,7 @@ public interface V050Module {
         final var operationRegistry = new OperationRegistry();
         registerCancunOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         customOperations.forEach(operationRegistry::put);
+        customOps.forEach(operationRegistry::put);
         return new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.CANCUN);
     }
 

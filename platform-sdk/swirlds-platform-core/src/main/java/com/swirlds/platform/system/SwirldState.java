@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public interface SwirldState extends MerkleNode {
      * <strong>This method is always invoked on an immutable state.</strong>
      *
      * @param event the event to perform pre-handling on
-     * @param stateSignatureTransaction a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     * @param stateSignatureTransaction a consumer that accepts a {@link ScopedSystemTransaction} that
      *                                   will be used for callbacks
      */
     default void preHandle(
@@ -83,7 +83,7 @@ public interface SwirldState extends MerkleNode {
      *
      * @param round         the round to apply
      * @param platformState the platform state
-     * @param stateSignatureTransaction a consumer that accepts a list of {@link ScopedSystemTransaction}s that
+     * @param stateSignatureTransaction a consumer that accepts a {@link ScopedSystemTransaction} that
      *                                   will be used for callbacks
      */
     void handleConsensusRound(
