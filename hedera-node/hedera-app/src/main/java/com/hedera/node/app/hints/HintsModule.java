@@ -24,8 +24,8 @@ import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
+import com.hedera.node.app.hints.impl.HintsContext;
 import com.hedera.node.app.hints.impl.HintsKeyAccessorImpl;
-import com.hedera.node.app.hints.impl.HintsSigning;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.fakes.FakeGroupElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -67,7 +67,7 @@ public interface HintsModule {
 
     @Provides
     @Singleton
-    static ConcurrentMap<Bytes, HintsSigning> providePendingSignatures() {
+    static ConcurrentMap<Bytes, HintsContext.Signing> providePendingSignatures() {
         return new ConcurrentHashMap<>();
     }
 

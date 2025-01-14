@@ -20,6 +20,7 @@ import static com.hedera.node.app.roster.RosterTransitionWeights.atLeastOneThird
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
+import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.node.app.hints.HintsLibrary;
@@ -28,15 +29,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * The current hinTS signing context.
+ * The current hinTS context.
  */
 @Singleton
-public class HintsSigningContext {
-    private final HintsLibrary operations;
+public class HintsContext {
+    private final HintsLibrary library;
 
     @Nullable
     private HintsConstruction construction;
@@ -45,8 +50,8 @@ public class HintsSigningContext {
     private Map<Long, Integer> nodePartyIds;
 
     @Inject
-    public HintsSigningContext(@NonNull final HintsLibrary operations) {
-        this.operations = requireNonNull(operations);
+    public HintsContext(@NonNull final HintsLibrary library) {
+        this.library = requireNonNull(library);
     }
 
     /**
@@ -77,12 +82,12 @@ public class HintsSigningContext {
     /**
      * Returns the active verification key, or throws if the context is not ready.
      */
-    public Bytes activeVerificationKeyOrThrow() {
+    public Bytes verificationKeyOrThrow() {
         throwIfNotReady();
         return requireNonNull(construction).preprocessedKeysOrThrow().verificationKey();
     }
 
-    public long activeConstructionIdOrThrow() {
+    public long constructionIdOrThrow() {
         throwIfNotReady();
         return requireNonNull(construction).constructionId();
     }
@@ -92,18 +97,18 @@ public class HintsSigningContext {
      * @param blockHash the block hash
      * @return the signing process
      */
-    public @NonNull HintsSigning newSigning(@NonNull final Bytes blockHash) {
+    public @NonNull Signing newSigning(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         throwIfNotReady();
         final var aggregationKey =
                 requireNonNull(construction).preprocessedKeysOrThrow().aggregationKey();
-        return new HintsSigning(
-                atLeastOneThirdOfTotal(operations.extractTotalWeight(aggregationKey)),
+        return new Signing(
+                atLeastOneThirdOfTotal(library.extractTotalWeight(aggregationKey)),
                 construction.constructionId(),
                 blockHash,
                 aggregationKey,
                 requireNonNull(nodePartyIds),
-                operations);
+                library);
     }
 
     /**
@@ -121,6 +126,63 @@ public class HintsSigningContext {
     private void throwIfNotReady() {
         if (!isReady()) {
             throw new IllegalStateException("Signing context not ready");
+        }
+    }
+
+    /**
+     * A particular signing process spawned from this context.
+     */
+    public static class Signing {
+        private final long constructionId;
+        private final long thresholdWeight;
+        private final Bytes message;
+        private final Bytes aggregationKey;
+        private final Map<Long, Integer> partyIds;
+        private final CompletableFuture<Bytes> future = new CompletableFuture<>();
+        private final ConcurrentMap<Long, BlsSignature> signatures = new ConcurrentHashMap<>();
+        private final AtomicLong weightOfSignatures = new AtomicLong();
+        private final HintsLibrary library;
+
+        public Signing(
+                final long constructionId,
+                final long thresholdWeight,
+                @NonNull final Bytes message,
+                @NonNull final Bytes aggregationKey,
+                @NonNull final Map<Long, Integer> partyIds,
+                @NonNull final HintsLibrary library) {
+            this.constructionId = constructionId;
+            this.thresholdWeight = thresholdWeight;
+            this.message = requireNonNull(message);
+            this.aggregationKey = requireNonNull(aggregationKey);
+            this.partyIds = requireNonNull(partyIds);
+            this.library = requireNonNull(library);
+        }
+
+        /**
+         * The future that will complete when sufficient partial signatures have been aggregated.
+         */
+        public CompletableFuture<Bytes> future() {
+            return future;
+        }
+
+        /**
+         * Incorporate a partial signature into the aggregation.
+         * @param constructionId the construction ID
+         * @param nodeId the node ID
+         * @param signature the partial signature
+         */
+        public void incorporate(final long constructionId, final long nodeId, @NonNull final BlsSignature signature) {
+            requireNonNull(signature);
+            if (this.constructionId == constructionId) {
+                final var publicKey = library.extractPublicKey(aggregationKey, partyIds.get(nodeId));
+                if (library.verifyPartial(message, signature, publicKey)) {
+                    signatures.put(nodeId, signature);
+                    final var weight = library.extractWeight(aggregationKey, partyIds.get(nodeId));
+                    if (weightOfSignatures.addAndGet(weight) >= thresholdWeight) {
+                        future.complete(library.signAggregate(aggregationKey, signatures));
+                    }
+                }
+            }
         }
     }
 }

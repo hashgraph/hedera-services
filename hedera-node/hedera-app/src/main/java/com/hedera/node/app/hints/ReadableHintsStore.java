@@ -57,11 +57,12 @@ public interface ReadableHintsStore {
     HintsConstruction getActiveConstruction();
 
     /**
-     * Returns the verification key for the given target roster hash, if it exists.
-     * @param targetRosterHash the target roster hash
+     * Returns the verification key for the given roster hash, if it exists.
+     * @param rosterHash the roster hash
+     * @return the verification key, or null if it does not exist
      */
     @Nullable
-    Bytes getVerificationKeyFor(@NonNull Bytes targetRosterHash);
+    Bytes getVerificationKeyFor(@NonNull Bytes rosterHash);
 
     /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
@@ -70,23 +71,13 @@ public interface ReadableHintsStore {
     HintsConstruction getConstructionFor(@NonNull ActiveRosters activeRosters);
 
     /**
-     * If there is a known construction with the given source and target roster hashes,
-     * returns the corresponding {@link HintsConstruction}; otherwise, returns null.
-     * @param sourceRosterHash the source roster hash
-     * @param targetRosterHash the target roster hash
-     * @return the corresponding {@link HintsConstruction}, or null
-     */
-    @Nullable
-    HintsConstruction getConstructionFor(@Nullable Bytes sourceRosterHash, @NonNull Bytes targetRosterHash);
-
-    /**
      * Returns the preprocessed keys and votes for the given construction id, if they exist.
      * @param constructionId the construction id
      * @param nodeIds the node ids
      * @return the preprocessed keys and votes, or null
      */
     @NonNull
-    Map<Long, PreprocessingVote> votesFor(long constructionId, @NonNull Set<Long> nodeIds);
+    Map<Long, PreprocessingVote> getVotes(long constructionId, @NonNull Set<Long> nodeIds);
 
     /**
      * Returns the hinTS keys published by the given set of nodes for the given party size.

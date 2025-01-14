@@ -19,7 +19,7 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
@@ -49,15 +49,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Default implementation of {@link WritableHintsStore}.
  */
 public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements WritableHintsStore {
-    private static final Logger log = LogManager.getLogger(WritableHintsStoreImpl.class);
-
     private final WritableKVState<HintsPartyId, HintsKeySet> hintsKeys;
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
@@ -65,7 +61,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     public WritableHintsStoreImpl(@NonNull WritableStates states) {
         super(states);
-        this.hintsKeys = states.get(HINTS_KEY);
+        this.hintsKeys = states.get(HINTS_KEY_SETS_KEY);
         this.nextConstruction = states.getSingleton(NEXT_CONSTRUCTION_KEY);
         this.activeConstruction = states.getSingleton(ACTIVE_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
@@ -80,9 +76,13 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         requireNonNull(activeRosters);
         requireNonNull(now);
         requireNonNull(tssConfig);
+        final var phase = activeRosters.phase();
+        if (phase == HANDOFF) {
+            throw new IllegalArgumentException("Handoff phase has no construction");
+        }
         var construction = getConstructionFor(activeRosters);
         if (construction == null) {
-            final var gracePeriod = activeRosters.phase() == BOOTSTRAP
+            final var gracePeriod = phase == BOOTSTRAP
                     ? tssConfig.bootstrapHintsKeyGracePeriod()
                     : tssConfig.transitionHintsKeyGracePeriod();
             construction = updateForNewConstruction(

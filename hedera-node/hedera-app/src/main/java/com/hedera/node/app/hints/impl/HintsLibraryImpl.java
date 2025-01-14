@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
@@ -49,7 +48,7 @@ public class HintsLibraryImpl implements HintsLibrary {
     public boolean verifyPartial(
             @NonNull final Bytes message,
             @NonNull final BlsSignature signature,
-            @NonNull final BlsPublicKey publicKey) {
+            @NonNull final Bytes publicKey) {
         requireNonNull(message);
         requireNonNull(signature);
         requireNonNull(publicKey);
@@ -64,7 +63,7 @@ public class HintsLibraryImpl implements HintsLibrary {
     }
 
     @Override
-    public BlsPublicKey extractPublicKey(@NonNull final Bytes aggregationKey, final long partyId) {
+    public Bytes extractPublicKey(@NonNull final Bytes aggregationKey, final long partyId) {
         requireNonNull(aggregationKey);
         throw new AssertionError("Not implemented");
     }

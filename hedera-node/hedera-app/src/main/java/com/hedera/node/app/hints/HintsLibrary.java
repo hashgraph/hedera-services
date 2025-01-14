@@ -18,7 +18,6 @@ package com.hedera.node.app.hints;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
@@ -36,7 +35,7 @@ import java.util.Map;
  *   to select the hinTS keys to use as input to {@link HintsLibrary#preprocess(Map, Map, int)}.</li>
  *   <li><b>Partial signatures</b> ({@code Sign}) - Implemented by {@link HintsLibrary#signPartial(Bytes, BlsPrivateKey)}.</li>
  *   <li><b>Verifying partial signatures</b> ({@code PartialVerify}) - Implemented by using
- *   {@link HintsLibrary#verifyPartial(Bytes, BlsSignature, BlsPublicKey)} with public keys extracted from the
+ *   {@link HintsLibrary#verifyPartial(Bytes, BlsSignature, Bytes)} with public keys extracted from the
  *   aggregation key in the active hinTS scheme via {@link HintsLibrary#extractPublicKey(Bytes, long)}.</li>
  *   <li><b>Signature aggregation</b> ({@code SignAggr}) - Implemented by {@link HintsLibrary#signAggregate(Bytes, Map)}
  *   with partial signatures verified as above with weights extracted from the aggregation key in the active hinTS
@@ -95,11 +94,12 @@ public interface HintsLibrary {
 
     /**
      * Extracts the public key for the given party id from the given aggregation key.
+     *
      * @param aggregationKey the aggregation key
      * @param partyId the party id
      * @return the public key
      */
-    BlsPublicKey extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
+    Bytes extractPublicKey(@NonNull Bytes aggregationKey, long partyId);
 
     /**
      * Verifies the given signature for the given message and public key.
@@ -108,7 +108,7 @@ public interface HintsLibrary {
      * @param publicKey the public key
      * @return true if the signature is valid; false otherwise
      */
-    boolean verifyPartial(@NonNull Bytes message, @NonNull BlsSignature signature, @NonNull BlsPublicKey publicKey);
+    boolean verifyPartial(@NonNull Bytes message, @NonNull BlsSignature signature, @NonNull Bytes publicKey);
 
     /**
      * Extracts the weight of the given party id from the given aggregation key.

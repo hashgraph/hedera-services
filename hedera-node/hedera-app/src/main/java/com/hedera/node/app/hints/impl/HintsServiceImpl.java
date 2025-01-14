@@ -80,7 +80,7 @@ public class HintsServiceImpl implements HintsService {
 
     @Override
     public @NonNull Bytes activeVerificationKeyOrThrow() {
-        return component.signingContext().activeVerificationKeyOrThrow();
+        return component.signingContext().verificationKeyOrThrow();
     }
 
     @Override

@@ -18,7 +18,7 @@ package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
 import static java.util.Objects.requireNonNull;
@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -54,15 +53,15 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
 
     public ReadableHintsStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.hintsKeys = states.get(HINTS_KEY);
+        this.hintsKeys = states.get(HINTS_KEY_SETS_KEY);
         this.nextConstruction = states.getSingleton(NEXT_CONSTRUCTION_KEY);
         this.activeConstruction = states.getSingleton(ACTIVE_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
     }
 
     @Override
-    public @Nullable Bytes getVerificationKeyFor(@NonNull final Bytes targetRosterHash) {
-        requireNonNull(targetRosterHash);
+    public @Nullable Bytes getVerificationKeyFor(@NonNull final Bytes rosterHash) {
+        requireNonNull(rosterHash);
         HintsConstruction construction;
         if ((construction = requireNonNull(activeConstruction.get())).hasPreprocessedKeys()) {
             return construction.preprocessedKeysOrThrow().verificationKey();
@@ -96,31 +95,16 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public @Nullable HintsConstruction getConstructionFor(
-            @Nullable final Bytes sourceRosterHash, @NonNull final Bytes targetRosterHash) {
-        requireNonNull(targetRosterHash);
-        HintsConstruction construction;
-        if (constructionIsFor(
-                construction = requireNonNull(activeConstruction.get()), sourceRosterHash, targetRosterHash)) {
-            return construction;
-        } else if (constructionIsFor(
-                construction = requireNonNull(nextConstruction.get()), sourceRosterHash, targetRosterHash)) {
-            return construction;
-        }
-        return null;
-    }
-
-    @Override
-    public @NonNull Map<Long, PreprocessingVote> votesFor(final long constructionId, @NonNull final Set<Long> nodeIds) {
+    public @NonNull Map<Long, PreprocessingVote> getVotes(final long constructionId, @NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
-        final Map<Long, PreprocessingVote> scopedVotes = new HashMap<>();
+        final Map<Long, PreprocessingVote> constructionVotes = new HashMap<>();
         for (final var nodeId : nodeIds) {
             final var vote = votes.get(new PreprocessingVoteId(constructionId, nodeId));
             if (vote != null) {
-                scopedVotes.put(nodeId, vote);
+                constructionVotes.put(nodeId, vote);
             }
         }
-        return scopedVotes;
+        return constructionVotes;
     }
 
     @Override
@@ -138,14 +122,6 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
             }
         }
         return publications;
-    }
-
-    private boolean constructionIsFor(
-            @NonNull final HintsConstruction construction,
-            @Nullable final Bytes sourceRosterHash,
-            @NonNull final Bytes targetRosterHash) {
-        return Optional.ofNullable(sourceRosterHash).orElse(Bytes.EMPTY).equals(construction.sourceRosterHash())
-                && targetRosterHash.equals(construction.targetRosterHash());
     }
 
     private boolean constructionIsFor(

@@ -40,7 +40,7 @@ public class HintsSubmissions extends TssSubmissions {
     private static final Logger logger = LogManager.getLogger(HintsSubmissions.class);
 
     private final HintsKeyAccessor keyAccessor;
-    private final HintsSigningContext signingContext;
+    private final HintsContext signingContext;
     private final BiConsumer<TransactionBody, String> onFailure =
             (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason);
 
@@ -49,7 +49,7 @@ public class HintsSubmissions extends TssSubmissions {
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
             @NonNull final HintsKeyAccessor keyAccessor,
-            @NonNull final HintsSigningContext signingContext) {
+            @NonNull final HintsContext signingContext) {
         super(executor, appContext);
         this.keyAccessor = requireNonNull(keyAccessor);
         this.signingContext = requireNonNull(signingContext);
@@ -82,7 +82,7 @@ public class HintsSubmissions extends TssSubmissions {
      */
     public CompletableFuture<Void> submitPartialSignature(@NonNull final Bytes message) {
         requireNonNull(message);
-        final long constructionId = signingContext.activeConstructionIdOrThrow();
+        final long constructionId = signingContext.constructionIdOrThrow();
         return submit(
                 b -> {
                     final var signature = keyAccessor.signWithBlsPrivateKey(constructionId, message);

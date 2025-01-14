@@ -57,7 +57,7 @@ public class ActiveHintsController implements HintsController {
     private final BlsKeyPair blsKeyPair;
     private final HintsLibrary library;
     private final HintsSubmissions submissions;
-    private final HintsSigningContext signingContext;
+    private final HintsContext signingContext;
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
     private final Map<Integer, Long> partyNodeIds = new HashMap<>();
     private final RosterTransitionWeights weights;
@@ -100,7 +100,7 @@ public class ActiveHintsController implements HintsController {
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final Map<Long, PreprocessingVote> votes,
             @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsSigningContext signingContext) {
+            @NonNull final HintsContext signingContext) {
         this.selfId = selfId;
         this.blsKeyPair = requireNonNull(blsKeyPair);
         this.weights = requireNonNull(weights);

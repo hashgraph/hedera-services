@@ -49,7 +49,7 @@ public class HintsControllers {
     private final HintsKeyAccessor keyLoader;
     private final HintsLibrary library;
     private final HintsSubmissions submissions;
-    private final HintsSigningContext signingContext;
+    private final HintsContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
 
     /**
@@ -65,7 +65,7 @@ public class HintsControllers {
             @NonNull final HintsKeyAccessor keyLoader,
             @NonNull final HintsLibrary library,
             @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsSigningContext signingContext,
+            @NonNull final HintsContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier) {
         this.executor = requireNonNull(executor);
         this.keyLoader = requireNonNull(keyLoader);
@@ -137,7 +137,7 @@ public class HintsControllers {
         } else {
             final var numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
             final var publications = hintsStore.getHintsKeyPublications(weights.targetNodeIds(), numParties);
-            final var votes = hintsStore.votesFor(construction.constructionId(), weights.sourceNodeIds());
+            final var votes = hintsStore.getVotes(construction.constructionId(), weights.sourceNodeIds());
             final var selfId = selfNodeInfoSupplier.get().nodeId();
             final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
             return new ActiveHintsController(
