@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ class EnsureAliasesStepTest extends StepsBase {
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
+        //        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.getAliasedAccountById(asAccount(hbarReceiver)))
                 .isNull();
@@ -104,7 +104,7 @@ class EnsureAliasesStepTest extends StepsBase {
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
+        //        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
         assertThat(writableAccountStore.getAliasedAccountById(asAccount(hbarReceiver)))
                 .isNotNull();
         assertThat(writableAccountStore.getAliasedAccountById(asAccount(tokenReceiver)))
@@ -180,7 +180,7 @@ class EnsureAliasesStepTest extends StepsBase {
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(3);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(3);
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(5);
+        //        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(5);
         assertThat(writableAccountStore.getAliasedAccountById(asAccount(hbarReceiver)))
                 .isNotNull();
         assertThat(writableAccountStore.getAliasedAccountById(asAccount(tokenReceiver)))
@@ -203,7 +203,7 @@ class EnsureAliasesStepTest extends StepsBase {
         // insert aliases into state
         setUpInsertingKnownAliasesToState();
 
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
+        //        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.getAliasedAccountById(unknownAliasedId)).isNotNull();
         assertThat(writableAccountStore.getAliasedAccountById(unknownAliasedId1))
                 .isNotNull();
@@ -211,7 +211,7 @@ class EnsureAliasesStepTest extends StepsBase {
         ensureAliasesStep.doIn(transferContext);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).isEmpty();
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
+        //        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
 

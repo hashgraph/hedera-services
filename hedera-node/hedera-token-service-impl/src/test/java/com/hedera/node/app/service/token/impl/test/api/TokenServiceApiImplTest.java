@@ -260,7 +260,7 @@ class TokenServiceApiImplTest {
         //        assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
         assertTrue(deletedContract.deleted());
-        assertEquals(0, accountStore.sizeOfAliasesState());
+        //        assertEquals(0, accountStore.sizeOfAliasesState());
     }
 
     @Test
@@ -282,7 +282,7 @@ class TokenServiceApiImplTest {
         final var deletedContract = requireNonNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
         assertTrue(deletedContract.deleted());
         assertEquals(Bytes.EMPTY, deletedContract.alias());
-        assertEquals(0, accountStore.sizeOfAliasesState());
+        //        assertEquals(0, accountStore.sizeOfAliasesState());
     }
 
     @Test

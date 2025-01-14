@@ -168,12 +168,6 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         final var accountId = lookupAliasedAccountId(id);
         return accountId == null ? null : accountState.get(accountId);
     }
-
-    @Override
-    public long getNumberOfAccounts() {
-        return accountState.size();
-    }
-
     /**
      * Given some {@link AccountID}, if it is an alias, then convert it to a number-based account ID. If it is not an
      * alias, then just return it. If the given id is bogus, containing neither an account number nor an alias, or
