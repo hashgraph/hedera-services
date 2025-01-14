@@ -39,6 +39,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.internal.MerkleCryptoEngine;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.demo.platform.fs.stresstest.proto.RandomBytesTransaction;
@@ -81,8 +82,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class PlatformTestingToolStateTest {
+class PlatformTestingToolStateTest {
 
+    private static final String DEFAULT_CONFIG = "configs/FCM1KForTest.json";
+    private static final String CONFIG_WITHOUT_APPEND_SIG = "configs/FCM1KForTestWithoutAppendSig.json";
     private static PlatformTestingToolState state;
     private static BasicSoftwareVersion softwareVersion;
     private static final byte[] EMPTY_ARRAY = new byte[] {};
@@ -102,7 +105,7 @@ public class PlatformTestingToolStateTest {
 
     @BeforeAll
     static void initState() {
-        final var payloadConfig = mock(PayloadCfgSimple.class);
+        final PayloadCfgSimple payloadConfig = mock(PayloadCfgSimple.class);
         when(payloadConfig.isAppendSig()).thenReturn(true);
 
         softwareVersion = new BasicSoftwareVersion(1);
@@ -126,10 +129,10 @@ public class PlatformTestingToolStateTest {
 
         final Randotron randotron = Randotron.create();
 
-        final var keysAndCerts =
+        final KeysAndCerts keysAndCerts =
                 KeysAndCerts.generate("a-name", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
 
-        final var signer = new PlatformSigner(keysAndCerts);
+        final PlatformSigner signer = new PlatformSigner(keysAndCerts);
         final Hash stateHash = randotron.nextHash();
         final Bytes signature = signer.signImmutable(stateHash);
 
@@ -138,28 +141,6 @@ public class PlatformTestingToolStateTest {
                 .signature(signature)
                 .hash(stateHash.getBytes())
                 .build();
-
-        final var platform = mock(Platform.class);
-        final var initTrigger = InitTrigger.GENESIS;
-        final var futureHash = mock(Future.class);
-        final var platformContext = mock(PlatformContext.class);
-        final var metrics = mock(DefaultPlatformMetrics.class);
-        final var cryptography = mock(MerkleCryptoEngine.class);
-        when(platform.getRoster()).thenReturn(roster);
-        when(platform.getSelfId()).thenReturn(NodeId.of(1L));
-        when(platform.getRoster()).thenReturn(roster);
-        when(platformContext.getMetrics()).thenReturn(metrics);
-        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
-        when(platform.getContext()).thenReturn(platformContext);
-        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
-        when(cryptography.digestTreeAsync(any())).thenReturn(futureHash);
-
-        parameterProvider = mockStatic(ParameterProvider.class);
-        parameterProviderInstance = mock(ParameterProvider.class);
-        parameterProvider.when(ParameterProvider::getInstance).thenReturn(parameterProviderInstance);
-        when(parameterProviderInstance.getParameters()).thenReturn(new String[] {"configs/FCM1KForTest.json"});
-        state.init(platform, initTrigger, softwareVersion);
-        state.initChildren();
     }
 
     @AfterEach
@@ -170,6 +151,7 @@ public class PlatformTestingToolStateTest {
     @Test
     void handleConsensusRoundWithApplicationTransactionOfRandomType() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
 
         final TestTransactionWrapper testTransactionWrapper = getTransactionWithRandomType(300);
@@ -185,9 +167,26 @@ public class PlatformTestingToolStateTest {
     @Test
     void handleConsensusRoundWithSystemTransaction() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
 
-        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+        final Bytes stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+        when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
+
+        // When
+        state.handleConsensusRound(round, platformStateModifier, consumer);
+
+        // Then
+        assertThat(consumedSystemTransactions.size()).isEqualTo(1);
+    }
+
+    @Test
+    void handleConsensusRoundWithDisabledAppendSig() {
+        // Given
+        givenInitState(CONFIG_WITHOUT_APPEND_SIG);
+        givenRoundAndEvent();
+
+        final Bytes stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
@@ -200,9 +199,11 @@ public class PlatformTestingToolStateTest {
     @Test
     void handleConsensusRoundWithMultipleSystemTransaction() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
-        final var secondConsensusTransaction = mock(TransactionWrapper.class);
-        final var thirdConsensusTransaction = mock(TransactionWrapper.class);
+
+        final TransactionWrapper secondConsensusTransaction = mock(TransactionWrapper.class);
+        final TransactionWrapper thirdConsensusTransaction = mock(TransactionWrapper.class);
         when(platformEvent.consensusTransactionIterator())
                 .thenReturn(List.of(
                                 (ConsensusTransaction) transaction,
@@ -210,7 +211,7 @@ public class PlatformTestingToolStateTest {
                                 thirdConsensusTransaction)
                         .iterator());
 
-        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+        final Bytes stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
 
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
@@ -226,6 +227,7 @@ public class PlatformTestingToolStateTest {
     @Test
     void handleConsensusRoundWithDeprecatedSystemTransaction() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
 
         final byte[] transactionBytes = new byte[300];
@@ -244,14 +246,16 @@ public class PlatformTestingToolStateTest {
     @Test
     void preHandleConsensusRoundWithApplicationTransactionOfRandomType() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
 
         final TestTransactionWrapper testTransactionWrapper = getTransactionWithRandomType(300);
 
-        final var eventTransaction = new EventTransaction(
+        final EventTransaction eventTransaction = new EventTransaction(
                 new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(testTransactionWrapper.toByteArray())));
-        final var eventCore = mock(EventCore.class);
-        final var gossipEvent = new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
+        final EventCore eventCore = mock(EventCore.class);
+        final GossipEvent gossipEvent =
+                new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
         platformEvent = new PlatformEvent(gossipEvent);
 
@@ -265,13 +269,15 @@ public class PlatformTestingToolStateTest {
     @Test
     void preHandleConsensusRoundWithSystemTransaction() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
 
-        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
-        final var eventTransaction =
+        final Bytes stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+        final EventTransaction eventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
-        final var eventCore = mock(EventCore.class);
-        final var gossipEvent = new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
+        final EventCore eventCore = mock(EventCore.class);
+        final GossipEvent gossipEvent =
+                new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
         event = new PlatformEvent(gossipEvent);
 
@@ -285,16 +291,18 @@ public class PlatformTestingToolStateTest {
     @Test
     void preHandleConsensusRoundWithMultipleSystemTransaction() {
         // Given
-        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+        givenInitState(DEFAULT_CONFIG);
 
-        final var eventTransaction =
+        final Bytes stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
+
+        final EventTransaction eventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
-        final var secondEventTransaction =
+        final EventTransaction secondEventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
-        final var thirdEventTransaction =
+        final EventTransaction thirdEventTransaction =
                 new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
-        final var eventCore = mock(EventCore.class);
-        final var gossipEvent = new GossipEvent(
+        final EventCore eventCore = mock(EventCore.class);
+        final GossipEvent gossipEvent = new GossipEvent(
                 eventCore,
                 null,
                 List.of(eventTransaction, secondEventTransaction, thirdEventTransaction),
@@ -312,15 +320,18 @@ public class PlatformTestingToolStateTest {
     @Test
     void preHandleConsensusRoundWithDeprecatedSystemTransaction() {
         // Given
+        givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
         when(transaction.isSystem()).thenReturn(true);
 
         final byte[] transactionBytes = new byte[300];
         random.nextBytes(transactionBytes);
 
-        final var eventTransaction = new EventTransaction(new OneOf<>(STATE_SIGNATURE_TRANSACTION, transactionBytes));
-        final var eventCore = mock(EventCore.class);
-        final var gossipEvent = new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
+        final EventTransaction eventTransaction =
+                new EventTransaction(new OneOf<>(STATE_SIGNATURE_TRANSACTION, transactionBytes));
+        final EventCore eventCore = mock(EventCore.class);
+        final GossipEvent gossipEvent =
+                new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
         event = new PlatformEvent(gossipEvent);
 
@@ -341,7 +352,7 @@ public class PlatformTestingToolStateTest {
                 .thenReturn(Collections.singletonList((ConsensusTransaction) transaction)
                         .iterator());
 
-        final var eventWindow = new EventWindow(10, 5, 20, AncientMode.BIRTH_ROUND_THRESHOLD);
+        final EventWindow eventWindow = new EventWindow(10, 5, 20, AncientMode.BIRTH_ROUND_THRESHOLD);
         round = new ConsensusRound(
                 roster,
                 List.of(platformEvent),
@@ -357,7 +368,7 @@ public class PlatformTestingToolStateTest {
         final byte[] transactionBytes = new byte[transactionSize];
         random.nextBytes(transactionBytes);
 
-        final var randomBytesTransaction = RandomBytesTransaction.newBuilder()
+        final RandomBytesTransaction randomBytesTransaction = RandomBytesTransaction.newBuilder()
                 .setIsInserSeq(false)
                 .setData(ByteString.copyFrom(transactionBytes))
                 .build();
@@ -369,5 +380,33 @@ public class PlatformTestingToolStateTest {
         return TestTransactionWrapper.newBuilder()
                 .setTestTransactionRawBytes(ByteString.copyFrom(testTransaction.toByteArray()))
                 .build();
+    }
+
+    private void givenInitState(final String config) {
+        final NodeId nodeId = NodeId.of(1L);
+        final Platform platform = mock(Platform.class);
+        final InitTrigger initTrigger = InitTrigger.GENESIS;
+        final Future futureHash = mock(Future.class);
+        final PlatformContext platformContext = mock(PlatformContext.class);
+        final DefaultPlatformMetrics metrics = mock(DefaultPlatformMetrics.class);
+        final MerkleCryptoEngine cryptography = mock(MerkleCryptoEngine.class);
+        final NotificationEngine notificationEngine = mock(NotificationEngine.class);
+        when(platform.getRoster()).thenReturn(roster);
+        when(platform.getSelfId()).thenReturn(nodeId);
+        when(platformContext.getMetrics()).thenReturn(metrics);
+        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
+        when(platform.getContext()).thenReturn(platformContext);
+        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
+        when(cryptography.digestTreeAsync(any())).thenReturn(futureHash);
+        when(platform.getNotificationEngine()).thenReturn(notificationEngine);
+
+        parameterProvider = mockStatic(ParameterProvider.class);
+        parameterProviderInstance = mock(ParameterProvider.class);
+        parameterProvider.when(ParameterProvider::getInstance).thenReturn(parameterProviderInstance);
+        when(parameterProviderInstance.getParameters()).thenReturn(new String[] {config});
+        state.init(platform, initTrigger, softwareVersion);
+        state.initChildren();
+
+        main.init(platform, nodeId);
     }
 }

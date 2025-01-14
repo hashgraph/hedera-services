@@ -1294,14 +1294,17 @@ public class PlatformTestingToolMain implements SwirldMain {
                                 ByteString.copyFrom(transaction.signature().toByteArray()))
                         .setHash(ByteString.copyFrom(transaction.hash().toByteArray()))
                         .build();
-
         final TestTransaction testTransaction = TestTransaction.newBuilder()
                 .setStateSignatureTransaction(convertedSystemTransaction)
                 .build();
 
-        final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.newBuilder()
-                .setTestTransactionRawBytes(ByteString.copyFrom(testTransaction.toByteArray()))
-                .build();
-        return Bytes.wrap(testTransactionWrapper.toByteArray());
+        if (currentConfig.getPayloadConfig().isAppendSig()) {
+            final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.newBuilder()
+                    .setTestTransactionRawBytes(ByteString.copyFrom(testTransaction.toByteArray()))
+                    .build();
+            return Bytes.wrap(testTransactionWrapper.toByteArray());
+        } else {
+            return Bytes.wrap(testTransaction.toByteArray());
+        }
     }
 }

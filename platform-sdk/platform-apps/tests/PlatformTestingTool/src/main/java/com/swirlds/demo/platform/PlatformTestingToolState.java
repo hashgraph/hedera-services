@@ -1288,7 +1288,7 @@ public class PlatformTestingToolState extends PlatformMerkleStateRoot {
                 break;
             case STATESIGNATURETRANSACTION:
                 consumeSystemTransaction(testTransaction.get(), id, semanticVersion, stateSignatureTransactionCallback);
-                break;
+                return;
             default:
                 logger.error(EXCEPTION.getMarker(), "Unrecognized transaction!");
         }
