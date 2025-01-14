@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,22 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers.customfee;
 
-import static java.util.Objects.requireNonNull;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,68 +46,38 @@ public class ConsensusCustomFeeAssessor {
         // Needed for Dagger injection
     }
 
-    public List<CryptoTransferTransactionBody> assessCustomFee(Topic topic, HandleContext context) {
+    /**
+     * Build and return a list of synthetic crypto transfer transaction bodies, that represents custom fees payments.
+     * It will return one body per topic custom fee.
+     *
+     * @param customFees List of custom fees to be charged
+     * @param payer The payer Account ID
+     * @return List of synthetic crypto transfer transaction bodies
+     */
+    public List<CryptoTransferTransactionBody> assessCustomFee(
+            @NonNull final List<FixedCustomFee> customFees, @NonNull final AccountID payer) {
         final List<CryptoTransferTransactionBody> transactionBodies = new ArrayList<>();
 
-        final var op = context.body().consensusSubmitMessageOrThrow();
-        final var payer = context.payer();
-        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
-        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-
-        final var tokenTransfers = new ArrayList<TokenTransferList>();
-        List<AccountAmount> hbarTransfers = new ArrayList<>();
-        // we need to count the number of balance adjustments,
-        // and if needed to split custom fee transfers in to separate dispatches
-        // todo: add explanation for maxTransfers
-        final var maxTransfers = ledgerConfig.transfersMaxLen() / 3;
-        var transferCounts = 0;
-
-        // build crypto transfer body for the first layer of custom fees,
-        // if there is a second layer it will be assessed in crypto transfer handler
-        for (ConsensusCustomFee fee : topic.customFees()) {
-            // check if payer is treasury or collector
-            if (context.payer().equals(fee.feeCollectorAccountId())) {
-                continue;
-            }
+        // build crypto transfer bodies for the first layer of custom fees,
+        // if there is a second or third layer it will be assessed in crypto transfer handler
+        for (FixedCustomFee fee : customFees) {
+            final var tokenTransfers = new ArrayList<TokenTransferList>();
+            List<AccountAmount> hbarTransfers = new ArrayList<>();
 
             final var fixedFee = fee.fixedFeeOrThrow();
-
             if (fixedFee.hasDenominatingTokenId()) {
-                final var tokenId = fixedFee.denominatingTokenIdOrThrow();
-                final var tokenTreasury = tokenStore.get(tokenId).treasuryAccountIdOrThrow();
-                if (context.payer().equals(tokenTreasury)) {
-                    continue;
-                }
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
             } else {
-                hbarTransfers = mergeTransfers(
-                        hbarTransfers, buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
+                hbarTransfers = buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee);
             }
-            transferCounts++;
 
-            if (transferCounts == maxTransfers) {
-                final var syntheticBodyBuilder = tokenTransfers(tokenTransfers.toArray(TokenTransferList[]::new));
-
-                transactionBodies.add(syntheticBodyBuilder
-                        .transfers(
-                                TransferList.newBuilder().accountAmounts(hbarTransfers.toArray(AccountAmount[]::new)))
-                        .build());
-
-                // reset lists and counter
-                transferCounts = 0;
-                tokenTransfers.clear();
-                hbarTransfers.clear();
-            }
+            // build the synthetic body
+            final var syntheticBodyBuilder =
+                    CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransfers);
+            transactionBodies.add(syntheticBodyBuilder
+                    .transfers(TransferList.newBuilder().accountAmounts(hbarTransfers.toArray(AccountAmount[]::new)))
+                    .build());
         }
-
-        if (tokenTransfers.isEmpty() && hbarTransfers.isEmpty()) {
-            return transactionBodies;
-        }
-
-        final var syntheticBodyBuilder = tokenTransfers(tokenTransfers.toArray(TokenTransferList[]::new));
-        transactionBodies.add(syntheticBodyBuilder
-                .transfers(TransferList.newBuilder().accountAmounts(hbarTransfers.toArray(AccountAmount[]::new)))
-                .build());
 
         return transactionBodies;
     }
@@ -144,57 +109,10 @@ public class ConsensusCustomFeeAssessor {
                 .build();
     }
 
-    private CryptoTransferTransactionBody.Builder tokenTransfers(@NonNull TokenTransferList... tokenTransferLists) {
-        if (repeatsTokenId(tokenTransferLists)) {
-            final Map<TokenID, TokenTransferList> consolidatedTokenTransfers = new LinkedHashMap<>();
-            for (final var tokenTransferList : tokenTransferLists) {
-                consolidatedTokenTransfers.merge(
-                        tokenTransferList.tokenOrThrow(),
-                        tokenTransferList,
-                        ConsensusCustomFeeAssessor::mergeTokenTransferLists);
-            }
-            tokenTransferLists = consolidatedTokenTransfers.values().toArray(TokenTransferList[]::new);
-        }
-        return CryptoTransferTransactionBody.newBuilder().tokenTransfers(tokenTransferLists);
-    }
-
-    private static TokenTransferList mergeTokenTransferLists(
-            @NonNull final TokenTransferList from, @NonNull final TokenTransferList to) {
-        return from.copyBuilder()
-                .transfers(mergeTransfers(from.transfers(), to.transfers()))
-                .build();
-    }
-
-    private static List<AccountAmount> mergeTransfers(
-            @NonNull final List<AccountAmount> from, @NonNull final List<AccountAmount> to) {
-        requireNonNull(from);
-        requireNonNull(to);
-        final Map<AccountID, AccountAmount> consolidated = new LinkedHashMap<>();
-        consolidateInto(consolidated, from);
-        consolidateInto(consolidated, to);
-        return new ArrayList<>(consolidated.values());
-    }
-
-    private static void consolidateInto(
-            @NonNull final Map<AccountID, AccountAmount> consolidated, @NonNull final List<AccountAmount> transfers) {
-        for (final var transfer : transfers) {
-            consolidated.merge(transfer.accountID(), transfer, ConsensusCustomFeeAssessor::mergeAdjusts);
-        }
-    }
-
-    private static AccountAmount mergeAdjusts(@NonNull final AccountAmount from, @NonNull final AccountAmount to) {
-        return from.copyBuilder()
-                .amount(from.amount() + to.amount())
-                .isApproval(from.isApproval() || to.isApproval())
-                .build();
-    }
-
-    private boolean repeatsTokenId(@NonNull final TokenTransferList[] tokenTransferList) {
-        return tokenTransferList.length > 1
-                && Arrays.stream(tokenTransferList)
-                                .map(TokenTransferList::token)
-                                .collect(Collectors.toSet())
-                                .size()
-                        < tokenTransferList.length;
+    @VisibleForTesting
+    public AccountID getTokenTreasury(TokenID tokenId, ReadableTokenStore tokenStore) {
+        final var token = tokenStore.get(tokenId);
+        validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+        return token.treasuryAccountIdOrThrow();
     }
 }

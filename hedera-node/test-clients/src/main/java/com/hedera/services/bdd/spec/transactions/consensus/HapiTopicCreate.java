@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -64,9 +64,9 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     private Optional<Key> feeScheduleKey = Optional.empty();
     private Optional<String> feeScheduleKeyName = Optional.empty();
     private Optional<KeyShape> feeScheduleKeyShape = Optional.empty();
-    private final List<Function<HapiSpec, ConsensusCustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private final List<Function<HapiSpec, FixedCustomFee>> feeScheduleSuppliers = new ArrayList<>();
     private Optional<List<Function<HapiSpec, Key>>> feeExemptKeyNamesList = Optional.empty();
-    private Optional<List<Key>> freeMesssageKeyList = Optional.empty();
+    private Optional<List<Key>> feeExemptKeyList = Optional.empty();
 
     /** For some test we need the capability to build transaction has no autoRenewPeiord */
     private boolean clearAutoRenewPeriod = false;
@@ -107,7 +107,13 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return self();
     }
 
-    public HapiTopicCreate withConsensusCustomFee(final Function<HapiSpec, ConsensusCustomFee> supplier) {
+    public HapiTopicCreate feeExemptKeys(Key... keys) {
+        feeExemptKeyNamesList = Optional.of(
+                Stream.of(keys).<Function<HapiSpec, Key>>map(k -> spec -> k).collect(toList()));
+        return self();
+    }
+
+    public HapiTopicCreate withConsensusCustomFee(final Function<HapiSpec, FixedCustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
     }
@@ -170,7 +176,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
                             autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
                             autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
                             feeScheduleKey.ifPresent(b::setFeeScheduleKey);
-                            freeMesssageKeyList.ifPresent(keys -> keys.forEach(b::addFeeExemptKeyList));
+                            feeExemptKeyList.ifPresent(keys -> keys.forEach(b::addFeeExemptKeyList));
                             if (!feeScheduleSuppliers.isEmpty()) {
                                 for (final var supplier : feeScheduleSuppliers) {
                                     b.addCustomFees(supplier.apply(spec));
@@ -196,7 +202,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
             feeScheduleKey = Optional.of(netOf(spec, feeScheduleKeyName, feeScheduleKeyShape));
         }
 
-        feeExemptKeyNamesList.ifPresent(functions -> freeMesssageKeyList = Optional.of(functions.stream()
+        feeExemptKeyNamesList.ifPresent(functions -> feeExemptKeyList = Optional.of(functions.stream()
                 .map(f -> f.apply(spec))
                 .filter(k -> k != null && k != Key.getDefaultInstance())
                 .collect(toList())));

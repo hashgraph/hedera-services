@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,15 +30,14 @@ import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
-import com.swirlds.state.merkle.SigSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
@@ -58,7 +57,7 @@ public class ReconnectLearner {
 
     private final Connection connection;
     private final Roster roster;
-    private final MerkleRoot currentState;
+    private final PlatformMerkleStateRoot currentState;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
@@ -90,7 +89,7 @@ public class ReconnectLearner {
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             @NonNull final Roster roster,
-            @NonNull final MerkleRoot currentState,
+            @NonNull final PlatformMerkleStateRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
@@ -106,8 +105,7 @@ public class ReconnectLearner {
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
-        this.stateValidationData = new SignedStateValidationData(
-                currentState.getReadablePlatformState(), RosterUtils.buildAddressBook(roster));
+        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), roster);
     }
 
     /**
@@ -159,7 +157,7 @@ public class ReconnectLearner {
         try {
             receiveSignatures();
             reservedSignedState = reconnect();
-            validator.validate(reservedSignedState.get(), RosterUtils.buildAddressBook(roster), stateValidationData);
+            validator.validate(reservedSignedState.get(), roster, stateValidationData);
             ReconnectUtils.endReconnectHandshake(connection);
             SignedStateFileReader.unregisterServiceStates(reservedSignedState.get());
             return reservedSignedState;
@@ -206,7 +204,7 @@ public class ReconnectLearner {
                 platformContext.getMetrics());
         synchronizer.synchronize();
 
-        final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
+        final PlatformMerkleStateRoot state = (PlatformMerkleStateRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
                 platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,

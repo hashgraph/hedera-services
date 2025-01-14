@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -45,32 +45,26 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(NOT_REPEATABLE)
 public class FileQueriesStressTests {
-    private AtomicLong duration = new AtomicLong(10);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
+    private final AtomicLong duration = new AtomicLong(10);
+    private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     @HapiTest
     final Stream<DynamicTest> getFileContentsStress() {
-        return defaultHapiSpec("getFileContentsStress")
-                .given()
-                .when()
-                .then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(getFileContentsFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(
+                withOpContext((spec, opLog) -> configureFromCi(spec)),
+                runWithProvider(getFileContentsFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     @HapiTest
     final Stream<DynamicTest> getFileInfoStress() {
-        return defaultHapiSpec("getFileInfoStress")
-                .given()
-                .when()
-                .then(
-                        withOpContext((spec, opLog) -> configureFromCi(spec)),
-                        runWithProvider(getFileInfoFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+        return hapiTest(
+                withOpContext((spec, opLog) -> configureFromCi(spec)),
+                runWithProvider(getFileInfoFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> getFileContentsFactory() {

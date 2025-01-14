@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
@@ -92,7 +93,7 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> expectedConsensusFixedHbarFee(
+    public static BiConsumer<HapiSpec, List<FixedCustomFee>> expectedConsensusFixedHbarFee(
             long amount, String collector) {
         return (spec, actual) -> {
             final var expected = CustomFeeSpecs.builtConsensusFixedHbar(amount, collector, spec);
@@ -100,7 +101,15 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiSpec, List<ConsensusCustomFee>> expectedConsensusFixedHTSFee(
+    public static BiConsumer<HapiSpec, List<FixedCustomFee>> expectedConsensusFixedHbarFee(
+            long amount, AccountID collector) {
+        return (spec, actual) -> {
+            final var expected = CustomFeeSpecs.builtConsensusFixedHbar(amount, collector);
+            failUnlessConsensusFeePresent("fixed ℏ", actual, expected);
+        };
+    }
+
+    public static BiConsumer<HapiSpec, List<FixedCustomFee>> expectedConsensusFixedHTSFee(
             long amount, String token, String collector) {
         return (spec, actual) -> {
             final var expected = CustomFeeSpecs.builtConsensusFixedHts(amount, token, collector, spec);
@@ -118,7 +127,7 @@ public class CustomFeeTests {
     }
 
     private static void failUnlessConsensusFeePresent(
-            String detail, List<ConsensusCustomFee> actual, ConsensusCustomFee expected) {
+            String detail, List<FixedCustomFee> actual, FixedCustomFee expected) {
         for (var customFee : actual) {
             if (expected.equals(customFee)) {
                 return;

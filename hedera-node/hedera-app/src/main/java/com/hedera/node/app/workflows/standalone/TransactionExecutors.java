@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
@@ -33,8 +34,6 @@ import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.tss.TssBaseServiceImpl;
-import com.hedera.node.app.tss.TssLibraryImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -47,7 +46,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -59,6 +58,7 @@ public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
 
     public static final NodeInfo DEFAULT_NODE_INFO = new NodeInfoImpl(0, asAccount(3L), 10, List.of(), Bytes.EMPTY);
+    public static final String MAX_SIGNED_TXN_SIZE_PROPERTY = "executor.maxSignedTxnSize";
 
     /**
      * A strategy to bind and retrieve {@link OperationTracer} scoped to a thread.
@@ -118,25 +118,20 @@ public enum TransactionExecutors {
                         () -> state,
                         () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        final var tssBaseService = new TssBaseServiceImpl(
-                appContext,
-                ForkJoinPool.commonPool(),
-                ForkJoinPool.commonPool(),
-                new TssLibraryImpl(appContext),
-                ForkJoinPool.commonPool(),
-                NO_OP_METRICS);
         final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();
         final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
-                .tssBaseService(tssBaseService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .scheduleServiceImpl(scheduleService)
                 .metrics(NO_OP_METRICS)
                 .throttleFactory(appContext.throttleFactory())
+                .maxSignedTxnSize(Optional.ofNullable(properties.get(MAX_SIGNED_TXN_SIZE_PROPERTY))
+                        .map(Integer::parseInt)
+                        .orElse(Hedera.MAX_SIGNED_TXN_SIZE))
                 .build();
         componentRef.set(component);
         return component;

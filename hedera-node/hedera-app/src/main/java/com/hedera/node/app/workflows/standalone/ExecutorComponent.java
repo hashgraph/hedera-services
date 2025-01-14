@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.standalone;
 
+import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -28,7 +29,6 @@ import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
-import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.FacilityInitModule;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
@@ -63,9 +63,6 @@ public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
         @BindsInstance
-        Builder tssBaseService(TssBaseService tssBaseService);
-
-        @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 
         @BindsInstance
@@ -85,6 +82,9 @@ public interface ExecutorComponent {
 
         @BindsInstance
         Builder throttleFactory(Throttle.Factory throttleFactory);
+
+        @BindsInstance
+        Builder maxSignedTxnSize(@MaxSignedTxnSize int maxSignedTxnSize);
 
         ExecutorComponent build();
     }

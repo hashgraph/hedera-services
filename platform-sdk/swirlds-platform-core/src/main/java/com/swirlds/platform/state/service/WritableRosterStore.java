@@ -33,6 +33,9 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 
 /**
  * Read-write implementation for accessing rosters states.
@@ -91,7 +94,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
                 RosterUtils.hash(candidateRoster).getBytes();
 
         // update the roster state/map
-        final RosterState previousRosterState = rosterStateOrThrow();
+        final RosterState previousRosterState = rosterStateOrDefault();
         final Bytes previousCandidateRosterHash = previousRosterState.candidateRosterHash();
         final Builder newRosterStateBuilder =
                 previousRosterState.copyBuilder().candidateRosterHash(incomingCandidateRosterHash);
@@ -114,18 +117,28 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         requireNonNull(roster);
         RosterValidator.validate(roster);
 
+        final Bytes rosterHash = RosterUtils.hash(roster).getBytes();
+
         // update the roster state
-        final RosterState previousRosterState = rosterStateOrThrow();
+        final RosterState previousRosterState = rosterStateOrDefault();
         final List<RoundRosterPair> roundRosterPairs = new LinkedList<>(previousRosterState.roundRosterPairs());
         if (!roundRosterPairs.isEmpty()) {
             final RoundRosterPair activeRosterPair = roundRosterPairs.getFirst();
+            if (activeRosterPair.activeRosterHash().equals(rosterHash)) {
+                // We're trying to set the exact same active roster, maybe even with the same roundNumber.
+                // This may happen if, for whatever reason, roster updates come from different code paths.
+                // This shouldn't be considered an error because the system wants to use the exact same
+                // roster that is currently active anyway. So we silently ignore such a putActiveRoster request
+                // because it's a no-op:
+                return;
+            }
             if (round < 0 || round <= activeRosterPair.roundNumber()) {
-                throw new IllegalArgumentException(
-                        "incoming round number must be greater than the round number of the current active roster.");
+                throw new IllegalArgumentException("incoming round number = " + round
+                        + " must be greater than the round number of the current active roster = "
+                        + activeRosterPair.roundNumber() + ".");
             }
         }
-        final Bytes activeRosterHash = RosterUtils.hash(roster).getBytes();
-        roundRosterPairs.addFirst(new RoundRosterPair(round, activeRosterHash));
+        roundRosterPairs.addFirst(new RoundRosterPair(round, rosterHash));
 
         if (roundRosterPairs.size() > MAXIMUM_ROSTER_HISTORY_SIZE) {
             final RoundRosterPair lastRemovedRoster = roundRosterPairs.removeLast();
@@ -148,17 +161,32 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
         // so we remove it if it meets removal criteria.
         removeRoster(previousRosterState.candidateRosterHash());
         rosterState.put(newRosterStateBuilder.build());
-        rosterMap.put(ProtoBytes.newBuilder().value(activeRosterHash).build(), roster);
+        rosterMap.put(ProtoBytes.newBuilder().value(rosterHash).build(), roster);
     }
 
     /**
-     * Returns the roster state or throws an exception if the state is null.
+     * Reset the roster state to an empty list and remove all entries from the roster map.
+     * This method is primarily intended to be used in CLI tools that may need to reset
+     * the RosterService states to a vanilla state, for example to reproduce the genesis state.
+     */
+    public void resetRosters() {
+        rosterState.put(RosterState.DEFAULT);
+
+        // To avoid modifying the map while iterating over all the keys, collect them into a list first:
+        final List<ProtoBytes> keys = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(rosterMap.keys(), Spliterator.ORDERED), false)
+                .toList();
+        keys.forEach(rosterMap::remove);
+    }
+
+    /**
+     * Returns the roster state; or the default roster state if the roster state is not yet set at genesis.
      * @return the roster state
-     * @throws NullPointerException if the roster state is null
      */
     @NonNull
-    private RosterState rosterStateOrThrow() {
-        return requireNonNull(rosterState.get());
+    private RosterState rosterStateOrDefault() {
+        RosterState state;
+        return (state = rosterState.get()) == null ? RosterState.DEFAULT : state;
     }
 
     /**
@@ -168,7 +196,7 @@ public class WritableRosterStore extends ReadableRosterStoreImpl {
      * @param rosterHash the hash of the roster
      */
     private void removeRoster(@NonNull final Bytes rosterHash) {
-        final List<RoundRosterPair> activeRosterHistory = rosterStateOrThrow().roundRosterPairs();
+        final List<RoundRosterPair> activeRosterHistory = rosterStateOrDefault().roundRosterPairs();
         if (activeRosterHistory.stream()
                 .noneMatch(rosterPair -> rosterPair.activeRosterHash().equals(rosterHash))) {
             this.rosterMap.remove(ProtoBytes.newBuilder().value(rosterHash).build());

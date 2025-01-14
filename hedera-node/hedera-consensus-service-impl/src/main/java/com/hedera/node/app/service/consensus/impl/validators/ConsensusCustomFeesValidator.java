@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.validators;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -34,7 +35,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -65,7 +66,7 @@ public class ConsensusCustomFeesValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final List<ConsensusCustomFee> customFees,
+            @NonNull final List<FixedCustomFee> customFees,
             @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(accountStore);
         requireNonNull(tokenRelationStore);
@@ -88,7 +89,7 @@ public class ConsensusCustomFeesValidator {
     }
 
     private void validateFixedFee(
-            @NonNull final ConsensusCustomFee fee,
+            @NonNull final FixedCustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var fixedFee = fee.fixedFeeOrThrow();
@@ -119,11 +120,13 @@ public class ConsensusCustomFeesValidator {
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var denomToken = getIfUsable(tokenNum, tokenStore, REQUIRE_NOT_PAUSED, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateFalse(
-                TokenSupplyType.FINITE.equals(denomToken.supplyType()) && feeAmount > denomToken.maxSupply(),
-                AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
+        if (denomToken.supplyType().equals(TokenSupplyType.FINITE)) {
+            validateFalse(feeAmount > denomToken.maxSupply(), AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
+        }
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-        validateTrue(tokenRelationStore.get(feeCollectorNum, tokenNum) != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        final var tokenRel = tokenRelationStore.get(feeCollectorNum, tokenNum);
+        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
     }
 
     /**

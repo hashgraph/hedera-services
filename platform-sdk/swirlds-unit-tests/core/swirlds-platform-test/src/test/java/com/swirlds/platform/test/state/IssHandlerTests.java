@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -167,7 +167,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -205,7 +205,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -237,7 +237,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -275,7 +275,7 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 
     @Test
@@ -313,6 +313,6 @@ class IssHandlerTests {
 
         final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
         assertNotNull(issRound);
-        assertEquals(issRound.getValue(), 1234L);
+        assertEquals(1234L, issRound.getValue());
     }
 }

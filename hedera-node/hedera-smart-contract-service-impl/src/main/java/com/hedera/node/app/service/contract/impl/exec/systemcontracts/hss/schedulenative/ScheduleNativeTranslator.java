@@ -1,0 +1,125 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.schedulenative;
+
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator.createSelectorsMap;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator.updateSelectorsMap;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.datatypes.Address.fromHexString;
+
+import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.config.data.ContractsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+
+@Singleton
+public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAttempt> {
+
+    public static final Function SCHEDULED_NATIVE_CALL =
+            new Function("scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
+    private static final int SCHEDULE_CONTRACT_ADDRESS = 0;
+    private static final int SCHEDULE_CALL_DATA = 1;
+    private static final int SCHEDULE_PAYER = 2;
+
+    private final HtsCallFactory htsCallFactory;
+
+    @Inject
+    public ScheduleNativeTranslator(@NonNull final HtsCallFactory htsCallFactory) {
+        requireNonNull(htsCallFactory);
+        this.htsCallFactory = htsCallFactory;
+    }
+
+    @Override
+    public boolean matches(@NonNull final HssCallAttempt attempt) {
+        final var scheduleNativeEnabled =
+                attempt.configuration().getConfigData(ContractsConfig.class).systemContractScheduleNativeEnabled();
+        return attempt.isSelectorIfConfigEnabled(scheduleNativeEnabled, SCHEDULED_NATIVE_CALL)
+                && innerCallValidation(attempt);
+    }
+
+    @Override
+    public Call callFrom(@NonNull final HssCallAttempt attempt) {
+        final var call = SCHEDULED_NATIVE_CALL.decodeCall(attempt.inputBytes());
+        final var innerCallData = Bytes.wrap((byte[]) call.get(SCHEDULE_CALL_DATA));
+        final var payerID = attempt.addressIdConverter().convert(call.get(SCHEDULE_PAYER));
+        return new ScheduleNativeCall(
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.defaultVerificationStrategy(),
+                payerID,
+                ScheduleNativeTranslator::gasRequirement,
+                attempt.keySetFor(),
+                innerCallData,
+                htsCallFactory,
+                false);
+    }
+
+    /**
+     * Calculates the gas requirement for a {@code SCHEDULE_CREATE} call.
+     *
+     * @param body the transaction body
+     * @param systemContractGasCalculator the gas calculator
+     * @param enhancement the enhancement
+     * @param payerId the payer account ID
+     * @return the gas requirement
+     */
+    public static long gasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.SCHEDULE_CREATE, payerId);
+    }
+
+    // This method is used to validate the inner call of the scheduled create call
+    // We validate that the sender contract is HTS, that the sender address is a valid account
+    // And that the inner call is one of create or update token functions
+    private boolean innerCallValidation(@NonNull final HssCallAttempt attempt) {
+        final var call = SCHEDULED_NATIVE_CALL.decodeCall(attempt.inputBytes());
+        final var contractAddress = (Address) call.get(SCHEDULE_CONTRACT_ADDRESS);
+        final var payerAddress = (Address) call.get(SCHEDULE_PAYER);
+        final var payerID = attempt.addressIdConverter().convert(payerAddress);
+        validateTrue(payerID != AccountID.DEFAULT, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        final var besuContractAddress = fromHexString(contractAddress.toString());
+        validateTrue(besuContractAddress.equals(fromHexString(HTS_EVM_ADDRESS)), ResponseCodeEnum.INVALID_CONTRACT_ID);
+        final var innerCallSelector =
+                Bytes.wrap((byte[]) call.get(SCHEDULE_CALL_DATA)).slice(0, 4).toArray();
+        final var canBeCreateToken =
+                createSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
+        final var canBeUpdateToken =
+                updateSelectorsMap.keySet().stream().anyMatch(s -> Arrays.equals(s.selector(), innerCallSelector));
+
+        return canBeCreateToken || canBeUpdateToken;
+    }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,23 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
+import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
+import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_KEY;
-import static com.swirlds.platform.state.service.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -51,20 +59,23 @@ import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlatformStateUpdatesTest implements TransactionFactory {
-    private static final RosterState ROSTER_STATE = RosterState.newBuilder()
+public class PlatformStateUpdatesTest implements TransactionFactory {
+    public static final RosterState ROSTER_STATE = RosterState.newBuilder()
             .roundRosterPairs(List.of(RoundRosterPair.DEFAULT))
             .build();
     private FakeState state;
@@ -79,10 +90,13 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
 
+    @Mock
+    private BiConsumer<Roster, Path> rosterExportHelper;
+
     @BeforeEach
     void setUp() {
         freezeTimeBackingStore = new AtomicReference<>(null);
-        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.GENESIS_PLATFORM_STATE);
+        platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
@@ -99,7 +113,7 @@ class PlatformStateUpdatesTest implements TransactionFactory {
                         PlatformStateService.NAME,
                         Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore));
 
-        subject = new PlatformStateUpdates();
+        subject = new PlatformStateUpdates(rosterExportHelper);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -130,24 +144,43 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
-    void testFreezeUpgradeWhenKeying() {
-        // given
+    void freezeAbortNullsOutFreezeTime() {
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
         final var txBody = TransactionBody.newBuilder()
-                .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_ABORT));
 
-        // when
-        subject.handleTxBody(state, txBody.build(), configWith(true, true));
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
 
-        // then
-        final var platformState = platformStateBackingStore.get();
-        assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
-        assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
+        assertThat(platformStateBackingStore.get().freezeTime()).isNull();
     }
 
     @Test
-    void testFreezeUpgradeWhenKeyingButNotUsingRosterLifecycle() {
+    void unknownFreezeIsNoop() {
+        platformStateBackingStore.set(
+                PlatformState.newBuilder().freezeTime(Timestamp.DEFAULT).build());
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(UNKNOWN_FREEZE_TYPE));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isEqualTo(Timestamp.DEFAULT);
+    }
+
+    @Test
+    void telemetryUpgradeIsNoop() {
+        platformStateBackingStore.set(
+                PlatformState.newBuilder().freezeTime(Timestamp.DEFAULT).build());
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(TELEMETRY_UPGRADE));
+
+        subject.handleTxBody(state, txBody.build(), DEFAULT_CONFIG);
+
+        assertThat(platformStateBackingStore.get().freezeTime()).isEqualTo(Timestamp.DEFAULT);
+    }
+
+    @Test
+    void testFreezeUpgradeWhenKeying() {
         // given
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
@@ -164,12 +197,73 @@ class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
-    void putsCandidateRosterWhenNotKeyingButUsingRosterLifecycle() {
+    void testFreezeUpgradeWhenKeyingButNotUsingRosterLifecycle() {
         // given
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
         final var txBody = TransactionBody.newBuilder()
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
+
+        // when
+        subject.handleTxBody(state, txBody.build(), configWith(false, false));
+
+        // then
+        final var platformState = platformStateBackingStore.get();
+        assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
+        assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
+    }
+
+    @Test
+    void putsCandidateRosterWhenNotKeyingButUsingRosterLifecycle() {
+        // given
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        nodes.put(
+                new EntityNumber(0L),
+                Node.newBuilder()
+                        .weight(1)
+                        .gossipCaCertificate(Bytes.fromHex("0123"))
+                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .build());
+
+        // when
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
+
+        // then
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(rosterExportHelper).accept(any(), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
+    }
+
+    @Test
+    void worksAroundFailureToPutCandidateRoster() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        nodes.put(
+                new EntityNumber(0L),
+                Node.newBuilder()
+                        .weight(0)
+                        .gossipCaCertificate(Bytes.fromHex("0123"))
+                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .build());
+
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
+
+        verify(rosterExportHelper, never()).accept(any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exportsCandidateRosterIfRequestedEvenWhenNotUsingRosterLifecycle() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
         nodes.put(
                 new EntityNumber(0L),
                 Node.newBuilder()
@@ -182,15 +276,18 @@ class PlatformStateUpdatesTest implements TransactionFactory {
         subject.handleTxBody(state, txBody.build(), configWith(false, true));
 
         // then
-        final var platformState = platformStateBackingStore.get();
-        assertEquals(freezeTime.seconds(), platformState.freezeTimeOrThrow().seconds());
-        assertEquals(freezeTime.nanos(), platformState.freezeTimeOrThrow().nanos());
+        final var captor = ArgumentCaptor.forClass(Path.class);
+        verify(rosterExportHelper).accept(any(), captor.capture());
+        final var path = captor.getValue();
+        assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
-    private Configuration configWith(final boolean keyCandidateRoster, final boolean useRosterLifecycle) {
+    private Configuration configWith(final boolean useRosterLifecycle, final boolean createCandidateRoster) {
         return HederaTestConfigBuilder.create()
-                .withValue("tss.keyCandidateRoster", "" + keyCandidateRoster)
+                .withValue("addressBook.createCandidateRosterOnPrepareUpgrade", "" + createCandidateRoster)
                 .withValue("addressBook.useRosterLifecycle", "" + useRosterLifecycle)
+                .withValue("networkAdmin.exportCandidateRoster", "true")
+                .withValue("networkAdmin.candidateRosterExportFile", "candidate-network.json")
                 .getOrCreateConfig();
     }
 }

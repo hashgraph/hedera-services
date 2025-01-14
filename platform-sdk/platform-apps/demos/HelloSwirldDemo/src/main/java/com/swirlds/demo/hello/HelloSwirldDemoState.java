@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,12 @@ package com.swirlds.demo.hello;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -38,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -94,7 +97,7 @@ public class HelloSwirldDemoState extends PlatformMerkleStateRoot {
     // ///////////////////////////////////////////////////////////////////
 
     public HelloSwirldDemoState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(lifecycles, versionFactory);
     }
@@ -105,7 +108,10 @@ public class HelloSwirldDemoState extends PlatformMerkleStateRoot {
     }
 
     @Override
-    public synchronized void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public synchronized void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

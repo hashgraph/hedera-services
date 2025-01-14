@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -25,6 +27,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
@@ -39,15 +44,26 @@ import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -310,6 +326,31 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
+        @DisplayName("Create topic with keys")
+        // TOPIC_FEE_020/21/23/24
+        final Stream<DynamicTest> topicCreateWithFEKL() {
+            final var collector = "collector";
+            final var key = "key";
+            return hapiTest(
+                    // create topic with 1 FEKL and no custom fee
+                    newKeyNamed(key),
+                    createTopic(TOPIC).adminKeyName(ADMIN_KEY).feeExemptKeys(key),
+                    getTopicInfo(TOPIC).hasAdminKey(ADMIN_KEY).hasFeeExemptKeys(List.of(key)),
+                    // create topic with 1 FEKL and custom fee
+                    cryptoCreate(collector),
+                    createTopic(TOPIC + "2")
+                            .withConsensusCustomFee(fixedConsensusHbarFee(1, collector))
+                            .feeScheduleKeyName(FEE_SCHEDULE_KEY)
+                            .adminKeyName(ADMIN_KEY)
+                            .feeExemptKeys(key),
+                    getTopicInfo(TOPIC + "2")
+                            .hasCustomFee(expectedConsensusFixedHbarFee(1, collector))
+                            .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
+                            .hasAdminKey(ADMIN_KEY)
+                            .hasFeeExemptKeys(List.of(key)));
+        }
+
+        @HapiTest
         @DisplayName("Create topic with 10 keys in FEKL")
         // TOPIC_FEE_022
         final Stream<DynamicTest> createTopicWithFEKL() {
@@ -331,6 +372,45 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
                             .hasFeeScheduleKey(FEE_SCHEDULE_KEY)
                             // assert the list
                             .hasFeeExemptKeys(List.of(feeExemptKeyNames(10)))));
+        }
+
+        @HapiTest
+        @DisplayName("Topic Create with different keys")
+        // TOPIC_FEE_025
+        final Stream<DynamicTest> topicCreateWithDifferentKeys() {
+            final var ecdsaKey = "ecdsaKey";
+            final var ed25519Key = "ed25519Key";
+            final var threshKey = "threshKey";
+            return hapiTest(
+                    newKeyNamed(ecdsaKey).shape(SigControl.SECP256K1_ON),
+                    newKeyNamed(ed25519Key).shape(SigControl.ED25519_ON),
+                    newKeyNamed(threshKey).shape(threshOf(1, SIMPLE, SIMPLE)),
+                    createTopic(TOPIC).feeExemptKeys(ecdsaKey, ed25519Key, threshKey),
+                    getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(ecdsaKey, ed25519Key, threshKey)));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with keys")
+        // TOPIC_FEE_026
+        final Stream<DynamicTest> topicCreateWithFeklDeletedAccount() {
+            final var key = "key";
+            return hapiTest(
+                    newKeyNamed(key),
+                    cryptoCreate("deleted").key(key),
+                    cryptoDelete("deleted"),
+                    createTopic(TOPIC).feeExemptKeys(key),
+                    getTopicInfo(TOPIC).hasFeeExemptKeys(List.of(key)));
+        }
+
+        @HapiTest
+        @DisplayName("Delete custom fee collector")
+        // TOPIC_FEE_028
+        final Stream<DynamicTest> deleteCollector() {
+            final var collector = "collector";
+            return hapiTest(
+                    cryptoCreate(collector),
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(1, collector)),
+                    cryptoDelete(collector).hasKnownStatus(SUCCESS));
         }
     }
 
@@ -420,6 +500,112 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
                             .feeScheduleKeyName(FEE_SCHEDULE_KEY)
                             .withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collector))
                             .hasKnownStatus(ACCOUNT_DELETED));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with custom fee above max FT supply")
+        // TOPIC_FEE_034
+        final Stream<DynamicTest> createTopicCustomFeeAboveSupply() {
+            final var collector = "collector";
+            return hapiTest(
+                    cryptoCreate(collector),
+                    tokenCreate("fungibleToken")
+                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                            .supplyType(TokenSupplyType.FINITE)
+                            .initialSupply(500)
+                            .maxSupply(1000),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1001, "fungibleToken", "collector"))
+                            .hasKnownStatus(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with negative custom fee")
+        // TOPIC_FEE_037
+        final Stream<DynamicTest> createTopicNegativeFee() {
+            return hapiTest(
+                    cryptoCreate("collector"),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fixedConsensusHbarFee(-1, "collector"))
+                            .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with not specified custom fee")
+        // TOPIC_FEE_038
+        final Stream<DynamicTest> createTopicNotSpecifiedFee() {
+            final var collector = "collector";
+            return hapiTest(
+                    cryptoCreate(collector),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(spec -> FixedCustomFee.newBuilder()
+                                    .setFeeCollectorAccountId(spec.registry().getAccountID(collector))
+                                    .build())
+                            .hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with invalid FT for custom fee")
+        // TOPIC_FEE_039/40/41
+        final Stream<DynamicTest> createTopicInvalidToken() {
+            return hapiTest(
+                    cryptoCreate("collector"),
+                    newKeyNamed("pauseKey"),
+                    tokenCreate("pausedToken").pauseKey("pauseKey"),
+                    tokenPause("pausedToken"),
+                    tokenCreate("deletedToken").adminKey("adminKey"),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1, "pausedToken", "collector"))
+                            .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
+                    tokenDelete("deletedToken").hasKnownStatus(SUCCESS),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1, "deletedToken", "collector"))
+                            .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with above FEKL limit")
+        // TOPIC_FEE_042
+        final Stream<DynamicTest> createTopicAboveKeyLimit() {
+            return hapiTest(flattened(
+                    newNamedKeysForFEKL(11),
+                    createTopic(TOPIC)
+                            .feeExemptKeys(feeExemptKeyNames(11))
+                            .hasKnownStatus(MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED)));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with invalid fee exempt key")
+        // TOPIC_FEE_043
+        final Stream<DynamicTest> createTopicInvalidFeeExemptKey() {
+            var invalidEd25519Key = Key.newBuilder()
+                    .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
+                    .build();
+            var invalidEcdsaKey = Key.newBuilder()
+                    .setECDSASecp256K1(ByteString.fromHex("0000000000000000000000000000000000000000"))
+                    .build();
+            return hapiTest(
+                    createTopic(TOPIC)
+                            .feeExemptKeys(invalidEd25519Key)
+                            .hasKnownStatus(INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST),
+                    createTopic(TOPIC)
+                            .feeExemptKeys(invalidEcdsaKey)
+                            .hasKnownStatus(INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST));
+        }
+
+        @HapiTest
+        @DisplayName("Create topic with frozen token for collector")
+        // TOPIC_FEE_044
+        final Stream<DynamicTest> createTopicFrozenTokenForCollector() {
+            return hapiTest(
+                    newKeyNamed("freezeKey"),
+                    cryptoCreate("collector"),
+                    tokenCreate("frozenToken").freezeKey("freezeKey"),
+                    tokenAssociate("collector", "frozenToken"),
+                    tokenFreeze("frozenToken", "collector"),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fixedConsensusHtsFee(1, "frozenToken", "collector"))
+                            .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
         }
     }
 

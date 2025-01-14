@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.tss.TssMessageMapKey;
-import com.hedera.hapi.node.state.tss.TssVoteMapKey;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
-import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -52,8 +48,6 @@ import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateScheduleCountsOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateStakingInfosOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateTokenOp;
-import com.hedera.services.bdd.spec.utilops.embedded.MutateTssMessagesOp;
-import com.hedera.services.bdd.spec.utilops.embedded.MutateTssVotesOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewKVStateOp;
 import com.hedera.services.bdd.spec.utilops.embedded.ViewMappingValueOp;
@@ -66,6 +60,7 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -123,27 +118,6 @@ public final class EmbeddedVerbs {
         return new MutateStakingInfosOp(mutation);
     }
 
-    /**
-     * Returns an operation that allows the test author to directly mutate the TSS messages.
-     *
-     * @param mutation the mutation to apply to the TSS messages
-     * @return the operation that will mutate the TSS messages
-     */
-    public static MutateTssMessagesOp mutateTssMessages(
-            @NonNull final Consumer<WritableKVState<TssMessageMapKey, TssMessageTransactionBody>> mutation) {
-        return new MutateTssMessagesOp(mutation);
-    }
-
-    /**
-     * Returns an operation that allows the test author to directly mutate the TSS votes.
-     *
-     * @param mutation the mutation to apply to the TSS votes
-     * @return the operation that will mutate the TSS votes
-     */
-    public static MutateTssVotesOp mutateTssVotes(
-            @NonNull final Consumer<WritableKVState<TssVoteMapKey, TssVoteTransactionBody>> mutation) {
-        return new MutateTssVotesOp(mutation);
-    }
     /**
      * Returns an operation that allows the test author to directly mutate an account.
      *
@@ -313,6 +287,18 @@ public final class EmbeddedVerbs {
             @NonNull final String receiverName,
             @NonNull final Consumer<AccountPendingAirdrop> observer) {
         return new ViewPendingAirdropOp(tokenName, senderName, receiverName, observer);
+    }
+
+    /**
+     * Returns an operation that sleeps until the given instant when in repeatable mode.
+     * @param then the instant to sleep until
+     * @return the operation that will sleep until the given instant in repeatable mode
+     */
+    public static SpecOperation sleepToExactly(@NonNull final Instant then) {
+        return doingContextual(spec -> {
+            final var embeddedHedera = spec.repeatableEmbeddedHederaOrThrow();
+            embeddedHedera.tick(Duration.between(spec.consensusTime(), then));
+        });
     }
 
     /**

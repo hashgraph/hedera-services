@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,21 +63,6 @@ public class FileBlockItemWriterTest {
     private FileSystem fileSystem;
 
     @Test
-    public void testFileBlockItemWriterConstructor() {
-        when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
-        when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
-        when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
-        when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
-        when(fileSystem.getPath(anyString())).thenReturn(tempDir);
-
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
-
-        // Assertion to check if the directory is created
-        Path expectedDirectory = tempDir.resolve("block-0.0.3");
-        assertThat(Files.exists(expectedDirectory)).isTrue();
-    }
-
-    @Test
     public void testOpenBlock() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
@@ -86,12 +71,11 @@ public class FileBlockItemWriterTest {
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
-
-        fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the block file is created
         Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
@@ -107,12 +91,11 @@ public class FileBlockItemWriterTest {
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
-
-        fileBlockItemWriter.openBlock(1);
 
         assertThatThrownBy(() -> fileBlockItemWriter.openBlock(1), "Cannot initialize a FileBlockItemWriter twice")
                 .isInstanceOf(IllegalStateException.class);
@@ -127,10 +110,6 @@ public class FileBlockItemWriterTest {
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
         FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
-
-        // Assertion to check if the directory is created
-        Path expectedDirectory = tempDir.resolve("block-0.0.3");
-        assertThat(Files.exists(expectedDirectory)).isTrue();
 
         assertThatThrownBy(() -> fileBlockItemWriter.openBlock(-1), "Block number must be non-negative")
                 .isInstanceOf(IllegalArgumentException.class);

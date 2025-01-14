@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,28 +20,32 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.swirlds.platform.system.transaction.TransactionWrapperUtils.createAppPayloadWrapper;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeConsensusEvent;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeEvent;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 /**
  * An embedded Hedera node that handles transactions synchronously on ingest and thus
@@ -49,13 +53,27 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Instant FIXED_POINT = Instant.parse("2024-06-24T12:05:41.487328Z");
-    private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
+
+    // Using a default round duration of one second makes it easier to structure tests with
+    // time-based events like transactions scheduled with wait_for_expiry=true
+    public static final Duration DEFAULT_ROUND_DURATION = Duration.ofSeconds(1);
+
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
+    private final Queue<Runnable> pendingNodeSubmissions = new ArrayDeque<>();
+
+    private static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CALLBACK = ignore -> {};
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleStateSignatureCallback =
+            NO_OP_CALLBACK;
+    private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleStateSignatureCallback = NO_OP_CALLBACK;
+
+    // The amount of consensus time that will be simulated to elapse before the next transaction---note
+    // that in repeatable mode, every transaction gets its own event, and each event gets its own round
+    private Duration roundDuration = DEFAULT_ROUND_DURATION;
 
     public RepeatableEmbeddedHedera(@NonNull final EmbeddedNode node) {
         super(node);
-        platform = new SynchronousFakePlatform(defaultNodeId, addressBook, executorService);
+        platform = new SynchronousFakePlatform(defaultNodeId, executorService);
     }
 
     @Override
@@ -71,6 +89,20 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     @Override
     public void tick(@NonNull Duration duration) {
         time.tick(duration);
+    }
+
+    @Override
+    public TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
+        this.preHandleStateSignatureCallback = preHandleCallback;
+        this.handleStateSignatureCallback = handleCallback;
+        final var response = submit(transaction, nodeAccountId);
+        this.preHandleStateSignatureCallback = NO_OP_CALLBACK;
+        this.handleStateSignatureCallback = NO_OP_CALLBACK;
+        return response;
     }
 
     @Override
@@ -94,13 +126,13 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
                     new FakeEvent(nodeId, time.now(), semanticVersion, createAppPayloadWrapper(payload));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
-            handleNextRound(false);
-            // If handling this transaction scheduled TSS work, do it synchronously as well
-            while (tssBaseService.hasTssSubmission()) {
+            handleNextRound();
+            // If handling this transaction scheduled node transactions, handle them now
+            while (!pendingNodeSubmissions.isEmpty()) {
                 platform.lastCreatedEvent = null;
-                tssBaseService.executeNextTssSubmission();
+                pendingNodeSubmissions.poll().run();
                 if (platform.lastCreatedEvent != null) {
-                    handleNextRound(true);
+                    handleNextRound();
                 }
             }
         }
@@ -115,32 +147,47 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
     }
 
     /**
+     * Returns the block hash signer for this embedded node that can be told to lapse into an unresponsive state
+     * and start ignoring signature requests.
+     */
+    public LapsingBlockHashSigner blockHashSigner() {
+        return blockHashSigner;
+    }
+
+    /**
      * Returns the last consensus round number.
      */
     public long lastRoundNo() {
         return platform.lastRoundNo();
     }
 
-    private void handleNextRound(boolean skipsSignatureTxn) {
-        hedera.onPreHandle(platform.lastCreatedEvent, state);
-        if (skipsSignatureTxn && platform.lastCreatedEvent.function() == HederaFunctionality.TSS_SHARE_SIGNATURE) {
-            return;
-        }
+    /**
+     * Sets the duration of each simulated consensus round, and hence the consensus time that will
+     * elapse before the next transaction is handled.
+     * @param roundDuration the duration of each simulated round
+     */
+    public void setRoundDuration(@NonNull final Duration roundDuration) {
+        this.roundDuration = requireNonNull(roundDuration);
+    }
+
+    /**
+     * Executes the transaction in the last-created event within its own round.
+     */
+    private void handleNextRound() {
+        hedera.onPreHandle(platform.lastCreatedEvent, state, preHandleStateSignatureCallback);
         final var round = platform.nextConsensusRound();
         // Handle each transaction in own round
-        hedera.handleWorkflow().handleRound(state, round);
+        hedera.handleWorkflow().handleRound(state, round, handleStateSignatureCallback);
         hedera.onSealConsensusRound(round, state);
-        notifyBlockStreamManagerIfEnabled(round.getRoundNum());
+        notifyStateHashed(round.getRoundNum());
     }
 
     private class SynchronousFakePlatform extends AbstractFakePlatform implements Platform {
         private FakeEvent lastCreatedEvent;
 
         public SynchronousFakePlatform(
-                @NonNull NodeId selfId,
-                @NonNull AddressBook addressBook,
-                @NonNull ScheduledExecutorService executorService) {
-            super(selfId, addressBook, executorService);
+                @NonNull final NodeId selfId, @NonNull final ScheduledExecutorService executorService) {
+            super(selfId, roster, executorService);
         }
 
         @Override
@@ -156,7 +203,7 @@ public class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements 
         }
 
         private Round nextConsensusRound() {
-            time.tick(SIMULATED_ROUND_DURATION);
+            time.tick(roundDuration);
             final var firstRoundTime = time.now();
             final var consensusEvents = List.<ConsensusEvent>of(new FakeConsensusEvent(
                     requireNonNull(lastCreatedEvent),
