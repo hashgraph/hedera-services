@@ -43,10 +43,10 @@ Topics can have an optional fees for submitting messages.
  * Custom fees defined here SHALL be in addition to the base
  * network and node fees.
  */
-repeated ConsensusCustomFee custom_fees = 10;
+repeated FixedCustomFee custom_fees = 10;
 ```
 
-Fees can be set in HBAR or HTS fungible tokens.
+Fees can be only a `fixed fee` and can be set in HBAR or HTS fungible tokens.
 
 ```protobuf
 /**
@@ -58,7 +58,7 @@ Fees can be set in HBAR or HTS fungible tokens.
  * Only "fixed" fee definitions are supported because there is no basis for
  * a fractional fee on a consensus submit transaction.
  */
-message ConsensusCustomFee {
+message FixedCustomFee {
   /**
    * A fixed custom fee.
    * <p>
@@ -99,20 +99,40 @@ repeated Key fee_exempt_key_list = 9;
 Note:
 In `consensus_update_topic`, `custom_fees` and `fee_exempt_key_list` are wrapped in order to differentiate between setting an empty list and not updating the list.
 
-The `ConsensusSubmitMessageTransactionBody` message is updated to include the optional max_custom_fees property for specifying the maximum fee that the user is willing to pay for the message.
+HIP-991 introduces generic custom fee limits.
+The `TransactionBody` message is updated to include the optional list maxCustomFees for specifying the maximum fee that the users are willing to pay for the transaction.
 
 ```protobuf
-message ConsensusSubmitMessageTransactionBody {
+message TransactionBody {
   [..]
   /**
-    * The maximum custom fee that the user is willing to pay for the message. This field will be ignored if `accept_all_custom_fees` is set to `true`.
-    */
-  repeated FixedFee max_custom_fees = 4;
+   * A list of maximum custom fees that the users are willing to pay.
+   * <p>
+   * This field is OPTIONAL.<br/>
+   * If left empty, the users are accepting to pay any custom fee.<br/>
+   * If used with a transaction type that does not support custom fee limits, the transaction will fail.
+   */
+  repeated CustomFeeLimit maxCustomFees = 1001;
+}
+```
+
+```protobuf
+/**
+ * A maximum custom fee that the user is willing to pay.
+ * <p>
+ * This message is used to specify the maximum custom fee that given user is
+ * willing to pay.
+ */
+message CustomFeeLimit {
+  /**
+   * A payer account identifier.
+   */
+  AccountID account_id = 1;
 
   /**
-   * If set to true, the transaction will accept all custom fees from the topic id
+   * A custom fee amount limit.
    */
-  bool accept_all_custom_fees = 5;
+  FixedFee amount_limit = 2;
 }
 ```
 

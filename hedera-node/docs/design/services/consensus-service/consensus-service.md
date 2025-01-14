@@ -177,8 +177,6 @@ The `ConsensusSubmitMessageTransactionBody` message includes the following field
 - `message`: Message to be submitted. Max size of the Transaction (including signatures) is 6KiB.
 - `topicID`: Represents the identifier of the topic to submit message to.
 - `chunkInfo`: Optional information of the current chunk in a fragmented message.
-- `maxCustomFees`: Optional list containing maximum custom fees to be paid for the transaction.
-- `acceptAllCustomFees`: Optional boolean value to accept all custom fees.
 
 ## Handlers
 
