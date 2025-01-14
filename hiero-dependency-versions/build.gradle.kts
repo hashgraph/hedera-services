@@ -61,7 +61,7 @@ dependencies.constraints {
         because("com.fasterxml.jackson.databind")
     }
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackson") {
-        because("com.fasterxml.jackson.dataformat")
+        because("com.fasterxml.jackson.dataformat.yaml")
     }
     api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
