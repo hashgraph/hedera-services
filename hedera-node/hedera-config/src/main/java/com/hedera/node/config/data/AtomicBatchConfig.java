@@ -20,5 +20,5 @@ import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("utilPrng")
+@ConfigData("atomicBatch")
 public record AtomicBatchConfig(@ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled) {}
