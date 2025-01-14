@@ -137,6 +137,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.system.InitTrigger;
@@ -203,7 +204,8 @@ import org.apache.logging.log4j.Logger;
  * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera implements SwirldMain, PlatformStatusChangeListener, AppContext.Gossip {
+public final class Hedera
+        implements SwirldMain<PlatformMerkleStateRoot>, PlatformStatusChangeListener, AppContext.Gossip {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -285,6 +287,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * The factory for the startup networks.
      */
     private final StartupNetworksFactory startupNetworksFactory;
+
+    private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -468,8 +472,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
+            stateLifecycles = new StateLifecyclesImpl(this);
             final Supplier<PlatformMerkleStateRoot> baseSupplier =
-                    () -> new PlatformMerkleStateRoot(new StateLifecyclesImpl(this), ServicesSoftwareVersion::new);
+                    () -> new PlatformMerkleStateRoot(ServicesSoftwareVersion::new);
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> {};
@@ -513,6 +518,14 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @NonNull
     public PlatformMerkleStateRoot newMerkleStateRoot() {
         return stateRootSupplier.get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public StateLifecycles<PlatformMerkleStateRoot> newStateLifecycles() {
+        return stateLifecycles;
     }
 
     @Override

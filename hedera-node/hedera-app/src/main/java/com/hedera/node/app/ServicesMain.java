@@ -47,6 +47,7 @@ import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.tss.TssBlockHashSigner;
 import com.hedera.node.internal.network.Network;
 import com.swirlds.base.time.Time;
@@ -88,9 +89,9 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
@@ -108,7 +109,7 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This class simply delegates to {@link Hedera}.
  */
-public class ServicesMain implements SwirldMain {
+public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
@@ -167,6 +168,14 @@ public class ServicesMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    public StateLifecycles<PlatformMerkleStateRoot> newStateLifecycles() {
+        return new StateLifecyclesImpl(hederaOrThrow());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void run() {
         hederaOrThrow().run();
     }
@@ -190,7 +199,7 @@ public class ServicesMain implements SwirldMain {
      *     and the working directory <i>settings.txt</i>, providing the same
      *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
      *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
-     *     {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
+     *     {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
      *     on a {@link MerkleStateRoot} instance that delegates the call back to our
      *     Hedera instance.)</li>
      *     <li>Call {@link Hedera#init(Platform, NodeId)} to complete startup phase
@@ -281,6 +290,7 @@ public class ServicesMain implements SwirldMain {
         final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
+        StateLifecycles<PlatformMerkleStateRoot> stateLifecycles = hedera.newStateLifecycles();
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
@@ -350,7 +360,8 @@ public class ServicesMain implements SwirldMain {
                     detectSoftwareUpgrade(version, initialState.get()),
                     initialState.get(),
                     addressBook.copy(),
-                    platformContext);
+                    platformContext,
+                    stateLifecycles);
             rosterHistory = buildRosterHistory(initialState.get().getState());
         }
         final var platformBuilder = PlatformBuilder.create(
@@ -358,6 +369,7 @@ public class ServicesMain implements SwirldMain {
                         Hedera.SWIRLD_NAME,
                         version,
                         initialState,
+                        stateLifecycles,
                         selfId,
                         canonicalEventStreamLoc(selfId.id(), state),
                         rosterHistory)
@@ -377,7 +389,7 @@ public class ServicesMain implements SwirldMain {
      * @param root the platform merkle state root
      * @return the event stream name
      */
-    private static String canonicalEventStreamLoc(final long nodeId, @NonNull final PlatformMerkleStateRoot root) {
+    private static String canonicalEventStreamLoc(final long nodeId, @NonNull final State root) {
         final var nodeStore = new ReadableNodeStoreImpl(root.getReadableStates(AddressBookService.NAME));
         final var accountId = requireNonNull(nodeStore.get(nodeId)).accountIdOrThrow();
         return accountId.shardNum() + "." + accountId.realmNum() + "." + accountId.accountNumOrThrow();

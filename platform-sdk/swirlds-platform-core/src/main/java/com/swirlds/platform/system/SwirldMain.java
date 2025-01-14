@@ -20,6 +20,8 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -27,7 +29,7 @@ import java.util.List;
  * To implement a swirld, create a class that implements SwirldMain. Its constructor should have no parameters, and its
  * run() method should run until the user quits the swirld.
  */
-public interface SwirldMain extends Runnable {
+public interface SwirldMain<T extends PlatformMerkleStateRoot> extends Runnable {
 
     /**
      * Get configuration types to be registered.
@@ -47,8 +49,8 @@ public interface SwirldMain extends Runnable {
      * </p>
      *
      * <p>
-     * Any changes necessary to initialize {@link SwirldState} should be made in
-     * {@link SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
+     * Any changes necessary to initialize {@link PlatformMerkleStateRoot} should be made in
+     * {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
      * </p>
      *
      * @param platform the Platform that instantiated this SwirldMain
@@ -69,7 +71,13 @@ public interface SwirldMain extends Runnable {
      * @return merkle state tree root node
      */
     @NonNull
-    PlatformMerkleStateRoot newMerkleStateRoot();
+    T newMerkleStateRoot();
+
+    /**
+     * Instantiate and return a new instance of the state lifecycles for this SwirldMain object.
+     * @return state lifecycles
+     */
+    StateLifecycles<T> newStateLifecycles();
 
     /**
      * <p>

@@ -41,7 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class SwirldStateManagerTests {
+class SwirldsStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
     private PlatformMerkleStateRoot initialState;
@@ -57,7 +57,12 @@ class SwirldStateManagerTests {
                 TestPlatformContextBuilder.create().build();
 
         swirldStateManager = new SwirldStateManager(
-                platformContext, roster, NodeId.of(0L), mock(StatusActionSubmitter.class), new BasicSoftwareVersion(1));
+                platformContext,
+                roster,
+                NodeId.of(0L),
+                mock(StatusActionSubmitter.class),
+                new BasicSoftwareVersion(1),
+                FAKE_MERKLE_STATE_LIFECYCLES);
         swirldStateManager.setInitialState(initialState);
     }
 
@@ -126,8 +131,8 @@ class SwirldStateManagerTests {
     }
 
     private static PlatformMerkleStateRoot newState() {
-        final PlatformMerkleStateRoot state = new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+        final PlatformMerkleStateRoot state =
+                new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
@@ -143,7 +148,7 @@ class SwirldStateManagerTests {
         final SignedState ss = new RandomSignedStateGenerator().build();
         assertEquals(
                 1,
-                ss.getSwirldState().getReservationCount(),
+                ss.getState().getReservationCount(),
                 "Creating a signed state should increment the state reference count.");
         return ss;
     }
