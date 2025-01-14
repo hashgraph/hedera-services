@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.suites.hip423;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -36,37 +51,37 @@ public final class LongTermScheduleUtils {
     public static final String RECEIVER = "receiver";
     public static final String CREATE_TXN = "createTxn";
     public static final String TRIGGERING_TXN = "triggeringTxn";
-    static final String PAYER = "payer";
-    static final String ADMIN = "admin";
-    static final String EXTRA_KEY = "extraKey";
-    static final String SHARED_KEY = "sharedKey";
-    static final String BASIC_XFER = "basicXfer";
-    static final String TWO_SIG_XFER = "twoSigXfer";
-    static final String DEFERRED_XFER = "deferredXfer";
-    static final String THREE_SIG_XFER = "threeSigXfer";
-    static final String TOKEN_A = "tokenA";
-    static final String CREATION = "creation";
-    static final String BEFORE = "before";
-    static final String DEFERRED_FALL = "deferredFall";
-    static final String DEFERRED_CREATION = "deferredCreation";
-    static final String PAYING_ACCOUNT_2 = "payingAccount2";
-    static final String SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED = "Scheduled transaction must not succeed";
-    static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
-    static final String SENDER_1 = "sender1";
-    static final String SENDER_2 = "sender2";
-    static final String SENDER_3 = "sender3";
-    static final String SIMPLE_UPDATE = "SimpleUpdate";
-    static final String SUCCESS_TXN = "successTxn";
-    static final String TRANSACTION_NOT_SCHEDULED = "Transaction not scheduled!";
-    static final String VALID_SCHEDULE = "validSchedule";
-    static final String WEIRDLY_POPULAR_KEY = "weirdlyPopularKey";
-    static final String WRONG_CONSENSUS_TIMESTAMP = "Wrong consensus timestamp!";
-    static final String WRONG_RECORD_ACCOUNT_ID = "Wrong record account ID!";
-    static final String WRONG_SCHEDULE_ID = "Wrong schedule ID!";
-    static final String WRONG_TRANSACTION_VALID_START = "Wrong transaction valid start!";
-    static final String WRONG_TRANSFER_LIST = "Wrong transfer list!";
+    public static final String PAYER = "payer";
+    public static final String ADMIN = "admin";
+    public static final String EXTRA_KEY = "extraKey";
+    public static final String SHARED_KEY = "sharedKey";
+    public static final String BASIC_XFER = "basicXfer";
+    public static final String TWO_SIG_XFER = "twoSigXfer";
+    public static final String DEFERRED_XFER = "deferredXfer";
+    public static final String THREE_SIG_XFER = "threeSigXfer";
+    public static final String TOKEN_A = "tokenA";
+    public static final String CREATION = "creation";
+    public static final String BEFORE = "before";
+    public static final String DEFERRED_FALL = "deferredFall";
+    public static final String DEFERRED_CREATION = "deferredCreation";
+    public static final String PAYING_ACCOUNT_2 = "payingAccount2";
+    public static final String SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED = "Scheduled transaction must not succeed";
+    public static final String SCHEDULE_CREATE_FEE = "scheduleCreateFee";
+    public static final String SENDER_1 = "sender1";
+    public static final String SENDER_2 = "sender2";
+    public static final String SENDER_3 = "sender3";
+    public static final String SIMPLE_UPDATE = "SimpleUpdate";
+    public static final String SUCCESS_TXN = "successTxn";
+    public static final String TRANSACTION_NOT_SCHEDULED = "Transaction not scheduled!";
+    public static final String VALID_SCHEDULE = "validSchedule";
+    public static final String WEIRDLY_POPULAR_KEY = "weirdlyPopularKey";
+    public static final String WRONG_CONSENSUS_TIMESTAMP = "Wrong consensus timestamp!";
+    public static final String WRONG_RECORD_ACCOUNT_ID = "Wrong record account ID!";
+    public static final String WRONG_SCHEDULE_ID = "Wrong schedule ID!";
+    public static final String WRONG_TRANSACTION_VALID_START = "Wrong transaction valid start!";
+    public static final String WRONG_TRANSFER_LIST = "Wrong transfer list!";
 
-    static final byte[] ORIG_FILE = "SOMETHING".getBytes();
+    public static final byte[] ORIG_FILE = "SOMETHING".getBytes();
 
     private LongTermScheduleUtils() {}
 
@@ -98,7 +113,7 @@ public final class LongTermScheduleUtils {
         return amountHasBeenTransferred && payerHasPaid;
     }
 
-    static SpecOperation[] scheduleFakeUpgrade(
+    public static SpecOperation[] scheduleFakeUpgrade(
             @NonNull final String payer, final long lifetime, @NonNull final String via) {
         final var operations = List.of(
                 buildUpgradeZipFrom(FAKE_ASSETS_LOC),

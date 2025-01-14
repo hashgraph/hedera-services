@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.schedule.ScheduledCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
@@ -114,8 +113,8 @@ public final class EmbeddedVerbs {
      * @return the operation that will mutate the staking infos
      */
     public static MutateStakingInfosOp mutateStakingInfos(
-            @NonNull final Consumer<WritableKVState<EntityNumber, StakingNodeInfo>> mutation) {
-        return new MutateStakingInfosOp(mutation);
+            final String nodeId, @NonNull final Consumer<StakingNodeInfo.Builder> mutation) {
+        return new MutateStakingInfosOp(nodeId, mutation);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import com.hedera.node.app.service.contract.impl.annotations.CustomOps;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
@@ -25,8 +26,10 @@ import dagger.Component;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
@@ -45,6 +48,7 @@ public interface ContractServiceComponent {
          * @param signatureVerifier the verifier used for signature verification
          * @param verificationStrategies the current verification strategy to use
          * @param addOnTracers all operation tracer callbacks
+         * @param customOps any additional custom operations to use when constructing the EVM
          * @return the contract service component
          */
         ContractServiceComponent create(
@@ -52,7 +56,8 @@ public interface ContractServiceComponent {
                 @BindsInstance SignatureVerifier signatureVerifier,
                 @BindsInstance VerificationStrategies verificationStrategies,
                 @BindsInstance @Nullable Supplier<List<OperationTracer>> addOnTracers,
-                @BindsInstance ContractMetrics contractMetrics);
+                @BindsInstance ContractMetrics contractMetrics,
+                @BindsInstance @CustomOps Set<Operation> customOps);
     }
 
     /**
