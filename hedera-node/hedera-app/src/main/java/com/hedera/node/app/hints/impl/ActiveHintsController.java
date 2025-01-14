@@ -24,7 +24,6 @@ import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;

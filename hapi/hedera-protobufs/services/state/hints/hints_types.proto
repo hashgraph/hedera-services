@@ -41,21 +41,6 @@ message HintsPartyId {
 }
 
 /**
- * A hinTS party's "extended" public key, including the hints derived
- * from its secret key for use in the hinTS preprocessing algorithm.
- */
-message HintsKey {
-  /**
-   * The party's BLS public key.
-   */
-  bytes public_key = 1;
-  /**
-   * Hints of the party's contribution to a secret statement.
-   */
-  bytes hints = 2;
-}
-
-/**
  * A set of hinTS keys submitted by a node.
  */
 message HintsKeySet {

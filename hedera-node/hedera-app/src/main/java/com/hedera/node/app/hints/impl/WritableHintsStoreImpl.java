@@ -27,7 +27,6 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.NodePartyId;
