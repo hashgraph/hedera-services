@@ -115,4 +115,9 @@ public class ReadableEntityIdStoreImpl implements ReadableEntityIdStore {
     public long numAirdrops() {
         return requireNonNull(entityCountsState.get()).numAirdrops();
     }
+
+    @Override
+    public long numNodes() {
+        return requireNonNull(entityCountsState.get()).numNodes();
+    }
 }

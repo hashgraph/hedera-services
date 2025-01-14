@@ -40,4 +40,6 @@ public interface ReadableEntityIdStore {
     long numSchedules();
 
     long numAirdrops();
+
+    long numNodes();
 }

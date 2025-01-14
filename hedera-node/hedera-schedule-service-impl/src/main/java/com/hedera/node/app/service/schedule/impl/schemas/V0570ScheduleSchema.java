@@ -138,7 +138,7 @@ public final class V0570ScheduleSchema extends Schema {
                         writableScheduleByEquality.put(key, newScheduleId);
                     }
                 });
-        log.info("Migrated {} schedules from SCHEDULES_BY_EQUALITY_KEY", readableSchedulesByEquality.size());
+        log.info("Migrated {} schedules from SCHEDULES_BY_EQUALITY_KEY");
     }
 
     private static StateDefinition<TimestampSeconds, ScheduledCounts> scheduledCounts() {

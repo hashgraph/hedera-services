@@ -58,6 +58,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -194,8 +195,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     .scheduledTransactionID(scheduledTxnId);
             throw new HandleException(IDENTICAL_SCHEDULE_ALREADY_CREATED);
         }
+        final var entityIdStore = context.storeFactory().readableStore(ReadableEntityIdStore.class);
         validateTrue(
-                scheduleStore.numSchedulesInState() + 1 <= schedulingConfig.maxNumber(),
+                entityIdStore.numSchedules() + 1 <= schedulingConfig.maxNumber(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         final var capacityFraction = schedulingConfig.schedulableCapacityFraction();
         final var usageSnapshots = scheduleStore.usageSnapshotsForScheduled(then);

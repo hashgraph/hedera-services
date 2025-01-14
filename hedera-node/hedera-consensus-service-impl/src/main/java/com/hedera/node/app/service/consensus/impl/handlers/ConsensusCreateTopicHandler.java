@@ -40,6 +40,7 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -120,9 +121,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             handleContext.attributeValidator().validateKey(op.submitKey());
             builder.submitKey(op.submitKey());
         }
-
+        final var entityIdStore = handleContext.storeFactory().readableStore(ReadableEntityIdStore.class);
         /* Validate if the current topic can be created */
-        if (topicStore.sizeOfState() >= topicConfig.maxNumber()) {
+        if (entityIdStore.numTopics() >= topicConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 

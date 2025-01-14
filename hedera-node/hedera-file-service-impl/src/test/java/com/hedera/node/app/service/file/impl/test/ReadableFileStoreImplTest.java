@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.file.impl.test;
 
-import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -70,11 +69,5 @@ class ReadableFileStoreImplTest extends FileTestBase {
     @Test
     void nullArgsFail() {
         assertThrows(NullPointerException.class, () -> new ReadableFileStoreImpl(null));
-    }
-
-    @Test
-    void returnSizeOfState() {
-        final var store = new ReadableFileStoreImpl(readableStates);
-        assertEquals(readableStates.get(BLOBS_KEY).size(), store.sizeOfState());
     }
 }

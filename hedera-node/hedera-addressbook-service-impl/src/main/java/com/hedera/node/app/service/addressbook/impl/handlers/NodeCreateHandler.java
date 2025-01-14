@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValida
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -100,9 +101,10 @@ public class NodeCreateHandler implements TransactionHandler {
         final var storeFactory = handleContext.storeFactory();
         final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
         final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var entityIdStore = storeFactory.readableStore(ReadableEntityIdStore.class);
         final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
 
-        validateFalse(nodeStore.sizeOfState() >= nodeConfig.maxNumber(), MAX_NODES_CREATED);
+        validateFalse(entityIdStore.numNodes() >= nodeConfig.maxNumber(), MAX_NODES_CREATED);
         validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
         addressBookValidator.validateDescription(op.description(), nodeConfig);
         addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);

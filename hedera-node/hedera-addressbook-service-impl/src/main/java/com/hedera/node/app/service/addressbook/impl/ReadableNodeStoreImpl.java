@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,14 +69,6 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
     @Nullable
     public Node get(final long nodeId) {
         return nodesState.get(EntityNumber.newBuilder().number(nodeId).build());
-    }
-
-    /**
-     * Returns the number of topics in the state.
-     * @return the number of topics in the state
-     */
-    public long sizeOfState() {
-        return nodesState.size();
     }
 
     protected <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {

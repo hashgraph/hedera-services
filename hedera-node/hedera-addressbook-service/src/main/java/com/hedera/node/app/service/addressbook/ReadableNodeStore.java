@@ -50,13 +50,6 @@ public interface ReadableNodeStore {
     Node get(long nodeId);
 
     /**
-     * Returns the number of nodes in the state.
-     * @return the number of nodes in the state
-     */
-    @Deprecated
-    long sizeOfState();
-
-    /**
      * Warms the system by preloading a node into memory
      *
      * <p>The default implementation is empty because preloading data into memory is only used for some implementations.

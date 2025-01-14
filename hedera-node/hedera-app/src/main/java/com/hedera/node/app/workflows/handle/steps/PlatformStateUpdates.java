@@ -132,8 +132,7 @@ public class PlatformStateUpdates {
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var candidateRoster = new Roster(StreamSupport.stream(
-                                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT),
-                                        false)
+                                        Spliterators.spliteratorUnknownSize(nodeStore.keys(), DISTINCT), false)
                                 .mapToLong(EntityNumber::number)
                                 .sorted()
                                 .mapToObj(nodeStore::get)

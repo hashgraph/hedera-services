@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.*;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -152,8 +151,8 @@ public class UtilizationScaledThrottleMultiplier {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfFiles = configuration.getConfigData(FilesConfig.class).maxNumber();
 
-        final var fileStore = storeFactory.getStore(ReadableFileStore.class);
-        final var numOfFiles = fileStore.sizeOfState();
+        final var entityIdStore = storeFactory.getStore(ReadableEntityIdStore.class);
+        final var numOfFiles = entityIdStore.numFiles();
 
         return maxNumOfFiles == 0 ? 100 : (int) ((100 * numOfFiles) / maxNumOfFiles);
     }
