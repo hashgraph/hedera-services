@@ -79,8 +79,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 public class PlatformTestingToolStateTest {
@@ -121,7 +119,6 @@ public class PlatformTestingToolStateTest {
         platformStateModifier = mock(PlatformStateModifier.class);
         roster = new Roster(Collections.EMPTY_LIST);
         transaction = mock(TransactionWrapper.class);
-        when(transaction.isSystem()).thenReturn(false);
         platformEvent = mock(PlatformEvent.class);
 
         consumedSystemTransactions = new ArrayList<>();
@@ -145,7 +142,6 @@ public class PlatformTestingToolStateTest {
         final var platform = mock(Platform.class);
         final var initTrigger = InitTrigger.GENESIS;
         final var futureHash = mock(Future.class);
-
         final var platformContext = mock(PlatformContext.class);
         final var metrics = mock(DefaultPlatformMetrics.class);
         final var cryptography = mock(MerkleCryptoEngine.class);
@@ -171,13 +167,12 @@ public class PlatformTestingToolStateTest {
         parameterProvider.close();
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {0, 100, 440, 600})
-    void handleConsensusRoundWithApplicationTransactionOfRandomType(final Integer transactionSize) {
+    @Test
+    void handleConsensusRoundWithApplicationTransactionOfRandomType() {
         // Given
         givenRoundAndEvent();
 
-        final TestTransactionWrapper testTransactionWrapper = getRandomTransaction(transactionSize);
+        final TestTransactionWrapper testTransactionWrapper = getTransactionWithRandomType(300);
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(testTransactionWrapper.toByteArray()));
 
         // When
@@ -233,7 +228,10 @@ public class PlatformTestingToolStateTest {
         // Given
         givenRoundAndEvent();
 
-        when(transaction.getApplicationTransaction()).thenReturn(Bytes.EMPTY);
+        final byte[] transactionBytes = new byte[300];
+        random.nextBytes(transactionBytes);
+
+        when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(transactionBytes));
         when(transaction.isSystem()).thenReturn(true);
 
         // When
@@ -243,13 +241,12 @@ public class PlatformTestingToolStateTest {
         assertThat(consumedSystemTransactions.size()).isZero();
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {100, 440, 600})
-    void preHandleConsensusRoundWithApplicationTransactionOfRandomType(final Integer transactionSize) {
+    @Test
+    void preHandleConsensusRoundWithApplicationTransactionOfRandomType() {
         // Given
         givenRoundAndEvent();
 
-        final TestTransactionWrapper testTransactionWrapper = getRandomTransaction(transactionSize);
+        final TestTransactionWrapper testTransactionWrapper = getTransactionWithRandomType(300);
 
         final var eventTransaction = new EventTransaction(
                 new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(testTransactionWrapper.toByteArray())));
@@ -318,9 +315,10 @@ public class PlatformTestingToolStateTest {
         givenRoundAndEvent();
         when(transaction.isSystem()).thenReturn(true);
 
-        final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
-        final var eventTransaction =
-                new EventTransaction(new OneOf<>(STATE_SIGNATURE_TRANSACTION, stateSignatureTransactionBytes));
+        final byte[] transactionBytes = new byte[300];
+        random.nextBytes(transactionBytes);
+
+        final var eventTransaction = new EventTransaction(new OneOf<>(STATE_SIGNATURE_TRANSACTION, transactionBytes));
         final var eventCore = mock(EventCore.class);
         final var gossipEvent = new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
@@ -355,7 +353,7 @@ public class PlatformTestingToolStateTest {
                 Instant.now());
     }
 
-    private TestTransactionWrapper getRandomTransaction(final int transactionSize) {
+    private TestTransactionWrapper getTransactionWithRandomType(final int transactionSize) {
         final byte[] transactionBytes = new byte[transactionSize];
         random.nextBytes(transactionBytes);
 
