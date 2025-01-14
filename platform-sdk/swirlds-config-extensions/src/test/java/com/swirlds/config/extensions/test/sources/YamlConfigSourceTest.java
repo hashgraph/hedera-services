@@ -20,7 +20,6 @@ import com.swirlds.config.extensions.sources.YamlConfigSource;
 import java.io.UncheckedIOException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class YamlConfigSourceTest {
@@ -71,18 +70,31 @@ class YamlConfigSourceTest {
     }
 
     @Test
-    @Disabled(
-            """
-                This test is disabled because the parser has a defect, it determines the depth of parsing based on the
-                presence of lists and objects. if some fields (like lists) are not present, it will change the way it
-                interprets the values other unrelated fields""")
     void testYamlFileWithNoList() {
         // given
         final String ymlFile = "withNoList.yaml";
 
         // when
         final YamlConfigSource yamlConfigSource = new YamlConfigSource(ymlFile, 1);
+
+        // then
         Assertions.assertEquals("random", yamlConfigSource.getValue("gossip.randomStringValue"));
         Assertions.assertEquals("42", yamlConfigSource.getValue("gossip.randomIntValue"));
+        Assertions.assertEquals("random2", yamlConfigSource.getValue("other.randomStringValue"));
+        Assertions.assertEquals("43", yamlConfigSource.getValue("other.randomIntValue"));
+        Assertions.assertEquals("random3", yamlConfigSource.getValue("a.b.randomStringValue"));
+        Assertions.assertEquals("44", yamlConfigSource.getValue("a.b.randomIntValue"));
+    }
+
+    @Test
+    void testYamlFileWithMoreThanTwoLevels() {
+        // given
+        final String ymlFile = "moreThanTwoLevels.yaml";
+
+        // when
+        final YamlConfigSource yamlConfigSource = new YamlConfigSource(ymlFile, 1);
+
+        // then
+        Assertions.assertEquals("{\"c\":1337}", yamlConfigSource.getValue("a.b"));
     }
 }
