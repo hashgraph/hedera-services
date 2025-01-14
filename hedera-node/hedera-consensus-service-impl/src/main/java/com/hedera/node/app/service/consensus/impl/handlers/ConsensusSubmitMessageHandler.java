@@ -48,8 +48,8 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
-import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.CustomFeeLimit;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -61,6 +61,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -80,7 +81,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -128,12 +131,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         if (topic.hasSubmitKey()) {
             context.requireKeyOrThrow(topic.submitKeyOrThrow(), INVALID_SUBMIT_KEY);
         }
-        // add optional fee exempt keys in to the key verifieer
-        // later it will be used to validate if transaction was signed by
-        // any of these keys and based on that, custom fees will be charged or not
-        if (!topic.feeExemptKeyList().isEmpty()) {
-            context.optionalKeys(new HashSet<>(topic.feeExemptKeyList()));
-        }
     }
 
     /**
@@ -163,8 +160,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var feesToBeCharged = extractFeesToBeCharged(topic.customFees(), handleContext);
 
             // check payer limits or throw
-            if (!op.acceptAllCustomFees()) {
-                validateFeeLimits(feesToBeCharged, op.maxCustomFees());
+            if (!txn.maxCustomFees().isEmpty()) {
+                validateFeeLimits(handleContext.payer(), feesToBeCharged, txn.maxCustomFees());
             }
 
             // create synthetic body and dispatch crypto transfer
@@ -342,14 +339,34 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     private boolean isFeeExempted(@NonNull final List<Key> feeExemptKeyList, @NonNull final KeyVerifier keyVerifier) {
         if (!feeExemptKeyList.isEmpty()) {
-            for (final var key : feeExemptKeyList) {
-                final var keyVerificationResult = keyVerifier.verificationFor(key);
-                if (keyVerificationResult.passed()) {
+            final var authorizingKeys =
+                    keyVerifier.authorizingSimpleKeys().stream().toList();
+            final VerificationAssistant callback =
+                    (k, ignore) -> simpleKeyVerifierFrom(authorizingKeys).test(k);
+            // check if authorizing keys are satisfying any of the fee exempt keys
+            for (final var feeExemptKey : feeExemptKeyList) {
+                if (keyVerifier.verificationFor(feeExemptKey, callback).passed()) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    public static Predicate<Key> simpleKeyVerifierFrom(@NonNull final List<Key> signatories) {
+        final Set<Key> cryptoSigs = new HashSet<>();
+        signatories.forEach(k -> {
+            switch (k.key().kind()) {
+                case ED25519, ECDSA_SECP256K1 -> cryptoSigs.add(k);
+                default -> {
+                    // No other key type can be a signatory
+                }
+            }
+        });
+        return key -> switch (key.key().kind()) {
+            case ED25519, ECDSA_SECP256K1 -> cryptoSigs.contains(key);
+            default -> false;
+        };
     }
 
     /**
@@ -359,8 +376,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param payerCustomFeeLimits List with limits of fees that the payer is willing to pay
      */
     private void validateFeeLimits(
-            @NonNull final List<ConsensusCustomFee> topicCustomFees,
-            @NonNull final List<FixedFee> payerCustomFeeLimits) {
+            @NonNull final AccountID payer,
+            @NonNull final List<FixedCustomFee> topicCustomFees,
+            @NonNull final List<CustomFeeLimit> payerCustomFeeLimits) {
         // Validate the duplication of payer custom fee limits
         validateDuplicationFeeLimits(payerCustomFeeLimits);
 
@@ -371,9 +389,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Validate payer token limits
         tokenFees.forEach((token, feeAmount) -> {
             final boolean isValid = payerCustomFeeLimits.stream()
-                    .filter(fee -> token.equals(fee.denominatingTokenId()))
-                    .anyMatch(fee -> {
-                        validateTrue(fee.amount() >= feeAmount, MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
+                    .filter(maxCustomFee ->
+                            token.equals(maxCustomFee.amountLimit().denominatingTokenId()))
+                    .filter(maxCustomFee -> payer.equals(maxCustomFee.accountId()))
+                    .anyMatch(maxCustomFee -> {
+                        validateTrue(maxCustomFee.amountLimit().amount() >= feeAmount, MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
                         return true;
                     });
             validateTrue(isValid, NO_VALID_MAX_CUSTOM_FEE);
@@ -381,10 +401,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Validate payer HBAR limit
         if (hbarFee.get() > 0) {
             final var payerHbarLimit = payerCustomFeeLimits.stream()
-                    .filter(fee -> !fee.hasDenominatingTokenId())
+                    .filter(maxCustomFee -> !maxCustomFee.amountLimit().hasDenominatingTokenId())
+                    .filter(maxCustomFee -> payer.equals(maxCustomFee.accountId()))
                     .findFirst()
                     .orElseThrow(() -> new HandleException(NO_VALID_MAX_CUSTOM_FEE));
-            validateTrue(payerHbarLimit.amount() >= hbarFee.get(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
+            validateTrue(payerHbarLimit.amountLimit().amount() >= hbarFee.get(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
         }
     }
 
@@ -396,8 +417,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param context The handle context
      * @return List containing only the fees concerning given payer
      */
-    private List<ConsensusCustomFee> extractFeesToBeCharged(
-            @NonNull final List<ConsensusCustomFee> topicCustomFees, @NonNull final HandleContext context) {
+    private List<FixedCustomFee> extractFeesToBeCharged(
+            @NonNull final List<FixedCustomFee> topicCustomFees, @NonNull final HandleContext context) {
         final var payer = context.payer();
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         return topicCustomFees.stream()
@@ -424,7 +445,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param tokenFees Map with total amount per token.
      */
     private void totalAmountToBeCharged(
-            @NonNull List<ConsensusCustomFee> topicCustomFees,
+            @NonNull List<FixedCustomFee> topicCustomFees,
             AtomicReference<Long> hbarFee,
             Map<TokenID, Long> tokenFees) {
         for (final var fee : topicCustomFees) {
@@ -438,16 +459,16 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
     }
 
-    private void validateDuplicationFeeLimits(@NonNull final List<FixedFee> payerCustomFeeLimits) {
+    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> payerCustomFeeLimits) {
         final var htsCustomFeeLimits = payerCustomFeeLimits.stream()
-                .filter(FixedFee::hasDenominatingTokenId)
+                .filter(maxCustomFee -> maxCustomFee.amountLimit().hasDenominatingTokenId())
                 .toList();
         final var hbarCustomFeeLimits = payerCustomFeeLimits.stream()
-                .filter(fee -> !fee.hasDenominatingTokenId())
+                .filter(maxCustomFee -> !maxCustomFee.amountLimit().hasDenominatingTokenId())
                 .toList();
 
         final var htsLimitHasDuplicate = htsCustomFeeLimits.stream()
-                        .map(FixedFee::denominatingTokenId)
+                        .map(maxCustomFee -> maxCustomFee.amountLimit().denominatingTokenId())
                         .collect(Collectors.toSet())
                         .size()
                 != htsCustomFeeLimits.size();

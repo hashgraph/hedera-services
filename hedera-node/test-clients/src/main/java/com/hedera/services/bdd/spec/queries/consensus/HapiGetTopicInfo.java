@@ -28,9 +28,9 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -68,7 +68,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     private Optional<String> feeScheduleKey = Optional.empty();
     private final List<String> expectedFeeExemptKeyList = new ArrayList<>();
     private boolean expectFeeExemptKeyListEmpty = false;
-    private final List<BiConsumer<HapiSpec, List<ConsensusCustomFee>>> expectedFees = new ArrayList<>();
+    private final List<BiConsumer<HapiSpec, List<FixedCustomFee>>> expectedFees = new ArrayList<>();
     private boolean expectNoFees = false;
     private Optional<Integer> expectCustomFeeSize = Optional.empty();
     private boolean saveRunningHash = false;
@@ -171,7 +171,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         return this;
     }
 
-    public HapiGetTopicInfo hasCustomFee(BiConsumer<HapiSpec, List<ConsensusCustomFee>> feeAssertion) {
+    public HapiGetTopicInfo hasCustomFee(BiConsumer<HapiSpec, List<FixedCustomFee>> feeAssertion) {
         expectedFees.add(feeAssertion);
         return this;
     }
