@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
@@ -47,11 +48,13 @@ public abstract class AbstractFakePlatform implements Platform {
     public AbstractFakePlatform(
             @NonNull final NodeId selfId,
             @NonNull final Roster roster,
-            @NonNull final ScheduledExecutorService executorService) {
+            @NonNull final ScheduledExecutorService executorService,
+            @NonNull final Metrics metrics) {
+        requireNonNull(metrics);
         requireNonNull(executorService);
         this.selfId = requireNonNull(selfId);
         this.roster = requireNonNull(roster);
-        platformContext = new FakePlatformContext(selfId, executorService);
+        this.platformContext = new FakePlatformContext(selfId, executorService, metrics);
     }
 
     /**

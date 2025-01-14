@@ -318,7 +318,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     /**
      * The metrics object being used for reporting.
      */
-    private Metrics metrics;
+    private final Metrics metrics;
 
     /**
      * A {@link StateChangeListener} that accumulates state changes that are only reported once per block; in the
@@ -386,6 +386,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * @param migrator the migrator to use with the services
      * @param startupNetworksFactory the factory for the startup networks
      * @param blockHashSignerFactory the factory for the block hash signer
+     * @param metrics the metrics object to use for reporting
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -393,9 +394,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final StartupNetworksFactory startupNetworksFactory,
-            @NonNull final BlockHashSignerFactory blockHashSignerFactory) {
+            @NonNull final BlockHashSignerFactory blockHashSignerFactory,
+            @NonNull final Metrics metrics) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        this.metrics = requireNonNull(metrics);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         this.blockHashSignerFactory = requireNonNull(blockHashSignerFactory);
@@ -431,7 +434,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 this,
                 configSupplier,
                 () -> daggerApp.networkInfo().selfNodeInfo(),
-                () -> metrics,
+                () -> this.metrics,
                 new AppThrottleFactory(
                         configSupplier,
                         () -> daggerApp.workingStateAccessor().getState(),
@@ -536,17 +539,35 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     *
     =================================================================================================================*/
 
+    /**
+     * Can be collapsed back into {@link #initializeStatesApi(State, InitTrigger, Network, Configuration, AddressBook)}
+     * once the roster lifecycle is adopted. Needed now to ensure {@link #isRosterLifecycleEnabled()} has an initialized
+     * {@link ConfigProvider}.
+     */
+    @Deprecated
+    public void initializeConfigProvider(@NonNull final InitTrigger trigger) {
+        requireNonNull(trigger);
+        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
+    }
+
+    /**
+     * Initializes the States API in the given state based on the given startup conditions.
+     *
+     * @param state the state to initialize
+     * @param trigger the trigger that is calling migration
+     * @param genesisNetwork the genesis network, if applicable
+     * @param platformConfig the platform configuration
+     * @param diskAddressBook the address book from disk, if the roster lifecycle is not enabled
+     */
     public void initializeStatesApi(
             @NonNull final State state,
-            @NonNull final Metrics metrics,
             @NonNull final InitTrigger trigger,
             @Nullable final Network genesisNetwork,
             @NonNull final Configuration platformConfig,
             @Deprecated @Nullable final AddressBook diskAddressBook) {
         requireNonNull(state);
         requireNonNull(platformConfig);
-        this.metrics = requireNonNull(metrics);
-        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
+        requireNonNull(configProvider);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -599,8 +620,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         }
         this.platform = requireNonNull(platform);
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
-            initializeStatesApi(
-                    state, metrics, trigger, null, platform.getContext().getConfiguration(), null);
+            initializeStatesApi(state, trigger, null, platform.getContext().getConfiguration(), null);
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
@@ -932,6 +952,13 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     public void setInitialStateHash(@NonNull final Hash stateHash) {
         requireNonNull(stateHash);
         initialStateHashFuture = completedFuture(stateHash.getBytes());
+    }
+
+    /**
+     * Returns the startup networks.
+     */
+    public @NonNull StartupNetworks startupNetworks() {
+        return requireNonNull(startupNetworks);
     }
 
     /*==================================================================================================================

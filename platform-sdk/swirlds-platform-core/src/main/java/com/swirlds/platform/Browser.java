@@ -187,7 +187,9 @@ public class Browser {
         final List<NodeId> configNodesToRun =
                 bootstrapConfiguration.getConfigData(BasicConfig.class).nodesToRun();
         final Set<NodeId> cliNodesToRun = commandLineArgs.localNodesToStart();
-        final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, configNodesToRun);
+        final var validNodeIds = appAddressBook.getNodeIdSet();
+        final List<NodeId> nodesToRun =
+                getNodesToRun(cliNodesToRun, configNodesToRun, () -> validNodeIds, validNodeIds::contains);
         logger.info(STARTUP.getMarker(), "The following nodes {} are set to run locally", nodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
