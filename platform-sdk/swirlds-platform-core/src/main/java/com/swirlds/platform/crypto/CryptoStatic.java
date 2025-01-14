@@ -24,10 +24,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
-import com.hedera.cryptography.bls.BlsKeyPair;
-import com.hedera.cryptography.bls.GroupAssignment;
-import com.hedera.cryptography.bls.SignatureSchema;
-import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -97,8 +93,6 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * A collection of various static crypto methods
  */
 public final class CryptoStatic {
-    public static final SignatureSchema SIGNATURE_SCHEMA =
-            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     private static final Logger logger = LogManager.getLogger(CryptoStatic.class);
     private static final int SERIAL_NUMBER_BITS = 64;
     private static final int MASTER_KEY_MULTIPLIER = 157;
@@ -641,22 +635,6 @@ public final class CryptoStatic {
             store.setCertificateEntry(SIGNING.storeName(name), sigCert);
         }
         return store;
-    }
-
-    /**
-     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
-     * @param secureRandom the secure random number generator to use
-     * @return a new {@link BlsKeyPair}
-     * @throws NoSuchAlgorithmException the algorithm is not supported
-     */
-    public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
-            throws NoSuchAlgorithmException {
-        if (secureRandom == null) {
-            logger.debug("Generating a new BLS key pair using a default secure random number generator");
-            return BlsKeyPair.generate(SIGNATURE_SCHEMA);
-        }
-        logger.debug("Generating a new BLS key pair using a custom secure random number generator");
-        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
     }
 
     /**

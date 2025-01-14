@@ -39,6 +39,7 @@ public interface HistoryLibrary {
 
     /**
      * Signs a message with a Schnorr private key. In Hiero TSS, this will always be the concatenation
+     * of an address book hash and the associated metadata.
      *
      * @param message the message
      * @param privateKey the private key
