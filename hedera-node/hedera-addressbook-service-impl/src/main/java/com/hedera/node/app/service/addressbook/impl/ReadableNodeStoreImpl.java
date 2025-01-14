@@ -72,14 +72,6 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         return nodesState.get(EntityNumber.newBuilder().number(nodeId).build());
     }
 
-    /**
-     * Returns the number of topics in the state.
-     * @return the number of topics in the state
-     */
-    public long sizeOfState() {
-        return nodesState.size();
-    }
-
     protected <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {
         return (T) nodesState;
     }

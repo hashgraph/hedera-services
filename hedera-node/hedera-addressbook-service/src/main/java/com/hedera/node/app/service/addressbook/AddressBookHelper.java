@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class AddressBookHelper {
     public static long getNextNodeID(@NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(nodeStore);
         final long maxNodeId = StreamSupport.stream(
-                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+                        Spliterators.spliteratorUnknownSize(nodeStore.keys(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
                 .max()
                 .orElse(-1L);

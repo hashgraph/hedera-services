@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,13 +67,6 @@ public interface ReadableScheduleStore {
      */
     @Nullable
     ScheduleID getByOrder(@NonNull ScheduledOrder scheduledOrder);
-
-    /**
-     * Returns the number of schedules in state, for use in enforcing creation limits.
-     *
-     * @return the number of schedules in state
-     */
-    long numSchedulesInState();
 
     /**
      * Returns the number of schedules that are scheduled to execute at the given consensus second.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,15 +82,6 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
         requireNonNull(topicID);
         return topicState().getForModify(topicID);
     }
-
-    /**
-     * Returns the number of topics in the state.
-     * @return the number of topics in the state
-     */
-    public long sizeOfState() {
-        return topicState().size();
-    }
-
     /**
      * Returns the set of topics modified in existing state.
      * @return the set of topics modified in existing state

@@ -38,6 +38,7 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -115,7 +116,8 @@ public class FileCreateHandler implements TransactionHandler {
 
         /* Validate if the current file can be created */
         final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
-        if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
+        final var entityIdStore = handleContext.storeFactory().readableStore(ReadableEntityIdStore.class);
+        if (entityIdStore.numFiles() >= fileServiceConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 

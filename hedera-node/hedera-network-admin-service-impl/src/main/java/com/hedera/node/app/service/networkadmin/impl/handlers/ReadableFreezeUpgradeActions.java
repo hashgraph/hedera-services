@@ -249,8 +249,7 @@ public class ReadableFreezeUpgradeActions {
     private record ActiveNode(@NonNull Node node, @Nullable StakingNodeInfo stakingInfo) {}
 
     private List<ActiveNode> allActiveNodes() {
-        return StreamSupport.stream(
-                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(nodeStore.keys(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
                 .sorted()
                 .mapToObj(nodeStore::get)

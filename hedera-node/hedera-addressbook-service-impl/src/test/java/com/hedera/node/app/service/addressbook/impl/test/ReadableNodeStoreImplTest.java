@@ -88,12 +88,6 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
     }
 
     @Test
-    void getSizeOfState() {
-        final var store = new ReadableNodeStoreImpl(readableStates);
-        assertEquals(readableStates.get(NODES_KEY).size(), store.sizeOfState());
-    }
-
-    @Test
     void keysWorks() {
         final var stateBuilder = emptyReadableNodeStateBuilder();
         stateBuilder

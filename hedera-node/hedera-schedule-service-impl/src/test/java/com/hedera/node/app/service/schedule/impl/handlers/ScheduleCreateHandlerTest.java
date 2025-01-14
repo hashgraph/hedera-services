@@ -189,7 +189,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         assertThat(configuredWhitelist).hasSizeGreaterThan(4);
 
         final WritableScheduleStore fullStore = mock(WritableScheduleStore.class);
-        given(fullStore.numSchedulesInState()).willReturn(scheduleConfig.maxNumber() + 1);
+        //        given(fullStore.numSchedulesInState()).willReturn(scheduleConfig.maxNumber() + 1);
         given(mockContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableScheduleStore.class)).willReturn(fullStore);
 

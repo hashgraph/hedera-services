@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,15 +79,6 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     public Node getForModify(final long nodeId) {
         return nodesState()
                 .getForModify(EntityNumber.newBuilder().number(nodeId).build());
-    }
-
-    /**
-     * Returns the number of nodes in the state.
-     * @return the number of nodes in the state
-     */
-    @Override
-    public long sizeOfState() {
-        return nodesState().size();
     }
 
     /**
