@@ -472,7 +472,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         // TOPIC_FEE_250
-        @DisplayName("Submitter pays fees with accept_all_custom_fees=true and the submitter as collector")
+        @DisplayName("Submitter as collector pays fees with no max fee limit")
         final Stream<DynamicTest> multipleCustomFeesWithSenderAsCollectorWithAcceptAllCustomFees() {
             final var alice = "alice";
             final var bob = "bob";
@@ -485,10 +485,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     tokenAssociate(bob, BASE_TOKEN),
                     cryptoTransfer(moving(2, BASE_TOKEN).between(SUBMITTER, alice)),
                     createTopic(TOPIC).withConsensusCustomFee(fee1).withConsensusCustomFee(fee2),
-                    submitMessageTo(TOPIC)
-                            .acceptAllCustomFees(true)
-                            .message("TEST")
-                            .payingWith(alice),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
 
                     // Verifying that alice pays bob but not herself
                     getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0L),
@@ -497,12 +494,13 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         // TOPIC_FEE_251
-        @DisplayName("Submitter pays fees with accept_all_custom_fees=true, the submitter as collector and max fee")
+        @DisplayName("Submitter as collector pays fees with max fee limit")
         final Stream<DynamicTest> multipleCustomFeesWithSenderAsCollectorWithAcceptAllCustomFeesAndMaxFee() {
             final var alice = "alice";
             final var bob = "bob";
             final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, alice);
             final var fee2 = fixedConsensusHtsFee(2, BASE_TOKEN, bob);
+            final var feeLimit = maxHtsCustomFee(alice, BASE_TOKEN, 2);
             return hapiTest(
                     cryptoCreate(alice).balance(ONE_HBAR),
                     cryptoCreate(bob).balance(0L),
@@ -511,8 +509,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoTransfer(moving(2, BASE_TOKEN).between(SUBMITTER, alice)),
                     createTopic(TOPIC).withConsensusCustomFee(fee1).withConsensusCustomFee(fee2),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee2)
-                            .acceptAllCustomFees(true)
+                            .maxCustomFee(feeLimit)
                             .message("TEST")
                             .payingWith(alice),
 
@@ -523,7 +520,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
 
         @HapiTest
         // TOPIC_FEE_253
-        @DisplayName("Submitter have enough balance to pay with submitter as collector")
+        @DisplayName("Submitter as collector have enough balance to pay")
         final Stream<DynamicTest> submitHaveEnoughBalanceToPayWithSubmitterAsCollector() {
             final var alice = "alice";
             final var bob = "bob";
@@ -543,12 +540,11 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .withConsensusCustomFee(fee1)
                             .withConsensusCustomFee(fee2)
                             .withConsensusCustomFee(fee3),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(fee2)
-                            .maxCustomFee(fee3)
-                            .acceptAllCustomFees(true)
-                            .message("TEST")
-                            .payingWith(alice));
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    // Verifying that alice pays bob but not herself
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0L),
+                    getAccountBalance(bob).hasTokenBalance(BASE_TOKEN, 2L),
+                    getAccountBalance(dave).hasTokenBalance(BASE_TOKEN, 3L));
         }
     }
 
@@ -573,7 +569,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoCreate(submitterWithLowBalance).balance(ONE_HBAR),
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
                             .message("TEST")
                             .payingWith(submitterWithLowBalance)
                             .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
@@ -597,7 +592,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     // create topic and submit
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
                             .message("TEST")
                             .payingWith(submitterWithLowBalance)
                             .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
@@ -618,7 +612,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     // create topic and submit
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
                             .message("TEST")
                             .payingWith(submitterWithNoAssociation)
                             .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
@@ -634,7 +627,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoCreate(collector).balance(0L),
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
                             .message("TEST")
                             .payingWith(collector)
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
@@ -660,7 +652,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     // create topic and submit a message
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
                             .message("TEST")
                             .payingWith(treasury)
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
@@ -689,8 +680,6 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .withConsensusCustomFee(fee2)
                             .withConsensusCustomFee(fee3),
                     submitMessageTo(TOPIC)
-                            .maxCustomFee(fee3)
-                            .acceptAllCustomFees(true)
                             .message("TEST")
                             .payingWith(alice)
                             .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
@@ -718,7 +707,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .feeExemptKeys(SUBMITTER)
                             .submitKeyName(SUBMITTER)
                             .withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST"),
+                    submitMessageTo(TOPIC).message("TEST"),
                     getAccountBalance(collector).hasTinyBars(0));
         }
 
@@ -735,7 +724,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .feeExemptKeys(SUBMITTER)
                             .submitKeyName(SUBMITTER)
                             .withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST"),
+                    submitMessageTo(TOPIC).message("TEST"),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
         }
 
@@ -748,7 +737,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             return hapiTest(
                     cryptoCreate(collector).balance(0L),
                     createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC).maxCustomFee(fee).message("TEST"),
+                    submitMessageTo(TOPIC).message("TEST"),
                     getAccountBalance(collector).hasTinyBars(ONE_HBAR));
         }
 
@@ -762,11 +751,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoCreate(collector).balance(0L),
                     tokenAssociate(collector, BASE_TOKEN),
                     createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
-                            .message("TEST")
-                            .signedBy(SUBMITTER)
-                            .payingWith(TOKEN_TREASURY),
+                    submitMessageTo(TOPIC).message("TEST").signedBy(SUBMITTER).payingWith(TOKEN_TREASURY),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
         }
 
@@ -780,11 +765,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoCreate(collector).balance(ONE_HBAR),
                     tokenAssociate(collector, BASE_TOKEN),
                     createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(fee)
-                            .message("TEST")
-                            .signedBy(SUBMITTER)
-                            .payingWith(collector),
+                    submitMessageTo(TOPIC).message("TEST").signedBy(SUBMITTER).payingWith(collector),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
         }
     }
