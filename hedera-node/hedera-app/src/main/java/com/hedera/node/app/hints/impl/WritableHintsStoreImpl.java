@@ -100,7 +100,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             final long nodeId,
             final int partyId,
             final int numParties,
-            @NonNull final HintsKey hintsKey,
+            @NonNull final Bytes hintsKey,
             @NonNull final Instant now) {
         final var id = new HintsPartyId(partyId, numParties);
         var keySet = hintsKeys.get(id);
@@ -209,11 +209,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         for (int partyId = 0; partyId < numParties; partyId++) {
             final var hintsId = new HintsPartyId(partyId, numParties);
             final var keySet = hintsKeys.get(hintsId);
-            if (keySet != null && keySet.hasNextKey()) {
+            if (keySet != null && keySet.nextKey().length() > 0) {
                 final var rotatedKeySet = keySet.copyBuilder()
                         .key(keySet.nextKey())
                         .adoptionTime(adoptionTime)
-                        .nextKey((HintsKey) null)
+                        .nextKey(Bytes.EMPTY)
                         .build();
                 hintsKeys.put(hintsId, rotatedKeySet);
             }

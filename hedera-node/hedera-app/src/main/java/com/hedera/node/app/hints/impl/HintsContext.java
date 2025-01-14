@@ -42,6 +42,7 @@ import javax.inject.Singleton;
 @Singleton
 public class HintsContext {
     private final HintsLibrary library;
+    private final HintsLibraryCodec codec;
 
     @Nullable
     private HintsConstruction construction;
@@ -50,8 +51,9 @@ public class HintsContext {
     private Map<Long, Integer> nodePartyIds;
 
     @Inject
-    public HintsContext(@NonNull final HintsLibrary library) {
+    public HintsContext(@NonNull final HintsLibrary library, @NonNull final HintsLibraryCodec codec) {
         this.library = requireNonNull(library);
+        this.codec = requireNonNull(codec);
     }
 
     /**
@@ -100,15 +102,16 @@ public class HintsContext {
     public @NonNull Signing newSigning(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         throwIfNotReady();
-        final var aggregationKey =
-                requireNonNull(construction).preprocessedKeysOrThrow().aggregationKey();
+        final var preprocessedKeys = requireNonNull(construction).preprocessedKeysOrThrow();
+        final var verificationKey = preprocessedKeys.verificationKey();
+        final long totalWeight = codec.extractTotalWeight(verificationKey);
         return new Signing(
-                atLeastOneThirdOfTotal(library.extractTotalWeight(aggregationKey)),
+                atLeastOneThirdOfTotal(totalWeight),
                 construction.constructionId(),
                 blockHash,
-                aggregationKey,
+                preprocessedKeys.aggregationKey(),
                 requireNonNull(nodePartyIds),
-                library);
+                verificationKey);
     }
 
     /**
@@ -132,16 +135,16 @@ public class HintsContext {
     /**
      * A particular signing process spawned from this context.
      */
-    public static class Signing {
+    public class Signing {
         private final long constructionId;
         private final long thresholdWeight;
         private final Bytes message;
         private final Bytes aggregationKey;
+        private final Bytes verificationKey;
         private final Map<Long, Integer> partyIds;
         private final CompletableFuture<Bytes> future = new CompletableFuture<>();
-        private final ConcurrentMap<Long, BlsSignature> signatures = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Integer, Bytes> signatures = new ConcurrentHashMap<>();
         private final AtomicLong weightOfSignatures = new AtomicLong();
-        private final HintsLibrary library;
 
         public Signing(
                 final long constructionId,
@@ -149,13 +152,13 @@ public class HintsContext {
                 @NonNull final Bytes message,
                 @NonNull final Bytes aggregationKey,
                 @NonNull final Map<Long, Integer> partyIds,
-                @NonNull final HintsLibrary library) {
+                @NonNull final Bytes verificationKey) {
             this.constructionId = constructionId;
             this.thresholdWeight = thresholdWeight;
             this.message = requireNonNull(message);
             this.aggregationKey = requireNonNull(aggregationKey);
             this.partyIds = requireNonNull(partyIds);
-            this.library = requireNonNull(library);
+            this.verificationKey = requireNonNull(verificationKey);
         }
 
         /**
@@ -171,15 +174,16 @@ public class HintsContext {
          * @param nodeId the node ID
          * @param signature the partial signature
          */
-        public void incorporate(final long constructionId, final long nodeId, @NonNull final BlsSignature signature) {
+        public void incorporate(final long constructionId, final long nodeId, @NonNull final Bytes signature) {
             requireNonNull(signature);
             if (this.constructionId == constructionId) {
-                final var publicKey = library.extractPublicKey(aggregationKey, partyIds.get(nodeId));
-                if (library.verifyPartial(message, signature, publicKey)) {
-                    signatures.put(nodeId, signature);
-                    final var weight = library.extractWeight(aggregationKey, partyIds.get(nodeId));
+                final int partyId = partyIds.get(nodeId);
+                final var publicKey = requireNonNull(codec.extractPublicKey(aggregationKey, partyId));
+                if (library.verifyBls(signature, message, publicKey)) {
+                    signatures.put(partyId, signature);
+                    final var weight = codec.extractWeight(aggregationKey, partyId);
                     if (weightOfSignatures.addAndGet(weight) >= thresholdWeight) {
-                        future.complete(library.signAggregate(aggregationKey, signatures));
+                        future.complete(library.aggregateSignatures(aggregationKey, verificationKey, signatures));
                     }
                 }
             }

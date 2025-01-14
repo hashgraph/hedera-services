@@ -16,42 +16,37 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.node.app.hints.HintsModule.FAKE_BLS_PUBLIC_KEY;
-import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.cryptography.bls.BlsKeyPair;
-import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsLibrary;
-import com.hedera.node.app.tss.fakes.FakeFieldElement;
+import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class HintsKeyAccessorImpl implements HintsKeyAccessor {
-    private static final BlsPrivateKey FAKE_BLS_PRIVATE_KEY =
-            new BlsPrivateKey(new FakeFieldElement(BigInteger.valueOf(42L)), SIGNATURE_SCHEMA);
-    private static final BlsKeyPair FAKE_BLS_KEY_PAIR = new BlsKeyPair(FAKE_BLS_PRIVATE_KEY, FAKE_BLS_PUBLIC_KEY);
+    private static final Bytes FAKE_BLS_PRIVATE_KEY = Bytes.wrap("FAKE_BLS_PRIVATE_KEY");
+    private static final Bytes FAKE_BLS_PUBLIC_KEY = Bytes.wrap("FAKE_BLS_PUBLIC_KEY");
+    private static final TssKeyPair FAKE_BLS_KEY_PAIR = new TssKeyPair(FAKE_BLS_PRIVATE_KEY, FAKE_BLS_PUBLIC_KEY);
 
-    private final HintsLibrary operations;
+    private final HintsLibrary library;
 
     @Inject
-    public HintsKeyAccessorImpl(@NonNull final HintsLibrary operations) {
-        this.operations = requireNonNull(operations);
+    public HintsKeyAccessorImpl(@NonNull final HintsLibrary library) {
+        this.library = requireNonNull(library);
     }
 
     @Override
     public Bytes signWithBlsPrivateKey(final long constructionId, @NonNull final Bytes message) {
-        final var signature = operations.signPartial(message, FAKE_BLS_PRIVATE_KEY);
-        return Bytes.wrap(signature.toBytes());
+        return library.signBls(message, FAKE_BLS_PRIVATE_KEY);
     }
 
     @Override
-    public BlsKeyPair getOrCreateBlsKeyPair(final long constructionId) {
+    public TssKeyPair getOrCreateBlsKeyPair(final long constructionId) {
         return FAKE_BLS_KEY_PAIR;
     }
 }

@@ -71,12 +71,12 @@ message HintsKeySet {
   /**
    * The party's active hinTS key.
    */
-  HintsKey key = 3;
+  bytes key = 3;
   /**
    * If set, the new hinTS key the node wants to use when
    * the next construction begins.
    */
-  HintsKey next_key = 4;
+  bytes next_key = 4;
 }
 
 /**

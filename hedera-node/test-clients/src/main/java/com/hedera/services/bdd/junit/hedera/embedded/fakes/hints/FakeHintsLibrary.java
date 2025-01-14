@@ -33,81 +33,56 @@ import java.util.Map;
  */
 public class FakeHintsLibrary implements HintsLibrary {
     @Override
-    public BlsKeyPair newBlsKeyPair() {
+    public Bytes newBlsKeyPair() {
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public BlsSignature signPartial(@NonNull final Bytes message, @NonNull final BlsPrivateKey key) {
-        requireNonNull(message);
-        requireNonNull(key);
+    public Bytes computeHints(@NonNull final Bytes blsPrivateKey, final int partyId, final int n) {
+        requireNonNull(blsPrivateKey);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public boolean verifyPartial(
-            @NonNull final Bytes message,
-            @NonNull final BlsSignature signature,
-            @NonNull final Bytes publicKey) {
-        requireNonNull(message);
-        requireNonNull(signature);
-        requireNonNull(publicKey);
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public Bytes signAggregate(@NonNull final Bytes aggregationKey, @NonNull final Map<Long, BlsSignature> signatures) {
-        requireNonNull(aggregationKey);
-        requireNonNull(signatures);
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public long extractWeight(@NonNull final Bytes aggregationKey, final long partyId) {
-        requireNonNull(aggregationKey);
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public long extractTotalWeight(@NonNull final Bytes aggregationKey) {
-        requireNonNull(aggregationKey);
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public Bytes extractPublicKey(@NonNull final Bytes aggregationKey, final long partyId) {
-        requireNonNull(aggregationKey);
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public Bytes computeHints(@NonNull final BlsPrivateKey privateKey, int partyId, final int n) {
-        requireNonNull(privateKey);
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public boolean validateHintsKey(@NonNull final HintsKey hintsKey, final int n) {
+    public boolean validateHintsKey(@NonNull final Bytes hintsKey, final int partyId, final int n) {
         requireNonNull(hintsKey);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public PreprocessedKeys preprocess(
-            @NonNull Map<Integer, HintsKey> hintKeys, @NonNull Map<Integer, Long> weights, int n) {
-        requireNonNull(hintKeys);
+    public Bytes preprocess(@NonNull final Map<Integer, Bytes> hintsKeys, @NonNull final Map<Integer, Long> weights, final int n) {
+        requireNonNull(hintsKeys);
         requireNonNull(weights);
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public boolean verifyAggregate(
-            @NonNull final Bytes message,
-            @NonNull final Bytes signature,
-            final long threshold,
-            @NonNull final Bytes verificationKey) {
+    public Bytes signBls(@NonNull final Bytes message, @NonNull final Bytes privateKey) {
         requireNonNull(message);
+        requireNonNull(privateKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public boolean verifyBls(@NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes publicKey) {
         requireNonNull(signature);
+        requireNonNull(message);
+        requireNonNull(publicKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public Bytes aggregateSignatures(@NonNull final Bytes aggregationKey, @NonNull final Bytes verificationKey, @NonNull final Map<Integer, Bytes> partialSignatures) {
+        requireNonNull(aggregationKey);
+        requireNonNull(verificationKey);
+        requireNonNull(partialSignatures);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public boolean verifyAggregate(@NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes verificationKey, final long thresholdNumerator, long thresholdDenominator) {
+        requireNonNull(signature);
+        requireNonNull(message);
         requireNonNull(verificationKey);
         throw new AssertionError("Not implemented");
     }

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -184,14 +183,14 @@ class WritableHintsStoreImplTest {
                 .targetRosterHash(B_ROSTER_HASH)
                 .build();
         setConstructions(active, HintsConstruction.DEFAULT);
-        final var key = new HintsKey(Bytes.wrap("ONE"), Bytes.EMPTY);
-        final var nextKey = new HintsKey(Bytes.wrap("TWO"), Bytes.EMPTY);
+        final var key = Bytes.wrap("ONE");
+        final var nextKey = Bytes.wrap("TWO");
         final long rotatingKeyNodeId = 666L;
         final int numParties = HintsService.partySizeForRoster(C_ROSTER);
         subject.setHintsKey(rotatingKeyNodeId, 0, numParties, key, CONSENSUS_NOW.minusSeconds(1440));
         subject.setHintsKey(rotatingKeyNodeId, 0, numParties, nextKey, CONSENSUS_NOW.minusSeconds(1439));
         final long newKeyNodeId = 42L;
-        final var newKey = new HintsKey(Bytes.wrap("THREE"), Bytes.EMPTY);
+        final var newKey = Bytes.wrap("THREE");
         assertTrue(subject.setHintsKey(newKeyNodeId, 1, numParties, newKey, CONSENSUS_NOW.minusSeconds(1L)));
 
         final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG);
@@ -217,7 +216,7 @@ class WritableHintsStoreImplTest {
         assertEquals(666L, updatedKeySet.nodeId());
         assertEquals(nextKey, updatedKeySet.key());
         assertEquals(asTimestamp(CONSENSUS_NOW), updatedKeySet.adoptionTime());
-        assertFalse(updatedKeySet.hasNextKey());
+        assertEquals(0, updatedKeySet.nextKey().length());
 
         final var newPartyId = new HintsPartyId(1, numParties);
         final var newKeySet = state.getWritableStates(HintsService.NAME)

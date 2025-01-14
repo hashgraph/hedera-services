@@ -17,10 +17,10 @@
 package com.hedera.node.app.hints;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Map;
@@ -48,7 +48,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @return whether the key was immediately in use
      */
     boolean setHintsKey(
-            long nodeId, int partyId, int numParties, @NonNull HintsKey hintsKey, @NonNull final Instant now);
+            long nodeId, int partyId, int numParties, @NonNull Bytes hintsKey, @NonNull final Instant now);
 
     /**
      * Sets the consensus preprocessing output for the construction with the given ID and returns the

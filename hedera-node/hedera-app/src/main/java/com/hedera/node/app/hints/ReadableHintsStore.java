@@ -19,7 +19,6 @@ package com.hedera.node.app.hints;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -44,7 +43,7 @@ public interface ReadableHintsStore {
      * @param partyId the party ID for the node in this construction
      * @param adoptionTime the time at which the key was adopted
      */
-    record HintsKeyPublication(long nodeId, @NonNull HintsKey hintsKey, int partyId, @NonNull Instant adoptionTime) {
+    record HintsKeyPublication(long nodeId, @NonNull Bytes hintsKey, int partyId, @NonNull Instant adoptionTime) {
         public HintsKeyPublication {
             requireNonNull(hintsKey);
             requireNonNull(adoptionTime);

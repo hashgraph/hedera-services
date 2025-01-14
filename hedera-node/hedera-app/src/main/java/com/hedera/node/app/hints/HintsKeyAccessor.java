@@ -17,6 +17,7 @@
 package com.hedera.node.app.hints;
 
 import com.hedera.cryptography.bls.BlsKeyPair;
+import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -38,5 +39,5 @@ public interface HintsKeyAccessor {
      * @param constructionId the active construction ID
      * @return the hinTS key pair
      */
-    BlsKeyPair getOrCreateBlsKeyPair(long constructionId);
+    TssKeyPair getOrCreateBlsKeyPair(long constructionId);
 }

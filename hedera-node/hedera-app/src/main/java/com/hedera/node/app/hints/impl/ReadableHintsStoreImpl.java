@@ -117,7 +117,7 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
             if (keySet != null) {
                 if (nodeIds.contains(keySet.nodeId())) {
                     publications.add(new HintsKeyPublication(
-                            keySet.nodeId(), keySet.keyOrThrow(), partyId, asInstant(keySet.adoptionTimeOrThrow())));
+                            keySet.nodeId(), keySet.key(), partyId, asInstant(keySet.adoptionTimeOrThrow())));
                 }
             }
         }

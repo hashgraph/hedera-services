@@ -62,7 +62,7 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
             final int partyId = controller.partyIdOf(nodeId).orElse(INVALID_PARTY_ID);
             // Ignore hinTS keys that nodes publish with party ids other than their consensus party id
             if (op.partyId() == partyId) {
-                final var hintsKey = op.hintsKeyOrThrow();
+                final var hintsKey = op.hintsKey();
                 final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
                 final var adoptionTime = context.consensusNow();
                 if (hintsStore.setHintsKey(nodeId, partyId, numParties, hintsKey, adoptionTime)) {

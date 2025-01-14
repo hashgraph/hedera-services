@@ -23,7 +23,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKey;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -54,8 +53,10 @@ public class ActiveHintsController implements HintsController {
     private final int numParties;
     private final long selfId;
     private final Executor executor;
-    private final BlsKeyPair blsKeyPair;
+    private final Bytes blsPrivateKey;
+    private final Bytes blsPublicKey;
     private final HintsLibrary library;
+    private final HintsLibraryCodec codec;
     private final HintsSubmissions submissions;
     private final HintsContext signingContext;
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
@@ -88,27 +89,31 @@ public class ActiveHintsController implements HintsController {
      * @param hintsKey the hinTS key
      * @param isValid whether the key is valid
      */
-    private record Validation(int partyId, @NonNull HintsKey hintsKey, boolean isValid) {}
+    private record Validation(int partyId, @NonNull Bytes hintsKey, boolean isValid) {}
 
     public ActiveHintsController(
             final long selfId,
             @NonNull final HintsConstruction construction,
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Executor executor,
-            @NonNull final BlsKeyPair blsKeyPair,
             @NonNull final HintsLibrary library,
-            @NonNull final List<HintsKeyPublication> publications,
+            @NonNull final HintsLibraryCodec codec,
             @NonNull final Map<Long, PreprocessingVote> votes,
+            @NonNull final Bytes blsPrivateKey,
+            @NonNull final Bytes blsPublicKey,
+            @NonNull final List<HintsKeyPublication> publications,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext signingContext) {
         this.selfId = selfId;
-        this.blsKeyPair = requireNonNull(blsKeyPair);
+        this.blsPrivateKey = requireNonNull(blsPrivateKey);
+        this.blsPublicKey = requireNonNull(blsPublicKey);
         this.weights = requireNonNull(weights);
         this.numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
         this.executor = requireNonNull(executor);
         this.signingContext = requireNonNull(signingContext);
         this.submissions = requireNonNull(submissions);
         this.library = requireNonNull(library);
+        this.codec = requireNonNull(codec);
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
         publications.forEach(this::addHintsKeyPublication);
@@ -254,11 +259,12 @@ public class ActiveHintsController implements HintsController {
                     final var aggregatedWeights = nodePartyIds.entrySet().stream()
                             .filter(entry -> hintKeys.containsKey(entry.getValue()))
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
-                    final var keys = library.preprocess(hintKeys, aggregatedWeights, numParties);
+                    final var output = library.preprocess(hintKeys, aggregatedWeights, numParties);
+                    final var preprocessedKeys = codec.decodePreprocessedKeys(output);
                     final var body = HintsPreprocessingVoteTransactionBody.newBuilder()
                             .constructionId(construction.constructionId())
                             .vote(PreprocessingVote.newBuilder()
-                                    .preprocessedKeys(keys)
+                                    .preprocessedKeys(preprocessedKeys)
                                     .build())
                             .build();
                     submissions.submitHintsVote(body).join();
@@ -290,10 +296,10 @@ public class ActiveHintsController implements HintsController {
      * @param hintsKey the hints key
      * @return the future
      */
-    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final HintsKey hintsKey) {
+    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final Bytes hintsKey) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var isValid = library.validateHintsKey(hintsKey, numParties);
+                    final var isValid = library.validateHintsKey(hintsKey, partyId, numParties);
                     return new Validation(partyId, hintsKey, isValid);
                 },
                 executor);
@@ -308,9 +314,8 @@ public class ActiveHintsController implements HintsController {
             final int selfPartyId = expectedPartyId(selfId);
             publicationFuture = CompletableFuture.runAsync(
                     () -> {
-                        final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
-                        final var hintsKey =
-                                new HintsKey(Bytes.wrap(blsKeyPair.publicKey().toBytes()), hints);
+                        final var hints = library.computeHints(blsPrivateKey, selfPartyId, numParties);
+                        final var hintsKey = codec.encodeHintsKey(blsPublicKey, hints);
                         final var body = new HintsKeyPublicationTransactionBody(selfPartyId, numParties, hintsKey);
                         submissions.submitHintsKey(body).join();
                     },
