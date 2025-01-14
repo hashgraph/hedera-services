@@ -176,6 +176,40 @@ public class SystemFileExportsTest {
     }
 
     @GenesisHapiTest
+    final Stream<DynamicTest> syntheticAddressBookCreatedAtGenesis() {
+        final AtomicReference<Bytes> addressBookContent = new AtomicReference<>();
+        return hapiTest(
+                recordStreamMustIncludeNoFailuresFrom(visibleItems(
+                        validatorSpecificSysFileFor(addressBookContent, "files.addressBook", "genesisTxn"),
+                        "genesisTxn")),
+                sourcingContextual(spec ->
+                        getSystemFiles(spec.startupProperties().getLong("files.addressBook"), addressBookContent::set)),
+                cryptoCreate("firstUser").via("genesisTxn"),
+                // Assert the first created entity still has the expected number
+                withOpContext((spec, opLog) -> assertEquals(
+                        spec.startupProperties().getLong("hedera.firstUserEntity"),
+                        spec.registry().getAccountID("firstUser").getAccountNum(),
+                        "First user entity num doesn't match config")));
+    }
+
+    @GenesisHapiTest
+    final Stream<DynamicTest> syntheticNodeDetailsCreatedAtGenesis() {
+        final AtomicReference<Bytes> addressBookContent = new AtomicReference<>();
+        return hapiTest(
+                recordStreamMustIncludeNoFailuresFrom(visibleItems(
+                        validatorSpecificSysFileFor(addressBookContent, "files.nodeDetails", "genesisTxn"),
+                        "genesisTxn")),
+                sourcingContextual(spec ->
+                        getSystemFiles(spec.startupProperties().getLong("files.nodeDetails"), addressBookContent::set)),
+                cryptoCreate("firstUser").via("genesisTxn"),
+                // Assert the first created entity still has the expected number
+                withOpContext((spec, opLog) -> assertEquals(
+                        spec.startupProperties().getLong("hedera.firstUserEntity"),
+                        spec.registry().getAccountID("firstUser").getAccountNum(),
+                        "First user entity num doesn't match config")));
+    }
+
+    @GenesisHapiTest
     final Stream<DynamicTest> syntheticFeeSchedulesUpdateHappensAtUpgradeBoundary()
             throws InvalidProtocolBufferException {
         final var feeSchedulesJson = resourceAsString("scheduled-contract-fees.json");
@@ -569,19 +603,83 @@ public class SystemFileExportsTest {
         assertEquals(Map.of(SUCCESS, 1), histogram.get(NodeStakeUpdate));
         final var postGenesisContents = SysFileLookups.getSystemFileContents(spec, fileNum -> true);
         items.entries().stream().filter(item -> item.function() == FileCreate).forEach(item -> {
+            final var fileId = item.createdFileId();
             final var preContents = requireNonNull(
-                    preGenesisContents.get(item.createdFileId()),
-                    "No pre-genesis contents for " + item.createdFileId());
+                    preGenesisContents.get(item.createdFileId()), "No pre-genesis contents for " + fileId);
             final var postContents = requireNonNull(
-                    postGenesisContents.get(item.createdFileId()),
-                    "No post-genesis contents for " + item.createdFileId());
+                    postGenesisContents.get(item.createdFileId()), "No post-genesis contents for " + fileId);
             final var exportedContents =
                     fromByteString(item.body().getFileCreate().getContents());
-            assertEquals(
-                    exportedContents, preContents, item.createdFileId() + " contents don't match pre-genesis query");
-            assertEquals(
-                    exportedContents, postContents, item.createdFileId() + " contents don't match post-genesis query");
+            if (fileId.fileNum()
+                    != 102) { // for nodedetail, the node's weight changed between preContent and exportedContents
+                assertEquals(exportedContents, preContents, fileId + " contents don't match pre-genesis query");
+            }
+            assertEquals(exportedContents, postContents, fileId + " contents don't match post-genesis query");
         });
+    }
+
+    private static VisibleItemsValidator validatorSpecificSysFileFor(
+            @NonNull final AtomicReference<Bytes> fileContent,
+            @NonNull final String fileNumProperty,
+            @NonNull final String specTxnIds) {
+        return (spec, records) ->
+                specificSysFileValidator(spec, records, fileContent.get(), fileNumProperty, specTxnIds);
+    }
+
+    private static void specificSysFileValidator(
+            @NonNull final HapiSpec spec,
+            @NonNull final Map<String, VisibleItems> genesisRecords,
+            @NonNull final Bytes fileContent,
+            @NonNull final String fileNumProperty,
+            @NonNull final String specTxnIds) {
+        final var items = requireNonNull(genesisRecords.get(specTxnIds));
+        final long fileNumb = spec.startupProperties().getLong(fileNumProperty);
+        final var histogram = statusHistograms(items.entries());
+        final var systemFileNums =
+                SysFileLookups.allSystemFileNums(spec).boxed().toList();
+        assertEquals(Map.of(SUCCESS, systemFileNums.size()), histogram.get(FileCreate));
+        // Also check we export a node stake update at genesis
+        assertEquals(Map.of(SUCCESS, 1), histogram.get(NodeStakeUpdate));
+        final var fileItem = items.entries().stream()
+                .filter(item -> item.function() == FileCreate)
+                .filter(item -> item.createdFileId().equals(new FileID(0, 0, fileNumb)))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(fileItem, "No create item for " + fileNumProperty + " found in " + specTxnIds + " txn");
+        final var fileCreateContents = fileItem.body().getFileCreate().getContents();
+        assertNotNull(
+                fileCreateContents, "No create content for " + fileNumProperty + " found in " + specTxnIds + " txn");
+        if (fileNumProperty.equals("files.nodeDetails")) {
+            try {
+                final var addressBook = NodeAddressBook.PROTOBUF.parse(fileContent);
+                final var updatedAddressBook =
+                        NodeAddressBook.PROTOBUF.parse(Bytes.wrap(fileCreateContents.toByteArray()));
+                assertEquals(
+                        addressBook.nodeAddress().size(),
+                        updatedAddressBook.nodeAddress().size(),
+                        "address book size mismatch");
+
+                for (int i = 0;
+                        i < addressBook.nodeAddress().size();
+                        i++) { // only stake not matching because of recalculating
+                    final var address = updatedAddressBook.nodeAddress().get(i);
+                    final var updatedAddress = updatedAddressBook.nodeAddress().get(i);
+                    assertEquals(address.nodeId(), updatedAddress.nodeId(), "nodeId mismatch");
+                    assertEquals(address.nodeAccountId(), updatedAddress.nodeAccountId(), "nodeAccountId mismatch");
+                    assertEquals(address.nodeCertHash(), updatedAddress.nodeCertHash(), "nodeCertHash mismatch");
+                    assertEquals(address.description(), updatedAddress.description(), "description mismatch");
+                    assertEquals(address.rsaPubKey(), updatedAddress.rsaPubKey(), "rsaPubKey mismatch");
+                    assertEquals(
+                            address.serviceEndpoint(), updatedAddress.serviceEndpoint(), "serviceEndpoint mismatch");
+                }
+            } catch (ParseException e) {
+                Assertions.fail("Update contents was not protobuf " + e.getMessage());
+            }
+        } else {
+            assertEquals(
+                    fileContent, fromByteString(fileCreateContents), fileNumb + " contents don't match genesis query");
+        }
     }
 
     private static Map<Long, X509Certificate> generateCertificates(final int n) {
