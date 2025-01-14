@@ -218,7 +218,7 @@ jobs:
           path: version.txt
           key: node-build-version-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
 
-      - name: Upload Manifests
+      - name: Upload Build Version
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: version.txt
