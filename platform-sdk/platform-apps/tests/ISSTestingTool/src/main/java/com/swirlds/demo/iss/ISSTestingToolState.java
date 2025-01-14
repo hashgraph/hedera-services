@@ -27,18 +27,15 @@ package com.swirlds.demo.iss;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,7 +46,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 

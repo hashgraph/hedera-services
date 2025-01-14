@@ -23,12 +23,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
-import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
@@ -196,8 +194,9 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
         setChild(STATE_LONG_INDEX, new StringLeaf(Long.toString(stateLong)));
     }
 
-    void processTransactions(Round round,
-                             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+    void processTransactions(
+            Round round,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         incrementRoundsHandled();
 
         round.forEachEventTransaction((ev, tx) -> {

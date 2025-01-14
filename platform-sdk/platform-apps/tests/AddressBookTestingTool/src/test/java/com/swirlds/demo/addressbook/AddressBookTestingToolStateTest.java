@@ -29,7 +29,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;

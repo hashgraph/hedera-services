@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -46,7 +45,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -317,7 +315,7 @@ class ISSTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        stateLifecycles.onPreHandle(event,state, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).isEmpty();

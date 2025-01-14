@@ -47,7 +47,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -59,7 +58,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -829,9 +827,10 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
      * @param event                             the event that contains the transaction
      * @param stateSignatureTransactionCallback the callback to call with the system transaction
      */
-    private void consumeSystemTransaction(final Transaction transaction,
-                                          final Event event,
-                                          final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+    private void consumeSystemTransaction(
+            final Transaction transaction,
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         try {
             final var stateSignatureTransaction =
                     StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());

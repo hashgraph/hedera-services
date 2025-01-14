@@ -29,29 +29,15 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.utility.ByteUtils;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.address.AddressBookUtils;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.text.ParseException;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -155,7 +141,6 @@ public class AddressBookTestingToolState extends PlatformMerkleStateRoot {
     boolean areTransactionBytesSystemOnes(final Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 4;
     }
-
 
     /**
      * Apply a transaction to the state.
