@@ -658,8 +658,8 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("Just some tests")
-        final Stream<DynamicTest> test() {
+        @DisplayName("Test duplicate denominations in max custom fee list")
+        final Stream<DynamicTest> testDuplicateDenomInMaxCustomFee() {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
             final var feeLimit1 = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
