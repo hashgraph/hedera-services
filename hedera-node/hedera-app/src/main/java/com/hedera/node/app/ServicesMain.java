@@ -24,8 +24,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.initLogging;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
@@ -60,7 +60,6 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -234,9 +233,9 @@ public class ServicesMain implements SwirldMain {
      * @param args optionally, what node id to run; required if the address book is ambiguous
      */
     public static void main(final String... args) throws Exception {
+        // --- Configure platform infrastructure and derive node id from the command line and environment ---
+        initLogging();
         BootstrapUtils.setupConstructableRegistry();
-
-        // ---  Extract information from the command line and environment to derive this node's id ---
         final var commandLineArgs = CommandLineArgs.parse(args);
         if (commandLineArgs.localNodesToStart().size() > 1) {
             logger.error(
@@ -266,7 +265,6 @@ public class ServicesMain implements SwirldMain {
         hedera = newHedera(metrics);
         final var version = hedera.getSoftwareVersion();
         final var isGenesis = new AtomicBoolean(false);
-        initLogging();
         logger.info("Starting node {} with version {}", selfId, version);
 
         // --- Build required infrastructure to load the initial state, then initialize the States API ---
@@ -380,18 +378,6 @@ public class ServicesMain implements SwirldMain {
         final var nodeStore = new ReadableNodeStoreImpl(root.getReadableStates(AddressBookService.NAME));
         final var accountId = requireNonNull(nodeStore.get(nodeId)).accountIdOrThrow();
         return accountId.shardNum() + "." + accountId.realmNum() + "." + accountId.accountNumOrThrow();
-    }
-
-    private static void initLogging() {
-        final var log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            // since the logging framework has not been instantiated, also log to stderr
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for log4j to initialize", e);
-        }
     }
 
     /**

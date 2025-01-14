@@ -17,11 +17,13 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
+import static com.swirlds.demo.migration.TransactionUtils.isSystemTransaction;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.MerkleNode;
@@ -47,7 +49,9 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -278,6 +282,27 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
+    @Override
+    public void preHandle(
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
+        event.forEachTransaction(transaction -> {
+
+            // We don't want to consume deprecated EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in
+            // the callback, since it's intended to be used only
+            // for the new form of encoded system transactions in Bytes.
+            // We skip the current iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            if (isSystemTransaction(transaction.getApplicationTransaction())) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransaction);
+            }
+        });
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -295,6 +320,11 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
                 if (trans.isSystem()) {
                     continue;
                 }
+                if (isSystemTransaction(trans.getApplicationTransaction())) {
+                    consumeSystemTransaction(trans, event, stateSignatureTransaction);
+                    continue;
+                }
+
                 final MigrationTestingToolTransaction mTrans =
                         TransactionUtils.parseTransaction(trans.getApplicationTransaction());
                 mTrans.applyTo(this);
@@ -334,5 +364,20 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.VIRTUAL_MAP;
+    }
+
+    private void consumeSystemTransaction(
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 }
