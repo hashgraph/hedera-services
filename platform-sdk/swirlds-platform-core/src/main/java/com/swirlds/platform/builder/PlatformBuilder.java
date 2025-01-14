@@ -58,7 +58,6 @@ import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -194,8 +193,6 @@ public final class PlatformBuilder {
         this.selfId = Objects.requireNonNull(selfId);
         this.consensusEventStreamName = Objects.requireNonNull(consensusEventStreamName);
         this.rosterHistory = Objects.requireNonNull(rosterHistory);
-
-        StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
     /**
