@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event.stale;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
+import com.swirlds.platform.component.framework.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import org.hiero.wiring.framework.component.InputWireLabel;
-import org.hiero.wiring.framework.transformers.RoutableData;
 
 /**
  * Detects when a self event becomes stale. This utility does not pay attention to events created by other nodes. This

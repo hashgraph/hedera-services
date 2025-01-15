@@ -21,20 +21,20 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.model.WiringModelBuilder;
+import com.swirlds.platform.component.framework.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.platform.component.framework.model.diagram.ModelGroup;
+import com.swirlds.platform.component.framework.model.diagram.ModelManualLink;
+import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
+import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerType;
+import com.swirlds.platform.component.framework.wires.SolderType;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
-import org.hiero.wiring.framework.model.diagram.ModelEdgeSubstitution;
-import org.hiero.wiring.framework.model.diagram.ModelGroup;
-import org.hiero.wiring.framework.model.diagram.ModelManualLink;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
-import org.hiero.wiring.framework.wires.SolderType;
 import picocli.CommandLine;
 
 @CommandLine.Command(

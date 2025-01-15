@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.validation;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Validates that events are internally complete and consistent.

@@ -34,6 +34,9 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.component.framework.WiringConfig;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.model.WiringModelBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -70,9 +73,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.wiring.framework.WiringConfig;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
 
 /**
  * Builds a {@link SwirldsPlatform} instance.

@@ -29,8 +29,8 @@ module com.swirlds.platform.core.test.fixtures {
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
+    requires com.swirlds.platform.component_framework;
     requires com.swirlds.state.api.test.fixtures;
-    requires org.hiero.wiring.framework;
     requires com.github.spotbugs.annotations;
     requires org.junit.jupiter.api;
     requires org.mockito;

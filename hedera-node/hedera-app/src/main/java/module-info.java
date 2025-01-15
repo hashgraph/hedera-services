@@ -57,8 +57,8 @@ module com.hedera.node.app {
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
+    requires com.swirlds.platform.component_framework;
     requires com.swirlds.virtualmap;
-    requires org.hiero.wiring.framework;
     requires com.google.common;
     requires com.google.protobuf;
     requires io.grpc.netty;

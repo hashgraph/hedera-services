@@ -26,6 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.utility.throttle.RateLimiter;
+import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.NoInput;
@@ -39,7 +40,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.

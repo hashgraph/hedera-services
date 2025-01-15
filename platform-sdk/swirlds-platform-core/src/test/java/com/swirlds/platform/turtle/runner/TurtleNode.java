@@ -33,6 +33,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.component.framework.model.DeterministicWiringModel;
+import com.swirlds.platform.component.framework.model.WiringModelBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
@@ -47,8 +49,6 @@ import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
-import org.hiero.wiring.framework.model.DeterministicWiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
 
 /**
  * Encapsulates a single node running in a TURTLE network.

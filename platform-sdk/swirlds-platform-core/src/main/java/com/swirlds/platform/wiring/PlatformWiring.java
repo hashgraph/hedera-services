@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
+import static com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
+import static com.swirlds.platform.component.framework.wires.SolderType.INJECT;
+import static com.swirlds.platform.component.framework.wires.SolderType.OFFER;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
-import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
-import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
-import static org.hiero.wiring.framework.wires.SolderType.INJECT;
-import static org.hiero.wiring.framework.wires.SolderType.OFFER;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
@@ -29,6 +29,15 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.component.framework.component.ComponentWiring;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration;
+import com.swirlds.platform.component.framework.transformers.RoutableData;
+import com.swirlds.platform.component.framework.transformers.WireFilter;
+import com.swirlds.platform.component.framework.transformers.WireTransformer;
+import com.swirlds.platform.component.framework.wires.input.InputWire;
+import com.swirlds.platform.component.framework.wires.output.OutputWire;
+import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
@@ -99,15 +108,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import org.hiero.event.creator.impl.EventCreationConfig;
-import org.hiero.wiring.framework.component.ComponentWiring;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
-import org.hiero.wiring.framework.transformers.RoutableData;
-import org.hiero.wiring.framework.transformers.WireFilter;
-import org.hiero.wiring.framework.transformers.WireTransformer;
-import org.hiero.wiring.framework.wires.input.InputWire;
-import org.hiero.wiring.framework.wires.output.OutputWire;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.

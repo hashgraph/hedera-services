@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.event.preconsensus.durability;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * This component performs a logical "join" operation between states ready to be handled and events that are known to be

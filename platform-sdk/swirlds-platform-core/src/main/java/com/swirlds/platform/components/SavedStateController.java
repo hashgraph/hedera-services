@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.components;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Controls which signed states should be written to disk based on input from other components.

@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.system.status;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * A state machine that processes {@link PlatformStatusAction}s

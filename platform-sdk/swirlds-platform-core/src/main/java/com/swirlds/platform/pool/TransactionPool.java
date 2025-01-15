@@ -17,10 +17,10 @@
 package com.swirlds.platform.pool;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Coordinates and manages a pool of transactions waiting to be submitted.

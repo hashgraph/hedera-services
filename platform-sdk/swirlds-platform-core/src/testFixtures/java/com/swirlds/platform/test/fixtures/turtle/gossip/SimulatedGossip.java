@@ -17,6 +17,9 @@
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
+import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -26,9 +29,6 @@ import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.wires.input.BindableInputWire;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 
 /**
  * Simulates the {@link Gossip} subsystem for a group of nodes running on a {@link SimulatedNetwork}.

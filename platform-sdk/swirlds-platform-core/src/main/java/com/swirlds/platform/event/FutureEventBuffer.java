@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Buffers events from the future (i.e. events with a birth round that is greater than the round that consensus is

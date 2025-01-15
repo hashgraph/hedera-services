@@ -34,6 +34,7 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileReader;
+import com.swirlds.platform.component.framework.tasks.AbstractTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
@@ -50,7 +51,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.hiero.wiring.framework.tasks.AbstractTask;
 
 /**
  * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk.

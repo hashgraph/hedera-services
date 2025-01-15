@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.state.hashlogger;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * This component is responsible for logging the hash of the state each round (for debugging).

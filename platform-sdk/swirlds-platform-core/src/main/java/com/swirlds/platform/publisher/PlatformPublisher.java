@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.publisher;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * This component is responsible for publishing internal platform data to external subscribers. By default this is not

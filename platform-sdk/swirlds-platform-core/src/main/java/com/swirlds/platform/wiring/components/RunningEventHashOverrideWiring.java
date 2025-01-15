@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.wiring.components;
 
-import static org.hiero.wiring.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
-import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.platform.component.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
+import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
+import com.swirlds.platform.component.framework.wires.input.InputWire;
+import com.swirlds.platform.component.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.wires.input.BindableInputWire;
-import org.hiero.wiring.framework.wires.input.InputWire;
-import org.hiero.wiring.framework.wires.output.OutputWire;
 
 /**
  * A wiring object for distributing {@link RunningEventHashOverride}s

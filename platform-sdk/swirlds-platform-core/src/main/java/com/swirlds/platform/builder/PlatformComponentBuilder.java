@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.component.framework.component.ComponentWiring;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -103,7 +104,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
-import org.hiero.wiring.framework.component.ComponentWiring;
 
 /**
  * The advanced platform builder is responsible for constructing platform components. This class is exposed so that

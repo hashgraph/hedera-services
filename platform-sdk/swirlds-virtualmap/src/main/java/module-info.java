@@ -40,7 +40,7 @@ open module com.swirlds.virtualmap {
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
-    requires org.hiero.wiring.framework;
+    requires com.swirlds.platform.component_framework;
     requires java.management; // Test dependency
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;

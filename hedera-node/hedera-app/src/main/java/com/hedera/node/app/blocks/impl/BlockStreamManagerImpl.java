@@ -59,6 +59,7 @@ import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.node.config.types.DiskNetworkExport;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.component.framework.tasks.AbstractTask;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
@@ -89,7 +90,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.wiring.framework.tasks.AbstractTask;
 
 @Singleton
 public class BlockStreamManagerImpl implements BlockStreamManager {

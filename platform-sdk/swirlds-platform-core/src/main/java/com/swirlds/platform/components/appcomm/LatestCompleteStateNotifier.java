@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.components.appcomm;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Responsible for notifying the app of the latest complete state.

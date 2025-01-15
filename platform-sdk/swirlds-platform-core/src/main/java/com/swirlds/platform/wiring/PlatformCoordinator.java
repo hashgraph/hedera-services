@@ -17,6 +17,8 @@
 package com.swirlds.platform.wiring;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.platform.component.framework.component.ComponentWiring;
+import com.swirlds.platform.component.framework.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
@@ -47,8 +49,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
-import org.hiero.wiring.framework.component.ComponentWiring;
-import org.hiero.wiring.framework.transformers.RoutableData;
 
 /**
  * Responsible for coordinating the clearing of the platform wiring objects.

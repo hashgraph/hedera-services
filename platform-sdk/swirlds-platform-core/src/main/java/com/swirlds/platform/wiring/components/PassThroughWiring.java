@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
+import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerType;
+import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
+import com.swirlds.platform.component.framework.wires.input.InputWire;
+import com.swirlds.platform.component.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
-import org.hiero.wiring.framework.wires.input.BindableInputWire;
-import org.hiero.wiring.framework.wires.input.InputWire;
-import org.hiero.wiring.framework.wires.output.OutputWire;
 
 /**
  * PassThrough Component Wiring, useful for wiring no-op components with the given scheduler type.

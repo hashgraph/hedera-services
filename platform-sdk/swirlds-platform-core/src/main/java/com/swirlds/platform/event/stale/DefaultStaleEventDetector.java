@@ -20,6 +20,7 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.component.framework.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
@@ -32,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.ToLongFunction;
-import org.hiero.wiring.framework.transformers.RoutableData;
 
 /**
  * Detects when a self event becomes stale. Note that this detection may not observe a self event go stale if the node

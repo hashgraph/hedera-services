@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.components;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * The gateway for disseminating {@link EventWindow} instances to the rest of the platform.

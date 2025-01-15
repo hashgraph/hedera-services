@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.event.hashing;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Hashes events.

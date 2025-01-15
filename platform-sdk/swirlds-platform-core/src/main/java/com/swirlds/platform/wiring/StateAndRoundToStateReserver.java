@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.platform.component.framework.transformers.AdvancedTransformation;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.transformers.AdvancedTransformation;
 
 /**
  * Manages reservations of a signed state contained in a {@link StateAndRound} object, when the StateAndRound needs to

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.turtle.gossip;
 
-import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
+import static com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -25,6 +25,12 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.component.framework.model.TraceableWiringModel;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.model.WiringModelBuilder;
+import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
+import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
+import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.system.address.AddressBook;
@@ -41,12 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.hiero.wiring.framework.model.TraceableWiringModel;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.wires.input.BindableInputWire;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 

@@ -30,8 +30,8 @@ open module com.swirlds.merkledb {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.platform.component_framework;
     requires transitive com.swirlds.virtualmap;
-    requires transitive org.hiero.wiring.framework;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;

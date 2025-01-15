@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.branching;
 
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * This class is responsible for logging and producing metrics when a branch is observed.

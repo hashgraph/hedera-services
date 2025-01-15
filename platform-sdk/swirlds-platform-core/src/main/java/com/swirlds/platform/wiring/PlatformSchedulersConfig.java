@@ -18,8 +18,8 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration;
 import java.time.Duration;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerConfiguration;
 
 /**
  * Contains configuration values for the platform schedulers.

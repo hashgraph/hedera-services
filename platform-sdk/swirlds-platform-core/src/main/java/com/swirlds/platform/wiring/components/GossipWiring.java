@@ -17,6 +17,12 @@
 package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
+import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
+import com.swirlds.platform.component.framework.wires.input.InputWire;
+import com.swirlds.platform.component.framework.wires.output.OutputWire;
+import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -24,12 +30,6 @@ import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.wires.input.BindableInputWire;
-import org.hiero.wiring.framework.wires.input.InputWire;
-import org.hiero.wiring.framework.wires.output.OutputWire;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 
 /**
  * Wiring for gossip.

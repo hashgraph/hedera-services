@@ -17,11 +17,11 @@
 package com.swirlds.platform.state.signed;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.swirlds.platform.component.framework.component.InputWireLabel;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import org.hiero.wiring.framework.component.InputWireLabel;
 
 /**
  * Collects signatures for signed states. This class ensures that all the non-ancient states that are not fully signed

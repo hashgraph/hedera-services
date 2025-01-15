@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
+import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.wires.input.BindableInputWire;
-import org.hiero.wiring.framework.wires.output.StandardOutputWire;
 
 /**
  * Implements gossip with network peers.

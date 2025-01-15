@@ -16,13 +16,19 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.platform.component.framework.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static org.hiero.wiring.framework.wires.SolderType.INJECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.component.framework.component.ComponentWiring;
+import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.platform.component.framework.model.WiringModelBuilder;
+import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
+import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerType;
+import com.swirlds.platform.component.framework.wires.output.OutputWire;
 import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -47,12 +53,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
-import org.hiero.wiring.framework.component.ComponentWiring;
-import org.hiero.wiring.framework.model.WiringModel;
-import org.hiero.wiring.framework.model.WiringModelBuilder;
-import org.hiero.wiring.framework.schedulers.TaskScheduler;
-import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
-import org.hiero.wiring.framework.wires.output.OutputWire;
 
 /**
  * Event intake with consensus and shadowgraph, used for testing
