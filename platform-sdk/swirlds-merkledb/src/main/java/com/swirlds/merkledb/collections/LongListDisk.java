@@ -25,7 +25,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -53,14 +52,9 @@ public class LongListDisk extends AbstractLongList<Long> {
     /** A temp byte buffer for reading and writing longs */
     private static final ThreadLocal<ByteBuffer> TEMP_LONG_BUFFER_THREAD_LOCAL;
 
-    /** This file channel is to work with the temporary file which is initialized
-     * in {@link LongListDisk#readBodyFromFileChannelOnInit}.
-     */
-    private FileChannel initFileChannel;
-
     /** This file channel is to work with the temporary file.
      */
-    private final FileChannel currentFileChannel;
+    private FileChannel currentFileChannel;
 
     /**
      * Path to the temporary file used to store the data.
@@ -144,8 +138,6 @@ public class LongListDisk extends AbstractLongList<Long> {
         if (tempFile == null) {
             throw new IllegalStateException("The temp file is not initialized");
         }
-        currentFileChannel = FileChannel.open(
-                tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
     /**
@@ -163,17 +155,10 @@ public class LongListDisk extends AbstractLongList<Long> {
             throws IOException {
         tempFile = createTempFile(sourceFileName, configuration);
 
-        try (final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw")) {
-            // ensure that the amount of disk space is enough
-            // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
-            rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
-            this.initFileChannel = rf.getChannel();
-            super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
-        } finally {
-            if (this.initFileChannel != null && this.initFileChannel.isOpen()) {
-                this.initFileChannel.close();
-            }
-        }
+        currentFileChannel = FileChannel.open(
+                tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+
+        super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
     }
 
     /** {@inheritDoc} */
@@ -186,13 +171,7 @@ public class LongListDisk extends AbstractLongList<Long> {
         readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, transferBuffer);
 
         final int firstChunkIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
-        return (long) (chunkIndex - firstChunkIndex) * memoryChunkSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected void setChunk(int chunkIndex, Long chunk, int startIndex, int endIndex) throws IOException {
-        final ByteBuffer transferBuffer = TRANSFER_BUFFER_THREAD_LOCAL.get();
+        final long chunk = ((long) (chunkIndex - firstChunkIndex) * memoryChunkSize);
 
         int startOffset = startIndex * Long.BYTES;
         int endOffset = endIndex * Long.BYTES;
@@ -201,13 +180,13 @@ public class LongListDisk extends AbstractLongList<Long> {
         transferBuffer.limit(endOffset);
 
         int bytesToWrite = endOffset - startOffset;
-        long bytesWritten = MerkleDbFileUtils.completelyWrite(initFileChannel, transferBuffer, chunk + startOffset);
+        long bytesWritten = MerkleDbFileUtils.completelyWrite(currentFileChannel, transferBuffer, chunk + startOffset);
         if (bytesWritten != bytesToWrite) {
             throw new IOException("Failed to write long list (disk) chunks, chunkIndex=" + chunkIndex + " expected="
                     + bytesToWrite + " actual=" + bytesWritten);
         }
 
-        chunkList.set(chunkIndex, chunk);
+        return chunk;
     }
 
     private void fillBufferWithZeroes(ByteBuffer transferBuffer) {
