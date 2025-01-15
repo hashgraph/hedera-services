@@ -23,7 +23,6 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.hiero.wiring.framework.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.hiero.wiring.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Random;
@@ -32,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import org.hiero.wiring.framework.TestWiringModelBuilder;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;
 import org.hiero.wiring.framework.wires.input.BindableInputWire;

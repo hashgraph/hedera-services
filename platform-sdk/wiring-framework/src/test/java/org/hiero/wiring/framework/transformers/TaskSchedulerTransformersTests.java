@@ -22,7 +22,6 @@ import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.hiero.wiring.framework.TestWiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -34,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.hiero.wiring.framework.TestWiringModelBuilder;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.schedulers.TaskScheduler;
 import org.hiero.wiring.framework.wires.SolderType;

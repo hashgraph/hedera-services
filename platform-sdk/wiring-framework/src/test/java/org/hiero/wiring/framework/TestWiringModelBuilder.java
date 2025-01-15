@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package org.hiero.wiring.framework;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.model.WiringModelBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A simple version of a wiring model for scenarios where the wiring model is not needed.

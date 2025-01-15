@@ -20,11 +20,11 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.hiero.wiring.framework.TestWiringModelBuilder;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.hiero.wiring.framework.TestWiringModelBuilder;
 import org.hiero.wiring.framework.counters.StandardObjectCounter;
 import org.hiero.wiring.framework.model.WiringModel;
 import org.hiero.wiring.framework.schedulers.builders.TaskSchedulerType;

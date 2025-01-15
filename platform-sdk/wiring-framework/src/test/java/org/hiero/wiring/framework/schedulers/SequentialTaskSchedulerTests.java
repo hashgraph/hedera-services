@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.hiero.wiring.framework.TestWiringModelBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -46,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.hiero.wiring.framework.TestWiringModelBuilder;
 import org.hiero.wiring.framework.counters.BackpressureObjectCounter;
 import org.hiero.wiring.framework.counters.ObjectCounter;
 import org.hiero.wiring.framework.model.WiringModel;
