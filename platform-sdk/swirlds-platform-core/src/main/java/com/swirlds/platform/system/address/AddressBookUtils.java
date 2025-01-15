@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -246,11 +247,18 @@ public class AddressBookUtils {
             @NonNull final SoftwareVersion version,
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook bootstrapAddressBook,
-            @NonNull final PlatformContext platformContext) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final StateLifecycles<?> stateLifecycles) {
         final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                selfId, version, softwareUpgrade, initialState.get(), bootstrapAddressBook.copy(), platformContext);
+                selfId,
+                version,
+                softwareUpgrade,
+                initialState.get(),
+                bootstrapAddressBook.copy(),
+                platformContext,
+                stateLifecycles);
         final State state = initialState.get().getState();
 
         if (addressBookInitializer.hasAddressBookChanged()) {

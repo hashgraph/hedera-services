@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,13 @@ import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.state.State;
@@ -59,6 +61,7 @@ public class ReconnectStateLoader {
     private final SignedStateNexus latestImmutableStateNexus;
     private final SavedStateController savedStateController;
     private final Roster roster;
+    private final StateLifecycles stateLifecycles;
 
     /**
      * Constructor.
@@ -70,6 +73,7 @@ public class ReconnectStateLoader {
      * @param latestImmutableStateNexus holds the latest immutable state
      * @param savedStateController      manages how states are saved
      * @param roster                    the current roster
+     * @param stateLifecycles           state lifecycle event handler
      */
     public ReconnectStateLoader(
             @NonNull final Platform platform,
@@ -78,7 +82,8 @@ public class ReconnectStateLoader {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final SavedStateController savedStateController,
-            @NonNull final Roster roster) {
+            @NonNull final Roster roster,
+            @NonNull final StateLifecycles stateLifecycles) {
         this.platform = Objects.requireNonNull(platform);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.platformWiring = Objects.requireNonNull(platformWiring);
@@ -86,6 +91,7 @@ public class ReconnectStateLoader {
         this.latestImmutableStateNexus = Objects.requireNonNull(latestImmutableStateNexus);
         this.savedStateController = Objects.requireNonNull(savedStateController);
         this.roster = Objects.requireNonNull(roster);
+        this.stateLifecycles = stateLifecycles;
     }
 
     /**
@@ -103,12 +109,12 @@ public class ReconnectStateLoader {
             // It's important to call init() before loading the signed state. The loading process makes copies
             // of the state, and we want to be sure that the first state in the chain of copies has been initialized.
             final Hash reconnectHash = signedState.getState().getHash();
-            signedState
-                    .getSwirldState()
-                    .init(
-                            platform,
-                            InitTrigger.RECONNECT,
-                            signedState.getState().getReadablePlatformState().getCreationSoftwareVersion());
+            SoftwareVersion creationSoftwareVersion =
+                    signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
+            signedState.init(platformContext);
+            stateLifecycles.onStateInitialized(
+                    signedState.getState(), platform, InitTrigger.RECONNECT, creationSoftwareVersion);
+
             if (!Objects.equals(signedState.getState().getHash(), reconnectHash)) {
                 throw new IllegalStateException(
                         "State hash is not permitted to change during a reconnect init() call. Previous hash was "

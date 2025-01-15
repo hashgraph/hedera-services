@@ -33,6 +33,8 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
@@ -66,6 +68,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -146,6 +149,8 @@ public interface HederaInjectionComponent {
 
     SubmissionManager submissionManager();
 
+    AsyncFatalIssListener fatalIssListener();
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -186,6 +191,12 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder blockHashSigner(BlockHashSigner blockHashSigner);
+
+        @BindsInstance
+        Builder hintsService(HintsService hintsService);
+
+        @BindsInstance
+        Builder historyService(HistoryService historyService);
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);

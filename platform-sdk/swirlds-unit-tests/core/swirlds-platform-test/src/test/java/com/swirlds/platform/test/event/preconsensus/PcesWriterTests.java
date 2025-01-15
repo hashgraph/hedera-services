@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
@@ -52,8 +50,6 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.PcesWriterTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -73,14 +69,13 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("PcesWriter Tests")
@@ -97,17 +92,6 @@ class PcesWriterTests {
 
     protected static Stream<Arguments> buildArguments() {
         return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
-    }
-
-    @BeforeAll
-    static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
-        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
-    }
-
-    @AfterAll
-    static void afterAll() {
-        StaticSoftwareVersion.reset();
     }
 
     @BeforeEach
@@ -399,125 +383,127 @@ class PcesWriterTests {
     }
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
+    @CsvSource({
+        "GENERATION_THRESHOLD, true",
+        "GENERATION_THRESHOLD, false",
+        "BIRTH_ROUND_THRESHOLD, true",
+        "BIRTH_ROUND_THRESHOLD, false"
+    })
     @DisplayName("Discontinuity Test")
-    void discontinuityTest(@NonNull final AncientMode ancientMode) throws IOException {
-        for (final boolean truncateLastFile : List.of(true, false)) {
-            beforeEach();
+    void discontinuityTest(@NonNull final AncientMode ancientMode, final boolean truncateLastFile) throws IOException {
+        beforeEach();
 
-            final Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
 
-            final PlatformContext platformContext = buildContext(ancientMode);
+        final PlatformContext platformContext = buildContext(ancientMode);
 
-            final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
-            final int stepsUntilAncient = random.nextInt(50, 100);
-            final PcesSequencer sequencer = new DefaultPcesSequencer();
-            final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
+        final StandardGraphGenerator generator = PcesWriterTestUtils.buildGraphGenerator(platformContext, random);
+        final int stepsUntilAncient = random.nextInt(50, 100);
+        final PcesSequencer sequencer = new DefaultPcesSequencer();
+        final PcesFileTracker pcesFiles = new PcesFileTracker(ancientMode);
 
-            final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
-            final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
-            final AtomicLong latestDurableSequenceNumber = new AtomicLong();
+        final PcesFileManager fileManager = new PcesFileManager(platformContext, pcesFiles, selfId, 0);
+        final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
+        final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
-            final List<PlatformEvent> eventsBeforeDiscontinuity = new LinkedList<>();
-            final List<PlatformEvent> eventsAfterDiscontinuity = new LinkedList<>();
-            for (int i = 0; i < numEvents; i++) {
-                final PlatformEvent event =
-                        generator.generateEventWithoutIndex().getBaseEvent();
-                if (i < numEvents / 2) {
-                    eventsBeforeDiscontinuity.add(event);
-                } else {
-                    eventsAfterDiscontinuity.add(event);
-                }
+        final List<PlatformEvent> eventsBeforeDiscontinuity = new LinkedList<>();
+        final List<PlatformEvent> eventsAfterDiscontinuity = new LinkedList<>();
+        for (int i = 0; i < numEvents; i++) {
+            final PlatformEvent event = generator.generateEventWithoutIndex().getBaseEvent();
+            if (i < numEvents / 2) {
+                eventsBeforeDiscontinuity.add(event);
+            } else {
+                eventsAfterDiscontinuity.add(event);
             }
-
-            writer.beginStreamingNewEvents();
-
-            final Collection<PlatformEvent> rejectedEvents = new HashSet<>();
-
-            long lowerBound = ancientMode.selectIndicator(0, 1);
-            final Iterator<PlatformEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
-            while (iterator1.hasNext()) {
-                final PlatformEvent event = iterator1.next();
-
-                sequencer.assignStreamSequenceNumber(event);
-                passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
-
-                lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
-                writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
-
-                if (event.getAncientIndicator(ancientMode) < lowerBound) {
-                    // Although it's not common, it's actually possible that the generator will generate
-                    // an event that is ancient (since it isn't aware of what we consider to be ancient)
-                    rejectedEvents.add(event);
-                    iterator1.remove();
-                }
-
-                // request a flush sometimes
-                if (random.nextInt(10) == 0) {
-                    passValueToDurabilityNexus(
-                            writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
-                }
-            }
-
-            passValueToDurabilityNexus(writer.registerDiscontinuity(100L), latestDurableSequenceNumber);
-            eventsBeforeDiscontinuity.forEach(
-                    event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
-
-            if (truncateLastFile) {
-                // Remove a single byte from the last file. This will corrupt the last event that was written.
-                final Iterator<PcesFile> it = pcesFiles.getFileIterator(NO_LOWER_BOUND, 0);
-                while (it.hasNext()) {
-                    final PcesFile file = it.next();
-                    if (!it.hasNext()) {
-                        FileManipulation.truncateNBytesFromFile(file.getPath(), 1);
-                    }
-                }
-
-                eventsBeforeDiscontinuity.remove(eventsBeforeDiscontinuity.size() - 1);
-            }
-
-            final Iterator<PlatformEvent> iterator2 = eventsAfterDiscontinuity.iterator();
-            while (iterator2.hasNext()) {
-                final PlatformEvent event = iterator2.next();
-
-                sequencer.assignStreamSequenceNumber(event);
-                passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
-
-                lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
-                writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
-
-                if (event.getAncientIndicator(ancientMode) < lowerBound) {
-                    // Although it's not common, it's actually possible that the generator will generate
-                    // an event that is ancient (since it isn't aware of what we consider to be ancient)
-                    rejectedEvents.add(event);
-                    iterator2.remove();
-                }
-
-                // request a flush sometimes
-                if (random.nextInt(10) == 0) {
-                    passValueToDurabilityNexus(
-                            writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
-                }
-            }
-
-            passValueToDurabilityNexus(
-                    writer.submitFlushRequest(eventsAfterDiscontinuity.getLast().getStreamSequenceNumber()),
-                    latestDurableSequenceNumber);
-
-            assertTrue(latestDurableSequenceNumber.get()
-                    >= eventsAfterDiscontinuity
-                            .get(eventsAfterDiscontinuity.size() - 1)
-                            .getStreamSequenceNumber());
-            eventsAfterDiscontinuity.forEach(
-                    event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
-            rejectedEvents.forEach(
-                    event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
-
-            PcesWriterTestUtils.verifyStream(
-                    selfId, eventsBeforeDiscontinuity, platformContext, truncateLastFile ? 1 : 0, ancientMode);
-
-            writer.closeCurrentMutableFile();
         }
+
+        writer.beginStreamingNewEvents();
+
+        final Collection<PlatformEvent> rejectedEvents = new HashSet<>();
+
+        long lowerBound = ancientMode.selectIndicator(0, 1);
+        final Iterator<PlatformEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
+        while (iterator1.hasNext()) {
+            final PlatformEvent event = iterator1.next();
+
+            sequencer.assignStreamSequenceNumber(event);
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
+
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
+
+            if (event.getAncientIndicator(ancientMode) < lowerBound) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                rejectedEvents.add(event);
+                iterator1.remove();
+            }
+
+            // request a flush sometimes
+            if (random.nextInt(10) == 0) {
+                passValueToDurabilityNexus(
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
+            }
+        }
+
+        passValueToDurabilityNexus(writer.registerDiscontinuity(100L), latestDurableSequenceNumber);
+        eventsBeforeDiscontinuity.forEach(
+                event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+
+        if (truncateLastFile) {
+            // Remove a single byte from the last file. This will corrupt the last event that was written.
+            final Iterator<PcesFile> it = pcesFiles.getFileIterator(NO_LOWER_BOUND, 0);
+            while (it.hasNext()) {
+                final PcesFile file = it.next();
+                if (!it.hasNext()) {
+                    FileManipulation.truncateNBytesFromFile(file.getPath(), 1);
+                }
+            }
+
+            eventsBeforeDiscontinuity.remove(eventsBeforeDiscontinuity.size() - 1);
+        }
+
+        final Iterator<PlatformEvent> iterator2 = eventsAfterDiscontinuity.iterator();
+        while (iterator2.hasNext()) {
+            final PlatformEvent event = iterator2.next();
+
+            sequencer.assignStreamSequenceNumber(event);
+            passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
+
+            lowerBound = Math.max(lowerBound, event.getAncientIndicator(ancientMode) - stepsUntilAncient);
+            writer.updateNonAncientEventBoundary(new EventWindow(1, lowerBound, lowerBound, ancientMode));
+
+            if (event.getAncientIndicator(ancientMode) < lowerBound) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                rejectedEvents.add(event);
+                iterator2.remove();
+            }
+
+            // request a flush sometimes
+            if (random.nextInt(10) == 0) {
+                passValueToDurabilityNexus(
+                        writer.submitFlushRequest(event.getStreamSequenceNumber()), latestDurableSequenceNumber);
+            }
+        }
+
+        passValueToDurabilityNexus(
+                writer.submitFlushRequest(eventsAfterDiscontinuity.getLast().getStreamSequenceNumber()),
+                latestDurableSequenceNumber);
+
+        assertTrue(latestDurableSequenceNumber.get()
+                >= eventsAfterDiscontinuity
+                        .get(eventsAfterDiscontinuity.size() - 1)
+                        .getStreamSequenceNumber());
+        eventsAfterDiscontinuity.forEach(
+                event -> assertTrue(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+        rejectedEvents.forEach(
+                event -> assertFalse(latestDurableSequenceNumber.get() >= event.getStreamSequenceNumber()));
+
+        PcesWriterTestUtils.verifyStream(
+                selfId, eventsBeforeDiscontinuity, platformContext, truncateLastFile ? 1 : 0, ancientMode);
+
+        writer.closeCurrentMutableFile();
     }
 
     /**
