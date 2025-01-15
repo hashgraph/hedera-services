@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import java.nio.file.Path;
 import java.time.Instant;
 
@@ -61,7 +61,7 @@ public class StateWriteToDiskCompleteNotification extends AbstractNotification {
      * @deprecated used by PTT for an obsolete feature
      */
     @Deprecated(forRemoval = true)
-    public SwirldState getState() {
+    public PlatformMerkleStateRoot getState() {
         return null;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.demo.platform.PlatformTestingToolState;
+import com.swirlds.demo.platform.PlatformTestingToolStateLifecycles;
 import com.swirlds.demo.platform.TestUtil;
 import com.swirlds.demo.platform.expiration.ExpirationUtils;
 import com.swirlds.merkle.map.MerkleMap;
@@ -60,6 +61,7 @@ public class MapValueFCQTests {
     private static final Random RANDOM = new Random();
     private static final Random random = new Random();
     static PlatformTestingToolState state;
+    static PlatformTestingToolStateLifecycles lifecycles;
     private static MerkleCryptography cryptography;
     private static MapValueFCQ mapValueFCQ;
     private static MapKey mapKey;
@@ -77,6 +79,7 @@ public class MapValueFCQTests {
 
         mapKey = new MapKey(0, 0, random.nextLong());
         state = Mockito.spy(PlatformTestingToolState.class);
+        lifecycles = new PlatformTestingToolStateLifecycles();
         final Platform platform = Mockito.mock(Platform.class);
         when(platform.getSelfId()).thenReturn(NodeId.of(0L));
         final Roster roster = RandomRosterBuilder.create(RANDOM).withSize(4).build();
@@ -166,7 +169,7 @@ public class MapValueFCQTests {
         generateRecords(500, 0, 500);
 
         final long purgeTime = Instant.now().getEpochSecond();
-        final long removedNum = state.purgeExpiredRecords(purgeTime);
+        final long removedNum = lifecycles.purgeExpiredRecords(state, purgeTime);
 
         int expectedNumberOfPurgedRecords = 2001;
 

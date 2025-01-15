@@ -31,6 +31,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -59,7 +60,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
     public ConcurrentEmbeddedHedera(@NonNull final EmbeddedNode node) {
         super(node);
-        platform = new ConcurrentFakePlatform(executorService);
+        platform = new ConcurrentFakePlatform(executorService, metrics);
     }
 
     @Override
@@ -126,8 +127,9 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         private final BlockingQueue<FakeEvent> queue = new ArrayBlockingQueue<>(MIN_CAPACITY);
         private final ScheduledExecutorService executorService;
 
-        public ConcurrentFakePlatform(@NonNull final ScheduledExecutorService executorService) {
-            super(defaultNodeId, roster, requireNonNull(executorService));
+        public ConcurrentFakePlatform(
+                @NonNull final ScheduledExecutorService executorService, @NonNull final Metrics metrics) {
+            super(defaultNodeId, roster, requireNonNull(executorService), requireNonNull(metrics));
             this.executorService = executorService;
         }
 

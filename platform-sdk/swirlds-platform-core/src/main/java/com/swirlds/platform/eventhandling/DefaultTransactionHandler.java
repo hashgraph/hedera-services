@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
             return createSignedState(consensusRound, systemTransactions);
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
+            logger.error(EXCEPTION.getMarker(), "onHandleConsensusRound interrupted");
             Thread.currentThread().interrupt();
 
             return null;

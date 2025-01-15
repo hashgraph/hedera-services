@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package com.swirlds.platform.test.cli;
 
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
@@ -27,8 +25,6 @@ import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
@@ -41,9 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -51,17 +45,6 @@ class EventStreamReportingToolTest {
 
     @TempDir
     Path tmpDir;
-
-    @BeforeAll
-    static void beforeAll() throws ConstructableRegistryException {
-        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-    }
-
-    @AfterAll
-    static void afterAll() {
-        StaticSoftwareVersion.reset();
-    }
 
     /**
      * Generates events, feeds them to consensus, then writes these consensus events to stream files. One the files a
