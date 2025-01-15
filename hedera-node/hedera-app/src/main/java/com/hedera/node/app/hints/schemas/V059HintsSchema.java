@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.hapi.node.state.hints.HintsKey;
+import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
@@ -55,7 +55,7 @@ public class V059HintsSchema extends Schema {
     private static final long MAX_HINTS = 1L << 31;
     private static final long MAX_PREPROCESSING_VOTES = 1L << 31;
 
-    public static final String HINTS_KEY = "HINTS";
+    public static final String HINTS_KEY_SETS_KEY = "HINTS_KEY_SETS";
     public static final String ACTIVE_CONSTRUCTION_KEY = "ACTIVE_CONSTRUCTION";
     public static final String NEXT_CONSTRUCTION_KEY = "NEXT_CONSTRUCTION";
     public static final String PREPROCESSING_VOTES_KEY = "PREPROCESSING_VOTES";
@@ -72,7 +72,7 @@ public class V059HintsSchema extends Schema {
         return Set.of(
                 StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, HintsConstruction.PROTOBUF),
                 StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, HintsConstruction.PROTOBUF),
-                StateDefinition.onDisk(HINTS_KEY, HintsPartyId.PROTOBUF, HintsKey.PROTOBUF, MAX_HINTS),
+                StateDefinition.onDisk(HINTS_KEY_SETS_KEY, HintsPartyId.PROTOBUF, HintsKeySet.PROTOBUF, MAX_HINTS),
                 StateDefinition.onDisk(
                         PREPROCESSING_VOTES_KEY,
                         PreprocessingVoteId.PROTOBUF,
@@ -89,7 +89,7 @@ public class V059HintsSchema extends Schema {
 
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
-        final var states = ctx.previousStates();
+        final var states = ctx.newStates();
         final var activeConstruction = requireNonNull(
                 states.<HintsConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY).get());
         if (activeConstruction.hasPreprocessedKeys()) {

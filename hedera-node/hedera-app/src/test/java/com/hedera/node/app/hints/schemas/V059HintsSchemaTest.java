@@ -66,7 +66,7 @@ class V059HintsSchemaTest {
                 V059HintsSchema.ACTIVE_CONSTRUCTION_KEY,
                 V059HintsSchema.NEXT_CONSTRUCTION_KEY,
                 V059HintsSchema.PREPROCESSING_VOTES_KEY,
-                V059HintsSchema.HINTS_KEY);
+                V059HintsSchema.HINTS_KEY_SETS_KEY);
         final var actualStateNames =
                 subject.statesToCreate().stream().map(StateDefinition::stateKey).collect(Collectors.toSet());
         assertEquals(expectedStateNames, actualStateNames);
