@@ -48,7 +48,8 @@ class BlockStreamBucketUploaderMetricsTest {
     @BeforeEach
     void setUp() {
         metrics = TestUtils.metrics();
-        blockStreamBucketUploaderMetrics = new BlockStreamBucketUploaderMetrics(metrics, SELF_NODE_ID);
+        blockStreamBucketUploaderMetrics =
+                new BlockStreamBucketUploaderMetrics(metrics, SELF_NODE_ID, List.of("aws", "gcp"));
     }
 
     @Test

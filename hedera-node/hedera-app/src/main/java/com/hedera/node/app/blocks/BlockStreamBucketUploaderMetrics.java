@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.blocks;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
@@ -74,10 +76,16 @@ public class BlockStreamBucketUploaderMetrics {
      * Constructor for the BlockStreamBucketMetrics.
      *
      * @param metrics the {@link Metrics} object where all metrics will be registered
+     * @param selfNodeId the ID this node
+     * @param bucketProviders cloud bucket providers
      */
     @Inject
-    public BlockStreamBucketUploaderMetrics(@NonNull final Metrics metrics, @NodeSelfId final long selfNodeId) {
-        List<String> bucketProviders = List.of("aws", "gcp"); // TODO: get providers from config
+    public BlockStreamBucketUploaderMetrics(
+            @NonNull final Metrics metrics,
+            @NodeSelfId final long selfNodeId,
+            @NonNull final List<String> bucketProviders) {
+        requireNonNull(metrics, "metrics must not be null");
+        requireNonNull(bucketProviders, "bucketProviders must not be null");
 
         final var perNodeMetricCategory = String.format(PER_NODE_METRIC_PREFIX, selfNodeId);
         blocksRetained = metrics.getOrCreate(
