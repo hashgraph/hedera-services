@@ -30,8 +30,8 @@ module org.hiero.wiring.framework {
     exports org.hiero.wiring.framework.wires.output;
 
     requires transitive com.swirlds.base;
+    requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
-    requires com.swirlds.common;
     requires com.swirlds.logging;
     requires com.swirlds.metrics.api;
     requires org.apache.logging.log4j;

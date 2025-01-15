@@ -73,6 +73,5 @@ timingSensitiveModuleInfo {
     requires("com.swirlds.platform.core.test.fixtures")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
-    requires("org.hiero.wiring.framework")
     requires("org.junit.jupiter.params")
 }
