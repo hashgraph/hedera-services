@@ -67,6 +67,7 @@ public class ProofController {
     private final Executor executor;
     private final SchnorrKeyPair schnorrKeyPair;
     private final HistoryLibrary library;
+    private final HistoryLibraryCodec codec;
     private final HistorySubmissions submissions;
     private final RosterTransitionWeights weights;
     private final Consumer<HistoryProof> proofConsumer;
@@ -135,11 +136,13 @@ public class ProofController {
             @Nullable final Bytes metadata,
             @NonNull final SchnorrKeyPair schnorrKeyPair,
             @NonNull final HistoryLibrary library,
+            @NonNull final HistoryLibraryCodec codec,
             @NonNull final HistorySubmissions submissions,
             @NonNull final Consumer<HistoryProof> proofConsumer) {
         this.selfId = selfId;
         this.ledgerId = ledgerId;
         this.metadata = metadata;
+        this.codec = requireNonNull(codec);
         this.executor = requireNonNull(executor);
         this.library = requireNonNull(library);
         this.submissions = requireNonNull(submissions);
@@ -296,22 +299,17 @@ public class ProofController {
      */
     private CompletableFuture<Void> startSigningFuture() {
         requireNonNull(metadata);
-        final var targetRoster = new HistoryAddressBook(weights.orderedTargetWeights()
-                .map(node ->
-                        new HistoryAddressBookEntry(node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
-                .toList());
+        final var proofKeys = Map.copyOf(targetProofKeys);
         return CompletableFuture.runAsync(
                 () -> {
-                    final var targetRosterHash = library.hashAddressBook(targetRoster);
-                    final var buffer = ByteBuffer.allocate((int) (targetRosterHash.length() + metadata.length()));
-                    targetRosterHash.writeTo(buffer);
-                    metadata.writeTo(buffer);
-                    final var message = noThrowSha384HashOf(Bytes.wrap(buffer.array()));
-                    final var signature = new HistorySignature(
-                            new History(targetRosterHash, metadata),
-                            library.signHistory(message, schnorrKeyPair.privateKey()));
+                    final var targetBook = codec.encodeAddressBook(weights.targetNodeWeights(), proofKeys);
+                    final var targetHash = library.hashAddressBook(targetBook);
+                    final var history = new History(targetHash, metadata);
+                    final var message = codec.encodeHistory(history);
+                    final var signature = library.signSchnorr(message, schnorrKeyPair.privateKey());
+                    final var historySignature = new HistorySignature(history, signature);
                     submissions
-                            .submitAssemblySignature(construction.constructionId(), signature)
+                            .submitAssemblySignature(construction.constructionId(), historySignature)
                             .join();
                 },
                 executor);
@@ -339,24 +337,20 @@ public class ProofController {
         final var proofMetadata = requireNonNull(metadata);
         return CompletableFuture.runAsync(
                 () -> {
-                    final var sourceRoster = new HistoryAddressBook(weights.orderedSourceWeights()
-                            .map(node -> new HistoryAddressBookEntry(
-                                    node.nodeId(), node.weight(), sourceProofKeys.get(node.nodeId())))
-                            .toList());
-                    final var targetRoster = new HistoryAddressBook(weights.orderedTargetWeights()
-                            .map(node -> new HistoryAddressBookEntry(
-                                    node.nodeId(), node.weight(), targetProofKeys.get(node.nodeId())))
-                            .toList());
+                    final var sourceBook = codec.encodeAddressBook(weights.sourceNodeWeights(), sourceProofKeys);
+                    final var sourceHash = library.hashAddressBook(sourceBook);
+                    final var targetBook = codec.encodeAddressBook(weights.targetNodeWeights(), targetProofKeys);
+                    final var targetHash = library.hashAddressBook(targetBook);
                     final var proof = library.proveChainOfTrust(
-                            Optional.ofNullable(ledgerId).orElseGet(() -> library.hashAddressBook(sourceRoster)),
+                            Optional.ofNullable(ledgerId).orElseGet(() -> library.hashAddressBook(sourceBook)),
                             sourceProof,
-                            sourceRoster,
+                            sourceBook,
                             signatures,
-                            library.hashAddressBook(targetRoster),
+                            targetHash,
                             proofMetadata);
                     final var metadataProof = HistoryProof.newBuilder()
-                            .sourceAddressBookHash(library.hashAddressBook(sourceRoster))
-                            .targetAddressBookHash(library.hashAddressBook(targetRoster))
+                            .sourceAddressBookHash(sourceHash)
+                            .targetAddressBookHash(targetHash)
                             .proof(proof)
                             .proofKeys(proofKeyListFrom(targetProofKeys))
                             .metadata(proofMetadata)
@@ -439,29 +433,11 @@ public class ProofController {
             final long nodeId, @NonNull final HistorySignature historySignature) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    final var message = messageFor(historySignature.historyOrThrow());
+                    final var message = codec.encodeHistory(historySignature.historyOrThrow());
                     final var proofKey = requireNonNull(targetProofKeys.get(nodeId));
-                    final var isValid = library.verifyHistorySignature(proofKey, message, historySignature.signature());
+                    final var isValid = library.verifySchnorr(historySignature.signature(), proofKey, message);
                     return new Verification(nodeId, historySignature, isValid);
                 },
                 executor);
-    }
-
-    private Bytes messageFor(@NonNull final History history) {
-        return messageFor(history.addressBookHash(), history.metadata());
-    }
-
-    /**
-     * Returns the message to be signed for the given address book hash and metadata.
-     *
-     * @param addressBookHash the address book hash
-     * @param metadata the metadata
-     * @return the message
-     */
-    private Bytes messageFor(@NonNull final Bytes addressBookHash, @NonNull final Bytes metadata) {
-        final var buffer = ByteBuffer.allocate((int) (addressBookHash.length() + metadata.length()));
-        addressBookHash.writeTo(buffer);
-        metadata.writeTo(buffer);
-        return noThrowSha384HashOf(Bytes.wrap(buffer.array()));
     }
 }

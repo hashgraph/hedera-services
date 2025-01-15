@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ProofKeysAccessor;
+import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -27,25 +28,25 @@ import javax.inject.Singleton;
 
 @Singleton
 public class ProofKeysAccessorImpl implements ProofKeysAccessor {
-    private static final Bytes FAKE_SCHNORR_PRIVATE_KEY = Bytes.wrap("fake_schnorr_private_key".getBytes());
-    private static final Bytes FAKE_SCHNORR_PUBLIC_KEY = Bytes.wrap("fake_schnorr_public_key".getBytes());
-    private static final SchnorrKeyPair FAKE_SCHNORR_KEY_PAIR =
-            new SchnorrKeyPair(FAKE_SCHNORR_PRIVATE_KEY, FAKE_SCHNORR_PUBLIC_KEY);
+    private static final Bytes FAKE_SCHNORR_PRIVATE_KEY = Bytes.wrap("FAKE_SCHNORR_PRIVATE_KEY");
+    private static final Bytes FAKE_SCHNORR_PUBLIC_KEY = Bytes.wrap("FAKE_SCHNORR_PUBLIC_KEY");
+    private static final TssKeyPair FAKE_SCHNORR_KEY_PAIR =
+            new TssKeyPair(FAKE_SCHNORR_PRIVATE_KEY, FAKE_SCHNORR_PUBLIC_KEY);
 
-    private final HistoryLibrary operations;
+    private final HistoryLibrary library;
 
     @Inject
-    public ProofKeysAccessorImpl(@NonNull final HistoryLibrary operations) {
-        this.operations = requireNonNull(operations);
+    public ProofKeysAccessorImpl(@NonNull final HistoryLibrary library) {
+        this.library = requireNonNull(library);
     }
 
     @Override
-    public Bytes signWithSchnorrPrivateKey(final long constructionId, @NonNull final Bytes message) {
-        return operations.signHistory(message, FAKE_SCHNORR_PRIVATE_KEY);
+    public Bytes sign(final long constructionId, @NonNull final Bytes message) {
+        return library.signSchnorr(message, FAKE_SCHNORR_PRIVATE_KEY);
     }
 
     @Override
-    public SchnorrKeyPair getOrCreateSchnorrKeyPair(final long constructionId) {
+    public TssKeyPair getOrCreateSchnorrKeyPair(final long constructionId) {
         return FAKE_SCHNORR_KEY_PAIR;
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.HistoryAddressBook;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,59 +29,53 @@ import java.util.Map;
  */
 public class HistoryLibraryImpl implements HistoryLibrary {
     @Override
-    public SchnorrKeyPair newSchnorrKeyPair() {
-        return new SchnorrKeyPair(Bytes.EMPTY, Bytes.EMPTY);
+    public Bytes snarkVerificationKey() {
+        throw new AssertionError("Not implemented");
     }
 
     @Override
-    public Bytes hashAddressBook(@NonNull final HistoryAddressBook addressBook) {
-        requireNonNull(addressBook);
-        return Bytes.EMPTY;
+    public Bytes newSchnorrKeyPair() {
+        throw new AssertionError("Not implemented");
     }
 
     @Override
-    public Bytes signHistory(@NonNull final Bytes history, @NonNull final Bytes privateKey) {
-        requireNonNull(history);
+    public Bytes signSchnorr(@NonNull final Bytes message, @NonNull final Bytes privateKey) {
+        requireNonNull(message);
         requireNonNull(privateKey);
-        return Bytes.EMPTY;
+        throw new AssertionError("Not implemented");
     }
 
     @Override
-    public boolean verifyHistorySignature(
-            @NonNull final Bytes publicKey, @NonNull final Bytes history, @NonNull final Bytes signature) {
-        requireNonNull(publicKey);
-        requireNonNull(history);
+    public boolean verifySchnorr(@NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes publicKey) {
         requireNonNull(signature);
-        return true;
+        requireNonNull(message);
+        requireNonNull(publicKey);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public Bytes hashAddressBook(@NonNull final Bytes addressBook) {
+        requireNonNull(addressBook);
+        throw new AssertionError("Not implemented");
     }
 
     @NonNull
     @Override
-    public Bytes proveChainOfTrust(
-            @NonNull Bytes ledgerId,
-            @Nullable final Bytes sourceProof,
-            @NonNull final HistoryAddressBook sourceAddressBook,
-            @NonNull final Map<Long, Bytes> sourceSignatures,
-            @NonNull final Bytes targetAddressBookHash,
-            @NonNull final Bytes targetMetadata) {
+    public Bytes proveChainOfTrust(@NonNull final Bytes ledgerId, @Nullable final Bytes sourceProof, @NonNull final Bytes sourceAddressBook, @NonNull Map<Long, Bytes> sourceSignatures, @NonNull final Bytes targetAddressBookHash, @NonNull final Bytes targetMetadata) {
         requireNonNull(ledgerId);
         requireNonNull(sourceAddressBook);
+        requireNonNull(sourceSignatures);
         requireNonNull(targetAddressBookHash);
         requireNonNull(targetMetadata);
-        requireNonNull(sourceSignatures);
-        return Bytes.EMPTY;
+        throw new AssertionError("Not implemented");
     }
 
     @Override
-    public boolean verifyChainOfTrust(
-            @NonNull final Bytes ledgerId,
-            @NonNull final Bytes addressBookHash,
-            @NonNull final Bytes metadata,
-            @NonNull final Bytes proof) {
+    public boolean verifyChainOfTrust(@NonNull final Bytes ledgerId, @NonNull final Bytes addressBookHash, @NonNull final Bytes metadata, @NonNull final Bytes proof) {
         requireNonNull(ledgerId);
         requireNonNull(addressBookHash);
         requireNonNull(metadata);
         requireNonNull(proof);
-        return false;
+        throw new AssertionError("Not implemented");
     }
 }

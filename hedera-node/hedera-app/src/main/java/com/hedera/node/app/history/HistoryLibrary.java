@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.hapi.node.state.history.HistoryAddressBook;
-import com.hedera.node.app.history.impl.SchnorrKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -28,42 +26,50 @@ import java.util.Map;
  */
 public interface HistoryLibrary {
     /**
-     * Generates a new Schnorr key pair.
-     * @return the key pair
+     * Returns the SNARK verification key in use by this library.
+     * <p>
+     * <b>Important:</b> If this changes, the ledger id must also change.
      */
-    SchnorrKeyPair newSchnorrKeyPair();
+    Bytes snarkVerificationKey();
 
     /**
-     * Signs the given history with the given Schnorr private key.
-     * @param history the message
-     * @param privateKey the Schnorr private key
+     * Returns a new Schnorr key pair.
+     */
+    Bytes newSchnorrKeyPair();
+
+    /**
+     * Signs a message with a Schnorr private key. In Hiero TSS, this will always be the concatenation
+     * of an address book hash and the associated metadata.
+     *
+     * @param message the message
+     * @param privateKey the private key
      * @return the signature
      */
-    Bytes signHistory(@NonNull Bytes history, @NonNull Bytes privateKey);
+    Bytes signSchnorr(@NonNull Bytes message, @NonNull Bytes privateKey);
 
     /**
-     * Validates the Schnorr signature for the given message and public key.
+     * Checks that a signature on a message verifies under a Schnorr public key.
      *
-     * @param publicKey the Schnorr public key
-     * @param history the history
      * @param signature the signature
+     * @param message the message
+     * @param publicKey the public key
      * @return true if the signature is valid; false otherwise
      */
-    boolean verifyHistorySignature(@NonNull Bytes publicKey, @NonNull Bytes history, @NonNull Bytes signature);
+    boolean verifySchnorr(@NonNull Bytes signature, @NonNull Bytes message, @NonNull Bytes publicKey);
 
     /**
-     * Hashes the given address book.
+     * Computes the hash of the given address book with the same algorithm used by the SNARK circuit.
      * @param addressBook the address book
      * @return the hash of the address book
      */
-    Bytes hashAddressBook(@NonNull HistoryAddressBook addressBook);
+    Bytes hashAddressBook(@NonNull Bytes addressBook);
 
     /**
      * Returns a SNARK recursively proving the target address book and associated metadata belong to the given ledger
      * id's chain of trust that includes the given source address book, based on its own proof of belonging. (Unless the
      * source address book hash <i>is</i> the ledger id, which is the base case of the recursion).
      *
-     * @param ledgerId the ledger id
+     * @param ledgerId the ledger id, the concatenation of the genesis address book hash and the SNARK verification key
      * @param sourceProof if not null, the proof the source address book is in the ledger id's chain of trust
      * @param sourceAddressBook the source roster
      * @param sourceSignatures the source address book signatures on the target address book hash and its metadata
@@ -75,7 +81,7 @@ public interface HistoryLibrary {
     Bytes proveChainOfTrust(
             @NonNull Bytes ledgerId,
             @Nullable Bytes sourceProof,
-            @NonNull HistoryAddressBook sourceAddressBook,
+            @NonNull Bytes sourceAddressBook,
             @NonNull Map<Long, Bytes> sourceSignatures,
             @NonNull Bytes targetAddressBookHash,
             @NonNull Bytes targetMetadata);

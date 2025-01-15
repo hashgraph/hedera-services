@@ -17,6 +17,7 @@
 package com.hedera.node.app.history;
 
 import com.hedera.node.app.history.impl.SchnorrKeyPair;
+import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -30,7 +31,7 @@ public interface ProofKeysAccessor {
      * @param message the message to sign
      * @return the signature, using the Schnorr private key for the given construction ID
      */
-    Bytes signWithSchnorrPrivateKey(long constructionId, @NonNull Bytes message);
+    Bytes sign(long constructionId, @NonNull Bytes message);
 
     /**
      * Returns the Schnorr key pair this node should use starting with the given construction id,
@@ -38,5 +39,5 @@ public interface ProofKeysAccessor {
      * @param constructionId the active construction ID
      * @return the Schnorr key pair
      */
-    SchnorrKeyPair getOrCreateSchnorrKeyPair(long constructionId);
+    TssKeyPair getOrCreateSchnorrKeyPair(long constructionId);
 }
