@@ -272,8 +272,7 @@ public abstract class AbstractLongList<C> implements LongList {
     /**
      * Reads data from the specified {@code fileChannel} and stores it into a chunk.
      * The data is read from the specified range within the chunk.
-     * Subclasses must implement this method to read data from the provided {@code fileChannel}
-     * and store it into the chunk at {@code chunkIndex}.
+     * Subclasses must implement this method to read data from the provided {@code fileChannel}.
      *
      * @param fileChannel the file channel to read from
      * @param chunkIndex the index of the chunk to store the read data
