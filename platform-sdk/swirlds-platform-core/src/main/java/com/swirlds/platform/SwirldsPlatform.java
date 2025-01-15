@@ -289,10 +289,10 @@ public class SwirldsPlatform implements Platform {
                 .getConfiguration()
                 .getConfigData(StateConfig.class)
                 .getMainClassName(blocks.mainClassName());
-        final SignedStateFilePath statePath = new SignedStateFilePath(
-                platformContext.getConfiguration().getConfigData(StateCommonConfig.class));
-        final List<SavedStateInfo> savedStates = statePath.getSavedStateFiles(actualMainClassName, selfId,
-                blocks.swirldName());
+        final SignedStateFilePath statePath =
+                new SignedStateFilePath(platformContext.getConfiguration().getConfigData(StateCommonConfig.class));
+        final List<SavedStateInfo> savedStates =
+                statePath.getSavedStateFiles(actualMainClassName, selfId, blocks.swirldName());
         if (!savedStates.isEmpty()) {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
             final long minimumGenerationNonAncientForOldestState =
