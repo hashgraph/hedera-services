@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,19 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.PlatformStatNames;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.state.merkle.MerkleStateRoot;
 
 /**
- * Collection of metrics related to SwirldState
+ * Collection of metrics related to the state lifecycle
  */
-public class SwirldStateMetrics {
+public class StateMetrics {
 
     private static final RunningAverageMetric.Config AVG_SEC_TRANS_HANDLED_CONFIG = new RunningAverageMetric.Config(
                     INTERNAL_CATEGORY, "secTransH")
-            .withDescription(
-                    "avg time to handle a consensus transaction in SwirldState.handleTransaction " + "(in seconds)")
+            .withDescription("avg time to handle a consensus transaction in StateLifecycles.onHandleTransaction "
+                    + "(in seconds)")
             .withFormat(FORMAT_10_6);
     private final RunningAverageMetric avgSecTransHandled;
 
@@ -50,26 +51,26 @@ public class SwirldStateMetrics {
     private static final SpeedometerMetric.Config TRANS_HANDLED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     INTERNAL_CATEGORY, PlatformStatNames.TRANSACTIONS_HANDLED_PER_SECOND)
             .withDescription(
-                    "number of consensus transactions per second handled " + "by SwirldState.handleTransaction()")
+                    "number of consensus transactions per second handled " + "by StateLifecycles.onHandleTransaction()")
             .withFormat(FORMAT_9_6);
     private final SpeedometerMetric transHandledPerSecond;
 
     private static final RunningAverageMetric.Config AVG_STATE_COPY_MICROS_CONFIG = new RunningAverageMetric.Config(
                     INTERNAL_CATEGORY, "stateCopyMicros")
-            .withDescription("average time it takes the SwirldState.copy() method in SwirldState to finish "
-                    + "(in microseconds)")
+            .withDescription(
+                    "average time it takes the State.copy() method in StateLifecycles to finish " + "(in microseconds)")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgStateCopyMicros;
 
     /**
-     * Constructor of {@code SwirldStateMetrics}
+     * Constructor of {@code StateMetrics}
      *
      * @param metrics
      * 		a reference to the metrics-system
      * @throws IllegalArgumentException
      * 		if {@code metrics} is {@code null}
      */
-    public SwirldStateMetrics(final Metrics metrics) {
+    public StateMetrics(final Metrics metrics) {
         avgSecTransHandled = metrics.getOrCreate(AVG_SEC_TRANS_HANDLED_CONFIG);
         avgConsHandleTime = metrics.getOrCreate(AVG_CONS_HANDLE_TIME_CONFIG);
         transHandledPerSecond = metrics.getOrCreate(TRANS_HANDLED_PER_SECOND_CONFIG);
@@ -77,7 +78,7 @@ public class SwirldStateMetrics {
     }
 
     /**
-     * Records the amount of time to handle a consensus transaction in {@link SwirldState}.
+     * Records the amount of time to handle a consensus transaction in {@link PlatformMerkleStateRoot}.
      *
      * @param seconds
      * 		the amount of time in seconds
@@ -87,7 +88,7 @@ public class SwirldStateMetrics {
     }
 
     /**
-     * Records the amount of time between a transaction reaching consensus and being handled in {@link SwirldState}.
+     * Records the amount of time between a transaction reaching consensus and being handled in {@link PlatformMerkleStateRoot}.
      *
      * @param seconds
      * 		the amount of time in seconds
@@ -97,14 +98,14 @@ public class SwirldStateMetrics {
     }
 
     /**
-     * Records the fact that consensus transactions were handled by {@link SwirldState}.
+     * Records the fact that consensus transactions were handled by {@link PlatformMerkleStateRoot}.
      */
     public void consensusTransHandled(final int numTrans) {
         transHandledPerSecond.update(numTrans);
     }
 
     /**
-     * Records the time it takes {@link SwirldState#copy()} to finish (in microseconds)
+     * Records the time it takes {@link MerkleStateRoot#copy()} to finish (in microseconds)
      *
      * @param micros
      * 		the amount of time in microseconds

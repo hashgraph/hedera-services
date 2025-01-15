@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.platform.event;
+package com.swirlds.platform.event;
 
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -36,34 +32,26 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@Disabled("Temporarily disabling until platform refactoring is complete")
 public class EventMigrationTest {
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        StaticSoftwareVersion.setSoftwareVersion(new ServicesSoftwareVersion(SemanticVersion.DEFAULT, 0));
     }
 
     public static Stream<Arguments> migrationTestArguments() {
-        return Stream.of(
-                Arguments.of("eventFiles/previewnet-53/2024-08-26T10_38_35.016340634Z.events", 637, 4),
-                Arguments.of("eventFiles/testnet-53/2024-09-10T00_00_00.021456201Z.events", 635, 5));
+        return Stream.of(Arguments.of("eventFiles/testnet-57/2025-01-10T00_00_00.016538241Z.events", 532, 3));
     }
 
     /**
-     * Tests the migration of events as we are switching events to protobuf. The main thing we are testing is that the
+     * Tests the migration of events. The main thing we are testing is that the
      * hashes of old events can still be calculated when the code changes. This is done by calculating the hashes of the
      * events that are read and matching them to the parent descriptors inside the events. The parents of most events
      * will be present in the file, except for a few events at the beginning of the file.
-     * <p>
-     * Even though this could be considered a platform test, it needs to be in the services module because the event
-     * contains a {@link SerializableSemVers} which is a services class
      */
     @ParameterizedTest
     @MethodSource("migrationTestArguments")

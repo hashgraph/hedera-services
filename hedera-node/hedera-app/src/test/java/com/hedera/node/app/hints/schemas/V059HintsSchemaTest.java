@@ -88,7 +88,7 @@ class V059HintsSchemaTest {
 
     @Test
     void restartSetsFinishedConstructionInContext() {
-        given(migrationContext.previousStates()).willReturn(writableStates);
+        given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.ACTIVE_CONSTRUCTION_KEY))
                 .willReturn(activeConstructionState);
         final var construction = HintsConstruction.newBuilder()
@@ -103,7 +103,7 @@ class V059HintsSchemaTest {
 
     @Test
     void restartDoesNotSetUnfinishedConstructionInContext() {
-        given(migrationContext.previousStates()).willReturn(writableStates);
+        given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.ACTIVE_CONSTRUCTION_KEY))
                 .willReturn(activeConstructionState);
         given(activeConstructionState.get()).willReturn(HintsConstruction.DEFAULT);

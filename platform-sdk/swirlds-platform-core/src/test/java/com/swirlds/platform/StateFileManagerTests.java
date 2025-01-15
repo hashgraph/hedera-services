@@ -62,7 +62,7 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
-import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingState;
 import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -210,7 +210,7 @@ class StateFileManagerTests {
     void saveFatalSignedState() throws InterruptedException, IOException {
         final SignedState signedState =
                 new RandomSignedStateGenerator().setUseBlockingState(true).build();
-        ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
+        ((BlockingState) signedState.getState()).enableBlockingSerialization();
 
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -227,7 +227,7 @@ class StateFileManagerTests {
         // shouldn't be finished yet
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
-        ((BlockingSwirldState) signedState.getSwirldState()).unblockSerialization();
+        ((BlockingState) signedState.getState()).unblockSerialization();
         thread.join(1000);
 
         final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());

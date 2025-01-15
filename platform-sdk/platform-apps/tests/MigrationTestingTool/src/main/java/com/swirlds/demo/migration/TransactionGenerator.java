@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,8 @@ public class TransactionGenerator {
         final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
         try {
+            // Adding additional byte to differentiate application transactions from system ones
+            out.write(1);
             out.writeSerializable(transaction, false);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
