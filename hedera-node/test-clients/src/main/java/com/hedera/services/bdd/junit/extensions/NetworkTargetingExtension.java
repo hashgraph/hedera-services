@@ -48,17 +48,14 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.swirlds.platform.system.InitTrigger;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -82,15 +79,15 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
         hapiTestMethodOf(extensionContext).ifPresent(method -> {
             if (isAnnotated(method, GenesisHapiTest.class)) {
                 final var a = method.getAnnotation(GenesisHapiTest.class);
-                final var targetNetwork =
-                        new EmbeddedNetwork(method.getName().toUpperCase(), method.getName(), CONCURRENT, InitTrigger.GENESIS);
+                final var targetNetwork = new EmbeddedNetwork(
+                        method.getName().toUpperCase(), method.getName(), CONCURRENT, InitTrigger.GENESIS);
                 final var bootstrapOverrides = Arrays.stream(a.bootstrapOverrides())
                         .collect(toMap(ConfigOverride::key, ConfigOverride::value));
                 targetNetwork.startWith(bootstrapOverrides, a.generateNetworkJson(), a.useDiskAdminKey());
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else if (isAnnotated(method, RestartHapiTest.class)) {
-                final var targetNetwork =
-                        new EmbeddedNetwork(method.getName().toUpperCase(), method.getName(), REPEATABLE, InitTrigger.RESTART);
+                final var targetNetwork = new EmbeddedNetwork(
+                        method.getName().toUpperCase(), method.getName(), REPEATABLE, InitTrigger.RESTART);
                 final var a = method.getAnnotation(RestartHapiTest.class);
 
                 final var setupOverrides =

@@ -17,7 +17,6 @@
 package com.hedera.node.app.info;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
-import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
 import static java.util.Objects.requireNonNull;
 
@@ -43,9 +42,6 @@ import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
-
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -58,6 +54,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,7 +114,9 @@ public class DiskStartupNetworks implements StartupNetworks {
             return unscopedNetwork;
         }
 
-        return loadNetwork(AssetUse.OVERRIDE, config, "" + roundNumber, OVERRIDE_NETWORK_JSON).or(() -> loadFromConfigTxt(config)).or(Optional::empty);
+        return loadNetwork(AssetUse.OVERRIDE, config, "" + roundNumber, OVERRIDE_NETWORK_JSON)
+                .or(() -> loadFromConfigTxt(config))
+                .or(Optional::empty);
     }
 
     @Override
@@ -177,15 +176,15 @@ public class DiskStartupNetworks implements StartupNetworks {
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 
-
     private Optional<Network> loadFromConfigTxt(Configuration configuration) {
-        var configTxtPath = Paths.get(configuration.getConfigData(BootstrapConfig.class).configTxtPath());
+        var configTxtPath =
+                Paths.get(configuration.getConfigData(BootstrapConfig.class).configTxtPath());
         Optional<Network> maybeNetwork = genesisNetworkFromConfigTxt(configuration, configTxtPath);
         Optional<Network> updatedNetwork = Optional.empty();
         if (maybeNetwork.isPresent()) {
             final var network = maybeNetwork.get();
             // first try node-admin-keys.json
-            //todo add!
+            // todo add!
 
             // then try to load the PEM file itself
             var keysPath = configuration.getConfigData(BootstrapConfig.class).nodeDiskAdminKeyPath();
@@ -194,8 +193,10 @@ public class DiskStartupNetworks implements StartupNetworks {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of(keysPath), "*.pem")) {
                 for (Path entry : stream) {
                     if (entry.getFileName().toString().contains("account")) {
-                        pemAcctStr = entry.getFileName().toString().replace(".pem", "").replace(
-                                "account", "");
+                        pemAcctStr = entry.getFileName()
+                                .toString()
+                                .replace(".pem", "")
+                                .replace("account", "");
                         pemLoc = entry.toAbsolutePath().toString();
                         break;
                     }
@@ -204,15 +205,15 @@ public class DiskStartupNetworks implements StartupNetworks {
                 log.warn("Couldn't find account pem file", e);
             }
 
-            //load .pem
+            // load .pem
             if (!pemAcctStr.isEmpty()) {
                 // first, find the appropriate metadata object
                 int metadataIndex = -1;
-                AccountID pemAccount = AccountID.newBuilder().accountNum(
-                        Long.parseLong(pemAcctStr)).build();
+                AccountID pemAccount = AccountID.newBuilder()
+                        .accountNum(Long.parseLong(pemAcctStr))
+                        .build();
                 for (NodeMetadata metadata : network.nodeMetadata()) {
-                    if (pemAccount.equals(
-                            metadata.node().accountId())) {
+                    if (pemAccount.equals(metadata.node().accountId())) {
 
                         metadataIndex = network.nodeMetadata().indexOf(metadata);
                         break;
@@ -225,8 +226,7 @@ public class DiskStartupNetworks implements StartupNetworks {
                 var nodeMetadata = network.nodeMetadata().get(metadataIndex);
 
                 // get passphrase:
-                final var passFile = Path.of(
-                        pemLoc.replace(".pem", ".pass"));
+                final var passFile = Path.of(pemLoc.replace(".pem", ".pass"));
                 String pass = "";
                 if (Files.exists(passFile)) {
                     try {
@@ -241,18 +241,24 @@ public class DiskStartupNetworks implements StartupNetworks {
                 }
 
                 // now, load the private key and build its public key
-                EdDSAPrivateKey privateKey = Ed25519Utils.readKeyFrom(Paths.get(pemLoc).toFile(), pass);
+                EdDSAPrivateKey privateKey =
+                        Ed25519Utils.readKeyFrom(Paths.get(pemLoc).toFile(), pass);
                 var publicKey = publicKeyFromEd25519(privateKey);
                 var pubKeyBytes = Bytes.wrap(publicKey);
                 var key = Key.newBuilder().ed25519(pubKeyBytes).build();
 
                 // finally, replace the old metadata with the new one (that has the updated admin key)
                 List<NodeMetadata> newMetas = new ArrayList<>(network.nodeMetadata());
-                Node newNode = nodeMetadata.nodeOrThrow().copyBuilder().adminKey(key).build();
-                NodeMetadata newNodeMetadata = nodeMetadata.copyBuilder().node(newNode).build();
+                Node newNode =
+                        nodeMetadata.nodeOrThrow().copyBuilder().adminKey(key).build();
+                NodeMetadata newNodeMetadata =
+                        nodeMetadata.copyBuilder().node(newNode).build();
                 newMetas.set(metadataIndex, newNodeMetadata);
                 // replace the old metadata with the new one
-                updatedNetwork = Optional.of(Network.newBuilder().ledgerId(network.ledgerId()).nodeMetadata(newMetas).build());
+                updatedNetwork = Optional.of(Network.newBuilder()
+                        .ledgerId(network.ledgerId())
+                        .nodeMetadata(newMetas)
+                        .build());
             }
         }
 
@@ -260,7 +266,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     private byte[] publicKeyFromEd25519(EdDSAPrivateKey privateKey) {
-       return privateKey.getAbyte();
+        return privateKey.getAbyte();
     }
 
     /**
@@ -388,7 +394,8 @@ public class DiskStartupNetworks implements StartupNetworks {
      * @return the loaded genesis network, if it was found and successfully loaded
      */
     @Deprecated(forRemoval = true)
-    private Optional<Network> genesisNetworkFromConfigTxt(@NonNull final Configuration platformConfig, @NonNull final Path configTxtPath) {
+    private Optional<Network> genesisNetworkFromConfigTxt(
+            @NonNull final Configuration platformConfig, @NonNull final Path configTxtPath) {
         try {
             log.info("No genesis-network.json detected, falling back to config.txt and initNodeSecurity()");
             final AddressBook legacyBook;

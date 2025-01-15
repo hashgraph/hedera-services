@@ -125,7 +125,11 @@ public class WorkingDirUtils {
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
      */
-    public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskNetworkKey) {
+    public static void recreateWorkingDir(
+            @NonNull final Path workingDir,
+            @NonNull final String configTxt,
+            final boolean generateNetworkJson,
+            final boolean useDiskNetworkKey) {
         requireNonNull(workingDir);
         requireNonNull(configTxt);
 
@@ -143,8 +147,7 @@ public class WorkingDirUtils {
 
         if (generateNetworkJson) {
             writeStringUnchecked(
-                    workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(
-                            GENESIS_NETWORK_JSON),
+                    workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
                     Network.JSON.toJSON(network));
         } else {
             // delete the default already output:
@@ -335,7 +338,8 @@ public class WorkingDirUtils {
         }
     }
 
-    private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir, final boolean useDiskAdminKey) {
+    private static void copyBootstrapAssets(
+            @NonNull final Path assetDir, @NonNull final Path workingDir, final boolean useDiskAdminKey) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
                 final var fileName = file.getFileName().toString();
@@ -356,8 +360,10 @@ public class WorkingDirUtils {
 
         var copiedAdminKeysDir = workingDir.resolve(DATA_DIR).resolve(KEYS_FOLDER);
         if (useDiskAdminKey) {
-            copyUnchecked(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"), copiedAdminKeysDir.resolve("account3.pem"));
-            copyUnchecked(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"), copiedAdminKeysDir.resolve("account3.pass"));
+            copyUnchecked(
+                    workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"), copiedAdminKeysDir.resolve("account3.pem"));
+            copyUnchecked(
+                    workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"), copiedAdminKeysDir.resolve("account3.pass"));
             // and remove node-admin-keys
             rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
         }

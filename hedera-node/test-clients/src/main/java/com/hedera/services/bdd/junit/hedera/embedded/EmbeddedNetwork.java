@@ -43,7 +43,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.platform.system.InitTrigger;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -83,15 +82,18 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     public EmbeddedNetwork(
-            @NonNull final String name, @NonNull final String workingDir, @NonNull final EmbeddedMode mode, @NonNull final
-            InitTrigger trigger) {
+            @NonNull final String name,
+            @NonNull final String workingDir,
+            @NonNull final EmbeddedMode mode,
+            @NonNull final InitTrigger trigger) {
         super(
                 name,
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
                         .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
                                 // All non-embedded node working directories are mapped to the embedded node0
                                 classicMetadataFor(
-                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir)), trigger))
+                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir)),
+                                trigger))
                         .toList());
         this.mode = requireNonNull(mode);
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
@@ -107,7 +109,11 @@ public class EmbeddedNetwork extends AbstractNetwork {
      *
      * @param state the state to customize
      */
-    public void restart(@NonNull final FakeState state, @NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean existingKey) {
+    public void restart(
+            @NonNull final FakeState state,
+            @NonNull final Map<String, String> bootstrapOverrides,
+            final boolean generateNetworkJson,
+            final boolean existingKey) {
         requireNonNull(state);
         startVia(hedera -> hedera.restart(state), bootstrapOverrides, generateNetworkJson, existingKey);
     }
@@ -119,7 +125,10 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     @Override
-    public void startWith(@NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+    public void startWith(
+            @NonNull final Map<String, String> bootstrapOverrides,
+            final boolean generateNetworkJson,
+            final boolean useDiskAdminKey) {
         requireNonNull(bootstrapOverrides);
         startVia(EmbeddedHedera::start, bootstrapOverrides, generateNetworkJson, useDiskAdminKey);
     }
@@ -198,7 +207,10 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     private void startVia(
-            @NonNull final Consumer<EmbeddedHedera> start, @NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+            @NonNull final Consumer<EmbeddedHedera> start,
+            @NonNull final Map<String, String> bootstrapOverrides,
+            final boolean generateNetworkJson,
+            final boolean useDiskAdminKey) {
         // Initialize the working directory
         embeddedNode.initWorkingDir(configTxt, generateNetworkJson, useDiskAdminKey);
         if (!bootstrapOverrides.isEmpty()) {

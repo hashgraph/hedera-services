@@ -53,10 +53,8 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.util.BootstrapUtils;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -110,14 +108,25 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
                 // Only initialize logging for the shared embedded network
             }
         }
-        System.setProperty("bootstrap.nodeDiskAdminKey.path", getExternalPath(DISK_ADMIN_KEY_DIR).toString());
-        System.setProperty("bootstrap.configTxt.path", getExternalPath(DATA_CONFIG_DIR).getParent().getParent().resolve("config.txt").toString());
-        System.setProperty("paths.keysDirPath", getExternalPath(DISK_ADMIN_KEY_DIR).resolve("public-cert").toString());
+        System.setProperty(
+                "bootstrap.nodeDiskAdminKey.path",
+                getExternalPath(DISK_ADMIN_KEY_DIR).toString());
+        System.setProperty(
+                "bootstrap.configTxt.path",
+                getExternalPath(DATA_CONFIG_DIR)
+                        .getParent()
+                        .getParent()
+                        .resolve("config.txt")
+                        .toString());
+        System.setProperty(
+                "paths.keysDirPath",
+                getExternalPath(DISK_ADMIN_KEY_DIR).resolve("public-cert").toString());
         return this;
     }
 
     @Override
-    public @NonNull EmbeddedNode initWorkingDir(@NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+    public @NonNull EmbeddedNode initWorkingDir(
+            @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
         super.initWorkingDir(configTxt, generateNetworkJson, useDiskAdminKey);
         updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;

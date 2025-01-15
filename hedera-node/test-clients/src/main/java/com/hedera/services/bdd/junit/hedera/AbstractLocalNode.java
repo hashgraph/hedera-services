@@ -28,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,9 +54,11 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     }
 
     @Override
-    public @NonNull T initWorkingDir(@NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+    public @NonNull T initWorkingDir(
+            @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
         requireNonNull(configTxt);
-        WorkingDirUtils.recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, generateNetworkJson, useDiskAdminKey);
+        WorkingDirUtils.recreateWorkingDir(
+                requireNonNull(metadata.workingDir()), configTxt, generateNetworkJson, useDiskAdminKey);
         workingDirInitialized = true;
         return self();
     }

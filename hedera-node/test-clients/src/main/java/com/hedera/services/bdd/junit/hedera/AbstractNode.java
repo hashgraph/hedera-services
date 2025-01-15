@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,9 +116,7 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(Hedera.APP_NAME)
                     .resolve("" + getNodeId())
                     .resolve(Hedera.SWIRLD_NAME);
-            case DISK_ADMIN_KEY_DIR -> workingDir
-                    .resolve(DATA_DIR)
-                    .resolve("keys");
+            case DISK_ADMIN_KEY_DIR -> workingDir.resolve(DATA_DIR).resolve("keys");
         };
     }
 

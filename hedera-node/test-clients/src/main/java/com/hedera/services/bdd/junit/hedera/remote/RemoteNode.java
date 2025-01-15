@@ -40,7 +40,8 @@ public class RemoteNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public HederaNode initWorkingDir(@NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+    public HederaNode initWorkingDir(
+            @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
         throw new UnsupportedOperationException("Cannot initialize a remote node's working directory");
     }
 
