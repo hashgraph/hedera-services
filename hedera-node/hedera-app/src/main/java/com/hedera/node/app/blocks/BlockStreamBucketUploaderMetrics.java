@@ -134,7 +134,10 @@ public class BlockStreamBucketUploaderMetrics {
      *
      * @param blocksRetainedCount current number of blocks retained on disk
      */
-    public void updateBlocksRetainedCount(final long blocksRetainedCount) {
+    public void updateBlocksRetainedCount(
+            final long
+                    blocksRetainedCount) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/ is
+        // merged, invoke at the end of the BucketUploadManager.onBlockClosed()
         if (blocksRetainedCount < 0) {
             log.warn("Received number of retained blocks: {}", blocksRetainedCount);
         } else {
@@ -147,7 +150,10 @@ public class BlockStreamBucketUploaderMetrics {
      *
      * @param blocksUploadedCount current number of uploaded blocks on disk
      */
-    public void updateBlocksUploadedCount(final long blocksUploadedCount) {
+    public void updateBlocksUploadedCount(
+            final long
+                    blocksUploadedCount) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/ is
+        // merged, invoke at the end of the BucketUploadManager.onBlockClosed()
         if (blocksUploadedCount < 0) {
             log.warn("Received number of uploaded blocks: {}", blocksUploadedCount);
         } else {
@@ -160,7 +166,11 @@ public class BlockStreamBucketUploaderMetrics {
      *
      * @param blocksHashMismatchCount current number of blocks with hash mismatch on disk
      */
-    public void updateBlocksHashMismatchCount(final long blocksHashMismatchCount) {
+    public void updateBlocksHashMismatchCount(
+            final long
+                    blocksHashMismatchCount) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/
+        // is merged, invoke at the end of the
+        // BucketUploadManager.onBlockClosed()
         if (blocksHashMismatchCount < 0) {
             log.warn("Received number of hash mismatched blocks: {}", blocksHashMismatchCount);
         } else {
@@ -173,7 +183,9 @@ public class BlockStreamBucketUploaderMetrics {
      *
      * @param provider the provider of the bucket
      */
-    public void incrementSuccessfulUploads(final String provider) {
+    public void incrementSuccessfulUploads(
+            final String provider) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/ is merged,
+        // invoke in BucketUploadManager.uploadToProvider()
         if (!successfulUploads.containsKey(provider)) {
             log.warn("Bucket provider {} not found for {} metric", provider, UPLOADS_SUCCESS);
         } else {
@@ -186,7 +198,9 @@ public class BlockStreamBucketUploaderMetrics {
      *
      * @param provider the provider of the bucket
      */
-    public void incrementFailedUploads(final String provider) {
+    public void incrementFailedUploads(
+            final String provider) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/ is merged,
+        // invoke in BucketUploadManager.processBlockClosure()
         if (!failedUploads.containsKey(provider)) {
             log.warn("Bucket provider {} not found for {} metric", provider, UPLOADS_FAILURE);
         } else {
@@ -199,7 +213,9 @@ public class BlockStreamBucketUploaderMetrics {
      *
      * @param provider the provider of the bucket
      */
-    public void incrementHashMismatchedBlocks(final String provider) {
+    public void incrementHashMismatchedBlocks(
+            final String provider) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/ is merged,
+        // invoke in BucketUploadManager.uploadToProvider()
         if (!hashMismatches.containsKey(provider)) {
             log.warn("Bucket provider {} not found for {} metric", provider, HASH_MISMATCH);
         } else {
@@ -213,7 +229,11 @@ public class BlockStreamBucketUploaderMetrics {
      * @param provider the provider of the bucket
      * @param latency the latest upload latency
      */
-    public void updateUploadLatency(final String provider, final Duration latency) {
+    public void updateUploadLatency(
+            final String provider,
+            final Duration
+                    latency) { // FUTURE: Once https://github.com/hashgraph/hedera-services/pull/17135/ is merged,
+        // invoke in BucketUploadManager.uploadToProvider()
         if (!uploadLatencies.containsKey(provider)) {
             log.warn("Bucket provider {} not found for upload latency metrics", provider);
         } else {
