@@ -25,18 +25,18 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.State;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
- * Implements the major lifecycle events for the state.
+ * Implements the major lifecycle events for the state. Normally, the implementation of this interface should be
+ * stateless or effectively immutable, unless it's a special test implementation. An instance of this class is
+ * meant to be created once at the start of the application and then used for the lifetime of the application.
  *
- * <p>Currently these are implied by the {@link com.swirlds.platform.system.SwirldState}
- * interface; but in the future will be callbacks registered with a platform builder.
  */
-public interface StateLifecycles {
+public interface StateLifecycles<T extends MerkleStateRoot> {
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this node.
@@ -47,7 +47,7 @@ public interface StateLifecycles {
      */
     void onPreHandle(
             @NonNull Event event,
-            @NonNull State state,
+            @NonNull T state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
 
     /**
@@ -59,14 +59,14 @@ public interface StateLifecycles {
      */
     void onHandleConsensusRound(
             @NonNull Round round,
-            @NonNull State state,
+            @NonNull T state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.
      * @param round the round whose platform state changes are completed
      */
-    void onSealConsensusRound(@NonNull Round round, @NonNull State state);
+    void onSealConsensusRound(@NonNull Round round, @NonNull T state);
 
     /**
      * Called when the platform is initializing the network state.
@@ -77,7 +77,7 @@ public interface StateLifecycles {
      * @param previousVersion if non-null, the network version that was previously in use
      */
     void onStateInitialized(
-            @NonNull State state,
+            @NonNull T state,
             @NonNull Platform platform,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion);
@@ -92,12 +92,12 @@ public interface StateLifecycles {
      * @param context the current platform context
      */
     @Deprecated(forRemoval = true)
-    void onUpdateWeight(@NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
+    void onUpdateWeight(@NonNull T state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
 
     /**
      * Called when event stream recovery finishes.
      *
      * @param recoveredState the recovered state after reapplying all events
      */
-    void onNewRecoveredState(@NonNull State recoveredState);
+    void onNewRecoveredState(@NonNull T recoveredState);
 }

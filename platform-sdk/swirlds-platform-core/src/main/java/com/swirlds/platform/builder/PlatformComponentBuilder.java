@@ -740,7 +740,8 @@ public class PlatformComponentBuilder {
         if (transactionPrehandler == null) {
             transactionPrehandler = new DefaultTransactionPrehandler(
                     blocks.platformContext(),
-                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"),
+                    blocks.stateLifecycles());
         }
         return transactionPrehandler;
     }
