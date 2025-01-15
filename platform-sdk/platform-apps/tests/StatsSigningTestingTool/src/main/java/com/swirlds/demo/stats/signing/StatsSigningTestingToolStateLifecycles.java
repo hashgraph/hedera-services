@@ -187,8 +187,8 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
             @NonNull final Transaction transaction,
             @NonNull final Event event,
             @NonNull
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
-                    stateSignatureTransactionCallback) {
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         try {
             final Bytes transactionBytes = transaction.getApplicationTransaction();
             final Bytes strippedSystemTransactionBytes = transactionBytes.slice(1, transactionBytes.length() - 1);

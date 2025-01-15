@@ -40,8 +40,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -79,8 +77,7 @@ class StatsSigningTestingToolStateTest {
         final SttTransactionPool transactionPool = mock(SttTransactionPool.class);
         final Supplier<SttTransactionPool> transactionPoolSupplier = mock(Supplier.class);
         final Function<SemanticVersion, SoftwareVersion> versionFactory = mock(Function.class);
-        state = new StatsSigningTestingToolState(
-                versionFactory);
+        state = new StatsSigningTestingToolState(versionFactory);
         stateLifecycles = new StatsSigningTestingToolStateLifecycles(transactionPoolSupplier);
         main = new StatsSigningTestingToolMain();
         random = new Random();
