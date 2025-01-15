@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
@@ -42,7 +43,6 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -192,11 +192,10 @@ public class SignedState implements SignedStateInfo {
             final boolean freezeState,
             final boolean deleteOnBackgroundThread,
             final boolean pcesRound) {
-
         state.reserve();
 
         this.signatureVerifier = requireNonNull(signatureVerifier);
-        this.state = state;
+        this.state = requireNonNull(state);
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
@@ -212,6 +211,10 @@ public class SignedState implements SignedStateInfo {
         this.freezeState = freezeState;
         this.deleteOnBackgroundThread = deleteOnBackgroundThread;
         this.pcesRound = pcesRound;
+    }
+
+    public void init(@NonNull PlatformContext platformContext) {
+        state.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
     }
 
     /**
@@ -474,15 +477,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull Instant getCreationTimestamp() {
         return creationTimestamp;
-    }
-
-    /**
-     * Get the root node of the application's state
-     *
-     * @return the root node of the application's state.
-     */
-    public @NonNull SwirldState getSwirldState() {
-        return state;
     }
 
     /**

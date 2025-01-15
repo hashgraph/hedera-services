@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.BlockingState;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -53,7 +53,7 @@ class StateTests {
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
-        merkleStateRoot = new BlockingSwirldState();
+        merkleStateRoot = new BlockingState();
 
         merkleStateRoot.invalidateHash();
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleStateRoot);

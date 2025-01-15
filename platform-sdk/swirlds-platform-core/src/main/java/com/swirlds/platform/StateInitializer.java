@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,12 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +39,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates the logic for calling
- * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}
+ * {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
  * startup time.
  */
 public final class StateInitializer {
@@ -56,7 +58,8 @@ public final class StateInitializer {
     public static void initializeState(
             @NonNull final Platform platform,
             @NonNull final PlatformContext platformContext,
-            @NonNull final SignedState signedState) {
+            @NonNull final SignedState signedState,
+            @NonNull final StateLifecycles stateLifecycles) {
 
         final SoftwareVersion previousSoftwareVersion;
         final InitTrigger trigger;
@@ -74,14 +77,13 @@ public final class StateInitializer {
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.
+
         if (initialState.getHash() != null) {
             throw new IllegalStateException("Expected initial state to be unhashed");
         }
-        if (initialState.getHash() != null) {
-            throw new IllegalStateException("Expected initial swirld state to be unhashed");
-        }
 
-        initialState.init(platform, trigger, previousSoftwareVersion);
+        signedState.init(platformContext);
+        stateLifecycles.onStateInitialized(signedState.getState(), platform, trigger, previousSoftwareVersion);
 
         abortAndThrowIfInterrupted(
                 () -> {

@@ -86,7 +86,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -127,7 +127,7 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file.
  * Each transaction consists of an optional sequence number and random bytes.
  */
-public class PlatformTestingToolMain implements SwirldMain {
+public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolState> {
 
     /**
      * use this for all logging
@@ -441,7 +441,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         FCQueueStatistics.register(metrics);
 
         // Register PTT statistics
-        PlatformTestingToolState.initStatistics(platform);
+        PlatformTestingToolStateLifecycles.initStatistics(platform);
 
         final int SAMPLING_PERIOD = 5000; /* millisecond */
         Timer statTimer = new Timer("stat timer" + selfId, true);
@@ -711,7 +711,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         platform.getNotificationEngine().register(NewSignedStateListener.class, notification -> {
             if (timeToCheckBalances(notification.getConsensusTimestamp())) {
-                checkBalances(notification.getSwirldState());
+                checkBalances(notification.getStateRoot());
             }
         });
     }
@@ -862,14 +862,25 @@ public class PlatformTestingToolMain implements SwirldMain {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new PlatformTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+    public PlatformTestingToolState newMerkleStateRoot() {
+        final PlatformTestingToolState state =
+                new PlatformTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public StateLifecycles<PlatformTestingToolState> newStateLifecycles() {
+        return new PlatformTestingToolStateLifecycles();
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {

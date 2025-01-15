@@ -16,10 +16,14 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
 /**
  * Configuration for the TSS subsystem.
  */
 @ConfigData("tss")
-public record TssConfig() {}
+public record TssConfig(
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean hintsEnabled,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean historyEnabled) {}

@@ -26,36 +26,12 @@ package com.swirlds.demo.stats.signing;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -68,35 +44,22 @@ import org.apache.logging.log4j.Logger;
 public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
 
     private static final long CLASS_ID = 0x79900efa3127b6eL;
-    /**
-     * use this for all logging, as controlled by the optional data/log4j2.xml file
-     */
-    private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolState.class);
-
-    private final Supplier<SttTransactionPool> transactionPoolSupplier;
 
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
-    /** if true, artificially take {@link #HANDLE_MICROS} to handle each consensus transaction */
-    private static final boolean SYNTHETIC_HANDLE_TIME = false;
-
-    /** the number of microseconds to wait before returning from the handle method */
-    private static final int HANDLE_MICROS = 100;
-
-    public StatsSigningTestingToolState(
-            @NonNull final StateLifecycles lifecycles,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory,
-            @NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
-        super(lifecycles, versionFactory);
-        this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
+    public StatsSigningTestingToolState(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(versionFactory);
     }
 
     private StatsSigningTestingToolState(@NonNull final StatsSigningTestingToolState sourceState) {
         super(sourceState);
-        this.transactionPoolSupplier = sourceState.transactionPoolSupplier;
         setImmutable(false);
         sourceState.setImmutable(true);
+    }
+
+    void incrementRunningSum(final long delta) {
+        runningSum += delta;
     }
 
     /**
@@ -107,102 +70,6 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
         throwIfImmutable();
         setImmutable(true);
         return new StatsSigningTestingToolState(this);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void preHandle(
-            @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
-        if (sttTransactionPool != null) {
-            event.forEachTransaction(transaction -> {
-                if (transaction.isSystem()) {
-                    return;
-                }
-                final TransactionSignature transactionSignature =
-                        sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
-                if (transactionSignature != null) {
-                    transaction.setMetadata(transactionSignature);
-                    CryptographyHolder.get().verifySync(List.of(transactionSignature));
-                }
-            });
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        throwIfImmutable();
-        round.forEachTransaction(this::handleTransaction);
-    }
-
-    private void handleTransaction(final ConsensusTransaction trans) {
-        if (trans.isSystem()) {
-            return;
-        }
-        final TransactionSignature s = trans.getMetadata();
-
-        if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
-                            + " publicKey = {}, signature = {}, data = {} ]",
-                    TransactionCodec.txId(trans.getApplicationTransaction()),
-                    s.getSignatureStatus(),
-                    s.getSignatureType(),
-                    hex(Arrays.copyOfRange(
-                            s.getContentsDirect(),
-                            s.getPublicKeyOffset(),
-                            s.getPublicKeyOffset() + s.getPublicKeyLength())),
-                    hex(Arrays.copyOfRange(
-                            s.getContentsDirect(),
-                            s.getSignatureOffset(),
-                            s.getSignatureOffset() + s.getSignatureLength())),
-                    hex(Arrays.copyOfRange(
-                            s.getContentsDirect(), s.getMessageOffset(), s.getMessageOffset() + s.getMessageLength())));
-        }
-
-        runningSum += TransactionCodec.txId(trans.getApplicationTransaction());
-
-        maybeDelay();
-    }
-
-    private void maybeDelay() {
-        if (SYNTHETIC_HANDLE_TIME) {
-            final long start = System.nanoTime();
-            while (System.nanoTime() - start < (HANDLE_MICROS * 1_000)) {
-                // busy wait
-            }
-        }
-    }
-
-    private boolean validateSignature(final TransactionSignature signature, final Transaction transaction) {
-        try {
-            final Future<Void> future = signature.waitForFuture();
-            // Block & Ignore the Void return
-            future.get();
-            return true;
-        } catch (final InterruptedException e) {
-            logger.info(
-                    TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
-                    "handleTransaction Interrupted. This should happen only during a reconnect");
-            Thread.currentThread().interrupt();
-        } catch (final ExecutionException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "error while validating transaction signature for transaction {}",
-                    transaction,
-                    e);
-        }
-        return false;
     }
 
     /**

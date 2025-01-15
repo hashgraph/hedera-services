@@ -27,23 +27,10 @@ package com.swirlds.demo.stress;
  */
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.common.utility.ByteUtils;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -57,21 +44,19 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
-    /** supplies the app config */
-    public StressTestingToolConfig config;
-
-    public StressTestingToolState(
-            @NonNull final StateLifecycles lifecycles,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
-        super(lifecycles, versionFactory);
+    public StressTestingToolState(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(versionFactory);
     }
 
     private StressTestingToolState(@NonNull final StressTestingToolState sourceState) {
         super(sourceState);
         runningSum = sourceState.runningSum;
-        config = sourceState.config;
         setImmutable(false);
         sourceState.setImmutable(true);
+    }
+
+    void incrementRunningSum(final long delta) {
+        runningSum += delta;
     }
 
     /**
@@ -82,60 +67,6 @@ public class StressTestingToolState extends PlatformMerkleStateRoot {
         throwIfImmutable();
         setImmutable(true);
         return new StressTestingToolState(this);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void init(
-            @NonNull final Platform platform,
-            @NonNull final InitTrigger trigger,
-            @Nullable final SoftwareVersion previousSoftwareVersion) {
-        super.init(platform, trigger, previousSoftwareVersion);
-
-        this.config = platform.getContext().getConfiguration().getConfigData(StressTestingToolConfig.class);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void preHandle(
-            @NonNull final Event event,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        busyWait(config.preHandleTime());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        throwIfImmutable();
-        round.forEachTransaction(this::handleTransaction);
-    }
-
-    private void handleTransaction(@NonNull final ConsensusTransaction trans) {
-        if (trans.isSystem()) {
-            return;
-        }
-        runningSum +=
-                ByteUtils.byteArrayToLong(trans.getApplicationTransaction().toByteArray(), 0);
-        busyWait(config.handleTime());
-    }
-
-    @SuppressWarnings("all")
-    private void busyWait(@NonNull final Duration duration) {
-        if (!duration.isZero() && !duration.isNegative()) {
-            final long start = System.nanoTime();
-            final long nanos = duration.toNanos();
-            while (System.nanoTime() - start < nanos) {
-                // busy wait
-            }
-        }
     }
 
     /**
