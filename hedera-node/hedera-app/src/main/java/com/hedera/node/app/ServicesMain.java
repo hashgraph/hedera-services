@@ -41,6 +41,8 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -410,6 +412,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 InstantSource.system(),
                 DiskStartupNetworks::new,
                 TssBlockHashSigner::new,
+                HintsServiceImpl::new,
+                HistoryServiceImpl::new,
                 metrics);
     }
 

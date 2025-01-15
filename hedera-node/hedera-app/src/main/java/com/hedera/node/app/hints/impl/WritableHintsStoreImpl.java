@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.hedera.node.app.hints.impl;
 
-import com.hedera.node.config.NetworkProperty;
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import com.hedera.node.app.hints.WritableHintsStore;
+import com.swirlds.state.spi.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Configuration for the TSS subsystem.
+ * Placeholder implementation of the {@link WritableHintsStore}.
  */
-@ConfigData("tss")
-public record TssConfig(
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean hintsEnabled,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean historyEnabled) {}
+public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements WritableHintsStore {
+    public WritableHintsStoreImpl(@NonNull WritableStates states) {
+        super(states);
+    }
+}
