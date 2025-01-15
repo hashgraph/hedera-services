@@ -32,7 +32,7 @@ public class AtomicBatchTest {
 
     @HapiTest
     // just test that the batch is submitted
-    public Stream<DynamicTest> test() {
+    public Stream<DynamicTest> simpleBatchTest() {
         return hapiTest(
                 cryptoCreate("payer").balance(ONE_HBAR),
                 atomicBatch(
