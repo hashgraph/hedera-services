@@ -80,11 +80,15 @@ Consider an example using HTS:
 * Sp the contract wants to call the defined ERC-20 method
   `balanceOf(address) external view returns (uint256)` on that token, so it:
 * Does a contract call to _the token_, at address `0.0.A`, using
-  selector [`0x70a08231`](https://www.4byte.directory/signatures/?bytes4_signature=0x70a08231),
+  selector `0x70a08231`[^†]
   passing the address of interest, `0xNNNNNNNNNNNNNNNNNNNN`, as an argument:
-  * `(bool success, uint256 amount) = 0xA.call{gas:5000}(abi.encodeWithSignature("balanceOf(address)", 0xNNNNNNNNNNNNNNNNNNNN)`
+  * `(bool success, uint256 amount) = 0xA.staticcall{gas:5000}(abi.encodeWithSignature("balanceOf(address)", 0xNNNNNNNNNNNNNNNNNNNN)`[^‡]
   * where `0xA` is the account num alias for `0.0.A` (aka "long-zero")
 * If `success` is true, then that address's balance is available in `amount`.
+
+[^†]: Via foundry tool: `cast sig balanceOf(address)`
+[^‡]: `balanceOf` is a `view` function, so `staticcall` works.  For non-`view` functions
+use `call`, of course.
 
 (Or more likely, developer has in his project a Solidity interface that holds all the ERC-20 methods,
 and uses that instead of a raw call.)
@@ -103,6 +107,10 @@ the same _flow_ for technical reasons, but very similarly.)
    return the customized redirect contract for this account address; otherwise return the empty
    bytecode (which lets the EVM do the "successful noop" call of a nonexistent contract)
    * _n.b._: "_and_ the account id given exists": Only for HAS and HSS at this time, not yet for HTS.
+   * _n.b._: The account here - the `ProxyEvmAccount` instance, is not the usual representation of
+     a Hedera account, but is a subclass of the Besu representation of an EVM "account".  We must
+     use this representation whenever using the proxy contract technique, so that we have an address
+     that works with the Besu `Call` operation.
 4. `DispatchingEvmFrameState.getAccountRedirectCode` - given account id return the bytecode
    for the redirect bytecode specialized for this account
 5. From this point it behaves like any other contract call, and the bytecode is executed
@@ -236,28 +244,5 @@ Via `library.dedaub.com/decompile`:
 0x5a: PUSH1     0x0
 0x5c: REVERT
 0x5d: INVALID
-0x5e: LOG2
-0x5f: PUSH5     0x6970667358
-0x65: MISSING
-0x66: SLT
-0x67: SHA3
-0x68: MISSING
-0x69: CALLDATACOPY
-0x6a: DUP16
-0x6b: MISSING
-0x6c: MISSING
-0x6d: PUSH19    0xba49a0005514ef7087017f707b45fb9bf56bb8
-0x81: SHL
-0x82: MISSING
-0x83: EXTCODEHASH
-0x84: CALL
-0x85: SWAP11
-0x86: MISSING
-0x87: DUP12
-0x88: PUSH5     0x736f6c6343
-0x8e: STOP
-0x8f: ADDMOD
-0x90: SIGNEXTEND
-0x91: STOP
-0x92: CALLER
+// remaining bytes elided: belongs to Solidity contract metadata
 ```
