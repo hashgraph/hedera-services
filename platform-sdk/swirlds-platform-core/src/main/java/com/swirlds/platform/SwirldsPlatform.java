@@ -23,10 +23,10 @@ import static com.swirlds.platform.StateInitializer.initializeState;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
 import static com.swirlds.platform.state.address.RosterMetrics.registerRosterMetrics;
-import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -72,6 +72,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
+import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.Platform;
@@ -288,8 +289,10 @@ public class SwirldsPlatform implements Platform {
                 .getConfiguration()
                 .getConfigData(StateConfig.class)
                 .getMainClassName(blocks.mainClassName());
-        final List<SavedStateInfo> savedStates =
-                getSavedStateFiles(platformContext, actualMainClassName, selfId, blocks.swirldName());
+        final SignedStateFilePath statePath = new SignedStateFilePath(
+                platformContext.getConfiguration().getConfigData(StateCommonConfig.class));
+        final List<SavedStateInfo> savedStates = statePath.getSavedStateFiles(actualMainClassName, selfId,
+                blocks.swirldName());
         if (!savedStates.isEmpty()) {
             // The minimum generation of non-ancient events for the oldest state snapshot on disk.
             final long minimumGenerationNonAncientForOldestState =

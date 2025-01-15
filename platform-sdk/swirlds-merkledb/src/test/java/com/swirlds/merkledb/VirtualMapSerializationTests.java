@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -385,7 +384,6 @@ class VirtualMapSerializationTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
         VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map = new VirtualMap<>(
                 "inMemoryModeSerde", KEY_SERIALIZER, VALUE_SERIALIZER, constructBuilder(configuration), configuration);
