@@ -36,7 +36,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * The current hinTS context.
+ * The hinTS context that can be used to request hinTS signatures using the latest
+ * complete construction, if there is one. See {@link #setConstruction(HintsConstruction)}
+ * for the ways the context can have a construction set.
  */
 @Singleton
 public class HintsContext {
@@ -81,7 +83,8 @@ public class HintsContext {
     }
 
     /**
-     * Returns the active verification key, or throws if the context is not ready.
+     * Returns the active verification key.
+     * @throws IllegalStateException if the context is not ready
      */
     public Bytes verificationKeyOrThrow() {
         throwIfNotReady();
@@ -89,7 +92,8 @@ public class HintsContext {
     }
 
     /**
-     * Returns the active construction ID, or throws if the context is not ready.
+     * Returns the construction ID.
+     * @throws IllegalStateException if the context is not ready
      */
     public long constructionIdOrThrow() {
         throwIfNotReady();
@@ -97,7 +101,7 @@ public class HintsContext {
     }
 
     /**
-     * Creates a new asynchronous signing process for the given block hash.
+     * Creates a new signing process for the given block hash.
      * @param blockHash the block hash
      * @return the signing process
      */
@@ -112,8 +116,8 @@ public class HintsContext {
                 atLeastOneThirdOfTotal(totalWeight),
                 blockHash,
                 preprocessedKeys.aggregationKey(),
-                verificationKey,
-                requireNonNull(nodePartyIds));
+                requireNonNull(nodePartyIds),
+                verificationKey);
     }
 
     /**
@@ -135,7 +139,7 @@ public class HintsContext {
     }
 
     /**
-     * A particular hinTS signing happening in this context.
+     * A signing process spawned from this context.
      */
     public class Signing {
         private final long constructionId;
@@ -153,14 +157,14 @@ public class HintsContext {
                 final long thresholdWeight,
                 @NonNull final Bytes message,
                 @NonNull final Bytes aggregationKey,
-                @NonNull final Bytes verificationKey,
-                @NonNull final Map<Long, Integer> partyIds) {
+                @NonNull final Map<Long, Integer> partyIds,
+                @NonNull final Bytes verificationKey) {
             this.constructionId = constructionId;
             this.thresholdWeight = thresholdWeight;
             this.message = requireNonNull(message);
             this.aggregationKey = requireNonNull(aggregationKey);
-            this.verificationKey = requireNonNull(verificationKey);
             this.partyIds = requireNonNull(partyIds);
+            this.verificationKey = requireNonNull(verificationKey);
         }
 
         /**
@@ -171,19 +175,25 @@ public class HintsContext {
         }
 
         /**
-         * Incorporate a partial signature into the aggregation.
+         * Incorporates a node's partial signature into the aggregation. If the signature is valid, and
+         * including this node's weight passes the required threshold, completes the future returned from
+         * {@link #future()} with the aggregated signature.
+         *
          * @param constructionId the construction ID
          * @param nodeId the node ID
          * @param signature the partial signature
          */
         public void incorporate(final long constructionId, final long nodeId, @NonNull final Bytes signature) {
             requireNonNull(signature);
-            if (this.constructionId == constructionId) {
+            if (this.constructionId == constructionId && partyIds.containsKey(nodeId)) {
                 final int partyId = partyIds.get(nodeId);
                 final var publicKey = codec.extractPublicKey(aggregationKey, partyId);
                 if (publicKey != null && library.verifyBls(signature, message, publicKey)) {
                     signatures.put(partyId, signature);
                     final var weight = codec.extractWeight(aggregationKey, partyId);
+                    System.out.println("Weight for node" + nodeId + ": " + weight);
+                    System.out.println("Weight of signatures: " + weightOfSignatures);
+                    System.out.println("Threshold weight: " + thresholdWeight);
                     if (weightOfSignatures.addAndGet(weight) >= thresholdWeight) {
                         future.complete(library.aggregateSignatures(aggregationKey, verificationKey, signatures));
                     }

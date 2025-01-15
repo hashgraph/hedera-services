@@ -115,6 +115,8 @@ class HintsContextTest {
 
         signing.incorporate(CONSTRUCTION.constructionId() + 1, 0L, signature);
         assertFalse(future.isDone());
+        signing.incorporate(CONSTRUCTION.constructionId(), Long.MAX_VALUE, signature);
+        assertFalse(future.isDone());
         signing.incorporate(CONSTRUCTION.constructionId(), A_NODE_PARTY_ID.nodeId(), signature);
         assertFalse(future.isDone());
         signing.incorporate(CONSTRUCTION.constructionId(), B_NODE_PARTY_ID.nodeId(), signature);
