@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,6 +220,8 @@ public class GrpcUtils {
                     .cancelAirdrop(transaction);
             case TokenClaimAirdrop -> clients.getTokenSvcStub(nodeAccountId, false, false)
                     .claimAirdrop(transaction);
+            case AtomicBatch -> clients.getUtilSvcStub(nodeAccountId, false, false)
+                    .atomicBatch(transaction);
             default -> throw new IllegalArgumentException(functionality + " is not a transaction");
         };
     }

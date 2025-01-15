@@ -31,7 +31,7 @@ public class AtomicBatchTest {
 
     @HapiTest
     // just test that the batch is submitted
-    public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabled() {
+    public Stream<DynamicTest> simpleBatchTest() {
         return hapiTest(atomicBatch(
                 cryptoCreate("PAYER").balance(ONE_HBAR), cryptoCreate("SENDER").balance(1L)));
     }
