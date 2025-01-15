@@ -56,7 +56,7 @@ public class TransactionHandler {
      * 		the stateLifecycles to apply {@code round} to
      * @param stateRoot the state root to apply {@code round} to
      */
-    public <T extends PlatformMerkleStateRoot> void handleRound(
+    public <T extends PlatformMerkleStateRoot> List<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
             final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
         final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
         try {

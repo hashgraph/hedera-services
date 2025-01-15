@@ -92,6 +92,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
         final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
+        Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
 
         ReservedSignedState latestImmutableState = null;
         try {
@@ -101,7 +102,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                latestImmutableState.get().getSwirldState().preHandle(event, scopedSystemTransactions::add);
+                stateLifecycles.onPreHandle(event, latestImmutableState.get().getState(), consumer);
             } catch (final Throwable t) {
                 logger.error(
                         EXCEPTION.getMarker(), "error invoking StateLifecycles.onPreHandle() for event {}", event, t);
