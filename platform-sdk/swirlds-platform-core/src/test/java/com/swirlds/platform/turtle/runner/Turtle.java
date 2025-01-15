@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.turtle.runner;
 
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -105,8 +103,7 @@ public class Turtle {
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(
                             MerkleStateRoot.class,
-                            () -> new PlatformMerkleStateRoot(
-                                    FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1))));
+                            () -> new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(1))));
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }

@@ -17,7 +17,10 @@
 package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import com.hedera.node.app.blocks.BlockHashSigner;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.tss.TssBlockHashSigner;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.CompletableFuture;
@@ -30,8 +33,11 @@ public class LapsingBlockHashSigner implements BlockHashSigner {
 
     private boolean ignoreRequests = false;
 
-    public LapsingBlockHashSigner() {
-        this.delegate = new TssBlockHashSigner();
+    public LapsingBlockHashSigner(
+            @NonNull final HintsService hintsService,
+            @NonNull final HistoryService historyService,
+            @NonNull final ConfigProvider configProvider) {
+        this.delegate = new TssBlockHashSigner(hintsService, historyService, configProvider);
     }
 
     /**

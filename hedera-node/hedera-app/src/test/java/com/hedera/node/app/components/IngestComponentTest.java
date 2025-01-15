@@ -36,6 +36,8 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -115,6 +117,8 @@ class IngestComponentTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 throttleFactory);
+        final var hintsService = new HintsServiceImpl(appContext);
+        final var historyService = new HistoryServiceImpl(appContext);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
@@ -139,6 +143,8 @@ class IngestComponentTest {
                 .startupNetworks(startupNetworks)
                 .throttleFactory(throttleFactory)
                 .blockHashSigner(blockHashSigner)
+                .hintsService(hintsService)
+                .historyService(historyService)
                 .build();
 
         final var state = new FakeState();
