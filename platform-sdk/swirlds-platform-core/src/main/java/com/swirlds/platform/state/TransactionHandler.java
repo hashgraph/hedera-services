@@ -23,7 +23,7 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.metrics.StateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -39,30 +39,31 @@ public class TransactionHandler {
     /** The id of this node. */
     private final NodeId selfId;
 
-    /** Stats relevant to SwirldState operations. */
-    private final SwirldStateMetrics stats;
+    /** Stats relevant to the state operations. */
+    private final StateMetrics stats;
 
-    public TransactionHandler(final NodeId selfId, final SwirldStateMetrics stats) {
+    public TransactionHandler(final NodeId selfId, final StateMetrics stats) {
         this.selfId = selfId;
         this.stats = stats;
     }
 
     /**
-     * Applies a consensus round to SwirldState, handles any exceptions gracefully, and updates relevant statistics.
+     * Applies a consensus round to the state, handles any exceptions gracefully, and updates relevant statistics.
      *
      * @param round
      * 		the round to apply
-     * @param state
-     * 		the state to apply {@code round} to
+     * @param stateLifecycles
+     * 		the stateLifecycles to apply {@code round} to
+     * @param stateRoot the state root to apply {@code round} to
      */
-    public List<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
-            final ConsensusRound round, final PlatformMerkleStateRoot state) {
+    public <T extends PlatformMerkleStateRoot> void handleRound(
+            final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
         final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            state.handleConsensusRound(round, state.getWritablePlatformState(), scopedSystemTransactions::add);
+            stateLifecycles.onHandleConsensusRound(round, stateRoot, scopedSystemTransactions::add);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 
@@ -78,7 +79,7 @@ public class TransactionHandler {
         } catch (final Throwable t) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "error invoking SwirldState.handleConsensusRound() [ nodeId = {} ] with round {}",
+                    "error invoking StateLifecycles.onHandleConsensusRound() [ nodeId = {} ] with round {}",
                     selfId,
                     round.getRoundNum(),
                     t);

@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.spec.utilops.streams;
 
 import static com.hedera.node.config.types.StreamMode.RECORDS;
@@ -28,6 +43,8 @@ import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.support.validators.block.BlockContentsValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BlockItemNonceValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BlockNumberSequenceValidator;
 import com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator;
 import com.hedera.services.bdd.junit.support.validators.block.TransactionRecordParityValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -65,7 +82,11 @@ public class StreamValidationOp extends UtilOp {
             new TokenReconciliationValidator());
 
     private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES = List.of(
-            TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY, BlockContentsValidator.FACTORY);
+            TransactionRecordParityValidator.FACTORY,
+            StateChangesValidator.FACTORY,
+            BlockContentsValidator.FACTORY,
+            BlockNumberSequenceValidator.FACTORY,
+            BlockItemNonceValidator.FACTORY);
 
     public static void main(String[] args) {}
 
