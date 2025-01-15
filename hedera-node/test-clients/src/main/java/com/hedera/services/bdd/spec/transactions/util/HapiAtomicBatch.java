@@ -62,12 +62,13 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
 
     @Override
     protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        // TODO: Implement proper estimate for AtomicBatch
         return 20_000_000L; // spec.fees().forActivityBasedOp(HederaFunctionality.AtomicBatch, this::usageEstimate, txn,
         // numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        // todo: check for correct estimation of the batch
+        // TODO: check for correct estimation of the batch
         final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
         final var accumulator = new UsageAccumulator();
