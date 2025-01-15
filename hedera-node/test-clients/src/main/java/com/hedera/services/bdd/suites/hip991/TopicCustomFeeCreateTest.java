@@ -36,9 +36,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHTSFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.expectedConsensusFixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
@@ -89,6 +91,25 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
             lifecycle.doAdhoc(setupBaseKeys());
         }
+
+        @HapiTest
+        @DisplayName("Create topic with all keys")
+        final Stream<DynamicTest> validateFeeForTopicCreate() {
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
+                    cryptoCreate("collector"),
+                    cryptoCreate("autoRenew"),
+                    createTopic(TOPIC).via("topicNoCustomFee").payingWith("payer"),
+                    createTopic(TOPIC).via("topicWithCustomFee")
+                            .adminKeyName("adminKey")
+                            .autoRenewAccountId("autoRenew")
+                            .withConsensusCustomFee(fixedConsensusHbarFee(1,"collector"))
+                            .payingWith("payer"),
+                    validateChargedUsd("topicNoCustomFee", 0.01,2),
+                    validateChargedUsd("topicWithCustomFee", 2.0));
+        }
+
 
         @HapiTest
         @DisplayName("Create topic with all keys")

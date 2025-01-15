@@ -246,12 +246,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 
     @Override
     protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        ConsensusCreateTopic,
-                        ConsensusServiceFeeBuilder::getConsensusCreateTopicFee,
-                        txn,
-                        numPayerKeys);
+        return 200_000_000_000L;
     }
 
     @Override
