@@ -16,23 +16,30 @@
 
 package com.hedera.services.bdd.suites.hip551;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import org.junit.jupiter.api.DynamicTest;
+
+import java.util.stream.Stream;
+
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
 
     @HapiTest
     // just test that the batch is submitted
-    public Stream<DynamicTest> waitForExpiryIgnoredWhenLongTermDisabled() {
-        return hapiTest(atomicBatch(
-                cryptoCreate("PAYER").balance(ONE_HBAR), cryptoCreate("SENDER").balance(1L)));
+    public Stream<DynamicTest> test() {
+        return hapiTest(
+                cryptoCreate("payer").balance(ONE_HBAR),
+                atomicBatch(
+                cryptoCreate("PAYER").balance(ONE_HBAR), cryptoCreate("SENDER").balance(1L))
+                        .payingWith("payer")
+                        .via("txn"),
+                validateChargedUsd("txn", 0.001));
     }
 }
