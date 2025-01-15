@@ -90,9 +90,9 @@ with 0.30 milestone on it.
 
 ![labels-on-issue](./assets/labels-on-issue.png)
 
-### DevOps-CI Responsibilities
+### Platform-CI Responsibilities
 
-The DevOps-CI team will handle the following:
+The Platform-CI team will handle the following:
 
 - Will provide automated release processes and coordinate release schedules
 - Will handle production releases

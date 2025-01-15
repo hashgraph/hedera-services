@@ -24,8 +24,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
+import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.initLogging;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
@@ -50,9 +50,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
@@ -72,16 +70,15 @@ import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.GraphicsEnvironment;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -153,13 +150,7 @@ public class Browser {
             return;
         }
 
-        final Path log4jPath = getAbsolutePath(LOG4J_FILE_NAME);
-        try {
-            Log4jSetup.startLoggingFramework(log4jPath).await();
-        } catch (final InterruptedException e) {
-            CommonUtils.tellUserConsole("Interrupted while waiting for log4j to initialize");
-            Thread.currentThread().interrupt();
-        }
+        initLogging();
 
         logger = LogManager.getLogger(Browser.class);
 
@@ -196,7 +187,9 @@ public class Browser {
         final List<NodeId> configNodesToRun =
                 bootstrapConfiguration.getConfigData(BasicConfig.class).nodesToRun();
         final Set<NodeId> cliNodesToRun = commandLineArgs.localNodesToStart();
-        final List<NodeId> nodesToRun = getNodesToRun(appAddressBook, cliNodesToRun, configNodesToRun);
+        final var validNodeIds = appAddressBook.getNodeIdSet();
+        final List<NodeId> nodesToRun =
+                getNodesToRun(cliNodesToRun, configNodesToRun, () -> validNodeIds, validNodeIds::contains);
         logger.info(STARTUP.getMarker(), "The following nodes {} are set to run locally", nodesToRun);
 
         // Load all SwirldMain instances for locally run nodes.
@@ -279,6 +272,7 @@ public class Browser {
             // Each platform needs a different temporary state on disk.
             MerkleDb.resetDefaultInstancePath();
             // Create the initial state for the platform
+            StateLifecycles stateLifecycles = appMain.newStateLifecycles();
             final HashedReservedSignedState reservedState = getInitialState(
                     configuration,
                     recycleBin,
@@ -296,7 +290,8 @@ public class Browser {
                     appMain.getSoftwareVersion(),
                     initialState,
                     appDefinition.getConfigAddressBook(),
-                    platformContext);
+                    platformContext,
+                    stateLifecycles);
 
             // Build the platform with the given values
             final PlatformBuilder builder = PlatformBuilder.create(
@@ -304,9 +299,10 @@ public class Browser {
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
                     initialState,
+                    stateLifecycles,
                     nodeId,
                     AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                    RosterUtils.buildRosterHistory((State) initialState.get().getState()));
+                    RosterUtils.buildRosterHistory(initialState.get().getState()));
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);

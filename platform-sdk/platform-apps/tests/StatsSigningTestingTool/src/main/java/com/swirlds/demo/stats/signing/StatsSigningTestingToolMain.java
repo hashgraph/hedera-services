@@ -50,7 +50,7 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -65,7 +65,7 @@ import org.apache.logging.log4j.Logger;
  * also saves them to disk in a comma separated value (.csv) file. Each transaction is 100 random bytes. So
  * StatsSigningDemoState.handleTransaction doesn't actually do anything.
  */
-public class StatsSigningTestingToolMain implements SwirldMain {
+public class StatsSigningTestingToolMain implements SwirldMain<StatsSigningTestingToolState> {
     // the first four come from the parameters in the config.txt file
 
     public static final byte SYSTEM_TRANSACTION_MARKER = 0;
@@ -77,11 +77,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(StatsSigningTestingToolState.class, () -> {
-                        final StatsSigningTestingToolState statsSigningTestingToolState =
-                                new StatsSigningTestingToolState(
-                                        FAKE_MERKLE_STATE_LIFECYCLES,
-                                        version -> new BasicSoftwareVersion(version.major()),
-                                        () -> null);
+                        StatsSigningTestingToolState statsSigningTestingToolState =
+                                new StatsSigningTestingToolState(version -> new BasicSoftwareVersion(version.major()));
                         return statsSigningTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
@@ -304,13 +301,16 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new StatsSigningTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()),
-                () -> sttTransactionPool);
+    public StatsSigningTestingToolState newMerkleStateRoot() {
+        final StatsSigningTestingToolState state = new StatsSigningTestingToolState(
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    public StateLifecycles<StatsSigningTestingToolState> newStateLifecycles() {
+        return new StatsSigningTestingToolStateLifecycles(() -> sttTransactionPool);
     }
 
     /**
