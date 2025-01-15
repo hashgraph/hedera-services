@@ -39,7 +39,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param transaction   The transaction itself
  * @param txBody        the deserialized {@link TransactionBody} (either from the {@link Transaction#body()} or
- *  *                      from the {@link Transaction#signedTransactionBytes()}).
+ *                      from the {@link Transaction#signedTransactionBytes()}).
  * @param transactionID the validated {@link TransactionID} extracted from {@link #txBody}
  * @param payerID       the validated {@link AccountID} of the payer extracted from {@link #transactionID}
  * @param signatureMap  the {@link SignatureMap} (either from {@link Transaction#sigMap()} or

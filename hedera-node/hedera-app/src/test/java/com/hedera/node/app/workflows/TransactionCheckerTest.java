@@ -405,78 +405,79 @@ final class TransactionCheckerTest extends AppTestBase {
                 // But the super deprecation counter has not
                 assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
             }
-        }
 
-        @Test
-        @DisplayName("A transaction with super deprecated fields alone will throw")
-        @SuppressWarnings("deprecation")
-        void happyWithSuperDeprecatedFields() {
-            // Given a transaction using the super deprecated fields
-            final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
-            final var localTx = Transaction.newBuilder()
-                    .body(txBody)
-                    .sigs(SignatureList.newBuilder().sigs(sig).build())
-                    .build();
+            @Test
+            @DisplayName("A transaction with super deprecated fields alone will throw")
+            @SuppressWarnings("deprecation")
+            void happyWithSuperDeprecatedFields() {
+                // Given a transaction using the super deprecated fields
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
+                final var localTx = Transaction.newBuilder()
+                        .body(txBody)
+                        .sigs(SignatureList.newBuilder().sigs(sig).build())
+                        .build();
 
-            // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
-            assertThatThrownBy(() -> checker.check(localTx, null))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_TRANSACTION_BODY));
+                // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
+                assertThatThrownBy(() -> checker.check(localTx, null))
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(INVALID_TRANSACTION_BODY));
 
-            // And the super deprecation counter has been incremented
-            assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
-            // But the deprecation counter has not
-            assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
-        }
+                // And the super deprecation counter has been incremented
+                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
+                // But the deprecation counter has not
+                assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
+            }
 
-        @Test
-        @DisplayName(
-                "A transaction with super deprecated fields and signedTransactionBytes ignores super deprecated fields")
-        @SuppressWarnings("deprecation")
-        void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
-            // Given a transaction using the super deprecated fields and signedTransactionBytes
-            final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
-            final var localTx = Transaction.newBuilder()
-                    .body(txBody)
-                    .sigs(SignatureList.newBuilder().sigs(sig).build())
-                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
-                    .build();
+            @Test
+            @DisplayName(
+                    "A transaction with super deprecated fields and signedTransactionBytes ignores super deprecated fields")
+            @SuppressWarnings("deprecation")
+            void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
+                // Given a transaction using the super deprecated fields and signedTransactionBytes
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
+                final var localTx = Transaction.newBuilder()
+                        .body(txBody)
+                        .sigs(SignatureList.newBuilder().sigs(sig).build())
+                        .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                        .build();
 
-            // When we check
-            final var info = checker.check(localTx, null);
-            // Then the parsed data is as we expected
-            assertThat(info.transaction()).isEqualTo(localTx);
-            assertThat(info.txBody()).isEqualTo(txBody);
-            assertThat(info.signatureMap()).isEqualTo(signatureMap);
-            assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
-            // And the super-deprecated counter is incremented, but not the deprecated counter
-            assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
-            assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
-        }
+                // When we check
+                final var info = checker.check(localTx, null);
+                // Then the parsed data is as we expected
+                assertThat(info.transaction()).isEqualTo(localTx);
+                assertThat(info.txBody()).isEqualTo(txBody);
+                assertThat(info.signatureMap()).isEqualTo(signatureMap);
+                assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
+                // And the super-deprecated counter is incremented, but not the deprecated counter
+                assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
+                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
+            }
 
-        @Test
-        @DisplayName("A transaction with super deprecated fields and deprecated fields ignores super deprecated fields")
-        @SuppressWarnings("deprecation")
-        void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
-            // Given a transaction using the super deprecated fields and signedTransactionBytes
-            final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
-            final var localTx = Transaction.newBuilder()
-                    .body(txBody)
-                    .sigs(SignatureList.newBuilder().sigs(sig).build())
-                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
-                    .sigMap(signatureMap)
-                    .build();
+            @Test
+            @DisplayName(
+                    "A transaction with super deprecated fields and deprecated fields ignores super deprecated fields")
+            @SuppressWarnings("deprecation")
+            void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
+                // Given a transaction using the super deprecated fields and signedTransactionBytes
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
+                final var localTx = Transaction.newBuilder()
+                        .body(txBody)
+                        .sigs(SignatureList.newBuilder().sigs(sig).build())
+                        .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
+                        .sigMap(signatureMap)
+                        .build();
 
-            // When we check
-            final var info = checker.check(localTx, null);
-            // Then the parsed data is as we expected
-            assertThat(info.transaction()).isEqualTo(localTx);
-            assertThat(info.txBody()).isEqualTo(txBody);
-            assertThat(info.signatureMap()).isEqualTo(signatureMap);
-            assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
-            // And the super-deprecated counter is incremented, and also the deprecated counter
-            assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
-            assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
+                // When we check
+                final var info = checker.check(localTx, null);
+                // Then the parsed data is as we expected
+                assertThat(info.transaction()).isEqualTo(localTx);
+                assertThat(info.txBody()).isEqualTo(txBody);
+                assertThat(info.signatureMap()).isEqualTo(signatureMap);
+                assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
+                // And the super-deprecated counter is incremented, and also the deprecated counter
+                assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
+                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
+            }
         }
 
         @Nested
