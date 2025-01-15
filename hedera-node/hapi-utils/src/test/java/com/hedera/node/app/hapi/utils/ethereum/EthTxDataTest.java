@@ -618,4 +618,19 @@ class EthTxDataTest {
         byte[] failingChainId = BigInteger.valueOf(11155111L).toByteArray();
         assertNotEquals(Hex.toHexString(subject.chainId()), Hex.toHexString(failingChainId));
     }
+    @Test
+    void populateEthTxDataComparedToUnsignedByteArrayNoExtraByteAdded() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0_WITH_CHAIN_ID_11155111));
+        byte[] passingChainId = BigIntegers.asUnsignedByteArray(BigInteger.valueOf(11155111L));
+        assertEquals(Hex.toHexString(subject.chainId()), Hex.toHexString(passingChainId));
+    }
+
+    @Test
+        // In this scenario we are adding unexpected byte at the beginning of the bytes array.
+        // Issue is better described here: https://github.com/hashgraph/hedera-services/issues/15953
+    void populateEthTxDataComparedToSignedByteArrayExtraByteAdded() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0_WITH_CHAIN_ID_11155111));
+        byte[] failingChainId = BigInteger.valueOf(11155111L).toByteArray();
+        assertNotEquals(Hex.toHexString(subject.chainId()), Hex.toHexString(failingChainId));
+    }
 }

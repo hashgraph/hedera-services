@@ -384,9 +384,12 @@ public record EthTxData(
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
         // https://eips.ethereum.org/EIPS/eip-155
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
-            // after EIP155 the chain id is equal to
-            // CHAIN_ID = (v - {0,1} - 35) / 2
-            chainId = BigIntegers.asUnsignedByteArray(vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
+            // BigIntegers.asUnsignedByteArray method is used here to ensure no extra byte is added at the beginning
+            // of the byte array, which can happen in BigInteger.toByteArray when the highest bit
+            // in the result is already occupied by stored values. This issue is further explained
+            // in https://github.com/hashgraph/hedera-services/issues/15953
+            chainId = BigIntegers.asUnsignedByteArray(
+                    vBI.subtract(BigInteger.valueOf(35)).shiftRight(1));
         } else if (isLegacyUnprotectedEtx(vBI)) {
             // before EIP155 the chain id is considered equal to 0
             chainId = new byte[0];
