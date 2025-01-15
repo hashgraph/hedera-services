@@ -24,8 +24,9 @@ defaults:
 
 permissions:
   id-token: write
-  contents: read
-  actions: read
+  contents: write
+  actions: write
+  issues: write
 
 jobs:
   perform-version-roll:
