@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,13 +55,13 @@ public class TransactionPoolNexus implements TransactionSupplier {
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
      */
-    private final Queue<EventTransaction> bufferedTransactions = new LinkedList<>();
+    private final Queue<Bytes> bufferedTransactions = new LinkedList<>();
 
     /**
      * A list of high-priority transactions created by this node waiting to be put into a self-event. Transactions in
      * this queue are always inserted into an event before transactions waiting in {@link #bufferedTransactions}.
      */
-    private final Queue<EventTransaction> priorityBufferedTransactions = new LinkedList<>();
+    private final Queue<Bytes> priorityBufferedTransactions = new LinkedList<>();
 
     /**
      * The number of buffered signature transactions waiting to be put into events.
@@ -151,6 +151,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             return false;
         }
         final EventTransaction transaction = new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, appTransaction));
+        // TODO: Adapt to work with Bytes
         if (TransactionUtils.getLegacyTransactionSize(transaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
@@ -161,7 +162,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             return false;
         }
 
-        return submitTransaction(transaction, false);
+        return submitTransaction(appTransaction, false, false);
     }
 
     /**
@@ -174,10 +175,9 @@ public class TransactionPoolNexus implements TransactionSupplier {
      *                    functionalities.
      * @return true if successful
      */
-    public synchronized boolean submitTransaction(@NonNull final EventTransaction transaction, final boolean priority) {
-
+    public synchronized boolean submitTransaction(
+            @NonNull final Bytes transaction, final boolean priority, final boolean isSystem) {
         Objects.requireNonNull(transaction);
-        final boolean isSystem = TransactionUtils.isSystemTransaction(transaction);
 
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
@@ -232,15 +232,17 @@ public class TransactionPoolNexus implements TransactionSupplier {
     private EventTransaction getNextTransaction(final int currentEventSize) {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
-        if (!priorityBufferedTransactions.isEmpty()
-                && TransactionUtils.getLegacyTransactionSize(priorityBufferedTransactions.peek()) <= maxSize) {
-            return priorityBufferedTransactions.poll();
-        }
-
-        if (!bufferedTransactions.isEmpty()
-                && TransactionUtils.getLegacyTransactionSize(bufferedTransactions.peek()) <= maxSize) {
-            return bufferedTransactions.poll();
-        }
+        // TODO: Adapt to work with Bytes
+        //        if (!priorityBufferedTransactions.isEmpty()
+        //                && TransactionUtils.getLegacyTransactionSize(priorityBufferedTransactions.peek()) <= maxSize)
+        // {
+        //            return priorityBufferedTransactions.poll();
+        //        }
+        //
+        //        if (!bufferedTransactions.isEmpty()
+        //                && TransactionUtils.getLegacyTransactionSize(bufferedTransactions.peek()) <= maxSize) {
+        //            return bufferedTransactions.poll();
+        //        }
 
         return null;
     }

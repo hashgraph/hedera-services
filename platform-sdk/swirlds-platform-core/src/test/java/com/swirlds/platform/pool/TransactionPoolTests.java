@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,14 @@ class TransactionPoolTests {
     void addTransactionTest() {
         final List<EventTransaction> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
-        when(transactionPoolNexus.submitTransaction(any(), anyBoolean())).thenAnswer(invocation -> {
-            final EventTransaction transaction = invocation.getArgument(0);
-            final boolean isPriority = invocation.getArgument(1);
-            assertTrue(isPriority);
-            transactionList.add(transaction);
-            return true;
-        });
+        when(transactionPoolNexus.submitTransaction(any(), anyBoolean(), anyBoolean()))
+                .thenAnswer(invocation -> {
+                    final EventTransaction transaction = invocation.getArgument(0);
+                    final boolean isPriority = invocation.getArgument(1);
+                    assertTrue(isPriority);
+                    transactionList.add(transaction);
+                    return true;
+                });
 
         final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
         final StateSignatureTransaction signatureTransaction = StateSignatureTransaction.newBuilder()
