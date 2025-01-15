@@ -18,9 +18,23 @@ public record NodeMetadata(
         int internalGossipPort,
         int externalGossipPort,
         int prometheusPort,
-        @Nullable Path workingDir) {
+        @Nullable Path workingDir,
+        boolean generateNetworkJson) {
     public static final int UNKNOWN_PORT = -1;
 
+    public NodeMetadata(
+            long nodeId,
+            String name,
+            AccountID accountId,
+            String host,
+            int grpcPort,
+            int grpcNodeOperatorPort,
+            int internalGossipPort,
+            int externalGossipPort,
+            int prometheusPort,
+            @Nullable Path workingDir) {
+        this(nodeId, name, accountId, host, grpcPort, grpcNodeOperatorPort, internalGossipPort, externalGossipPort, prometheusPort, workingDir, true);
+    }
     /**
      * Create a new instance with the same values as this instance, but different ports.
      *

@@ -83,4 +83,16 @@ public @interface RestartHapiTest {
      * using {@link RestartType#SAME_VERSION} or {@link RestartType#UPGRADE_BOUNDARY}.
      */
     Class<? extends SavedStateSpec> savedStateSpec() default NoopSavedStateSpec.class;
+
+    /**
+     * todo
+     * @return
+     */
+    boolean generateNetworkJson() default true;
+
+    /**
+     * todo
+     * @return
+     */
+    boolean useDiskAdminKey() default false;
 }

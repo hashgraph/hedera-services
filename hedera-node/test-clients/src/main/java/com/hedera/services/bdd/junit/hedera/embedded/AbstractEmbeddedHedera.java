@@ -39,6 +39,7 @@ import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
@@ -46,6 +47,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -70,7 +72,9 @@ import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertificateEncodingException;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -351,9 +355,35 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
-                .withSize(1)
+                .withSize(configFile.getAddressBook().getSize())
                 .withRealKeysEnabled(true)
                 .build();
+
+        // write public certs to disk so crypto can initialize from them
+        var parent = path.getParent();
+        Path certDir = parent.resolve("data").resolve("keys").resolve("public-cert");
+        WorkingDirUtils.ensureDir(certDir.toString());
+        AtomicInteger addressIndex = new AtomicInteger();
+        randomAddressBook.iterator().forEachRemaining(address -> {
+            var filename = "s-public-node" + (addressIndex.getAndIncrement() + 1) + ".pem";
+            try (final var certWriter = Files.newBufferedWriter(certDir.resolve(filename))) {
+                certWriter.write("-----BEGIN CERTIFICATE-----\n");
+                var encoded = CommonUtils.base64encode(address.getSigCert().getEncoded());
+                int index = 0;
+                while (index < encoded.length()) {
+                    int end = Math.min(index + 64, encoded.length());
+                    certWriter.write(encoded.substring(index, end));
+                    certWriter.write("\n");
+                    index = end;
+                }
+                certWriter.write("\n-----END CERTIFICATE-----\n");
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } catch (CertificateEncodingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
         final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
         final var addressBook = configFile.getAddressBook();
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)

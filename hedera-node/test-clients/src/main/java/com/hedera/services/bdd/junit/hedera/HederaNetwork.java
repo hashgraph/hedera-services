@@ -165,6 +165,16 @@ public interface HederaNetwork {
     }
 
     /**
+     * todo
+     * @param bootstrapOverrides
+     * @param generateNetworkJson
+     * @param useDiskAdminKey
+     */
+    default void startWith(@NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Forcibly stops all nodes in the network.
      */
     void terminate();

@@ -43,4 +43,8 @@ import org.junit.jupiter.api.parallel.Isolated;
 @Isolated
 public @interface GenesisHapiTest {
     ConfigOverride[] bootstrapOverrides() default {};
+
+    boolean generateNetworkJson() default true;
+
+    boolean useDiskAdminKey() default false;
 }

@@ -54,4 +54,6 @@ public record BootstrapConfig(
         @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "genesis/throttles.json") @NodeProperty
                 String throttleDefsJsonResource,
         @ConfigProperty(value = "throttleDefsJson.file", defaultValue = "data/config/throttles.json") @NodeProperty
-                String throttleDefsJsonFile) {}
+                String throttleDefsJsonFile,
+        @ConfigProperty(value = "nodeDiskAdminKey.path", defaultValue = "data/keys") String nodeDiskAdminKeyPath,
+        @ConfigProperty(value = "configTxt.path", defaultValue = "") String configTxtPath) {}

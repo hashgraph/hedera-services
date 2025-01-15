@@ -88,6 +88,7 @@ public class WorkingDirUtils {
     public static final String OUTPUT_DIR = "output";
     public static final String UPGRADE_DIR = "upgrade";
     public static final String CURRENT_DIR = "current";
+    public static final String DISK_ADMIN_KEY_PREFIX = "disk-admin-key";
     public static final String CONFIG_TXT = "config.txt";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
@@ -124,7 +125,7 @@ public class WorkingDirUtils {
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
      */
-    public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
+    public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskNetworkKey) {
         requireNonNull(workingDir);
         requireNonNull(configTxt);
 
@@ -139,11 +140,23 @@ public class WorkingDirUtils {
         // Write the address book (config.txt) and genesis network (genesis-network.json) files
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
         final var network = networkFrom(configTxt, OnlyRoster.NO);
-        writeStringUnchecked(
-                workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
-                Network.JSON.toJSON(network));
+
+        if (generateNetworkJson) {
+            writeStringUnchecked(
+                    workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(
+                            GENESIS_NETWORK_JSON),
+                    Network.JSON.toJSON(network));
+        } else {
+            // delete the default already output:
+            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON));
+        }
+        if (useDiskNetworkKey) {
+            // remove the default node-admin-keys
+            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
+        }
+
         // Copy the bootstrap assets into the working directory
-        copyBootstrapAssets(bootstrapAssetsLoc(), workingDir);
+        copyBootstrapAssets(bootstrapAssetsLoc(), workingDir, useDiskNetworkKey);
         // Update the log4j2.xml file with the correct output directory
         updateLog4j2XmlOutputDir(workingDir);
     }
@@ -322,7 +335,7 @@ public class WorkingDirUtils {
         }
     }
 
-    private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
+    private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir, final boolean useDiskAdminKey) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
                 final var fileName = file.getFileName().toString();
@@ -340,6 +353,18 @@ public class WorkingDirUtils {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+
+        var copiedAdminKeysDir = workingDir.resolve(DATA_DIR).resolve(KEYS_FOLDER);
+        if (useDiskAdminKey) {
+            copyUnchecked(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"), copiedAdminKeysDir.resolve("account3.pem"));
+            copyUnchecked(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"), copiedAdminKeysDir.resolve("account3.pass"));
+            // and remove node-admin-keys
+            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
+        }
+
+        rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"));
+        rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"));
+        rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".words"));
     }
 
     /**

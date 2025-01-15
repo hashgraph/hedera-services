@@ -83,7 +83,7 @@ public interface HederaNode {
      * @return this
      */
     @NonNull
-    HederaNode initWorkingDir(@NonNull String configTxt);
+    HederaNode initWorkingDir(@NonNull String configTxt, boolean generateNetworkJson, boolean useDiskAdminKey);
 
     /**
      * Starts the node software.

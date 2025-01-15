@@ -42,6 +42,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.platform.system.InitTrigger;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -75,20 +77,21 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public static HederaNetwork newSharedNetwork(@NonNull final EmbeddedMode mode) {
         requireNonNull(mode);
         return switch (mode) {
-            case CONCURRENT -> new EmbeddedNetwork(CONCURRENT_NAME, CONCURRENT_WORKING_DIR, mode);
-            case REPEATABLE -> new EmbeddedNetwork(REPEATABLE_NAME, REPEATABLE_WORKING_DIR, mode);
+            case CONCURRENT -> new EmbeddedNetwork(CONCURRENT_NAME, CONCURRENT_WORKING_DIR, mode, InitTrigger.GENESIS);
+            case REPEATABLE -> new EmbeddedNetwork(REPEATABLE_NAME, REPEATABLE_WORKING_DIR, mode, InitTrigger.GENESIS);
         };
     }
 
     public EmbeddedNetwork(
-            @NonNull final String name, @NonNull final String workingDir, @NonNull final EmbeddedMode mode) {
+            @NonNull final String name, @NonNull final String workingDir, @NonNull final EmbeddedMode mode, @NonNull final
+            InitTrigger trigger) {
         super(
                 name,
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
                         .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
                                 // All non-embedded node working directories are mapped to the embedded node0
                                 classicMetadataFor(
-                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir))))
+                                        nodeId, name, FAKE_HOST, 0, 0, 0, 0, 0, workingDirFor(0, workingDir)), trigger))
                         .toList());
         this.mode = requireNonNull(mode);
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
@@ -104,20 +107,21 @@ public class EmbeddedNetwork extends AbstractNetwork {
      *
      * @param state the state to customize
      */
-    public void restart(@NonNull final FakeState state, @NonNull final Map<String, String> bootstrapOverrides) {
+    public void restart(@NonNull final FakeState state, @NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean existingKey) {
         requireNonNull(state);
-        startVia(hedera -> hedera.restart(state), bootstrapOverrides);
+        startVia(hedera -> hedera.restart(state), bootstrapOverrides, generateNetworkJson, existingKey);
     }
 
     @Override
     public void start() {
-        startWith(emptyMap());
+        // initialize with the default params
+        startWith(emptyMap(), true, false);
     }
 
     @Override
-    public void startWith(@NonNull final Map<String, String> bootstrapOverrides) {
+    public void startWith(@NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
         requireNonNull(bootstrapOverrides);
-        startVia(EmbeddedHedera::start, bootstrapOverrides);
+        startVia(EmbeddedHedera::start, bootstrapOverrides, generateNetworkJson, useDiskAdminKey);
     }
 
     @Override
@@ -194,9 +198,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     private void startVia(
-            @NonNull final Consumer<EmbeddedHedera> start, @NonNull final Map<String, String> bootstrapOverrides) {
+            @NonNull final Consumer<EmbeddedHedera> start, @NonNull final Map<String, String> bootstrapOverrides, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
         // Initialize the working directory
-        embeddedNode.initWorkingDir(configTxt);
+        embeddedNode.initWorkingDir(configTxt, generateNetworkJson, useDiskAdminKey);
         if (!bootstrapOverrides.isEmpty()) {
             updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
         }

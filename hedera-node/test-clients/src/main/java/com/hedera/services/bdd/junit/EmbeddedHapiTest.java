@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
+import com.swirlds.platform.system.InitTrigger;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -46,4 +48,10 @@ public @interface EmbeddedHapiTest {
      * @return the reasons the test has to run in embedded mode
      */
     EmbeddedReason[] value();
+
+    /**
+     * todo
+     * @return
+     */
+    InitTrigger initTrigger() default InitTrigger.GENESIS;
 }

@@ -23,11 +23,12 @@ import static com.hedera.node.app.info.DiskStartupNetworks.ROUND_DIR_PATTERN;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.conditionFuture;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -54,9 +55,9 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     }
 
     @Override
-    public @NonNull T initWorkingDir(@NonNull final String configTxt) {
+    public @NonNull T initWorkingDir(@NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
         requireNonNull(configTxt);
-        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
+        WorkingDirUtils.recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, generateNetworkJson, useDiskAdminKey);
         workingDirInitialized = true;
         return self();
     }

@@ -201,7 +201,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     @Override
     public void start() {
-        nodes.forEach(node -> node.initWorkingDir(configTxt).start());
+        nodes.forEach(node -> node.initWorkingDir(configTxt, true, false).start());
     }
 
     /**
@@ -342,7 +342,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         nodes.add(insertionPoint, node);
         configTxt = configTxtForLocal(
                 networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, latestCandidateWeights());
-        nodes.get(insertionPoint).initWorkingDir(configTxt);
+        // SubProcess nodes don't honor the embedded flags, so we pass the defaults
+        nodes.get(insertionPoint).initWorkingDir(configTxt, true, false);
         refreshOverrideNetworks(ReassignPorts.NO);
     }
 
