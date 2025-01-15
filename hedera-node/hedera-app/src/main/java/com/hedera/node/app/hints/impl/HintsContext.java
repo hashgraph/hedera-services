@@ -72,29 +72,30 @@ public class HintsContext {
      */
     public void setConstruction(@NonNull final HintsConstruction construction) {
         this.construction = requireNonNull(construction);
-        this.nodePartyIds = asNodePartyIds(construction.nodePartyIds());
+        if (!construction.hasHintsScheme()) {
+            throw new IllegalArgumentException("Construction has no hints scheme");
+        }
+        this.nodePartyIds = asNodePartyIds(construction.hintsSchemeOrThrow().nodePartyIds());
     }
 
     /**
      * Returns true if the signing context is ready.
      */
     public boolean isReady() {
-        return construction != null;
+        return construction != null && construction.hasHintsScheme();
     }
 
     /**
-     * Returns the active verification key.
-     * @throws IllegalStateException if the context is not ready
+     * Returns the active verification key, or throws if the context is not ready.
      */
     public Bytes verificationKeyOrThrow() {
         throwIfNotReady();
-        return requireNonNull(construction).preprocessedKeysOrThrow().verificationKey();
+        return requireNonNull(construction)
+                .hintsSchemeOrThrow()
+                .preprocessedKeysOrThrow()
+                .verificationKey();
     }
 
-    /**
-     * Returns the construction ID.
-     * @throws IllegalStateException if the context is not ready
-     */
     public long constructionIdOrThrow() {
         throwIfNotReady();
         return requireNonNull(construction).constructionId();
@@ -108,7 +109,8 @@ public class HintsContext {
     public @NonNull Signing newSigning(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         throwIfNotReady();
-        final var preprocessedKeys = requireNonNull(construction).preprocessedKeysOrThrow();
+        final var preprocessedKeys =
+                requireNonNull(construction).hintsSchemeOrThrow().preprocessedKeysOrThrow();
         final var verificationKey = preprocessedKeys.verificationKey();
         final long totalWeight = codec.extractTotalWeight(verificationKey);
         return new Signing(

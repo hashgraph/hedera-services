@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.hints.HintsLibrary;
@@ -44,8 +45,8 @@ class HintsContextTest {
     private static final NodePartyId D_NODE_PARTY_ID = new NodePartyId(9L, 18);
     private static final HintsConstruction CONSTRUCTION = HintsConstruction.newBuilder()
             .constructionId(1L)
-            .preprocessedKeys(PREPROCESSED_KEYS)
-            .nodePartyIds(List.of(A_NODE_PARTY_ID, B_NODE_PARTY_ID, C_NODE_PARTY_ID, D_NODE_PARTY_ID))
+            .hintsScheme(new HintsScheme(
+                    PREPROCESSED_KEYS, List.of(A_NODE_PARTY_ID, B_NODE_PARTY_ID, C_NODE_PARTY_ID, D_NODE_PARTY_ID)))
             .build();
 
     @Mock

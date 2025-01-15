@@ -22,12 +22,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.hints.impl.HintsContext;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +94,7 @@ class V059HintsSchemaTest {
         given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.ACTIVE_CONSTRUCTION_KEY))
                 .willReturn(activeConstructionState);
         final var construction = HintsConstruction.newBuilder()
-                .preprocessedKeys(PreprocessedKeys.DEFAULT)
+                .hintsScheme(new HintsScheme(PreprocessedKeys.DEFAULT, List.of()))
                 .build();
         given(activeConstructionState.get()).willReturn(construction);
 
