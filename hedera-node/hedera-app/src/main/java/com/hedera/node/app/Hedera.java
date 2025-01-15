@@ -72,6 +72,8 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
@@ -269,6 +271,18 @@ public final class Hedera
     private final BlockStreamService blockStreamService;
 
     /**
+     * The hinTS service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final HintsService hintsService;
+
+    /**
+     * The history service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final HistoryService historyService;
+
+    /**
      * The block hash signer factory.
      */
     private final BlockHashSignerFactory blockHashSignerFactory;
@@ -367,9 +381,24 @@ public final class Hedera
     }
 
     @FunctionalInterface
+    public interface HintsServiceFactory {
+        @NonNull
+        HintsService apply(@NonNull AppContext appContext);
+    }
+
+    @FunctionalInterface
+    public interface HistoryServiceFactory {
+        @NonNull
+        HistoryService apply(@NonNull AppContext appContext);
+    }
+
+    @FunctionalInterface
     public interface BlockHashSignerFactory {
         @NonNull
-        BlockHashSigner apply();
+        BlockHashSigner apply(
+                @NonNull HintsService hintsService,
+                @NonNull HistoryService historyService,
+                @NonNull ConfigProvider configProvider);
     }
 
     /*==================================================================================================================
@@ -390,6 +419,8 @@ public final class Hedera
      * @param migrator the migrator to use with the services
      * @param startupNetworksFactory the factory for the startup networks
      * @param blockHashSignerFactory the factory for the block hash signer
+     * @param hintsServiceFactory the factory for the hints service
+     * @param historyServiceFactory the factory for the history service
      * @param metrics the metrics object to use for reporting
      */
     public Hedera(
@@ -399,6 +430,8 @@ public final class Hedera
             @NonNull final InstantSource instantSource,
             @NonNull final StartupNetworksFactory startupNetworksFactory,
             @NonNull final BlockHashSignerFactory blockHashSignerFactory,
+            @NonNull final HintsServiceFactory hintsServiceFactory,
+            @NonNull final HistoryServiceFactory historyServiceFactory,
             @NonNull final Metrics metrics) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
@@ -444,6 +477,8 @@ public final class Hedera
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
+        hintsService = hintsServiceFactory.apply(appContext);
+        historyService = historyServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
@@ -454,6 +489,8 @@ public final class Hedera
                         contractServiceImpl,
                         fileServiceImpl,
                         new TssBaseServiceImpl(),
+                        hintsService,
+                        historyService,
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
                         new TokenServiceImpl(),
@@ -1066,6 +1103,7 @@ public final class Hedera
 
         final var networkInfo =
                 new StateNetworkInfo(platform.getSelfId().id(), state, platform.getRoster(), configProvider);
+        final var blockHashSigner = blockHashSignerFactory.apply(hintsService, historyService, configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
@@ -1090,8 +1128,9 @@ public final class Hedera
                 .initialStateHash(initialStateHash)
                 .networkInfo(networkInfo)
                 .startupNetworks(startupNetworks)
-                // (FUTURE) Pass the HintsService and HistoryService to this factory
-                .blockHashSigner(blockHashSignerFactory.apply())
+                .hintsService(hintsService)
+                .historyService(historyService)
+                .blockHashSigner(blockHashSigner)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
