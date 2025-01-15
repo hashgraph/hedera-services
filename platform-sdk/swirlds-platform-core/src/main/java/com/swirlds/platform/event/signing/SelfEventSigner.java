@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.signing;
 
-import com.swirlds.platform.component.framework.component.InputWireLabel;
+import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;

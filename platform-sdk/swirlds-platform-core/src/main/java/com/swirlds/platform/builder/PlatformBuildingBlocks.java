@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.PlatformEvent;

@@ -17,7 +17,7 @@
 package com.swirlds.platform.eventhandling;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.swirlds.platform.component.framework.component.InputWireLabel;
+import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;

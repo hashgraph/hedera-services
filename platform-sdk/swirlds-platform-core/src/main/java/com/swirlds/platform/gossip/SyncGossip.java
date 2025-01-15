@@ -30,10 +30,10 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.component.framework.model.WiringModel;
-import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
-import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;

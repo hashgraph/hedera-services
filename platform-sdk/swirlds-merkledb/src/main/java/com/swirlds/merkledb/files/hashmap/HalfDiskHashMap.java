@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.component.framework.tasks.AbstractTask;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.Snapshotable;
@@ -34,7 +35,6 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileReader;
-import com.swirlds.platform.component.framework.tasks.AbstractTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;

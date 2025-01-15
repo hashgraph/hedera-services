@@ -17,8 +17,8 @@
 package com.swirlds.platform.wiring;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.swirlds.platform.component.framework.component.ComponentWiring;
-import com.swirlds.platform.component.framework.transformers.RoutableData;
+import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;

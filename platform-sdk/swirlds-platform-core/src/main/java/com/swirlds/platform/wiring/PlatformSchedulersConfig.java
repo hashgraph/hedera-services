@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration;
 import java.time.Duration;
 
 /**

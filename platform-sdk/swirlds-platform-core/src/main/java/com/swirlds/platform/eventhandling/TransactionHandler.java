@@ -17,7 +17,7 @@
 package com.swirlds.platform.eventhandling;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.platform.component.framework.component.InputWireLabel;
+import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;

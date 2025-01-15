@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.hasher;
 
-import com.swirlds.platform.component.framework.component.InputWireLabel;
+import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

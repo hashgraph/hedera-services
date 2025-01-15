@@ -18,7 +18,7 @@ module com.swirlds.platform.test {
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
-    requires transitive com.swirlds.platform.component_framework;
+    requires transitive com.swirlds.component.framework;
     requires transitive com.swirlds.platform.core.test.fixtures;
     requires transitive com.swirlds.platform.core;
     requires com.hedera.node.hapi;

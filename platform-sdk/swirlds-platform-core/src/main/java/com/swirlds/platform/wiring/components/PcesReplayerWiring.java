@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.wiring.components;
 
-import static com.swirlds.platform.component.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
-import static com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.component.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerType.DIRECT;
 
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.platform.component.framework.model.WiringModel;
-import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
-import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
-import com.swirlds.platform.component.framework.wires.input.InputWire;
-import com.swirlds.platform.component.framework.wires.output.OutputWire;
-import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.input.InputWire;
+import com.swirlds.component.framework.wires.output.OutputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.NoInput;

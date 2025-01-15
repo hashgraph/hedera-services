@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.component.framework.model.WiringModel;
-import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
-import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;

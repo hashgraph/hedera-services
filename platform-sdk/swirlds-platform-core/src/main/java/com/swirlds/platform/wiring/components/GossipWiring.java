@@ -17,12 +17,12 @@
 package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.component.framework.model.WiringModel;
-import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
-import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
-import com.swirlds.platform.component.framework.wires.input.InputWire;
-import com.swirlds.platform.component.framework.wires.output.OutputWire;
-import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.input.InputWire;
+import com.swirlds.component.framework.wires.output.OutputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.status.PlatformStatus;

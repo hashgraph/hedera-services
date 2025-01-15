@@ -20,7 +20,7 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.component.framework.transformers.RoutableData;
+import com.swirlds.component.framework.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;

@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.nexus;
 
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.component.framework.component.SchedulerLabel;
+import com.swirlds.component.framework.component.SchedulerLabel;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;

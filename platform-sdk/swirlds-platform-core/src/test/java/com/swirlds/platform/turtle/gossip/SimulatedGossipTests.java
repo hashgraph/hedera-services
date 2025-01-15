@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.turtle.gossip;
 
-import static com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
+import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -25,12 +25,12 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.component.framework.model.TraceableWiringModel;
-import com.swirlds.platform.component.framework.model.WiringModel;
-import com.swirlds.platform.component.framework.model.WiringModelBuilder;
-import com.swirlds.platform.component.framework.schedulers.TaskScheduler;
-import com.swirlds.platform.component.framework.wires.input.BindableInputWire;
-import com.swirlds.platform.component.framework.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.TraceableWiringModel;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.system.address.AddressBook;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.platform.component.framework.component.InputWireLabel;
+import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;

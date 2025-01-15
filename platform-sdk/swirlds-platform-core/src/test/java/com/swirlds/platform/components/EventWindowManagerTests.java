@@ -22,10 +22,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.component.framework.component.ComponentWiring;
-import com.swirlds.platform.component.framework.model.WiringModel;
-import com.swirlds.platform.component.framework.model.WiringModelBuilder;
-import com.swirlds.platform.component.framework.schedulers.builders.TaskSchedulerType;
+import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import java.util.concurrent.atomic.AtomicReference;

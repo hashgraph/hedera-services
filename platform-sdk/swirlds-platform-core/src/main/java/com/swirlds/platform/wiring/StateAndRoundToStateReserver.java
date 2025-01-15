@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.platform.component.framework.transformers.AdvancedTransformation;
+import com.swirlds.component.framework.transformers.AdvancedTransformation;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;

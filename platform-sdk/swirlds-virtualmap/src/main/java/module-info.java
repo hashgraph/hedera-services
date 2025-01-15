@@ -38,9 +38,9 @@ open module com.swirlds.virtualmap {
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires com.swirlds.base;
+    requires com.swirlds.component.framework;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
-    requires com.swirlds.platform.component_framework;
     requires java.management; // Test dependency
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;
