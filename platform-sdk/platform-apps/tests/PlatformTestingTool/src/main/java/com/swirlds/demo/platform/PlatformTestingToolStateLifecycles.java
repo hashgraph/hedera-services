@@ -20,6 +20,7 @@ import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
+import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.STATESIGNATURETRANSACTION;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
@@ -212,7 +213,6 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         }
 
         /* Add handleTransaction statistics */
-        htFCMMicroSec = platform.getContext().getMetrics().getOrCreate(HT_FCM_MICRO_SEC_CONFIG);
         htFCQMicroSec = platform.getContext().getMetrics().getOrCreate(HT_FCQ_MICRO_SEC_CONFIG);
         htFCQExpirationMicroSec = platform.getContext().getMetrics().getOrCreate(HT_FCQ_EXPIRATION_MICRO_SEC_CONFIG);
         htFCMSize = platform.getContext().getMetrics().getOrCreate(HT_FCM_SIZE_CONFIG);
@@ -716,7 +716,10 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         }
     }
 
-    private void preHandleTransaction(final Transaction transaction, final Event event, final PlatformTestingToolState state,
+    private void preHandleTransaction(
+            final Transaction transaction,
+            final Event event,
+            final PlatformTestingToolState state,
             Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         if (transaction.isSystem()) {
             return;
@@ -744,7 +747,6 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         }
     }
 
-
     @Override
     public void onHandleConsensusRound(
             @NonNull Round round,
@@ -756,8 +758,8 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         }
         delay(state);
         updateTransactionCounters(state);
-        round.forEachEventTransaction(
-                (event, transaction) -> handleConsensusTransaction(event, transaction, round.getRoundNum(), state, stateSignatureTransactionCallback));
+        round.forEachEventTransaction((event, transaction) -> handleConsensusTransaction(
+                event, transaction, round.getRoundNum(), state, stateSignatureTransactionCallback));
     }
 
     /**
@@ -792,7 +794,13 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         try {
             waitForSignatureValidation(trans);
             handleTransaction(
-                    event.getCreatorId(), event.getSoftwareVersion(), event.getTimeCreated(), trans.getConsensusTimestamp(), trans, state, stateSignatureTransactionCallback);
+                    event.getCreatorId(),
+                    event.getSoftwareVersion(),
+                    event.getTimeCreated(),
+                    trans.getConsensusTimestamp(),
+                    trans,
+                    state,
+                    stateSignatureTransactionCallback);
         } catch (final InterruptedException e) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -825,7 +833,9 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
             @NonNull final Instant timestamp,
             @NonNull final ConsensusTransaction trans,
             @NonNull final PlatformTestingToolState state,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         if (state.getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.parseFrom(
@@ -962,8 +972,8 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
             @NonNull final NodeId creator,
             @NonNull final SemanticVersion semanticVersion,
             @NonNull
-            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
-                    stateSignatureTransactionCallback) {
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
         final var stateSignatureTransaction =
                 convertStateSignatureTransactionFromTestToSourceType(transaction.getStateSignatureTransaction());
         stateSignatureTransactionCallback.accept(
@@ -1011,52 +1021,48 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         return keccakDigest.digest();
     }
 
-    private void expandSignatures(final Transaction trans, final TestTransactionWrapper testTransactionWrapper, PlatformTestingToolState state) {
+    private void expandSignatures(
+            final Transaction trans,
+            final TestTransactionWrapper testTransactionWrapper,
+            PlatformTestingToolState state) {
         if (state.getConfig().isAppendSig()) {
-            try {
-                final byte[] testTransactionRawBytes =
-                        testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
-                final byte[] publicKey =
-                        testTransactionWrapper.getPublicKeyRawBytes().toByteArray();
-                final byte[] signature =
-                        testTransactionWrapper.getSignaturesRawBytes().toByteArray();
-                final AppTransactionSignatureType AppSignatureType = testTransactionWrapper.getSignatureType();
+            final byte[] testTransactionRawBytes =
+                    testTransactionWrapper.getTestTransactionRawBytes().toByteArray();
+            final byte[] publicKey =
+                    testTransactionWrapper.getPublicKeyRawBytes().toByteArray();
+            final byte[] signature =
+                    testTransactionWrapper.getSignaturesRawBytes().toByteArray();
+            final AppTransactionSignatureType AppSignatureType = testTransactionWrapper.getSignatureType();
 
-                final SignatureType signatureType;
-                byte[] signaturePayload = testTransactionRawBytes;
+            final SignatureType signatureType;
+            byte[] signaturePayload = testTransactionRawBytes;
 
-                if (AppSignatureType == AppTransactionSignatureType.ED25519) {
-                    signatureType = SignatureType.ED25519;
-                } else if (AppSignatureType == AppTransactionSignatureType.ECDSA_SECP256K1) {
-                    signatureType = SignatureType.ECDSA_SECP256K1;
-                    signaturePayload = keccak256(testTransactionRawBytes);
-                } else if (AppSignatureType == AppTransactionSignatureType.RSA) {
-                    signatureType = SignatureType.RSA;
-                } else {
-                    throw new UnsupportedOperationException("Unknown application signature type " + AppSignatureType);
-                }
-
-                final int msgLen = signaturePayload.length;
-                final int sigOffset = msgLen + publicKey.length;
-
-                // concatenate payload with public key and signature
-                final byte[] contents = ByteBuffer.allocate(
-                                signaturePayload.length + publicKey.length + signature.length)
-                        .put(signaturePayload)
-                        .put(publicKey)
-                        .put(signature)
-                        .array();
-
-                final TransactionSignature transactionSignature = new TransactionSignature(
-                        contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
-                trans.setMetadata(transactionSignature);
-
-                CryptographyHolder.get().verifySync(List.of(transactionSignature));
-
-            } catch (final InvalidProtocolBufferException ex) {
-                exceptionRateLimiter.handle(
-                        ex, (error) -> logger.error(EXCEPTION.getMarker(), "InvalidProtocolBufferException", error));
+            if (AppSignatureType == AppTransactionSignatureType.ED25519) {
+                signatureType = SignatureType.ED25519;
+            } else if (AppSignatureType == AppTransactionSignatureType.ECDSA_SECP256K1) {
+                signatureType = SignatureType.ECDSA_SECP256K1;
+                signaturePayload = keccak256(testTransactionRawBytes);
+            } else if (AppSignatureType == AppTransactionSignatureType.RSA) {
+                signatureType = SignatureType.RSA;
+            } else {
+                throw new UnsupportedOperationException("Unknown application signature type " + AppSignatureType);
             }
+
+            final int msgLen = signaturePayload.length;
+            final int sigOffset = msgLen + publicKey.length;
+
+            // concatenate payload with public key and signature
+            final byte[] contents = ByteBuffer.allocate(signaturePayload.length + publicKey.length + signature.length)
+                    .put(signaturePayload)
+                    .put(publicKey)
+                    .put(signature)
+                    .array();
+
+            final TransactionSignature transactionSignature = new TransactionSignature(
+                    contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
+            trans.setMetadata(transactionSignature);
+
+            CryptographyHolder.get().verifySync(List.of(transactionSignature));
         }
     }
 

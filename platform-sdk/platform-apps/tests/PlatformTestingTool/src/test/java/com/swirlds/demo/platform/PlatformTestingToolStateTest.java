@@ -18,7 +18,8 @@ package com.swirlds.demo.platform;
 
 import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
 import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
-import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema.ROSTER_STATES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -35,16 +36,25 @@ import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.RosterStateId;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.internal.MerkleCryptoEngine;
+import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.demo.merkle.map.FCMFamily;
+import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.fs.stresstest.proto.RandomBytesTransaction;
 import com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction;
 import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
+import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.impl.DefaultCounter;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -57,15 +67,17 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -86,46 +98,49 @@ class PlatformTestingToolStateTest {
 
     private static final String DEFAULT_CONFIG = "configs/FCM1KForTest.json";
     private static final String CONFIG_WITHOUT_APPEND_SIG = "configs/FCM1KForTestWithoutAppendSig.json";
-    private static PlatformTestingToolState state;
-    private static BasicSoftwareVersion softwareVersion;
     private static final byte[] EMPTY_ARRAY = new byte[] {};
-    private PlatformTestingToolMain main;
-    private Random random;
-    private PlatformStateModifier platformStateModifier;
-    private Round round;
-    private Roster roster;
-    private ConsensusEvent event;
-    private PlatformEvent platformEvent;
+    private static PlatformTestingToolStateLifecycles stateLifecycles;
+    private static PlatformTestingToolState state;
+    private static MockedStatic<ParameterProvider> parameterProvider;
     private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer;
     private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedSystemTransactions;
-    private Transaction transaction;
     private StateSignatureTransaction stateSignatureTransaction;
-    private static MockedStatic<ParameterProvider> parameterProvider;
-    private static ParameterProvider parameterProviderInstance;
+    private PlatformTestingToolMain main;
+    private PlatformEvent platformEvent;
+    private Transaction transaction;
+    private Random random;
+    private Round round;
+    private Roster roster;
+    private EventWindow eventWindow;
 
     @BeforeAll
-    static void initState() {
+    static void createState() {
         final PayloadCfgSimple payloadConfig = mock(PayloadCfgSimple.class);
         when(payloadConfig.isAppendSig()).thenReturn(true);
 
-        softwareVersion = new BasicSoftwareVersion(1);
-        state = new PlatformTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
+        state = mock(PlatformTestingToolState.class);
+
+        final ExpectedFCMFamily expectedFCMFamily = mock(ExpectedFCMFamily.class);
+        when(state.getStateExpectedMap()).thenReturn(expectedFCMFamily);
+
+        stateLifecycles = new PlatformTestingToolStateLifecycles();
     }
 
     @BeforeEach
     void setUp() throws KeyStoreException, KeyGeneratingException, NoSuchAlgorithmException, NoSuchProviderException {
         main = new PlatformTestingToolMain();
         random = new Random();
-        platformStateModifier = mock(PlatformStateModifier.class);
         roster = new Roster(Collections.EMPTY_LIST);
         transaction = mock(TransactionWrapper.class);
         platformEvent = mock(PlatformEvent.class);
+        eventWindow = new EventWindow(10, 5, 20, AncientMode.BIRTH_ROUND_THRESHOLD);
 
         consumedSystemTransactions = new ArrayList<>();
         consumer = systemTransaction -> consumedSystemTransactions.add(systemTransaction);
+
+        when(platformEvent.getCreatorId()).thenReturn(new NodeId());
+        when(platformEvent.getSoftwareVersion()).thenReturn(new SemanticVersion(1, 1, 1, "", ""));
+        when(platformEvent.getConsensusTimestamp()).thenReturn(Instant.now());
 
         final Randotron randotron = Randotron.create();
 
@@ -158,10 +173,10 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(testTransactionWrapper.toByteArray()));
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isZero();
+        assertThat(consumedSystemTransactions).isEmpty();
     }
 
     @Test
@@ -174,10 +189,10 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isEqualTo(1);
+        assertThat(consumedSystemTransactions).hasSize(1);
     }
 
     @Test
@@ -190,17 +205,16 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isEqualTo(1);
+        assertThat(consumedSystemTransactions).hasSize(1);
     }
 
     @Test
     void handleConsensusRoundWithMultipleSystemTransaction() {
         // Given
         givenInitState(DEFAULT_CONFIG);
-        givenRoundAndEvent();
 
         final TransactionWrapper secondConsensusTransaction = mock(TransactionWrapper.class);
         final TransactionWrapper thirdConsensusTransaction = mock(TransactionWrapper.class);
@@ -210,6 +224,9 @@ class PlatformTestingToolStateTest {
                                 secondConsensusTransaction,
                                 thirdConsensusTransaction)
                         .iterator());
+        when(platformEvent.transactionIterator())
+                .thenReturn(List.of(transaction, secondConsensusTransaction, thirdConsensusTransaction)
+                        .iterator());
 
         final Bytes stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
 
@@ -217,11 +234,21 @@ class PlatformTestingToolStateTest {
         when(secondConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
+        round = new ConsensusRound(
+                roster,
+                List.of(platformEvent),
+                platformEvent,
+                new Generations(),
+                eventWindow,
+                new ConsensusSnapshot(),
+                false,
+                Instant.now());
+
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isEqualTo(3);
+        assertThat(consumedSystemTransactions).hasSize(3);
     }
 
     @Test
@@ -237,10 +264,10 @@ class PlatformTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isZero();
+        assertThat(consumedSystemTransactions).isEmpty();
     }
 
     @Test
@@ -260,10 +287,10 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(platformEvent, consumer);
+        stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isZero();
+        assertThat(consumedSystemTransactions).isEmpty();
     }
 
     @Test
@@ -279,13 +306,13 @@ class PlatformTestingToolStateTest {
         final GossipEvent gossipEvent =
                 new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
-        event = new PlatformEvent(gossipEvent);
+        platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isEqualTo(1);
+        assertThat(consumedSystemTransactions).hasSize(1);
     }
 
     @Test
@@ -308,13 +335,13 @@ class PlatformTestingToolStateTest {
                 List.of(eventTransaction, secondEventTransaction, thirdEventTransaction),
                 Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
-        event = new PlatformEvent(gossipEvent);
+        platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isEqualTo(3);
+        assertThat(consumedSystemTransactions).hasSize(3);
     }
 
     @Test
@@ -333,26 +360,22 @@ class PlatformTestingToolStateTest {
         final GossipEvent gossipEvent =
                 new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
-        event = new PlatformEvent(gossipEvent);
+        platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
-        assertThat(consumedSystemTransactions.size()).isZero();
+        assertThat(consumedSystemTransactions).isEmpty();
     }
 
     private void givenRoundAndEvent() {
-        when(platformEvent.getCreatorId()).thenReturn(new NodeId());
-        when(platformEvent.getSoftwareVersion()).thenReturn(new SemanticVersion(1, 1, 1, "", ""));
-        when(platformEvent.getConsensusTimestamp()).thenReturn(Instant.now());
         when(platformEvent.transactionIterator())
                 .thenReturn(Collections.singletonList(transaction).iterator());
         when(platformEvent.consensusTransactionIterator())
                 .thenReturn(Collections.singletonList((ConsensusTransaction) transaction)
                         .iterator());
 
-        final EventWindow eventWindow = new EventWindow(10, 5, 20, AncientMode.BIRTH_ROUND_THRESHOLD);
         round = new ConsensusRound(
                 roster,
                 List.of(platformEvent),
@@ -386,27 +409,94 @@ class PlatformTestingToolStateTest {
         final NodeId nodeId = NodeId.of(1L);
         final Platform platform = mock(Platform.class);
         final InitTrigger initTrigger = InitTrigger.GENESIS;
-        final Future futureHash = mock(Future.class);
         final PlatformContext platformContext = mock(PlatformContext.class);
-        final DefaultPlatformMetrics metrics = mock(DefaultPlatformMetrics.class);
-        final MerkleCryptoEngine cryptography = mock(MerkleCryptoEngine.class);
-        final NotificationEngine notificationEngine = mock(NotificationEngine.class);
-        when(platform.getRoster()).thenReturn(roster);
-        when(platform.getSelfId()).thenReturn(nodeId);
-        when(platformContext.getMetrics()).thenReturn(metrics);
-        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
-        when(platform.getContext()).thenReturn(platformContext);
-        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
-        when(cryptography.digestTreeAsync(any())).thenReturn(futureHash);
-        when(platform.getNotificationEngine()).thenReturn(notificationEngine);
+
+        givenPlatform(platform, platformContext, nodeId);
+        givenPlatformContextConfig(platformContext, config);
 
         parameterProvider = mockStatic(ParameterProvider.class);
-        parameterProviderInstance = mock(ParameterProvider.class);
+        ParameterProvider parameterProviderInstance = mock(ParameterProvider.class);
         parameterProvider.when(ParameterProvider::getInstance).thenReturn(parameterProviderInstance);
         when(parameterProviderInstance.getParameters()).thenReturn(new String[] {config});
-        state.init(platform, initTrigger, softwareVersion);
-        state.initChildren();
 
+        state.initChildren();
+        stateLifecycles.onStateInitialized(state, platform, initTrigger, new BasicSoftwareVersion(1));
         main.init(platform, nodeId);
+    }
+
+    private void givenPlatform(final Platform platform, final PlatformContext platformContext, final NodeId nodeId) {
+        final Future<Hash> futureHash = mock(Future.class);
+        final MerkleCryptoEngine cryptography = mock(MerkleCryptoEngine.class);
+        when(cryptography.digestTreeAsync(any())).thenReturn(futureHash);
+        final NotificationEngine notificationEngine = mock(NotificationEngine.class);
+
+        when(platform.getRoster()).thenReturn(roster);
+        when(platform.getSelfId()).thenReturn(nodeId);
+        when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
+        when(platform.getContext()).thenReturn(platformContext);
+        when(platform.getNotificationEngine()).thenReturn(notificationEngine);
+        when(platform.getContext()).thenReturn(platformContext);
+    }
+
+    private void givenPlatformContextConfig(final PlatformContext platformContext, final String config) {
+        final WritableStates platformWritableStates = mock(MapWritableStates.class);
+        final WritableSingletonState platformWritableSingletonState = mock(WritableSingletonState.class);
+        when(platformWritableStates.getSingleton(PLATFORM_STATE_KEY)).thenReturn(platformWritableSingletonState);
+        when(state.getWritableStates(PlatformStateService.NAME)).thenReturn(platformWritableStates);
+
+        final WritableStates rosterWritableStates = mock(MapWritableStates.class);
+        final WritableSingletonState rosterWritableSingletonState = mock(WritableSingletonState.class);
+        when(rosterWritableStates.getSingleton(ROSTER_STATES_KEY)).thenReturn(rosterWritableSingletonState);
+        when(state.getWritableStates(RosterStateId.NAME)).thenReturn(rosterWritableStates);
+
+        final PayloadCfgSimple payloadConfig = mock(PayloadCfgSimple.class);
+        when(payloadConfig.isAppendSig()).thenReturn(config.equals(DEFAULT_CONFIG));
+
+        final RandomDelayCfg randomDelayCfg = mock(RandomDelayCfg.class);
+        when(payloadConfig.getDelayCfg()).thenReturn(randomDelayCfg);
+
+        final FCMFamily fcmFamily = mock(FCMFamily.class);
+        when(fcmFamily.getAccountFCQMap()).thenReturn(new MerkleMap<>());
+
+        when(state.getConfig()).thenReturn(payloadConfig);
+        when(state.getFcmFamily()).thenReturn(fcmFamily);
+
+        final Metric metric = mock(SpeedometerMetric.class);
+        final Counter counter = mock(DefaultCounter.class);
+        final RunningAverageMetric runningAverageMetric = mock(RunningAverageMetric.class);
+
+        final DefaultPlatformMetrics metrics = mock(DefaultPlatformMetrics.class);
+        when(metrics.getOrCreate(any()))
+                .thenReturn(
+                        metric,
+                        metric,
+                        metric,
+                        metric,
+                        metric,
+                        metric,
+                        metric,
+                        metric,
+                        metric,
+                        counter,
+                        metric,
+                        runningAverageMetric,
+                        metric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        runningAverageMetric,
+                        metric,
+                        metric,
+                        metric);
+
+        when(platformContext.getMetrics()).thenReturn(metrics);
     }
 }
