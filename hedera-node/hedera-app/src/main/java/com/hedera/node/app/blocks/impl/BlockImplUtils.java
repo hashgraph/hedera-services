@@ -24,6 +24,7 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CONGESTION_STARTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CONTRACT_BYTECODE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CONTRACT_STORAGE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ENTITY_COUNTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ENTITY_ID;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FILES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FREEZE_TIME;
@@ -128,6 +129,7 @@ public class BlockImplUtils {
                     };
                     case "EntityIdService" -> switch (stateKey) {
                         case "ENTITY_ID" -> STATE_ID_ENTITY_ID.protoOrdinal();
+                        case "ENTITY_COUNTS" -> STATE_ID_ENTITY_COUNTS.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     case "FeeService" -> switch (stateKey) {

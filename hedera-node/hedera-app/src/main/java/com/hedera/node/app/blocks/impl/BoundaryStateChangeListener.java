@@ -33,6 +33,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -234,6 +235,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             }
             case HintsConstruction hintsConstruction -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.HINTS_CONSTRUCTION_VALUE, hintsConstruction);
+            }
+            case EntityCounts entityCounts -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.ENTITY_COUNTS_VALUE, entityCounts);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
