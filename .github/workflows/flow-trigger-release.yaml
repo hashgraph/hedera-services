@@ -48,6 +48,7 @@ jobs:
           egress-policy: audit
 
       - name: Process, Validate, and Pad Build Input
+        id: validate
         run: |
           echo "The input is ${{ inputs.build_number }}"
           if ! [[ "${{ inputs.build_number }}" =~ ^[0-9]+$ ]]; then
@@ -65,14 +66,14 @@ jobs:
           echo "Prefixed number is: $build_tag"
 
           # Export as environment variable
-          echo "BUILD_TAG=$build_tag" >> $GITHUB_ENV
+          echo "BUILD_TAG=$build_tag" >> $GITHUB_OUTPUT
 
       - name: Checkout Code
         id: checkout_code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: "0"
-          ref: ${{ env.BUILD_TAG }}
+          ref: ${{ steps.validate.outputs.BUILD_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Display Current Branch or Tag
