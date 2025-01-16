@@ -93,23 +93,20 @@ public class TopicCustomFeeCreateTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
-        @DisplayName("Create topic with all keys")
-        final Stream<DynamicTest> validateFeeForTopicCreate() {
+        @DisplayName("Validate fees for topic create")
+        final Stream<DynamicTest> validateFeesForTopicCreate() {
             return hapiTest(
-                    newKeyNamed("adminKey"),
                     cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
                     cryptoCreate("collector"),
-                    cryptoCreate("autoRenew"),
                     createTopic(TOPIC).via("topicNoCustomFee").payingWith("payer"),
-                    createTopic(TOPIC).via("topicWithCustomFee")
-                            .adminKeyName("adminKey")
-                            .autoRenewAccountId("autoRenew")
-                            .withConsensusCustomFee(fixedConsensusHbarFee(1,"collector"))
+                    createTopic(TOPIC)
+                            .via("topicWithCustomFee")
+                            .blankMemo()
+                            .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector"))
                             .payingWith("payer"),
-                    validateChargedUsd("topicNoCustomFee", 0.01,2),
+                    validateChargedUsd("topicNoCustomFee", 0.01, 2),
                     validateChargedUsd("topicWithCustomFee", 2.0));
         }
-
 
         @HapiTest
         @DisplayName("Create topic with all keys")
