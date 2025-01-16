@@ -129,8 +129,6 @@ determine the version to roll to when the `[Main] Create New Release` workflow i
 the commits on `main` between build-XXXXX (the selected build candidate) and build-YYYYY (the new build) must be `fix:`
 commits so that a new patch bump version would be triggered.
 
-(Note: **If any feature or breaking commits have been included in that timeframe, there will be a new minor/major version.**)
-
 There are also commit types that will not affect the version at all. These commit categories are:
 
 - `chore:`
