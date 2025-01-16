@@ -125,6 +125,8 @@ public class WorkingDirUtils {
      *
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
+     * @param adminKeySources signals to the framework which admin key files to place in the node's
+     *                        working directory
      */
     public static void recreateWorkingDir(
             @NonNull final Path workingDir,
