@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: "Build ID of the Tag (example: 43 = build_00043)"
+        description: "Build Number (ex: 43 = build_00043)"
         type: string
         required: true
 
@@ -97,7 +97,11 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "Installing semantic-release"
-          npm install -g semantic-release
+          npm install -g semantic-release@24.2.0 @semantic-release/git@10.0.1 @semantic-release/github@11.0.1 \
+            @semantic-release/exec@6.0.3 semantic-release-helm3@2.9.3 \
+            conventional-changelog-conventionalcommits@8.0.0 \
+            @commitlint/cli@19.5.0 @commitlint/config-conventional@19.5.0 \
+            marked-mangle@1.1.10 marked-gfm-heading-id@4.1.1 semantic-release-conventional-commits@3.0.0
 
       - name: Configure Git for Semantic Release
         run: |
