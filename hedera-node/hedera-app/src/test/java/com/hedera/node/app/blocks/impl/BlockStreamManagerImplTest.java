@@ -67,7 +67,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableStates;
@@ -76,6 +79,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -136,6 +140,21 @@ class BlockStreamManagerImplTest {
 
     @Mock
     private Round round;
+
+    @Mock
+    private Iterator<ConsensusEvent> eventIterator;
+
+    @Mock
+    private Iterator<ConsensusTransaction> transactionIterator;
+
+    @Mock
+    private TransactionWrapper transaction1;
+
+    @Mock
+    private TransactionWrapper transaction2;
+
+    @Mock
+    private ConsensusEvent event;
 
     @Mock
     private State state;
@@ -258,7 +277,6 @@ class BlockStreamManagerImplTest {
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
-        verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
         assertNull(subject.prngSeed());
@@ -274,6 +292,8 @@ class BlockStreamManagerImplTest {
         given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
         // End the round
         subject.endRound(state, ROUND_NO);
+
+        verify(aWriter).openBlock(N_BLOCK_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
         final var expectedBlockInfo = new BlockStreamInfo(
@@ -318,9 +338,8 @@ class BlockStreamManagerImplTest {
         // Start the round that will be block N
         subject.startRound(round, state);
 
-        // Assert the internal state of the subject has changed as expected and the writer has been opened
+        // Assert the internal state of the subject has changed as expected
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
-        verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
 
@@ -357,7 +376,6 @@ class BlockStreamManagerImplTest {
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
-        verify(aWriter).openBlock(N_BLOCK_NO);
         assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
         assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
         assertEquals(N_BLOCK_NO, subject.blockNo());
@@ -376,6 +394,8 @@ class BlockStreamManagerImplTest {
         given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
         // End the round
         subject.endRound(state, ROUND_NO);
+
+        verify(aWriter).openBlock(N_BLOCK_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
         final var expectedBlockInfo = new BlockStreamInfo(
@@ -484,6 +504,14 @@ class BlockStreamManagerImplTest {
             @NonNull final PlatformState platformState,
             @NonNull final BlockItemWriter... writers) {
         given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+        given(round.iterator()).willReturn(eventIterator);
+        given(eventIterator.hasNext()).willReturn(true, false);
+        given(eventIterator.next()).willReturn(event);
+        given(event.consensusTransactionIterator()).willReturn(transactionIterator);
+        given(transactionIterator.hasNext()).willReturn(true).willReturn(true).willReturn(false);
+        given(transactionIterator.next()).willReturn(transaction1).willReturn(transaction2);
+        given(transaction1.getConsensusTimestamp()).willReturn(null);
+        given(transaction2.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
         final AtomicInteger nextWriter = new AtomicInteger(0);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("blockStream.roundsPerBlock", roundsPerBlock)

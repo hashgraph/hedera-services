@@ -18,7 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
+import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ROSTER_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SIGNATURE_SET_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeHashInfoFile;
@@ -173,7 +173,7 @@ class SignedStateFileReadWriteTest {
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
-        final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
+        final Path addressBookFile = directory.resolve(CURRENT_ROSTER_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
         final String configDir = testDirectory.resolve("data/saved").toString();
@@ -184,7 +184,7 @@ class SignedStateFileReadWriteTest {
                 .build();
 
         // make immutable
-        signedState.getSwirldState().copy();
+        signedState.getState().copy();
 
         writeSignedStateToDisk(
                 platformContext, NodeId.of(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);

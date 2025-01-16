@@ -20,15 +20,18 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
-import com.swirlds.state.merkle.MerkleStateRoot;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +56,7 @@ class StateLifecyclesImplTest extends MerkleTestBase {
     private PlatformContext platformContext;
 
     @Mock
-    private MerkleStateRoot merkleStateRoot;
+    private PlatformMerkleStateRoot merkleStateRoot;
 
     private StateLifecyclesImpl subject;
 
@@ -64,16 +67,18 @@ class StateLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnPreHandle() {
-        subject.onPreHandle(event, merkleStateRoot);
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> callback = txns -> {};
+        subject.onPreHandle(event, merkleStateRoot, callback);
 
-        verify(hedera).onPreHandle(event, merkleStateRoot);
+        verify(hedera).onPreHandle(event, merkleStateRoot, callback);
     }
 
     @Test
     void delegatesOnHandleConsensusRound() {
-        subject.onHandleConsensusRound(round, merkleStateRoot);
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> callback = txns -> {};
+        subject.onHandleConsensusRound(round, merkleStateRoot, callback);
 
-        verify(hedera).onHandleConsensusRound(round, merkleStateRoot);
+        verify(hedera).onHandleConsensusRound(round, merkleStateRoot, callback);
     }
 
     @Test

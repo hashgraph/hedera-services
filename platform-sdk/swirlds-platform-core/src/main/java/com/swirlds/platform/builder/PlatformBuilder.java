@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -33,9 +32,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.WiringConfig;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.component.framework.WiringConfig;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -54,12 +53,13 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,7 +67,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,6 +84,9 @@ public final class PlatformBuilder {
     private final String appName;
     private final SoftwareVersion softwareVersion;
     private final ReservedSignedState initialState;
+
+    private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
+
     private final NodeId selfId;
     private final String swirldName;
 
@@ -146,14 +148,15 @@ public final class PlatformBuilder {
      * the app will pass the loaded state via the initialState argument to this method. If the snapshot doesn't exist,
      * then the app will create a new genesis state and pass it via the same initialState argument.
      *
-     * @param appName             the name of the application, currently used for deciding where to store states on
-     *                            disk
-     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
-     * @param selfId              the ID of this node
-     * @param softwareVersion     the software version of the application
-     * @param initialState        the initial state supplied by the application
+     * @param appName                  the name of the application, currently used for deciding where to store states on
+     *                                 disk
+     * @param swirldName               the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion          the software version of the application
+     * @param initialState             the initial state supplied by the application
+     * @param stateLifecycles          the state lifecycle events handler
+     * @param selfId                   the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
-     * @param rosterHistory       the roster history provided by the application to use at startup
+     * @param rosterHistory            the roster history provided by the application to use at startup
      */
     @NonNull
     public static PlatformBuilder create(
@@ -161,30 +164,40 @@ public final class PlatformBuilder {
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
+            @NonNull final StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
             @NonNull final RosterHistory rosterHistory) {
         return new PlatformBuilder(
-                appName, swirldName, softwareVersion, initialState, selfId, consensusEventStreamName, rosterHistory);
+                appName,
+                swirldName,
+                softwareVersion,
+                initialState,
+                stateLifecycles,
+                selfId,
+                consensusEventStreamName,
+                rosterHistory);
     }
 
     /**
      * Constructor.
      *
-     * @param appName               the name of the application, currently used for deciding where to store states on
-     *                              disk
-     * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
-     * @param softwareVersion       the software version of the application
-     * @param initialState          the genesis state supplied by application
-     * @param selfId                the ID of this node
+     * @param appName                  the name of the application, currently used for deciding where to store states on
+     *                                 disk
+     * @param swirldName               the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion          the software version of the application
+     * @param initialState             the genesis state supplied by application
+     * @param stateLifecycles          the state lifecycle events handler
+     * @param selfId                   the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
-     * @param rosterHistory         the roster history provided by the application to use at startup
+     * @param rosterHistory            the roster history provided by the application to use at startup
      */
     private PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final ReservedSignedState initialState,
+            @NonNull final StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
             @NonNull final RosterHistory rosterHistory) {
@@ -193,11 +206,10 @@ public final class PlatformBuilder {
         this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.initialState = Objects.requireNonNull(initialState);
+        this.stateLifecycles = Objects.requireNonNull(stateLifecycles);
         this.selfId = Objects.requireNonNull(selfId);
         this.consensusEventStreamName = Objects.requireNonNull(consensusEventStreamName);
         this.rosterHistory = Objects.requireNonNull(rosterHistory);
-
-        StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
     /**
@@ -373,8 +385,6 @@ public final class PlatformBuilder {
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
-        checkNodesToRun(List.of(selfId));
-
         final Roster currentRoster = rosterHistory.getCurrentRoster();
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -420,7 +430,8 @@ public final class PlatformBuilder {
                 currentRoster,
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
-                softwareVersion);
+                softwareVersion,
+                stateLifecycles);
 
         if (model == null) {
             final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
@@ -475,7 +486,8 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
-                firstPlatform);
+                firstPlatform,
+                stateLifecycles);
 
         return new PlatformComponentBuilder(buildingBlocks);
     }

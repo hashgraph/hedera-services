@@ -34,6 +34,8 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -144,6 +146,12 @@ class HandleWorkflowTest {
     @Mock
     private UserTxnFactory userTxnFactory;
 
+    @Mock
+    private HintsService hintsService;
+
+    @Mock
+    private HistoryService historyService;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -167,7 +175,7 @@ class HandleWorkflowTest {
 
         givenSubjectWith(RECORDS, emptyList());
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();
@@ -184,7 +192,7 @@ class HandleWorkflowTest {
         givenSubjectWith(BOTH, builders);
         given(blockStreamManager.blockTimestamp()).willReturn(BLOCK_TIME);
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         builders.forEach(builder -> verify(blockStreamManager)
                 .writeItem(BlockItem.newBuilder()
@@ -222,6 +230,8 @@ class HandleWorkflowTest {
                 new AddressBookHelper(),
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                scheduleService);
+                scheduleService,
+                hintsService,
+                historyService);
     }
 }
