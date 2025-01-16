@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -208,7 +208,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
             return createSignedState(consensusRound, systemTransactions);
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), "handleConsensusRound interrupted");
+            logger.error(EXCEPTION.getMarker(), "onHandleConsensusRound interrupted");
             Thread.currentThread().interrupt();
 
             return null;
