@@ -323,7 +323,7 @@ public class HandleWorkflow {
             }
         }
         // Update all throttle metrics once per round
-        throttleServiceManager.updateAllMetrics(); // TODO: update congestion multiplier metrics here?
+        throttleServiceManager.updateAllMetrics();
         // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
