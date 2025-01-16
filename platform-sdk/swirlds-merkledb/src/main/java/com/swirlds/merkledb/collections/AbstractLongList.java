@@ -265,7 +265,7 @@ public abstract class AbstractLongList<C> implements LongList {
             final int endIndexInChunk = (chunkIndex == lastChunkIndex) ? (maxValidIndexInChunk + 1) : numLongsPerChunk;
 
             C chunk = readChunkData(fileChannel, chunkIndex, startIndexInChunk, endIndexInChunk);
-            setChunk(chunkIndex, chunk, startIndexInChunk, endIndexInChunk);
+            setChunk(chunkIndex, chunk);
         }
     }
 
@@ -285,16 +285,12 @@ public abstract class AbstractLongList<C> implements LongList {
             throws IOException;
 
     /**
-     * Stores the specified chunk at the given {@code chunkIndex}. Subclasses may override
-     * this method to perform additional actions (e.g., persisting the chunk to a file).
+     * Stores the specified chunk at the given {@code chunkIndex}.
      *
      * @param chunkIndex the index where the chunk is to be stored
      * @param chunk      the chunk to store
-     * @param startIndex the starting index (inclusive) within the chunk to write data
-     * @param endIndex   the ending index (exclusive) within the chunk
-     * @throws IOException if an I/O error occurs, when overridden by a subclass
      */
-    protected void setChunk(int chunkIndex, C chunk, int startIndex, int endIndex) throws IOException {
+    protected void setChunk(int chunkIndex, C chunk) {
         chunkList.set(chunkIndex, chunk);
     }
 

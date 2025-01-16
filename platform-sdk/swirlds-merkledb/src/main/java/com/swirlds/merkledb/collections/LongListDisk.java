@@ -165,6 +165,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     @Override
     protected Long readChunkData(FileChannel fileChannel, int chunkIndex, int startIndex, int endIndex)
             throws IOException {
+        // read from `fileChannel`
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         fillBufferWithZeroes(transferBuffer);
 
@@ -173,6 +174,7 @@ public class LongListDisk extends AbstractLongList<Long> {
         final int firstChunkIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
         final long chunk = ((long) (chunkIndex - firstChunkIndex) * memoryChunkSize);
 
+        // write to `currentFileChannel`
         int startOffset = startIndex * Long.BYTES;
         int endOffset = endIndex * Long.BYTES;
 
