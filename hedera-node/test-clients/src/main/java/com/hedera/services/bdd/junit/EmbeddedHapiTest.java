@@ -49,8 +49,8 @@ public @interface EmbeddedHapiTest {
     EmbeddedReason[] value();
 
     /**
-     * todo
-     * @return
+     * The trigger to use when initializing the embedded node
+     * @return the specified trigger
      */
     InitTrigger initTrigger() default InitTrigger.GENESIS;
 }

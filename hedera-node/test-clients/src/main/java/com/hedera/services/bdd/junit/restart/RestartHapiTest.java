@@ -85,14 +85,9 @@ public @interface RestartHapiTest {
     Class<? extends SavedStateSpec> savedStateSpec() default NoopSavedStateSpec.class;
 
     /**
-     * todo
-     * @return
+     * Determines whether the PEM admin key should be present. This flag applies to both
+     * genesis and restart scenarios.
+     * @return true if the PEM admin key should be present at node startup and restart
      */
-    boolean generateNetworkJson() default true;
-
-    /**
-     * todo
-     * @return
-     */
-    boolean useDiskAdminKey() default false;
+    boolean usePemAdminKey() default false;
 }

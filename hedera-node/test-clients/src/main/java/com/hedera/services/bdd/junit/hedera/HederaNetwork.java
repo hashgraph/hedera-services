@@ -165,9 +165,11 @@ public interface HederaNetwork {
     }
 
     /**
-     * todo
-     * @param bootstrapOverrides
-     * @param adminKeySources todo
+     * Starts all nodes in the network with the given customizations. The inclusion of each source
+     * type will ensure that the necessary corresponding key materials are all present on disk at
+     * time of node startup.
+     * @param bootstrapOverrides - configuration overrides to apply PRIOR to startup
+     * @param adminKeySources - the source(s) of admin keys to make available to the embedded node
      */
     default void startWith(
             @NonNull final Map<String, String> bootstrapOverrides, @NonNull AdminKeySource[] adminKeySources) {

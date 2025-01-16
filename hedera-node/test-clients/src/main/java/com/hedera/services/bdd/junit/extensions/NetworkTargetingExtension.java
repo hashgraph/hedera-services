@@ -109,7 +109,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                     case SAME_VERSION, UPGRADE_BOUNDARY -> {
                         final var state = postGenesisStateOf(targetNetwork, a);
                         targetNetwork.restart(state, restartOverrides, new AdminKeySource[] {
-                            AdminKeySource.NODE_ADMIN_KEYS_FILE, a.useDiskAdminKey() ? AdminKeySource.PEM_FILE : null
+                            AdminKeySource.NODE_ADMIN_KEYS_FILE, a.usePemAdminKey() ? AdminKeySource.PEM_FILE : null
                         });
                     }
                 }
