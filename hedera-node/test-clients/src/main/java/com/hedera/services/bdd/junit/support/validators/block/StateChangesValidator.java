@@ -592,6 +592,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
+            case HINTS_CONSTRUCTION_VALUE -> singletonUpdateChange.hintsConstructionValueOrThrow();
         };
     }
 
@@ -624,6 +625,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case SCHEDULED_ORDER_KEY -> mapChangeKey.scheduledOrderKeyOrThrow();
             case TSS_MESSAGE_MAP_KEY -> mapChangeKey.tssMessageMapKeyOrThrow();
             case TSS_VOTE_MAP_KEY -> mapChangeKey.tssVoteMapKeyOrThrow();
+            case HINTS_PARTY_ID_KEY -> mapChangeKey.hintsPartyIdKeyOrThrow();
+            case PREPROCESSING_VOTE_ID_KEY -> mapChangeKey.preprocessingVoteIdKeyOrThrow();
         };
     }
 
@@ -652,6 +655,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TSS_ENCRYPTION_KEYS_VALUE -> mapChangeValue.tssEncryptionKeysValue();
             case TSS_MESSAGE_VALUE -> mapChangeValue.tssMessageValueOrThrow();
             case TSS_VOTE_VALUE -> mapChangeValue.tssVoteValueOrThrow();
+            case HINTS_KEY_SET_VALUE -> mapChangeValue.hintsKeySetValueOrThrow();
+            case PREPROCESSING_VOTE_VALUE -> mapChangeValue.preprocessingVoteValueOrThrow();
         };
     }
 
