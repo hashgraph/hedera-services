@@ -542,7 +542,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var kind = item.item().kind();
             ByteBuffer hash = null;
             switch (kind) {
-                case EVENT_HEADER, EVENT_TRANSACTION, TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
+                case EVENT_HEADER,
+                        EVENT_TRANSACTION,
+                        TRANSACTION_RESULT,
+                        TRANSACTION_OUTPUT,
+                        STATE_CHANGES,
+                        ROUND_HEADER,
+                        BLOCK_HEADER -> {
                     MessageDigest digest = sha384DigestOrThrow();
                     bytes.writeTo(digest);
                     hash = ByteBuffer.wrap(digest.digest());
@@ -574,7 +580,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     hash.rewind();
                     outputTreeHasher.addLeaf(hash);
                 }
-                case TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(hash);
+                case TRANSACTION_OUTPUT, STATE_CHANGES, ROUND_HEADER, BLOCK_HEADER -> outputTreeHasher.addLeaf(hash);
             }
 
             final BlockHeader header = item.blockHeader();
