@@ -49,9 +49,9 @@ The release process will be changing in the following areas beginning with `Rele
 |---------------------------------------------------------|----------|
 | Planning                                                | 12d      |
 | Development                                             | 26d      |
-| [NEW] **milestone** Select candidate commit for release | 0d       |
 | [DEL] ~~**milestone** Create release branch~~           | ~~0d~~   |
 | Bugs & Fix                                              | 12d      |
+| [NEW] **milestone** Select candidate commit for release | 0d       |
 | [NEW] Run the `[Main] Create New Release` workflow      | 0d       |
 | **milestone** Deploy to preview net                     | 12d      |
 | [DEL] ~~**milestone** Create alpha tag~~                | ~~0d~~   |
