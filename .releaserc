@@ -15,7 +15,7 @@
   ],
   "branches":[
     {
-      "name": "main"
+      "name": "14967-semantic-release-workflow-update"
     },
     {
       "name": "release/([0-9]+).([0-9]+)",
