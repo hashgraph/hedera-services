@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.DynamicTest;
 
 public class ConsensusServiceFeesSuite {
     private static final double BASE_FEE_TOPIC_CREATE = 0.01;
+    private static final double BASE_FEE_TOPIC_CREATE_WITH_CUSTOM_FEE = 2.00;
     private static final double BASE_FEE_TOPIC_UPDATE = 0.00022;
     private static final double BASE_FEE_TOPIC_DELETE = 0.005;
     private static final double BASE_FEE_TOPIC_SUBMIT_MESSAGE = 0.0001;
@@ -51,8 +53,15 @@ public class ConsensusServiceFeesSuite {
     final Stream<DynamicTest> topicCreateBaseUSDFee() {
         return hapiTest(
                 cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("collector"),
                 createTopic(TOPIC_NAME).blankMemo().payingWith(PAYER).via("topicCreate"),
-                validateChargedUsd("topicCreate", BASE_FEE_TOPIC_CREATE));
+                createTopic("TopicWithCustomFee")
+                        .blankMemo()
+                        .payingWith(PAYER)
+                        .withConsensusCustomFee(fixedConsensusHbarFee(1, "collector"))
+                        .via("topicCreateWithCustomFee"),
+                validateChargedUsd("topicCreate", BASE_FEE_TOPIC_CREATE),
+                validateChargedUsd("topicCreateWithCustomFee", BASE_FEE_TOPIC_CREATE_WITH_CUSTOM_FEE));
     }
 
     @HapiTest
