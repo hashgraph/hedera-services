@@ -17,7 +17,6 @@
 package com.hedera.node.app.hints.impl;
 
 import com.hedera.node.app.hints.HintsLibrary;
-import com.hedera.node.app.hints.HintsModule;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

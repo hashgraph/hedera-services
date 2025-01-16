@@ -60,13 +60,10 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
-    public @Nullable Bytes getVerificationKeyFor(@NonNull final Bytes rosterHash) {
-        requireNonNull(rosterHash);
-        HintsConstruction construction;
-        if ((construction = requireNonNull(activeConstruction.get())).hasPreprocessedKeys()) {
-            return construction.preprocessedKeysOrThrow().verificationKey();
-        } else if ((construction = requireNonNull(nextConstruction.get())).hasPreprocessedKeys()) {
-            return construction.preprocessedKeysOrThrow().verificationKey();
+    public @Nullable Bytes getActiveVerificationKey() {
+        final var construction = requireNonNull(activeConstruction.get());
+        if (construction.hasHintsScheme()) {
+            return construction.hintsSchemeOrThrow().preprocessedKeysOrThrow().verificationKey();
         }
         return null;
     }

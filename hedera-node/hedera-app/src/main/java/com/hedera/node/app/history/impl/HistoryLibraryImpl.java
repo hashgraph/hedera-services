@@ -46,7 +46,8 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     }
 
     @Override
-    public boolean verifySchnorr(@NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes publicKey) {
+    public boolean verifySchnorr(
+            @NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes publicKey) {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(publicKey);
@@ -61,7 +62,13 @@ public class HistoryLibraryImpl implements HistoryLibrary {
 
     @NonNull
     @Override
-    public Bytes proveChainOfTrust(@NonNull final Bytes ledgerId, @Nullable final Bytes sourceProof, @NonNull final Bytes sourceAddressBook, @NonNull Map<Long, Bytes> sourceSignatures, @NonNull final Bytes targetAddressBookHash, @NonNull final Bytes targetMetadata) {
+    public Bytes proveChainOfTrust(
+            @NonNull final Bytes ledgerId,
+            @Nullable final Bytes sourceProof,
+            @NonNull final Bytes sourceAddressBook,
+            @NonNull Map<Long, Bytes> sourceSignatures,
+            @NonNull final Bytes targetAddressBookHash,
+            @NonNull final Bytes targetMetadata) {
         requireNonNull(ledgerId);
         requireNonNull(sourceAddressBook);
         requireNonNull(sourceSignatures);
@@ -71,7 +78,11 @@ public class HistoryLibraryImpl implements HistoryLibrary {
     }
 
     @Override
-    public boolean verifyChainOfTrust(@NonNull final Bytes ledgerId, @NonNull final Bytes addressBookHash, @NonNull final Bytes metadata, @NonNull final Bytes proof) {
+    public boolean verifyChainOfTrust(
+            @NonNull final Bytes ledgerId,
+            @NonNull final Bytes addressBookHash,
+            @NonNull final Bytes metadata,
+            @NonNull final Bytes proof) {
         requireNonNull(ledgerId);
         requireNonNull(addressBookHash);
         requireNonNull(metadata);

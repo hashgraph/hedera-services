@@ -45,7 +45,8 @@ public class HintsLibraryImpl implements HintsLibrary {
     }
 
     @Override
-    public Bytes preprocess(@NonNull final Map<Integer, Bytes> hintsKeys, @NonNull final Map<Integer, Long> weights, final int n) {
+    public Bytes preprocess(
+            @NonNull final Map<Integer, Bytes> hintsKeys, @NonNull final Map<Integer, Long> weights, final int n) {
         requireNonNull(hintsKeys);
         requireNonNull(weights);
         throw new AssertionError("Not implemented");
@@ -59,7 +60,8 @@ public class HintsLibraryImpl implements HintsLibrary {
     }
 
     @Override
-    public boolean verifyBls(@NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes publicKey) {
+    public boolean verifyBls(
+            @NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes publicKey) {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(publicKey);
@@ -67,7 +69,10 @@ public class HintsLibraryImpl implements HintsLibrary {
     }
 
     @Override
-    public Bytes aggregateSignatures(@NonNull final Bytes aggregationKey, @NonNull final Bytes verificationKey, @NonNull final Map<Integer, Bytes> partialSignatures) {
+    public Bytes aggregateSignatures(
+            @NonNull final Bytes aggregationKey,
+            @NonNull final Bytes verificationKey,
+            @NonNull final Map<Integer, Bytes> partialSignatures) {
         requireNonNull(aggregationKey);
         requireNonNull(verificationKey);
         requireNonNull(partialSignatures);
@@ -75,7 +80,12 @@ public class HintsLibraryImpl implements HintsLibrary {
     }
 
     @Override
-    public boolean verifyAggregate(@NonNull final Bytes signature, @NonNull final Bytes message, @NonNull final Bytes verificationKey, final long thresholdNumerator, long thresholdDenominator) {
+    public boolean verifyAggregate(
+            @NonNull final Bytes signature,
+            @NonNull final Bytes message,
+            @NonNull final Bytes verificationKey,
+            final long thresholdNumerator,
+            long thresholdDenominator) {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(verificationKey);

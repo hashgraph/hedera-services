@@ -69,8 +69,8 @@ public interface HintsController {
     void addHintsKeyPublication(@NonNull ReadableHintsStore.HintsKeyPublication publication);
 
     /**
-     * If the construction is not already complete, adds a preprocessing outputs vote to the <i>controller's</i>
-     * state.
+     * If this controller's construction is not already complete, considers updating its state with this preprocessing
+     * vote the controller's state. Returns true if any state was updated.
      * <p>
      * <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also
      * updates <i>network</i> state with the winning output.
@@ -78,7 +78,7 @@ public interface HintsController {
      * @param vote the preprocessing outputs vote
      * @param hintsStore the hints store
      */
-    void addPreprocessingVote(long nodeId, @NonNull PreprocessingVote vote, @NonNull WritableHintsStore hintsStore);
+    boolean addPreprocessingVote(long nodeId, @NonNull PreprocessingVote vote, @NonNull WritableHintsStore hintsStore);
 
     /**
      * Cancels any pending work that this controller has scheduled.

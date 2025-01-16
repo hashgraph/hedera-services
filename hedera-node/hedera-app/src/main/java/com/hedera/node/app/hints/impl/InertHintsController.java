@@ -72,11 +72,11 @@ public class InertHintsController implements HintsController {
     }
 
     @Override
-    public void addPreprocessingVote(
+    public boolean addPreprocessingVote(
             final long nodeId, @NonNull final PreprocessingVote vote, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(vote);
         requireNonNull(hintsStore);
-        // No-op
+        return false;
     }
 
     @Override

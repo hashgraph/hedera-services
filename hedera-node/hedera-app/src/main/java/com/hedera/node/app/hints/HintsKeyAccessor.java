@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hints;
 
-import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -18,6 +18,7 @@ package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
@@ -30,6 +31,10 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
+import com.hedera.hapi.node.state.hints.NodePartyId;
+import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -53,11 +58,14 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -65,11 +73,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WritableHintsStoreImplTest {
+    private static final PreprocessingVote DEFAULT_VOTE = PreprocessingVote.newBuilder()
+            .preprocessedKeys(PreprocessedKeys.DEFAULT)
+            .build();
     private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final Roster A_ROSTER = new Roster(List.of(RosterEntry.DEFAULT));
     private static final Bytes A_ROSTER_HASH = Bytes.wrap("A");
     private static final Bytes B_ROSTER_HASH = Bytes.wrap("B");
-    private static final Roster C_ROSTER = new Roster(List.of(RosterEntry.DEFAULT, RosterEntry.DEFAULT));
+    private static final Roster C_ROSTER = new Roster(List.of(
+            RosterEntry.newBuilder().nodeId(1L).build(),
+            RosterEntry.newBuilder().nodeId(2L).build()));
     private static final Bytes C_ROSTER_HASH = Bytes.wrap("C");
     private static final TssConfig TSS_CONFIG = DEFAULT_CONFIG.getConfigData(TssConfig.class);
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
@@ -93,10 +106,14 @@ class WritableHintsStoreImplTest {
 
     private WritableHintsStoreImpl subject;
 
+    @BeforeEach
+    void setUp() {
+        state = emptyState();
+        subject = new WritableHintsStoreImpl(state.getWritableStates(HintsService.NAME));
+    }
+
     @Test
     void refusesToGetOrCreateForHandoff() {
-        setUpWith();
-
         given(activeRosters.phase()).willReturn(HANDOFF);
 
         assertNull(subject.getConstructionFor(activeRosters));
@@ -107,8 +124,6 @@ class WritableHintsStoreImplTest {
 
     @Test
     void findsMatchingTransitionConstructionInActiveConstructionIfThere() {
-        setUpWith();
-
         given(activeRosters.phase()).willReturn(TRANSITION);
         given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
         given(activeRosters.targetRosterHash()).willReturn(B_ROSTER_HASH);
@@ -124,8 +139,6 @@ class WritableHintsStoreImplTest {
 
     @Test
     void findsMatchingTransitionConstructionInNextConstructionIfThere() {
-        setUpWith();
-
         given(activeRosters.phase()).willReturn(TRANSITION);
         given(activeRosters.sourceRosterHash()).willReturn(B_ROSTER_HASH);
         given(activeRosters.targetRosterHash()).willReturn(C_ROSTER_HASH);
@@ -146,8 +159,6 @@ class WritableHintsStoreImplTest {
 
     @Test
     void createsBootstrapConstructionIfNotPresent() {
-        setUpWith();
-
         givenARosterLookup();
         given(activeRosters.phase()).willReturn(BOOTSTRAP);
         given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
@@ -171,8 +182,6 @@ class WritableHintsStoreImplTest {
 
     @Test
     void setsAsNextConstructionAndRotatesKeysDuringTransition() {
-        setUpWith();
-
         givenCRosterLookup();
         given(activeRosters.phase()).willReturn(TRANSITION);
         given(activeRosters.sourceRosterHash()).willReturn(B_ROSTER_HASH);
@@ -183,6 +192,7 @@ class WritableHintsStoreImplTest {
                 .targetRosterHash(B_ROSTER_HASH)
                 .build();
         setConstructions(active, HintsConstruction.DEFAULT);
+        assertSame(active, subject.getActiveConstruction());
         final var key = Bytes.wrap("ONE");
         final var nextKey = Bytes.wrap("TWO");
         final long rotatingKeyNodeId = 666L;
@@ -229,7 +239,109 @@ class WritableHintsStoreImplTest {
     }
 
     @Test
-    void canSetPreprocessingStartTime() {}
+    void canSetPreprocessingStartTimeIfConstructionIdExists() {
+        setConstructions(
+                HintsConstruction.newBuilder().constructionId(123L).build(),
+                HintsConstruction.newBuilder().constructionId(456L).build());
+
+        assertThrows(IllegalArgumentException.class, () -> subject.setPreprocessingStartTime(0L, CONSENSUS_NOW));
+        subject.setPreprocessingStartTime(123L, CONSENSUS_NOW);
+        assertEquals(
+                asTimestamp(CONSENSUS_NOW),
+                constructionNow(ACTIVE_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
+        assertFalse(constructionNow(NEXT_CONSTRUCTION_KEY).hasPreprocessingStartTime());
+
+        subject.setPreprocessingStartTime(123L, CONSENSUS_NOW);
+        assertEquals(
+                asTimestamp(CONSENSUS_NOW),
+                constructionNow(ACTIVE_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
+
+        final var then = CONSENSUS_NOW.plusSeconds(1L);
+        subject.setPreprocessingStartTime(456L, then);
+        assertEquals(asTimestamp(then), constructionNow(NEXT_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
+    }
+
+    @Test
+    void canSetHintsScheme() {
+        setConstructions(
+                HintsConstruction.newBuilder().constructionId(123L).build(),
+                HintsConstruction.newBuilder().constructionId(456L).build());
+        final var verificationKey = Bytes.wrap("VK");
+        final var keys = new PreprocessedKeys(Bytes.EMPTY, verificationKey);
+        final var nodePartyIds = Map.of(1L, 2, 3L, 6);
+        assertNull(subject.getActiveVerificationKey());
+
+        subject.setHintsScheme(456L, keys, nodePartyIds);
+
+        final var construction = constructionNow(NEXT_CONSTRUCTION_KEY);
+        assertEquals(keys, construction.hintsSchemeOrThrow().preprocessedKeysOrThrow());
+        assertEquals(
+                List.of(new NodePartyId(1L, 2), new NodePartyId(3L, 6)),
+                construction.hintsSchemeOrThrow().nodePartyIds());
+        assertNull(subject.getActiveVerificationKey());
+
+        subject.setHintsScheme(123L, keys, nodePartyIds);
+        assertEquals(verificationKey, subject.getActiveVerificationKey());
+    }
+
+    @Test
+    void purgingStateAfterExactlyHandoffIsFalseIfNothingHappened() {
+        given(activeRosters.phase()).willReturn(TRANSITION);
+        assertThrows(IllegalArgumentException.class, () -> subject.purgeStateAfterHandoff(activeRosters));
+        given(activeRosters.phase()).willReturn(BOOTSTRAP);
+        assertThrows(IllegalArgumentException.class, () -> subject.purgeStateAfterHandoff(activeRosters));
+        given(activeRosters.phase()).willReturn(HANDOFF);
+        given(activeRosters.currentRosterHash()).willReturn(Bytes.wrap("NA"));
+
+        assertFalse(subject.purgeStateAfterHandoff(activeRosters));
+    }
+
+    @Test
+    void purgingStateAfterHandoffHasTrueExpectedEffectIfSomethingHappened() {
+        given(activeRosters.phase()).willReturn(HANDOFF);
+        given(activeRosters.currentRoster()).willReturn(C_ROSTER);
+        given(activeRosters.currentRosterHash()).willReturn(C_ROSTER_HASH);
+        givenARosterLookup();
+        final var activeConstruction = HintsConstruction.newBuilder()
+                .constructionId(123L)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(A_ROSTER_HASH)
+                .build();
+        final var nextConstruction = HintsConstruction.newBuilder()
+                .constructionId(456L)
+                .targetRosterHash(C_ROSTER_HASH)
+                .build();
+        setConstructions(activeConstruction, nextConstruction);
+        addSomeVotesFor(123L, A_ROSTER);
+        addSomeHintsKeySetsFor(A_ROSTER);
+        final var votesBefore = subject.getVotes(123L, Set.of(0L, 1L));
+        assertEquals(1, votesBefore.size());
+        assertEquals(DEFAULT_VOTE, votesBefore.get(0L));
+        final var publicationsBefore = subject.getHintsKeyPublications(Set.of(0L), partySizeForRoster(A_ROSTER));
+        assertEquals(1, publicationsBefore.size());
+
+        subject.purgeStateAfterHandoff(activeRosters);
+
+        assertSame(nextConstruction, constructionNow(ACTIVE_CONSTRUCTION_KEY));
+
+        assertEquals(0L, votesNow().size());
+        assertEquals(0L, keySetsNow().size());
+    }
+
+    private ReadableKVState<PreprocessingVoteId, PreprocessingVote> votesNow() {
+        return state.getWritableStates(HintsService.NAME).get(V059HintsSchema.PREPROCESSING_VOTES_KEY);
+    }
+
+    private ReadableKVState<HintsPartyId, HintsKeySet> keySetsNow() {
+        return state.getWritableStates(HintsService.NAME).get(V059HintsSchema.HINTS_KEY_SETS_KEY);
+    }
+
+    private HintsConstruction constructionNow(@NonNull final String key) {
+        final var construction = state.getWritableStates(HintsService.NAME)
+                .<HintsConstruction>getSingleton(key)
+                .get();
+        return requireNonNull(construction);
+    }
 
     private void setConstructions(@NonNull final HintsConstruction active, @NonNull final HintsConstruction next) {
         final var writableStates = state.getWritableStates(HintsService.NAME);
@@ -242,17 +354,34 @@ class WritableHintsStoreImplTest {
         ((CommittableWritableStates) writableStates).commit();
     }
 
+    private void addSomeVotesFor(final long constructionId, @NonNull final Roster roster) {
+        roster.rosterEntries()
+                .forEach(entry -> subject.addPreprocessingVote(entry.nodeId(), constructionId, DEFAULT_VOTE));
+    }
+
+    private void addSomeHintsKeySetsFor(@NonNull final Roster roster) {
+        final var writableStates = state.getWritableStates(HintsService.NAME);
+        final var keySets = state.getWritableStates(HintsService.NAME)
+                .<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_KEY);
+        final int numParties = partySizeForRoster(roster);
+        for (int i = 0; i < numParties; i++) {
+            final var partyId = new HintsPartyId(i, numParties);
+            final var keySet = HintsKeySet.newBuilder()
+                    .nodeId(i)
+                    .key(Bytes.wrap("KEY" + i))
+                    .adoptionTime(asTimestamp(CONSENSUS_NOW.minusSeconds(i)))
+                    .build();
+            keySets.put(partyId, keySet);
+        }
+        ((CommittableWritableStates) writableStates).commit();
+    }
+
     private void givenARosterLookup() {
         given(activeRosters.findRelatedRoster(A_ROSTER_HASH)).willReturn(A_ROSTER);
     }
 
     private void givenCRosterLookup() {
         given(activeRosters.findRelatedRoster(C_ROSTER_HASH)).willReturn(C_ROSTER);
-    }
-
-    private void setUpWith() {
-        state = emptyState();
-        subject = new WritableHintsStoreImpl(state.getWritableStates(HintsService.NAME));
     }
 
     private State emptyState() {

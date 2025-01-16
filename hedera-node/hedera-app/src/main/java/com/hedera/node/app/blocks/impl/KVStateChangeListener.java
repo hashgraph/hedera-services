@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.hints.HintsKeySet;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -243,6 +245,12 @@ public class KVStateChangeListener implements StateChangeListener {
                     .build();
             case TssEncryptionKeys tssEncryptionKeys -> MapChangeValue.newBuilder()
                     .tssEncryptionKeysValue(tssEncryptionKeys)
+                    .build();
+            case HintsKeySet hintsKeySet -> MapChangeValue.newBuilder()
+                    .hintsKeySetValue(hintsKeySet)
+                    .build();
+            case PreprocessingVote preprocessingVote -> MapChangeValue.newBuilder()
+                    .preprocessingVoteValue(preprocessingVote)
                     .build();
             default -> throw new IllegalStateException(
                     "Unexpected value: " + value.getClass().getSimpleName());

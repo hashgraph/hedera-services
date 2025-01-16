@@ -20,7 +20,6 @@ import static com.hedera.node.app.roster.RosterTransitionWeights.atLeastOneThird
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.cryptography.bls.BlsSignature;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.node.app.hints.HintsLibrary;
@@ -71,14 +70,17 @@ public class HintsContext {
      */
     public void setConstruction(@NonNull final HintsConstruction construction) {
         this.construction = requireNonNull(construction);
-        this.nodePartyIds = asNodePartyIds(construction.nodePartyIds());
+        if (!construction.hasHintsScheme()) {
+            throw new IllegalArgumentException("Construction has no hints scheme");
+        }
+        this.nodePartyIds = asNodePartyIds(construction.hintsSchemeOrThrow().nodePartyIds());
     }
 
     /**
      * Returns true if the signing context is ready.
      */
     public boolean isReady() {
-        return construction != null;
+        return construction != null && construction.hasHintsScheme();
     }
 
     /**
@@ -86,7 +88,10 @@ public class HintsContext {
      */
     public Bytes verificationKeyOrThrow() {
         throwIfNotReady();
-        return requireNonNull(construction).preprocessedKeysOrThrow().verificationKey();
+        return requireNonNull(construction)
+                .hintsSchemeOrThrow()
+                .preprocessedKeysOrThrow()
+                .verificationKey();
     }
 
     public long constructionIdOrThrow() {
@@ -102,7 +107,8 @@ public class HintsContext {
     public @NonNull Signing newSigning(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         throwIfNotReady();
-        final var preprocessedKeys = requireNonNull(construction).preprocessedKeysOrThrow();
+        final var preprocessedKeys =
+                requireNonNull(construction).hintsSchemeOrThrow().preprocessedKeysOrThrow();
         final var verificationKey = preprocessedKeys.verificationKey();
         final long totalWeight = codec.extractTotalWeight(verificationKey);
         return new Signing(

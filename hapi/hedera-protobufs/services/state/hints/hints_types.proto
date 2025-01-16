@@ -19,7 +19,6 @@ package com.hedera.hapi.node.state.hints;
  */
 
 import "timestamp.proto";
-import "basic_types.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.hints">>> This comment is special code for setting PBJ Compiler java package
@@ -127,6 +126,21 @@ message NodePartyId {
 }
 
 /**
+ * The information constituting the hinTS scheme Hiero TSS.
+ */
+message HintsScheme {
+  /**
+   * The aggregation and verification keys for the scheme.
+   */
+  PreprocessedKeys preprocessed_keys = 1;
+
+  /**
+   * The final party ids assigned to each node in the target roster.
+   */
+  repeated NodePartyId node_party_ids = 2;
+}
+
+/**
  * A summary of progress in constructing a hinTS scheme.
  */
 message HintsConstruction {
@@ -145,7 +159,7 @@ message HintsConstruction {
    */
   bytes target_roster_hash = 3;
 
-  oneof preprocessing_time {
+  oneof preprocessing_state {
     /**
      * If the network is still gathering hinTS keys for this construction,
      * the time at which honest nodes should stop waiting for tardy
@@ -159,16 +173,10 @@ message HintsConstruction {
      * adopted to be included as input to the preprocessing algorithm.
      */
     proto.Timestamp preprocessing_start_time = 5;
+
+    /**
+     * If set, the completed hinTS scheme.
+     */
+    HintsScheme hints_scheme = 6;
   }
-
-  /**
-   * If set, the preprocessed hinTS keys that were approved by nodes
-   * holding at least 1/3 of the weight in the source roster.
-   */
-  PreprocessedKeys preprocessed_keys = 6;
-
-  /**
-   * The final party ids assigned to each node in the target roster.
-   */
-  repeated NodePartyId node_party_ids = 7;
 }

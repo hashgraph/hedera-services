@@ -18,6 +18,7 @@ package com.hedera.node.app.hints;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -47,15 +48,19 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @param now the adoption time
      * @return whether the key was immediately in use
      */
-    boolean setHintsKey(
-            long nodeId, int partyId, int numParties, @NonNull Bytes hintsKey, @NonNull final Instant now);
+    boolean setHintsKey(long nodeId, int partyId, int numParties, @NonNull Bytes hintsKey, @NonNull final Instant now);
+
+    /**
+     * Adds a preprocessing vote for the given node and construction.
+     */
+    void addPreprocessingVote(long nodeId, long constructionId, @NonNull PreprocessingVote vote);
 
     /**
      * Sets the consensus preprocessing output for the construction with the given ID and returns the
      * updated construction.
      * @return the updated construction
      */
-    HintsConstruction setPreprocessedKeys(
+    HintsConstruction setHintsScheme(
             long constructionId, @NonNull PreprocessedKeys keys, @NonNull Map<Long, Integer> nodePartyIds);
 
     /**

@@ -17,15 +17,12 @@
 package com.hedera.node.app.history.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
-import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.history.History;
-import com.hedera.hapi.node.state.history.HistoryAddressBook;
-import com.hedera.hapi.node.state.history.HistoryAddressBookEntry;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
@@ -38,7 +35,6 @@ import com.hedera.node.app.roster.RosterTransitionWeights;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;

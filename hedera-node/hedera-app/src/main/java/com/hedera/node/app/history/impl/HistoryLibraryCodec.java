@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.history.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.history.History;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Map;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Utility to extract information from byte arrays returned by the {@link HistoryLibrary}, encode protobuf
@@ -56,7 +55,8 @@ public class HistoryLibraryCodec {
      * @param publicKeys the available Schnorr public keys for the nodes in the roster
      * @return the history address book
      */
-    public @NonNull Bytes encodeAddressBook(@NonNull final Map<Long, Long> weights, @NonNull final Map<Long, Bytes> publicKeys) {
+    public @NonNull Bytes encodeAddressBook(
+            @NonNull final Map<Long, Long> weights, @NonNull final Map<Long, Bytes> publicKeys) {
         requireNonNull(weights);
         requireNonNull(publicKeys);
         throw new UnsupportedOperationException("Not implemented");
@@ -69,7 +69,8 @@ public class HistoryLibraryCodec {
      * @param snarkVerificationKey the verification key for the SNARK used to prove address book transitions
      * @return the history address book
      */
-    public @NonNull Bytes encodeLedgerId(@NonNull final Bytes addressBookHash, @NonNull final Bytes snarkVerificationKey) {
+    public @NonNull Bytes encodeLedgerId(
+            @NonNull final Bytes addressBookHash, @NonNull final Bytes snarkVerificationKey) {
         requireNonNull(addressBookHash);
         requireNonNull(snarkVerificationKey);
         throw new UnsupportedOperationException("Not implemented");

@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.hints;
+package com.hedera.node.app.hints.impl;
 
 import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
+import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
-import com.hedera.node.app.hints.impl.HintsContext;
-import com.hedera.node.app.hints.impl.HintsKeyAccessorImpl;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.fakes.FakeGroupElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

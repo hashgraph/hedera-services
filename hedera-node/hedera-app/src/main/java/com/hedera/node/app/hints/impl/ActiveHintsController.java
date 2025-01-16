@@ -57,7 +57,7 @@ public class ActiveHintsController implements HintsController {
     private final HintsLibrary library;
     private final HintsLibraryCodec codec;
     private final HintsSubmissions submissions;
-    private final HintsContext signingContext;
+    private final HintsContext context;
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
     private final Map<Integer, Long> partyNodeIds = new HashMap<>();
     private final RosterTransitionWeights weights;
@@ -102,14 +102,14 @@ public class ActiveHintsController implements HintsController {
             @NonNull final Bytes blsPublicKey,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsContext signingContext) {
+            @NonNull final HintsContext context) {
         this.selfId = selfId;
         this.blsPrivateKey = requireNonNull(blsPrivateKey);
         this.blsPublicKey = requireNonNull(blsPublicKey);
         this.weights = requireNonNull(weights);
         this.numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
         this.executor = requireNonNull(executor);
-        this.signingContext = requireNonNull(signingContext);
+        this.context = requireNonNull(context);
         this.submissions = requireNonNull(submissions);
         this.library = requireNonNull(library);
         this.codec = requireNonNull(codec);
@@ -125,7 +125,7 @@ public class ActiveHintsController implements HintsController {
 
     @Override
     public boolean isStillInProgress() {
-        return !construction.hasPreprocessedKeys();
+        return !construction.hasHintsScheme();
     }
 
     @Override
@@ -137,7 +137,7 @@ public class ActiveHintsController implements HintsController {
     public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(now);
         requireNonNull(hintsStore);
-        if (construction.hasPreprocessedKeys()) {
+        if (construction.hasHintsScheme()) {
             return;
         }
         if (construction.hasPreprocessingStartTime()) {
@@ -189,11 +189,11 @@ public class ActiveHintsController implements HintsController {
     }
 
     @Override
-    public void addPreprocessingVote(
+    public boolean addPreprocessingVote(
             final long nodeId, @NonNull final PreprocessingVote vote, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(vote);
         requireNonNull(hintsStore);
-        if (!construction.hasPreprocessedKeys()) {
+        if (!construction.hasHintsScheme() && !votes.containsKey(nodeId)) {
             votes.put(nodeId, vote);
             final var outputWeights = votes.entrySet().stream()
                     .collect(groupingBy(
@@ -204,12 +204,15 @@ public class ActiveHintsController implements HintsController {
                     .map(Map.Entry::getKey)
                     .findFirst();
             maybeWinningOutputs.ifPresent(keys -> {
-                construction = hintsStore.setPreprocessedKeys(construction.constructionId(), keys, nodePartyIds);
+                construction = hintsStore.setHintsScheme(construction.constructionId(), keys, nodePartyIds);
+                // If this just completed the active construction, update the signing context
                 if (hintsStore.getActiveConstruction().constructionId() == construction.constructionId()) {
-                    signingContext.setConstruction(construction);
+                    context.setConstruction(construction);
                 }
             });
+            return true;
         }
+        return false;
     }
 
     @Override

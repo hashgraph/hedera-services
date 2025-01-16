@@ -23,7 +23,6 @@ import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

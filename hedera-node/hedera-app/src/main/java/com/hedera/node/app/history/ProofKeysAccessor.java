@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.node.app.history.impl.SchnorrKeyPair;
 import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;

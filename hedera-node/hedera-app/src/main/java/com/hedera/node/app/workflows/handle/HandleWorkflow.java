@@ -285,7 +285,7 @@ public class HandleWorkflow {
                 final Bytes currentMetadata;
                 if (tssConfig.hintsEnabled()) {
                     final var hintsStore = new ReadableHintsStoreImpl(state.getReadableStates(HintsService.NAME));
-                    currentMetadata = hintsStore.getVerificationKeyFor(activeRosters.currentRosterHash());
+                    currentMetadata = hintsStore.getActiveVerificationKey();
                 } else {
                     currentMetadata = null;
                 }

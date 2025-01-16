@@ -30,13 +30,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Encapsulates information about the hints in state that are not directly scoped to
- * a particular maximum universe size.
+ * Gives read access to the primary and secondary hinTS service states.
  */
 public interface ReadableHintsStore {
     /**
-     * The full record of a hinTS key publication, including the key, the submitting node id, and (importantly)
-     * the party id for that node id in this construction.
+     * The full record of a hinTS key publication, including the key, the time it was adopted, the submitting node id,
+     * and (importantly) the party id for that node id in this construction.
      *
      * @param nodeId the node ID submitting the key
      * @param hintsKey the hinTS key itself
@@ -57,11 +56,11 @@ public interface ReadableHintsStore {
 
     /**
      * Returns the verification key for the given roster hash, if it exists.
-     * @param rosterHash the roster hash
+     *
      * @return the verification key, or null if it does not exist
      */
     @Nullable
-    Bytes getVerificationKeyFor(@NonNull Bytes rosterHash);
+    Bytes getActiveVerificationKey();
 
     /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.

@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
+import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -44,6 +45,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -53,6 +55,9 @@ import java.util.function.UnaryOperator;
  * Default implementation of {@link WritableHintsStore}.
  */
 public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements WritableHintsStore {
+    private static final Comparator<NodePartyId> NODE_PARTY_ID_COMPARATOR =
+            Comparator.comparingLong(NodePartyId::nodeId);
+
     private final WritableKVState<HintsPartyId, HintsKeySet> hintsKeys;
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
@@ -119,13 +124,19 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public HintsConstruction setPreprocessedKeys(
+    public void addPreprocessingVote(
+            final long nodeId, final long constructionId, @NonNull final PreprocessingVote vote) {
+        votes.put(new PreprocessingVoteId(constructionId, nodeId), vote);
+    }
+
+    @Override
+    public HintsConstruction setHintsScheme(
             final long constructionId,
             @NonNull final PreprocessedKeys keys,
             @NonNull final Map<Long, Integer> nodePartyIds) {
         requireNonNull(keys);
         requireNonNull(nodePartyIds);
-        return updateOrThrow(constructionId, b -> b.preprocessedKeys(keys).nodePartyIds(asList(nodePartyIds)));
+        return updateOrThrow(constructionId, b -> b.hintsScheme(new HintsScheme(keys, asList(nodePartyIds))));
     }
 
     @Override
@@ -140,7 +151,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             throw new IllegalArgumentException("Not in handoff phase");
         }
         if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(activeRosters.currentRosterHash())) {
-            // The next construction is becoming the active one; so purge votes that were for active
+            // The next construction is becoming the active one; so purge obsolete votes now
             purgeVotes(requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
             // If the active construction's party size was different than the current roster's, purge its hinTS keys
             final int newActiveSize = partySizeForRoster(activeRosters.currentRoster());
@@ -199,6 +210,10 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         if (requireNonNull(activeConstruction.get()).equals(HintsConstruction.DEFAULT)) {
             activeConstruction.put(construction);
         } else {
+            if (!requireNonNull(nextConstruction.get()).equals(HintsConstruction.DEFAULT)) {
+                // Before replacing the next construction, purge its votes
+                purgeVotes(requireNonNull(nextConstruction.get()), lookup);
+            }
             nextConstruction.put(construction);
         }
         // Rotate any hint keys requested to be used in the next construction
@@ -243,9 +258,10 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private void purgeHintsKeysIfNotForPartySize(
             final int m, @NonNull final HintsConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
         final var targetRoster = requireNonNull(lookup.apply(construction.targetRosterHash()));
-        if (partySizeForRoster(targetRoster) != m) {
-            for (int partyId = 0; partyId < m; partyId++) {
-                final var hintsId = new HintsPartyId(partyId, m);
+        final int n = partySizeForRoster(targetRoster);
+        if (n != m) {
+            for (int partyId = 0; partyId < n; partyId++) {
+                final var hintsId = new HintsPartyId(partyId, n);
                 hintsKeys.remove(hintsId);
             }
         }
@@ -269,6 +285,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private List<NodePartyId> asList(@NonNull final Map<Long, Integer> nodePartyIds) {
         return nodePartyIds.entrySet().stream()
                 .map(entry -> new NodePartyId(entry.getKey(), entry.getValue()))
+                .sorted(NODE_PARTY_ID_COMPARATOR)
                 .toList();
     }
 }
