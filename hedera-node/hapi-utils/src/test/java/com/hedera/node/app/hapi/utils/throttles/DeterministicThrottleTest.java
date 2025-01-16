@@ -146,7 +146,6 @@ class DeterministicThrottleTest {
     }
 
     @Test
-    @Disabled("Test is flaky. See https://github.com/hashgraph/hedera-services/issues/13667")
     void throttlesWithinPermissibleTolerance() throws InterruptedException {
         final long mtps = 123_456L;
         final var subject = DeterministicThrottle.withMtps(mtps);
