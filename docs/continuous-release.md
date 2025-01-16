@@ -135,5 +135,6 @@ There are also commit types that will not affect the version at all. These commi
 - `docs:`
 - `ci:`
 
-**Note**: If any `feat` commits have been added between passing builds the @hashgraph/release-engineering-managers and 
-@hashgraph/platform-ci teams must be contacted and coordinated with in order to generate a new patch release.
+**Note**: If any `feat` commits or breaking change indicators have been added between passing builds the 
+@hashgraph/release-engineering-managers and @hashgraph/platform-ci teams must be contacted and coordinated with in order
+to generate a new patch release.
