@@ -1652,6 +1652,11 @@ enum HederaFunctionality {
      * Submit a signature of a state root hash gossiped to other nodes
      */
     StateSignatureTransaction = 100;
+
+    /**
+     * Submit a batch of transactions to run atomically
+     */
+    AtomicBatch = 101;
 }
 
 /**

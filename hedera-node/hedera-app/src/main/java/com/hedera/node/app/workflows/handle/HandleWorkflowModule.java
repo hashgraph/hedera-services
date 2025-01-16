@@ -164,6 +164,7 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
-                utilHandlers.prngHandler());
+                utilHandlers.prngHandler(),
+                utilHandlers.atomicBatchHandler());
     }
 }

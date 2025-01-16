@@ -241,7 +241,12 @@ message TransactionBody {
      * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 6;
-
+    /**
+* The <b>entire public key</b> of the trusted batch assembler.
+*
+* Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
+*/
+    Key batchKey = 66;
     // The fields here are ordered in strictly ascending field ordinal
     // order due to limitations in PBJ.
     oneof data {
@@ -608,5 +613,15 @@ message TransactionBody {
          * A transaction body for signature of a state root hash gossiped to other nodes
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
+
+        AtomicBatchTransactionBody atomicBatch = 67;
     }
+}
+
+/**
+ * Create an atomic batch.
+ */
+message AtomicBatchTransactionBody {
+    // <<<pbj.java_package = "com.hedera.hapi.node.util">>> This comment is special code for setting PBJ Compiler java package
+    repeated Transaction transactions = 1;
 }
