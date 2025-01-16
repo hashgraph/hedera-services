@@ -45,20 +45,21 @@ longevity testing.
 
 The release process will be changing in the following areas beginning with `Release 0.59`:
 
-| Stage                                                    | Duration |
-|----------------------------------------------------------|------|
-| Planning                                                 | 12d  |
-| Development                                              | 33d  |
-| [NEW] **milestone** Select candidate commit for release  | 0d   |
-| [DEL] ~~**milestone** Create release branch~~            | ~~0d~~ |
-| Bugs & Fix                                               | 12d  |
-| [NEW] Run the `[Main] Create New Release` workflow       | 0d   |
-| **milestone** Deploy to preview net                      | 12d  |
-| [DEL] ~~**milestone** Create alpha tag~~                 | ~~0d~~ |
-| **milestone** Deploy to test net                         | 1d   |
-| Perform migration testing                                | 22d  |
-| **milestone** Deploy to main net                         | 7d   |
-| Release Retrospective                                    | 1d   |
+| Stage                                                   | Duration |
+|---------------------------------------------------------|----------|
+| Planning                                                | 12d      |
+| Development                                             | 26d      |
+| [NEW] **milestone** Select candidate commit for release | 0d       |
+| [DEL] ~~**milestone** Create release branch~~           | ~~0d~~   |
+| Bugs & Fix                                              | 12d      |
+| [NEW] Run the `[Main] Create New Release` workflow      | 0d       |
+| **milestone** Deploy to preview net                     | 12d      |
+| [DEL] ~~**milestone** Create alpha tag~~                | ~~0d~~   |
+| [DEL] ~~**milestone** Create final tag~~                | 0d       |
+| **milestone** Deploy to test net                        | 1d       |
+| Perform migration testing                               | 22d      |
+| **milestone** Deploy to main net                        | 7d       |
+| Release Retrospective                                   | 1d       |
 
 ### Selecting a build candidate
 
