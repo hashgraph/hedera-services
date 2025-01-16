@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -491,5 +491,109 @@ public class AirdropSystemContractTest {
                         .gas(1500000)
                         .andAssert(txn ->
                                 txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_NFT_SERIAL_NUMBER)));
+    }
+
+    @HapiTest
+    @Order(12)
+    @DisplayName("Distribute NFTs to multiple accounts")
+    public Stream<DynamicTest> distributeNfts(
+            @NonNull @NonFungibleToken(numPreMints = 3) final SpecNonFungibleToken nft,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver1.getInfo(),
+                    receiver1.getInfo(),
+                    receiver3.getInfo(),
+                    nft.treasury().transferNFTsTo(sender, nft, 1L, 2L, 3L));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "nftAirdropDistribute",
+                                    nft,
+                                    sender,
+                                    prepareAccountAddresses(spec, receiver1, receiver2, receiver3))
+                            .gas(1500000),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)),
+                    nft.serialNo(1L).assertOwnerIs(receiver1),
+                    nft.serialNo(2L).assertOwnerIs(receiver2),
+                    nft.serialNo(3L).assertOwnerIs(receiver3));
+        }));
+    }
+
+    @HapiTest
+    @Order(13)
+    @DisplayName("Cannon Distribute 11 NFTs to multiple accounts")
+    public Stream<DynamicTest> distributeNftsOutOfBound(
+            @NonNull @NonFungibleToken(numPreMints = 11) final SpecNonFungibleToken nft,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver4,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver5,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver6,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver7,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver8,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver9,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver10,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver11) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver10.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver11.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    nft.treasury().transferNFTsTo(sender, nft, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L),
+                    nft.treasury().transferNFTsTo(sender, nft, 11L));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "nftAirdropDistribute",
+                                    nft,
+                                    sender,
+                                    prepareAccountAddresses(
+                                            spec,
+                                            receiver1,
+                                            receiver2,
+                                            receiver3,
+                                            receiver4,
+                                            receiver5,
+                                            receiver6,
+                                            receiver7,
+                                            receiver8,
+                                            receiver9,
+                                            receiver10,
+                                            receiver11))
+                            .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED))
+                            .gas(1500000),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)));
+        }));
     }
 }
