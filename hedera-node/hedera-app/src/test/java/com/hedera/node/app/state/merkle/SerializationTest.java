@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
-import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.StateCommonConfig_;
@@ -35,6 +33,7 @@ import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
@@ -42,11 +41,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -91,9 +87,6 @@ class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
-
-    @Mock
-    private MerkleStateLifecycles lifecycles;
 
     @Mock
     private MigrationStateChanges migrationStateChanges;
@@ -238,9 +231,7 @@ class SerializationTest extends MerkleTestBase {
                 .withTime(new FakeTime())
                 .build();
 
-        Platform mockPlatform = mock(Platform.class);
-        when(mockPlatform.getContext()).thenReturn(context);
-        originalTree.init(mockPlatform, InitTrigger.RESTART, new ServicesSoftwareVersion(schemaV1.getVersion()));
+        originalTree.init(context.getTime(), new NoOpMetrics(), merkleCryptography);
 
         // prepare the tree and create a snapshot
         originalTree.copy();
@@ -330,7 +321,7 @@ class SerializationTest extends MerkleTestBase {
         final SignedState randomState =
                 new RandomSignedStateGenerator().setRound(1).build();
 
-        final var originalTree = (PlatformMerkleStateRoot) randomState.getState();
+        final var originalTree = randomState.getState();
         final var originalRegistry =
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         originalRegistry.register(schemaV1);

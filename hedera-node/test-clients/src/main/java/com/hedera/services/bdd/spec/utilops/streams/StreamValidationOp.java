@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.support.validators.block.BlockContentsValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BlockItemNonceValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BlockNumberSequenceValidator;
 import com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator;
 import com.hedera.services.bdd.junit.support.validators.block.TransactionRecordParityValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -80,7 +82,11 @@ public class StreamValidationOp extends UtilOp {
             new TokenReconciliationValidator());
 
     private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES = List.of(
-            TransactionRecordParityValidator.FACTORY, StateChangesValidator.FACTORY, BlockContentsValidator.FACTORY);
+            TransactionRecordParityValidator.FACTORY,
+            StateChangesValidator.FACTORY,
+            BlockContentsValidator.FACTORY,
+            BlockNumberSequenceValidator.FACTORY,
+            BlockItemNonceValidator.FACTORY);
 
     public static void main(String[] args) {}
 
@@ -119,7 +125,7 @@ public class StreamValidationOp extends UtilOp {
         // Freeze the network
         allRunFor(
                 spec,
-                freezeOnly().payingWith(GENESIS).startingIn(1).seconds(),
+                freezeOnly().payingWith(GENESIS).startingIn(2).seconds(),
                 spec.targetNetworkType() == SUBPROCESS_NETWORK ? waitForFrozenNetwork(FREEZE_TIMEOUT) : noOp(),
                 // Wait for the final stream files to be created
                 sleepFor(STREAM_FILE_WAIT.toMillis()));

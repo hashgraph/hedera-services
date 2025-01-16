@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import java.util.List;
@@ -51,7 +51,7 @@ class SignedStateReserverTest {
         final SignedState signedState = new SignedState(
                 platformContext.getConfiguration(),
                 Mockito.mock(SignatureVerifier.class),
-                Mockito.mock(MerkleRoot.class),
+                Mockito.mock(PlatformMerkleStateRoot.class),
                 "create",
                 false,
                 false,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,36 +14,30 @@
  * limitations under the License.
  */
 
-pluginManagement { includeBuild("gradle/plugins") }
-
-plugins { id("com.hedera.gradle.settings") }
+plugins { id("org.hiero.gradle.build") version "0.3.0" }
 
 javaModules {
     // This "intermediate parent project" should be removed
     module("platform-sdk") { artifact = "swirlds-platform" }
 
     // The Hedera API module
-    module("hapi") {
-        group = "com.hedera.hashgraph"
-    }
+    module("hapi") { group = "com.hedera.hashgraph" }
 
     // The Hedera platform modules
     directory("platform-sdk") {
         group = "com.swirlds"
         module("swirlds") // not actually a Module as it has no module-info.java
         module("swirlds-benchmarks") // not actually a Module as it has no module-info.java
-        module("swirlds-unit-tests/core/swirlds-platform-test") // nested module is not found automatically
-        module("consensus-gossip")  { artifact = "consensus-gossip" }
-        module("consensus-gossip-impl")  { artifact = "consensus-gossip-impl" }
-        module("event-creator") { artifact = "event-creator" }
-        module("event-creator-impl") { artifact = "event-creator-impl" }
+        module(
+            "swirlds-unit-tests/core/swirlds-platform-test"
+        ) // nested module is not found automatically
     }
 
     // The Hedera services modules
     directory("hedera-node") {
         group = "com.hedera.hashgraph"
 
-        // Configure 'artifact' for projects where the folder does not correspond to the artifact name
+        // Configure 'artifact' for projects where folder does not correspond to artifact name
         module("hapi-fees") { artifact = "app-hapi-fees" }
         module("hapi-utils") { artifact = "app-hapi-utils" }
         module("hedera-addressbook-service") { artifact = "app-service-addressbook" }
@@ -68,17 +62,11 @@ javaModules {
     }
 
     // Platform-base demo applications
-    directory("example-apps") {
-        group = "com.swirlds"
-    }
+    directory("example-apps") { group = "com.swirlds" }
 
     // Platform demo applications
-    directory("platform-sdk/platform-apps/demos") {
-        group = "com.swirlds"
-    }
+    directory("platform-sdk/platform-apps/demos") { group = "com.swirlds" }
 
     // Platform test applications
-    directory("platform-sdk/platform-apps/tests") {
-        group = "com.swirlds"
-    }
+    directory("platform-sdk/platform-apps/tests") { group = "com.swirlds" }
 }

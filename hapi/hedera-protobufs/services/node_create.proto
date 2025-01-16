@@ -45,9 +45,11 @@ import "basic_types.proto";
  *   configuration during the next `freeze` transaction with the field
  *   `freeze_type` set to `PREPARE_UPGRADE`.
  *
- * ### Record Stream Effects
- * Upon completion the newly assigned `node_id` SHALL be in the transaction
- * receipt.
+ * ### Block Stream Effects
+ * Upon completion the newly assigned `node_id` SHALL be recorded in
+ * the transaction receipt.<br/>
+ * This value SHALL be the next available node identifier.<br/>
+ * Node identifiers SHALL NOT be reused.
  */
 message NodeCreateTransactionBody {
     /**
@@ -64,7 +66,8 @@ message NodeCreateTransactionBody {
     /**
      * A short description of the node.
      * <p>
-     * This value, if set, MUST NOT exceed 100 bytes when encoded as UTF-8.<br/>
+     * This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+     * (default 100) bytes when encoded as UTF-8.<br/>
      * This field is OPTIONAL.
      */
     string description = 2;
@@ -132,6 +135,7 @@ message NodeCreateTransactionBody {
     * An administrative key controlled by the node operator.
      * <p>
      * This key MUST sign this transaction.<br/>
+     * This key MUST sign each transaction to update this node.<br/>
      * This field MUST contain a valid `Key` value.<br/>
      * This field is REQUIRED and MUST NOT be set to an empty `KeyList`.
      */

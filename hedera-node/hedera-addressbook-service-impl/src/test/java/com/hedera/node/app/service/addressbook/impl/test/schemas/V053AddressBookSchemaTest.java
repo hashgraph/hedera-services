@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,8 +228,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.warnLogs()).hasSize(2);
-        assertThat(logCaptor.warnLogs()).matches(logs -> logs.getFirst().contains("Unable to read override keys"));
+        assertThat(logCaptor.warnLogs()).hasSize(1);
 
         assertThat(logCaptor.warnLogs()).matches(logs -> logs.getLast()
                 .contains("Can not parse file 102 com.hedera.pbj.runtime.ParseException: "));
@@ -305,7 +304,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("bootstrap.genesisPublicKey", defaultAdminKeyBytes)
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private void setupMigrationContext2() {
@@ -332,7 +331,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                         adminKeysLoc.toAbsolutePath().toString())
                 .withValue("accounts.addressBookAdmin", "55")
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private void setupMigrationContext3() {
@@ -367,7 +366,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("accounts.addressBookAdmin", "55")
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private void setupMigrationContext4() {
@@ -388,7 +387,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("accounts.addressBookAdmin", "55")
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
+        given(migrationContext.appConfig()).willReturn(config);
     }
 
     private String nodeAdminKeysJson() {

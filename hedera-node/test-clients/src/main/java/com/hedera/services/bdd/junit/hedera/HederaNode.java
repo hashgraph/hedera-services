@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.internal.network.Network;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -80,7 +82,8 @@ public interface HederaNode {
      * @param configTxt the address book the node should start with
      * @return this
      */
-    HederaNode initWorkingDir(String configTxt);
+    @NonNull
+    HederaNode initWorkingDir(@NonNull String configTxt);
 
     /**
      * Starts the node software.
@@ -142,5 +145,13 @@ public interface HederaNode {
      */
     default boolean dumpThreads() {
         return false;
+    }
+
+    /**
+     * If this node's startup assets included a genesis or override address book, returns it.
+     * @return the node's startup address book, if available
+     */
+    default Optional<Network> startupNetwork() {
+        return Optional.empty();
     }
 }

@@ -39,9 +39,7 @@ message Node {
     /**
      * A consensus node identifier.
      * <p>
-     * Node identifiers SHALL be unique _within_ a shard and realm,
-     * but a node SHALL NOT, ever, serve multiple shards or realms,
-     * therefore the node identifier MAY be repeated _between_ shards and realms.
+     * Node identifiers SHALL be globally unique for a given ledger.
      */
     uint64 node_id = 1;
 
@@ -49,15 +47,19 @@ message Node {
      * An account identifier.
      * <p>
      * This account SHALL be owned by the entity responsible for the node.<br/>
-     * This account SHALL be charged transaction fees for any transactions that
-     * are submitted to the network by this node and fail due diligence checks.
+     * This account SHALL be charged transaction fees for any transactions
+     * that are submitted to the network by this node and
+     * fail due diligence checks.<br/>
+     * This account SHALL be paid the node portion of transaction fees
+     * for transactions submitted by this node.
      */
     proto.AccountID account_id = 2;
 
     /**
      * A short description of the node.
      * <p>
-     * This value, if set, SHALL NOT exceed 100 bytes when encoded as UTF-8.
+     * This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+     * (default 100) bytes when encoded as UTF-8.
      */
     string description = 3;
 
@@ -80,7 +82,7 @@ message Node {
     repeated proto.ServiceEndpoint gossip_endpoint = 4;
 
     /**
-     * A list of service endpoints for gRPC calls.
+     * A list of service endpoints for client calls.
      * <p>
      * These endpoints SHALL represent the published endpoints to which clients
      * may submit transactions.<br/>
@@ -123,8 +125,11 @@ message Node {
      * of HBAR staked to that node.<br/>
      * Consensus SHALL be calculated based on agreement of greater than `2/3`
      * of the total `weight` value of all nodes on the network.
+     * <p>
+     * This field is deprecated and SHALL NOT be used when RosterLifecycle
+     * is enabled.
      */
-    uint64 weight = 8;
+    uint64 weight = 8 [deprecated = true];
 
     /**
      * A flag indicating this node is deleted.
@@ -139,7 +144,7 @@ message Node {
     bool deleted = 9;
 
     /**
-    * An administrative key controlled by the node operator.
+     * An administrative key controlled by the node operator.
      * <p>
      * This key MUST sign each transaction to update this node.<br/>
      * This field MUST contain a valid `Key` value.<br/>

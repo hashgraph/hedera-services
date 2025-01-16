@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -127,5 +128,13 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
         return requireNonNull(rosterState.get()).roundRosterPairs().stream()
                 .filter(pair -> rosterMap.contains(new ProtoBytes(pair.activeRosterHash())))
                 .toList();
+    }
+
+    @Override
+    public @Nullable Bytes getCandidateRosterHash() {
+        return Optional.ofNullable(rosterState.get())
+                .map(RosterState::candidateRosterHash)
+                .filter(bytes -> bytes.length() > 0)
+                .orElse(null);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+plugins { id("org.hiero.gradle.module.application") }
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-cast") }
 
-application.mainClass.set("com.swirlds.demo.stats.signing.StatsSigningTestingToolMain")
+application.mainClass = "com.swirlds.demo.stats.signing.StatsSigningTestingToolMain"
+
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.junit.jupiter.params")
+}

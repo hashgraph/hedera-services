@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -740,7 +740,8 @@ public class PlatformComponentBuilder {
         if (transactionPrehandler == null) {
             transactionPrehandler = new DefaultTransactionPrehandler(
                     blocks.platformContext(),
-                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"),
+                    blocks.stateLifecycles());
         }
         return transactionPrehandler;
     }
@@ -890,11 +891,7 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    blocks.initialState()
-                            .get()
-                            .getState()
-                            .getReadablePlatformState()
-                            .getAddressBook(),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

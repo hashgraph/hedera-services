@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.fixtures.state.FakeState;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -26,16 +27,25 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Consumer;
 
 public interface EmbeddedHedera {
     /**
      * Starts the embedded Hedera node.
      */
     void start();
+
+    /**
+     * Starts the embedded Hedera node from a saved state customized by the given specs.
+     *
+     * @param state the state to customize
+     */
+    void restart(@NonNull FakeState state);
 
     /**
      * Stops the embedded Hedera node.
@@ -47,12 +57,6 @@ public interface EmbeddedHedera {
      * @return the fake state of the embedded Hedera node
      */
     FakeState state();
-
-    /**
-     * Returns the fake TSS base service of the embedded Hedera node.
-     * @return the fake TSS base service of the embedded Hedera node
-     */
-    FakeTssBaseService tssBaseService();
 
     /**
      * Returns the software version of the embedded Hedera node.
@@ -85,6 +89,12 @@ public interface EmbeddedHedera {
     Hedera hedera();
 
     /**
+     * Returns the roster of the embedded Hedera node.
+     * @return the roster of the embedded Hedera node
+     */
+    Roster roster();
+
+    /**
      * Advances the synthetic time in the embedded Hedera node by a given duration.
      */
     void tick(@NonNull Duration duration);
@@ -110,6 +120,21 @@ public interface EmbeddedHedera {
      */
     TransactionResponse submit(
             @NonNull Transaction transaction, @NonNull AccountID nodeAccountId, @NonNull SyntheticVersion version);
+
+    /**
+     * Submits a transaction to the embedded node.
+     *
+     * @param transaction the transaction to submit
+     * @param nodeAccountId the account ID of the node to submit the transaction to
+     * @param preHandleCallback the callback to call during preHandle when a {@link StateSignatureTransaction} is encountered
+     * @param handleCallback the callback to call during preHandle when a {@link StateSignatureTransaction} is encountered
+     * @return the response to the transaction
+     */
+    TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback);
 
     /**
      * Sends a query to the embedded node.

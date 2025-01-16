@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -77,10 +78,9 @@ public class ValidateAddressBookStateCommand extends AbstractCommand {
 
         final AddressBook stateAddressBook;
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
-            final PlatformStateAccessor platformState =
-                    reservedSignedState.get().getState().getReadablePlatformState();
             System.out.printf("Extracting the state address book for comparison %n");
-            stateAddressBook = platformState.getAddressBook();
+            stateAddressBook = RosterUtils.buildAddressBook(RosterRetriever.retrieveActiveOrGenesisRoster(
+                    reservedSignedState.get().getState()));
         }
 
         System.out.printf("Validating address book %n");

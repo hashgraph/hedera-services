@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -544,7 +544,8 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Revoked))
+                                                                            TokenKycStatus.Revoked,
+                                                                            1L))
                                                             .withNftTokenInfo(nftTokenInfo)))),
                             childRecordsCheck(
                                     "NON_FUNGIBLE_TOKEN_INFO_TXN_V2",
@@ -565,7 +566,8 @@ public class TokenInfoHTSSuite {
                                                                                     spec, TokenKeyType.ADMIN_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Revoked))
+                                                                            TokenKycStatus.Revoked,
+                                                                            1L))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -1434,7 +1436,8 @@ public class TokenInfoHTSSuite {
                                                                                     .getKey(CONTRACT_KEY),
                                                                             expirySecond,
                                                                             targetLedgerId.get(),
-                                                                            TokenKycStatus.Revoked))
+                                                                            TokenKycStatus.Revoked,
+                                                                            1L))
                                                             .withNftTokenInfo(nftTokenInfo)))));
                 }));
     }
@@ -1582,7 +1585,7 @@ public class TokenInfoHTSSuite {
                 .build();
     }
 
-    private TokenInfo getTokenInfoStructForFungibleToken(
+    public static TokenInfo getTokenInfoStructForFungibleToken(
             final HapiSpec spec,
             final String tokenName,
             final String symbol,
@@ -1616,7 +1619,7 @@ public class TokenInfoHTSSuite {
                 .build();
     }
 
-    private TokenInfo.Builder buildBaseTokenInfo(
+    private static TokenInfo.Builder buildBaseTokenInfo(
             final HapiSpec spec,
             final String tokenName,
             final String symbol,
@@ -1656,7 +1659,7 @@ public class TokenInfoHTSSuite {
     }
 
     @NonNull
-    private ArrayList<CustomFee> getExpectedCustomFees(final HapiSpec spec) {
+    private static ArrayList<CustomFee> getExpectedCustomFees(final HapiSpec spec) {
         final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
         final var customFixedFee = CustomFee.newBuilder()
                 .setFixedFee(fixedFee)
@@ -1695,7 +1698,7 @@ public class TokenInfoHTSSuite {
         return customFees;
     }
 
-    private TokenInfo getTokenInfoStructForNonFungibleToken(
+    public static TokenInfo getTokenInfoStructForNonFungibleToken(
             final HapiSpec spec,
             final String tokenName,
             final String symbol,
@@ -1704,9 +1707,21 @@ public class TokenInfoHTSSuite {
             final Key adminKey,
             final long expirySecond,
             final ByteString ledgerId,
-            final TokenKycStatus kycDefault) {
+            final TokenKycStatus kycDefault,
+            final long totalSupply) {
         return buildTokenInfo(
-                spec, tokenName, symbol, memo, treasury, adminKey, expirySecond, ledgerId, null, false, kycDefault);
+                spec,
+                tokenName,
+                symbol,
+                memo,
+                treasury,
+                adminKey,
+                expirySecond,
+                ledgerId,
+                null,
+                false,
+                kycDefault,
+                totalSupply);
     }
 
     private TokenInfo getTokenInfoStructForNonFungibleTokenV2(
@@ -1715,7 +1730,8 @@ public class TokenInfoHTSSuite {
             final Key adminKey,
             final long expirySecond,
             final ByteString ledgerId,
-            final TokenKycStatus kycDefault) {
+            final TokenKycStatus kycDefault,
+            final long totalSupply) {
         final ByteString meta = ByteString.copyFrom("metadata".getBytes(StandardCharsets.UTF_8));
         return buildTokenInfo(
                 spec,
@@ -1728,10 +1744,11 @@ public class TokenInfoHTSSuite {
                 ledgerId,
                 meta,
                 true,
-                kycDefault);
+                kycDefault,
+                totalSupply);
     }
 
-    private TokenInfo buildTokenInfo(
+    private static TokenInfo buildTokenInfo(
             final HapiSpec spec,
             final String tokenName,
             final String symbol,
@@ -1742,7 +1759,8 @@ public class TokenInfoHTSSuite {
             final ByteString ledgerId,
             final ByteString metadata,
             final boolean includeMetadataKey,
-            final TokenKycStatus kycDefault) {
+            final TokenKycStatus kycDefault,
+            final long totalSupply) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
         TokenInfo.Builder builder = TokenInfo.newBuilder()
@@ -1757,7 +1775,7 @@ public class TokenInfoHTSSuite {
                 .setName(tokenName)
                 .setMemo(memo)
                 .setTreasury(treasury)
-                .setTotalSupply(1L)
+                .setTotalSupply(totalSupply)
                 .setMaxSupply(10L)
                 .addAllCustomFees(getCustomFeeForNFT(spec))
                 .setAdminKey(adminKey)
@@ -1781,7 +1799,7 @@ public class TokenInfoHTSSuite {
     }
 
     @NonNull
-    private ArrayList<CustomFee> getCustomFeeForNFT(final HapiSpec spec) {
+    private static ArrayList<CustomFee> getCustomFeeForNFT(final HapiSpec spec) {
         final var fraction = Fraction.newBuilder()
                 .setNumerator(NUMERATOR)
                 .setDenominator(DENOMINATOR)
@@ -1806,7 +1824,7 @@ public class TokenInfoHTSSuite {
         return customFees;
     }
 
-    private Key getTokenKeyFromSpec(final HapiSpec spec, final TokenKeyType type) {
+    public static Key getTokenKeyFromSpec(final HapiSpec spec, final TokenKeyType type) {
         final var key = spec.registry().getKey(type.name());
 
         final var keyBuilder = Key.newBuilder();

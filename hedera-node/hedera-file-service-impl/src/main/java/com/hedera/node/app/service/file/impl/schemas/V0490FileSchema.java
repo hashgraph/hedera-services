@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -50,7 +51,6 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
@@ -63,7 +63,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
-import com.swirlds.state.lifecycle.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -104,6 +103,12 @@ public class V0490FileSchema extends Schema {
     public static final String BLOBS_KEY = "FILES";
     public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
     public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
+
+    /**
+     * The default throttle definitions resource. Used as the ultimate fallback if the configured file and resource is
+     * not found.
+     */
+    private static final String DEFAULT_THROTTLES_RESOURCE = "genesis/throttles.json";
 
     /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
@@ -158,9 +163,9 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the Address Book into state
 
-    public void createGenesisAddressBookAndNodeDetails(@NonNull final SystemContext systemContext) {
+    public void createGenesisAddressBookAndNodeDetails(
+            @NonNull final SystemContext systemContext, @NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(systemContext);
-        final var networkInfo = systemContext.networkInfo();
         final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
         final var bootstrapConfig = systemContext.configuration().getConfigData(BootstrapConfig.class);
 
@@ -176,7 +181,7 @@ public class V0490FileSchema extends Schema {
         systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(genesisAddressBook(networkInfo))
+                                .contents(nodeStoreAddressBook(nodeStore))
                                 .keys(masterKey)
                                 .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
@@ -187,47 +192,12 @@ public class V0490FileSchema extends Schema {
         systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(genesisNodeDetails(networkInfo))
+                                .contents(nodeStoreNodeDetails(nodeStore))
                                 .keys(masterKey)
                                 .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
                 nodeInfoFileNum);
-    }
-
-    public Bytes genesisAddressBook(@NonNull final NetworkInfo networkInfo) {
-        final var nodeAddresses = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeAddresses.add(NodeAddress.newBuilder()
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
-                    .serviceEndpoint(
-                            // we really don't have grpc proxy name and port for now. Temporary values are set.
-                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
-                            // here.
-                            V053AddressBookSchema.endpointFor("1.0.0.0", 1))
-                    .build());
-        }
-        return NodeAddressBook.PROTOBUF.toBytes(
-                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build());
-    }
-
-    public Bytes genesisNodeDetails(@NonNull final NetworkInfo networkInfo) {
-        final var nodeDetails = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeDetails.add(NodeAddress.newBuilder()
-                    .stake(nodeInfo.stake())
-                    .nodeAccountId(nodeInfo.accountId())
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    // we really don't have grpc proxy name and port for now.Temporary values are set.
-                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
-                    .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
-                    .build());
-        }
-        return NodeAddressBook.PROTOBUF.toBytes(
-                NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
 
     public void updateAddressBookAndNodeDetailsAfterFreeze(
@@ -259,12 +229,13 @@ public class V0490FileSchema extends Schema {
                 .build()));
     }
 
-    private Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
+    public Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
         final var nodeDetails = new ArrayList<NodeAddress>();
         StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
+                .sorted(Comparator.comparingLong(Node::nodeId))
                 .forEach(node -> nodeDetails.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
                         .nodeAccountId(node.accountId())
@@ -284,12 +255,13 @@ public class V0490FileSchema extends Schema {
         return Bytes.wrap(Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8));
     }
 
-    private Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
+    public Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
+                .sorted(Comparator.comparingLong(Node::nodeId))
                 .forEach(node -> nodeAddresses.add(NodeAddress.newBuilder()
                         .nodeId(node.nodeId())
                         .nodeCertHash(getHexStringBytesFromBytes(node.grpcCertificateHash()))
@@ -611,9 +583,11 @@ public class V0490FileSchema extends Schema {
      * @return the throttle definitions proto as a byte array
      */
     private static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
-        // Get the path to the throttles permissions file
+        // Get the path to the throttles resource
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
-        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);
+        // Get the path to the throttles file
+        final var throttleDefinitionsFile = bootstrapConfig.throttleDefsJsonFile();
+        final var pathToThrottleDefinitions = Path.of(throttleDefinitionsFile);
 
         // If the file exists, load from there
         String throttleDefinitionsContent = null;
@@ -635,8 +609,26 @@ public class V0490FileSchema extends Schema {
                 throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
                 logger.info("Throttle definitions loaded from classpath resource {}", throttleDefinitionsResource);
             } catch (IOException | NullPointerException e) {
-                logger.fatal("Throttle definitions could not be loaded from disk or from classpath");
-                throw new IllegalStateException("Throttle definitions could not be loaded from classpath", e);
+                logger.warn(
+                        "Throttle definitions could not be loaded from classpath resource {}, using default fallback resource",
+                        throttleDefinitionsResource);
+            }
+        }
+
+        if (throttleDefinitionsContent == null) {
+            // Load the default throttle definitions resource
+            try (final var in =
+                    Thread.currentThread().getContextClassLoader().getResourceAsStream(DEFAULT_THROTTLES_RESOURCE)) {
+                throttleDefinitionsContent = new String(requireNonNull(in).readAllBytes(), UTF_8);
+                logger.info(
+                        "Throttle definitions loaded from default fallback classpath resource {}",
+                        DEFAULT_THROTTLES_RESOURCE);
+            } catch (IOException | NullPointerException e) {
+                logger.fatal(
+                        "Throttle definitions could not be loaded from default fallback classpath resource {}",
+                        DEFAULT_THROTTLES_RESOURCE);
+                throw new IllegalArgumentException(
+                        "Throttle definitions could not be loaded from default fallback classpath resource", e);
             }
         }
 

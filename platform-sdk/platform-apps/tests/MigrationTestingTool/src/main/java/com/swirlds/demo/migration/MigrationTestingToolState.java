@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,12 @@
 
 package com.swirlds.demo.migration;
 
-import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapKey;
@@ -36,24 +33,13 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,6 +70,10 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
          * Add a virtual map and remove all blobs.
          */
         public static final int VIRTUAL_MAP = 4;
+        /**
+         * Added ROSTERS and ROSTER_STATE
+         */
+        public static final int ROSTERS = 5;
     }
 
     private static final long CLASS_ID = 0x1a0daec64a09f6a4L;
@@ -93,28 +83,27 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      */
     private static class ChildIndices {
         public static final int UNUSED_PLATFORM_STATE = 0;
-        public static final int UNUSED_ROSTERS = 1;
-        public static final int UNUSED_ROSTER_STATE = 2;
+        public static final int MERKLE_MAP = 1;
+        public static final int VIRTUAL_MAP = 2;
 
-        public static final int MERKLE_MAP = 3;
-        public static final int VIRTUAL_MAP = 4;
+        public static final int UNUSED_ROSTERS = 3;
+        public static final int UNUSED_ROSTER_STATE = 4;
 
         public static final int CHILD_COUNT = 5;
+
+        // these constants are to migrate from v4 to v5
+        public static final int OLD_CHILD_COUNT = 3;
     }
 
-    public NodeId selfId;
-
-    public MigrationTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
-        super(lifecycles, versionFactory);
+    public MigrationTestingToolState(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(versionFactory);
+        allocateSpaceForChild(ChildIndices.CHILD_COUNT);
     }
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
         super(that);
         that.setImmutable(true);
         this.setImmutable(false);
-        this.selfId = that.selfId;
     }
 
     /**
@@ -122,7 +111,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      */
     @Override
     public int getMinimumChildCount() {
-        return ChildIndices.CHILD_COUNT;
+        return ChildIndices.OLD_CHILD_COUNT;
     }
 
     /**
@@ -153,6 +142,16 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
         }
     }
 
+    @Override
+    public MerkleNode migrate(int version) {
+        if (version == ClassVersion.VIRTUAL_MAP) {
+            FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(this);
+            return this;
+        }
+
+        return super.migrate(version);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -169,14 +168,14 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Get a {@link MerkleMap} that contains various data.
      */
-    protected MerkleMap<AccountID, MapValue> getMerkleMap() {
+    MerkleMap<AccountID, MapValue> getMerkleMap() {
         return getChild(ChildIndices.MERKLE_MAP);
     }
 
     /**
      * Set a {@link MerkleMap} that contains various data.
      */
-    protected void setMerkleMap(final MerkleMap<AccountID, MapValue> map) {
+    void setMerkleMap(final MerkleMap<AccountID, MapValue> map) {
         throwIfImmutable();
         setChild(ChildIndices.MERKLE_MAP, map);
     }
@@ -184,7 +183,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Get a {@link VirtualMap} that contains various data.
      */
-    protected VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> getVirtualMap() {
+    VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> getVirtualMap() {
         return getChild(ChildIndices.VIRTUAL_MAP);
     }
 
@@ -198,7 +197,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     /**
      * Do genesis initialization.
      */
-    private void genesisInit(final Platform platform) {
+    void genesisInit() {
         final Configuration configuration =
                 ConfigurationBuilder.create().autoDiscoverExtensions().build();
         setMerkleMap(new MerkleMap<>());
@@ -218,71 +217,6 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
                 new AccountVirtualMapValueSerializer(),
                 dsBuilder,
                 configuration));
-        selfId = platform.getSelfId();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void init(
-            @NonNull final Platform platform,
-            @NonNull final InitTrigger trigger,
-            @Nullable final SoftwareVersion previousSoftwareVersion) {
-        super.init(platform, trigger, previousSoftwareVersion);
-
-        final MerkleMap<AccountID, MapValue> merkleMap = getMerkleMap();
-        if (merkleMap != null) {
-            logger.info(STARTUP.getMarker(), "MerkleMap initialized with {} values", merkleMap.size());
-        }
-        final VirtualMap<?, ?> virtualMap = getVirtualMap();
-        if (virtualMap != null) {
-            logger.info(STARTUP.getMarker(), "VirtualMap initialized with {} values", virtualMap.size());
-        }
-        selfId = platform.getSelfId();
-
-        if (trigger == InitTrigger.GENESIS) {
-            logger.warn(STARTUP.getMarker(), "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
-        }
-
-        if (previousSoftwareVersion == null || previousSoftwareVersion.compareTo(PREVIOUS_SOFTWARE_VERSION) != 0) {
-            logger.warn(
-                    STARTUP.getMarker(),
-                    "previousSoftwareVersion was {} when expecting it to be {}",
-                    previousSoftwareVersion,
-                    PREVIOUS_SOFTWARE_VERSION);
-        }
-
-        if (trigger == InitTrigger.GENESIS) {
-            logger.info(STARTUP.getMarker(), "Doing genesis initialization");
-            genesisInit(platform);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull
-                    final Consumer<List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                            stateSignatureTransactions) {
-        throwIfImmutable();
-        for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
-            final ConsensusEvent event = eventIt.next();
-            for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
-                    transIt.hasNext(); ) {
-                final ConsensusTransaction trans = transIt.next();
-                if (trans.isSystem()) {
-                    continue;
-                }
-                final MigrationTestingToolTransaction mTrans =
-                        TransactionUtils.parseTransaction(trans.getApplicationTransaction());
-                mTrans.applyTo(this);
-            }
-        }
     }
 
     /**
@@ -308,7 +242,7 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.VIRTUAL_MAP;
+        return ClassVersion.ROSTERS;
     }
 
     /**

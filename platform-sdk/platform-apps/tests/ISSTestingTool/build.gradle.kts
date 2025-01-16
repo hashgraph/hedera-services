@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.gradle.application") }
+plugins { id("org.hiero.gradle.module.application") }
 
-application.mainClass.set("com.swirlds.demo.iss.ISSTestingToolMain")
+application.mainClass = "com.swirlds.demo.iss.ISSTestingToolMain"
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
+
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+}

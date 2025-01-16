@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithClea
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -136,7 +135,8 @@ public class PlatformWiring {
     private final ComponentWiring<InlinePcesWriter, PlatformEvent> pcesInlineWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<PcesSequencer, PlatformEvent> pcesSequencerWiring;
-    private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
+    private final ComponentWiring<TransactionPrehandler, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+            applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final GossipWiring gossipWiring;
     private final ComponentWiring<EventWindowManager, EventWindow> eventWindowManagerWiring;
@@ -493,16 +493,7 @@ public class PlatformWiring {
         splitOrphanBufferOutput.solderTo(applicationTransactionPrehandlerWiring.getInputWire(
                 TransactionPrehandler::prehandleApplicationTransactions));
 
-        // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
-        final WireTransformer<PlatformEvent, List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                preConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "extractPreconsensusSignatureTransactions",
-                        "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(
-                                event, StateSignatureTransaction.class));
-        splitOrphanBufferOutput.solderTo(preConsensusTransformer.getInputWire());
-        preConsensusTransformer
+        applicationTransactionPrehandlerWiring
                 .getOutputWire()
                 .solderTo(stateSignatureCollectorWiring.getInputWire(
                         StateSignatureCollector::handlePreconsensusSignatures));
@@ -625,9 +616,15 @@ public class PlatformWiring {
         final OutputWire<ReservedSignedState> hashedStateOutputWire =
                 hashedStateAndRoundOutputWire.buildAdvancedTransformer(
                         new StateAndRoundToStateReserver("postHasher_stateReserver"));
-        final OutputWire<ConsensusRound> hashedConsensusRoundOutput = stateHasherWiring
+
+        transactionHandlerWiring
                 .getOutputWire()
-                .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
+                .buildTransformer(
+                        "getSystemTransactions",
+                        "stateAndRound with system transactions",
+                        StateAndRound::systemTransactions)
+                .solderTo(stateSignatureCollectorWiring.getInputWire(
+                        StateSignatureCollector::handlePostconsensusSignatures));
 
         hashedStateOutputWire.solderTo(hashLoggerWiring.getInputWire(HashLogger::logHashes));
         hashedStateOutputWire.solderTo(stateSignerWiring.getInputWire(StateSigner::signState));
@@ -643,19 +640,6 @@ public class PlatformWiring {
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
         // FUTURE WORK: Split the single StateAndRound output into separate State and Round wires.
 
-        // Extract signatures from post-consensus events for input to the StateSignatureCollector.
-        final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignatureTransaction>>>
-                postConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "extractConsensusSignatureTransactions",
-                        "consensus events",
-                        round -> SystemTransactionExtractionUtils.extractFromRound(
-                                round, StateSignatureTransaction.class));
-        hashedConsensusRoundOutput.solderTo(postConsensusTransformer.getInputWire());
-        postConsensusTransformer
-                .getOutputWire()
-                .solderTo(stateSignatureCollectorWiring.getInputWire(
-                        StateSignatureCollector::handlePostconsensusSignatures));
         // Solder the state output as input to the state signature collector.
         hashedStateOutputWire.solderTo(
                 stateSignatureCollectorWiring.getInputWire(StateSignatureCollector::addReservedState));

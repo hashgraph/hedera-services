@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,11 +64,13 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.SortedSet;
 import java.util.function.Predicate;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,6 +113,12 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private ReadableNftStore nftStore;
+
+    @Mock
+    private KeyVerifier keyVerifier;
+
+    @Mock
+    private SortedSet<Key> keys;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
@@ -334,5 +342,12 @@ class HandleHederaNativeOperationsTest {
                 .willReturn(true);
         final var result = subject.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT);
         assertTrue(result);
+    }
+
+    @Test
+    void authorizingSimpleKeysTest() {
+        given(context.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.authorizingSimpleKeys()).willReturn(keys);
+        assertSame(keys, subject.authorizingSimpleKeys());
     }
 }

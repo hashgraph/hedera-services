@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateToDisk;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -106,8 +105,7 @@ public class StartupStateUtilsTests {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(
                         PlatformMerkleStateRoot.class,
-                        () -> new PlatformMerkleStateRoot(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()))));
+                        () -> new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @NonNull
@@ -197,6 +195,7 @@ public class StartupStateUtilsTests {
         }
 
         final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
+        MerkleDb.resetDefaultInstancePath();
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
                         recycleBin,
@@ -211,6 +210,7 @@ public class StartupStateUtilsTests {
 
         assertEquals(latestState.getRound(), loadedState.getRound());
         assertEquals(latestState.getState().getHash(), loadedState.getState().getHash());
+        RandomSignedStateGenerator.releaseReservable(loadedState.getState());
     }
 
     @Test
@@ -271,7 +271,9 @@ public class StartupStateUtilsTests {
                 latestUncorruptedState = state;
             }
         }
+        RandomSignedStateGenerator.releaseAllBuiltSignedStates();
 
+        MerkleDb.resetDefaultInstancePath();
         final SignedState loadedState = StartupStateUtils.loadStateFile(
                         platformContext.getConfiguration(),
                         recycleBin,
@@ -291,6 +293,10 @@ public class StartupStateUtilsTests {
                     loadedState.getState().getHash());
         } else {
             assertNull(loadedState);
+        }
+
+        if (loadedState != null) {
+            RandomSignedStateGenerator.releaseReservable(loadedState.getState());
         }
 
         final Path savedStateDirectory = signedStateFilePath

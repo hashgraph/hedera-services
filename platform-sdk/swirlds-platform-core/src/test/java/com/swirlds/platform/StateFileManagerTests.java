@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,8 +62,8 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
-import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.BlockingState;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
@@ -102,14 +102,14 @@ class StateFileManagerTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        FakeStateLifecycles.registerMerkleStateRootClassIds();
     }
 
     @BeforeEach
     void beforeEach() throws IOException {
         // Don't use JUnit @TempDir as it runs into a thread race with Merkle DB DataSource release...
         testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile(
-                "SignedStateFileReadWriteTest", FakeMerkleStateLifecycles.CONFIGURATION);
+                "SignedStateFileReadWriteTest", FakeStateLifecycles.CONFIGURATION);
         LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
         MerkleDb.resetDefaultInstancePath();
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
@@ -157,6 +157,7 @@ class StateFileManagerTests {
 
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
+        MerkleDb.resetDefaultInstancePath();
         final DeserializedSignedState deserializedSignedState =
                 readStateFile(TestPlatformContextBuilder.create().build().getConfiguration(), stateFile);
         MerkleCryptoFactory.getInstance()
@@ -209,7 +210,7 @@ class StateFileManagerTests {
     void saveFatalSignedState() throws InterruptedException, IOException {
         final SignedState signedState =
                 new RandomSignedStateGenerator().setUseBlockingState(true).build();
-        ((BlockingSwirldState) signedState.getSwirldState()).enableBlockingSerialization();
+        ((BlockingState) signedState.getState()).enableBlockingSerialization();
 
         final StateSnapshotManager manager =
                 new DefaultStateSnapshotManager(context, MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
@@ -226,7 +227,7 @@ class StateFileManagerTests {
         // shouldn't be finished yet
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
-        ((BlockingSwirldState) signedState.getSwirldState()).unblockSerialization();
+        ((BlockingState) signedState.getState()).unblockSerialization();
         thread.join(1000);
 
         final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
@@ -272,7 +273,10 @@ class StateFileManagerTests {
                 .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
-        final int totalStates = 100;
+        // Each state now has a VirtualMap for ROSTERS, and each VirtualMap consumes a lot of RAM.
+        // So one cannot keep too many VirtualMaps in memory at once, or OOMs pop up.
+        // Therefore, the number of states this test can use at once should be reasonably small:
+        final int totalStates = 10;
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
@@ -318,7 +322,8 @@ class StateFileManagerTests {
                     .build();
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
-            controller.markSavedState(new StateAndRound(reservedSignedState, mock(ConsensusRound.class)));
+            controller.markSavedState(
+                    new StateAndRound(reservedSignedState, mock(ConsensusRound.class), mock(ArrayList.class)));
             makeImmutable(reservedSignedState.get());
 
             if (signedState.isStateToSave()) {

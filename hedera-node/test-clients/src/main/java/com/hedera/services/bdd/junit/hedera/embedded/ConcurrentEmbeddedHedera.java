@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -30,6 +31,8 @@ import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +60,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
     public ConcurrentEmbeddedHedera(@NonNull final EmbeddedNode node) {
         super(node);
-        platform = new ConcurrentFakePlatform(executorService);
+        platform = new ConcurrentFakePlatform(executorService, metrics);
     }
 
     @Override
@@ -72,6 +76,15 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
+    }
+
+    @Override
+    public TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull AccountID nodeAccountId,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> preHandleCallback,
+            @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> handleCallback) {
+        throw new UnsupportedOperationException("ConcurrentEmbeddedHedera does not support state signature callbacks");
     }
 
     @Override
@@ -114,8 +127,9 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         private final BlockingQueue<FakeEvent> queue = new ArrayBlockingQueue<>(MIN_CAPACITY);
         private final ScheduledExecutorService executorService;
 
-        public ConcurrentFakePlatform(@NonNull final ScheduledExecutorService executorService) {
-            super(defaultNodeId, addressBook, requireNonNull(executorService));
+        public ConcurrentFakePlatform(
+                @NonNull final ScheduledExecutorService executorService, @NonNull final Metrics metrics) {
+            super(defaultNodeId, roster, requireNonNull(executorService), requireNonNull(metrics));
             this.executorService = executorService;
         }
 
@@ -159,8 +173,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                                         event.getSoftwareVersion());
                             })
                             .toList();
-                    final var round = new FakeRound(roundNo.getAndIncrement(), roster, consensusEvents);
-                    hedera.handleWorkflow().handleRound(state, round);
+                    final var round = new FakeRound(roundNo.getAndIncrement(), requireNonNull(roster), consensusEvents);
+                    hedera.handleWorkflow().handleRound(state, round, txns -> {});
                     hedera.onSealConsensusRound(round, state);
                     notifyStateHashed(round.getRoundNum());
                     prehandledEvents.clear();
@@ -168,7 +182,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                 // Now drain all events that will go in the next round and pre-handle them
                 final List<FakeEvent> newEvents = new ArrayList<>();
                 queue.drainTo(newEvents);
-                newEvents.forEach(event -> hedera.onPreHandle(event, state));
+                newEvents.forEach(event -> hedera.onPreHandle(event, state, txns -> {}));
                 prehandledEvents.addAll(newEvents);
             } catch (Throwable t) {
                 log.error("Error handling transactions", t);

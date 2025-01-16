@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -122,7 +123,8 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Supplier<ReservedSignedState>> getLatestCompleteStateReference,
         @NonNull AtomicReference<Consumer<SignedState>> loadReconnectStateReference,
         @NonNull AtomicReference<Runnable> clearAllPipelinesForReconnectReference,
-        boolean firstPlatform) {
+        boolean firstPlatform,
+        @NonNull StateLifecycles stateLifecycles) {
 
     public PlatformBuildingBlocks {
         requireNonNull(platformContext);

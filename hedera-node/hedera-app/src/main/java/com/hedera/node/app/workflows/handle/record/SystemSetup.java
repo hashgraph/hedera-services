@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,10 +62,12 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -133,7 +135,8 @@ public class SystemSetup {
      */
     public void doGenesisSetup(@NonNull final Dispatch dispatch) {
         final var systemContext = systemContextFor(dispatch);
-        fileService.createSystemEntities(systemContext);
+        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+        fileService.createSystemEntities(systemContext, nodeStore);
     }
 
     /**
@@ -323,7 +326,7 @@ public class SystemSetup {
     /**
      * Called only once, before handling the first transaction in network history. Externalizes
      * side effects of genesis setup done in
-     * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}.
+     * {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}.
      *
      * @throws NullPointerException if called more than once
      */
