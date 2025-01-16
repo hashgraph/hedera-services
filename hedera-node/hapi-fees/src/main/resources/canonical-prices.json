@@ -50,7 +50,7 @@
   },
   "ConsensusCreateTopic": {
 	"DEFAULT": 0.01,
-    "TOPIC_WITH_CUSTOM_FEES": 2.00
+    "TOPIC_CREATE_WITH_CUSTOM_FEES": 2.00
   },
   "ConsensusUpdateTopic": {
 	"DEFAULT": 0.00022
