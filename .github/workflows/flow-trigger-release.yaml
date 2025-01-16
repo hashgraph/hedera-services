@@ -76,6 +76,15 @@ jobs:
           ref: ${{ steps.validate.outputs.BUILD_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
+      - name: Checkout Code
+        id: checkout_code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: "private"
+
+      - name: Copy Private .releaserc file to Github Workspace
+        run: cp -f private/.releaserc .releaserc
+
       - name: Display Current Branch or Tag
         run: |
           # Check if it's a tag
