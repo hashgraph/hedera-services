@@ -77,7 +77,7 @@ Consider an example using HTS:
 * Contract thus has `0.0.A` as the address of some token, thinking it is an ERC-20 token, and has
   the address `0xNNNNNNNNNNNNNNNNNNNN`, and it wants to know how much of that token `0.0.A` that
   address owns.
-* Sp the contract wants to call the defined ERC-20 method
+* So the contract wants to call the defined ERC-20 method
   `balanceOf(address) external view returns (uint256)` on that token, so it:
 * Does a contract call to _the token_, at address `0.0.A`, using
   selector `0x70a08231`[^†]
