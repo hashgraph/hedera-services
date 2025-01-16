@@ -34,6 +34,8 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -146,6 +148,12 @@ class HandleWorkflowTest {
     private UserTxnFactory userTxnFactory;
 
     @Mock
+    private HintsService hintsService;
+
+    @Mock
+    private HistoryService historyService;
+
+    @Mock
     private CongestionMetrics congestionMetrics;
 
     private HandleWorkflow subject;
@@ -227,6 +235,8 @@ class HandleWorkflowTest {
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 scheduleService,
+                hintsService,
+                historyService,
                 congestionMetrics);
     }
 }

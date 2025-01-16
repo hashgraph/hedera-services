@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import java.time.Instant;
 
 /**
@@ -27,17 +27,17 @@ public class ReconnectCompleteNotification extends AbstractNotification {
 
     private long roundNumber;
     private Instant consensusTimestamp;
-    private SwirldState state;
+    private PlatformMerkleStateRoot state;
 
     public ReconnectCompleteNotification(
-            final long roundNumber, final Instant consensusTimestamp, final SwirldState state) {
+            final long roundNumber, final Instant consensusTimestamp, final PlatformMerkleStateRoot state) {
         this.roundNumber = roundNumber;
         this.consensusTimestamp = consensusTimestamp;
         this.state = state;
     }
 
     /**
-     * get round number from the {@link SwirldState}
+     * get round number from the {@link PlatformMerkleStateRoot}
      *
      * @return round number
      */
@@ -55,11 +55,11 @@ public class ReconnectCompleteNotification extends AbstractNotification {
     }
 
     /**
-     * get the {@link SwirldState} instance
+     * get the {@link PlatformMerkleStateRoot} instance
      *
-     * @return SwirldState
+     * @return PlatformMerkleStateRoot
      */
-    public SwirldState getState() {
+    public PlatformMerkleStateRoot getState() {
         return state;
     }
 }

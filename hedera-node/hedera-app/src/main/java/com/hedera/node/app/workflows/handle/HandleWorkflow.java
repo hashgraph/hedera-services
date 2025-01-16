@@ -59,8 +59,15 @@ import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.impl.ReadableHintsStoreImpl;
+import com.hedera.node.app.hints.impl.WritableHintsStoreImpl;
+import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.impl.WritableHistoryStoreImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
@@ -98,9 +105,11 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.SchedulingConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -154,6 +163,8 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final ScheduleService scheduleService;
+    private final HintsService hintsService;
+    private final HistoryService historyService;
     private final CongestionMetrics congestionMetrics;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
@@ -187,6 +198,8 @@ public class HandleWorkflow {
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final ScheduleService scheduleService,
+            @NonNull final HintsService hintsService,
+            @NonNull final HistoryService historyService,
             @NonNull final CongestionMetrics congestionMetrics) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
@@ -217,6 +230,8 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.hintsService = requireNonNull(hintsService);
+        this.historyService = requireNonNull(historyService);
     }
 
     /**
@@ -328,7 +343,7 @@ public class HandleWorkflow {
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do. Note the BlockStreamManager#endRound() method is called in Hedera's
-        // implementation of SwirldState#sealConsensusRound(), since the BlockStreamManager cannot do its
+        // implementation of StateLifecycles#onSealConsensusRound(), since the BlockStreamManager cannot do its
         // end-of-block work until the platform has finished all its state changes.
         if (userTransactionsHandled && streamMode != BLOCKS) {
             blockRecordManager.endRound(state);
@@ -859,6 +874,43 @@ public class HandleWorkflow {
             // where we are "stuck" trying to process node stake updates and never
             // get back to user transactions
             logger.error("Failed to process stake period changes", e);
+        }
+    }
+
+    /**
+     * Reconciles the state of the TSS system with the active rosters in the given state at the current time.
+     * @param tssConfig the TSS configuration
+     * @param state the state to use when reconciling the TSS system state with the active rosters
+     * @param now the current consensus time
+     */
+    private void reconcileTssState(
+            @NonNull final TssConfig tssConfig, @NonNull final State state, @NonNull final Instant now) {
+        if (tssConfig.hintsEnabled() || tssConfig.historyEnabled()) {
+            final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
+            final var activeRosters = ActiveRosters.from(rosterStore);
+            if (tssConfig.hintsEnabled()) {
+                final var hintsWritableStates = state.getWritableStates(HintsService.NAME);
+                final var hintsStore = new WritableHintsStoreImpl(hintsWritableStates);
+                doStreamingKVChanges(
+                        hintsWritableStates,
+                        now,
+                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig));
+            }
+            if (tssConfig.historyEnabled()) {
+                final Bytes currentMetadata;
+                if (tssConfig.hintsEnabled()) {
+                    final var hintsStore = new ReadableHintsStoreImpl(state.getReadableStates(HintsService.NAME));
+                    currentMetadata = hintsStore.getVerificationKeyFor(activeRosters.currentRosterHash());
+                } else {
+                    currentMetadata = null;
+                }
+                final var historyWritableStates = state.getWritableStates(HistoryService.NAME);
+                final var historyStore = new WritableHistoryStoreImpl(historyWritableStates);
+                doStreamingKVChanges(
+                        historyWritableStates,
+                        now,
+                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now));
+            }
         }
     }
 
