@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.rejec
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;

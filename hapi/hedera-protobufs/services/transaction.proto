@@ -166,6 +166,7 @@ message Transaction {
  * various parameters required to process a transaction.
  */
 message TransactionBody {
+    // <<<pbj.java_package = "com.hedera.hapi.node.transaction">>> This comment is special code for setting PBJ Compiler java package
     reserved 30, 61, 62, 63, 64;
 
     reserved "tssMessage", "tssVote", "tssShareSignature", "tssEncryptionKey";
@@ -621,5 +622,6 @@ message TransactionBody {
  * Create an atomic batch.
  */
 message AtomicBatchTransactionBody {
+    // <<<pbj.java_package = "com.hedera.hapi.node.util">>> This comment is special code for setting PBJ Compiler java package
     repeated Transaction transactions = 1;
 }

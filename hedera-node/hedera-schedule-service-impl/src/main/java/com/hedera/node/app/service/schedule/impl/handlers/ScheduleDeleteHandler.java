@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;

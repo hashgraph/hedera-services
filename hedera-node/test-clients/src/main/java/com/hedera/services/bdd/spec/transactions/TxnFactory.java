@@ -132,15 +132,15 @@ public class TxnFactory {
     /**
      * Given a {@link Consumer} that mutates a {@link TransactionBody.Builder}, return a {@link Transaction.Builder}
      * that incorporates this consumer along with default values for some notable
-     * {@link com.hedera.hapi.node.base.TransactionBody} fields if not overridden by the consumer.
+     * {@link com.hedera.hapi.node.transaction.TransactionBody} fields if not overridden by the consumer.
      *
      * <p>The fields given default values are,
      * <ol>
-     *     <li>{@link com.hedera.hapi.node.base.TransactionBody#transactionID()}</li>
-     *     <li>{@link com.hedera.hapi.node.base.TransactionBody#nodeAccountID()}</li>
-     *     <li>{@link com.hedera.hapi.node.base.TransactionBody#transactionFee()}</li>
-     *     <li>{@link com.hedera.hapi.node.base.TransactionBody#transactionValidDuration()}</li>
-     *     <li>{@link com.hedera.hapi.node.base.TransactionBody#memo()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#transactionID()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#nodeAccountID()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#transactionFee()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#transactionValidDuration()}</li>
+     *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#memo()}</li>
      * </ol>
      *
      * @param bodySpec the {@link Consumer} that mutates the {@link TransactionBody.Builder}

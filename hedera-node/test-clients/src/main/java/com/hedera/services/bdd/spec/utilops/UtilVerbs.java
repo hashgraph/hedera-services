@@ -2168,7 +2168,7 @@ public class UtilVerbs {
          */
         void test(
                 @NonNull HapiSpec spec,
-                @NonNull com.hedera.hapi.node.base.TransactionBody body,
+                @NonNull com.hedera.hapi.node.transaction.TransactionBody body,
                 @NonNull TransactionResult result);
     }
 

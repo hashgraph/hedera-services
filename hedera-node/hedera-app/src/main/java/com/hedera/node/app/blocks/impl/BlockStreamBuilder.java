@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,6 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -61,6 +60,7 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.platform.event.EventTransaction;

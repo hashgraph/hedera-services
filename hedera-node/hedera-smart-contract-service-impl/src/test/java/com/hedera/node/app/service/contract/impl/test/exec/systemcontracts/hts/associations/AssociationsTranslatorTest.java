@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;

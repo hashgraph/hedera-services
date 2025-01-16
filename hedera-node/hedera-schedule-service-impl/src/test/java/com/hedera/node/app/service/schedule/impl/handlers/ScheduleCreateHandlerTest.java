@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,12 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;

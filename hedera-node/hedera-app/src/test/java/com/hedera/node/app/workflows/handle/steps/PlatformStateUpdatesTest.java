@@ -38,7 +38,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -48,6 +47,7 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.roster.RosterService;
