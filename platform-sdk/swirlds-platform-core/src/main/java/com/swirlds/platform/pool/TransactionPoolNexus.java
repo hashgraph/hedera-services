@@ -228,6 +228,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
 
         if (!priorityBufferedTransactions.isEmpty()
                 && TransactionUtils.getLegacyTransactionSize(priorityBufferedTransactions.peek()) <= maxSize) {
+            bufferedSignatureTransactionCount--;
             return priorityBufferedTransactions.poll();
         }
 
@@ -265,11 +266,6 @@ public class TransactionPoolNexus implements TransactionSupplier {
 
             currEventSize += TransactionUtils.getLegacyTransactionSize(transaction);
             selectedTrans.add(transaction);
-
-            // TODO: adapt this to the new transaction type
-            //            if (STATE_SIGNATURE_TRANSACTION.equals(transaction.transaction().kind())) {
-            //                bufferedSignatureTransactionCount--;
-            //            }
         }
 
         return selectedTrans;

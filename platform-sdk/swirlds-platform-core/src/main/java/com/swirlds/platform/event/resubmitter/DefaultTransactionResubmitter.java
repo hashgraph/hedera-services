@@ -17,15 +17,12 @@
 package com.swirlds.platform.event.resubmitter;
 
 import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -64,24 +61,24 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
         }
 
         final List<EventTransaction> transactionsToResubmit = new ArrayList<>();
-        final Iterator<Transaction> iterator = event.transactionIterator();
-        while (iterator.hasNext()) {
-            final Bytes transaction = iterator.next().getTransaction();
-            // TODO: adapt this to the new transaction model
-            //            if (Objects.equals(transaction.transaction().kind(),
-            // TransactionOneOfType.STATE_SIGNATURE_TRANSACTION)) {
-            //                final StateSignatureTransaction payload =
-            //                        transaction.transaction().as();
-            //                final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
-            //
-            //                if (transactionAge <= maxSignatureResubmitAge) {
-            //                    transactionsToResubmit.add(transaction);
-            //                    metrics.reportResubmittedSystemTransaction();
-            //                } else {
-            //                    metrics.reportAbandonedSystemTransaction();
-            //                }
-            //            }
-        }
+        // turning off this functionality for now
+        //        final Iterator<Transaction> iterator = event.transactionIterator();
+        //        while (iterator.hasNext()) {
+        //            final Bytes transaction = iterator.next().getTransaction();
+        //            if (Objects.equals(transaction.transaction().kind(),
+        // TransactionOneOfType.STATE_SIGNATURE_TRANSACTION)) {
+        //                final StateSignatureTransaction payload =
+        //                        transaction.transaction().as();
+        //                final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
+        //
+        //                if (transactionAge <= maxSignatureResubmitAge) {
+        //                    transactionsToResubmit.add(transaction);
+        //                    metrics.reportResubmittedSystemTransaction();
+        //                } else {
+        //                    metrics.reportAbandonedSystemTransaction();
+        //                }
+        //            }
+        //        }
 
         return transactionsToResubmit;
     }
