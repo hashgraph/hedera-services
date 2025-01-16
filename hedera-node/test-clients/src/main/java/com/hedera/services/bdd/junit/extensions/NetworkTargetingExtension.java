@@ -39,6 +39,7 @@ import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
+import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -83,7 +84,7 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                         method.getName().toUpperCase(), method.getName(), CONCURRENT, InitTrigger.GENESIS);
                 final var bootstrapOverrides = Arrays.stream(a.bootstrapOverrides())
                         .collect(toMap(ConfigOverride::key, ConfigOverride::value));
-                targetNetwork.startWith(bootstrapOverrides, a.generateNetworkJson(), a.useDiskAdminKey());
+                targetNetwork.startWith(bootstrapOverrides, a.keySources());
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else if (isAnnotated(method, RestartHapiTest.class)) {
                 final var targetNetwork = new EmbeddedNetwork(
@@ -107,7 +108,9 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                     }
                     case SAME_VERSION, UPGRADE_BOUNDARY -> {
                         final var state = postGenesisStateOf(targetNetwork, a);
-                        targetNetwork.restart(state, restartOverrides, false, a.useDiskAdminKey());
+                        targetNetwork.restart(state, restartOverrides, new AdminKeySource[] {
+                            AdminKeySource.NODE_ADMIN_KEYS_FILE, a.useDiskAdminKey() ? AdminKeySource.PEM_FILE : null
+                        });
                     }
                 }
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);

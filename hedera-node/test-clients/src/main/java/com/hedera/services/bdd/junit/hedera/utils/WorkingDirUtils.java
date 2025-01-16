@@ -31,6 +31,7 @@ import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -128,8 +129,7 @@ public class WorkingDirUtils {
     public static void recreateWorkingDir(
             @NonNull final Path workingDir,
             @NonNull final String configTxt,
-            final boolean generateNetworkJson,
-            final boolean useDiskNetworkKey) {
+            @NonNull final AdminKeySource[] adminKeySources) {
         requireNonNull(workingDir);
         requireNonNull(configTxt);
 
@@ -145,23 +145,32 @@ public class WorkingDirUtils {
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
         final var network = networkFrom(configTxt, OnlyRoster.NO);
 
+        // Only generate the network JSON file if the flag is set
+        final var generateNetworkJson =
+                Arrays.stream(adminKeySources).anyMatch(source -> source == AdminKeySource.GENESIS_NETWORK_FILE);
         if (generateNetworkJson) {
             writeStringUnchecked(
                     workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
                     Network.JSON.toJSON(network));
         } else {
-            // delete the default already output:
+            // Remove any previously-copied genesis-network.json artifact
             rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON));
-        }
-        if (useDiskNetworkKey) {
-            // remove the default node-admin-keys
-            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
         }
 
         // Copy the bootstrap assets into the working directory
+        final var useDiskNetworkKey =
+                Arrays.stream(adminKeySources).anyMatch(source -> source == AdminKeySource.PEM_FILE);
         copyBootstrapAssets(bootstrapAssetsLoc(), workingDir, useDiskNetworkKey);
+
         // Update the log4j2.xml file with the correct output directory
         updateLog4j2XmlOutputDir(workingDir);
+
+        // Remove the node admin keys JSON file if the flag is false
+        final var retainNodeAdminKeys =
+                Arrays.stream(adminKeySources).anyMatch(source -> source == AdminKeySource.NODE_ADMIN_KEYS_FILE);
+        if (!retainNodeAdminKeys) {
+            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
+        }
     }
 
     /**
@@ -358,16 +367,15 @@ public class WorkingDirUtils {
             throw new UncheckedIOException(e);
         }
 
-        var copiedAdminKeysDir = workingDir.resolve(DATA_DIR).resolve(KEYS_FOLDER);
+        final var copiedAdminKeysDir = workingDir.resolve(DATA_DIR).resolve(KEYS_FOLDER);
         if (useDiskAdminKey) {
             copyUnchecked(
                     workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"), copiedAdminKeysDir.resolve("account3.pem"));
             copyUnchecked(
                     workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"), copiedAdminKeysDir.resolve("account3.pass"));
-            // and remove node-admin-keys
-            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
         }
 
+        // Since these files were copied to the appropriate dir immediately above, they're no longer needed
         rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"));
         rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"));
         rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".words"));

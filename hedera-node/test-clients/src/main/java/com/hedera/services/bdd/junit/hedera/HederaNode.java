@@ -80,10 +80,11 @@ public interface HederaNode {
      * Initializes the working directory for the node. Must be called before the node is started.
      *
      * @param configTxt the address book the node should start with
+     * @param adminKeySources todo
      * @return this
      */
     @NonNull
-    HederaNode initWorkingDir(@NonNull String configTxt, boolean generateNetworkJson, boolean useDiskAdminKey);
+    HederaNode initWorkingDir(@NonNull String configTxt, @NonNull AdminKeySource[] adminKeySources);
 
     /**
      * Starts the node software.

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.remote;
 
 import com.hedera.services.bdd.junit.hedera.AbstractNode;
+import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.junit.hedera.ExternalPath;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
@@ -40,8 +41,7 @@ public class RemoteNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public HederaNode initWorkingDir(
-            @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+    public HederaNode initWorkingDir(@NonNull final String configTxt, @NonNull final AdminKeySource[] adminKeySources) {
         throw new UnsupportedOperationException("Cannot initialize a remote node's working directory");
     }
 

@@ -19,10 +19,10 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.DISK_ADMIN_KEY_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.NODE_ADMIN_KEYS_JSON;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.PEM_ADMIN_KEY_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork.CONCURRENT_WORKING_DIR;
@@ -39,6 +39,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.internal.network.Network;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
+import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
@@ -109,8 +110,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
             }
         }
         System.setProperty(
-                "bootstrap.nodeDiskAdminKey.path",
-                getExternalPath(DISK_ADMIN_KEY_DIR).toString());
+                "bootstrap.pemAdminKey.path", getExternalPath(PEM_ADMIN_KEY_DIR).toString());
         System.setProperty(
                 "bootstrap.configTxt.path",
                 getExternalPath(DATA_CONFIG_DIR)
@@ -120,14 +120,14 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
                         .toString());
         System.setProperty(
                 "paths.keysDirPath",
-                getExternalPath(DISK_ADMIN_KEY_DIR).resolve("public-cert").toString());
+                getExternalPath(PEM_ADMIN_KEY_DIR).resolve("public-cert").toString());
         return this;
     }
 
     @Override
     public @NonNull EmbeddedNode initWorkingDir(
-            @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
-        super.initWorkingDir(configTxt, generateNetworkJson, useDiskAdminKey);
+            @NonNull final String configTxt, @NonNull final AdminKeySource[] adminKeySources) {
+        super.initWorkingDir(configTxt, adminKeySources);
         updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;
     }

@@ -167,13 +167,10 @@ public interface HederaNetwork {
     /**
      * todo
      * @param bootstrapOverrides
-     * @param generateNetworkJson
-     * @param useDiskAdminKey
+     * @param adminKeySources todo
      */
     default void startWith(
-            @NonNull final Map<String, String> bootstrapOverrides,
-            final boolean generateNetworkJson,
-            final boolean useDiskAdminKey) {
+            @NonNull final Map<String, String> bootstrapOverrides, @NonNull AdminKeySource[] adminKeySources) {
         throw new UnsupportedOperationException();
     }
 

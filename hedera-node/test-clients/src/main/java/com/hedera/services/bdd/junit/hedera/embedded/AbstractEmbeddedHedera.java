@@ -374,29 +374,14 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .withRealKeysEnabled(true)
                 .build();
 
-        // write public certs to disk so crypto can initialize from them
-        var parent = path.getParent();
-        Path certDir = parent.resolve("data").resolve("keys").resolve("public-cert");
+        // Write all public certs to disk so CryptoStatic can initialize
+        final var parent = path.getParent();
+        final Path certDir = parent.resolve("data").resolve("keys").resolve("public-cert");
         WorkingDirUtils.ensureDir(certDir.toString());
-        AtomicInteger addressIndex = new AtomicInteger();
+        final AtomicInteger addressIndex = new AtomicInteger();
         randomAddressBook.iterator().forEachRemaining(address -> {
-            var filename = "s-public-node" + (addressIndex.getAndIncrement() + 1) + ".pem";
-            try (final var certWriter = Files.newBufferedWriter(certDir.resolve(filename))) {
-                certWriter.write("-----BEGIN CERTIFICATE-----\n");
-                var encoded = CommonUtils.base64encode(address.getSigCert().getEncoded());
-                int index = 0;
-                while (index < encoded.length()) {
-                    int end = Math.min(index + 64, encoded.length());
-                    certWriter.write(encoded.substring(index, end));
-                    certWriter.write("\n");
-                    index = end;
-                }
-                certWriter.write("\n-----END CERTIFICATE-----\n");
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (CertificateEncodingException e) {
-                throw new RuntimeException(e);
-            }
+            final var filename = "s-public-node" + (addressIndex.getAndIncrement() + 1) + ".pem";
+            certToDisk(filename, address, certDir);
         });
 
         final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
@@ -404,6 +389,26 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))
                 .toList());
+    }
+
+    private static void certToDisk(
+            @NonNull final String certFilename, @NonNull final Address address, @NonNull final Path certDir) {
+        try (final var certWriter = Files.newBufferedWriter(certDir.resolve(certFilename))) {
+            certWriter.write("-----BEGIN CERTIFICATE-----\n");
+            var encoded = CommonUtils.base64encode(address.getSigCert().getEncoded());
+            int index = 0;
+            while (index < encoded.length()) {
+                int end = Math.min(index + 64, encoded.length());
+                certWriter.write(encoded.substring(index, end));
+                certWriter.write("\n");
+                index = end;
+            }
+            certWriter.write("\n-----END CERTIFICATE-----\n");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static AccountID accountIdOf(@NonNull final Address address) {

@@ -30,6 +30,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
+import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
@@ -112,25 +113,22 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public void restart(
             @NonNull final FakeState state,
             @NonNull final Map<String, String> bootstrapOverrides,
-            final boolean generateNetworkJson,
-            final boolean existingKey) {
+            @NonNull final AdminKeySource[] adminKeySources) {
         requireNonNull(state);
-        startVia(hedera -> hedera.restart(state), bootstrapOverrides, generateNetworkJson, existingKey);
+        startVia(hedera -> hedera.restart(state), bootstrapOverrides, adminKeySources);
     }
 
     @Override
     public void start() {
-        // initialize with the default params
-        startWith(emptyMap(), true, false);
+        // Initialize with the default params
+        startWith(emptyMap(), AdminKeySource.DEFAULTS);
     }
 
     @Override
     public void startWith(
-            @NonNull final Map<String, String> bootstrapOverrides,
-            final boolean generateNetworkJson,
-            final boolean useDiskAdminKey) {
+            @NonNull final Map<String, String> bootstrapOverrides, @NonNull final AdminKeySource[] adminKeySources) {
         requireNonNull(bootstrapOverrides);
-        startVia(EmbeddedHedera::start, bootstrapOverrides, generateNetworkJson, useDiskAdminKey);
+        startVia(EmbeddedHedera::start, bootstrapOverrides, adminKeySources);
     }
 
     @Override
@@ -209,10 +207,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private void startVia(
             @NonNull final Consumer<EmbeddedHedera> start,
             @NonNull final Map<String, String> bootstrapOverrides,
-            final boolean generateNetworkJson,
-            final boolean useDiskAdminKey) {
+            @NonNull final AdminKeySource[] adminKeySources) {
         // Initialize the working directory
-        embeddedNode.initWorkingDir(configTxt, generateNetworkJson, useDiskAdminKey);
+        embeddedNode.initWorkingDir(configTxt, adminKeySources);
         if (!bootstrapOverrides.isEmpty()) {
             updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
         }

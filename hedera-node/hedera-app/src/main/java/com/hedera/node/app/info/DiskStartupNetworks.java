@@ -18,6 +18,7 @@ package com.hedera.node.app.info;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
@@ -50,6 +52,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -176,97 +179,179 @@ public class DiskStartupNetworks implements StartupNetworks {
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 
-    private Optional<Network> loadFromConfigTxt(Configuration configuration) {
-        var configTxtPath =
-                Paths.get(configuration.getConfigData(BootstrapConfig.class).configTxtPath());
-        Optional<Network> maybeNetwork = genesisNetworkFromConfigTxt(configuration, configTxtPath);
-        Optional<Network> updatedNetwork = Optional.empty();
-        if (maybeNetwork.isPresent()) {
-            final var network = maybeNetwork.get();
-            // first try node-admin-keys.json
-            // todo add!
+    private record NodeAdminPEMKey(@NonNull Key key, int nodeMetadataIndex) {}
 
-            // then try to load the PEM file itself
-            var keysPath = configuration.getConfigData(BootstrapConfig.class).nodeDiskAdminKeyPath();
-            String pemAcctStr = "";
-            String pemLoc = "";
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of(keysPath), "*.pem")) {
+    private static Map<Long, Key> parseEd25519NodeAdminKeysFrom(@NonNull final String loc) {
+        final var path = Paths.get(loc);
+        try {
+            final var json = Files.readString(path);
+            return V053AddressBookSchema.parseEd25519NodeAdminKeys(json);
+        } catch (IOException ignore) {
+            return emptyMap();
+        }
+    }
+
+    private record DiskKeyAccess(@NonNull Path pemLoc, long pemAccountId) {}
+
+    private static class PemAdminKeyLoader {
+        private PemAdminKeyLoader() {
+            // utility class
+        }
+
+        static Optional<NodeAdminPEMKey> load(@NonNull final Network networkSoFar, @NonNull final Path keysPath) {
+            final var maybePemAccess = maybeDiskAdminKeyFiles(keysPath);
+            if (maybePemAccess.isPresent()) {
+                final DiskKeyAccess pemAccess = maybePemAccess.get();
+                final var maybeDiskKey = maybeLoadDiskAdminKey(pemAccess);
+                if (maybeDiskKey.isPresent()) {
+                    final var maybeMetadataIndex = findNodeIndex(networkSoFar, pemAccess.pemAccountId());
+                    if (maybeMetadataIndex.isPresent()) {
+                        return Optional.of(new NodeAdminPEMKey(maybeDiskKey.get(), maybeMetadataIndex.get()));
+                    }
+                }
+            }
+
+            log.fatal(
+                    "bootstrap.pemAdminKeyPath is set (value=[{}]), but no accessible account pem file found",
+                    keysPath);
+            return Optional.empty();
+        }
+
+        private static Optional<DiskKeyAccess> maybeDiskAdminKeyFiles(@NonNull final Path keysPath) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(keysPath, "*.pem")) {
                 for (Path entry : stream) {
                     if (entry.getFileName().toString().contains("account")) {
-                        pemAcctStr = entry.getFileName()
+                        final var pemLoc = entry.toAbsolutePath().toString();
+                        final var pemAcctStr = entry.getFileName()
                                 .toString()
                                 .replace(".pem", "")
                                 .replace("account", "");
-                        pemLoc = entry.toAbsolutePath().toString();
-                        break;
+                        final var pemAcctId = parseAcctIdFromPemLoc(pemAcctStr);
+
+                        // Only one PEM file is expected in this directory, so return the first one
+                        return Optional.of(new DiskKeyAccess(Path.of(pemLoc), pemAcctId));
                     }
                 }
             } catch (IOException e) {
-                log.warn("Couldn't find account pem file", e);
+                log.error("Couldn't open pem file(s):", e);
             }
 
-            // load .pem
-            if (!pemAcctStr.isEmpty()) {
-                // first, find the appropriate metadata object
-                int metadataIndex = -1;
-                AccountID pemAccount = AccountID.newBuilder()
-                        .accountNum(Long.parseLong(pemAcctStr))
-                        .build();
-                for (NodeMetadata metadata : network.nodeMetadata()) {
-                    if (pemAccount.equals(metadata.node().accountId())) {
+            log.error("No account pem file(s) found in [{}]", keysPath);
+            return Optional.empty();
+        }
 
-                        metadataIndex = network.nodeMetadata().indexOf(metadata);
-                        break;
+        private static Optional<Key> maybeLoadDiskAdminKey(@NonNull final DiskKeyAccess keyAccess) {
+            // Get the passphrase for the PEM key
+            final var passFile = Path.of(keyAccess.pemLoc().toString().replace(".pem", ".pass"));
+            String pass = "";
+            if (Files.exists(passFile)) {
+                try {
+                    pass = Files.readString(passFile);
+                } catch (final IOException e) {
+                    log.warn(".pass file at {} couldn't open", passFile, e);
+                }
+            }
+
+            if (pass.isEmpty()) {
+                log.error("No passphrase found for pem account {}", keyAccess.pemAccountId());
+                // Ed25519Utils#readKeyFrom requires a password, so fail here
+                return Optional.empty();
+            }
+
+            // Load the private key and compute its public key
+            final EdDSAPrivateKey privateKey =
+                    Ed25519Utils.readKeyFrom(keyAccess.pemLoc().toFile(), pass);
+            final var publicKey = publicKeyFromPrivateEd25519(privateKey);
+            final var pubKeyBytes = Bytes.wrap(publicKey);
+            return Optional.of(Key.newBuilder().ed25519(pubKeyBytes).build());
+        }
+
+        private static Optional<Integer> findNodeIndex(@NonNull final Network configTxtNetwork, final long pemAcct) {
+            final AccountID pemAccount =
+                    AccountID.newBuilder().accountNum(pemAcct).build();
+            for (final NodeMetadata metadata : configTxtNetwork.nodeMetadata()) {
+                if (pemAccount.equals(metadata.node().accountId())) {
+                    final var metadataIndex = configTxtNetwork.nodeMetadata().indexOf(metadata);
+                    if (metadataIndex > -1) {
+                        return Optional.of(metadataIndex);
                     }
                 }
-                if (metadataIndex == -1) {
-                    log.warn("No metadata found for pem account {}", pemAcctStr);
-                    throw new IllegalStateException("No metadata found for node account " + pemAcctStr);
-                }
-                var nodeMetadata = network.nodeMetadata().get(metadataIndex);
+            }
 
-                // get passphrase:
-                final var passFile = Path.of(pemLoc.replace(".pem", ".pass"));
-                String pass = "";
-                if (Files.exists(passFile)) {
-                    try {
-                        pass = Files.readString(passFile);
-                    } catch (IOException e) {
-                        throw new IllegalStateException(".pass file at {} couldn't open", e);
-                    }
-                } else {
-                    log.warn("No passphrase found for pem account {}", pemAcctStr);
-                    // There's no chance of loading the private key without the passphrase, so return
+            log.warn("No parseable metadata found for PEM key (account {})", pemAcct);
+            return Optional.empty();
+        }
+
+        private static long parseAcctIdFromPemLoc(@NonNull final String pemLoc) {
+            final var pemFilename = Paths.get(pemLoc).getFileName().toString();
+            return Long.parseLong(pemFilename.replace("account", "").replace(".pem", ""));
+        }
+
+        private static byte[] publicKeyFromPrivateEd25519(@NonNull final EdDSAPrivateKey privateKey) {
+            return privateKey.getAbyte();
+        }
+    }
+
+    // (FUTURE) Once the roster lifecycle is fully implemented, we can remove the dependency on the
+    // config.txt file
+    private Optional<Network> loadFromConfigTxt(Configuration configuration) {
+        final var configTxtPath =
+                Paths.get(configuration.getConfigData(BootstrapConfig.class).configTxtPath());
+        final Optional<Network> maybeNetwork = genesisNetworkFromConfigTxt(configuration, configTxtPath);
+
+        Optional<Network> updatedNetwork = Optional.empty();
+        if (maybeNetwork.isPresent()) {
+            final var network = maybeNetwork.get();
+
+            // First attempt to load the node-admin-keys.json key
+            final var nodeAdminKeysPath =
+                    configuration.getConfigData(BootstrapConfig.class).nodeAdminKeysPath();
+            final var foundAdminKeys = parseEd25519NodeAdminKeysFrom(nodeAdminKeysPath);
+            // Retrieve the first admin key from the map
+            Key diskKey = foundAdminKeys.get(0L);
+            int nodeMetadataIndex = 0;
+
+            // If the key is not found in node admin keys, attempt to load it from disk
+            if (diskKey == null) {
+                final var pemAdminKeyPath =
+                        configuration.getConfigData(BootstrapConfig.class).pemAdminKeyPath();
+                final var pemKey = PemAdminKeyLoader.load(network, Path.of(pemAdminKeyPath));
+                if (pemKey.isEmpty()) {
+                    // At this point there's nothing more we can do to find an admin key, so return
                     return Optional.empty();
                 }
 
-                // now, load the private key and build its public key
-                EdDSAPrivateKey privateKey =
-                        Ed25519Utils.readKeyFrom(Paths.get(pemLoc).toFile(), pass);
-                var publicKey = publicKeyFromEd25519(privateKey);
-                var pubKeyBytes = Bytes.wrap(publicKey);
-                var key = Key.newBuilder().ed25519(pubKeyBytes).build();
-
-                // finally, replace the old metadata with the new one (that has the updated admin key)
-                List<NodeMetadata> newMetas = new ArrayList<>(network.nodeMetadata());
-                Node newNode =
-                        nodeMetadata.nodeOrThrow().copyBuilder().adminKey(key).build();
-                NodeMetadata newNodeMetadata =
-                        nodeMetadata.copyBuilder().node(newNode).build();
-                newMetas.set(metadataIndex, newNodeMetadata);
-                // replace the old metadata with the new one
-                updatedNetwork = Optional.of(Network.newBuilder()
-                        .ledgerId(network.ledgerId())
-                        .nodeMetadata(newMetas)
-                        .build());
+                diskKey = pemKey.get().key();
+                nodeMetadataIndex = pemKey.get().nodeMetadataIndex();
             }
+
+            updatedNetwork = copiedNetworkWithAdminKey(network, diskKey, nodeMetadataIndex);
         }
 
+        log.error("Unable to load fallback network");
         return updatedNetwork;
     }
 
-    private byte[] publicKeyFromEd25519(EdDSAPrivateKey privateKey) {
-        return privateKey.getAbyte();
+    private Optional<Network> copiedNetworkWithAdminKey(
+            @NonNull final Network network, @NonNull final Key thisNodeAdminKey, final int thisNodeIndex) {
+        final var thisNodeMetadata = network.nodeMetadata().get(thisNodeIndex);
+
+        // Copy each node's metadata to a new list, then replace this node's metadata with the new one
+        final List<NodeMetadata> newMetas = new ArrayList<>(network.nodeMetadata());
+        final Node newNode = thisNodeMetadata
+                .nodeOrThrow()
+                .copyBuilder()
+                .adminKey(thisNodeAdminKey)
+                .build();
+        final NodeMetadata newNodeMetadata =
+                thisNodeMetadata.copyBuilder().node(newNode).build();
+        newMetas.set(thisNodeIndex, newNodeMetadata);
+
+        // Replace the old metadata with the new one
+        return Optional.of(Network.newBuilder()
+                .ledgerId(network.ledgerId())
+                .nodeMetadata(newMetas)
+                .build());
     }
 
     /**

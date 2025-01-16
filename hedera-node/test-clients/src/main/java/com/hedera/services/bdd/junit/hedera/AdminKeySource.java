@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,12 @@
 package com.hedera.services.bdd.junit.hedera;
 
 /**
- * Enumerates files and directories created and used by a Hedera node.
+ * todo
  */
-public enum ExternalPath {
-    APPLICATION_LOG,
-    SWIRLDS_LOG,
-    ADDRESS_BOOK,
-    GENESIS_PROPERTIES,
-    APPLICATION_PROPERTIES,
-    NODE_ADMIN_KEYS_JSON,
-    LOG4J2_XML,
-    RECORD_STREAMS_DIR,
-    BLOCK_STREAMS_DIR,
-    DATA_CONFIG_DIR,
-    UPGRADE_ARTIFACTS_DIR,
-    SAVED_STATES_DIR,
-    PEM_ADMIN_KEY_DIR
+public enum AdminKeySource {
+    NODE_ADMIN_KEYS_FILE,
+    GENESIS_NETWORK_FILE,
+    PEM_FILE;
+
+    public static AdminKeySource[] DEFAULTS = new AdminKeySource[] {GENESIS_NETWORK_FILE, NODE_ADMIN_KEYS_FILE};
 }

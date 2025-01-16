@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.ONLY_EMBEDDED;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
+import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -44,7 +45,5 @@ import org.junit.jupiter.api.parallel.Isolated;
 public @interface GenesisHapiTest {
     ConfigOverride[] bootstrapOverrides() default {};
 
-    boolean generateNetworkJson() default true;
-
-    boolean useDiskAdminKey() default false;
+    AdminKeySource[] keySources() default {AdminKeySource.GENESIS_NETWORK_FILE, AdminKeySource.NODE_ADMIN_KEYS_FILE};
 }

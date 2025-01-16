@@ -54,11 +54,9 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     }
 
     @Override
-    public @NonNull T initWorkingDir(
-            @NonNull final String configTxt, final boolean generateNetworkJson, final boolean useDiskAdminKey) {
+    public @NonNull T initWorkingDir(@NonNull final String configTxt, @NonNull final AdminKeySource[] adminKeySources) {
         requireNonNull(configTxt);
-        WorkingDirUtils.recreateWorkingDir(
-                requireNonNull(metadata.workingDir()), configTxt, generateNetworkJson, useDiskAdminKey);
+        WorkingDirUtils.recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, adminKeySources);
         workingDirInitialized = true;
         return self();
     }
