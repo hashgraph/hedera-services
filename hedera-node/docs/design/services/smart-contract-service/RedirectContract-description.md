@@ -2,7 +2,7 @@
 
 The "redirect" contracts (aka proxy contracts, aka facade contracts) implement the feature where you
 can call a Hedera entity e.g. token, account or schedule (as of 0.59) directly at their address and they _act_
-as if you made the corresponding contract call.
+as if you made a contract call with the corresponding target address as the target parameter.
 
 * There are three terms currently in use for the same concept: "facade", "redirect", and "proxy".
   All three terms appear in symbols in the code, at this time.  Perhaps we'll standardize on one
