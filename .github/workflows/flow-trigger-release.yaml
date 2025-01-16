@@ -117,6 +117,7 @@ jobs:
           GIT_COMMITTER_NAME: ${{ secrets.GIT_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
         run: |
+          set -x
           ARGS=""
           if [[ "${{ github.event.inputs.dry-run-enabled }}" == true ]]; then
             ARGS="--dry-run"
