@@ -47,7 +47,7 @@ jobs:
         id: checkout_code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          fetch-depth: '0'
+          fetch-depth: "0"
           ref: main
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
@@ -109,7 +109,7 @@ jobs:
       - name: Add & Commit
         uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
         with:
-          cwd: '.'
+          cwd: "."
           author_name: ${{ secrets.SVCS_GIT_USER_NAME }}
           author_email: ${{ secrets.SVCS_GIT_USER_EMAIL }}
           commit: --signoff
