@@ -16,13 +16,9 @@
 
 package com.swirlds.platform.pool;
 
-import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
-import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -150,9 +146,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             illegalTransactionLogger.error(EXCEPTION.getMarker(), "transaction is null");
             return false;
         }
-        final EventTransaction transaction = new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, appTransaction));
-        // TODO: Adapt to work with Bytes
-        if (TransactionUtils.getLegacyTransactionSize(transaction) > maximumTransactionSize) {
+        if (TransactionUtils.getLegacyTransactionSize(appTransaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
                     EXCEPTION.getMarker(),
@@ -229,20 +223,18 @@ public class TransactionPoolNexus implements TransactionSupplier {
      * @return the next transaction, or null if no transaction is available
      */
     @Nullable
-    private EventTransaction getNextTransaction(final int currentEventSize) {
+    private Bytes getNextTransaction(final int currentEventSize) {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
-        // TODO: Adapt to work with Bytes
-        //        if (!priorityBufferedTransactions.isEmpty()
-        //                && TransactionUtils.getLegacyTransactionSize(priorityBufferedTransactions.peek()) <= maxSize)
-        // {
-        //            return priorityBufferedTransactions.poll();
-        //        }
-        //
-        //        if (!bufferedTransactions.isEmpty()
-        //                && TransactionUtils.getLegacyTransactionSize(bufferedTransactions.peek()) <= maxSize) {
-        //            return bufferedTransactions.poll();
-        //        }
+        if (!priorityBufferedTransactions.isEmpty()
+                && TransactionUtils.getLegacyTransactionSize(priorityBufferedTransactions.peek()) <= maxSize) {
+            return priorityBufferedTransactions.poll();
+        }
+
+        if (!bufferedTransactions.isEmpty()
+                && TransactionUtils.getLegacyTransactionSize(bufferedTransactions.peek()) <= maxSize) {
+            return bufferedTransactions.poll();
+        }
 
         return null;
     }
@@ -254,17 +246,17 @@ public class TransactionPoolNexus implements TransactionSupplier {
      */
     @NonNull
     @Override
-    public synchronized List<EventTransaction> getTransactions() {
+    public synchronized List<Bytes> getTransactions() {
         // Early return due to no transactions waiting
         if (bufferedTransactions.isEmpty() && priorityBufferedTransactions.isEmpty()) {
             return Collections.emptyList();
         }
 
-        final List<EventTransaction> selectedTrans = new LinkedList<>();
+        final List<Bytes> selectedTrans = new LinkedList<>();
         int currEventSize = 0;
 
         while (true) {
-            final EventTransaction transaction = getNextTransaction(currEventSize);
+            final Bytes transaction = getNextTransaction(currEventSize);
 
             if (transaction == null) {
                 // No transaction of suitable size is available
@@ -274,9 +266,10 @@ public class TransactionPoolNexus implements TransactionSupplier {
             currEventSize += TransactionUtils.getLegacyTransactionSize(transaction);
             selectedTrans.add(transaction);
 
-            if (STATE_SIGNATURE_TRANSACTION.equals(transaction.transaction().kind())) {
-                bufferedSignatureTransactionCount--;
-            }
+            // TODO: adapt this to the new transaction type
+            //            if (STATE_SIGNATURE_TRANSACTION.equals(transaction.transaction().kind())) {
+            //                bufferedSignatureTransactionCount--;
+            //            }
         }
 
         return selectedTrans;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -438,7 +438,9 @@ public class TipsetEventCreator implements EventCreator {
                 softwareVersion,
                 selfId,
                 lastSelfEvent,
-                otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
+                otherParent == null
+                        ? Collections.<EventDescriptorWrapper>emptyList()
+                        : Collections.singletonList(otherParent),
                 eventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
                         ? eventWindow.getPendingConsensusRound()
                         : ConsensusConstants.ROUND_FIRST,

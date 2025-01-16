@@ -42,6 +42,8 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     private final EventTransaction payload;
     /** The hash of the transaction */
     private Bytes hash;
+    // TODO: adapt this to the new transaction model
+    private Bytes transaction;
 
     /**
      * Constructs a new transaction wrapper
@@ -53,6 +55,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
         Objects.requireNonNull(transaction, "transaction should not be null");
         this.payload = new EventTransaction(transaction);
+        this.transaction = transaction.as();
     }
 
     /**
@@ -127,8 +130,8 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @NonNull
     @Override
-    public EventTransaction getTransaction() {
-        return payload;
+    public Bytes getTransaction() {
+        return transaction;
     }
 
     /**
@@ -139,7 +142,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @Override
     public int getSize() {
-        return TransactionUtils.getLegacyTransactionSize(payload);
+        return TransactionUtils.getLegacyTransactionSize(transaction);
     }
 
     /**

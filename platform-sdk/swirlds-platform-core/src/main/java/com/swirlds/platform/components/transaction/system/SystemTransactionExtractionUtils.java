@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,12 +72,14 @@ public class SystemTransactionExtractionUtils {
         final Iterator<Transaction> transactionIterator = event.transactionIterator();
         while (transactionIterator.hasNext()) {
             final Transaction transaction = transactionIterator.next();
-            if (systemTransactionTypeClass.isInstance(
-                    transaction.getTransaction().transaction().value())) {
-                scopedTransactions.add(
-                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
-                                transaction.getTransaction().transaction().value()));
-            }
+            // TODO: adapt this to the new transaction structure
+            //            if (systemTransactionTypeClass.isInstance(
+            //                    transaction.getTransaction().transaction().value())) {
+            //                scopedTransactions.add(
+            //                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(),
+            // (T)
+            //                                transaction.getTransaction().transaction().value()));
+            //            }
         }
 
         return scopedTransactions.isEmpty() ? null : scopedTransactions;

@@ -16,10 +16,8 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -37,7 +35,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      */
     @NonNull
     @Deprecated
-    EventTransaction getTransaction();
+    Bytes getTransaction();
 
     /**
      * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
@@ -46,7 +44,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
      */
     default @NonNull Bytes getApplicationTransaction() {
-        return !isSystem() ? getTransaction().transaction().as() : Bytes.EMPTY;
+        return getTransaction();
     }
 
     /**
@@ -62,9 +60,10 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
+    // TODO: adapt logic to the new transaction model
     @Deprecated
     default boolean isSystem() {
-        return TransactionUtils.isSystemTransaction(getTransaction());
+        return false;
     }
 
     /**
