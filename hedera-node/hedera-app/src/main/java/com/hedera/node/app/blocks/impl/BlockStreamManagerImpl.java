@@ -574,13 +574,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         protected boolean exec() {
             final var kind = item.item().kind();
             switch (kind) {
-                case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(hash);
+                case EVENT_HEADER, EVENT_TRANSACTION, ROUND_HEADER -> inputTreeHasher.addLeaf(hash);
                 case TRANSACTION_RESULT -> {
                     runningHashManager.nextResultHash(hash);
                     hash.rewind();
                     outputTreeHasher.addLeaf(hash);
                 }
-                case TRANSACTION_OUTPUT, STATE_CHANGES, ROUND_HEADER, BLOCK_HEADER -> outputTreeHasher.addLeaf(hash);
+                case TRANSACTION_OUTPUT, STATE_CHANGES, BLOCK_HEADER -> outputTreeHasher.addLeaf(hash);
             }
 
             final BlockHeader header = item.blockHeader();
