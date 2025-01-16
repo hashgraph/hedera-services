@@ -99,7 +99,13 @@ Beginning with release 0.59:
 
 ## Creating a patch bump
 
-:warning: Contact @hashgraph/platform-ci or @hashgraph/release-engineering-managers prior to attempting to create a patch bump release. 
+:warning: Contact @hashgraph/platform-ci or @hashgraph/release-engineering-managers prior to attempting to create a 
+patch bump release.
+
+:rotating_light: Attempting to cut a patch release where the history from the prior release contains a feature or 
+breaking change will result in an unintentional minor bump. This could take several days to redact the incorrect release
+and will prevent the next minor release from shipping. Requires intervention from @hashgraph/platform-ci and
+@hashgraph/release-engineering-managers.
 
 It is possible to create a patch bump after a build candidate has been released via the `[Main] Create New Release`
 workflow. The release managers will need to select a new build candidate from the list of available builds. The selected
