@@ -87,7 +87,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
+        this.accountStore = new WritableAccountStore(writableStates);
 
         // Determine whether staking is enabled
         stakingConfig = config.getConfigData(StakingConfig.class);

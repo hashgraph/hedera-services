@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         writableAirdropState = emptyWritableAirdropStateBuilder().build();
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        subject = new WritableAirdropStore(writableStates);
     }
 
     @Test
@@ -93,7 +93,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
                         .build());
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        subject = new WritableAirdropStore(writableStates);
 
         assertThat(writableAirdropState.contains(nftId)).isTrue();
 
@@ -123,7 +123,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
 
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        subject = new WritableAirdropStore(writableStates);
 
         assertThat(subject.exists(fungibleAirdropToRemove)).isTrue();
         assertThat(subject.exists(nftToRemove)).isTrue();
@@ -172,8 +172,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorCallWithNull() {
-        assertThatThrownBy(() -> subject = new WritableAirdropStore(null, configuration, storeMetricsService))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject = new WritableAirdropStore(null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("ConstantConditions")

@@ -45,6 +45,7 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.config.data.HederaConfig;
@@ -84,6 +85,9 @@ class IngestComponentTest {
 
     @Mock
     private BlockHashSigner blockHashSigner;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     private HederaInjectionComponent app;
 
@@ -132,7 +136,7 @@ class IngestComponentTest {
                 .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
                 .kvStateChangeListener(new KVStateChangeListener())
-                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener(storeMetricsService, configProvider))
                 .migrationStateChanges(List.of())
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))

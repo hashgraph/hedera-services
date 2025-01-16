@@ -174,8 +174,7 @@ public class StakePeriodChanges {
 
     private WritableNodeStore newWritableNodeStore(
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
-        final var writableFactory =
-                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService);
+        final var writableFactory = new WritableStoreFactory(stack, AddressBookService.NAME);
         return writableFactory.getStore(WritableNodeStore.class);
     }
 

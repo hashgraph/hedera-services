@@ -527,7 +527,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        writableAirdropStore = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        writableAirdropStore = new WritableAirdropStore(writableStates);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
 
         final var newAirdropValue = airdropWithValue(20);

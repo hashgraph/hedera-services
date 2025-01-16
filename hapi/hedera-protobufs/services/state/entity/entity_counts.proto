@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package proto;
+package com.hedera.hapi.node.state.entity;
 /*
  * Copyright (C) 2025 Hedera Hashgraph, LLC
  *

@@ -21,10 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.config.data.TokensConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,19 +44,10 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * Create a new {@link WritableTokenStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableTokenStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+    public WritableTokenStore(@NonNull final WritableStates states) {
         super(states);
         this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
-
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.TOKEN, maxCapacity);
-        tokenState.setMetrics(storeMetrics);
     }
 
     /**

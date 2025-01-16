@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -281,7 +281,9 @@ public class TransactionExecutorsTest {
                 config,
                 networkInfo,
                 NO_OP_METRICS,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         final var writableStates = state.getWritableStates(FileService.NAME);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
         genesisContentProviders(networkInfo, config).forEach((fileNum, provider) -> {

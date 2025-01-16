@@ -21,10 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.config.data.FilesConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,19 +41,10 @@ public class WritableFileStore extends ReadableFileStoreImpl {
      * Create a new {@link WritableFileStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableFileStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+    public WritableFileStore(@NonNull final WritableStates states) {
         super(states);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
-
-        final long maxCapacity = configuration.getConfigData(FilesConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.FILE, maxCapacity);
-        filesState.setMetrics(storeMetrics);
     }
 
     /**

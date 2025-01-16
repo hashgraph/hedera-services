@@ -544,8 +544,7 @@ public class HandleWorkflow {
         if (!Instant.EPOCH.equals(then) && then.getEpochSecond() < now.getEpochSecond()) {
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
             doStreamingKVChanges(writableStates, now, () -> {
-                final var scheduleStore = new WritableScheduleStoreImpl(
-                        writableStates, configProvider.getConfiguration(), storeMetricsService);
+                final var scheduleStore = new WritableScheduleStoreImpl(writableStates);
                 scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
             });
         }
@@ -596,8 +595,8 @@ public class HandleWorkflow {
                     // (FUTURE) Verify we can remove this deprecated node metadata sync now that DAB is active;
                     // it should never happen case that nodes are added or removed from the address book without
                     // those changes already being visible in the FAB
-                    final var addressBookWritableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
+                    final var addressBookWritableStoreFactory =
+                            new WritableStoreFactory(userTxn.stack(), AddressBookService.NAME);
                     addressBookHelper.adjustPostUpgradeNodeMetadata(
                             networkInfo,
                             userTxn.config(),

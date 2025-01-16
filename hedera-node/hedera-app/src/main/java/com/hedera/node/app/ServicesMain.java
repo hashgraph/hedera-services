@@ -40,6 +40,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
@@ -376,7 +377,8 @@ public class ServicesMain implements SwirldMain {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 DiskStartupNetworks::new,
-                TssBlockHashSigner::new);
+                TssBlockHashSigner::new,
+                new StoreMetricsServiceImpl(metrics));
     }
 
     /**

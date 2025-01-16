@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.config.data.TokensConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,19 +45,10 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Create a new {@link WritableNftStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum allowed mints.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableNftStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+    public WritableNftStore(@NonNull final WritableStates states) {
         super(states);
         this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
-
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
-        final var storeMetrics = storeMetricsService.get(StoreType.NFT, maxCapacity);
-        nftState.setMetrics(storeMetrics);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -385,11 +385,8 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(TOKEN_123)
                 .balance(10)
                 .build());
-        writableNftStore = new WritableNftStore(
-                new MapWritableStates(
-                        Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
-                CONFIGURATION,
-                storeMetricsService);
+        writableNftStore = new WritableNftStore(new MapWritableStates(
+                Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(

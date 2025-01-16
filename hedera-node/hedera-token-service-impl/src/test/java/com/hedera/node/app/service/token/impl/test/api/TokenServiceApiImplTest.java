@@ -114,7 +114,7 @@ class TokenServiceApiImplTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
+        accountStore = new WritableAccountStore(writableStates);
         subject = new TokenServiceApiImpl(DEFAULT_CONFIG, storeMetricsService, writableStates, customFeeTest);
     }
 

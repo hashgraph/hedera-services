@@ -70,18 +70,15 @@ class WritableTokenRelationStoreTest {
         given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
-        subject = new WritableTokenRelationStore(states, CONFIGURATION, storeMetricsService);
+        subject = new WritableTokenRelationStore(states);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testNullConstructorArgs() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenRelationStore(null, CONFIGURATION, storeMetricsService));
-        assertThrows(
-                NullPointerException.class, () -> new WritableTokenRelationStore(states, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, CONFIGURATION, null));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(null));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states));
     }
 
     @Test

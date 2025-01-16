@@ -76,6 +76,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.StateNetworkInfo;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -325,7 +326,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * current system, these are the singleton and queue updates. Every {@link MerkleStateRoot} will have this
      * listener registered.
      */
-    private final BoundaryStateChangeListener boundaryStateChangeListener = new BoundaryStateChangeListener();
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     /**
      * A {@link StateChangeListener} that accumulates state changes that must be immediately reported as they occur,
@@ -356,6 +357,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
     @Nullable
     private StartupNetworks startupNetworks;
 
+    @NonNull
+    private StoreMetricsServiceImpl storeMetricsService;
+
     @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
@@ -381,11 +385,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
-     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory the factory to use for creating the services registry
-     * @param migrator the migrator to use with the services
+     * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
+     * @param registryFactory        the factory to use for creating the services registry
+     * @param migrator               the migrator to use with the services
      * @param startupNetworksFactory the factory for the startup networks
      * @param blockHashSignerFactory the factory for the block hash signer
+     * @param storeMetricsService   the metrics service to use
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -393,9 +398,11 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final StartupNetworksFactory startupNetworksFactory,
-            @NonNull final BlockHashSignerFactory blockHashSignerFactory) {
+            @NonNull final BlockHashSignerFactory blockHashSignerFactory,
+            @NonNull final StoreMetricsServiceImpl storeMetricsService) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         this.blockHashSignerFactory = requireNonNull(blockHashSignerFactory);
@@ -437,6 +444,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
+        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configProvider);
         contractServiceImpl = new ContractServiceImpl(appContext);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
@@ -669,7 +677,9 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 platformConfig,
                 genesisNetworkInfo,
                 metrics,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         this.initState = null;
         PLATFORM_STATE_SERVICE.clearDiskAddressBook();
         migrationStateChanges = new ArrayList<>(migrationChanges);

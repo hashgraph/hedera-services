@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.AC
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.AIRDROPS;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
@@ -46,7 +45,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.test.fixtures.MapReadableStates;
@@ -83,10 +81,7 @@ public final class TestStoreFactory {
      */
     public static WritableTokenStore newWritableStoreWithTokens(Token... tokens) {
         final var wrappedState = newTokenStateFromTokens(tokens);
-        return new WritableTokenStore(
-                new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+        return new WritableTokenStore(new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)));
     }
 
     /**
@@ -118,8 +113,7 @@ public final class TestStoreFactory {
      * @return the new store
      */
     public static WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
-        return new WritableAccountStore(
-                new MapWritableStates(writableAccountStates(accounts)), CONFIGURATION, mock(StoreMetricsService.class));
+        return new WritableAccountStore(new MapWritableStates(writableAccountStates(accounts)));
     }
 
     /**
@@ -156,9 +150,7 @@ public final class TestStoreFactory {
     public static WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
         final var wrappingState = newTokenRelStateFromTokenRels(tokenRels);
         return new WritableTokenRelationStore(
-                new MapWritableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappingState)),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+                new MapWritableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappingState)));
     }
 
     /**
@@ -178,10 +170,7 @@ public final class TestStoreFactory {
      */
     public static WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
         final var wrappingState = newNftStateFromNfts(nfts);
-        return new WritableNftStore(
-                new MapWritableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+        return new WritableNftStore(new MapWritableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)));
     }
 
     private static MapWritableKVState<TokenID, Token> newTokenStateFromTokens(Token... tokens) {
@@ -203,10 +192,7 @@ public final class TestStoreFactory {
     }
 
     public static WritableAirdropStore newWritableStoreWithAirdrops(PendingAirdropId... airdrops) {
-        return new WritableAirdropStore(
-                new MapWritableStates(Map.of(AIRDROPS, newAirdropStateFromAirdrops(airdrops))),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+        return new WritableAirdropStore(new MapWritableStates(Map.of(AIRDROPS, newAirdropStateFromAirdrops(airdrops))));
     }
 
     private static MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> newAirdropStateFromAirdrops(

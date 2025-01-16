@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,6 @@ import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TREASURY_PAYER;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
@@ -100,7 +99,6 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -174,10 +172,7 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static WritableTokenStore wellKnownWritableTokenStoreAt() {
-        return new WritableTokenStore(
-                mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+        return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())));
     }
 
     private static WritableKVState<TokenID, Token> wellKnownTokenState() {
@@ -380,10 +375,7 @@ public class SigReqAdapterUtils {
                         .build());
 
         final var wrappedState = new MapWritableKVState<>(TOKEN_RELS_KEY, destination);
-        return new WritableTokenRelationStore(
-                mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+        return new WritableTokenRelationStore(mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)));
     }
 
     /**
@@ -403,9 +395,7 @@ public class SigReqAdapterUtils {
      */
     public static WritableAccountStore wellKnownWritableAccountStoreAt() {
         return new WritableAccountStore(
-                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
-                CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
     }
 
     private static WritableKVState<AccountID, Account> wrappedAccountState() {

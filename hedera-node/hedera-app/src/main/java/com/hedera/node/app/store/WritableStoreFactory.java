@@ -43,8 +43,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableStates;
@@ -70,74 +68,63 @@ public class WritableStoreFactory {
         newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
 
         // ConsensusService
-        newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
-        // TokenService
-        newMap.put(WritableAccountStore.class, new StoreEntry(TokenService.NAME, WritableAccountStore::new));
-        newMap.put(WritableAirdropStore.class, new StoreEntry(TokenService.NAME, WritableAirdropStore::new));
-        newMap.put(WritableNftStore.class, new StoreEntry(TokenService.NAME, WritableNftStore::new));
-        newMap.put(WritableTokenStore.class, new StoreEntry(TokenService.NAME, WritableTokenStore::new));
         newMap.put(
-                WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
+                WritableTopicStore.class,
+                new StoreEntry(ConsensusService.NAME, states1 -> new WritableTopicStore(states1)));
+        // TokenService
+        newMap.put(
+                WritableAccountStore.class,
+                new StoreEntry(TokenService.NAME, states3 -> new WritableAccountStore(states3)));
+        newMap.put(
+                WritableAirdropStore.class,
+                new StoreEntry(TokenService.NAME, states3 -> new WritableAirdropStore(states3)));
+        newMap.put(WritableNftStore.class, new StoreEntry(TokenService.NAME, states3 -> new WritableNftStore(states3)));
+        newMap.put(
+                WritableTokenStore.class,
+                new StoreEntry(TokenService.NAME, states4 -> new WritableTokenStore(states4)));
+        newMap.put(
+                WritableTokenRelationStore.class,
+                new StoreEntry(TokenService.NAME, states3 -> new WritableTokenRelationStore(states3)));
         newMap.put(
                 WritableNetworkStakingRewardsStore.class,
-                new StoreEntry(
-                        TokenService.NAME,
-                        (states, config, metrics) -> new WritableNetworkStakingRewardsStore(states)));
-        newMap.put(
-                WritableStakingInfoStore.class,
-                new StoreEntry(TokenService.NAME, (states, config, metrics) -> new WritableStakingInfoStore(states)));
+                new StoreEntry(TokenService.NAME, WritableNetworkStakingRewardsStore::new));
+        newMap.put(WritableStakingInfoStore.class, new StoreEntry(TokenService.NAME, WritableStakingInfoStore::new));
         // FreezeService
-        newMap.put(
-                WritableFreezeStore.class,
-                new StoreEntry(FreezeService.NAME, (states, config, metrics) -> new WritableFreezeStore(states)));
+        newMap.put(WritableFreezeStore.class, new StoreEntry(FreezeService.NAME, WritableFreezeStore::new));
         // FileService
-        newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
         newMap.put(
-                WritableUpgradeFileStore.class,
-                new StoreEntry(FileService.NAME, (states, config, metrics) -> new WritableUpgradeFileStore(states)));
+                WritableFileStore.class, new StoreEntry(FileService.NAME, states2 -> new WritableFileStore(states2)));
+        newMap.put(WritableUpgradeFileStore.class, new StoreEntry(FileService.NAME, WritableUpgradeFileStore::new));
         // ContractService
         newMap.put(
                 WritableContractStateStore.class,
-                new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
+                new StoreEntry(ContractService.NAME, states1 -> new WritableContractStateStore(states1)));
         // EntityIdService
         newMap.put(
-                WritableEntityIdStoreImpl.class,
-                new StoreEntry(
-                        EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStoreImpl(states)));
+                WritableEntityIdStoreImpl.class, new StoreEntry(EntityIdService.NAME, WritableEntityIdStoreImpl::new));
         // Schedule Service
-        newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
-        // Roster Service
         newMap.put(
-                WritableRosterStore.class,
-                new StoreEntry(RosterService.NAME, (states, config, metrics) -> new WritableRosterStore(states)));
+                WritableScheduleStore.class,
+                new StoreEntry(ScheduleService.NAME, states1 -> new WritableScheduleStoreImpl(states1)));
+        // Roster Service
+        newMap.put(WritableRosterStore.class, new StoreEntry(RosterService.NAME, WritableRosterStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 
     private final String serviceName;
     private final WritableStates states;
-    private final Configuration configuration;
-    private final StoreMetricsService storeMetricsService;
 
     /**
      * Constructor of {@code WritableStoreFactory}
      *
-     * @param state the {@link State} to use
+     * @param state       the {@link State} to use
      * @param serviceName the name of the service to create stores for
-     * @param configuration the configuration to use for the created stores
-     * @param storeMetricsService Service that provides utilization metrics.
      * @throws NullPointerException     if one of the arguments is {@code null}
      * @throws IllegalArgumentException if the service name is unknown
      */
-    public WritableStoreFactory(
-            @NonNull final State state,
-            @NonNull final String serviceName,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+    public WritableStoreFactory(@NonNull final State state, @NonNull final String serviceName) {
         requireNonNull(state);
         this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
-        this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
-        this.storeMetricsService =
-                requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
         this.states = state.getWritableStates(serviceName);
     }
 
@@ -155,7 +142,7 @@ public class WritableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
-            final var store = entry.factory().create(states, configuration, storeMetricsService);
+            final var store = entry.factory().create(states);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
@@ -175,10 +162,7 @@ public class WritableStoreFactory {
     }
 
     private interface StoreFactory {
-        Object create(
-                @NonNull WritableStates states,
-                @NonNull Configuration configuration,
-                @NonNull StoreMetricsService storeMetricsService);
+        Object create(@NonNull WritableStates states);
     }
 
     private record StoreEntry(@NonNull String name, @NonNull StoreFactory factory) {}

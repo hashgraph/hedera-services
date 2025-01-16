@@ -26,11 +26,7 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,19 +48,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * Create a new {@link WritableAccountStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableAccountStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+    public WritableAccountStore(@NonNull final WritableStates states) {
         super(states);
-
-        final long maxCapacity =
-                configuration.getConfigData(AccountsConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.ACCOUNT, maxCapacity);
-        accountState().setMetrics(storeMetrics);
     }
 
     @Override

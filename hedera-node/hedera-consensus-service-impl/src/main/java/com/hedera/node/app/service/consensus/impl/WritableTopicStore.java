@@ -20,10 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.config.data.TopicsConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,18 +37,9 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
      * Create a new {@link WritableTopicStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableTopicStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+    public WritableTopicStore(@NonNull final WritableStates states) {
         super(states);
-
-        final long maxCapacity = configuration.getConfigData(TopicsConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.TOPIC, maxCapacity);
-        topicState().setMetrics(storeMetrics);
     }
 
     @Override

@@ -250,15 +250,14 @@ public class ChildDispatchFactory {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack);
-        final var writableStoreFactory = new WritableStoreFactory(
-                childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
+        final var writableStoreFactory =
+                new WritableStoreFactory(childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()));
         final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
         final var entityNumGenerator = new EntityNumGeneratorImpl(
-                new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStoreImpl.class));
+                new WritableStoreFactory(childStack, EntityIdService.NAME).getStore(WritableEntityIdStoreImpl.class));
         final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(

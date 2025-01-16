@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,17 +46,15 @@ class WritableTopicStoreTest extends ConsensusTestBase {
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(
-                NullPointerException.class, () -> new WritableTopicStore(null, CONFIGURATION, storeMetricsService));
-        assertThrows(
-                NullPointerException.class, () -> new WritableTopicStore(writableStates, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, CONFIGURATION, null));
+        assertThrows(NullPointerException.class, () -> new WritableTopicStore(null));
+        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates));
+        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
+        final var store = new WritableTopicStore(writableStates);
         assertNotNull(store);
     }
 

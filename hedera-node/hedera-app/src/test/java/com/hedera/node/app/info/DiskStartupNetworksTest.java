@@ -297,7 +297,9 @@ class DiskStartupNetworksTest {
                 DEFAULT_CONFIG,
                 FAKE_NETWORK_INFO,
                 NO_OP_METRICS,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         addRosterInfo(state, network);
         addAddressBookInfo(state, network);
         return state;

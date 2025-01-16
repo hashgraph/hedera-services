@@ -149,7 +149,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 new FakeServiceMigrator(),
                 this::now,
                 DiskStartupNetworks::new,
-                () -> this.blockHashSigner = new LapsingBlockHashSigner());
+                () -> this.blockHashSigner = new LapsingBlockHashSigner(),
+                new StoreMetricsServiceImpl(metrics));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
