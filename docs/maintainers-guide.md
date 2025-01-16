@@ -44,6 +44,8 @@ Use the following tutorials to set up a GPG key.
 
 ## Development Model
 
+:warning: This section is out of date and will be updated soon:tm:
+
 The Git Source Code Management(SCM) system treats branches as one of the fundamental constructs for
 supporting concurrent development and assisting with merge conflict resolution. Due to the
 fundamental nature and flexibility offered by Git branches, it is critical to have a consistent
