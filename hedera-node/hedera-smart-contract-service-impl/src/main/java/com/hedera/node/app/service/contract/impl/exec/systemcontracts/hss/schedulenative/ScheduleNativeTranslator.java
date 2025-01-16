@@ -36,6 +36,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Category;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
@@ -49,8 +50,9 @@ import org.apache.tuweni.bytes.Bytes;
 @Singleton
 public class ScheduleNativeTranslator extends AbstractCallTranslator<HssCallAttempt> {
 
-    public static final SystemContractMethod SCHEDULED_NATIVE_CALL =
-            SystemContractMethod.declare("scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS);
+    public static final SystemContractMethod SCHEDULED_NATIVE_CALL = SystemContractMethod.declare(
+                    "scheduleNative(address,bytes,address)", ReturnTypes.RESPONSE_CODE_ADDRESS)
+            .withCategories(Category.SCHEDULE);
     private static final int SCHEDULE_CONTRACT_ADDRESS = 0;
     private static final int SCHEDULE_CALL_DATA = 1;
     private static final int SCHEDULE_PAYER = 2;

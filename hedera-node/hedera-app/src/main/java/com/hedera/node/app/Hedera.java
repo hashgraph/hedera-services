@@ -41,7 +41,6 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -93,12 +92,10 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.services.ServicesRegistry.Registration;
 import com.hedera.node.app.signature.AppSignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
@@ -169,7 +166,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -378,6 +374,8 @@ public final class Hedera
     @Nullable
     private StartupNetworks startupNetworks;
 
+    private boolean onceOnlyServiceInitializationPostDaggerHasHappened = false;
+
     @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
@@ -483,7 +481,7 @@ public final class Hedera
                         ThrottleAccumulator::new));
         hintsService = hintsServiceFactory.apply(appContext);
         historyService = historyServiceFactory.apply(appContext);
-        contractServiceImpl = new ContractServiceImpl(appContext);
+        contractServiceImpl = new ContractServiceImpl(appContext, metrics);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
@@ -679,17 +677,11 @@ public final class Hedera
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
 
-        // Tell each service it can do its final initialization (if needed) before the system starts
-        // processing transactions.
-        // N.B.: Careful what's done at this point.  Must lead to deterministic state and deterministic
-        // record/block streams.
-        if (trigger == RESTART) {
-            servicesRegistry.registrations().stream()
-                    .map(Registration::service)
-                    .filter(RpcService.class::isInstance)
-                    .map(RpcService.class::cast)
-                    .sorted(Comparator.comparing(o -> o.getClass().getSimpleName()))
-                    .forEach(RpcService::onStateInitializedForGenesis);
+        // Perform any service initialization that has to be postponed until Dagger is available
+        // (simple boolean is usable since we're still single-threaded when `onStateInitialized` is called)
+        if (!onceOnlyServiceInitializationPostDaggerHasHappened) {
+            contractServiceImpl.createMetrics();
+            onceOnlyServiceInitializationPostDaggerHasHappened = true;
         }
     }
 

@@ -35,7 +35,6 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ContractMetricsTest {
 
-    private final Supplier<Metrics> metricsSupplier = () -> fakeMetrics();
+    private final Metrics metrics = fakeMetrics();
 
     @Mock
     private ContractsConfig contractsConfig;
@@ -53,8 +52,7 @@ public class ContractMetricsTest {
     private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
 
     public @NonNull ContractMetrics getSubject() {
-        final var contractMetrics =
-                new ContractMetrics(metricsSupplier, () -> contractsConfig, systemContractMethodRegistry);
+        final var contractMetrics = new ContractMetrics(metrics, () -> contractsConfig, systemContractMethodRegistry);
         contractMetrics.createContractPrimaryMetrics();
         contractMetrics.createContractSecondaryMetrics();
         return contractMetrics;

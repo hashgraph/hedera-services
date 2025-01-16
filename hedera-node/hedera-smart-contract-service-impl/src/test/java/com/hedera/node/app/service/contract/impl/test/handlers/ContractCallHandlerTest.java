@@ -97,7 +97,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
 
     private final Metrics metrics = new NoOpMetrics();
     private final ContractMetrics contractMetrics =
-            new ContractMetrics(() -> metrics, () -> contractsConfig, systemContractMethodRegistry);
+            new ContractMetrics(metrics, () -> contractsConfig, systemContractMethodRegistry);
 
     private ContractCallHandler subject;
 

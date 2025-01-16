@@ -170,7 +170,7 @@ class EthereumTransactionHandlerTest {
 
     private final Metrics metrics = new NoOpMetrics();
     private final ContractMetrics contractMetrics =
-            new ContractMetrics(() -> metrics, () -> contractsConfig, systemContractMethodRegistry);
+            new ContractMetrics(metrics, () -> contractsConfig, systemContractMethodRegistry);
 
     @BeforeEach
     void setUp() {

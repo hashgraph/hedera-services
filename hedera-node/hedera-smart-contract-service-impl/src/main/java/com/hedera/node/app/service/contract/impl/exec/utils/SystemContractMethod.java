@@ -348,17 +348,17 @@ public record SystemContractMethod(
         return methodName;
     }
 
-    private @NonNull String variantsSuffix() {
+    public @NonNull String variantsSuffix() {
         if (variants.isEmpty()) return "";
         return variants.stream().map(Variant::asSuffix).sorted().collect(Collectors.joining("_", "_", ""));
     }
 
-    private @NonNull String categoriesSuffix() {
+    public @NonNull String categoriesSuffix() {
         if (categories.isEmpty()) return "";
         return categories.stream().map(Category::asSuffix).sorted().collect(Collectors.joining(",", "_[", "]"));
     }
 
-    private @NonNull String modifiersSuffix() {
+    public @NonNull String modifiersSuffix() {
         if (modifier.isEmpty()) return "";
         return "_[" + modifier.get().asSuffix() + "]";
     }

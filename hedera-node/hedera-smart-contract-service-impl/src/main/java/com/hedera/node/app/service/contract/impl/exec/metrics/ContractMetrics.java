@@ -59,7 +59,7 @@ public class ContractMetrics {
 
     private static final Logger log = LogManager.getLogger(ContractMetrics.class);
 
-    private final Supplier<Metrics> metricsSupplier;
+    private final Metrics metrics;
     private final Supplier<ContractsConfig> contractsConfigSupplier;
     private boolean p1MetricsEnabled;
     private boolean p2MetricsEnabled;
@@ -143,11 +143,10 @@ public class ContractMetrics {
 
     @Inject
     public ContractMetrics(
-            @NonNull final Supplier<Metrics> metricsSupplier,
+            @NonNull final Metrics metrics,
             @NonNull final Supplier<ContractsConfig> contractsConfigSupplier,
             @NonNull final SystemContractMethodRegistry systemContractMethodRegistry) {
-        this.metricsSupplier = requireNonNull(
-                metricsSupplier, "metrics supplier (from platform via ServicesMain/Hedera must not be null");
+        this.metrics = requireNonNull(metrics, "metrics (from platform via ServicesMain/Hedera must not be null");
         this.contractsConfigSupplier =
                 requireNonNull(contractsConfigSupplier, "contracts configuration supplier must not be null");
         this.systemContractMethodRegistry =
@@ -167,7 +166,6 @@ public class ContractMetrics {
         this.p1MetricsEnabled = contractsConfig.metricsSmartContractPrimaryEnabled();
 
         if (p1MetricsEnabled) {
-            final var metrics = requireNonNull(metricsSupplier.get());
 
             // Rejected transactions counters
             for (final var txKind : POSSIBLE_FAILING_TX_TYPES.keySet()) {
@@ -214,7 +212,7 @@ public class ContractMetrics {
         final var config = new Counter.Config(METRIC_CATEGORY, metricName)
                 .withDescription(descr)
                 .withUnit(METRIC_TXN_UNIT);
-        return newCounter(metricsSupplier.get(), config);
+        return newCounter(metrics, config);
     }
 
     private @NonNull Counter[] makeCounterPair(@NonNull final String name, @NonNull final String clarification) {
@@ -239,7 +237,6 @@ public class ContractMetrics {
         this.p2MetricsEnabled = contractsConfig.metricsSmartContractSecondaryEnabled();
 
         if (p2MetricsEnabled) {
-            final var metrics = requireNonNull(metricsSupplier.get());
 
             // P2 metrics come in pairs:  a total count of something, and the error count for that same thing
 
@@ -253,6 +250,7 @@ public class ContractMetrics {
             }
 
             // By via: DIRECT vs PROXY
+
             for (final var callVia : SystemContractMethod.CallVia.values()) {
                 systemContractMethodCountersVia.put(callVia, makeCounterPair(callVia.name(), ""));
             }
@@ -442,10 +440,15 @@ public class ContractMetrics {
 
     @VisibleForTesting
     public @NonNull String allCountersToString() {
+        return '{' + allCountersAsTable().replace("\n", ", ") + '}';
+    }
+
+    @VisibleForTesting
+    public @NonNull String allCountersAsTable() {
         return getAllCounterValues().entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(e -> e.getKey() + ": " + e.getValue())
-                .collect(Collectors.joining(", ", "{", "}"));
+                .collect(Collectors.joining("\n"));
     }
 
     // ---------------------------------

@@ -122,8 +122,15 @@ public class SystemContractMethodRegistry {
                 .toList();
         final var sb = new StringBuilder();
         for (final var method : allMethods) {
-            sb.append("%s: 0x%s - %s\n"
-                    .formatted(method.qualifiedMethodName(), method.selectorHex(), method.signatureWithReturn()));
+            var categoriesSuffix = method.categoriesSuffix();
+            if (categoriesSuffix.isEmpty()) categoriesSuffix = "No Category";
+            else categoriesSuffix = categoriesSuffix.substring(1);
+            sb.append("%s: 0x%s - %s - %s\n"
+                    .formatted(
+                            method.qualifiedMethodName(),
+                            method.selectorHex(),
+                            method.signatureWithReturn(),
+                            categoriesSuffix));
         }
         return sb.toString();
     }
