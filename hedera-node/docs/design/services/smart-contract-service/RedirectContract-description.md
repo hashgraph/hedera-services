@@ -12,7 +12,7 @@ as if you made a contract call with the corresponding target address as the targ
 There is one redirect contract which is parameterized as a _template_ with the addresses of the
 HTS, HAS, and HSS system contracts, and with the correct "redirect" method selector.
 
-When a call is made to a token, an account, or a scheduled transaction, the redirect template is
+When a call is made to a token, an account, or a schedule, the redirect template is
 instantiated with the correct system contract address and selector, and then executed.  It wraps
 the calldata (provided by the calling contract or transaction) and delegate-calls the actual
 system contract, passing back whatever the return status and value is.
