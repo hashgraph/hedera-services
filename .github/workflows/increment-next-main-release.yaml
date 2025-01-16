@@ -114,3 +114,9 @@ jobs:
           author_email: ${{ secrets.SVCS_GIT_USER_EMAIL }}
           commit: --signoff
           message: "chore: Minor Version Roll"
+
+      - name: Push Changes to Main
+        run: |
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
