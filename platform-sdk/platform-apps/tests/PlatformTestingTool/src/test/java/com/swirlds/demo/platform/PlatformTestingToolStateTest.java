@@ -54,7 +54,6 @@ import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.impl.DefaultCounter;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -462,7 +461,7 @@ class PlatformTestingToolStateTest {
         when(state.getFcmFamily()).thenReturn(fcmFamily);
 
         final Metric metric = mock(SpeedometerMetric.class);
-        final Counter counter = mock(DefaultCounter.class);
+        final Counter counter = mock(Counter.class);
         final RunningAverageMetric runningAverageMetric = mock(RunningAverageMetric.class);
 
         final DefaultPlatformMetrics metrics = mock(DefaultPlatformMetrics.class);
