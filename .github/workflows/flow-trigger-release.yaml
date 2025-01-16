@@ -22,6 +22,11 @@ on:
         description: "Build Number (ex: 43 = build_00043)"
         type: string
         required: true
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
 
 defaults:
   run:
@@ -103,15 +108,16 @@ jobs:
             @commitlint/cli@19.5.0 @commitlint/config-conventional@19.5.0 \
             marked-mangle@1.1.10 marked-gfm-heading-id@4.1.1 semantic-release-conventional-commits@3.0.0
 
-      - name: Configure Git for Semantic Release
-        run: |
-          git config user.name "${{ secrets.SVCS_GIT_USER_NAME }}"
-          git config user.email "${{ secrets.SVCS_GIT_USER_EMAIL }}"
-
-      - name: Run Semantic Release
+      - name: Publish Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          GIT_AUTHOR_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_AUTHOR_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+          GIT_COMMITTER_NAME: ${{ secrets.GIT_USER_NAME }}
+          GIT_COMMITTER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
         run: |
-          echo "Running semantic-release now"
-          npx semantic-release
-          echo "Completed semantic-release"
+          ARGS=""
+          if [[ "${{ github.event.inputs.dry-run-enabled }}" == true ]]; then
+            ARGS="--dry-run"
+          fi
+          npx semantic-release ${ARGS}
