@@ -100,11 +100,13 @@ The DevOps-CI team will handle the following:
 
 ### Github CI Workflow Naming Conventions
 
-- node-* and platform-* prefix is a legacy carryover because node repo and platform repo were merged together.
-- flow-* is a standalone workflow that can be executed by a user (should have a workflow-dispatch trigger). It can also be a PR target. Anything the user interacts with starts with flow.
-- z* was to force everything to sort to the bottom of the view in the Actions tab of github. We can now pin these.
-- xf means a workflow that can be trigger by other means (workflow_run or workflow_dispatch) but are not user facing.
-- xcron is a cron job kickoff script.
+- `node-*` and `platform-*` prefix is a legacy carryover because node repo and platform repo were merged together.
+- `flow-*` is a standalone workflow that can be executed by a user (should have a workflow-dispatch trigger). It can also be a PR target. Anything the user interacts with starts with flow.
+- `z` is used to force everything to sort to the bottom of the view in the Actions tab of github. We can now pin these.
+- `x` means a workflow is not user facing.
+- `f` means the workflow can be triggered directly by other workflows (or by users). Ex: `workflow_dispatch`.
+- `c` means the file contains a reusable workflow, called a workflow component, triggered by `workflow_call`. 
+- `cron` indicates a workflow has a time-based trigger.
 
 ### User Stories
 
