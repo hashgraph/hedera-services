@@ -271,8 +271,8 @@ class EthTxDataTest {
     }
 
     @Test
-    // EIP-155 adds chainId in order to prevent replay attacks. This test checks if the encoding works without the
-    // chainId
+        // EIP-155 adds chainId in order to prevent replay attacks. This test checks if the encoding works without the
+        // chainId
     void roundTrip155UnprotectedTx() {
         final var expected = Hex.decode(EIP155_UNPROTECTED);
         final var tx155 = EthTxData.populateEthTxData(expected);
@@ -398,6 +398,7 @@ class EthTxDataTest {
                 BigInteger.ONE,
                 oneByte,
                 oneByte,
+                null,
                 1,
                 oneByte,
                 oneByte,
@@ -418,6 +419,7 @@ class EthTxDataTest {
                 BigInteger.ONE,
                 oneByte,
                 oneByte,
+                null,
                 1,
                 oneByte,
                 oneByte,
@@ -481,6 +483,7 @@ class EthTxDataTest {
                 oneByte,
                 WEIBARS_IN_A_TINYBAR,
                 oneByte,
+                null,
                 null,
                 1,
                 oneByte,
@@ -548,6 +551,7 @@ class EthTxDataTest {
                         BigInteger.ONE,
                         oneByte,
                         oneByte,
+                        null,
                         1,
                         oneByte,
                         oneByte,
@@ -577,6 +581,7 @@ class EthTxDataTest {
                 BigInteger.ONE,
                 oneByte,
                 oneByte,
+                null,
                 1,
                 oneByte,
                 oneByte,
@@ -596,7 +601,7 @@ class EthTxDataTest {
 
         final var oneByte = new byte[] {1};
         final EthTxData ethTxData = new EthTxData(
-                oneByte, type, oneByte, 1, oneByte, oneByte, oneByte, 1, oneByte, bigValue, oneByte, null, 1, oneByte,
+                oneByte, type, oneByte, 1, oneByte, oneByte, oneByte, 1, oneByte, bigValue, oneByte, null, null,1, oneByte,
                 oneByte, oneByte);
         final var encoded = ethTxData.encodeTx();
 
