@@ -252,7 +252,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.TokenCreate,
+                        ConsensusCreateTopic,
                         txnSubType,
                         ConsensusServiceFeeBuilder::getConsensusCreateTopicFee,
                         txn,
