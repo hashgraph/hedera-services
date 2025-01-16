@@ -303,6 +303,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     private final AtomicBoolean merged = new AtomicBoolean(false);
 
+    /**
+     * Indicates whether this copy has been compacted, i.e. {@link #garbageCollectIfNeeded()} has been
+     * called.
+     */
+    private final AtomicBoolean compacted = new AtomicBoolean(false);
+
     private final AtomicBoolean detached = new AtomicBoolean(false);
 
     /**
@@ -1152,6 +1158,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             return true;
         }
         // Otherwise check its size and compare against flush threshold
+        return estimatedSizeExceedsFlushThreshold();
+    }
+
+    private boolean estimatedSizeExceedsFlushThreshold() {
         final long threshold = flushThreshold.get();
         return (threshold > 0) && (estimatedSize() >= threshold);
     }
@@ -1195,7 +1205,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public boolean flush() {
+    public void flush() {
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be flushed");
         }
@@ -1206,25 +1216,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throw new IllegalStateException("a merged copy can not be flushed");
         }
 
-        // Prepare the cache for flush. It may affect cache's estimated size
         cache.prepareForFlush();
-        if (shouldBeFlushed()) {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
-            final long start = System.currentTimeMillis();
-            flush(cache, state, dataSource);
-            cache.release();
-            final long end = System.currentTimeMillis();
-            flushed.set(true);
-            flushLatch.countDown();
-            statistics.recordFlush(end - start);
-            logger.debug(
-                    VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {} in {} ms", cache.getFastCopyVersion(), end - start);
-            return true;
-        } else {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
-            cache.garbageCollect();
-            return false;
-        }
+        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush {} v{}", state.getLabel(), cache.getFastCopyVersion());
+        final long start = System.currentTimeMillis();
+        flush(cache, state, dataSource);
+        cache.release();
+        final long end = System.currentTimeMillis();
+        flushed.set(true);
+        flushLatch.countDown();
+        statistics.recordFlush(end - start);
+        logger.debug(
+                VIRTUAL_MERKLE_STATS.getMarker(),
+                "Flushed {} v{} in {} ms",
+                state.getLabel(),
+                cache.getFastCopyVersion(),
+                end - start);
     }
 
     private void flush(VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource ds) {
@@ -1271,6 +1277,35 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         + DigestType.SHA_384.digestLength()); // hash
 
         return estimatedInternalsSize + estimatedLeavesSize;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void garbageCollectIfNeeded() {
+        if (!compacted.compareAndSet(false, true)) {
+            // Already compacted
+            return;
+        }
+        if (!isImmutable()) {
+            throw new IllegalStateException("mutable copies can not be compacted");
+        }
+        if (flushed.get() || merged.get()) {
+            throw new IllegalStateException("This virtual root has already been flushed or merged");
+        }
+        // If estimated size below the threshold, no compaction is needed
+        if (estimatedSizeExceedsFlushThreshold()) {
+            // Prepare the cache for flush. It may affect cache's estimated size
+            cache.prepareForFlush();
+            if (!estimatedSizeExceedsFlushThreshold()) {
+                logger.debug(
+                        VIRTUAL_MERKLE_STATS.getMarker(), "GC {} v{}", state.getLabel(), cache.getFastCopyVersion());
+                cache.garbageCollect();
+            } else {
+                // this copy will be eventually flushed to disk
+            }
+        }
     }
 
     // Serialization implementation

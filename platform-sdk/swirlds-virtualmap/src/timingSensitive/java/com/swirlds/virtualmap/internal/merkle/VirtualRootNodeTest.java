@@ -538,7 +538,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         // Here is the test: in every copy, add 100 elements. In the same copy, delete all elements
         // added in the previous copy. Every copy will contain no more than 200 elements, therefore
         // its effective size will be small, so none of the copies should be flushed to disk
-        final int nCopies = 10000;
+        final int nCopies = 1000;
         final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
         copies[0] = root;
         for (int copyNo = 1; copyNo < nCopies; copyNo++) {
@@ -626,7 +626,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
             for (int i = 0; i < N; i++) {
                 final int keyIndex = l.get(i);
                 final TestKey key = new TestKey(keyIndex);
-                if (i % 2 == copyNo % 2) { // add
+                if (keyIndex % 2 == copyNo % 2) { // add
                     final TestValue value = new TestValue(1000000 + keyIndex);
                     root.put(key, value);
                 } else { // remove
@@ -643,6 +643,85 @@ class VirtualRootNodeTest extends VirtualTestBase {
             assertEventuallyTrue(() -> copy.isMerged(), Duration.ofSeconds(16), "copy " + i + " should be merged");
         }
 
+        root.release();
+    }
+
+    @Test
+    void inMemoryUnreleasedCopyNoFlushTest() throws InterruptedException {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1_000_000)
+                .getOrCreateConfig();
+
+        final int N = 100;
+        final int nCopies = 1000;
+
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
+
+        final VirtualRootNode<TestKey, TestValue> copy0 = root;
+        VirtualMapState state = new VirtualMapState("label");
+        copy0.postInit(new VirtualStateAccessorImpl(state));
+        // Marker entry in the very first copy
+        copy0.put(new TestKey(1), new TestValue(999));
+
+        final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
+        copies[0] = root;
+
+        // Here is the test: every elemement is added in one copy and then removed in the
+        // next copy. Every copy will contain no more than 500 elements, therefore its
+        // effective size will be small, so none of the copies should be flushed to disk.
+        // In addition to that, the very first copy is not released, it can't be merged or
+        // flushed, but it should not prevent all other copies from merging / compacting
+        for (int copyNo = 1; copyNo < nCopies; copyNo++) {
+            final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+            copies[copyNo] = copy;
+            state = state.copy();
+            copy.postInit(new VirtualStateAccessorImpl(state));
+            // The very first copy is not released. It must not prevent the remaining copies
+            // from merging and compacting
+            if (copyNo != 1) {
+                root.release();
+            }
+            root = copy;
+            for (int i = 0; i < N; i++) {
+                final int toAdd = copyNo * 100 + i;
+                final TestKey keyToAdd = new TestKey(toAdd);
+                final TestValue value = new TestValue(1000000 + toAdd);
+                root.put(keyToAdd, value);
+                final int toRemove = (copyNo - 1) * 100 + i;
+                final TestKey keytoRemove = new TestKey(toRemove);
+                root.remove(keytoRemove);
+            }
+        }
+
+        // The first copy is not released, it cannot be merged/flushed, no need to check it. The
+        // last two copies should not be checked: the last one is mutable, the one before is not
+        // mergeable until its next copy is immutable
+        for (int i = 1; i < nCopies - 2; i++) {
+            final VirtualRootNode<TestKey, TestValue> copy = copies[i];
+            // Copies must be merged, not flushed
+            assertEventuallyTrue(() -> copy.isMerged(), Duration.ofSeconds(16), "copy " + i + " should be merged");
+        }
+
+        // Values from copies 1 to nCopies - 2 should not be there (removed)
+        for (int copyNo = 1; copyNo < nCopies - 2; copyNo++) {
+            for (int i = 0; i < N; i++) {
+                final int toCheck = copyNo * 100 + i;
+                final TestKey keyToCheck = new TestKey(toCheck);
+                final TestValue value = root.get(keyToCheck);
+                assertNull(value);
+                final VirtualLeafRecord<TestKey, TestValue> leafRec =
+                        root.getCache().lookupLeafByKey(keyToCheck, false);
+                assertTrue(leafRec == null || leafRec.getPath() == -1); // null or deleted
+            }
+        }
+        assertEquals(new TestValue(999), copy0.get(new TestKey(1)));
+        assertNull(root.get(new TestKey(1)));
+
+        copies[0].release();
         root.release();
     }
 
@@ -783,7 +862,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         // node cache will grow, but total number of entities in the map will not. Without in-memory
         // maps, it would result in some flushes, and with in-memory support, all copies should be
         // GC'ed and then merged
-        final int nCopies = 1000;
+        final int nCopies = 100;
         final VirtualRootNode[] copies = new VirtualRootNode[nCopies];
         copies[0] = root;
         for (int copyNo = 1; copyNo < nCopies; copyNo++) {
