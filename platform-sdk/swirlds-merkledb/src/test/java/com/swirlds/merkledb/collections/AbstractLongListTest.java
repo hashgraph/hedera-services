@@ -122,7 +122,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(1)
-    void createData() {
+    void testCreateData() {
         longList = createLongList();
         final long capacity = longList.capacity();
 
@@ -167,7 +167,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(2)
-    void checkData() {
+    void testCheckData() {
         for (int i = 0; i < SAMPLE_SIZE; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(
@@ -193,7 +193,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(3)
-    void offEndExpand() {
+    void testOffEndExpand() {
         longList.updateValidRange(0, OUT_OF_SAMPLE_INDEX);
         longList.put(OUT_OF_SAMPLE_INDEX, OUT_OF_SAMPLE_INDEX);
         assertEquals(
@@ -204,7 +204,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(4)
-    void putIfEqual() {
+    void testPutIfEqual() {
         longList.put(OUT_OF_SAMPLE_INDEX, OUT_OF_SAMPLE_INDEX);
 
         longList.putIfEqual(OUT_OF_SAMPLE_INDEX, DEFAULT_VALUE, REPL_VALUE);
@@ -228,7 +228,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @Test
     @Order(5)
-    void close() {
+    void testClose() {
         if (longList != null) {
             longList.close();
         }
@@ -238,7 +238,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @SuppressWarnings("resource")
     @Test
-    void constructorValidatesArgs() {
+    void testConstructorValidatesArgs() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> createFullyParameterizedLongListWith(1, -1),
@@ -258,7 +258,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void chunkSizeFactoryWorks() {
+    void testChunkSizeFactoryWorks() {
         final int expectedNum = Math.toIntExact(2 * MEBIBYTES_TO_BYTES / Long.BYTES);
 
         try (final AbstractLongList<?> longList = createLongListWithChunkSizeInMb(2)) {
@@ -270,7 +270,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void insertAtTheEndOfTheList() {
+    void testInsertAtTheEndOfTheList() {
         try (final LongList longList = createLongList()) {
             longList.updateValidRange(0, DEFAULT_MAX_LONGS_TO_STORE - 1);
             assertDoesNotThrow(() -> longList.put(DEFAULT_MAX_LONGS_TO_STORE - 1, 1));
@@ -278,7 +278,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void insertAtTheEndOfTheListCustomConfigured() {
+    void testInsertAtTheEndOfTheListCustomConfigured() {
         final int MAX_LONGS = 10;
         try (final LongList longList = createFullyParameterizedLongListWith(10, MAX_LONGS)) {
             longList.updateValidRange(0, MAX_LONGS - 1);
@@ -287,7 +287,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void unsupportedVersion() throws URISyntaxException {
+    void testUnsupportedVersion() throws URISyntaxException {
         final Path pathToList = ResourceLoader.getFile("test_data/LongList_unsupported_version.ll");
         assertThrows(IOException.class, () -> {
             //noinspection EmptyTryBlock
@@ -305,7 +305,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
      * @throws IOException if file operations fail.
      */
     @Test
-    void closeAndRecreateLongListMultipleTimes(@TempDir final Path tempDir) throws IOException {
+    void testCloseAndRecreateLongListMultipleTimes(@TempDir final Path tempDir) throws IOException {
         final Path file = tempDir.resolve("testCloseAndRecreateLongListMultipleTimes.ll");
         if (Files.exists(file)) {
             Files.delete(file);
@@ -334,7 +334,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void backwardCompatibilityHalfEmpty_10K() throws URISyntaxException, IOException {
+    void testBackwardCompatibilityHalfEmpty_10K() throws URISyntaxException, IOException {
         // SAMPLE_SIZE should be 10K for this test
         final int SAMPLE_SIZE = 10_000;
         final int HALF_SAMPLE_SIZE = SAMPLE_SIZE / 2;
@@ -355,7 +355,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void reuseOfChunksMinValidIndex() throws IOException {
+    void testReuseOfChunksMinValidIndex() throws IOException {
         // Create a LongList with the specified number of longs per chunk and max longs
         try (final LongList longList = createFullyParameterizedLongListWith(100, SAMPLE_SIZE * 2)) {
             // Populate the list with initial values and validate its contents
@@ -394,7 +394,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void reuseOfChunksMaxValidIndex() throws IOException {
+    void testReuseOfChunksMaxValidIndex() throws IOException {
         // Create a LongList with the specified number of longs per chunk and max longs
         try (final LongList longList = createFullyParameterizedLongListWith(100, SAMPLE_SIZE * 2)) {
             // Populate the list with initial values and validate its contents
@@ -434,7 +434,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] countDivider={0}")
     @ValueSource(ints = {2, 3, 4, 5, 10, 50})
-    void minValidIndexRespectedInForEach_10K(final int countDivider) throws InterruptedException {
+    void testMinValidIndexRespectedInForEach_10K(final int countDivider) throws InterruptedException {
         // SAMPLE_SIZE is set to 10K for this test
         final int SAMPLE_SIZE = 10_000;
 
@@ -473,7 +473,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void spliteratorEdgeCases() {
+    void testSpliteratorEdgeCases() {
         final LongConsumer firstConsumer = mock(LongConsumer.class);
         final LongConsumer secondConsumer = mock(LongConsumer.class);
 
@@ -598,7 +598,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void writeAndReadBackEmptyList(
+    void testWriteAndReadBackEmptyList(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
@@ -623,7 +623,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void writeAndReadBack(
+    void testWriteAndReadBack(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
@@ -664,7 +664,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void writeAndReadBackBigIndex(
+    void testWriteAndReadBackBigIndex(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
@@ -698,7 +698,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void customNumberOfLongs(
+    void testCustomNumberOfLongs(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
@@ -733,7 +733,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void shrinkListMinValidIndex_10K(
+    void testShrinkListMinValidIndex_10K(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
@@ -796,7 +796,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
-    void shrinkListMaxValidIndex_10K(
+    void testShrinkListMaxValidIndex_10K(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             @TempDir final Path tempDir)
@@ -883,7 +883,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, First Reader={1}, Second Reader={2}")
     @MethodSource("longListWriterSecondReaderPairsProvider")
-    void updateListCreatedFromSnapshotPersistAndVerify_10K(
+    void testUpdateListCreatedFromSnapshotPersistAndVerify_10K(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             final LongListReaderFactory secondReaderFactory,
@@ -941,7 +941,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, First Reader={1}, Second Reader={2}")
     @MethodSource("longListWriterSecondReaderPairsProvider")
-    void updateMinToTheLowerEnd_10K(
+    void testUpdateMinToTheLowerEnd_10K(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             final LongListReaderFactory secondReaderFactory,
@@ -1058,7 +1058,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     @ParameterizedTest(
             name = "[{index}] Writer={0}, Reader={1}, startIndex={2}, endIndex={3}, numLongsPerChunk={4}, maxLongs={5}")
     @MethodSource("longListWriterReaderRangePairsProvider")
-    void writeReadRangeElement(
+    void testWriteReadRangeElement(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             final int startIndex,
@@ -1121,7 +1121,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairsProvider")
-    void createHalfEmptyLongListInMemoryReadBack(
+    void testCreateHalfEmptyLongListInMemoryReadBack(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             final int chunkOffset,
@@ -1186,7 +1186,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairs2Provider")
-    void persistListWithNonZeroMinValidIndex_1M(
+    void testPersistListWithNonZeroMinValidIndex_1M(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             final int chunkOffset,
@@ -1234,7 +1234,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}, chunkOffset={2}")
     @MethodSource("longListWriterReaderOffsetPairs2Provider")
-    void persistShrunkList_1M(
+    void testPersistShrunkList_1M(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
             final int chunkOffset,

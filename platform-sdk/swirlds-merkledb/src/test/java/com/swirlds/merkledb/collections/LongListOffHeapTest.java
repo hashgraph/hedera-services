@@ -68,7 +68,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
      * Provides a stream of writer paired with two reader implementations for testing
      * cross-compatibility.
      * <p>
-     * Used for {@link AbstractLongListTest#updateMinToTheLowerEnd_10K}
+     * Used for {@link AbstractLongListTest#testUpdateMinToTheLowerEnd_10K}
      *
      * @return a stream of arguments containing a writer and two readers.
      */
@@ -79,7 +79,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     /**
      * Provides writer-reader pairs combined with range configurations for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#writeReadRangeElement}
+     * Used for {@link AbstractLongListTest#testWriteReadRangeElement}
      *
      * @return a stream of arguments for range-based parameterized tests
      */
@@ -90,7 +90,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     /**
      * Provides writer-reader pairs combined with chunk offset configurations (first set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */
@@ -101,7 +101,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     /**
      * Provides writer-reader pairs combined with chunk offset configurations (second set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#createHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */
