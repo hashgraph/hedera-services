@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
@@ -163,7 +164,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long useNextEntityNumber() {
-        return context.entityNumGenerator().newEntityNum();
+        return context.entityNumGenerator().newEntityNum(EntityType.CONTRACT_BYTECODE);
     }
 
     @Override

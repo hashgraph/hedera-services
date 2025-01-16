@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STAT
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
@@ -39,8 +40,8 @@ class WritableEntityIdStoreTest {
     @Test
     void peeksAndIncrementsAsExpected() {
         assertEquals(1, subject.peekAtNextNumber());
-        assertEquals(1, subject.incrementAndGet());
+        assertEquals(1, subject.incrementAndGet(EntityType.ACCOUNT));
         assertEquals(2, subject.peekAtNextNumber());
-        assertEquals(2, subject.incrementAndGet());
+        assertEquals(2, subject.incrementAndGet(EntityType.ACCOUNT));
     }
 }

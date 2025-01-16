@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -260,7 +261,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -296,7 +297,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
 
         subject.handle(handleContext);
 
