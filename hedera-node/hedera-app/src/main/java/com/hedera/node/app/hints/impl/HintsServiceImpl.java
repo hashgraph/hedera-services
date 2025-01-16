@@ -18,23 +18,35 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Placeholder implementation of the {@link HintsService}.
  */
 public class HintsServiceImpl implements HintsService {
-    public HintsServiceImpl(@NonNull final AppContext appContext) {
-        requireNonNull(appContext);
+    private final HintsServiceComponent component;
+
+    public HintsServiceImpl(
+            @NonNull final Metrics metrics,
+            @NonNull final Executor executor,
+            @NonNull final AppContext appContext,
+            @NonNull final HintsLibrary library) {
+        // Fully qualified for benefit of javadoc
+        this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
+                .create(library, appContext, executor, metrics);
     }
 
     @Override
@@ -51,13 +63,14 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
-    public @NonNull Bytes currentVerificationKeyOrThrow() {
+    public @NonNull Bytes activeVerificationKeyOrThrow() {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
+        registry.register(new V059HintsSchema(component.signingContext()));
     }
 
     @Override
