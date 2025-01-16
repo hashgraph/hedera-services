@@ -105,9 +105,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
         validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         // Do not allow sending HBars to Burn Address
-        if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
-            validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
-        }
+//        if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
+//            validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
+//        }
     }
 
     /**
