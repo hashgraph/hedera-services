@@ -28,8 +28,6 @@ on:
         required: false
         default: false
 
-intentionally broken workflow
-
 defaults:
   run:
     shell: bash
