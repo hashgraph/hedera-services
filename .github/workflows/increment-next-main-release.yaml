@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZXF: Version Roll"
+name: "[Main] Prepare Next Release Version"
 on:
   workflow_dispatch:
 
@@ -29,8 +29,8 @@ permissions:
   issues: write
 
 jobs:
-  perform-version-roll:
-    name: Perform Version Roll
+  next-main-release:
+    name: Prepare Next Release Version
     runs-on: network-node-linux-medium
     steps:
       - name: Harden Runner

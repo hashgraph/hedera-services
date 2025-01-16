@@ -14,15 +14,14 @@
 # limitations under the License.
 ##
 
-name: "ZXF: Trigger Semantic Release"
+name: "[Main] Create New Release"
 on:
   workflow_dispatch:
     inputs:
-      number_input:
+      build_number:
         description: "Build ID of the Tag (example: 43 = build_00043)"
         type: string
         required: true
-        default: ""
 
 defaults:
   run:
@@ -34,8 +33,8 @@ permissions:
   actions: read
 
 jobs:
-  trigger-semantic-release:
-    name: Trigger Semantic Release
+  create-new-release:
+    name: Create New Release
     runs-on: network-node-linux-medium
     steps:
       - name: Harden Runner
