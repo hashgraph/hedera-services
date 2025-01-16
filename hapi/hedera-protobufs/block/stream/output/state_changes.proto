@@ -70,6 +70,7 @@ import "state/tss/tss_encryption_keys.proto";
 import "state/tss/tss_message_map_key.proto";
 import "state/tss/tss_vote_map_key.proto";
 import "state/hints/hints_types.proto";
+import "state/history/history_types.proto";
 
 /**
  * A set of state changes.
@@ -408,17 +409,47 @@ enum StateIdentifier {
     /**
      * A state identifier for the active hinTS construction.
      */
-    STATE_ID_ACTIVE_CONSTRUCTION = 38;
+    STATE_ID_ACTIVE_HINTS_CONSTRUCTION = 38;
 
     /**
      * A state identifier for the next hinTS construction.
      */
-    STATE_ID_NEXT_CONSTRUCTION = 39;
+    STATE_ID_NEXT_HINTS_CONSTRUCTION = 39;
 
     /**
      * A state identifier for hinTS preprocessing output votes.
      */
     STATE_ID_PREPROCESSING_VOTES = 40;
+
+    /**
+     * A state identifier for the ledger id.
+     */
+    STATE_ID_LEDGER_ID = 41;
+
+    /**
+     * A state identifier for history proof key sets.
+     */
+    STATE_ID_PROOF_KEY_SETS = 42;
+
+    /**
+     * A state identifier for the active proof construction.
+     */
+    STATE_ID_ACTIVE_PROOF_CONSTRUCTION = 43;
+
+    /**
+     * A state identifier for the next proof construction.
+     */
+    STATE_ID_NEXT_PROOF_CONSTRUCTION = 44;
+
+    /**
+     * A state identifier for signatures on roster transition histories.
+     */
+    STATE_ID_HISTORY_SIGNATURES = 45;
+
+    /**
+     * A state identifier for votes on history proofs.
+     */
+    STATE_ID_PROOF_VOTES = 46;
 
     /**
      * A state identifier for the round receipts queue.
@@ -634,6 +665,11 @@ message SingletonUpdateChange {
          * A change to a hinTS construction singleton.
          */
         com.hedera.hapi.node.state.hints.HintsConstruction hints_construction_value = 14;
+
+        /**
+         * A change to a hinTS construction singleton.
+         */
+        com.hedera.hapi.node.state.history.HistoryProofConstruction history_proof_construction_value = 15;
     }
 }
 
@@ -798,6 +834,16 @@ message MapChangeKey {
          * A hinTS preprocessing vote id key.
          */
         com.hedera.hapi.node.state.hints.PreprocessingVoteId preprocessing_vote_id_key = 20;
+
+        /**
+         * An unscoped node id key.
+         */
+        com.hedera.hapi.platform.state.NodeId node_id_key = 21;
+
+        /**
+         * A construction-scoped node id key.
+         */
+        com.hedera.hapi.node.state.history.ConstructionNodeId construction_node_id_key = 22;
     }
 }
 

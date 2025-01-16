@@ -65,10 +65,10 @@ public class V059HistorySchema extends Schema {
     private static final long MAX_PROOF_VOTES = MAX_ASSEMBLY_SIGNATURES;
 
     public static final String LEDGER_ID_KEY = "LEDGER_ID";
-    public static final String PROOF_KEYS_KEY = "PROOF_KEYS";
+    public static final String PROOF_KEY_SETS_KEY = "PROOF_KEY_SETS";
     public static final String ACTIVE_CONSTRUCTION_KEY = "ACTIVE_CONSTRUCTION";
     public static final String NEXT_CONSTRUCTION_KEY = "NEXT_CONSTRUCTION";
-    public static final String ASSEMBLY_SIGNATURES_KEY = "ASSEMBLY_SIGNATURES";
+    public static final String HISTORY_SIGNATURES_KEY = "HISTORY_SIGNATURES";
     public static final String PROOF_VOTES_KEY = "PROOF_VOTES";
 
     private final Consumer<HistoryProof> proofConsumer;
@@ -84,9 +84,9 @@ public class V059HistorySchema extends Schema {
                 StateDefinition.singleton(LEDGER_ID_KEY, ProtoBytes.PROTOBUF),
                 StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
                 StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
-                StateDefinition.onDisk(PROOF_KEYS_KEY, NodeId.PROTOBUF, ProofKeySet.PROTOBUF, MAX_PROOF_KEYS),
+                StateDefinition.onDisk(PROOF_KEY_SETS_KEY, NodeId.PROTOBUF, ProofKeySet.PROTOBUF, MAX_PROOF_KEYS),
                 StateDefinition.onDisk(
-                        ASSEMBLY_SIGNATURES_KEY,
+                        HISTORY_SIGNATURES_KEY,
                         ConstructionNodeId.PROTOBUF,
                         RecordedHistorySignature.PROTOBUF,
                         MAX_ASSEMBLY_SIGNATURES),

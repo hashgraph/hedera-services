@@ -17,7 +17,8 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
-import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACTIVE_CONSTRUCTION;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACTIVE_HINTS_CONSTRUCTION;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACTIVE_PROOF_CONSTRUCTION;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ALIASES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_INFO;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
@@ -28,14 +29,19 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ENTIT
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FILES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FREEZE_TIME;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_HINTS_KEY_SETS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_HISTORY_SIGNATURES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_LEDGER_ID;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_MIDNIGHT_RATES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NETWORK_REWARDS;
-import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NEXT_CONSTRUCTION;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NEXT_HINTS_CONSTRUCTION;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NEXT_PROOF_CONSTRUCTION;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PREPROCESSING_VOTES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PROOF_KEY_SETS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PROOF_VOTES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ROSTERS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ROSTER_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_RUNNING_HASHES;
@@ -52,6 +58,10 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOKEN_RELATIONS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TOPICS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TRANSACTION_RECEIPTS_QUEUE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_ENCRYPTION_KEYS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_MESSAGES;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_STATUS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_TSS_VOTES;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_150;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_151;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_UPGRADE_DATA_152;
@@ -194,11 +204,27 @@ public class BlockImplUtils {
                         case "TOKENS" -> STATE_ID_TOKENS.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
+                    case "TssBaseService" -> switch (stateKey) {
+                        case "TSS_MESSAGES" -> STATE_ID_TSS_MESSAGES.protoOrdinal();
+                        case "TSS_VOTES" -> STATE_ID_TSS_VOTES.protoOrdinal();
+                        case "TSS_ENCRYPTION_KEYS" -> STATE_ID_TSS_ENCRYPTION_KEYS.protoOrdinal();
+                        case "TSS_STATUS" -> STATE_ID_TSS_STATUS.protoOrdinal();
+                        default -> UNKNOWN_STATE_ID;
+                    };
                     case "HintsService" -> switch (stateKey) {
                         case "HINTS_KEY_SETS" -> STATE_ID_HINTS_KEY_SETS.protoOrdinal();
-                        case "ACTIVE_CONSTRUCTION" -> STATE_ID_ACTIVE_CONSTRUCTION.protoOrdinal();
-                        case "NEXT_CONSTRUCTION" -> STATE_ID_NEXT_CONSTRUCTION.protoOrdinal();
+                        case "ACTIVE_CONSTRUCTION" -> STATE_ID_ACTIVE_HINTS_CONSTRUCTION.protoOrdinal();
+                        case "NEXT_CONSTRUCTION" -> STATE_ID_NEXT_HINTS_CONSTRUCTION.protoOrdinal();
                         case "PREPROCESSING_VOTES" -> STATE_ID_PREPROCESSING_VOTES.protoOrdinal();
+                        default -> UNKNOWN_STATE_ID;
+                    };
+                    case "HistoryService" -> switch (stateKey) {
+                        case "LEDGER_ID" -> STATE_ID_LEDGER_ID.protoOrdinal();
+                        case "PROOF_KEY_SETS" -> STATE_ID_PROOF_KEY_SETS.protoOrdinal();
+                        case "ACTIVE_CONSTRUCTION" -> STATE_ID_ACTIVE_PROOF_CONSTRUCTION.protoOrdinal();
+                        case "NEXT_CONSTRUCTION" -> STATE_ID_NEXT_PROOF_CONSTRUCTION.protoOrdinal();
+                        case "HISTORY_SIGNATURES" -> STATE_ID_HISTORY_SIGNATURES.protoOrdinal();
+                        case "PROOF_VOTES" -> STATE_ID_PROOF_VOTES.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;
                     };
                     default -> UNKNOWN_STATE_ID;
