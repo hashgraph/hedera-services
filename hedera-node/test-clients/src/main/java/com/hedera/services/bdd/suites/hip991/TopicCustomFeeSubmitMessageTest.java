@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -477,5 +478,26 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                 cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
                         .maxCustomFee(feeLimit)
                         .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
+    }
+
+    @HapiTest
+    @DisplayName("Max custom fee contain duplicate denominations")
+    final Stream<DynamicTest> maxCustomFeeContainsDuplicateDenominations() {
+        final var collector = "collector";
+        final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+        final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
+        final var feeLimit2 = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 10);
+        return hapiTest(flattened(
+                associateFeeTokensAndSubmitter(),
+                cryptoCreate(collector).balance(ONE_HBAR),
+                tokenAssociate(collector, BASE_TOKEN),
+                createTopic(TOPIC).withConsensusCustomFee(fee),
+                submitMessageTo(TOPIC)
+                        // duplicate denominations in maxCustomFee
+                        .maxCustomFee(feeLimit)
+                        .maxCustomFee(feeLimit2)
+                        .message("TEST")
+                        .payingWith(SUBMITTER)
+                        .hasPrecheck(DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST)));
     }
 }
