@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ package com.hedera.node.app.hapi.utils.ethereum;
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.rlp.RLPItem;
+import com.esaulpaugh.headlong.rlp.RLPList;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -43,9 +45,11 @@ public record EthTxData(
         byte[] maxGas,
         long gasLimit,
         byte[] to,
+        byte[] addressZero,
         BigInteger value, // weibar, always positive - note that high-bit might be ON in RLP encoding: still positive
         byte[] callData,
         byte[] accessList,
+        Object[] accessListAsRlp,
         int recId, // "recovery id" part of a v,r,s ECDSA signature - range 0..1
         byte[] v, // actual `v` value, incoming, recovery id (`recId` above) (possibly) encoded with chain id
         byte[] r,
@@ -66,6 +70,9 @@ public record EthTxData(
     // EIP155 note support for v = 27|28 cases in unprotected transaction cases
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
     static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+    static final byte[] ENTITY_NUM_ALIAS_0 = new byte[20];
+    static final String ADDRESS_0_REPLACEMENT = "d1b447296a57ec2ea4add0554f392eaf873f6e8d";
+
 
     // The specific transaction bytes that are used to deploy the Deterministic Deployer contract
     // see -  https://github.com/Arachnid/deterministic-deployment-proxy?tab=readme-ov-file#deployment-transaction
@@ -104,9 +111,11 @@ public record EthTxData(
                 maxGas,
                 gasLimit,
                 to,
+                addressZero,
                 value,
                 newCallData,
                 accessList,
+                null,
                 recId,
                 v,
                 r,
@@ -125,9 +134,11 @@ public record EthTxData(
                 maxGas,
                 gasLimit,
                 to,
+                addressZero,
                 value,
                 callData,
                 accessList,
+                null,
                 recId,
                 v,
                 r,
@@ -146,9 +157,11 @@ public record EthTxData(
                 maxGas,
                 gasLimit,
                 to,
+                addressZero,
                 replacementValue,
                 callData,
                 accessList,
+                null,
                 recId,
                 v,
                 r,
@@ -365,9 +378,11 @@ public record EthTxData(
                 maxGas,
                 gasLimit,
                 newTo,
+                addressZero,
                 value,
                 callData,
                 accessList,
+                null,
                 recId,
                 v,
                 r,
@@ -411,10 +426,12 @@ public record EthTxData(
                 null, // maxPriorityGas
                 null, // maxGas
                 rlpList.get(2).asLong(), // gasLimit
-                rlpList.get(3).data(), // to
+                Arrays.equals(ENTITY_NUM_ALIAS_0, rlpList.get(3).data()) ? CommonUtils.unhex(ADDRESS_0_REPLACEMENT) : rlpList.get(3).data(), // to
+                rlpList.get(3).data(),
                 rlpList.get(4).asBigInt(), // value
                 rlpList.get(5).data(), // callData
                 null, // accessList
+                null,
                 recId,
                 val,
                 rlpList.get(7).data(), // r
@@ -446,10 +463,14 @@ public record EthTxData(
                 rlpList.get(2).data(), // maxPriorityGas
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
-                rlpList.get(5).data(), // to
+                Arrays.equals(ENTITY_NUM_ALIAS_0, rlpList.get(5).data()) ? CommonUtils.unhex(ADDRESS_0_REPLACEMENT) : rlpList.get(5).data(), // to
+                rlpList.get(5).data(),
                 rlpList.get(6).asBigInt(), // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
+                rlpList.get(8) != null && rlpList.get(8).isList()
+                        ? encodeRlpList(rlpList.get(8).asRLPList())
+                        : new Object[0], // accessList as RLPList
                 rlpList.get(9).asByte(), // recId
                 null, // v
                 rlpList.get(10).data(), // r
@@ -481,10 +502,14 @@ public record EthTxData(
                 null, // maxPriorityGas
                 null, // maxGas
                 rlpList.get(3).asLong(), // gasLimit
-                rlpList.get(4).data(), // to
+                Arrays.equals(ENTITY_NUM_ALIAS_0, rlpList.get(4).data()) ? CommonUtils.unhex(ADDRESS_0_REPLACEMENT) : rlpList.get(4).data(), // to
+                rlpList.get(4).data(),
                 rlpList.get(5).asBigInt(), // value
                 rlpList.get(6).data(), // callData
                 rlpList.get(7).data(), // accessList
+                rlpList.get(7).isList()
+                        ? encodeRlpList(rlpList.get(7).asRLPList())
+                        : new Object[0], // accessList encoded as Object
                 rlpList.get(8).asByte(), // recId
                 null, // v
                 rlpList.get(9).data(), // r
@@ -496,5 +521,12 @@ public record EthTxData(
     // (unprotected) ethereum transactions is either 27 or 28
     private static boolean isLegacyUnprotectedEtx(@NonNull BigInteger vBI) {
         return vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_0) == 0 || vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_1) == 0;
+    }
+
+    private static Object[] encodeRlpList(RLPList rlpList) {
+
+        return rlpList.elements().stream()
+                .map(rlpItem -> rlpItem.isList() ? encodeRlpList(rlpItem.asRLPList()) : rlpItem.data())
+                .toArray();
     }
 }

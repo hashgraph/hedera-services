@@ -63,8 +63,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 @Singleton
 public class FrameBuilder {
     private static final int MAX_STACK_SIZE = 1024;
-    private static final String ADDRESS_0_HEX = "0x0000000000000000000000000000000000000000";
-    private static final String ADDRESS_0_REPLACEMENT = "0xd1b447296a57ec2ea4add0554f392eaf873f6e8d";
 
     @Inject
     public FrameBuilder() {
@@ -113,10 +111,10 @@ public class FrameBuilder {
                 .blockHashLookup(context.blocks()::blockHashOf)
                 .contextVariables(contextVariables);
         if (transaction.isCreate()) {
-            return finishedAsCreate(to.toString().equals(ADDRESS_0_HEX) ? Address.fromHexString(ADDRESS_0_REPLACEMENT) : to, builder, transaction);
+            return finishedAsCreate(to, builder, transaction);
         } else {
             return finishedAsCall(
-                    to.toString().equals(ADDRESS_0_HEX) ? Address.fromHexString(ADDRESS_0_REPLACEMENT) : to, worldUpdater, builder, transaction, featureFlags, config.getConfigData(ContractsConfig.class));
+                    to, worldUpdater, builder, transaction, featureFlags, config.getConfigData(ContractsConfig.class));
         }
     }
 

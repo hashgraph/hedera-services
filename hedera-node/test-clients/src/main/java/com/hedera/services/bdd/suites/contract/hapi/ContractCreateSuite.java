@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -935,9 +935,11 @@ public class ContractCreateSuite {
                 BigInteger.ONE.toByteArray(),
                 150_000,
                 new byte[] {1, 2, 3},
+                new byte[] {1, 2, 3},
                 BigInteger.ONE,
                 new byte[] {},
                 new byte[] {},
+                null,
                 0,
                 null,
                 null,

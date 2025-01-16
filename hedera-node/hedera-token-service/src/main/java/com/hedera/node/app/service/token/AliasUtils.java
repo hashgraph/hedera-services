@@ -45,7 +45,6 @@ public final class AliasUtils {
      * and realm are 0, so we just let this byte array be all zeros for now.
      */
     private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[12];
-    private static final byte[] ENTITY_NUM_ALIAS_0 = new byte[20];
     /** All EVM addresses are 20 bytes long, and key-encoded keys are not. */
     private static final int EVM_ADDRESS_SIZE = 20;
     /** All valid ECDSA protobuf encoded keys have this prefix */
@@ -113,7 +112,7 @@ public final class AliasUtils {
      * @return True if the alias is an entity num alias
      */
     public static boolean isEntityNumAlias(final Bytes alias) {
-        return isOfEvmAddressSize(alias) && alias.matchesPrefix(ENTITY_NUM_ALIAS_PREFIX) && !alias.matchesPrefix(ENTITY_NUM_ALIAS_0);
+        return isOfEvmAddressSize(alias) && alias.matchesPrefix(ENTITY_NUM_ALIAS_PREFIX);
     }
 
     /**
