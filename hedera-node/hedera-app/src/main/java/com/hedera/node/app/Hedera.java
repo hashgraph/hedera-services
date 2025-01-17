@@ -570,7 +570,7 @@ public final class Hedera
         this.platformStatus = notification.getNewStatus();
         logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
         final var streamToBlockNodes = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class).streamToBlockNodes();
-        switch (platformStatus) {
+        switch (platformStatus) {R
             case ACTIVE -> {
                 startGrpcServer();
                 if (streamToBlockNodes && isNotEmbedded()) {

@@ -57,7 +57,9 @@ public class BlockNodeConnectionManager {
     private final Map<BlockNodeConfig, BlockNodeConnection> activeConnections;
     private final Map<BlockNodeConfig, Integer> retryAttempts;
     private final Map<BlockNodeConfig, Instant> nextRetryTime;
+    private final Set<BlockNodeConfig> nodesInBackoff;
     private final ScheduledExecutorService scheduler;
+    private int availableConnectionSlots;
 
     /**
      * Creates a new BlockNodeConnectionManager with the given configuration from disk.
@@ -82,7 +84,9 @@ public class BlockNodeConnectionManager {
         this.activeConnections = new ConcurrentHashMap<>();
         this.retryAttempts = new ConcurrentHashMap<>();
         this.nextRetryTime = new ConcurrentHashMap<>();
+        this.nodesInBackoff = ConcurrentHashMap.newKeySet();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
+        this.availableConnectionSlots = maxSimultaneousConnections;
 
         // Sort nodes by priority (lowest number = highest priority)
         allNodes.sort(Comparator.comparingInt(BlockNodeConfig::priority));
@@ -107,41 +111,38 @@ public class BlockNodeConnectionManager {
      * Attempts to establish connections to block nodes based on priority and configuration.
      */
     public void establishConnections() {
-        logger.info("Establishing connections to block nodes...");
-        // Group nodes by priority
-        Map<Integer, List<BlockNodeConfig>> nodesByPriority = allNodes.stream()
-                .collect(Collectors.groupingBy(BlockNodeConfig::priority));
-
-        int remainingSlots = maxSimultaneousConnections;
-
+        logger.info("Establishing connections to block nodes... (Available slots: {})", availableConnectionSlots);
+        
         // First, connect to all preferred nodes
         List<BlockNodeConfig> preferredNodes = allNodes.stream()
                 .filter(BlockNodeConfig::preferred)
+                .filter(node -> !activeConnections.containsKey(node))
+                .filter(node -> !nodesInBackoff.contains(node))
                 .toList();
 
         for (BlockNodeConfig node : preferredNodes) {
-            if (remainingSlots <= 0) break;
-            if (!activeConnections.containsKey(node)) {
-                connectToNode(node);
-                remainingSlots--;
-            }
+            if (availableConnectionSlots <= 0) break;
+            connectToNode(node);
+            availableConnectionSlots--;
         }
 
         // Then connect to other nodes by priority
+        Map<Integer, List<BlockNodeConfig>> nodesByPriority = allNodes.stream()
+                .filter(node -> !node.preferred()) // Skip preferred nodes as they're already handled
+                .filter(node -> !activeConnections.containsKey(node))
+                .filter(node -> !nodesInBackoff.contains(node))
+                .collect(Collectors.groupingBy(BlockNodeConfig::priority));
+
         for (Entry<Integer, List<BlockNodeConfig>> entry : nodesByPriority.entrySet()) {
-            if (remainingSlots <= 0) break;
+            if (availableConnectionSlots <= 0) break;
 
-            List<BlockNodeConfig> nodes = entry.getValue().stream()
-                    .filter(node -> !node.preferred()) // Skip preferred nodes as they're already handled
-                    .filter(node -> !activeConnections.containsKey(node))
-                    .collect(Collectors.toList());
-
-            // Randomly select nodes from this priority level
+            List<BlockNodeConfig> nodes = new ArrayList<>(entry.getValue());
             Collections.shuffle(nodes);
+            
             for (BlockNodeConfig node : nodes) {
-                if (remainingSlots <= 0) break;
+                if (availableConnectionSlots <= 0) break;
                 connectToNode(node);
-                remainingSlots--;
+                availableConnectionSlots--;
             }
         }
     }
@@ -203,6 +204,7 @@ public class BlockNodeConnectionManager {
     private void handleConnectionFailure(BlockNodeConfig node) {
         int attempts = retryAttempts.getOrDefault(node, 0) + 1;
         retryAttempts.put(node, attempts);
+        nodesInBackoff.add(node);
 
         if (attempts <= MAX_RETRY_ATTEMPTS) {
             // Calculate next retry time with exponential backoff
@@ -210,13 +212,22 @@ public class BlockNodeConnectionManager {
             Instant nextRetry = Instant.now().plusMillis(delayMillis);
             nextRetryTime.put(node, nextRetry);
 
-            logger.info("Scheduling retry attempt {} for node {}:{} at {}", 
-                    attempts, node.address(), node.port(), nextRetry);
+            logger.info("Scheduling retry attempt {} for node {}:{} in {} ms", 
+                    attempts, node.address(), node.port(), delayMillis);
+
+            // Schedule the retry attempt
+            scheduler.schedule(() -> {
+                logger.info("Attempting retry {} for node {}:{}", attempts, node.address(), node.port());
+                connectToNode(node);
+            }, delayMillis, TimeUnit.MILLISECONDS);
         } else {
             logger.error("Max retry attempts ({}) reached for node {}:{}. Removing from connection pool.", 
                     MAX_RETRY_ATTEMPTS, node.address(), node.port());
             retryAttempts.remove(node);
             nextRetryTime.remove(node);
+            nodesInBackoff.remove(node);
+            availableConnectionSlots++; // Free up the slot for another node
+            establishConnections(); // Try to establish connection with another node
         }
     }
 
@@ -224,8 +235,14 @@ public class BlockNodeConnectionManager {
         BlockNodeConnection connection = activeConnections.remove(node);
         if (connection != null) {
             connection.close();
+            availableConnectionSlots++;
             logger.info("Disconnected from block node {}:{}", node.address(), node.port());
         }
+        
+        // Also clean up any retry state
+        retryAttempts.remove(node);
+        nextRetryTime.remove(node);
+        nodesInBackoff.remove(node);
     }
 
     public void shutdown() {
