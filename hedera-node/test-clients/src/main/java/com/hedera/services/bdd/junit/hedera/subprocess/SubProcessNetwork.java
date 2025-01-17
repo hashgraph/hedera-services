@@ -215,6 +215,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             BlockNodeContainer container = new BlockNodeContainer();
             container.start();
             blockNodeContainers.add(container);
+            log.info("Started block node container for node {} @ localhost:{}", node.getNodeId(), container.getGrpcPort());
 
             // Initialize Working Directory for Node
             node.initWorkingDir(configTxt);
@@ -249,8 +250,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
             // Write the config to this node's block-nodes.yaml
             Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.yaml");
-            Map<String, BlockNodeConnectionInfo> config = Map.of("blockNodeConnectionInfo", connectionInfo);
-            mapper.writeValue(configPath.toFile(), config);
+            mapper.writeValue(configPath.toFile(), connectionInfo);
             
             log.info("Updated block node configuration for node {} with container port {}", 
                     node.getNodeId(), container.getGrpcPort());

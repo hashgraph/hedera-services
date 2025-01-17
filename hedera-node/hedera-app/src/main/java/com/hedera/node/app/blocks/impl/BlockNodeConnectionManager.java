@@ -107,6 +107,7 @@ public class BlockNodeConnectionManager {
      * Attempts to establish connections to block nodes based on priority and configuration.
      */
     public void establishConnections() {
+        logger.info("Establishing connections to block nodes...");
         // Group nodes by priority
         Map<Integer, List<BlockNodeConfig>> nodesByPriority = allNodes.stream()
                 .collect(Collectors.groupingBy(BlockNodeConfig::priority));
@@ -161,6 +162,7 @@ public class BlockNodeConnectionManager {
     }
 
     private void connectToNode(BlockNodeConfig node) {
+        logger.info("Connecting to block node {}:{}", node.address(), node.port());
         // Check if we're still in backoff period
         Instant now = Instant.now();
         if (nextRetryTime.containsKey(node) && now.isBefore(nextRetryTime.get(node))) {

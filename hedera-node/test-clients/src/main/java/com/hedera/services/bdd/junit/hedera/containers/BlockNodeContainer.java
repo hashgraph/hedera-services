@@ -1,5 +1,6 @@
 package com.hedera.services.bdd.junit.hedera.containers;
 
+import java.time.Duration;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
@@ -10,6 +11,7 @@ import org.testcontainers.utility.DockerImageName;
 public class BlockNodeContainer extends GenericContainer<BlockNodeContainer> {
     private static final int INTERNAL_PORT = 8080;
     private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("block-node-server:0.4.0-SNAPSHOT");
+    private static final String blockNodeVersion = "0.4.0-SNAPSHOT";
 
     /**
      * Creates a new block node container with the default image.
@@ -26,7 +28,9 @@ public class BlockNodeContainer extends GenericContainer<BlockNodeContainer> {
     public BlockNodeContainer(DockerImageName dockerImageName) {
         super(dockerImageName);
         withExposedPorts(INTERNAL_PORT);
-        waitingFor(Wait.forLogMessage(".*Block Node Server started.*\\n", 1));
+        withEnv("VERSION", blockNodeVersion);
+        waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(2)));
+        waitingFor(Wait.forHealthcheck());
     }
 
     /**
@@ -36,14 +40,5 @@ public class BlockNodeContainer extends GenericContainer<BlockNodeContainer> {
      */
     public int getGrpcPort() {
         return getMappedPort(INTERNAL_PORT);
-    }
-
-    /**
-     * Gets the host address for connecting to this block node.
-     *
-     * @return the host address (usually localhost)
-     */
-    public String getHost() {
-        return getHost();
     }
 } 
