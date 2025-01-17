@@ -45,6 +45,7 @@ module com.hedera.node.app {
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
     requires transitive org.hyperledger.besu.evm;
+    requires transitive io.helidon.webclient.grpc;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
@@ -65,7 +66,6 @@ module com.hedera.node.app {
     requires io.grpc;
     requires io.helidon.common.tls;
     requires io.helidon.webclient.api;
-    requires io.helidon.webclient.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
@@ -133,6 +133,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
     exports com.hedera.node.app.roster.schemas;
+    exports com.hedera.node.app.blocks.config;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

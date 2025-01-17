@@ -570,11 +570,21 @@ public final class Hedera
         this.platformStatus = notification.getNewStatus();
         logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
         switch (platformStatus) {
-            case ACTIVE -> startGrpcServer();
-            case CATASTROPHIC_FAILURE -> shutdownGrpcServer();
+            case ACTIVE -> {
+                logger.info("Platform status is now ACTIVE");
+                startGrpcServer();
+                daggerApp.blockNodeConnectionManager().establishConnections();
+            }
             case FREEZE_COMPLETE -> {
-                closeRecordStreams();
+                logger.info("Platform status is now FREEZE_COMPLETE");
                 shutdownGrpcServer();
+                closeRecordStreams();
+                daggerApp.blockNodeConnectionManager().shutdown();
+            }
+            case CATASTROPHIC_FAILURE -> {
+                logger.error("Platform status is now CATASTROPHIC_FAILURE");
+                shutdownGrpcServer();
+                daggerApp.blockNodeConnectionManager().shutdown();
             }
             case REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE, CHECKING, FREEZING, BEHIND -> {
                 // Nothing to do here, just enumerate for completeness
@@ -878,6 +888,9 @@ public final class Hedera
         shutdownGrpcServer();
 
         if (daggerApp != null) {
+            logger.debug("Shutting down the Block Node Connection Manager");
+            daggerApp.blockNodeConnectionManager().shutdown();
+
             logger.debug("Shutting down the state");
             final var state = daggerApp.workingStateAccessor().getState();
             if (state instanceof MerkleStateRoot msr) {
