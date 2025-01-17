@@ -29,9 +29,11 @@ import com.hedera.hapi.node.state.history.HistoryProofVote;
 import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.node.app.history.HistoryLibrary;
-import com.hedera.node.app.history.ReadableHistoryStore.AssemblySignaturePublication;
+import com.hedera.node.app.history.ReadableHistoryStore.HistorySignaturePublication;
+import com.hedera.node.app.history.ReadableHistoryStore.ProofKeyPublication;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.roster.RosterTransitionWeights;
+import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -50,9 +52,12 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
- * Manages the process objects and work needed to advance toward completion of a metadata proof.
+ * Manages the process objects and work needed to advance work towards a proof that a certain
+ * {@code (address book hash, metadata)} pair belongs to the chain of trust proceeding from the
+ * ledger id. (Or, if the ledger id is null, simply the proof that the ledger has blessed the
+ * genesis address book metadata).
  */
-public class ProofController {
+public class ProofControllerImpl {
     private static final Comparator<ProofKey> PROOF_KEY_COMPARATOR = Comparator.comparingLong(ProofKey::nodeId);
 
     private final long selfId;
@@ -61,7 +66,7 @@ public class ProofController {
     private final Bytes ledgerId;
 
     private final Executor executor;
-    private final SchnorrKeyPair schnorrKeyPair;
+    private final TssKeyPair schnorrKeyPair;
     private final HistoryLibrary library;
     private final HistoryLibraryCodec codec;
     private final HistorySubmissions submissions;
@@ -69,41 +74,42 @@ public class ProofController {
     private final Consumer<HistoryProof> proofConsumer;
     private final Map<Long, HistoryProofVote> votes = new HashMap<>();
     private final Map<Long, Bytes> targetProofKeys = new HashMap<>();
+    private final NavigableMap<Instant, Long> proofKeyAdoptionTimes = new TreeMap<>();
     private final Set<Long> signingNodeIds = new HashSet<>();
     private final NavigableMap<Instant, CompletableFuture<Verification>> verificationFutures = new TreeMap<>();
 
     /**
-     * If not null, the metadata this controller will include in its historical assembly.
+     * Once set, the metadata to be proven as associated to the target address book hash.
      */
     @Nullable
-    private Bytes metadata;
+    private Bytes targetMetadata;
 
     /**
-     * The ongoing construction, updated each time the controller advances the construction in state.
+     * The ongoing construction, updated in network state each time the controller makes progress.
      */
     private HistoryProofConstruction construction;
 
     /**
-     * If not null, the future that resolves when this node publishes its Schnorr key for this construction.
+     * If not null, a future that resolves when this node publishes its Schnorr key.
      */
     @Nullable
     private CompletableFuture<Void> publicationFuture;
 
     /**
-     * If not null, the future that resolves when this node signs its assembly for this construction.
+     * If not null, a future that resolves when this node signs its assembled history.
      */
     @Nullable
     private CompletableFuture<Void> signingFuture;
 
     /**
-     * If not null, a future that resolves when this node finishes assembling the SNARK proof for this construction
-     * and voting for its proof as the consensus metadata proof.
+     * If not null, a future that resolves when this node finishes assembling its proof that
+     * extends the chain of trust, and voting for that proof as the consensus proof.
      */
     @Nullable
     private CompletableFuture<Void> proofFuture;
 
     /**
-     * A party's verified signature on some new history.
+     * A party's verified signature on a new piece of {@code (address book hash, metadata)} history.
      *
      * @param nodeId the node's id
      * @param historySignature its history signature
@@ -123,21 +129,21 @@ public class ProofController {
      */
     private record Signatures(@NonNull History history, @NonNull Instant cutoff) {}
 
-    public ProofController(
+    public ProofControllerImpl(
             final long selfId,
-            @NonNull final HistoryProofConstruction construction,
+            @NonNull final TssKeyPair schnorrKeyPair,
             @Nullable final Bytes ledgerId,
+            @NonNull final HistoryProofConstruction construction,
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Executor executor,
-            @Nullable final Bytes metadata,
-            @NonNull final SchnorrKeyPair schnorrKeyPair,
             @NonNull final HistoryLibrary library,
             @NonNull final HistoryLibraryCodec codec,
             @NonNull final HistorySubmissions submissions,
+            @NonNull final List<ProofKeyPublication> keyPublications,
+            @NonNull final List<HistorySignaturePublication> signaturePublications,
             @NonNull final Consumer<HistoryProof> proofConsumer) {
         this.selfId = selfId;
         this.ledgerId = ledgerId;
-        this.metadata = metadata;
         this.codec = requireNonNull(codec);
         this.executor = requireNonNull(executor);
         this.library = requireNonNull(library);
@@ -146,6 +152,8 @@ public class ProofController {
         this.construction = requireNonNull(construction);
         this.proofConsumer = requireNonNull(proofConsumer);
         this.schnorrKeyPair = requireNonNull(schnorrKeyPair);
+        keyPublications.forEach(this::addProofKeyPublication);
+        signaturePublications.forEach(this::addSignaturePublication);
     }
 
     /**
@@ -153,13 +161,18 @@ public class ProofController {
      * construction toward a deterministic completion.
      *
      * @param now the current consensus time
+     * @param metadata the latest known metadata to be proven
      * @param historyStore the history store, in case the controller is able to complete the construction
      */
-    public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHistoryStore historyStore) {
+    public void advanceConstruction(
+            @NonNull final Instant now,
+            @Nullable final Bytes metadata,
+            @NonNull final WritableHistoryStore historyStore) {
         if (construction.hasTargetProof()) {
             return;
         }
-        if (metadata == null) {
+        targetMetadata = metadata;
+        if (targetMetadata == null) {
             ensureProofKeyPublished();
         } else if (construction.hasAssemblyStartTime()) {
             if (!votes.containsKey(selfId) && proofFuture == null) {
@@ -183,14 +196,19 @@ public class ProofController {
      * Incorporates the proof key published by the given node, if this construction has not already "locked in"
      * its assembled target roster.
      *
-     * @param nodeId the node ID
-     * @param proofKey the proof key
+     * @param publication the proof key publication
      */
-    public void incorporateProofKey(final long nodeId, @NonNull final Bytes proofKey) {
-        requireNonNull(proofKey);
-        if (!construction.hasAssemblyStartTime()) {
-            targetProofKeys.put(nodeId, proofKey);
+    public void addProofKeyPublication(@NonNull final ProofKeyPublication publication) {
+        requireNonNull(publication);
+        if (construction.hasTargetProof()) {
+            return;
         }
+        final long nodeId = publication.nodeId();
+        if (!weights.targetIncludes(nodeId)) {
+            return;
+        }
+        targetProofKeys.put(nodeId, publication.proofKey());
+        proofKeyAdoptionTimes.put(publication.adoptionTime(), nodeId);
     }
 
     /**
@@ -199,7 +217,7 @@ public class ProofController {
      *
      * @param publication the proof key publication
      */
-    public void addProofSignature(@NonNull final AssemblySignaturePublication publication) {
+    public void addSignaturePublication(@NonNull final HistorySignaturePublication publication) {
         requireNonNull(publication);
         if (!construction.hasTargetProof() && targetProofKeys.containsKey(publication.nodeId())) {
             verificationFutures.put(
@@ -240,24 +258,6 @@ public class ProofController {
     }
 
     /**
-     * The possible recommendations the controller's assembly policy may make.
-     */
-    private enum Recommendation {
-        /**
-         * Schedule the construction's assembly using proof keys published til now.
-         */
-        ASSEMBLE_NOW,
-        /**
-         * Revisit the question again at the next opportunity.
-         */
-        COME_BACK_LATER,
-        /**
-         * Reschedule the next assembly checkpoint to reduce overhead.
-         */
-        RESCHEDULE_CHECKPOINT,
-    }
-
-    /**
      * Applies a deterministic policy to recommend an assembly behavior at the given time.
      *
      * @param now the current consensus time
@@ -294,13 +294,13 @@ public class ProofController {
      * the signature.
      */
     private CompletableFuture<Void> startSigningFuture() {
-        requireNonNull(metadata);
+        requireNonNull(targetMetadata);
         final var proofKeys = Map.copyOf(targetProofKeys);
         return CompletableFuture.runAsync(
                 () -> {
                     final var targetBook = codec.encodeAddressBook(weights.targetNodeWeights(), proofKeys);
                     final var targetHash = library.hashAddressBook(targetBook);
-                    final var history = new History(targetHash, metadata);
+                    final var history = new History(targetHash, targetMetadata);
                     final var message = codec.encodeHistory(history);
                     final var signature = library.signSchnorr(message, schnorrKeyPair.privateKey());
                     final var historySignature = new HistorySignature(history, signature);
@@ -330,7 +330,7 @@ public class ProofController {
             sourceProof = null;
             sourceProofKeys = Map.copyOf(targetProofKeys);
         }
-        final var proofMetadata = requireNonNull(metadata);
+        final var targetMetadata = requireNonNull(this.targetMetadata);
         return CompletableFuture.runAsync(
                 () -> {
                     final var sourceBook = codec.encodeAddressBook(weights.sourceNodeWeights(), sourceProofKeys);
@@ -343,13 +343,12 @@ public class ProofController {
                             sourceBook,
                             signatures,
                             targetHash,
-                            proofMetadata);
+                            targetMetadata);
                     final var metadataProof = HistoryProof.newBuilder()
                             .sourceAddressBookHash(sourceHash)
-                            .targetAddressBookHash(targetHash)
-                            .proof(proof)
                             .proofKeys(proofKeyListFrom(targetProofKeys))
-                            .metadata(proofMetadata)
+                            .targetHistory(new History(targetHash, targetMetadata))
+                            .proof(proof)
                             .build();
                     submissions
                             .submitProofVote(construction.constructionId(), metadataProof)

@@ -31,6 +31,7 @@ import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.RosterTransitionWeights;
+import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,12 +49,11 @@ import java.util.stream.IntStream;
 /**
  * Manages the process objects and work needed to advance toward completion of a hinTS construction.
  */
-public class ActiveHintsController implements HintsController {
+public class HintsControllerImpl implements HintsController {
     private final int numParties;
     private final long selfId;
     private final Executor executor;
-    private final Bytes blsPrivateKey;
-    private final Bytes blsPublicKey;
+    private final TssKeyPair blsKeyPair;
     private final HintsLibrary library;
     private final HintsLibraryCodec codec;
     private final HintsSubmissions submissions;
@@ -90,22 +90,20 @@ public class ActiveHintsController implements HintsController {
      */
     private record Validation(int partyId, @NonNull Bytes hintsKey, boolean isValid) {}
 
-    public ActiveHintsController(
+    public HintsControllerImpl(
             final long selfId,
+            @NonNull final TssKeyPair blsKeyPair,
             @NonNull final HintsConstruction construction,
             @NonNull final RosterTransitionWeights weights,
             @NonNull final Executor executor,
             @NonNull final HintsLibrary library,
             @NonNull final HintsLibraryCodec codec,
             @NonNull final Map<Long, PreprocessingVote> votes,
-            @NonNull final Bytes blsPrivateKey,
-            @NonNull final Bytes blsPublicKey,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext context) {
         this.selfId = selfId;
-        this.blsPrivateKey = requireNonNull(blsPrivateKey);
-        this.blsPublicKey = requireNonNull(blsPublicKey);
+        this.blsKeyPair = requireNonNull(blsKeyPair);
         this.weights = requireNonNull(weights);
         this.numParties = partySizeForRosterNodeCount(weights.targetRosterSize());
         this.executor = requireNonNull(executor);
@@ -168,12 +166,13 @@ public class ActiveHintsController implements HintsController {
     @Override
     public void addHintsKeyPublication(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
-        // Ignore hinTS keys published after the construction
-        if (construction.hasPreprocessingStartTime()) {
+        // Ignore publications if we already have a hinTS scheme
+        if (construction.hasHintsScheme()) {
             return;
         }
         final long nodeId = publication.nodeId();
-        // Ignore hinTS keys from nodes not in the target roster
+        // Ignore hinTS keys from nodes not in the target roster; though note this does not
+        // prevent the handler from storing them for use in future constructions
         if (!weights.targetIncludes(nodeId)) {
             return;
         }
@@ -316,8 +315,8 @@ public class ActiveHintsController implements HintsController {
             final int selfPartyId = expectedPartyId(selfId);
             publicationFuture = CompletableFuture.runAsync(
                     () -> {
-                        final var hints = library.computeHints(blsPrivateKey, selfPartyId, numParties);
-                        final var hintsKey = codec.encodeHintsKey(blsPublicKey, hints);
+                        final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
+                        final var hintsKey = codec.encodeHintsKey(blsKeyPair.publicKey(), hints);
                         final var body = new HintsKeyPublicationTransactionBody(selfPartyId, numParties, hintsKey);
                         submissions.submitHintsKey(body).join();
                     },

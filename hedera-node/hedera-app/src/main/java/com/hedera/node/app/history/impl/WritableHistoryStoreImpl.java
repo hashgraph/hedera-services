@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.node.app.history.WritableHistoryStore;
+import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -30,9 +32,19 @@ import java.time.Instant;
  */
 public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implements WritableHistoryStore {
     @Override
-    public HistoryProofConstruction rescheduleAssemblyCheckpoint(
-            final long constructionId, @NonNull final Instant then) {
-        requireNonNull(then);
+    public @NonNull HistoryProofConstruction getOrCreateConstruction(
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
+        requireNonNull(activeRosters);
+        requireNonNull(now);
+        requireNonNull(tssConfig);
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public void setLedgerId(@NonNull final Bytes bytes) {
+        requireNonNull(bytes);
         throw new AssertionError("Not implemented");
     }
 
@@ -49,8 +61,7 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
     }
 
     @Override
-    public void setLedgerId(@NonNull final Bytes bytes) {
-        requireNonNull(bytes);
+    public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
         throw new AssertionError("Not implemented");
     }
 }

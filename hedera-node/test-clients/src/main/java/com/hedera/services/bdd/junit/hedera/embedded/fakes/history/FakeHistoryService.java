@@ -22,6 +22,7 @@ import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +51,7 @@ public class FakeHistoryService implements HistoryService {
             @NonNull final ActiveRosters activeRosters,
             @Nullable final Bytes currentMetadata,
             @NonNull final WritableHistoryStore historyStore,
-            @NonNull final Instant now) {
+            @NonNull final Instant now, TssConfig tssConfig) {
         requireNonNull(activeRosters);
         requireNonNull(historyStore);
         requireNonNull(now);

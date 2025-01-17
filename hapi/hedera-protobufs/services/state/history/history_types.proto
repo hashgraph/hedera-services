@@ -25,53 +25,16 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * A view of the network roster suitable for recursive proofs that
- * certain metadata was derived from the ledger id in a manner that
- * can trusted throughout any period the network's aBFT security
- * was not compromised; no matter how nodes were added, removed, or
- * updated during that period.
- */
-message HistoryAddressBook {
-  repeated HistoryAddressBookEntry address_book_entries = 1;
-}
-
-/**
- * An entry in the view of the network roster suitable for recursive
- * proofs that certain metadata was derived from the ledger id in a
- * manner that can trusted throughout any period the network's aBFT
- * security was not compromised; no matter how nodes were added,
- * removed, or updated during that period.
- */
-message HistoryAddressBookEntry {
-  /**
-   * The node id.
-   */
-  uint64 node_id = 1;
-  /**
-   * The weight of the node.
-   */
-  uint64 weight = 2;
-  /**
-   * A public key used to contribute to a recursive SNARK that proves
-   * certain metadata was derived from the ledger id in a manner that
-   * can trusted throughout any period the network's aBFT security
-   * was not compromised; no matter how nodes were added, removed, or
-   * updated during that period.
-   */
-  bytes proof_public_key = 3;
-}
-
-/**
- * A set of Schnorr keys for a node; that is, the key the node is
- * currently using and the key it party wishes to use for the next
- * proof roster assembly.
+ * A set of proof keys for a node; that is, the key the node is
+ * currently using and the key it wants to use in assembling the
+ * next address book in the ledger id's chain of trust.
  */
 message ProofKeySet {
   /**
-   * The consensus time at which the network adopted the current
-   * Schnorr key in this set. An adoption time that is sufficiently
+   * The consensus time when the network adopted the active
+   * proof key in this set. An adoption time that is sufficiently
    * tardy relative to the latest assembly start time may result
-   * in the node's key being omitted from the proof roster.
+   * in the node's key being omitted from the address book.
    */
   proto.Timestamp adoption_time = 2;
   /**
@@ -79,18 +42,18 @@ message ProofKeySet {
    */
   bytes key = 3;
   /**
-   * If not null, the proof key the node wishes to use in all future
-   * proof roster. Will be adopted at the beginning of the next
-   * roster transition phase; so the node should begin using it
-   * then.
+   * If set, the proof key the node wants to start using in the
+   * address book.
    */
   bytes next_key = 4;
 }
 
 /**
- * A key a node will use to contribute its signature to proofs
- * that certain history (that is, address book with associated
- * metadata) belongs to the chain of trust for a ledger id.
+ * A record of the proof key a node had in a particular address
+ * book. Necessary to keep at each point history so that nodes
+ * can verify the correct key was used to sign in transitions
+ * starting from the current address book; no matter how keys
+ * have been rotated from the time the address book was created.
  */
 message ProofKey {
   /**
@@ -104,7 +67,22 @@ message ProofKey {
 }
 
 /**
- * A proof that some address book history belongs to a ledger id's
+ * A piece of new history in the form of an address book hash and
+ * associated metadata.
+ */
+message History {
+  /**
+   * The address book hash of the new history.
+   */
+  bytes address_book_hash = 1;
+  /**
+   * The metadata associated to the address book.
+   */
+  bytes metadata = 2;
+}
+
+/**
+ * A proof that some address book history belongs to the ledger id's
  * chain of trust.
  */
 message HistoryProof {
@@ -113,21 +91,17 @@ message HistoryProof {
    */
   bytes source_address_book_hash = 1;
   /**
-   * The hash of the target address book.
-   */
-  bytes target_address_book_hash = 2;
-  /**
-   * The metadata tagged to the target address book.
-   */
-  bytes metadata = 3;
-  /**
    * The proof keys for the source address book.
    */
-  repeated ProofKey proof_keys = 4;
+  repeated ProofKey proof_keys = 2;
   /**
-   * The recursive SNARK that proves the chain of trust.
+   * The target history of the proof.
    */
-  bytes proof = 5;
+  History target_history = 3;
+  /**
+   * The proof of chain of trust from the ledger id.
+   */
+  bytes proof = 4;
 }
 
 /**
@@ -158,7 +132,7 @@ message HistoryProofConstruction {
    */
   bytes target_roster_hash = 4;
 
-  oneof assembly_time {
+  oneof proof_state {
     /**
      * If the network is still gathering proof keys for this
      * construction, the next time at which nodes should stop waiting
@@ -173,13 +147,13 @@ message HistoryProofConstruction {
      * keys must have been adopted to be included in the final history.
      */
     proto.Timestamp assembly_start_time = 6;
+    /**
+     * When this construction is complete, the recursive proof that
+     * the target roster's address book and associated metadata belong
+     * to the ledger id's chain of trust.
+     */
+    HistoryProof target_proof = 7;
   }
-  /**
-   * When this construction is complete, the recursive proof that
-   * the target roster's address book and associated metadata belong
-   * to the ledger id's chain of trust.
-   */
-  HistoryProof target_proof = 7;
 }
 
 /**
@@ -212,21 +186,6 @@ message HistoryProofVote {
      */
     uint64 congruent_node_id = 2;
   }
-}
-
-/**
- * An assembly of new history in the form of an address book hash and
- * associated metadata.
- */
-message History {
-  /**
-   * The address book hash of the new history.
-   */
-  bytes address_book_hash = 1;
-  /**
-   * The metadata associated to the address book.
-   */
-  bytes metadata = 2;
 }
 
 /**

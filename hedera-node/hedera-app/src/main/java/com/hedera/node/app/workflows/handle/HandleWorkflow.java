@@ -291,7 +291,7 @@ public class HandleWorkflow {
                 }
                 doStreamingKVChanges(state.getWritableStates(HistoryService.NAME), now, () -> {
                     final var historyStore = new WritableHistoryStoreImpl();
-                    historyService.reconcile(activeRosters, currentMetadata, historyStore, now);
+                    historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig);
                 });
             }
         }

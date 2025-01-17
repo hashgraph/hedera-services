@@ -23,6 +23,7 @@ import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -39,10 +40,10 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     private final HistoryServiceComponent component;
 
     /**
-     * If not null, the proof of the metadata scoped to the current roster.
+     * If not null, the proof of the history ending at the current roster.
      */
     @Nullable
-    private HistoryProof metadataProof;
+    private HistoryProof historyProof;
 
     public HistoryServiceImpl(
             @NonNull final Metrics metrics,
@@ -60,13 +61,30 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     @Override
     public void reconcile(
             @NonNull final ActiveRosters activeRosters,
-            @Nullable final Bytes currentMetadata,
+            @Nullable final Bytes metadata,
             @NonNull final WritableHistoryStore historyStore,
-            @NonNull final Instant now) {
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
         requireNonNull(activeRosters);
         requireNonNull(historyStore);
         requireNonNull(now);
-        // No-op
+        requireNonNull(tssConfig);
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = historyStore.getOrCreateConstruction(activeRosters, now, tssConfig);
+                if (!construction.hasTargetProof()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, historyStore);
+                    controller.advanceConstruction(now, metadata, historyStore);
+                }
+            }
+            case HANDOFF -> {
+               if (historyStore.purgeStateAfterHandoff(activeRosters)) {
+                   final var construction = requireNonNull(historyStore.getConstructionFor(activeRosters));
+                   this.accept(construction.targetProofOrThrow());
+               }
+            }
+        }
     }
 
     @Override
@@ -77,12 +95,13 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     @Override
     public @NonNull Bytes getCurrentProof(@NonNull final Bytes metadata) {
         requireNonNull(metadata);
-        requireNonNull(metadataProof);
-        if (!metadataProof.metadata().equals(metadata)) {
+        requireNonNull(historyProof);
+        final var targetMetadata = historyProof.targetHistoryOrThrow().metadata();
+        if (!targetMetadata.equals(metadata)) {
             throw new IllegalArgumentException(
-                    "Metadata '" + metadata + "' does not match proof (for '" + metadataProof.metadata() + "')");
+                    "Metadata '" + metadata + "' does not match proof (for '" + targetMetadata + "')");
         }
-        return metadataProof.proof();
+        return historyProof.proof();
     }
 
     @Override

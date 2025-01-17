@@ -42,7 +42,10 @@ import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
+import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
+import com.hedera.hapi.node.state.history.ConstructionNodeId;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -61,6 +64,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.state.tss.TssEncryptionKeys;
 import com.hedera.hapi.node.state.tss.TssMessageMapKey;
 import com.hedera.hapi.node.state.tss.TssVoteMapKey;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.swirlds.state.StateChangeListener;
@@ -182,6 +186,18 @@ public class KVStateChangeListener implements StateChangeListener {
                     .build();
             case TssVoteMapKey tssVoteMapKey -> MapChangeKey.newBuilder()
                     .tssVoteMapKey(tssVoteMapKey)
+                    .build();
+            case HintsPartyId hintsPartyId -> MapChangeKey.newBuilder()
+                    .hintsPartyIdKey(hintsPartyId)
+                    .build();
+            case PreprocessingVoteId preprocessingVoteId -> MapChangeKey.newBuilder()
+                    .preprocessingVoteIdKey(preprocessingVoteId)
+                    .build();
+            case NodeId nodeId -> MapChangeKey.newBuilder()
+                    .nodeIdKey(nodeId)
+                    .build();
+            case ConstructionNodeId constructionNodeId -> MapChangeKey.newBuilder()
+                    .constructionNodeIdKey(constructionNodeId)
                     .build();
             default -> throw new IllegalStateException(
                     "Unrecognized key type " + key.getClass().getSimpleName());

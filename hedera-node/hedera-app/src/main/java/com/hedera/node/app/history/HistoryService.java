@@ -19,6 +19,7 @@ package com.hedera.node.app.history;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,16 +55,18 @@ public interface HistoryService extends Service {
 
     /**
      * Reconciles the history of roster proofs with the given active rosters and metadata, if known.
+     *
      * @param activeRosters the active rosters
      * @param currentMetadata the current metadata, if known
      * @param historyStore the history store
      * @param now the current time
+     * @param tssConfig
      */
     void reconcile(
             @NonNull ActiveRosters activeRosters,
             @Nullable Bytes currentMetadata,
             @NonNull WritableHistoryStore historyStore,
-            @NonNull Instant now);
+            @NonNull Instant now, TssConfig tssConfig);
 
     /**
      * Returns a proof of inclusion of the given metadata for the current roster.

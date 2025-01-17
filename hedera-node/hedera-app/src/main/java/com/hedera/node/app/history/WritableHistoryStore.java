@@ -16,21 +16,25 @@
 
 package com.hedera.node.app.history;
 
+import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.node.app.roster.ActiveRosters;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 public interface WritableHistoryStore extends ReadableHistoryStore {
     /**
-     * Reschedules the next assembly checkpoint for the construction with the given ID and returns the
-     * updated construction.
-     * @param constructionId the construction ID
-     * @param then the next assembly checkpoint
-     * @return the updated construction
+     * If there is a known construction matching the active rosters, returns it; otherwise, null.
+     * @param activeRosters the active rosters
+     * @param now the current time
+     * @param tssConfig the TSS configuration
      */
-    HistoryProofConstruction rescheduleAssemblyCheckpoint(long constructionId, @NonNull Instant then);
+    @NonNull
+    HistoryProofConstruction getOrCreateConstruction(
+            @NonNull ActiveRosters activeRosters, @NonNull Instant now, @NonNull TssConfig tssConfig);
 
     /**
      * Sets the assembly time for the construction with the given ID and returns the
@@ -54,4 +58,10 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
      * @param bytes the bytes
      */
     void setLedgerId(@NonNull Bytes bytes);
+
+    /**
+     * Purges any state no longer needed after a given handoff.
+     * @return whether any state was purged
+     */
+    boolean purgeStateAfterHandoff(@NonNull ActiveRosters activeRosters);
 }

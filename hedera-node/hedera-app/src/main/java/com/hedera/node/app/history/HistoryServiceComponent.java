@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.history;
 
+import com.hedera.node.app.hints.impl.HintsControllers;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
+import com.hedera.node.app.history.impl.ProofControllers;
 import com.hedera.node.app.spi.AppContext;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
@@ -37,4 +39,6 @@ public interface HistoryServiceComponent {
     }
 
     HistoryHandlers handlers();
+
+    ProofControllers controllers();
 }

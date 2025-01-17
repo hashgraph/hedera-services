@@ -83,6 +83,7 @@ public class HintsControllers {
      *
      * @param activeRosters the active rosters
      * @param construction the hinTS construction
+     * @param hintsStore the hinTS store
      * @return the result of the operation
      */
     public @NonNull HintsController getOrCreateFor(
@@ -114,9 +115,9 @@ public class HintsControllers {
     }
 
     /**
-     * Returns the in-progress controller for the hinTS construction with the given universe size, if it exists.
+     * Returns the in-progress controller for the hinTS construction with the given party size.
      *
-     * @param m the log2 of the universe size
+     * @param m the number of parties
      * @return the controller, if it exists
      */
     public Optional<HintsController> getInProgressForNumParties(final int m) {
@@ -143,16 +144,14 @@ public class HintsControllers {
             final var votes = hintsStore.getVotes(construction.constructionId(), weights.sourceNodeIds());
             final var selfId = selfNodeInfoSupplier.get().nodeId();
             final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
-            return new ActiveHintsController(
+            return new HintsControllerImpl(
                     selfId,
-                    construction,
+                    blsKeyPair, construction,
                     weights,
                     executor,
                     library,
                     codec,
                     votes,
-                    blsKeyPair.privateKey(),
-                    blsKeyPair.publicKey(),
                     publications,
                     submissions,
                     signingContext);
