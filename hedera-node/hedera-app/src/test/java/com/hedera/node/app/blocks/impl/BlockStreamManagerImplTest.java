@@ -304,12 +304,12 @@ class BlockStreamManagerImplTest {
                 Bytes.fromHex(
                         "edde6b2beddb2fda438665bbe6df0a639c518e6d5352e7276944b70777d437d28d1b22813ed70f5b8a3a3cbaf08aa9a8"),
                 ZERO_BLOCK_HASH,
-                3,
+                4,
                 List.of(
+                        Bytes.EMPTY,
+                        Bytes.EMPTY,
                         Bytes.fromHex(
-                                "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
-                        Bytes.fromHex(
-                                "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
+                                "cf1343eb8811fc4ccbd468b9703d60272894c91d1972efeb2d77d2e9d82598659feaf09b7c6bf0f1c3e0fcf4a4f08f48")),
                 Timestamp.DEFAULT,
                 true,
                 SemanticVersion.DEFAULT,
@@ -406,12 +406,12 @@ class BlockStreamManagerImplTest {
                 Bytes.fromHex(
                         "edde6b2beddb2fda438665bbe6df0a639c518e6d5352e7276944b70777d437d28d1b22813ed70f5b8a3a3cbaf08aa9a8"),
                 ZERO_BLOCK_HASH,
-                3,
+                4,
                 List.of(
+                        Bytes.EMPTY,
+                        Bytes.EMPTY,
                         Bytes.fromHex(
-                                "be03f18885e3fb5e26dae1ad95d6559b62092d2162342f376712fd00fa045aaedda06811a1548a916a26878752900473"),
-                        Bytes.fromHex(
-                                "84910d7e7710b482680de1e81865de39396de9c536ab265cf3253bf378bc50ed2f6c5a3ec19a25c51ee170347f13b28d")),
+                                "cf1343eb8811fc4ccbd468b9703d60272894c91d1972efeb2d77d2e9d82598659feaf09b7c6bf0f1c3e0fcf4a4f08f48")),
                 Timestamp.DEFAULT,
                 false,
                 SemanticVersion.DEFAULT,
