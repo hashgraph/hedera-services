@@ -30,7 +30,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
-import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
@@ -109,26 +108,27 @@ public class EmbeddedNetwork extends AbstractNetwork {
      * Starts the embedded Hedera network from a saved state customized by the given specs.
      *
      * @param state the state to customize
+     * @param bootstrapOverrides the overrides to apply
+     * @param useDiskGossipFiles whether to have the legacy disk gossip files on disk
      */
     public void restart(
             @NonNull final FakeState state,
             @NonNull final Map<String, String> bootstrapOverrides,
-            @NonNull final AdminKeySource[] adminKeySources) {
+            final boolean useDiskGossipFiles) {
         requireNonNull(state);
-        startVia(hedera -> hedera.restart(state), bootstrapOverrides, adminKeySources);
+        startVia(hedera -> hedera.restart(state), bootstrapOverrides, useDiskGossipFiles);
     }
 
     @Override
     public void start() {
         // Initialize with the default params
-        startWith(emptyMap(), AdminKeySource.DEFAULTS);
+        startWith(emptyMap(), false);
     }
 
     @Override
-    public void startWith(
-            @NonNull final Map<String, String> bootstrapOverrides, @NonNull final AdminKeySource[] adminKeySources) {
+    public void startWith(@NonNull final Map<String, String> bootstrapOverrides, final boolean useDiskGossipFiles) {
         requireNonNull(bootstrapOverrides);
-        startVia(EmbeddedHedera::start, bootstrapOverrides, adminKeySources);
+        startVia(EmbeddedHedera::start, bootstrapOverrides, useDiskGossipFiles);
     }
 
     @Override
@@ -207,9 +207,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private void startVia(
             @NonNull final Consumer<EmbeddedHedera> start,
             @NonNull final Map<String, String> bootstrapOverrides,
-            @NonNull final AdminKeySource[] adminKeySources) {
+            final boolean useDiskGossipFiles) {
         // Initialize the working directory
-        embeddedNode.initWorkingDir(configTxt, adminKeySources);
+        embeddedNode.initWorkingDir(configTxt, useDiskGossipFiles);
         if (!bootstrapOverrides.isEmpty()) {
             updateBootstrapProperties(embeddedNode.getExternalPath(APPLICATION_PROPERTIES), bootstrapOverrides);
         }

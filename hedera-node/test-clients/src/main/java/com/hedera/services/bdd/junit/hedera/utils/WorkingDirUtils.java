@@ -31,7 +31,6 @@ import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -89,7 +88,7 @@ public class WorkingDirUtils {
     public static final String OUTPUT_DIR = "output";
     public static final String UPGRADE_DIR = "upgrade";
     public static final String CURRENT_DIR = "current";
-    public static final String DISK_ADMIN_KEY_PREFIX = "disk-admin-key";
+    public static final String DISK_GOSSIP_KEY_PREFIX = "disk-gossip-key";
     public static final String CONFIG_TXT = "config.txt";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
@@ -99,6 +98,8 @@ public class WorkingDirUtils {
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
+    private static final List<String> PUBLIC_CERTS =
+            List.of("s-public-node1.pem", "s-public-node2.pem", "s-public-node3.pem");
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -125,13 +126,10 @@ public class WorkingDirUtils {
      *
      * @param workingDir the path to the working directory
      * @param configTxt the contents of the <i>config.txt</i> file
-     * @param adminKeySources signals to the framework which admin key files to place in the node's
-     *                        working directory
+     * @param useDiskGossipFiles whether or not to have legacy gossip files present on disk at startup
      */
     public static void recreateWorkingDir(
-            @NonNull final Path workingDir,
-            @NonNull final String configTxt,
-            @NonNull final AdminKeySource[] adminKeySources) {
+            @NonNull final Path workingDir, @NonNull final String configTxt, final boolean useDiskGossipFiles) {
         requireNonNull(workingDir);
         requireNonNull(configTxt);
 
@@ -148,8 +146,7 @@ public class WorkingDirUtils {
         final var network = networkFrom(configTxt, OnlyRoster.NO);
 
         // Only generate the network JSON file if the flag is set
-        final var generateNetworkJson =
-                Arrays.stream(adminKeySources).anyMatch(source -> source == AdminKeySource.GENESIS_NETWORK_FILE);
+        final var generateNetworkJson = !useDiskGossipFiles;
         if (generateNetworkJson) {
             writeStringUnchecked(
                     workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
@@ -160,19 +157,10 @@ public class WorkingDirUtils {
         }
 
         // Copy the bootstrap assets into the working directory
-        final var useDiskNetworkKey =
-                Arrays.stream(adminKeySources).anyMatch(source -> source == AdminKeySource.PEM_FILE);
-        copyBootstrapAssets(bootstrapAssetsLoc(), workingDir, useDiskNetworkKey);
+        copyBootstrapAssets(bootstrapAssetsLoc(), workingDir);
 
         // Update the log4j2.xml file with the correct output directory
         updateLog4j2XmlOutputDir(workingDir);
-
-        // Remove the node admin keys JSON file if the flag is false
-        final var retainNodeAdminKeys =
-                Arrays.stream(adminKeySources).anyMatch(source -> source == AdminKeySource.NODE_ADMIN_KEYS_FILE);
-        if (!retainNodeAdminKeys) {
-            rm(workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(NODE_ADMIN_KEYS_JSON));
-        }
     }
 
     /**
@@ -349,8 +337,7 @@ public class WorkingDirUtils {
         }
     }
 
-    private static void copyBootstrapAssets(
-            @NonNull final Path assetDir, @NonNull final Path workingDir, final boolean useDiskAdminKey) {
+    private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
                 final var fileName = file.getFileName().toString();
@@ -369,18 +356,19 @@ public class WorkingDirUtils {
             throw new UncheckedIOException(e);
         }
 
-        final var copiedAdminKeysDir = workingDir.resolve(DATA_DIR).resolve(KEYS_FOLDER);
-        if (useDiskAdminKey) {
-            copyUnchecked(
-                    workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"), copiedAdminKeysDir.resolve("account3.pem"));
-            copyUnchecked(
-                    workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"), copiedAdminKeysDir.resolve("account3.pass"));
-        }
+        final var copiedGossipKeyDir = workingDir.resolve(DATA_DIR).resolve(KEYS_FOLDER);
+        ensureDir(copiedGossipKeyDir.toString());
+        copyUnchecked(workingDir.resolve(DISK_GOSSIP_KEY_PREFIX + ".pem"), copiedGossipKeyDir.resolve("account5.pem"));
+        copyUnchecked(
+                workingDir.resolve(DISK_GOSSIP_KEY_PREFIX + ".pass"), copiedGossipKeyDir.resolve("account5.pass"));
+
+        // Also copy the public certs of the other nodes in the network
+        PUBLIC_CERTS.forEach(cert -> copyUnchecked(workingDir.resolve(cert), copiedGossipKeyDir.resolve(cert)));
 
         // Since these files were copied to the appropriate dir immediately above, they're no longer needed
-        rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pem"));
-        rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".pass"));
-        rm(workingDir.resolve(DISK_ADMIN_KEY_PREFIX + ".words"));
+        rm(workingDir.resolve(DISK_GOSSIP_KEY_PREFIX + ".pem"));
+        rm(workingDir.resolve(DISK_GOSSIP_KEY_PREFIX + ".pass"));
+        PUBLIC_CERTS.forEach(cert -> rm(workingDir.resolve(cert)));
     }
 
     /**

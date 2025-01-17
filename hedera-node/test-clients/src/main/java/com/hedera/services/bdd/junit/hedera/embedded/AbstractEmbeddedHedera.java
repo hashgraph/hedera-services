@@ -18,6 +18,8 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.hapi.utils.keys.RSAUtils.generateCertificate;
+import static com.hedera.node.app.hapi.utils.keys.RSAUtils.parseIdFromPemLoc;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
 import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
@@ -41,6 +43,7 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.keys.RSAUtils;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
@@ -50,7 +53,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
-import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -80,9 +82,14 @@ import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -141,7 +148,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
-        addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
+
+        try {
+            addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         network = node.startupNetwork().orElseThrow();
         roster = rosterFrom(network);
         nodeIds = network.nodeMetadata().stream()
@@ -366,7 +378,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         return bytes;
     }
 
-    private static AddressBook loadAddressBook(@NonNull final Path path) {
+    public AddressBook getAddressBook() {
+        return addressBook;
+    }
+
+    private static AddressBook loadAddressBook(@NonNull final Path path) throws Exception {
         requireNonNull(path);
         final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
@@ -376,19 +392,49 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
         // Write all public certs to disk so CryptoStatic can initialize
         final var parent = path.getParent();
-        final Path certDir = parent.resolve("data").resolve("keys").resolve("public-cert");
-        WorkingDirUtils.ensureDir(certDir.toString());
-        final AtomicInteger addressIndex = new AtomicInteger();
-        randomAddressBook.iterator().forEachRemaining(address -> {
-            final var filename = "s-public-node" + (addressIndex.getAndIncrement() + 1) + ".pem";
-            certToDisk(filename, address, certDir);
-        });
-
-        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+        final Path keysDir = parent.resolve("data").resolve("keys");
+        final var sigCerts = new HashMap<Long, X509Certificate>();
         final var addressBook = configFile.getAddressBook();
-        return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .map(address -> address.copySetSigCert(sigCert))
-                .toList());
+        if (Files.exists(keysDir)) {
+            // first generate the cert for the node's own gossip key
+            final var gossipPrivateKey = RSAUtils.loadPrivateKey(
+                    keysDir
+                            // NOTE: this key is for testing only; we don't need to worry about the password stored in
+                            // the file
+                            .resolve("account5.pem")
+                            .toString(),
+                    "pass");
+            final var gossipCert = generateCertificate(gossipPrivateKey, 0);
+            final var newAddress0 = addressBook.getAddress(NodeId.of(0)).copySetSigCert(gossipCert);
+            certToDisk("s-public-node0.pem", newAddress0, keysDir);
+            sigCerts.put(0L, gossipCert);
+
+            // now load all the other public certs
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(keysDir, "s-public-node*.pem")) {
+                for (Path file : stream) {
+                    final var sigCert = RSAUtils.parseCertificate(
+                            keysDir.resolve(file.getFileName()).toString());
+                    final var nodeAcctId = parseIdFromPemLoc(file);
+                    sigCerts.put(nodeAcctId, sigCert);
+                }
+            }
+
+            final List<Address> addresses = new ArrayList<>();
+            addresses.add(newAddress0);
+            for (int i = 1; i < 4; i++) {
+                Address oldAddress = addressBook.getAddress(NodeId.of(i));
+                Address newAddress = oldAddress.copySetSigCert(sigCerts.get((long) i));
+                addresses.add(newAddress);
+            }
+
+            return new AddressBook(addresses);
+        } else {
+            final var sigCert =
+                    requireNonNull(randomAddressBook.iterator().next().getSigCert());
+            return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
+                    .map(address -> address.copySetSigCert(sigCert))
+                    .toList());
+        }
     }
 
     private static void certToDisk(
@@ -403,7 +449,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 certWriter.write("\n");
                 index = end;
             }
-            certWriter.write("\n-----END CERTIFICATE-----\n");
+            certWriter.write("-----END CERTIFICATE-----\n");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (CertificateEncodingException e) {

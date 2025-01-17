@@ -80,11 +80,11 @@ public interface HederaNode {
      * Initializes the working directory for the node. Must be called before the node is started.
      *
      * @param configTxt the address book the node should start with
-     * @param adminKeySources todo
+     * @param useTestGossipFiles whether or not to have legacy gossip files present on disk at startup
      * @return this
      */
     @NonNull
-    HederaNode initWorkingDir(@NonNull String configTxt, @NonNull AdminKeySource[] adminKeySources);
+    HederaNode initWorkingDir(@NonNull String configTxt, final boolean useTestGossipFiles);
 
     /**
      * Starts the node software.

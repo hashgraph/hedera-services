@@ -42,7 +42,6 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
-import com.hedera.services.bdd.junit.hedera.AdminKeySource;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -202,8 +201,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     @Override
     public void start() {
-        nodes.forEach(
-                node -> node.initWorkingDir(configTxt, AdminKeySource.DEFAULTS).start());
+        nodes.forEach(node -> node.initWorkingDir(configTxt, false).start());
     }
 
     /**
@@ -344,8 +342,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         nodes.add(insertionPoint, node);
         configTxt = configTxtForLocal(
                 networkName, nodes, nextInternalGossipPort, nextExternalGossipPort, latestCandidateWeights());
-        // SubProcess nodes don't honor the embedded flags, so we pass the defaults
-        nodes.get(insertionPoint).initWorkingDir(configTxt, AdminKeySource.DEFAULTS);
+        nodes.get(insertionPoint).initWorkingDir(configTxt, false);
         refreshOverrideNetworks(ReassignPorts.NO);
     }
 

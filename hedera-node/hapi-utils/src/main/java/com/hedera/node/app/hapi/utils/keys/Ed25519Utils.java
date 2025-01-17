@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import org.bouncycastle.pkcs.PKCSException;
  */
 public final class Ed25519Utils {
     private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;
-    private static final Provider BC_PROVIDER = new BouncyCastleProvider();
+    public static final Provider BC_PROVIDER = new BouncyCastleProvider();
     private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
 
     private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";

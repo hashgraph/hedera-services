@@ -54,9 +54,9 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     }
 
     @Override
-    public @NonNull T initWorkingDir(@NonNull final String configTxt, @NonNull final AdminKeySource[] adminKeySources) {
+    public @NonNull T initWorkingDir(@NonNull final String configTxt, final boolean useTestGossipFiles) {
         requireNonNull(configTxt);
-        WorkingDirUtils.recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, adminKeySources);
+        WorkingDirUtils.recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt, useTestGossipFiles);
         workingDirInitialized = true;
         return self();
     }

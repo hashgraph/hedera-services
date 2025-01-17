@@ -17,17 +17,20 @@
 package com.hedera.node.app.info;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
+import static com.hedera.node.app.hapi.utils.keys.RSAUtils.parseIdFromPemLoc;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
-import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
+import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.hapi.utils.keys.RSAUtils;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
-import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
@@ -50,14 +53,18 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +73,7 @@ import org.apache.logging.log4j.Logger;
  * working directory on disk.
  */
 public class DiskStartupNetworks implements StartupNetworks {
-    private static final Logger log = LogManager.getLogger(DiskStartupNetworks.class);
+    static final Logger log = LogManager.getLogger(DiskStartupNetworks.class);
 
     public static final String ARCHIVE = ".archive";
     public static final String GENESIS_NETWORK_JSON = "genesis-network.json";
@@ -94,6 +101,199 @@ public class DiskStartupNetworks implements StartupNetworks {
         MIGRATION,
     }
 
+    // (FUTURE) 🔥🔥 Once the roster lifecycle is fully implemented, we can remove the dependency on the config.txt
+    // file. We should be able to delete this private class in its entirety. Let's make this a big eyesore so we remove
+    // it as soon as possible 🔥🔥
+    private static class ConfigTxtUtils {
+        private ConfigTxtUtils() {
+            // utility class
+        }
+
+        /**
+         * Creates a network from the given <i>config.txt</i> file. Since config.txt alone is not
+         * sufficient to fill out all the data needed in each roster entry, this code will also perform
+         * two more steps: 1) attempt to read the existing public certificates for all other nodes
+         * from disk, and 2) use this node's RSA key on disk, if present, to generate a certificate
+         * for this node.
+         *
+         * @param configTxt the <b>contents</b> of the <i>config.txt</i> file
+         * @param config the application's config
+         * @return the network
+         */
+        static Optional<Network> networkFromDisk(@NonNull final String configTxt, @NonNull final Configuration config) {
+            requireNonNull(configTxt);
+            requireNonNull(config);
+
+            final var networkCertsPath =
+                    config.getConfigData(BootstrapConfig.class).networkCertsPath();
+
+            final Map<Long, byte[]> certs = new HashMap<>();
+            try {
+                certs.putAll(PemCertsLoader.load(Paths.get(networkCertsPath)));
+            } catch (CertificateEncodingException e) {
+                log.warn("Couldn't load node certs", e);
+            }
+            if (certs.isEmpty()) {
+                // There's no point in loading the rest of configTxt if we don't have the certs available
+                return Optional.empty();
+            }
+
+            final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
+                    .filter(line -> line.contains("address, "))
+                    .map(line -> {
+                        final var parts = line.split(", ");
+                        final long nodeId = Long.parseLong(parts[1]);
+                        final long weight = Long.parseLong(parts[4]);
+                        final var gossipEndpoints =
+                                List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
+                        final var nodeAcctId = asAccount(parts[9]);
+                        if (!certs.containsKey(nodeId)) {
+                            throw new IllegalStateException("Missing cert for node " + nodeId);
+                        }
+                        final var certBytes = Bytes.wrap(certs.get(nodeId));
+                        final var metadata = NodeMetadata.newBuilder()
+                                .rosterEntry(new RosterEntry(nodeId, weight, certBytes, gossipEndpoints));
+                        metadata.node(new Node(
+                                nodeId,
+                                nodeAcctId,
+                                "node" + (nodeId + 1),
+                                gossipEndpoints,
+                                List.of(),
+                                certBytes,
+                                // The gRPC certificate hash is irrelevant for PR checks
+                                Bytes.EMPTY,
+                                weight,
+                                false,
+                                null));
+
+                        return metadata.build();
+                    })
+                    .toList();
+            return Optional.of(Network.newBuilder().nodeMetadata(nodeMetadata).build());
+        }
+
+        static ServiceEndpoint asServiceEndpoint(String v) {
+            String[] parts = v.split(":");
+            return ServiceEndpoint.newBuilder()
+                    .ipAddressV4(fromByteString(asOctets(parts[0])))
+                    .port(Integer.parseInt(parts[1]))
+                    .build();
+        }
+
+        static ByteString asOctets(final String ipAddressV4) {
+            final byte[] octets = new byte[4];
+            final String[] literals = ipAddressV4.split("[.]");
+            for (int i = 0; i < 4; i++) {
+                octets[i] = (byte) Integer.parseInt(literals[i]);
+            }
+            return ByteString.copyFrom(octets);
+        }
+
+        static AccountID asAccount(String v) {
+            final long[] nativeParts = asDotDelimitedLongArray(v);
+            return AccountID.newBuilder()
+                    .shardNum(nativeParts[0])
+                    .realmNum(nativeParts[1])
+                    .accountNum(nativeParts[2])
+                    .build();
+        }
+
+        static long[] asDotDelimitedLongArray(String s) {
+            final String[] parts = s.split("[.]");
+            return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+        }
+
+        static ServiceEndpoint endpointFrom(@NonNull final String hostLiteral, @NonNull final String portLiteral) {
+            return asServiceEndpoint(hostLiteral + ":" + portLiteral);
+        }
+
+        private static class PemCertsLoader {
+            private PemCertsLoader() {
+                // utility class
+            }
+
+            static Map<Long, byte[]> load(@NonNull final Path certsPath) throws CertificateEncodingException {
+                final var pemCerts = maybeDiskCertFiles(certsPath);
+                final var certsByNodeAcctId = new HashMap<Long, byte[]>();
+                for (final var pemPair : pemCerts.entrySet()) {
+                    final var pemAcctId = pemPair.getKey();
+                    final var pemLoc = pemPair.getValue();
+                    final Optional<X509Certificate> maybeCert = maybeLoadDiskCert(pemLoc);
+                    Optional<RSAPrivateKey> maybeKey = Optional.empty();
+                    if (maybeCert.isEmpty()) {
+                        // We'll need to generate the cert for this node using its private key
+                        maybeKey = maybeLoadPrivateKey(pemLoc);
+                    }
+
+                    Optional<X509Certificate> cert;
+                    if (maybeCert.isPresent()) {
+                        cert = maybeCert;
+                    } else {
+                        cert = maybeKey.flatMap(privateKey -> maybeGenerateCert(privateKey, 0));
+                    }
+
+                    final var certBytes = cert.map(a -> {
+                                try {
+                                    return a.getEncoded();
+                                } catch (CertificateEncodingException e) {
+                                    log.warn("Unable to encode cert", e);
+                                }
+
+                                return new byte[0];
+                            })
+                            .get();
+                    certsByNodeAcctId.put(pemAcctId, certBytes);
+                }
+
+                return certsByNodeAcctId;
+            }
+
+            private static Map<Long, Path> maybeDiskCertFiles(@NonNull final Path certsPath) {
+                final Map<Long, Path> certFiles = new HashMap<>();
+                try (final DirectoryStream<Path> stream = Files.newDirectoryStream(certsPath, "*.pem")) {
+                    for (Path entry : stream) {
+                        if (entry.getFileName().toString().contains("s-public-node")) {
+                            final var pemAcctId = parseIdFromPemLoc(entry);
+                            certFiles.put(pemAcctId, entry);
+                        }
+                    }
+                } catch (IOException e) {
+                    log.error("Error locating pem file(s)", e);
+                }
+
+                return certFiles;
+            }
+
+            private static Optional<X509Certificate> maybeLoadDiskCert(Path pemLoc) {
+                try {
+                    return Optional.of(RSAUtils.parseCertificate(pemLoc.toString()));
+                } catch (final Exception e) {
+                    log.warn("Error loading PEM as certificate from {}", pemLoc, e);
+                    return Optional.empty();
+                }
+            }
+
+            private static Optional<RSAPrivateKey> maybeLoadPrivateKey(Path pemLoc) {
+                try {
+                    return Optional.of(RSAUtils.loadPrivateKey(pemLoc.toString(), "pass"));
+                } catch (Exception e) {
+                    log.warn("Error loading PEM as private key from {}", pemLoc, e);
+                    return Optional.empty();
+                }
+            }
+
+            private static Optional<X509Certificate> maybeGenerateCert(
+                    @NonNull final RSAPrivateKey privateKey, final int nodeId) {
+                try {
+                    return Optional.of(RSAUtils.generateCertificate(privateKey, nodeId));
+                } catch (Exception e) {
+                    log.warn("Unable to generate certificate for node {}", nodeId, e);
+                    return Optional.empty();
+                }
+            }
+        }
+    }
+
     public DiskStartupNetworks(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider);
     }
@@ -102,7 +302,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     public Network genesisNetworkOrThrow(@NonNull final Configuration platformConfig) {
         requireNonNull(platformConfig);
         return loadNetwork(AssetUse.GENESIS, configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
-                .or(() -> loadFromConfigTxt(platformConfig))
+                .or(() -> fromConfigTxt(platformConfig))
                 .orElseThrow(() -> new IllegalStateException("Genesis network not found"));
     }
 
@@ -118,7 +318,7 @@ public class DiskStartupNetworks implements StartupNetworks {
         }
 
         return loadNetwork(AssetUse.OVERRIDE, config, "" + roundNumber, OVERRIDE_NETWORK_JSON)
-                .or(() -> loadFromConfigTxt(config))
+                .or(() -> fromConfigTxt(config))
                 .or(Optional::empty);
     }
 
@@ -175,183 +375,8 @@ public class DiskStartupNetworks implements StartupNetworks {
     @Override
     public Network migrationNetworkOrThrow() {
         return loadNetwork(AssetUse.MIGRATION, configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
-                .or(() -> loadFromConfigTxt(configProvider.getConfiguration()))
+                .or(() -> fromConfigTxt(configProvider.getConfiguration()))
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
-    }
-
-    private record NodeAdminPEMKey(@NonNull Key key, int nodeMetadataIndex) {}
-
-    private static Map<Long, Key> parseEd25519NodeAdminKeysFrom(@NonNull final String loc) {
-        final var path = Paths.get(loc);
-        try {
-            final var json = Files.readString(path);
-            return V053AddressBookSchema.parseEd25519NodeAdminKeys(json);
-        } catch (IOException ignore) {
-            return emptyMap();
-        }
-    }
-
-    private record DiskKeyAccess(@NonNull Path pemLoc, long pemAccountId) {}
-
-    private static class PemAdminKeyLoader {
-        private PemAdminKeyLoader() {
-            // utility class
-        }
-
-        static Optional<NodeAdminPEMKey> load(@NonNull final Network networkSoFar, @NonNull final Path keysPath) {
-            final var maybePemAccess = maybeDiskAdminKeyFiles(keysPath);
-            if (maybePemAccess.isPresent()) {
-                final DiskKeyAccess pemAccess = maybePemAccess.get();
-                final var maybeDiskKey = maybeLoadDiskAdminKey(pemAccess);
-                if (maybeDiskKey.isPresent()) {
-                    final var maybeMetadataIndex = findNodeIndex(networkSoFar, pemAccess.pemAccountId());
-                    if (maybeMetadataIndex.isPresent()) {
-                        return Optional.of(new NodeAdminPEMKey(maybeDiskKey.get(), maybeMetadataIndex.get()));
-                    }
-                }
-            }
-
-            log.fatal(
-                    "bootstrap.pemAdminKeyPath is set (value=[{}]), but no accessible account pem file found",
-                    keysPath);
-            return Optional.empty();
-        }
-
-        private static Optional<DiskKeyAccess> maybeDiskAdminKeyFiles(@NonNull final Path keysPath) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(keysPath, "*.pem")) {
-                for (Path entry : stream) {
-                    if (entry.getFileName().toString().contains("account")) {
-                        final var pemLoc = entry.toAbsolutePath().toString();
-                        final var pemAcctStr = entry.getFileName()
-                                .toString()
-                                .replace(".pem", "")
-                                .replace("account", "");
-                        final var pemAcctId = parseAcctIdFromPemLoc(pemAcctStr);
-
-                        // Only one PEM file is expected in this directory, so return the first one
-                        return Optional.of(new DiskKeyAccess(Path.of(pemLoc), pemAcctId));
-                    }
-                }
-            } catch (IOException e) {
-                log.error("Couldn't open pem file(s):", e);
-            }
-
-            log.error("No account pem file(s) found in [{}]", keysPath);
-            return Optional.empty();
-        }
-
-        private static Optional<Key> maybeLoadDiskAdminKey(@NonNull final DiskKeyAccess keyAccess) {
-            // Get the passphrase for the PEM key
-            final var passFile = Path.of(keyAccess.pemLoc().toString().replace(".pem", ".pass"));
-            String pass = "";
-            if (Files.exists(passFile)) {
-                try {
-                    pass = Files.readString(passFile);
-                } catch (final IOException e) {
-                    log.warn(".pass file at {} couldn't open", passFile, e);
-                }
-            }
-
-            if (pass.isEmpty()) {
-                log.error("No passphrase found for pem account {}", keyAccess.pemAccountId());
-                // Ed25519Utils#readKeyFrom requires a password, so fail here
-                return Optional.empty();
-            }
-
-            // Load the private key and compute its public key
-            final EdDSAPrivateKey privateKey =
-                    Ed25519Utils.readKeyFrom(keyAccess.pemLoc().toFile(), pass);
-            final var publicKey = publicKeyFromPrivateEd25519(privateKey);
-            final var pubKeyBytes = Bytes.wrap(publicKey);
-            return Optional.of(Key.newBuilder().ed25519(pubKeyBytes).build());
-        }
-
-        private static Optional<Integer> findNodeIndex(@NonNull final Network configTxtNetwork, final long pemAcct) {
-            final AccountID pemAccount =
-                    AccountID.newBuilder().accountNum(pemAcct).build();
-            for (final NodeMetadata metadata : configTxtNetwork.nodeMetadata()) {
-                if (pemAccount.equals(metadata.node().accountId())) {
-                    final var metadataIndex = configTxtNetwork.nodeMetadata().indexOf(metadata);
-                    if (metadataIndex > -1) {
-                        return Optional.of(metadataIndex);
-                    }
-                }
-            }
-
-            log.warn("No parseable metadata found for PEM key (account {})", pemAcct);
-            return Optional.empty();
-        }
-
-        private static long parseAcctIdFromPemLoc(@NonNull final String pemLoc) {
-            final var pemFilename = Paths.get(pemLoc).getFileName().toString();
-            return Long.parseLong(pemFilename.replace("account", "").replace(".pem", ""));
-        }
-
-        private static byte[] publicKeyFromPrivateEd25519(@NonNull final EdDSAPrivateKey privateKey) {
-            return privateKey.getAbyte();
-        }
-    }
-
-    // (FUTURE) Once the roster lifecycle is fully implemented, we can remove the dependency on the
-    // config.txt file
-    private Optional<Network> loadFromConfigTxt(Configuration configuration) {
-        final var configTxtPath =
-                Paths.get(configuration.getConfigData(BootstrapConfig.class).configTxtPath());
-        final Optional<Network> maybeNetwork = genesisNetworkFromConfigTxt(configuration, configTxtPath);
-
-        Optional<Network> updatedNetwork = Optional.empty();
-        if (maybeNetwork.isPresent()) {
-            final var network = maybeNetwork.get();
-
-            // First attempt to load the node-admin-keys.json key
-            final var nodeAdminKeysPath =
-                    configuration.getConfigData(BootstrapConfig.class).nodeAdminKeysPath();
-            final var foundAdminKeys = parseEd25519NodeAdminKeysFrom(nodeAdminKeysPath);
-            // Retrieve the first admin key from the map
-            Key diskKey = foundAdminKeys.get(0L);
-            int nodeMetadataIndex = 0;
-
-            // If the key is not found in node admin keys, attempt to load it from disk
-            if (diskKey == null) {
-                final var pemAdminKeyPath =
-                        configuration.getConfigData(BootstrapConfig.class).pemAdminKeyPath();
-                final var pemKey = PemAdminKeyLoader.load(network, Path.of(pemAdminKeyPath));
-                if (pemKey.isEmpty()) {
-                    // At this point there's nothing more we can do to find an admin key, so return
-                    return Optional.empty();
-                }
-
-                diskKey = pemKey.get().key();
-                nodeMetadataIndex = pemKey.get().nodeMetadataIndex();
-            }
-
-            updatedNetwork = copiedNetworkWithAdminKey(network, diskKey, nodeMetadataIndex);
-        }
-
-        log.error("Unable to load fallback network");
-        return updatedNetwork;
-    }
-
-    private Optional<Network> copiedNetworkWithAdminKey(
-            @NonNull final Network network, @NonNull final Key thisNodeAdminKey, final int thisNodeIndex) {
-        final var thisNodeMetadata = network.nodeMetadata().get(thisNodeIndex);
-
-        // Copy each node's metadata to a new list, then replace this node's metadata with the new one
-        final List<NodeMetadata> newMetas = new ArrayList<>(network.nodeMetadata());
-        final Node newNode = thisNodeMetadata
-                .nodeOrThrow()
-                .copyBuilder()
-                .adminKey(thisNodeAdminKey)
-                .build();
-        final NodeMetadata newNodeMetadata =
-                thisNodeMetadata.copyBuilder().node(newNode).build();
-        newMetas.set(thisNodeIndex, newNodeMetadata);
-
-        // Replace the old metadata with the new one
-        return Optional.of(Network.newBuilder()
-                .ledgerId(network.ledgerId())
-                .nodeMetadata(newMetas)
-                .build());
     }
 
     /**
@@ -498,6 +523,15 @@ public class DiskStartupNetworks implements StartupNetworks {
             log.warn("Fallback loading genesis network from config.txt also failed", e);
             throw new IllegalStateException(e);
         }
+    }
+
+    private static Optional<Network> fromConfigTxt(@NonNull final Configuration config) {
+        final var configTxtPath =
+                Paths.get(config.getConfigData(BootstrapConfig.class).configTxtPath());
+        final var configTxt = LegacyConfigPropertiesLoader.loadConfigFile(configTxtPath)
+                .getAddressBook()
+                .toConfigText();
+        return ConfigTxtUtils.networkFromDisk(configTxt, config);
     }
 
     /**

@@ -169,10 +169,9 @@ public interface HederaNetwork {
      * type will ensure that the necessary corresponding key materials are all present on disk at
      * time of node startup.
      * @param bootstrapOverrides - configuration overrides to apply PRIOR to startup
-     * @param adminKeySources - the source(s) of admin keys to make available to the embedded node
+     * @param useDiskGossipFiles - use disk gossip files instead of the standard network JSON
      */
-    default void startWith(
-            @NonNull final Map<String, String> bootstrapOverrides, @NonNull AdminKeySource[] adminKeySources) {
+    default void startWith(@NonNull final Map<String, String> bootstrapOverrides, final boolean useDiskGossipFiles) {
         throw new UnsupportedOperationException();
     }
 
