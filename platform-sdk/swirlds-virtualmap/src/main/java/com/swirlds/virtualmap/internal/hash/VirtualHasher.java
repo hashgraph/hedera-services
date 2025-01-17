@@ -21,11 +21,11 @@ import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.common.concurrent.AbstractTask;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.component.framework.tasks.AbstractTask;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongFunction;
 import org.apache.logging.log4j.LogManager;
@@ -113,9 +114,13 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             synchronized (VirtualHasher.class) {
                 pool = hashingPool;
                 if (pool == null) {
-                    final int hashingThreadCount = virtualMapConfig.getNumHashThreads();
-                    pool = new ForkJoinPool(hashingThreadCount);
-                    hashingPool = pool;
+                    if (Thread.currentThread() instanceof ForkJoinWorkerThread thread) {
+                        hashingPool = thread.getPool();
+                    } else {
+                        final int hashingThreadCount = virtualMapConfig.getNumHashThreads();
+                        pool = new ForkJoinPool(hashingThreadCount);
+                        hashingPool = pool;
+                    }
                 }
             }
         }
