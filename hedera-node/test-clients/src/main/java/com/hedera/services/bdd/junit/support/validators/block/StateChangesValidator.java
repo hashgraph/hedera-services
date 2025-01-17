@@ -300,9 +300,9 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
         final var digest = sha384DigestOrThrow();
         switch (item.item().kind()) {
-            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
+            case EVENT_HEADER, EVENT_TRANSACTION, ROUND_HEADER -> inputTreeHasher.addLeaf(
                     ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
-            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES, BLOCK_HEADER -> outputTreeHasher.addLeaf(
                     ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
             default -> {
                 // Other items are not part of the input/output trees
