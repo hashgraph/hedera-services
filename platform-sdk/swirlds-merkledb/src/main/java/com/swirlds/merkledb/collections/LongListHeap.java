@@ -94,13 +94,10 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
         initReadBuffer = ByteBuffer.allocateDirect(memoryChunkSize).order(ByteOrder.nativeOrder());
-
-        super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
-
         try {
-            MemoryUtils.closeDirectByteBuffer(initReadBuffer);
+            super.readBodyFromFileChannelOnInit(sourceFileName, fileChannel);
         } finally {
-            initReadBuffer = null;
+            MemoryUtils.closeDirectByteBuffer(initReadBuffer);
         }
     }
 
