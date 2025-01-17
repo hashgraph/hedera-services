@@ -44,10 +44,18 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
 
     private List<HapiTxnOp<?>> operationsToBatch;
 
+    private boolean useRawTransactions = false;
+    private List<Transaction> transactionsToBatch;
+
     public HapiAtomicBatch() {}
 
     public HapiAtomicBatch(HapiTxnOp<?>... ops) {
         this.operationsToBatch = Arrays.stream(ops).toList();
+    }
+
+    public HapiAtomicBatch(Transaction... transactions) {
+        useRawTransactions = true;
+        this.transactionsToBatch = Arrays.stream(transactions).toList();
     }
 
     @Override
@@ -81,11 +89,15 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
         final AtomicBatchTransactionBody opBody = spec.txns()
                 .<AtomicBatchTransactionBody, AtomicBatchTransactionBody.Builder>body(
                         AtomicBatchTransactionBody.class, b -> {
-                            for (HapiTxnOp<?> op : operationsToBatch) {
-                                try {
-                                    b.addTransactions(op.signedTxnFor(spec));
-                                } catch (Throwable e) {
-                                    throw new RuntimeException(e);
+                            if (useRawTransactions) {
+                                b.addAllTransactions(transactionsToBatch);
+                            } else {
+                                for (HapiTxnOp<?> op : operationsToBatch) {
+                                    try {
+                                        b.addTransactions(op.signedTxnFor(spec));
+                                    } catch (Throwable e) {
+                                        throw new RuntimeException(e);
+                                    }
                                 }
                             }
                         });

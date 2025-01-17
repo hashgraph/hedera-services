@@ -19,6 +19,9 @@ package com.hedera.services.bdd.suites.hip551;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.BuildTransaction.buildTxnFrom;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -35,7 +38,17 @@ public class AtomicBatchTest {
     // just test that the batch is submitted
     // disabled for now because there is no handler logic and streamValidation is failing in CI
     public Stream<DynamicTest> simpleBatchTest() {
-        return hapiTest(atomicBatch(
-                cryptoCreate("PAYER").balance(ONE_HBAR), cryptoCreate("SENDER").balance(1L)));
+        return hapiTest(
+                // submit batch with HapiTxnOp
+                atomicBatch(
+                        cryptoCreate("PAYER").balance(ONE_HBAR),
+                        cryptoCreate("SENDER").balance(1L)),
+
+                // submit batch with Transaction
+                withOpContext((spec, opLog) -> {
+                    var txn = buildTxnFrom(spec, cryptoCreate("PAYER").balance(ONE_HBAR));
+                    var batch1 = atomicBatch(txn);
+                    allRunFor(spec, batch1);
+                }));
     }
 }
