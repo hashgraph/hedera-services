@@ -18,6 +18,7 @@ package com.swirlds.platform.event.hashing;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -26,6 +27,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Objects;
@@ -50,7 +52,9 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        List<Bytes> transactions = event.getGossipEvent().transactions();
+        boolean isNewFormat = !transactions.isEmpty();
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), isNewFormat);
         event.setHash(hash);
         return event;
     }
@@ -61,7 +65,7 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), false);
         event.setHash(hash);
     }
 
@@ -74,20 +78,34 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      * @return the hash of the event
      */
     @NonNull
-    private Hash hashEvent(@NonNull final EventCore eventCore, @NonNull final List<TransactionWrapper> transactions) {
-        // TODO: adapt this to the new transaction model
-        //        try {
-        //            EventCore.PROTOBUF.write(eventCore, eventStream);
-        //            for (final TransactionWrapper transaction : transactions) {
-        //                EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
-        //                byte[] hash = transactionDigest.digest();
-        //                transaction.setHash(Bytes.wrap(hash));
-        //                eventStream.writeBytes(hash);
-        //            }
-        //        } catch (final IOException e) {
-        //            throw new RuntimeException("An exception occurred while trying to hash an event!", e);
-        //        }
-        //
+    private Hash hashEvent(
+            @NonNull final EventCore eventCore,
+            @NonNull final List<TransactionWrapper> transactions,
+            final boolean isNewFormat) {
+        try {
+            if (isNewFormat) {
+                for (final TransactionWrapper transaction : transactions) {
+                    transactionStream.writeBytes(Objects.requireNonNull(transaction.getTransaction()));
+                    processTransactionHash(transaction);
+                }
+            } else {
+                // TODO: adapt transaction wrapper for the old transaction model
+                //                    for (final TransactionWrapper transaction : transactions) {
+                //                        EventTransaction.PROTOBUF.write(transaction.getTransaction(),
+                // transactionStream);
+                //                        processTransactionHash(transaction);
+                //                    }
+            }
+        } catch (final IOException e) {
+            throw new RuntimeException("An exception occurred while trying to hash an event!", e);
+        }
+
         return new Hash(eventDigest.digest(), DigestType.SHA_384);
+    }
+
+    private void processTransactionHash(TransactionWrapper transaction) throws IOException {
+        byte[] hash = transactionDigest.digest();
+        transaction.setHash(Bytes.wrap(hash));
+        eventStream.writeBytes(hash);
     }
 }
