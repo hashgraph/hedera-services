@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.history.impl.HistoryLibraryCodecImpl.HISTORY_LIBRARY_CODEC;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -41,8 +42,8 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
-import com.hedera.node.app.history.HistoryServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
+import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -384,7 +385,11 @@ public class ServicesMain implements SwirldMain {
                 appContext ->
                         new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl()),
                 appContext -> new HistoryServiceImpl(
-                        metrics, ForkJoinPool.commonPool(), appContext, new HistoryLibraryImpl()),
+                        metrics,
+                        ForkJoinPool.commonPool(),
+                        appContext,
+                        new HistoryLibraryImpl(),
+                        HISTORY_LIBRARY_CODEC),
                 TssBlockHashSigner::new);
     }
 

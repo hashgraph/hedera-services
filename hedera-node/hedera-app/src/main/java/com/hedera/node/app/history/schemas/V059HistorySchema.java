@@ -65,9 +65,9 @@ public class V059HistorySchema extends Schema {
     private static final long MAX_PROOF_VOTES = MAX_ASSEMBLY_SIGNATURES;
 
     public static final String LEDGER_ID_KEY = "LEDGER_ID";
+    public static final String ACTIVE_PROOF_CONSTRUCTION_KEY = "ACTIVE_PROOF_CONSTRUCTION";
+    public static final String NEXT_PROOF_CONSTRUCTION_KEY = "NEXT_PROOF_CONSTRUCTION";
     public static final String PROOF_KEY_SETS_KEY = "PROOF_KEY_SETS";
-    public static final String ACTIVE_CONSTRUCTION_KEY = "ACTIVE_CONSTRUCTION";
-    public static final String NEXT_CONSTRUCTION_KEY = "NEXT_CONSTRUCTION";
     public static final String HISTORY_SIGNATURES_KEY = "HISTORY_SIGNATURES";
     public static final String PROOF_VOTES_KEY = "PROOF_VOTES";
 
@@ -82,8 +82,8 @@ public class V059HistorySchema extends Schema {
     public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.singleton(LEDGER_ID_KEY, ProtoBytes.PROTOBUF),
-                StateDefinition.singleton(ACTIVE_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
-                StateDefinition.singleton(NEXT_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
+                StateDefinition.singleton(ACTIVE_PROOF_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
+                StateDefinition.singleton(NEXT_PROOF_CONSTRUCTION_KEY, HistoryProofConstruction.PROTOBUF),
                 StateDefinition.onDisk(PROOF_KEY_SETS_KEY, NodeId.PROTOBUF, ProofKeySet.PROTOBUF, MAX_PROOF_KEYS),
                 StateDefinition.onDisk(
                         HISTORY_SIGNATURES_KEY,
@@ -98,15 +98,17 @@ public class V059HistorySchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         final var states = ctx.newStates();
         states.<ProtoBytes>getSingleton(LEDGER_ID_KEY).put(ProtoBytes.DEFAULT);
-        states.<HistoryProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY).put(HistoryProofConstruction.DEFAULT);
-        states.<HistoryProofConstruction>getSingleton(NEXT_CONSTRUCTION_KEY).put(HistoryProofConstruction.DEFAULT);
+        states.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY)
+                .put(HistoryProofConstruction.DEFAULT);
+        states.<HistoryProofConstruction>getSingleton(NEXT_PROOF_CONSTRUCTION_KEY)
+                .put(HistoryProofConstruction.DEFAULT);
     }
 
     @Override
     public void restart(@NonNull final MigrationContext ctx) {
-        final var states = ctx.previousStates();
+        final var states = ctx.newStates();
         final var activeConstruction =
-                requireNonNull(states.<HistoryProofConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY)
+                requireNonNull(states.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY)
                         .get());
         if (activeConstruction.hasTargetProof()) {
             proofConsumer.accept(activeConstruction.targetProofOrThrow());

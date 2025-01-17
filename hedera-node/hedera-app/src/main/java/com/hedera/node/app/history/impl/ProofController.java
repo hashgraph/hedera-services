@@ -25,7 +25,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
+/**
+ * Manages the process objects and work needed to advance work towards a proof that a certain
+ * {@code (address book hash, metadata)} pair belongs to the chain of trust proceeding from the
+ * ledger id. (Or, if the ledger id is null, simply the proof that the ledger has blessed the
+ * genesis address book metadata).
+ */
 public interface ProofController {
+    /**
+     * Returns the ID of the proof construction that this controller is managing.
+     */
+    long constructionId();
+
     /**
      * Acts relative to the given state to let this node help advance the ongoing metadata proof
      * construction toward a deterministic completion.

@@ -64,6 +64,12 @@ public interface ReadableHistoryStore {
     }
 
     /**
+     * Returns the ledger id initiating the chain of trusted history, if known.
+     */
+    @Nullable
+    Bytes getLedgerId();
+
+    /**
      * Returns the active construction.
      */
     @NonNull

@@ -16,22 +16,31 @@
 
 package com.hedera.node.app.history.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.history.History;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
-public interface HistoryLibraryCodec {
+/**
+ * Utility to extract information from byte arrays returned by the {@link HistoryLibrary}, encode protobuf
+ * messages in the form the library expects, and so on.
+ */
+public enum HistoryLibraryCodecImpl implements HistoryLibraryCodec {
+    HISTORY_LIBRARY_CODEC;
+
     /**
      * Encodes the given address book hash and metadata into a history record to be signed via
      * {@link HistoryLibrary#signSchnorr(Bytes, Bytes)}.
      *
-     * @param history the history record to encode
-     * @return the bytes for signing
+     * @param history@return the bytes for signing
      */
-    @NonNull
-    Bytes encodeHistory(@NonNull History history);
+    public @NonNull Bytes encodeHistory(@NonNull final History history) {
+        requireNonNull(history);
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Encodes the given roster and public keys into an address book for use with the {@link HistoryLibrary}.
@@ -40,8 +49,12 @@ public interface HistoryLibraryCodec {
      * @param publicKeys the available Schnorr public keys for the nodes in the roster
      * @return the history address book
      */
-    @NonNull
-    Bytes encodeAddressBook(@NonNull Map<Long, Long> weights, @NonNull Map<Long, Bytes> publicKeys);
+    public @NonNull Bytes encodeAddressBook(
+            @NonNull final Map<Long, Long> weights, @NonNull final Map<Long, Bytes> publicKeys) {
+        requireNonNull(weights);
+        requireNonNull(publicKeys);
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Encodes the given roster and public keys into an address book for use with the {@link HistoryLibrary}.
@@ -50,6 +63,10 @@ public interface HistoryLibraryCodec {
      * @param snarkVerificationKey the verification key for the SNARK used to prove address book transitions
      * @return the history address book
      */
-    @NonNull
-    Bytes encodeLedgerId(@NonNull Bytes addressBookHash, @NonNull Bytes snarkVerificationKey);
+    public @NonNull Bytes encodeLedgerId(
+            @NonNull final Bytes addressBookHash, @NonNull final Bytes snarkVerificationKey) {
+        requireNonNull(addressBookHash);
+        requireNonNull(snarkVerificationKey);
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }

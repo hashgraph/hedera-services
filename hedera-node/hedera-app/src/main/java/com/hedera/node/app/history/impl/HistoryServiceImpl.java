@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.history;
+package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.node.app.history.HistoryLibrary;
+import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -49,8 +52,9 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HistoryLibrary operations) {
-        component = DaggerHistoryServiceComponent.factory().create(operations, appContext, executor, metrics);
+            @NonNull final HistoryLibrary library,
+            @NonNull final HistoryLibraryCodec codec) {
+        component = DaggerHistoryServiceComponent.factory().create(library, codec, appContext, executor, metrics, this);
     }
 
     @Override

@@ -14,21 +14,31 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.history;
+package com.hedera.node.app.history.impl;
+
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.history.handlers.HistoryAssemblySignatureHandler;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.handlers.HistoryProofKeyPublicationHandler;
 import com.hedera.node.app.history.handlers.HistoryProofVoteHandler;
-import com.hedera.node.app.history.impl.ProofKeysAccessorImpl;
+import com.hedera.node.app.spi.AppContext;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Module
 public interface HistoryModule {
+    @Provides
+    @Singleton
+    static Supplier<NodeInfo> provideSelfNodeInfoSupplier(@NonNull final AppContext appContext) {
+        return requireNonNull(appContext).selfNodeInfoSupplier();
+    }
+
     @Binds
     @Singleton
     ProofKeysAccessor bindProofKeyAccessor(@NonNull ProofKeysAccessorImpl proofKeysAccessorImpl);

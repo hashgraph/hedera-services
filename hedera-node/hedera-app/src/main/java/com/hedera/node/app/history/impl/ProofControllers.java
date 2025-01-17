@@ -18,11 +18,17 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ReadableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -30,16 +36,37 @@ import javax.inject.Singleton;
 public class ProofControllers {
     private static final long NO_CONSTRUCTION_ID = -1L;
 
+    private final Executor executor;
+    private final ProofKeysAccessor keyAccessor;
+    private final HistoryLibrary library;
+    private final HistoryLibraryCodec codec;
+    private final HistorySubmissions submissions;
+    private final Supplier<NodeInfo> selfNodeInfoSupplier;
+    private final Consumer<HistoryProof> proofConsumer;
+
     /**
      * May be null if the node has just started, or if the network has completed the most up-to-date
      * construction implied by its roster store.
      */
     @Nullable
-    private ProofControllerImpl controller;
+    private ProofController controller;
 
     @Inject
-    public ProofControllers() {
-        // Dagger2
+    public ProofControllers(
+            @NonNull final Executor executor,
+            @NonNull final ProofKeysAccessor keyAccessor,
+            @NonNull final HistoryLibrary library,
+            @NonNull final HistoryLibraryCodec codec,
+            @NonNull final HistorySubmissions submissions,
+            @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier,
+            @NonNull final Consumer<HistoryProof> proofConsumer) {
+        this.executor = requireNonNull(executor);
+        this.keyAccessor = requireNonNull(keyAccessor);
+        this.library = requireNonNull(library);
+        this.codec = requireNonNull(codec);
+        this.submissions = requireNonNull(submissions);
+        this.selfNodeInfoSupplier = requireNonNull(selfNodeInfoSupplier);
+        this.proofConsumer = requireNonNull(proofConsumer);
     }
 
     /**
@@ -50,7 +77,7 @@ public class ProofControllers {
      * @param historyStore the history store
      * @return the result of the operation
      */
-    public @NonNull ProofControllerImpl getOrCreateFor(
+    public @NonNull ProofController getOrCreateFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HistoryProofConstruction construction,
             @NonNull final ReadableHistoryStore historyStore) {
@@ -61,9 +88,45 @@ public class ProofControllers {
             if (controller != null) {
                 controller.cancelPendingWork();
             }
-            controller = newControllerFor(activeRosters, construction, hintsStore);
+            controller = newControllerFor(activeRosters, construction, historyStore);
         }
         return requireNonNull(controller);
+    }
+
+    /**
+     * Returns a new controller for the given active rosters and history proof construction.
+     * @param activeRosters the active rosters
+     * @param construction the proof construction
+     * @param historyStore the history store
+     * @return the controller
+     */
+    private ProofController newControllerFor(
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final HistoryProofConstruction construction,
+            @NonNull final ReadableHistoryStore historyStore) {
+        final var weights = activeRosters.transitionWeights();
+        if (!weights.sourceNodesHaveTargetThreshold()) {
+            return new InertProofController(construction.constructionId());
+        } else {
+            final var selfId = selfNodeInfoSupplier.get().nodeId();
+            final var schnorrKeyPair = keyAccessor.getOrCreateSchnorrKeyPair(construction.constructionId());
+            final var keyPublications = historyStore.getProofKeyPublications(weights.targetNodeIds());
+            final var signaturePublications =
+                    historyStore.getSignaturePublications(construction.constructionId(), weights.targetNodeIds());
+            return new ProofControllerImpl(
+                    selfId,
+                    schnorrKeyPair,
+                    historyStore.getLedgerId(),
+                    construction,
+                    weights,
+                    executor,
+                    library,
+                    codec,
+                    submissions,
+                    keyPublications,
+                    signaturePublications,
+                    proofConsumer);
+        }
     }
 
     /**

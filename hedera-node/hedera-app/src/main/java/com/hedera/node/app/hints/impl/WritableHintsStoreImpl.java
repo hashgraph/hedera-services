@@ -63,7 +63,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
 
-    public WritableHintsStoreImpl(@NonNull WritableStates states) {
+    public WritableHintsStoreImpl(@NonNull final WritableStates states) {
         super(states);
         this.hintsKeys = states.get(HINTS_KEY_SETS_KEY);
         this.nextConstruction = states.getSingleton(NEXT_CONSTRUCTION_KEY);

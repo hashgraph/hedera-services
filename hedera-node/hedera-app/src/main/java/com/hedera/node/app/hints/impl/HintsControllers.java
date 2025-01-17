@@ -46,7 +46,7 @@ public class HintsControllers {
     private static final long NO_CONSTRUCTION_ID = -1L;
 
     private final Executor executor;
-    private final HintsKeyAccessor keyLoader;
+    private final HintsKeyAccessor keyAccessor;
     private final HintsLibrary library;
     private final HintsLibraryCodec codec;
     private final HintsSubmissions submissions;
@@ -63,14 +63,14 @@ public class HintsControllers {
     @Inject
     public HintsControllers(
             @NonNull final Executor executor,
-            @NonNull final HintsKeyAccessor keyLoader,
+            @NonNull final HintsKeyAccessor keyAccessor,
             @NonNull final HintsLibrary library,
             @NonNull final HintsLibraryCodec codec,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier) {
         this.executor = requireNonNull(executor);
-        this.keyLoader = requireNonNull(keyLoader);
+        this.keyAccessor = requireNonNull(keyAccessor);
         this.codec = requireNonNull(codec);
         this.signingContext = requireNonNull(signingContext);
         this.library = requireNonNull(library);
@@ -143,7 +143,7 @@ public class HintsControllers {
             final var publications = hintsStore.getHintsKeyPublications(weights.targetNodeIds(), numParties);
             final var votes = hintsStore.getVotes(construction.constructionId(), weights.sourceNodeIds());
             final var selfId = selfNodeInfoSupplier.get().nodeId();
-            final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
+            final var blsKeyPair = keyAccessor.getOrCreateBlsKeyPair(construction.constructionId());
             return new HintsControllerImpl(
                     selfId,
                     blsKeyPair,

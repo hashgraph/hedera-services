@@ -52,10 +52,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
- * Manages the process objects and work needed to advance work towards a proof that a certain
- * {@code (address book hash, metadata)} pair belongs to the chain of trust proceeding from the
- * ledger id. (Or, if the ledger id is null, simply the proof that the ledger has blessed the
- * genesis address book metadata).
+ * Default implementation of {@link ProofController}.
  */
 public class ProofControllerImpl implements ProofController {
     private static final Comparator<ProofKey> PROOF_KEY_COMPARATOR = Comparator.comparingLong(ProofKey::nodeId);
@@ -156,6 +153,11 @@ public class ProofControllerImpl implements ProofController {
     }
 
     @Override
+    public long constructionId() {
+        return construction.constructionId();
+    }
+
+    @Override
     public void advanceConstruction(
             @NonNull final Instant now,
             @Nullable final Bytes metadata,
@@ -204,6 +206,7 @@ public class ProofControllerImpl implements ProofController {
         if (!construction.hasTargetProof() && targetProofKeys.containsKey(publication.nodeId())) {
             verificationFutures.put(
                     publication.at(), verificationFuture(publication.nodeId(), publication.signature()));
+            signingNodeIds.add(publication.nodeId());
         }
     }
 
@@ -211,6 +214,7 @@ public class ProofControllerImpl implements ProofController {
     public boolean addProofVote(
             final long nodeId, @NonNull final HistoryProofVote vote, @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(vote);
+        requireNonNull(historyStore);
         if (!construction.hasTargetProof() && !votes.containsKey(nodeId)) {
             votes.put(nodeId, vote);
             final var proofWeights = votes.entrySet().stream()

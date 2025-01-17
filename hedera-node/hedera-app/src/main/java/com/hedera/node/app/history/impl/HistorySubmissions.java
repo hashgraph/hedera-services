@@ -25,7 +25,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody;
-import com.hedera.node.app.history.ProofKeysAccessor;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssSubmissions;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

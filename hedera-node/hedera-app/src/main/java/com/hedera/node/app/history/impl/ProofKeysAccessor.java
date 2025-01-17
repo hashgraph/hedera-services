@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.history;
+package com.hedera.node.app.history.impl;
 
 import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

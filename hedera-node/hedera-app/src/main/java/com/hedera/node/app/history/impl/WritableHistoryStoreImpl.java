@@ -16,14 +16,30 @@
 
 package com.hedera.node.app.history.impl;
 
+import static com.hedera.node.app.history.schemas.V059HistorySchema.ACTIVE_PROOF_CONSTRUCTION_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.HISTORY_SIGNATURES_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.LEDGER_ID_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.NEXT_PROOF_CONSTRUCTION_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.PROOF_KEY_SETS_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.PROOF_VOTES_KEY;
+import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.history.ConstructionNodeId;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.hapi.node.state.history.HistoryProofVote;
+import com.hedera.hapi.node.state.history.ProofKeySet;
+import com.hedera.hapi.node.state.history.RecordedHistorySignature;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -31,6 +47,23 @@ import java.time.Instant;
  * Default implementation of {@link WritableHistoryStore}.
  */
 public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implements WritableHistoryStore {
+    private final WritableSingletonState<ProtoBytes> ledgerId;
+    private final WritableSingletonState<HistoryProofConstruction> nextConstruction;
+    private final WritableSingletonState<HistoryProofConstruction> activeConstruction;
+    private final WritableKVState<NodeId, ProofKeySet> proofKeySets;
+    private final WritableKVState<ConstructionNodeId, RecordedHistorySignature> signatures;
+    private final WritableKVState<ConstructionNodeId, HistoryProofVote> votes;
+
+    public WritableHistoryStoreImpl(@NonNull final WritableStates states) {
+        super(states);
+        this.ledgerId = states.getSingleton(LEDGER_ID_KEY);
+        this.nextConstruction = states.getSingleton(NEXT_PROOF_CONSTRUCTION_KEY);
+        this.activeConstruction = states.getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY);
+        this.proofKeySets = states.get(PROOF_KEY_SETS_KEY);
+        this.signatures = states.get(HISTORY_SIGNATURES_KEY);
+        this.votes = states.get(PROOF_VOTES_KEY);
+    }
+
     @Override
     public @NonNull HistoryProofConstruction getOrCreateConstruction(
             @NonNull final ActiveRosters activeRosters,
@@ -39,13 +72,18 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
         requireNonNull(activeRosters);
         requireNonNull(now);
         requireNonNull(tssConfig);
+        final var phase = activeRosters.phase();
+        if (phase == HANDOFF) {
+            throw new IllegalArgumentException("Handoff phase has no construction");
+        }
+
         throw new AssertionError("Not implemented");
     }
 
     @Override
     public void setLedgerId(@NonNull final Bytes bytes) {
         requireNonNull(bytes);
-        throw new AssertionError("Not implemented");
+        ledgerId.put(new ProtoBytes(bytes));
     }
 
     @Override
