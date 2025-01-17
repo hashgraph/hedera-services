@@ -32,17 +32,6 @@ public final class TransactionUtils {
     private TransactionUtils() {}
 
     /**
-     * Get the size of a transaction.<br>
-     * This is a convenience method that delegates to {@link #getLegacyTransactionSize(OneOf)}.
-     *
-     * @param transaction the transaction to get the size of
-     * @return the size of the transaction
-     */
-    //    public static int getLegacyTransactionSize(@NonNull final EventTransaction transaction) {
-    //        return getLegacyTransactionSize(transaction.transaction());
-    //    }
-
-    /**
      * Get the size of a transaction.
      *
      * @param transaction the transaction to get the size of

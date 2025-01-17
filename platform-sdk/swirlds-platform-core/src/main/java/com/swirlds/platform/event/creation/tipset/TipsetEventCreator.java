@@ -438,9 +438,7 @@ public class TipsetEventCreator implements EventCreator {
                 softwareVersion,
                 selfId,
                 lastSelfEvent,
-                otherParent == null
-                        ? Collections.<EventDescriptorWrapper>emptyList()
-                        : Collections.singletonList(otherParent),
+                otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
                 eventWindow.getAncientMode() == AncientMode.BIRTH_ROUND_THRESHOLD
                         ? eventWindow.getPendingConsensusRound()
                         : ConsensusConstants.ROUND_FIRST,

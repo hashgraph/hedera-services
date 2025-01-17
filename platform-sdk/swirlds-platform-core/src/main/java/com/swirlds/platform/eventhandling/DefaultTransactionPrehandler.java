@@ -92,7 +92,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
         final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
-        Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
 
         ReservedSignedState latestImmutableState = null;
         try {

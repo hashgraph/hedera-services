@@ -43,7 +43,7 @@ public class UnsignedEvent implements Hashable {
     /**
      * The transactions of the event.
      */
-    private final List<Bytes> eventTransactions;
+    private final List<Bytes> transactions;
 
     /**
      * The metadata of the event.
@@ -70,7 +70,7 @@ public class UnsignedEvent implements Hashable {
             @NonNull final Instant timeCreated,
             @NonNull final List<Bytes> transactions) {
         Objects.requireNonNull(transactions, "The transactions must not be null");
-        this.eventTransactions = Objects.requireNonNull(transactions, "transactions must not be null");
+        this.transactions = Objects.requireNonNull(transactions, "transactions must not be null");
         this.metadata = new EventMetadata(creatorId, selfParent, otherParents, timeCreated, transactions);
         this.eventCore = new EventCore(
                 creatorId.id(),
@@ -130,8 +130,8 @@ public class UnsignedEvent implements Hashable {
      * @return list of transactions
      */
     @NonNull
-    public List<Bytes> getEventTransactions() {
-        return eventTransactions;
+    public List<Bytes> getTransactionsBytes() {
+        return transactions;
     }
 
     @Override
@@ -156,19 +156,19 @@ public class UnsignedEvent implements Hashable {
 
         final UnsignedEvent that = (UnsignedEvent) o;
 
-        return (Objects.equals(eventCore, that.eventCore)) && Objects.equals(eventTransactions, that.eventTransactions);
+        return (Objects.equals(eventCore, that.eventCore)) && Objects.equals(transactions, that.transactions);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(eventCore, eventTransactions);
+        return Objects.hash(eventCore, transactions);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .append(eventCore)
-                .append(eventTransactions)
+                .append(transactions)
                 .append("hash", getHash() == null ? "null" : getHash().toHex(5))
                 .toString();
     }

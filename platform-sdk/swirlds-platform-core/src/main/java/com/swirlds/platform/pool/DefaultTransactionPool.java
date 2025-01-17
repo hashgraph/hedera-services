@@ -45,7 +45,7 @@ public class DefaultTransactionPool implements TransactionPool {
     @Override
     public void submitSystemTransaction(@NonNull final StateSignatureTransaction payload) {
         Objects.requireNonNull(payload);
-        Bytes payloadBytes = StateSignatureTransaction.PROTOBUF.toBytes(payload);
+        final Bytes payloadBytes = StateSignatureTransaction.PROTOBUF.toBytes(payload);
         transactionPoolNexus.submitTransaction(payloadBytes, true, true);
     }
 
