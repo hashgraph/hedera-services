@@ -236,7 +236,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var body = feeContext.body();
-        final var hasCustomFees = !body.consensusCreateTopicOrThrow().customFees().isEmpty();
+        final var hasCustomFees =
+                !body.consensusCreateTopicOrThrow().customFees().isEmpty();
         final var subType = hasCustomFees ? SubType.TOPIC_CREATE_WITH_CUSTOM_FEES : SubType.DEFAULT;
 
         return feeContext
