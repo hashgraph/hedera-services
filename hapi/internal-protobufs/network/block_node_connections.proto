@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package com.hedera.hapi.network;
+
+option java_package = "com.hedera.node.internal.network.legacy";
+// <<<pbj.java_package = "com.hedera.node.internal.network">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+// Configuration for a single block node connection
+message BlockNodeConfig {
+    int32 priority = 1;
+    string address = 2;
+    int32 port = 3;
+    bool preferred = 4;
+    int32 block_item_batch_size = 5;
+}
+
+// Overall connection configuration for block nodes
+message BlockNodeConnectionInfo {
+    repeated BlockNodeConfig nodes = 1;
+    int32 node_reselection_interval = 2;  // in seconds
+    int32 max_simultaneous_connections = 3;
+} 

@@ -35,9 +35,9 @@ import static java.util.stream.Collectors.toMap;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.node.app.blocks.config.BlockNodeConfig;
-import com.hedera.node.app.blocks.config.BlockNodeConnectionInfo;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.internal.network.BlockNodeConfig;
+import com.hedera.node.internal.network.BlockNodeConnectionInfo;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.ParseException;
@@ -79,6 +79,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.hedera.services.bdd.junit.hedera.BlockNodeMode;
 
 /**
  * A network of Hedera nodes started in subprocesses and accessed via gRPC. Unlike
@@ -93,6 +94,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
     private static final int LAST_CANDIDATE_PORT = 40000;
+    private BlockNodeMode blockNodeMode = BlockNodeMode.NONE;  // Default to no block nodes
 
     private static final String SUBPROCESS_HOST = "127.0.0.1";
     private static final ByteString SUBPROCESS_ENDPOINT = asOctets(SUBPROCESS_HOST);
@@ -115,6 +117,23 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private final String genesisConfigTxt;
 
     private final List<BlockNodeContainer> blockNodeContainers = new ArrayList<>();
+
+    /**
+     * Configure the block node mode for this network.
+     * @param mode the block node mode to use
+     */
+    public void setBlockNodeMode(BlockNodeMode mode) {
+        log.info("Setting block node mode from {} to {}", this.blockNodeMode, mode);
+        this.blockNodeMode = mode;
+    }
+
+    /**
+     * Get the current block node mode
+     * @return current block node mode
+     */
+    public BlockNodeMode getBlockNodeMode() {
+        return blockNodeMode;
+    }
 
     /**
      * Wraps a runnable, allowing us to defer running it until we know we are the privileged runner
@@ -210,29 +229,69 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     @Override
     public void start() {
-        for (HederaNode node : nodes) {
-            // Start a block node container for this network node
-            BlockNodeContainer container = new BlockNodeContainer();
-            container.start();
-            blockNodeContainers.add(container);
-            log.info("Started block node container for node {} @ localhost:{}", node.getNodeId(), container.getGrpcPort());
+        log.info("Starting network with block node mode: {}", blockNodeMode);
+        
+        // First start block nodes if needed
+        if (blockNodeMode == BlockNodeMode.CONTAINERS) {
+            log.info("Starting block node containers for {} nodes", nodes.size());
+            for (HederaNode node : nodes) {
+                // Start a block node container for this network node
+                BlockNodeContainer container = new BlockNodeContainer();
+                container.start();
+                blockNodeContainers.add(container);
+                log.info("Started block node container for node {} @ localhost:{}", 
+                        node.getNodeId(), container.getGrpcPort());
+            }
+        } else {
+            log.info("Skipping block node containers as mode is: {}", blockNodeMode);
+        }
 
+        // Then start each network node
+        for (HederaNode node : nodes) {
+            log.info("Starting node {} with block node mode: {}", node.getNodeId(), blockNodeMode);
+            
             // Initialize Working Directory for Node
             node.initWorkingDir(configTxt);
 
-            // Update this node's block-nodes.yaml with the container's connection info
-            updateBlockNodesConfigForNode(node, container);
+            // Write block node config if needed
+            if (blockNodeMode == BlockNodeMode.CONTAINERS) {
+                BlockNodeContainer container = blockNodeContainers.get((int)node.getNodeId());
+                updateBlockNodesConfigForNode(node, container);
+                log.info("Configured block node for node {} with container port {}", 
+                        node.getNodeId(), container.getGrpcPort());
+            } else {
+                log.info("Skipping block node for node {} as block nodes are disabled", node.getNodeId());
+            }
 
             // Start the node
             node.start();
         }
     }
 
+    /**
+     * Configures block nodes based on the current mode.
+     * This is called after the network is started and block node mode is set.
+     */
+    public void configureBlockNodes() {
+        if (blockNodeMode != BlockNodeMode.CONTAINERS) {
+            return;
+        }
+
+        for (HederaNode node : nodes) {
+            // Start a block node container for this network node
+            BlockNodeContainer container = new BlockNodeContainer();
+            container.start();
+            blockNodeContainers.add(container);
+            log.info("Started block node container for node {} @ localhost:{}", 
+                    node.getNodeId(), container.getGrpcPort());
+
+            // Update this node's block-nodes.json with the container's connection info
+            updateBlockNodesConfigForNode(node, container);
+        }
+    }
+
     private void updateBlockNodesConfigForNode(HederaNode node, BlockNodeContainer container) {
         try {
-            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            mapper.findAndRegisterModules();
-
             // Create block node config for this container
             List<BlockNodeConfig> blockNodes = List.of(new BlockNodeConfig(
                 1, // priority
@@ -245,12 +304,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
                 blockNodes,
                 3600, // 1 hour reselection interval
-                1 // only one connection needed
+                1 // only one connection needed, also not relevant for one preferred block node
             );
 
-            // Write the config to this node's block-nodes.yaml
-            Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.yaml");
-            mapper.writeValue(configPath.toFile(), connectionInfo);
+            // Write the config to this node's block-nodes.json
+            Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.json");
+            Files.writeString(configPath, BlockNodeConnectionInfo.JSON.toJSON(connectionInfo));
             
             log.info("Updated block node configuration for node {} with container port {}", 
                     node.getNodeId(), container.getGrpcPort());

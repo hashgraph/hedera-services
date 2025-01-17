@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {
+      "priority": 1,
+      "address": "localhost",
+      "port": 8080,
+      "preferred": true,
+      "blockItemBatchSize": 256
+    }
+  ],
+  "nodeReselectionInterval": 3600,
+  "maxSimultaneousConnections": 1
+}

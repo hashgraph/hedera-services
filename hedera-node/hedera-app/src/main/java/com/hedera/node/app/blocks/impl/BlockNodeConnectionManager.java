@@ -8,10 +8,12 @@ import com.hedera.hapi.block.protoc.PublishStreamResponse;
 import com.hedera.hapi.block.protoc.PublishStreamResponse.Acknowledgement;
 import com.hedera.hapi.block.protoc.PublishStreamResponse.EndOfStream;
 import com.hedera.hapi.block.protoc.PublishStreamResponseCode;
-import com.hedera.node.app.blocks.config.BlockNodeConfig;
-import com.hedera.node.app.blocks.config.BlockNodeConnectionInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.internal.network.BlockNodeConfig;
+import com.hedera.node.internal.network.BlockNodeConnectionInfo;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.helidon.common.tls.Tls;
@@ -35,6 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -59,7 +62,7 @@ public class BlockNodeConnectionManager {
     private final Map<BlockNodeConfig, Instant> nextRetryTime;
     private final Set<BlockNodeConfig> nodesInBackoff;
     private final ScheduledExecutorService scheduler;
-    private int availableConnectionSlots;
+    private int availableNonPreferredSlots;  // Renamed to clarify this only applies to non-preferred nodes
 
     /**
      * Creates a new BlockNodeConnectionManager with the given configuration from disk.
@@ -67,18 +70,31 @@ public class BlockNodeConnectionManager {
     public BlockNodeConnectionManager(@NonNull final ConfigProvider configProvider) {
         requireNonNull(configProvider);
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-        final var configPath = Paths.get(blockStreamConfig.blockNodeConnectionFileDir(), "block-nodes.yaml");
-        
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        mapper.findAndRegisterModules();
+        final var configPath = Paths.get(blockStreamConfig.blockNodeConnectionFileDir(), "block-nodes.json");
         
         try {
-            BlockNodeConnectionInfo blockNodeConnectionInfo = mapper.readValue(configPath.toFile(), BlockNodeConnectionInfo.class);
-            this.allNodes = new ArrayList<>(blockNodeConnectionInfo.nodes());
-            this.maxSimultaneousConnections = blockNodeConnectionInfo.maxSimultaneousConnections();
-            this.nodeReselectionInterval = Duration.ofSeconds(blockNodeConnectionInfo.nodeReselectionInterval());
+            byte[] jsonConfig = Files.readAllBytes(configPath);
+            BlockNodeConnectionInfo protoConfig = BlockNodeConnectionInfo.JSON.parse(Bytes.wrap(jsonConfig));
+            
+            // Convert proto config to internal config objects
+            this.allNodes = protoConfig.nodes().stream()
+                .map(node -> new BlockNodeConfig(
+                    node.priority(),
+                    node.address(),
+                    node.port(),
+                    node.preferred(),
+                    node.blockItemBatchSize()))
+                .collect(Collectors.toList());
+
+            logger.info("Loaded block node configuration from {}", configPath);
+            logger.info("Block node configuration: {}", allNodes);
+            
+            this.maxSimultaneousConnections = protoConfig.maxSimultaneousConnections();
+            this.nodeReselectionInterval = Duration.ofSeconds(protoConfig.nodeReselectionInterval());
         } catch (IOException e) {
             throw new RuntimeException("Failed to read block node configuration from " + configPath, e);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
 
         this.activeConnections = new ConcurrentHashMap<>();
@@ -86,7 +102,7 @@ public class BlockNodeConnectionManager {
         this.nextRetryTime = new ConcurrentHashMap<>();
         this.nodesInBackoff = ConcurrentHashMap.newKeySet();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
-        this.availableConnectionSlots = maxSimultaneousConnections;
+        this.availableNonPreferredSlots = maxSimultaneousConnections;
 
         // Sort nodes by priority (lowest number = highest priority)
         allNodes.sort(Comparator.comparingInt(BlockNodeConfig::priority));
@@ -111,9 +127,9 @@ public class BlockNodeConnectionManager {
      * Attempts to establish connections to block nodes based on priority and configuration.
      */
     public void establishConnections() {
-        logger.info("Establishing connections to block nodes... (Available slots: {})", availableConnectionSlots);
+        logger.info("Establishing connections to block nodes... (Available non-preferred slots: {})", availableNonPreferredSlots);
         
-        // First, connect to all preferred nodes
+        // First, connect to all preferred nodes (no slot limit)
         List<BlockNodeConfig> preferredNodes = allNodes.stream()
                 .filter(BlockNodeConfig::preferred)
                 .filter(node -> !activeConnections.containsKey(node))
@@ -121,12 +137,10 @@ public class BlockNodeConnectionManager {
                 .toList();
 
         for (BlockNodeConfig node : preferredNodes) {
-            if (availableConnectionSlots <= 0) break;
             connectToNode(node);
-            availableConnectionSlots--;
         }
 
-        // Then connect to other nodes by priority
+        // Then connect to other nodes by priority, respecting max connections limit
         Map<Integer, List<BlockNodeConfig>> nodesByPriority = allNodes.stream()
                 .filter(node -> !node.preferred()) // Skip preferred nodes as they're already handled
                 .filter(node -> !activeConnections.containsKey(node))
@@ -134,15 +148,17 @@ public class BlockNodeConnectionManager {
                 .collect(Collectors.groupingBy(BlockNodeConfig::priority));
 
         for (Entry<Integer, List<BlockNodeConfig>> entry : nodesByPriority.entrySet()) {
-            if (availableConnectionSlots <= 0) break;
+            if (availableNonPreferredSlots <= 0) break;
 
             List<BlockNodeConfig> nodes = new ArrayList<>(entry.getValue());
             Collections.shuffle(nodes);
             
             for (BlockNodeConfig node : nodes) {
-                if (availableConnectionSlots <= 0) break;
+                if (availableNonPreferredSlots <= 0) break;
                 connectToNode(node);
-                availableConnectionSlots--;
+                if (!node.preferred()) {
+                    availableNonPreferredSlots--;
+                }
             }
         }
     }
@@ -158,16 +174,23 @@ public class BlockNodeConnectionManager {
             disconnectFromNode(node);
         }
 
+        // Reset available slots for non-preferred nodes
+        availableNonPreferredSlots = maxSimultaneousConnections;
+
         // Establish new connections
         establishConnections();
     }
 
     private void connectToNode(BlockNodeConfig node) {
         logger.info("Connecting to block node {}:{}", node.address(), node.port());
-        // Check if we're still in backoff period
-        Instant now = Instant.now();
-        if (nextRetryTime.containsKey(node) && now.isBefore(nextRetryTime.get(node))) {
-            return;
+        
+        // Synchronize access to retry state
+        synchronized (this) {
+            // Check if we're still in backoff period
+            Instant now = Instant.now();
+            if (nextRetryTime.containsKey(node) && now.isBefore(nextRetryTime.get(node))) {
+                return;
+            }
         }
 
         try {
@@ -189,10 +212,17 @@ public class BlockNodeConnectionManager {
                                     .build())
                     .build());
 
-            BlockNodeConnection connection = new BlockNodeConnection(node, grpcServiceClient);
-            activeConnections.put(node, connection);
-            retryAttempts.remove(node);
-            nextRetryTime.remove(node);
+            BlockNodeConnection connection = new BlockNodeConnection(node, grpcServiceClient, this);
+            
+            // Synchronize updates to connection and retry state
+            synchronized (this) {
+                activeConnections.put(node, connection);
+                
+                // Reset retry state on successful connection
+                retryAttempts.remove(node);
+                nextRetryTime.remove(node);
+                nodesInBackoff.remove(node);
+            }
 
             logger.info("Successfully connected to block node {}:{}", node.address(), node.port());
         } catch (URISyntaxException | RuntimeException e) {
@@ -201,7 +231,18 @@ public class BlockNodeConnectionManager {
         }
     }
 
-    private void handleConnectionFailure(BlockNodeConfig node) {
+    /**
+     * Handles connection errors from a BlockNodeConnection by removing the failed connection
+     * and initiating the reconnection process.
+     *
+     * @param node the node configuration for the failed connection
+     */
+    public synchronized void handleConnectionError(BlockNodeConfig node) {
+        activeConnections.remove(node);  // Remove the failed connection
+        handleConnectionFailure(node);   // Schedule reconnection attempt
+    }
+
+    private synchronized void handleConnectionFailure(BlockNodeConfig node) {
         int attempts = retryAttempts.getOrDefault(node, 0) + 1;
         retryAttempts.put(node, attempts);
         nodesInBackoff.add(node);
@@ -226,16 +267,18 @@ public class BlockNodeConnectionManager {
             retryAttempts.remove(node);
             nextRetryTime.remove(node);
             nodesInBackoff.remove(node);
-            availableConnectionSlots++; // Free up the slot for another node
+            availableNonPreferredSlots++; // Free up the slot for another node
             establishConnections(); // Try to establish connection with another node
         }
     }
 
-    private void disconnectFromNode(BlockNodeConfig node) {
+    private synchronized void disconnectFromNode(BlockNodeConfig node) {
         BlockNodeConnection connection = activeConnections.remove(node);
         if (connection != null) {
             connection.close();
-            availableConnectionSlots++;
+            if (!node.preferred()) {
+                availableNonPreferredSlots++;
+            }
             logger.info("Disconnected from block node {}:{}", node.address(), node.port());
         }
         
@@ -258,12 +301,17 @@ public class BlockNodeConnectionManager {
     public static class BlockNodeConnection {
         private final BlockNodeConfig config;
         private final GrpcServiceClient grpcServiceClient;
+        private final BlockNodeConnectionManager manager;
         private StreamObserver<PublishStreamRequest> requestObserver;
         private volatile boolean isActive = true;
 
-        public BlockNodeConnection(BlockNodeConfig config, GrpcServiceClient grpcServiceClient) {
+        public BlockNodeConnection(
+                BlockNodeConfig config, 
+                GrpcServiceClient grpcServiceClient,
+                BlockNodeConnectionManager manager) {
             this.config = config;
             this.grpcServiceClient = grpcServiceClient;
+            this.manager = manager;
             establishStream();
         }
 
@@ -284,6 +332,7 @@ public class BlockNodeConnectionManager {
                     logger.error("Error in block node stream {}:{}: {}", 
                             config.address(), config.port(), status, t);
                     isActive = false;
+                    manager.handleConnectionError(config);  // Notify manager of error
                 }
 
                 @Override
@@ -291,6 +340,7 @@ public class BlockNodeConnectionManager {
                     logger.info("Stream completed for block node {}:{}", 
                             config.address(), config.port());
                     isActive = false;
+                    manager.handleConnectionError(config);  // Also handle normal stream completion as an error
                 }
             });
         }
