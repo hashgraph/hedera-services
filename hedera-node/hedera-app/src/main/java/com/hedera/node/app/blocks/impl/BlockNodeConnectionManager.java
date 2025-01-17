@@ -1,5 +1,7 @@
 package com.hedera.node.app.blocks.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
@@ -8,6 +10,8 @@ import com.hedera.hapi.block.protoc.PublishStreamResponse.EndOfStream;
 import com.hedera.hapi.block.protoc.PublishStreamResponseCode;
 import com.hedera.node.app.blocks.config.BlockNodeConfig;
 import com.hedera.node.app.blocks.config.BlockNodeConnectionInfo;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.helidon.common.tls.Tls;
@@ -30,6 +34,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.io.IOException;
+import java.nio.file.Paths;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Manages connections to block nodes, including connection lifecycle, node selection,
@@ -53,13 +62,23 @@ public class BlockNodeConnectionManager {
     /**
      * Creates a new BlockNodeConnectionManager with the given configuration from disk.
      */
-    public BlockNodeConnectionManager() {
-        BlockNodeConfig blockNodeConfig = new BlockNodeConfig(1, "localhost", 8080, true);
-        BlockNodeConnectionInfo blockNodeConnectionInfo = new BlockNodeConnectionInfo(
-                Collections.singletonList(blockNodeConfig), 3000, 1);
-        this.allNodes = new ArrayList<>(blockNodeConnectionInfo.nodes());
-        this.maxSimultaneousConnections = blockNodeConnectionInfo.maxSimultaneousConnections();
-        this.nodeReselectionInterval = Duration.ofSeconds(blockNodeConnectionInfo.nodeReselectionInterval());
+    public BlockNodeConnectionManager(@NonNull final ConfigProvider configProvider) {
+        requireNonNull(configProvider);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final var configPath = Paths.get(blockStreamConfig.blockNodeConnectionFileDir(), "block-nodes.yaml");
+        
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        mapper.findAndRegisterModules();
+        
+        try {
+            BlockNodeConnectionInfo blockNodeConnectionInfo = mapper.readValue(configPath.toFile(), BlockNodeConnectionInfo.class);
+            this.allNodes = new ArrayList<>(blockNodeConnectionInfo.nodes());
+            this.maxSimultaneousConnections = blockNodeConnectionInfo.maxSimultaneousConnections();
+            this.nodeReselectionInterval = Duration.ofSeconds(blockNodeConnectionInfo.nodeReselectionInterval());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read block node configuration from " + configPath, e);
+        }
+
         this.activeConnections = new ConcurrentHashMap<>();
         this.retryAttempts = new ConcurrentHashMap<>();
         this.nextRetryTime = new ConcurrentHashMap<>();

@@ -569,22 +569,31 @@ public final class Hedera
     public void notify(@NonNull final PlatformStatusChangeNotification notification) {
         this.platformStatus = notification.getNewStatus();
         logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
+        final var streamToBlockNodes = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class).streamToBlockNodes();
         switch (platformStatus) {
             case ACTIVE -> {
-                logger.info("Platform status is now ACTIVE");
                 startGrpcServer();
-                daggerApp.blockNodeConnectionManager().establishConnections();
+                if (streamToBlockNodes && isNotEmbedded()) {
+                    logger.info("Establishing connections to Block Nodes");
+                    daggerApp.blockNodeConnectionManager().establishConnections();
+                }
             }
             case FREEZE_COMPLETE -> {
                 logger.info("Platform status is now FREEZE_COMPLETE");
                 shutdownGrpcServer();
                 closeRecordStreams();
-                daggerApp.blockNodeConnectionManager().shutdown();
+                if (streamToBlockNodes && isNotEmbedded()) {
+                    logger.info("FREEZE_COMPLETE - Shutting down connections to Block Nodes");
+                    daggerApp.blockNodeConnectionManager().shutdown();
+                }
             }
             case CATASTROPHIC_FAILURE -> {
                 logger.error("Platform status is now CATASTROPHIC_FAILURE");
                 shutdownGrpcServer();
-                daggerApp.blockNodeConnectionManager().shutdown();
+                if (streamToBlockNodes && isNotEmbedded()) {
+                    logger.info("CATASTROPHIC_FAILURE - Shutting down connections to Block Nodes");
+                    daggerApp.blockNodeConnectionManager().shutdown();
+                }
             }
             case REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE, CHECKING, FREEZING, BEHIND -> {
                 // Nothing to do here, just enumerate for completeness

@@ -74,6 +74,11 @@ module com.hedera.node.app {
     requires static com.google.auto.service;
     requires static java.compiler; // javax.annotation.processing.Generated
 
+    // Jackson dependencies
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.fasterxml.jackson.core;
+
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
     exports com.hedera.node.app.workflows.ingest;

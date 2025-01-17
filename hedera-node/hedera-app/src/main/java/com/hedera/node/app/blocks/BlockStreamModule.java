@@ -38,7 +38,7 @@ public class BlockStreamModule {
     @Provides
     @Singleton
     public BlockNodeConnectionManager provideBlockNodeConnectionManager(ConfigProvider configProvider) {
-        return new BlockNodeConnectionManager();
+        return new BlockNodeConnectionManager(configProvider);
     }
 
     @Provides
