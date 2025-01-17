@@ -70,7 +70,7 @@ class GetScheduledInfoTranslatorTest {
     @Test
     void matchesGetScheduledFungibleTokenTxn() {
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
-                GetScheduledInfoTranslator.GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION,
+                GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO,
                 subject,
                 enhancement,
                 addressIdConverter,
@@ -87,7 +87,7 @@ class GetScheduledInfoTranslatorTest {
     @Test
     void matchesGetScheduledNonFungibleTokenTxn() {
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
-                GetScheduledInfoTranslator.GET_SCHEDULED_NON_FUNGIBLE_TOKEN_CREATE_TRANSACTION,
+                GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO,
                 subject,
                 enhancement,
                 addressIdConverter,
@@ -120,10 +120,10 @@ class GetScheduledInfoTranslatorTest {
 
     @Test
     void createsFungibleTokenCall() {
-        given(attempt.isSelector(GetScheduledInfoTranslator.GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION))
+        given(attempt.isSelector(GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO))
                 .willReturn(true);
         given(attempt.inputBytes())
-                .willReturn(GetScheduledInfoTranslator.GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION
+                .willReturn(GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO
                         .encodeCallWithArgs(ConversionUtils.headlongAddressOf(CALLED_SCHEDULE_ID))
                         .array());
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
@@ -137,10 +137,10 @@ class GetScheduledInfoTranslatorTest {
 
     @Test
     void createsNonFungibleTokenCall() {
-        given(attempt.isSelector(GetScheduledInfoTranslator.GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION))
+        given(attempt.isSelector(GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO))
                 .willReturn(false);
         given(attempt.inputBytes())
-                .willReturn(GetScheduledInfoTranslator.GET_SCHEDULED_NON_FUNGIBLE_TOKEN_CREATE_TRANSACTION
+                .willReturn(GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO
                         .encodeCallWithArgs(ConversionUtils.headlongAddressOf(CALLED_SCHEDULE_ID))
                         .array());
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);

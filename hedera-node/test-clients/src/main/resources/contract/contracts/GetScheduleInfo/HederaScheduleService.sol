@@ -4,9 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "./HederaResponseCodes.sol";
 import "./IHederaScheduleService.sol";
+import "./IHederaTokenService.sol";
 
 abstract contract HederaScheduleService {
-    address constant scheduleSystemContractAddress = address(0x16b);
+    address constant precompileAddress = address(0x16b);
 
     /// Authorizes the calling contract as a signer to the schedule transaction.
     /// @param schedule the address of the schedule transaction.

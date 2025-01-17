@@ -30,11 +30,10 @@ import javax.inject.Singleton;
 
 @Singleton
 public class GetScheduledInfoTranslator extends AbstractCallTranslator<HssCallAttempt> {
-    public static final Function GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION = new Function(
-            "getScheduledFungibleTokenCreateTransaction(address)", ReturnTypes.RESPONSE_CODE_FUNGIBLE_TOKEN_INFO);
-    public static final Function GET_SCHEDULED_NON_FUNGIBLE_TOKEN_CREATE_TRANSACTION = new Function(
-            "getScheduledNonFungibleTokenCreateTransaction(address)",
-            ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO);
+    public static final Function GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO =
+            new Function("getScheduledCreateFungibleTokenInfo(address)", ReturnTypes.RESPONSE_CODE_FUNGIBLE_TOKEN_INFO);
+    public static final Function GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO = new Function(
+            "getScheduledCreateNonFungibleTokenInfo(address)", ReturnTypes.RESPONSE_CODE_NON_FUNGIBLE_TOKEN_INFO);
 
     // Tuple index for the schedule address
     private static final int SCHEDULE_ADDRESS = 0;
@@ -47,18 +46,18 @@ public class GetScheduledInfoTranslator extends AbstractCallTranslator<HssCallAt
     @Override
     public boolean matches(@NonNull final HssCallAttempt attempt) {
         return attempt.isSelector(
-                GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION, GET_SCHEDULED_NON_FUNGIBLE_TOKEN_CREATE_TRANSACTION);
+                GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO, GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO);
     }
 
     @Override
     public Call callFrom(@NonNull final HssCallAttempt attempt) {
-        return attempt.isSelector(GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION)
+        return attempt.isSelector(GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO)
                 ? getFungibleTokenCreateCall(attempt)
                 : getNonFungibleTokenCreateCall(attempt);
     }
 
     private Call getFungibleTokenCreateCall(@NonNull final HssCallAttempt attempt) {
-        final var call = GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION.decodeCall(attempt.inputBytes());
+        final var call = GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.inputBytes());
         final Address scheduleAddress = call.get(SCHEDULE_ADDRESS);
         return new GetScheduledFungibleTokenCreateCall(
                 attempt.systemContractGasCalculator(),
@@ -68,7 +67,7 @@ public class GetScheduledInfoTranslator extends AbstractCallTranslator<HssCallAt
     }
 
     private Call getNonFungibleTokenCreateCall(@NonNull final HssCallAttempt attempt) {
-        final var call = GET_SCHEDULED_NON_FUNGIBLE_TOKEN_CREATE_TRANSACTION.decodeCall(attempt.inputBytes());
+        final var call = GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.inputBytes());
         final Address scheduleAddress = call.get(SCHEDULE_ADDRESS);
         return new GetScheduledNonFungibleTokenCreateCall(
                 attempt.systemContractGasCalculator(),
