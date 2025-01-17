@@ -68,7 +68,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
      * Provides a stream of writer paired with two reader implementations for testing
      * cross-compatibility.
      * <p>
-     * Used for {@link AbstractLongListTest#testUpdateMinToTheLowerEnd_10K}
+     * Used for {@link AbstractLongListTest#testUpdateMinToTheLowerEnd}
      *
      * @return a stream of arguments containing a writer and two readers.
      */
@@ -88,24 +88,14 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     /**
-     * Provides writer-reader pairs combined with chunk offset configurations (first set) for testing.
+     * Provides writer-reader pairs combined with chunk offset configurations (second set) for testing.
      * <p>
-     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
+     * Used for {@link AbstractLongListTest#testPersistListWithNonZeroMinValidIndex}
+     * and {@link AbstractLongListTest#testPersistShrunkList}
      *
      * @return a stream of arguments for chunk offset based parameterized tests
      */
     static Stream<Arguments> longListWriterReaderOffsetPairsProvider() {
         return longListWriterReaderOffsetPairsProviderBase(longListWriterReaderPairsProvider());
-    }
-
-    /**
-     * Provides writer-reader pairs combined with chunk offset configurations (second set) for testing.
-     * <p>
-     * Used for {@link AbstractLongListTest#testCreateHalfEmptyLongListInMemoryReadBack}
-     *
-     * @return a stream of arguments for chunk offset based parameterized tests
-     */
-    static Stream<Arguments> longListWriterReaderOffsetPairs2Provider() {
-        return longListWriterReaderOffsetPairs2ProviderBase(longListWriterReaderPairsProvider());
     }
 }

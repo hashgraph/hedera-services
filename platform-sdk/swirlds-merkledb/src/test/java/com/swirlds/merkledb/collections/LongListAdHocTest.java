@@ -72,19 +72,16 @@ class LongListAdHocTest {
 
     // Tests https://github.com/hashgraph/hedera-services/issues/16860
     @Test
-    void testReallocateThreadLocalBufferWhenMemoryChunkSizeChanges_10K() throws IOException {
-        // SAMPLE_SIZE should be 10K for this test
-        final int SAMPLE_SIZE = 10_000;
-
+    void testReallocateThreadLocalBufferWhenMemoryChunkSizeChanges() throws IOException {
         // Create two long lists with different memory chunk sizes
         var largeMemoryChunkList = new LongListDisk(100, SAMPLE_SIZE * 2, 0, CONFIGURATION);
         var smallMemoryChunkList = new LongListDisk(10, SAMPLE_SIZE * 2, 0, CONFIGURATION);
 
         // Populate both long lists with sample data and validate
-        populateList(largeMemoryChunkList, SAMPLE_SIZE);
-        checkData(largeMemoryChunkList, 0, SAMPLE_SIZE);
-        populateList(smallMemoryChunkList, SAMPLE_SIZE);
-        checkData(smallMemoryChunkList, 0, SAMPLE_SIZE);
+        populateList(largeMemoryChunkList);
+        checkData(largeMemoryChunkList);
+        populateList(smallMemoryChunkList);
+        checkData(smallMemoryChunkList);
 
         // Capture the original file channel sizes before closing chunks
         final long originalLargeListChannelSize =
