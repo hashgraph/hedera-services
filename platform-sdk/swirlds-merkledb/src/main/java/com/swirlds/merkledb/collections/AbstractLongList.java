@@ -234,7 +234,8 @@ public abstract class AbstractLongList<C> implements LongList {
                         minValidIndex.set(-1);
                         maxValidIndex.set(-1);
                     } else {
-                        // Otherwise, compute the size by "inflating" it to include the number of indices to the left of the min valid index.
+                        // Otherwise, compute the size by "inflating" it to include the number of indices to the left of
+                        // the min valid index.
                         minValidIndex.set(readMinValidIndex);
                         size.set(readMinValidIndex + longsInFile);
                         maxValidIndex.set(size.get() - 1);

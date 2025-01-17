@@ -53,8 +53,6 @@ import java.util.function.BiFunction;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -636,14 +634,8 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 // Because the list actually contained no data, it is effectively empty and so the valid range is reset
                 assertEquals(0, readerList.size(), "An empty list should have size 0");
-                assertEquals(
-                        -1,
-                        readerList.getMinValidIndex(),
-                        "For an empty list, minValidIndex should be -1");
-                assertEquals(
-                        -1,
-                        readerList.getMaxValidIndex(),
-                        "For an empty list, maxValidIndex should be -1");
+                assertEquals(-1, readerList.getMinValidIndex(), "For an empty list, minValidIndex should be -1");
+                assertEquals(-1, readerList.getMaxValidIndex(), "For an empty list, maxValidIndex should be -1");
             } finally {
                 Files.delete(longListFile);
             }
@@ -715,8 +707,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
             try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
                 final String TEMP_FILE_NAME_2 = String.format(
                         "testWriteAndReadBackWithValidRange_again_write_%s_read_back_%s.ll",
-                        writerFactory,
-                        readerFactory);
+                        writerFactory, readerFactory);
 
                 // Verify that writing the read list to a new file doesn't cause exceptions
                 assertDoesNotThrow(() -> {
