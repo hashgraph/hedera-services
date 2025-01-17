@@ -532,7 +532,7 @@ public class AirdropSystemContractTest {
 
     @HapiTest
     @Order(13)
-    @DisplayName("Cannon Distribute 11 NFTs to multiple accounts")
+    @DisplayName("Cannot Distribute 11 NFTs to multiple accounts")
     public Stream<DynamicTest> distributeNftsOutOfBound(
             @NonNull @NonFungibleToken(numPreMints = 11) final SpecNonFungibleToken nft,
             @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
