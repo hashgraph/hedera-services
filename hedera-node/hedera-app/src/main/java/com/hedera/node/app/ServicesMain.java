@@ -41,6 +41,7 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hints.impl.FakeHintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
@@ -100,6 +101,7 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -412,7 +414,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 InstantSource.system(),
                 DiskStartupNetworks::new,
                 TssBlockHashSigner::new,
-                HintsServiceImpl::new,
+                appContext ->
+                        new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary()),
                 HistoryServiceImpl::new,
                 metrics);
     }

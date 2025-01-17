@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.swirlds.platform.config;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -47,7 +46,7 @@ public class DefaultConfiguration {
 
     /**
      * Build a basic configuration with the default configuration sources and paths. Reads configuration form
-     * "settings.txt". Registers the configuration to the {@link ConfigurationHolder}.
+     * "settings.txt".
      *
      * @param configurationBuilder the configuration builder that will be used to build the configuration
      * @return the configuration object
@@ -60,8 +59,7 @@ public class DefaultConfiguration {
     }
 
     /**
-     * Build a basic configuration with the default configuration sources and paths. Registers the configuration to the
-     * {@link ConfigurationHolder}.
+     * Build a basic configuration with the default configuration sources and paths.
      *
      * @param configurationBuilder the configuration builder that will be used to build the configuration
      * @param settingsPath         the path to the settings.txt file
@@ -76,8 +74,7 @@ public class DefaultConfiguration {
     }
 
     /**
-     * Build a basic configuration with the default configuration sources. Registers the configuration to the
-     * {@link ConfigurationHolder}.
+     * Build a basic configuration with the default configuration sources.
      *
      * @param configurationBuilder the configuration builder that will be used to build the configuration
      * @param settingsPath         the path to the settings.txt file
@@ -101,9 +98,6 @@ public class DefaultConfiguration {
             configurationBuilder.withSource(new LegacyFileConfigSource(configurationPath));
         }
 
-        final Configuration configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-
-        return configuration;
+        return configurationBuilder.build();
     }
 }

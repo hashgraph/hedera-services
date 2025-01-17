@@ -36,6 +36,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
@@ -66,6 +67,7 @@ import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,7 +119,8 @@ class IngestComponentTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 throttleFactory);
-        final var hintsService = new HintsServiceImpl(appContext);
+        final var hintsService =
+                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class));
         final var historyService = new HistoryServiceImpl(appContext);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
