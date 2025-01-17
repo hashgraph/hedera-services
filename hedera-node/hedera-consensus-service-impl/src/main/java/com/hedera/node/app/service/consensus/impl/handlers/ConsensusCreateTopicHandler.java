@@ -235,15 +235,14 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var op = feeContext.body();
-
-        final var hasCustomFees = !op.consensusCreateTopicOrThrow().customFees().isEmpty();
+        final var body = feeContext.body();
+        final var hasCustomFees = !body.consensusCreateTopicOrThrow().customFees().isEmpty();
         final var subType = hasCustomFees ? SubType.TOPIC_CREATE_WITH_CUSTOM_FEES : SubType.DEFAULT;
 
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(subType)
-                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(op), sigValueObj));
+                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj));
     }
 
     private FeeData usageGiven(
