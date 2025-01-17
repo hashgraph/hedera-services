@@ -98,26 +98,6 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     protected abstract T createLongListFromFile(final Path file) throws IOException;
 
-    @BeforeAll
-    static void beforeAll() {
-        directMemoryUsedAtStart = getDirectMemoryUsedBytes();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        // Check all memory is freed after DB is closed, but skip for LongListDisk
-        // as LongListDisk use file-based operations (FileChannel#write in LongListDisk#closeChunk)
-        // that don't immediately free memory due to OS-level caching
-        if (!(longList instanceof LongListDisk)) {
-            assertTrue(
-                    checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
-                    "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                            + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES) + "MB and is now "
-                            + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
-                            + "MB");
-        }
-    }
-
     // Ordered tests
 
     @Test
@@ -125,6 +105,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     void testCreateData() {
         longList = createLongList();
         final long capacity = longList.capacity();
+        directMemoryUsedAtStart = getDirectMemoryUsedBytes();
 
         assertEquals(
                 AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE,
@@ -231,6 +212,17 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     void testClose() {
         if (longList != null) {
             longList.close();
+        }
+        // Check all memory is freed after DB is closed, but skip for LongListDisk
+        // as LongListDisk use file-based operations (FileChannel#write in LongListDisk#closeChunk)
+        // that don't immediately free memory due to OS-level caching
+        if (!(longList instanceof LongListDisk)) {
+            assertTrue(
+                    checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
+                    "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
+                            + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES) + "MB and is now "
+                            + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
+                            + "MB");
         }
     }
 
@@ -623,6 +615,43 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
     @MethodSource("longListWriterReaderPairsProvider")
+    void testWriteAndReadBackEmptyListWithValidRange(
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
+            @TempDir final Path tempDir)
+            throws IOException {
+
+        // Create a writer LongList
+        try (final LongList writerList = writerFactory.createInstance().get()) {
+            // Update the valid range to something non-empty
+            writerList.updateValidRange(0, 5000);
+
+            // Write this "empty" LongList (no actual data put) to a file
+            final String TEMP_FILE_NAME = String.format(
+                    "testWriteAndReadBackEmptyListWithValidRange_write_%s_read_back_%s.ll",
+                    writerFactory, readerFactory);
+            final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
+
+            // Read the list back from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
+                // Because the list actually contained no data, it is effectively empty and so the valid range is reset
+                assertEquals(0, readerList.size(), "An empty list should have size 0");
+                assertEquals(
+                        -1,
+                        readerList.getMinValidIndex(),
+                        "For an empty list, minValidIndex should be -1");
+                assertEquals(
+                        -1,
+                        readerList.getMaxValidIndex(),
+                        "For an empty list, maxValidIndex should be -1");
+            } finally {
+                Files.delete(longListFile);
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
+    @MethodSource("longListWriterReaderPairsProvider")
     void testWriteAndReadBack(
             final LongListWriterFactory writerFactory,
             final LongListReaderFactory readerFactory,
@@ -657,6 +686,44 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 checkData(readerList);
             } finally {
                 // Clean up the temporary file
+                Files.delete(longListFile);
+            }
+        }
+    }
+
+    // if sample index would be updated then it should use custom method
+    @ParameterizedTest(name = "[{index}] Writer={0}, Reader={1}")
+    @MethodSource("longListWriterReaderPairsProvider")
+    void testWriteAndReadBackWithValidRange(
+            final LongListWriterFactory writerFactory,
+            final LongListReaderFactory readerFactory,
+            @TempDir final Path tempDir)
+            throws IOException {
+
+        // Create a writer LongList
+        try (final LongList writerList = writerFactory.createInstance().get()) {
+            // Put a single value in a small valid range
+            writerList.updateValidRange(1, 1);
+            writerList.put(1, 1);
+
+            // Write this LongList to a file
+            final String TEMP_FILE_NAME = String.format(
+                    "testWriteAndReadBackWithValidRange_write_%s_read_back_%s.ll", writerFactory, readerFactory);
+            final Path longListFile = writeLongListToFileAndVerify(writerList, TEMP_FILE_NAME, tempDir);
+
+            // Reconstruct the list from the file
+            try (final LongList readerList = readerFactory.createFromFile().apply(longListFile, CONFIGURATION)) {
+                final String TEMP_FILE_NAME_2 = String.format(
+                        "testWriteAndReadBackWithValidRange_again_write_%s_read_back_%s.ll",
+                        writerFactory,
+                        readerFactory);
+
+                // Verify that writing the read list to a new file doesn't cause exceptions
+                assertDoesNotThrow(() -> {
+                    final Path longListFile2 = writeLongListToFileAndVerify(readerList, TEMP_FILE_NAME_2, tempDir);
+                    Files.delete(longListFile2);
+                });
+            } finally {
                 Files.delete(longListFile);
             }
         }

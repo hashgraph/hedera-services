@@ -221,20 +221,30 @@ public abstract class AbstractLongList<C> implements LongList {
                 }
 
                 maxLongs = headerBuffer.getLong();
+
+                // Compute how many longs are in the file body
+                final long longsInFile = (fileChannel.size() - currentFileHeaderSize) / Long.BYTES;
+
                 if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {
-                    minValidIndex.set(headerBuffer.getLong());
-                    if (minValidIndex.get() < 0) {
-                        // Empty list, nothing to read
+                    final long readMinValidIndex = headerBuffer.getLong();
+
+                    // If the file is empty or readMinValidIndex < 0, treat it as an empty list
+                    if (longsInFile <= 0 || readMinValidIndex < 0) {
                         size.set(0);
+                        minValidIndex.set(-1);
+                        maxValidIndex.set(-1);
                     } else {
-                        // "inflating" the size by number of indices that are to the left of the min valid index
-                        size.set(minValidIndex.get() + (fileChannel.size() - currentFileHeaderSize) / Long.BYTES);
+                        // Otherwise, compute the size by "inflating" it to include the number of indices to the left of the min valid index.
+                        minValidIndex.set(readMinValidIndex);
+                        size.set(readMinValidIndex + longsInFile);
+                        maxValidIndex.set(size.get() - 1);
                     }
                 } else {
                     minValidIndex.set(0);
-                    size.set((fileChannel.size() - FILE_HEADER_SIZE_V1) / Long.BYTES);
+                    size.set(longsInFile);
+                    maxValidIndex.set(size.get() - 1);
                 }
-                maxValidIndex.set(size.get() - 1);
+
                 chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
                 readBodyFromFileChannelOnInit(file.getName(), fileChannel);
             }
