@@ -12,7 +12,7 @@ repos:
     rev: v0.3.0
     hooks:
       - id: gradle-task
-        args: ['-w', '-o', 'spotlessAppl']
+        args: ['-w', '-o', 'spotlessApply']
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v2.4.0
     hooks:
