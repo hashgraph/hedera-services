@@ -21,6 +21,8 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -28,7 +30,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -56,7 +58,7 @@ import org.apache.logging.log4j.Logger;
  * </li>
  * </ol>
  */
-public class AddressBookTestingToolMain implements SwirldMain {
+public class AddressBookTestingToolMain implements SwirldMain<AddressBookTestingToolState> {
 
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
@@ -65,12 +67,9 @@ public class AddressBookTestingToolMain implements SwirldMain {
         try {
             logger.info(STARTUP.getMarker(), "Registering AddressBookTestingToolState with ConstructableRegistry");
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(AddressBookTestingToolState.class, () -> {
-                        AddressBookTestingToolState addressBookTestingToolState = new AddressBookTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        return addressBookTestingToolState;
-                    }));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    AddressBookTestingToolState.class,
+                    () -> new AddressBookTestingToolState(version -> new BasicSoftwareVersion(version.major()))));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "AddressBookTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
@@ -127,12 +126,17 @@ public class AddressBookTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new AddressBookTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
+    public AddressBookTestingToolState newMerkleStateRoot() {
+        final AddressBookTestingToolState state = new AddressBookTestingToolState(
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    @NonNull
+    public StateLifecycles<AddressBookTestingToolState> newStateLifecycles() {
+        return new AddressBookTestingToolStateLifecycles();
     }
 
     /**
@@ -162,5 +166,10 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);
         return softwareVersion;
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

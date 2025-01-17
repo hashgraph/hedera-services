@@ -105,30 +105,28 @@ public class TssBlockHashSigner implements BlockHashSigner {
                 return hintsService.signFuture(blockHash);
             }
         } else {
-            final var metadata = hintsService == null ? Bytes.EMPTY : hintsService.activeVerificationKeyOrThrow();
-            final var proof = historyService.getCurrentProof(metadata);
+            final var vk = hintsService == null ? Bytes.EMPTY : hintsService.activeVerificationKeyOrThrow();
+            final var proof = historyService.getCurrentProof(vk);
             if (hintsService == null) {
-                return CompletableFuture.supplyAsync(() -> assemble(noThrowSha384HashOf(blockHash), metadata, proof));
+                return CompletableFuture.supplyAsync(() -> assemble(noThrowSha384HashOf(blockHash), vk, proof));
             } else {
-                return hintsService.signFuture(blockHash).thenApply(signature -> assemble(signature, metadata, proof));
+                return hintsService.signFuture(blockHash).thenApply(signature -> assemble(signature, vk, proof));
             }
         }
     }
 
     /**
-     * Assembles the signature from the given components.
+     * Assembles the ledger signature from the given components.
      *
      * @param signature the hinTS aggregate signature
-     * @param verificationKey the hinTS verification key
+     * @param vk the hinTS verification key
      * @param proof the recursive proof that the verification key was honestly assigned to the current roster
      * @return the assembled signature
      */
-    private Bytes assemble(
-            @NonNull final Bytes signature, @NonNull final Bytes verificationKey, @NonNull final Bytes proof) {
-        final var buffer =
-                ByteBuffer.wrap(new byte[(int) (signature.length() + verificationKey.length() + proof.length())]);
+    static Bytes assemble(@NonNull final Bytes signature, @NonNull final Bytes vk, @NonNull final Bytes proof) {
+        final var buffer = ByteBuffer.wrap(new byte[(int) (signature.length() + vk.length() + proof.length())]);
         signature.writeTo(buffer);
-        verificationKey.writeTo(buffer);
+        vk.writeTo(buffer);
         proof.writeTo(buffer);
         return Bytes.wrap(buffer.array());
     }

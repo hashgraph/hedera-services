@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static com.hedera.node.app.hints.HintsService.SIGNATURE_SCHEMA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.bls.BlsPublicKey;
@@ -26,7 +25,6 @@ import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.tss.fakes.FakeGroupElement;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -34,7 +32,6 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -43,9 +40,6 @@ import javax.inject.Singleton;
 
 @Module
 public interface HintsModule {
-    BlsPublicKey FAKE_BLS_PUBLIC_KEY =
-            new BlsPublicKey(new FakeGroupElement(BigInteger.valueOf(666L)), SIGNATURE_SCHEMA);
-
     @Provides
     @Singleton
     static Supplier<NodeInfo> provideSelfNodeInfoSupplier(@NonNull final AppContext appContext) {

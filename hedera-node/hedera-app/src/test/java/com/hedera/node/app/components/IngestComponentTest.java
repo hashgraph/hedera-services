@@ -151,6 +151,8 @@ class IngestComponentTest {
                 .startupNetworks(startupNetworks)
                 .throttleFactory(throttleFactory)
                 .blockHashSigner(blockHashSigner)
+                .hintsService(hintsService)
+                .historyService(historyService)
                 .build();
 
         final var state = new FakeState();

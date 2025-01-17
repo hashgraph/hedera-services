@@ -73,10 +73,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WritableHintsStoreImplTest {
+    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final PreprocessingVote DEFAULT_VOTE = PreprocessingVote.newBuilder()
             .preprocessedKeys(PreprocessedKeys.DEFAULT)
             .build();
-    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final Roster A_ROSTER = new Roster(List.of(RosterEntry.DEFAULT));
     private static final Bytes A_ROSTER_HASH = Bytes.wrap("A");
     private static final Bytes B_ROSTER_HASH = Bytes.wrap("B");

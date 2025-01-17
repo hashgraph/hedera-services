@@ -43,6 +43,16 @@ public interface HistoryService extends Service {
      */
     int MIGRATION_ORDER = RosterService.MIGRATION_ORDER - 1;
 
+    @Override
+    default @NonNull String getServiceName() {
+        return NAME;
+    }
+
+    @Override
+    default int migrationOrder() {
+        return MIGRATION_ORDER;
+    }
+
     /**
      * Returns the handlers for the {@link HistoryService}.
      */
@@ -55,19 +65,18 @@ public interface HistoryService extends Service {
 
     /**
      * Reconciles the history of roster proofs with the given active rosters and metadata, if known.
-     *
      * @param activeRosters the active rosters
      * @param currentMetadata the current metadata, if known
      * @param historyStore the history store
      * @param now the current time
-     * @param tssConfig
+     * @param tssConfig the TSS configuration
      */
     void reconcile(
             @NonNull ActiveRosters activeRosters,
             @Nullable Bytes currentMetadata,
             @NonNull WritableHistoryStore historyStore,
             @NonNull Instant now,
-            TssConfig tssConfig);
+            @NonNull TssConfig tssConfig);
 
     /**
      * Returns a proof of inclusion of the given metadata for the current roster.
@@ -78,9 +87,4 @@ public interface HistoryService extends Service {
      */
     @NonNull
     Bytes getCurrentProof(@NonNull Bytes metadata);
-
-    @Override
-    default @NonNull String getServiceName() {
-        return NAME;
-    }
 }

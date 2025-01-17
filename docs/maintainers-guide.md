@@ -44,6 +44,8 @@ Use the following tutorials to set up a GPG key.
 
 ## Development Model
 
+:warning: This section is out of date and will be updated soon:tm:
+
 The Git Source Code Management(SCM) system treats branches as one of the fundamental constructs for
 supporting concurrent development and assisting with merge conflict resolution. Due to the
 fundamental nature and flexibility offered by Git branches, it is critical to have a consistent
@@ -90,13 +92,23 @@ with 0.30 milestone on it.
 
 ![labels-on-issue](./assets/labels-on-issue.png)
 
-### DevOps-CI Responsibilities
+### Platform-CI Responsibilities
 
-The DevOps-CI team will handle the following:
+The Platform-CI team will handle the following:
 
 - Will provide automated release processes and coordinate release schedules
 - Will handle production releases
 - Note: no release branch will be created
+
+### Github CI Workflow Naming Conventions
+
+- `node-*` and `platform-*` prefix is a legacy carryover because node repo and platform repo were merged together.
+- `flow-*` is a standalone workflow that can be executed by a user (should have a workflow-dispatch trigger). It can also be a PR target. Anything the user interacts with starts with flow.
+- `z` is used to force everything to sort to the bottom of the view in the Actions tab of github. We can now pin these.
+- `x` means a workflow is not user facing.
+- `f` means the workflow can be triggered directly by other workflows (or by users). Ex: `workflow_dispatch`.
+- `c` means the file contains a reusable workflow, called a workflow component, triggered by `workflow_call`.
+- `cron` indicates a workflow has a time-based trigger.
 
 ### User Stories
 

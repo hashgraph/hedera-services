@@ -36,7 +36,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * The current hinTS context.
+ * The hinTS context that can be used to request hinTS signatures using the latest
+ * complete construction, if there is one. See {@link #setConstruction(HintsConstruction)}
+ * for the ways the context can have a construction set.
  */
 @Singleton
 public class HintsContext {
@@ -112,8 +114,8 @@ public class HintsContext {
         final var verificationKey = preprocessedKeys.verificationKey();
         final long totalWeight = codec.extractTotalWeight(verificationKey);
         return new Signing(
-                atLeastOneThirdOfTotal(totalWeight),
                 construction.constructionId(),
+                atLeastOneThirdOfTotal(totalWeight),
                 blockHash,
                 preprocessedKeys.aggregationKey(),
                 requireNonNull(nodePartyIds),
@@ -139,7 +141,7 @@ public class HintsContext {
     }
 
     /**
-     * A particular signing process spawned from this context.
+     * A signing process spawned from this context.
      */
     public class Signing {
         private final long constructionId;
@@ -175,17 +177,20 @@ public class HintsContext {
         }
 
         /**
-         * Incorporate a partial signature into the aggregation.
+         * Incorporates a node's partial signature into the aggregation. If the signature is valid, and
+         * including this node's weight passes the required threshold, completes the future returned from
+         * {@link #future()} with the aggregated signature.
+         *
          * @param constructionId the construction ID
          * @param nodeId the node ID
          * @param signature the partial signature
          */
         public void incorporate(final long constructionId, final long nodeId, @NonNull final Bytes signature) {
             requireNonNull(signature);
-            if (this.constructionId == constructionId) {
+            if (this.constructionId == constructionId && partyIds.containsKey(nodeId)) {
                 final int partyId = partyIds.get(nodeId);
-                final var publicKey = requireNonNull(codec.extractPublicKey(aggregationKey, partyId));
-                if (library.verifyBls(signature, message, publicKey)) {
+                final var publicKey = codec.extractPublicKey(aggregationKey, partyId);
+                if (publicKey != null && library.verifyBls(signature, message, publicKey)) {
                     signatures.put(partyId, signature);
                     final var weight = codec.extractWeight(aggregationKey, partyId);
                     if (weightOfSignatures.addAndGet(weight) >= thresholdWeight) {

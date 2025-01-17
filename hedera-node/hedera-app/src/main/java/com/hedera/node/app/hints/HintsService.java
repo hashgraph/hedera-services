@@ -18,9 +18,6 @@ package com.hedera.node.app.hints;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.cryptography.bls.GroupAssignment;
-import com.hedera.cryptography.bls.SignatureSchema;
-import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
@@ -65,8 +62,6 @@ import java.time.Instant;
  */
 public interface HintsService extends Service, BlockHashSigner {
     String NAME = "HintsService";
-
-    SignatureSchema SIGNATURE_SCHEMA = SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
 
     /**
      * Since the roster service has to decide to adopt the candidate roster
@@ -148,13 +143,13 @@ public interface HintsService extends Service, BlockHashSigner {
     }
 
     /**
-     * Returns the party size {@code M=2^k} for the unique {@code k} such that the
-     * roster node count {@code n} belongs to the interval {@code (2^(k-1), 2^k]}.
+     * Returns the party size {@code M=2^k} such that the given roster node count
+     * will fall inside the range {@code [2*(k-1), 2^k]}.
+     *
      * @param n the roster node count
      * @return the party size
      */
-    static int partySizeForRosterNodeCount(int n) {
-        n++;
+    static int partySizeForRosterNodeCount(final int n) {
         if ((n & (n - 1)) == 0) {
             return n;
         }

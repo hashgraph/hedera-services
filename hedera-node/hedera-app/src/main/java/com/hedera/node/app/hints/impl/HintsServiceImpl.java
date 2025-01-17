@@ -49,10 +49,10 @@ public class HintsServiceImpl implements HintsService {
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsLibrary operations) {
+            @NonNull final HintsLibrary library) {
         // Fully qualified for benefit of javadoc
         this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
-                .create(operations, appContext, executor, metrics);
+                .create(library, appContext, executor, metrics);
     }
 
     @VisibleForTesting
