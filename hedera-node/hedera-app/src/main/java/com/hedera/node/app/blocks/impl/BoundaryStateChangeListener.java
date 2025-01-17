@@ -238,7 +238,8 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             }
             case HistoryProofConstruction historyProofConstruction -> {
                 return new OneOf<>(
-                        SingletonUpdateChange.NewValueOneOfType.HISTORY_PROOF_CONSTRUCTION_VALUE, historyProofConstruction);
+                        SingletonUpdateChange.NewValueOneOfType.HISTORY_PROOF_CONSTRUCTION_VALUE,
+                        historyProofConstruction);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

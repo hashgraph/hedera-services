@@ -70,10 +70,10 @@ public interface HintsController {
 
     /**
      * If this controller's construction is not already complete, considers updating its state with this preprocessing
-     * vote the controller's state. Returns true if any state was updated.
+     * vote. Returns true if any state was updated.
      * <p>
-     * <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also
-     * updates <i>network</i> state with the winning output.
+     * <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also updates
+     * <i>network</i> state in the given writable store with the winning preprocessing output.
      * @param nodeId the node ID
      * @param vote the preprocessing outputs vote
      * @param hintsStore the hints store

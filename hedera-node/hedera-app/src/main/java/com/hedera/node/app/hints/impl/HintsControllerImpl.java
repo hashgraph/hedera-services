@@ -166,8 +166,8 @@ public class HintsControllerImpl implements HintsController {
     @Override
     public void addHintsKeyPublication(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
-        // Ignore publications if we already have a hinTS scheme
-        if (construction.hasHintsScheme()) {
+        // Once the preprocessing start time (or scheme) is known, the party keys are fixed
+        if (!construction.hasGracePeriodEndTime()) {
             return;
         }
         final long nodeId = publication.nodeId();

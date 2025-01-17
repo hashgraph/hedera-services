@@ -193,9 +193,7 @@ public class KVStateChangeListener implements StateChangeListener {
             case PreprocessingVoteId preprocessingVoteId -> MapChangeKey.newBuilder()
                     .preprocessingVoteIdKey(preprocessingVoteId)
                     .build();
-            case NodeId nodeId -> MapChangeKey.newBuilder()
-                    .nodeIdKey(nodeId)
-                    .build();
+            case NodeId nodeId -> MapChangeKey.newBuilder().nodeIdKey(nodeId).build();
             case ConstructionNodeId constructionNodeId -> MapChangeKey.newBuilder()
                     .constructionNodeIdKey(constructionNodeId)
                     .build();

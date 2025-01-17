@@ -16,20 +16,17 @@
 
 package com.hedera.node.app.history.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
 import com.hedera.node.app.history.ReadableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
-import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-
-import static java.util.Objects.requireNonNull;
 
 public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
     @Override
@@ -56,7 +53,8 @@ public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
     }
 
     @Override
-    public @NonNull List<HistorySignaturePublication> getSignaturePublications(final long constructionId, @NonNull final Set<Long> nodeIds) {
+    public @NonNull List<HistorySignaturePublication> getSignaturePublications(
+            final long constructionId, @NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
         return List.of();
     }

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.node.app.hints.impl.HintsControllers;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.impl.ProofControllers;
 import com.hedera.node.app.spi.AppContext;

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.history;
 
-import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.node.app.roster.ActiveRosters;

@@ -66,7 +66,8 @@ public interface HistoryService extends Service {
             @NonNull ActiveRosters activeRosters,
             @Nullable Bytes currentMetadata,
             @NonNull WritableHistoryStore historyStore,
-            @NonNull Instant now, TssConfig tssConfig);
+            @NonNull Instant now,
+            TssConfig tssConfig);
 
     /**
      * Returns a proof of inclusion of the given metadata for the current roster.

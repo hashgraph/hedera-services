@@ -79,10 +79,10 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
                 }
             }
             case HANDOFF -> {
-               if (historyStore.purgeStateAfterHandoff(activeRosters)) {
-                   final var construction = requireNonNull(historyStore.getConstructionFor(activeRosters));
-                   this.accept(construction.targetProofOrThrow());
-               }
+                if (historyStore.purgeStateAfterHandoff(activeRosters)) {
+                    final var construction = requireNonNull(historyStore.getConstructionFor(activeRosters));
+                    this.accept(construction.targetProofOrThrow());
+                }
             }
         }
     }

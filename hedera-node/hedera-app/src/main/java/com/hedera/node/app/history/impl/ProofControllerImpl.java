@@ -57,7 +57,7 @@ import java.util.function.Consumer;
  * ledger id. (Or, if the ledger id is null, simply the proof that the ledger has blessed the
  * genesis address book metadata).
  */
-public class ProofControllerImpl {
+public class ProofControllerImpl implements ProofController {
     private static final Comparator<ProofKey> PROOF_KEY_COMPARATOR = Comparator.comparingLong(ProofKey::nodeId);
 
     private final long selfId;
@@ -74,7 +74,6 @@ public class ProofControllerImpl {
     private final Consumer<HistoryProof> proofConsumer;
     private final Map<Long, HistoryProofVote> votes = new HashMap<>();
     private final Map<Long, Bytes> targetProofKeys = new HashMap<>();
-    private final NavigableMap<Instant, Long> proofKeyAdoptionTimes = new TreeMap<>();
     private final Set<Long> signingNodeIds = new HashSet<>();
     private final NavigableMap<Instant, CompletableFuture<Verification>> verificationFutures = new TreeMap<>();
 
@@ -156,14 +155,7 @@ public class ProofControllerImpl {
         signaturePublications.forEach(this::addSignaturePublication);
     }
 
-    /**
-     * Acts relative to the given state to let this node help advance the ongoing metadata proof
-     * construction toward a deterministic completion.
-     *
-     * @param now the current consensus time
-     * @param metadata the latest known metadata to be proven
-     * @param historyStore the history store, in case the controller is able to complete the construction
-     */
+    @Override
     public void advanceConstruction(
             @NonNull final Instant now,
             @Nullable final Bytes metadata,
@@ -192,15 +184,11 @@ public class ProofControllerImpl {
         }
     }
 
-    /**
-     * Incorporates the proof key published by the given node, if this construction has not already "locked in"
-     * its assembled target roster.
-     *
-     * @param publication the proof key publication
-     */
+    @Override
     public void addProofKeyPublication(@NonNull final ProofKeyPublication publication) {
         requireNonNull(publication);
-        if (construction.hasTargetProof()) {
+        // Once the assembly start time (or proof) is known, the proof keys are fixed
+        if (!construction.hasGracePeriodEndTime()) {
             return;
         }
         final long nodeId = publication.nodeId();
@@ -208,15 +196,9 @@ public class ProofControllerImpl {
             return;
         }
         targetProofKeys.put(nodeId, publication.proofKey());
-        proofKeyAdoptionTimes.put(publication.adoptionTime(), nodeId);
     }
 
-    /**
-     * Incorporates the assembly signature published by the given node, if this construction still needs a
-     * proof and the
-     *
-     * @param publication the proof key publication
-     */
+    @Override
     public void addSignaturePublication(@NonNull final HistorySignaturePublication publication) {
         requireNonNull(publication);
         if (!construction.hasTargetProof() && targetProofKeys.containsKey(publication.nodeId())) {
@@ -225,14 +207,8 @@ public class ProofControllerImpl {
         }
     }
 
-    /**
-     * Incorporates the metadata proof vote published by the given node, if this construction still needs a proof.
-     *
-     * @param nodeId the node ID
-     * @param vote the vote
-     * @param historyStore the history store
-     */
-    public void incorporateProofVote(
+    @Override
+    public boolean addProofVote(
             final long nodeId, @NonNull final HistoryProofVote vote, @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(vote);
         if (!construction.hasTargetProof() && !votes.containsKey(nodeId)) {
@@ -254,7 +230,23 @@ public class ProofControllerImpl {
                     }
                 }
             });
+            return true;
         }
+        return false;
+    }
+
+    @Override
+    public void cancelPendingWork() {
+        if (publicationFuture != null) {
+            publicationFuture.cancel(true);
+        }
+        if (signingFuture != null) {
+            signingFuture.cancel(true);
+        }
+        if (proofFuture != null) {
+            proofFuture.cancel(true);
+        }
+        verificationFutures.values().forEach(future -> future.cancel(true));
     }
 
     /**

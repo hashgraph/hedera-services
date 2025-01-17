@@ -146,7 +146,8 @@ public class HintsControllers {
             final var blsKeyPair = keyLoader.getOrCreateBlsKeyPair(construction.constructionId());
             return new HintsControllerImpl(
                     selfId,
-                    blsKeyPair, construction,
+                    blsKeyPair,
+                    construction,
                     weights,
                     executor,
                     library,

@@ -51,7 +51,8 @@ public class FakeHistoryService implements HistoryService {
             @NonNull final ActiveRosters activeRosters,
             @Nullable final Bytes currentMetadata,
             @NonNull final WritableHistoryStore historyStore,
-            @NonNull final Instant now, TssConfig tssConfig) {
+            @NonNull final Instant now,
+            TssConfig tssConfig) {
         requireNonNull(activeRosters);
         requireNonNull(historyStore);
         requireNonNull(now);

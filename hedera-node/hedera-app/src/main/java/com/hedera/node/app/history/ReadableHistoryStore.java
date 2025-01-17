@@ -25,7 +25,6 @@ import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +82,7 @@ public interface ReadableHistoryStore {
      * @return the preprocessed keys and votes, or null
      */
     @NonNull
-    Map<Long, HistoryProofVote> getVotes(long constructionId,  @NonNull Set<Long> nodeIds);
+    Map<Long, HistoryProofVote> getVotes(long constructionId, @NonNull Set<Long> nodeIds);
 
     /**
      * Returns the proof keys published by the given set of nodes for the active construction. (That is,
