@@ -22,16 +22,19 @@ import com.hedera.cryptography.asciiarmored.AsciiArmoredFiles;
 import com.hedera.cryptography.bls.BlsKeyPair;
 import com.hedera.cryptography.bls.BlsPrivateKey;
 import com.hedera.cryptography.bls.BlsPublicKey;
-import com.swirlds.platform.crypto.CryptoStatic;
+import com.hedera.cryptography.bls.GroupAssignment;
+import com.hedera.cryptography.bls.SignatureSchema;
+import com.hedera.cryptography.pairings.api.Curve;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class KeyPairSequenceManagerTest {
+    private static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     private static final String PRIVATE_KEY_FILE_NAME = "hinTS.bls";
 
     @TempDir
@@ -150,8 +153,7 @@ class KeyPairSequenceManagerTest {
 
     private static BlsPrivateKey newPrivateKey() {
         try {
-            return CryptoStatic.generateBlsKeyPair(SecureRandom.getInstanceStrong())
-                    .privateKey();
+            return BlsKeyPair.generate(SIGNATURE_SCHEMA).privateKey();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }

@@ -49,9 +49,8 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHintsService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHistoryService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.hints.FakeHintsService;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.history.FakeHistoryService;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -151,12 +150,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
      */
     protected LapsingBlockHashSigner blockHashSigner;
-    /**
-     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HintsServiceFactory} lambda we give the
-     * {@link Hedera} constructor will always set this (the fake's {@link HintsServiceImpl}
-     * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
-     */
-    protected FakeHintsService hintsService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);

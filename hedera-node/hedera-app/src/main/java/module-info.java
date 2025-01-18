@@ -120,10 +120,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.blocks.impl;
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
-    exports com.hedera.node.app.hints;
-    exports com.hedera.node.app.hints.impl;
     exports com.hedera.node.app.hints.handlers;
-    exports com.hedera.node.app.history;
     exports com.hedera.node.app.history.handlers;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.statedumpers;
@@ -140,7 +137,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
     exports com.hedera.node.app.roster.schemas;
-    exports com.hedera.node.app.history.impl;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

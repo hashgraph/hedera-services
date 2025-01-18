@@ -18,7 +18,6 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.cryptography.bls.BlsPublicKey;
 import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
@@ -34,7 +33,6 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
@@ -50,12 +48,6 @@ public interface HintsModule {
     @Singleton
     static Supplier<Configuration> provideConfigSupplier(@NonNull final AppContext appContext) {
         return requireNonNull(appContext).configSupplier();
-    }
-
-    @Provides
-    @Singleton
-    static Function<Bytes, BlsPublicKey> provideKeyParser() {
-        return bytes -> FAKE_BLS_PUBLIC_KEY;
     }
 
     @Provides

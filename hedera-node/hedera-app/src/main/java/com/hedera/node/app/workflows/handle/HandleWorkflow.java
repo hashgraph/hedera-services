@@ -164,8 +164,6 @@ public class HandleWorkflow {
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final ScheduleService scheduleService;
-    private final HintsService hintsService;
-    private final HistoryService historyService;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -199,9 +197,7 @@ public class HandleWorkflow {
             @NonNull final HistoryService historyService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
-            @NonNull final ScheduleService scheduleService,
-            @NonNull final HintsService hintsService,
-            @NonNull final HistoryService historyService) {
+            @NonNull final ScheduleService scheduleService) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -232,8 +228,6 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
-        this.hintsService = requireNonNull(hintsService);
-        this.historyService = requireNonNull(historyService);
     }
 
     /**
@@ -271,37 +265,6 @@ public class HandleWorkflow {
             // Even if there is an exception somewhere, we need to commit the receipts of any handled transactions
             // to the state so these transactions cannot be replayed in future rounds
             recordCache.commitRoundReceipts(state, round.getConsensusTimestamp());
-        }
-    }
-
-    private void reconcileTssState(
-            @NonNull final TssConfig tssConfig, @NonNull final State state, @NonNull final Instant now) {
-        if (tssConfig.hintsEnabled() || tssConfig.historyEnabled()) {
-            final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
-            final var activeRosters = ActiveRosters.from(rosterStore);
-            if (tssConfig.hintsEnabled()) {
-                final var hintsWritableStates = state.getWritableStates(HintsService.NAME);
-                final var hintsStore = new WritableHintsStoreImpl(hintsWritableStates);
-                doStreamingKVChanges(
-                        hintsWritableStates,
-                        now,
-                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig));
-            }
-            if (tssConfig.historyEnabled()) {
-                final Bytes currentMetadata;
-                if (tssConfig.hintsEnabled()) {
-                    final var hintsStore = new ReadableHintsStoreImpl(state.getReadableStates(HintsService.NAME));
-                    currentMetadata = hintsStore.getActiveVerificationKey();
-                } else {
-                    currentMetadata = null;
-                }
-                final var historyWritableStates = state.getWritableStates(HistoryService.NAME);
-                final var historyStore = new WritableHistoryStoreImpl(historyWritableStates);
-                doStreamingKVChanges(
-                        historyWritableStates,
-                        now,
-                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig));
-            }
         }
     }
 
@@ -943,7 +906,7 @@ public class HandleWorkflow {
                 doStreamingKVChanges(
                         historyWritableStates,
                         now,
-                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now));
+                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig));
             }
         }
     }

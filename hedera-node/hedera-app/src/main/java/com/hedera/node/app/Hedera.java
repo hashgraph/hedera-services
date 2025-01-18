@@ -283,18 +283,6 @@ public final class Hedera
     private final BlockStreamService blockStreamService;
 
     /**
-     * The hinTS service singleton, kept as a field here to avoid constructing twice
-     * (once in constructor to register schemas, again inside Dagger component).
-     */
-    private final HintsService hintsService;
-
-    /**
-     * The history service singleton, kept as a field here to avoid constructing twice
-     * (once in constructor to register schemas, again inside Dagger component).
-     */
-    private final HistoryService historyService;
-
-    /**
      * The block hash signer factory.
      */
     private final BlockHashSignerFactory blockHashSignerFactory;
@@ -433,8 +421,6 @@ public final class Hedera
      * @param hintsServiceFactory the factory for the hinTS service
      * @param historyServiceFactory the factory for the history service
      * @param blockHashSignerFactory the factory for the block hash signer
-     * @param hintsServiceFactory the factory for the hints service
-     * @param historyServiceFactory the factory for the history service
      * @param metrics the metrics object to use for reporting
      */
     public Hedera(

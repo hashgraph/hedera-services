@@ -16,15 +16,26 @@
 
 package com.hedera.node.app.history.impl;
 
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.ACTIVE_PROOF_CONSTRUCTION_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.NEXT_PROOF_CONSTRUCTION_KEY;
+import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
+import static com.hedera.node.app.roster.ActiveRosters.Phase.TRANSITION;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.history.History;
 import com.hedera.hapi.node.state.history.HistoryProof;
+import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
+import com.hedera.hapi.node.state.history.ProofKey;
+import com.hedera.hapi.node.state.history.ProofKeySet;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
@@ -32,6 +43,7 @@ import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
@@ -45,7 +57,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -122,10 +133,171 @@ class WritableHistoryStoreImplTest {
                 () -> subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG));
     }
 
-    private <T extends Record> void commitSingleton(@NonNull final String key, @NonNull final T value) {
-        commit(writableStates -> {
-            final WritableSingletonState<T> state = writableStates.getSingleton(key);
-            state.put(value);
+    @Test
+    void findsMatchingTransitionConstructionInActiveConstructionIfThere() {
+        given(activeRosters.phase()).willReturn(TRANSITION);
+        given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
+        given(activeRosters.targetRosterHash()).willReturn(B_ROSTER_HASH);
+        final var active = HistoryProofConstruction.newBuilder()
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(B_ROSTER_HASH)
+                .build();
+        setConstructions(active, HistoryProofConstruction.DEFAULT);
+
+        assertSame(active, subject.getConstructionFor(activeRosters));
+        assertSame(active, subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG));
+    }
+
+    @Test
+    void findsMatchingTransitionConstructionInNextConstructionIfThere() {
+        given(activeRosters.phase()).willReturn(TRANSITION);
+        given(activeRosters.sourceRosterHash()).willReturn(B_ROSTER_HASH);
+        given(activeRosters.targetRosterHash()).willReturn(C_ROSTER_HASH);
+        final var active = HistoryProofConstruction.newBuilder()
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(B_ROSTER_HASH)
+                .build();
+        final var next = HistoryProofConstruction.newBuilder()
+                .sourceRosterHash(B_ROSTER_HASH)
+                .targetRosterHash(C_ROSTER_HASH)
+                .build();
+        setConstructions(active, next);
+
+        final var construction = subject.getConstructionFor(activeRosters);
+
+        assertSame(next, construction);
+    }
+
+    @Test
+    void createsBootstrapConstructionIfNotPresent() {
+        givenARosterLookup();
+        given(activeRosters.phase()).willReturn(BOOTSTRAP);
+        given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
+        given(activeRosters.targetRosterHash()).willReturn(A_ROSTER_HASH);
+
+        final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG);
+
+        assertEquals(1L, construction.constructionId());
+        final var expectedGracePeriodEndTime =
+                asTimestamp(CONSENSUS_NOW.plus(TSS_CONFIG.bootstrapProofKeyGracePeriod()));
+        assertEquals(expectedGracePeriodEndTime, construction.gracePeriodEndTimeOrThrow());
+        assertEquals(A_ROSTER_HASH, construction.sourceRosterHash());
+        assertEquals(A_ROSTER_HASH, construction.targetRosterHash());
+
+        assertSame(construction, getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY));
+    }
+
+    @Test
+    void setsAsNextConstructionAndRotatesKeysDuringTransition() {
+        givenCRosterLookup();
+        given(activeRosters.phase()).willReturn(TRANSITION);
+        given(activeRosters.sourceRosterHash()).willReturn(B_ROSTER_HASH);
+        given(activeRosters.targetRosterHash()).willReturn(C_ROSTER_HASH);
+        final var active = HistoryProofConstruction.newBuilder()
+                .constructionId(2L)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(B_ROSTER_HASH)
+                .build();
+        setConstructions(active, HistoryProofConstruction.DEFAULT);
+        assertSame(active, subject.getActiveConstruction());
+        final var key = Bytes.wrap("ONE");
+        final var nextKey = Bytes.wrap("TWO");
+        final long rotatingKeyNodeId = C_ROSTER.rosterEntries().getFirst().nodeId();
+        subject.setProofKey(rotatingKeyNodeId, key, CONSENSUS_NOW.minusSeconds(1440));
+        subject.setProofKey(rotatingKeyNodeId, nextKey, CONSENSUS_NOW.minusSeconds(1439));
+        final long newKeyNodeId = C_ROSTER.rosterEntries().getLast().nodeId();
+        final var newKey = Bytes.wrap("THREE");
+        assertTrue(subject.setProofKey(newKeyNodeId, newKey, CONSENSUS_NOW.minusSeconds(1L)));
+
+        final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG);
+
+        assertEquals(3L, construction.constructionId());
+        final var expectedGracePeriodEndTime =
+                asTimestamp(CONSENSUS_NOW.plus(TSS_CONFIG.transitionProofKeyGracePeriod()));
+        assertEquals(expectedGracePeriodEndTime, construction.gracePeriodEndTimeOrThrow());
+        assertEquals(B_ROSTER_HASH, construction.sourceRosterHash());
+        assertEquals(C_ROSTER_HASH, construction.targetRosterHash());
+
+        assertSame(construction, getSingleton(NEXT_PROOF_CONSTRUCTION_KEY));
+
+        final var updatedKeySet = state.getWritableStates(HistoryService.NAME)
+                .<NodeId, ProofKeySet>get(V059HistorySchema.PROOF_KEY_SETS_KEY)
+                .get(new NodeId(rotatingKeyNodeId));
+        requireNonNull(updatedKeySet);
+        assertEquals(nextKey, updatedKeySet.key());
+        assertEquals(asTimestamp(CONSENSUS_NOW), updatedKeySet.adoptionTime());
+        assertEquals(Bytes.EMPTY, updatedKeySet.nextKey());
+
+        final var newKeySet = state.getWritableStates(HistoryService.NAME)
+                .<NodeId, ProofKeySet>get(V059HistorySchema.PROOF_KEY_SETS_KEY)
+                .get(new NodeId(newKeyNodeId));
+        requireNonNull(newKeySet);
+        assertEquals(newKey, newKeySet.key());
+        assertEquals(asTimestamp(CONSENSUS_NOW.minusSeconds(1L)), newKeySet.adoptionTime());
+    }
+
+    @Test
+    void canSetAssemblyStartTimeIfConstructionIdExists() {
+        setConstructions(
+                HistoryProofConstruction.newBuilder().constructionId(123L).build(),
+                HistoryProofConstruction.newBuilder().constructionId(456L).build());
+
+        assertThrows(IllegalArgumentException.class, () -> subject.setAssemblyTime(0L, CONSENSUS_NOW));
+        subject.setAssemblyTime(123L, CONSENSUS_NOW);
+        assertEquals(
+                asTimestamp(CONSENSUS_NOW),
+                this.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY)
+                        .assemblyStartTimeOrThrow());
+        assertFalse(this.<HistoryProofConstruction>getSingleton(NEXT_PROOF_CONSTRUCTION_KEY)
+                .hasAssemblyStartTime());
+
+        subject.setAssemblyTime(123L, CONSENSUS_NOW);
+        assertEquals(
+                asTimestamp(CONSENSUS_NOW),
+                this.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY)
+                        .assemblyStartTimeOrThrow());
+
+        final var then = CONSENSUS_NOW.plusSeconds(1L);
+        subject.setAssemblyTime(456L, then);
+        assertEquals(
+                asTimestamp(then),
+                this.<HistoryProofConstruction>getSingleton(NEXT_PROOF_CONSTRUCTION_KEY)
+                        .assemblyStartTimeOrThrow());
+    }
+
+    @Test
+    void canSetTargetProof() {
+        setConstructions(
+                HistoryProofConstruction.newBuilder().constructionId(123L).build(),
+                HistoryProofConstruction.newBuilder().constructionId(456L).build());
+
+        final var bookHash = Bytes.wrap("DOODLE");
+        final var proof = new HistoryProof(bookHash, List.of(ProofKey.DEFAULT), History.DEFAULT, Bytes.EMPTY);
+        subject.completeProof(456L, proof);
+
+        final var construction = this.<HistoryProofConstruction>getSingleton(NEXT_PROOF_CONSTRUCTION_KEY);
+        assertEquals(bookHash, construction.targetProofOrThrow().sourceAddressBookHash());
+    }
+
+    private void givenARosterLookup() {
+        given(activeRosters.findRelatedRoster(A_ROSTER_HASH)).willReturn(A_ROSTER);
+    }
+
+    private void givenCRosterLookup() {
+        given(activeRosters.findRelatedRoster(C_ROSTER_HASH)).willReturn(C_ROSTER);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Record> @NonNull T getSingleton(@NonNull final String key) {
+        return requireNonNull((T)
+                state.getWritableStates(HistoryService.NAME).getSingleton(key).get());
+    }
+
+    private void setConstructions(
+            @NonNull final HistoryProofConstruction active, @NonNull final HistoryProofConstruction next) {
+        commit(states -> {
+            states.getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY).put(active);
+            states.getSingleton(NEXT_PROOF_CONSTRUCTION_KEY).put(next);
         });
     }
 

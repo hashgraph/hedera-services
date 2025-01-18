@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.embedded.fakes.history;
+package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
@@ -52,10 +52,11 @@ public class FakeHistoryService implements HistoryService {
             @Nullable final Bytes currentMetadata,
             @NonNull final WritableHistoryStore historyStore,
             @NonNull final Instant now,
-            TssConfig tssConfig) {
+            @NonNull final TssConfig tssConfig) {
         requireNonNull(activeRosters);
         requireNonNull(historyStore);
         requireNonNull(now);
+        requireNonNull(tssConfig);
         // No-op
     }
 

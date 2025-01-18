@@ -78,7 +78,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.junit.support.validators.block;
     exports com.hedera.services.bdd.utils;
     exports com.hedera.services.bdd.junit.restart;
-    exports com.hedera.services.bdd.junit.hedera.embedded.fakes.hints;
 
     requires com.hedera.cryptography.bls;
     requires com.hedera.cryptography.tss;

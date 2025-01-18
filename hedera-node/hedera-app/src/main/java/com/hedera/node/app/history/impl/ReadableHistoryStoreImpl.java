@@ -72,13 +72,24 @@ public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
 
     @Override
     public @NonNull HistoryProofConstruction getActiveConstruction() {
-        throw new AssertionError("Not implemented");
+        return requireNonNull(activeConstruction.get());
     }
 
     @Override
     public @Nullable HistoryProofConstruction getConstructionFor(@NonNull final ActiveRosters activeRosters) {
         requireNonNull(activeRosters);
-        throw new AssertionError("Not implemented");
+        return switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                HistoryProofConstruction construction;
+                if (constructionIsFor(construction = requireNonNull(activeConstruction.get()), activeRosters)) {
+                    yield construction;
+                } else if (constructionIsFor(construction = requireNonNull(nextConstruction.get()), activeRosters)) {
+                    yield construction;
+                }
+                yield null;
+            }
+            case HANDOFF -> null;
+        };
     }
 
     @Override
@@ -98,5 +109,11 @@ public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
             final long constructionId, @NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
         return List.of();
+    }
+
+    private boolean constructionIsFor(
+            @NonNull final HistoryProofConstruction construction, @NonNull final ActiveRosters activeRosters) {
+        return activeRosters.sourceRosterHash().equals(construction.sourceRosterHash())
+                && activeRosters.targetRosterHash().equals(construction.targetRosterHash());
     }
 }

@@ -36,6 +36,17 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
             @NonNull ActiveRosters activeRosters, @NonNull Instant now, @NonNull TssConfig tssConfig);
 
     /**
+     * Includes the given proof key for the given node, assigning the given adoption time if the key
+     * is immediately in use.
+     *
+     * @param nodeId the node ID
+     * @param proofKey the hints key to include
+     * @param now the adoption time
+     * @return whether the key was immediately in use
+     */
+    boolean setProofKey(long nodeId, @NonNull Bytes proofKey, @NonNull Instant now);
+
+    /**
      * Sets the assembly time for the construction with the given ID and returns the
      * updated construction.
      * @param constructionId the construction ID

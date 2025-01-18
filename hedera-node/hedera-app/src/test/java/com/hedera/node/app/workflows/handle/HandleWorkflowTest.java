@@ -152,12 +152,6 @@ class HandleWorkflowTest {
     @Mock
     private UserTxnFactory userTxnFactory;
 
-    @Mock
-    private HintsService hintsService;
-
-    @Mock
-    private HistoryService historyService;
-
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -238,8 +232,6 @@ class HandleWorkflowTest {
                 historyService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                scheduleService,
-                hintsService,
-                historyService);
+                scheduleService);
     }
 }

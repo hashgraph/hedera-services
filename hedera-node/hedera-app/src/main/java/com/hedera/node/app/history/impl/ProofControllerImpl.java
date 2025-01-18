@@ -230,7 +230,8 @@ public class ProofControllerImpl implements ProofController {
                 if (historyStore.getActiveConstruction().constructionId() == construction.constructionId()) {
                     proofConsumer.accept(proof);
                     if (ledgerId == null) {
-                        historyStore.setLedgerId(proof.sourceAddressBookHash());
+                        requireNonNull(targetMetadata);
+                        historyStore.setLedgerId(codec.encodeLedgerId(proof.sourceAddressBookHash(), targetMetadata));
                     }
                 }
             });

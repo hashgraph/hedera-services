@@ -17,9 +17,9 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
 import static java.util.Objects.requireNonNull;
 
@@ -54,8 +54,8 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     public ReadableHintsStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.hintsKeys = states.get(HINTS_KEY_SETS_KEY);
-        this.nextConstruction = states.getSingleton(NEXT_CONSTRUCTION_KEY);
-        this.activeConstruction = states.getSingleton(ACTIVE_CONSTRUCTION_KEY);
+        this.nextConstruction = states.getSingleton(NEXT_HINT_CONSTRUCTION_KEY);
+        this.activeConstruction = states.getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
     }
 

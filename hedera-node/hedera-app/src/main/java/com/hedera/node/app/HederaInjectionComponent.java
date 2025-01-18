@@ -199,12 +199,6 @@ public interface HederaInjectionComponent {
         Builder blockHashSigner(BlockHashSigner blockHashSigner);
 
         @BindsInstance
-        Builder hintsService(HintsService hintsService);
-
-        @BindsInstance
-        Builder historyService(HistoryService historyService);
-
-        @BindsInstance
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
