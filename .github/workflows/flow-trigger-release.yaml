@@ -65,7 +65,7 @@ jobs:
           build_tag="build-$padded_number"
           echo "Prefixed number is: $build_tag"
 
-          # Export as environment variable
+          # Export to Github output
           echo "BUILD_TAG=$build_tag" >> $GITHUB_OUTPUT
 
       - name: Checkout Code
@@ -95,7 +95,6 @@ jobs:
           fi
 
       - name: Import GPG Key
-        id: gpg_importer
         uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
         with:
           git_commit_gpgsign: true
@@ -118,10 +117,22 @@ jobs:
             @commitlint/cli@19.5.0 @commitlint/config-conventional@19.5.0 \
             marked-mangle@1.1.10 marked-gfm-heading-id@4.1.1 semantic-release-conventional-commits@3.0.0
 
-      - name: Create a Temporary Build Branch
+      - name: Calculate Temporary Semantic Release Branch Name
+        id: branch_name
+        run: |
+          echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> $GITHUB_OUTPUT
+
+      - name: Create a Temporary Semantic Release Branch
         run: |
           echo "Going to run the following command:"
-          echo "git checkout -b temp/${{ steps.validate.outputs.BUILD_TAG }}"
+          echo "git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}"
+          git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          
+          echo "Checked out to:"
+          echo git status
+          
+          echo "Pushing branch to origin:"
+          git push --set-upstream origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
       - name: Publish Semantic Release
         env:
@@ -135,4 +146,10 @@ jobs:
           if [[ "${{ github.event.inputs.dry-run-enabled }}" == true ]]; then
             ARGS="--dry-run"
           fi
-          npx semantic-release ${ ARGS }
+          npx semantic-release ${ARGS}
+
+      - name: Delete the Temporary Semantic Release Branch
+        run: |
+          echo "Deleting the temporary semantic release branch"
+          git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          git push -d origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
