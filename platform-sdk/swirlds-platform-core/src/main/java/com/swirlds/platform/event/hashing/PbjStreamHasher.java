@@ -66,7 +66,7 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), false);
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), true);
         event.setHash(hash);
     }
 
