@@ -83,7 +83,12 @@ jobs:
           ref: "14967-semantic-release-workflow-update"
 
       - name: Copy Private .releaserc file to Github Workspace
-        run: cp -f private/.releaserc .releaserc
+        run: |
+          echo "Copying the .releaserc file"
+          cp -f private/.releaserc .releaserc
+          
+          echo "Removing private directory"
+          rm -rf private
 
       - name: Display Current Branch or Tag
         run: |
@@ -148,6 +153,15 @@ jobs:
             ARGS="--dry-run"
           fi
           npx semantic-release ${ARGS}
+
+      - name: Ensure Branch Not in Use and Delete Worktree
+        if: always()
+        run: |
+          # Switch to a safe branch (e.g., main)
+          git checkout main
+      
+          # Remove the worktree if it exists
+          git worktree list | grep ${{ steps.branch_name.outputs.BRANCH_NAME }} | awk '{print $1}' | xargs -r git worktree remove
 
       - name: Delete the Temporary Semantic Release Branch
         if: always()
