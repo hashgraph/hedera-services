@@ -1128,11 +1128,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 filteredLeafPathsCount,
                 virtualMapConfig);
         filterMutations(
-                dirtyLeaves,
-                keyToDirtyLeafIndex,
-                mergedCopyOldestVersion.get(),
-                filteredLeavesCount,
-                virtualMapConfig);
+                dirtyLeaves, keyToDirtyLeafIndex, mergedCopyOldestVersion.get(), filteredLeavesCount, virtualMapConfig);
     }
 
     /**
