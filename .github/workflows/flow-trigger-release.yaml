@@ -121,6 +121,7 @@ jobs:
         id: branch_name
         run: |
           echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> $GITHUB_OUTPUT
+          echo "The temp branch name is: ${BRANCH_NAME}"
 
       - name: Create a Temporary Semantic Release Branch
         run: |
@@ -152,5 +153,8 @@ jobs:
         if: always()
         run: |
           echo "Deleting the temporary semantic release branch"
+          echo "Deleting local branch now:"
           git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          
+          echo "Deleting remote branch now:"
           git push -d origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
