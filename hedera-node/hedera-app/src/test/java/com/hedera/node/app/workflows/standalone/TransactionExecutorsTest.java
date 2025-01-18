@@ -431,7 +431,7 @@ public class TransactionExecutorsTest {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(appContext),
+                        new ContractServiceImpl(appContext, NO_OP_METRICS),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
