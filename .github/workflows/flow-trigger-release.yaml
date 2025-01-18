@@ -118,6 +118,11 @@ jobs:
             @commitlint/cli@19.5.0 @commitlint/config-conventional@19.5.0 \
             marked-mangle@1.1.10 marked-gfm-heading-id@4.1.1 semantic-release-conventional-commits@3.0.0
 
+      - Name: Create a Temporary Build Branch
+        run: |
+          echo "Going to run the following command:"
+          echo "git checkout -b temp/${{ steps.validate.outputs.BUILD_TAG }}"
+
       - name: Publish Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -130,4 +135,4 @@ jobs:
           if [[ "${{ github.event.inputs.dry-run-enabled }}" == true ]]; then
             ARGS="--dry-run"
           fi
-          npx semantic-release ${ARGS}
+          npx semantic-release ${ ARGS }
