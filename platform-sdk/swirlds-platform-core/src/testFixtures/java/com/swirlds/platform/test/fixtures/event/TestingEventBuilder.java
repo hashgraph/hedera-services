@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
-import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
 import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -488,10 +486,10 @@ public class TestingEventBuilder {
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
             generatedTransactions.add(StateSignatureTransaction.PROTOBUF.toBytes(StateSignatureTransaction.newBuilder()
-                            .round(random.nextLong(0, Long.MAX_VALUE))
-                            .signature(RandomUtils.randomSignatureBytes(random))
-                            .hash(RandomUtils.randomHashBytes(random))
-                            .build()));
+                    .round(random.nextLong(0, Long.MAX_VALUE))
+                    .signature(RandomUtils.randomSignatureBytes(random))
+                    .hash(RandomUtils.randomHashBytes(random))
+                    .build()));
         }
 
         return generatedTransactions;
