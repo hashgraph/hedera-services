@@ -157,6 +157,7 @@ jobs:
       - name: Ensure Branch Not in Use and Delete Worktree
         if: always()
         run: |
+          set +x
           # Switch to a safe branch (e.g., main)
           git checkout main
           
