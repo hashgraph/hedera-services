@@ -155,7 +155,7 @@ jobs:
       - name: Git Merged Tags
         run: |
           echo "Git Merged Tags"
-          git tag --merged ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          git tag --merged 14967-clean-semantic-release-workflow
 
       - name: Publish Semantic Release
         env:
