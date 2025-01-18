@@ -181,6 +181,9 @@ jobs:
 #          echo "Changelog generated:"
 #          echo "$changelog"
 
+      - name: View Status After Running Semantic Release
+        run: git status
+
       - name: Ensure Branch Not in Use and Delete Worktree
         if: always()
         run: |
