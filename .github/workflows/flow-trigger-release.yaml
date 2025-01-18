@@ -184,7 +184,7 @@ jobs:
 #          echo "$changelog"
 
       - name: Git-Semver Setup Action
-        uses: DJ-BBot/setup-git-semver@v1.0.1
+        uses: DJ-BBot/setup-git-semver@7ede9a8b0c0f4cfff14e9b0a8771dbc546f2b76b # v1.0.1
 
       - name: Get next computed version
         id: next_version
@@ -201,9 +201,9 @@ jobs:
         run: |
           git tag -l | grep 59
 
-#      - name: Create Release Notes with Conventional Commits
-#        run: |
-#          git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
+      - name: Create Release Notes with Conventional Commits
+        run: |
+          git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
 
       - name: Create Release Notes with Markdown
         run: |
