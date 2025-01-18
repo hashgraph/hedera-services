@@ -144,12 +144,6 @@ jobs:
           echo "Pushing branch to origin:"
           git push --set-upstream origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
-      - name: Calculate and Print Next Version
-        run: |
-          echo "Running semantic-release in dry-run mode to calculate the next version"
-          VERSION=$(npx semantic-release --dry-run --no-ci | grep 'The next release version is' | awk '{print $NF}')
-          echo "The next version is: $VERSION"
-
       - name: Publish Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
