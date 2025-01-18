@@ -81,8 +81,8 @@ jobs:
         with:
           path: "private"
 
-      - name: Copy Private .releaserc file to Github Workspace
-        run: cp -f private/.releaserc .releaserc
+#      - name: Copy Private .releaserc file to Github Workspace
+#        run: cp -f private/.releaserc .releaserc
 
       - name: Display Current Branch or Tag
         run: |
