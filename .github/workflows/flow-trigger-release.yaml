@@ -156,9 +156,17 @@ jobs:
         run: |
           set +x
           echo "Git Merged Tags"
+          echo "Git fetch"
           git fetch
+          echo "Git branch -la grep semantic"
           git branch -la | grep semantic
-          BRANCH_HEAD_COMMIT=$(git rev-parse 14967-clean-semantic-release-workflow)
+          echo "Checkout clean semantic release workflow"
+          git checkout 14967-clean-semantic-release-workflow
+          echo "Find the head commit SHA"
+          BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
+          echo "Checkout the temp/build branch"
+          git checkout ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          echo "Check the merged tags now"
           git tag --merged ${BRANCH_HEAD_COMMIT}
 
       - name: Publish Semantic Release
