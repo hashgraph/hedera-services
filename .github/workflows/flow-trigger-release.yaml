@@ -141,9 +141,11 @@ jobs:
       - name: Git Merged Tags
         run: |
           echo "Git Merged Tags"
-          git fetch
+          git fetch --all
+          git fetch --tags
           git stash -u
           git checkout 14967-clean-semantic-release-workflow
+          git pull
           BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
           git checkout ${{ steps.branch_name.outputs.BRANCH_NAME }}
           git stash pop
