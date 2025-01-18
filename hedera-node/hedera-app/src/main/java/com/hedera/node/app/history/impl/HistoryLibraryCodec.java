@@ -22,6 +22,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
+/**
+ * Utility to extract information from byte arrays returned by the {@link HistoryLibrary}, encode protobuf
+ * messages in the form the library expects, and so on.
+ */
 public interface HistoryLibraryCodec {
     /**
      * Encodes the given address book hash and metadata into a history record to be signed via

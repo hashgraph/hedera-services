@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Provides write access to the history of rosters.
+ * Provides read access to the {@link HistoryService} state.
  */
 public interface ReadableHistoryStore {
     /**

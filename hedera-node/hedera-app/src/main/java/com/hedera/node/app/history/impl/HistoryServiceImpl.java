@@ -71,8 +71,13 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     }
 
     @Override
+    public void accept(@NonNull final HistoryProof historyProof) {
+        this.historyProof = historyProof;
+    }
+
+    @Override
     public boolean isReady() {
-        return true;
+        return historyProof != null;
     }
 
     @Override
@@ -92,7 +97,4 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
         requireNonNull(registry);
         registry.register(new V059HistorySchema(this));
     }
-
-    @Override
-    public void accept(@NonNull final HistoryProof construction) {}
 }
