@@ -187,12 +187,35 @@ jobs:
         uses: DJ-BBot/setup-git-semver@v1.0.1
 
       - name: Get next computed version
+        id: next_version
         run: |
           echo "Getting next computed version"
-          git-semver next --stable=false
+          echo "next_release=$(git-semver next --stable=false)" >>  >> $GITHUB_OUTPUT
+
+      - name: Apply next computed version tag
+        run: |
+          echo "Applying computed version tag"
+          git tag -a v${{ steps.next_version.outputs.next_release }} -m "v${{ steps.next_version.outputs.next_release }}"
+
+      - name: List all tags with 59 in the tag
+        run: |
+          git tag -l | grep 59
+
+#      - name: Create Release Notes with Conventional Commits
+#        run: |
+#          git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
+#
+#      - name: Create Release Notes with Markdown
+#        run: |
+#          git-semver log --markdown ${{ steps.next_version.outputs.next_release }}
 
       - name: View Status After Running Semantic Release
         run: git status
+
+      # TODO: Remove this delete step before merging to mainline
+      - name: Delete Created Tag
+        run: |
+          git tag --delete v${{ steps.next_version.outputs.next_release }}
 
       - name: Ensure Branch Not in Use and Delete Worktree
         if: always()
