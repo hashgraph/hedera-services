@@ -137,29 +137,16 @@ jobs:
           echo "Pushing branch to origin:"
           git push --set-upstream origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
-      - name: Prune Tags
-        run: |
-          echo "Prune Tags from Local"
-          git fetch --prune-tags
-
-
+      #TODO: Revisit this before merging to mainline
       - name: Git Merged Tags
         run: |
-          set +x
           echo "Git Merged Tags"
-          echo "Git fetch"
           git fetch
-          echo "Git branch -la grep semantic"
-          git branch -la | grep semantic
-          echo "Checkout clean semantic release workflow"
           git stash -u
           git checkout 14967-clean-semantic-release-workflow
-          echo "Find the head commit SHA"
           BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
-          echo "Checkout the temp/build branch"
           git checkout ${{ steps.branch_name.outputs.BRANCH_NAME }}
           git stash pop
-          echo "Check the merged tags now"
           git tag --merged ${BRANCH_HEAD_COMMIT}
 
       - name: Install Dependencies
