@@ -146,6 +146,11 @@ jobs:
           echo "Pushing branch to origin:"
           git push --set-upstream origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
+      - name: Prune Tags
+        run: |
+          echo "Prune Tags from Local"
+          git fetch --prune-tags
+
       - name: Publish Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
