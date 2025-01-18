@@ -158,7 +158,8 @@ jobs:
           echo "Git Merged Tags"
           git fetch
           git branch -la | grep semantic
-          git tag --merged ${git rev-parse 14967-clean-semantic-release-workflow}
+          BRANCH_HEAD_COMMIT = git rev-parse 14967-clean-semantic-release-workflow
+          git tag --merged ${BRANCH_HEAD_COMMIT}
 
       - name: Publish Semantic Release
         env:
