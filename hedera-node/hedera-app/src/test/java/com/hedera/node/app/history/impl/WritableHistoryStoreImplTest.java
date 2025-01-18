@@ -20,6 +20,8 @@ import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.history.schemas.V059HistorySchema.ACTIVE_PROOF_CONSTRUCTION_KEY;
 import static com.hedera.node.app.history.schemas.V059HistorySchema.NEXT_PROOF_CONSTRUCTION_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.PROOF_KEY_SETS_KEY;
+import static com.hedera.node.app.history.schemas.V059HistorySchema.PROOF_VOTES_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.TRANSITION;
@@ -27,10 +29,12 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.history.ConstructionNodeId;
 import com.hedera.hapi.node.state.history.History;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
+import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.hapi.node.state.history.ProofKeySet;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -62,6 +66,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +91,10 @@ class WritableHistoryStoreImplTest {
     private static final Bytes C_ROSTER_HASH = Bytes.wrap("C");
     private static final TssConfig TSS_CONFIG = DEFAULT_CONFIG.getConfigData(TssConfig.class);
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+    private static final HistorySignature DEFAULT_SIGNATURE = HistorySignature.newBuilder()
+            .history(History.DEFAULT)
+            .signature(Bytes.wrap("X"))
+            .build();
 
     @Mock
     private AppContext appContext;
@@ -279,12 +289,85 @@ class WritableHistoryStoreImplTest {
         assertEquals(bookHash, construction.targetProofOrThrow().sourceAddressBookHash());
     }
 
+    @Test
+    void purgingStateAfterExactlyHandoffIsFalseIfNothingHappened() {
+        given(activeRosters.phase()).willReturn(TRANSITION);
+        assertThrows(IllegalArgumentException.class, () -> subject.purgeStateAfterHandoff(activeRosters));
+        given(activeRosters.phase()).willReturn(BOOTSTRAP);
+        assertThrows(IllegalArgumentException.class, () -> subject.purgeStateAfterHandoff(activeRosters));
+        given(activeRosters.phase()).willReturn(HANDOFF);
+        given(activeRosters.currentRosterHash()).willReturn(Bytes.wrap("NA"));
+
+        assertFalse(subject.purgeStateAfterHandoff(activeRosters));
+    }
+
+    @Test
+    void purgingStateAfterHandoffHasTrueExpectedEffectIfSomethingHappened() {
+        given(activeRosters.phase()).willReturn(HANDOFF);
+        given(activeRosters.currentRosterHash()).willReturn(C_ROSTER_HASH);
+        final SortedSet<Long> removedNodeIds = new TreeSet<>(List.of(0L));
+        given(activeRosters.removedNodeIds()).willReturn(removedNodeIds);
+        givenARosterLookup();
+        final var activeConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(123L)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(A_ROSTER_HASH)
+                .build();
+        final var nextConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(456L)
+                .targetRosterHash(C_ROSTER_HASH)
+                .build();
+        setConstructions(activeConstruction, nextConstruction);
+        A_ROSTER.rosterEntries().forEach(entry -> subject.addProofVote(entry.nodeId(), 123L, DEFAULT_VOTE));
+        addSomeProofKeySetsFor(A_ROSTER);
+        commit(states -> {
+            states.<ConstructionNodeId, HistoryProofVote>get(PROOF_VOTES_KEY)
+                    .put(new ConstructionNodeId(123L, 0L), DEFAULT_VOTE);
+        });
+        subject.addSignature(0L, 123L, DEFAULT_SIGNATURE, CONSENSUS_NOW);
+        final var votesBefore = subject.getVotes(123L, Set.of(0L, 1L));
+        assertEquals(1, votesBefore.size());
+        assertEquals(DEFAULT_VOTE, votesBefore.get(0L));
+        final var publicationsBefore = subject.getProofKeyPublications(Set.of(0L));
+        assertEquals(1, publicationsBefore.size());
+        final var signaturesBefore = subject.getSignaturePublications(123L, Set.of(0L));
+        assertEquals(1, signaturesBefore.size());
+
+        subject.purgeStateAfterHandoff(activeRosters);
+
+        assertSame(nextConstruction, this.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_KEY));
+
+        assertEquals(
+                0L,
+                state.getWritableStates(HistoryService.NAME)
+                        .get(PROOF_VOTES_KEY)
+                        .size());
+        assertEquals(
+                0L,
+                state.getWritableStates(HistoryService.NAME)
+                        .get(PROOF_KEY_SETS_KEY)
+                        .size());
+    }
+
     private void givenARosterLookup() {
         given(activeRosters.findRelatedRoster(A_ROSTER_HASH)).willReturn(A_ROSTER);
     }
 
     private void givenCRosterLookup() {
         given(activeRosters.findRelatedRoster(C_ROSTER_HASH)).willReturn(C_ROSTER);
+    }
+
+    private void addSomeProofKeySetsFor(@NonNull final Roster roster) {
+        commit(states -> {
+            final var keySets = states.<NodeId, ProofKeySet>get(V059HistorySchema.PROOF_KEY_SETS_KEY);
+            roster.rosterEntries().forEach(entry -> {
+                final var keySet = ProofKeySet.newBuilder()
+                        .key(Bytes.wrap("KEY" + entry.nodeId()))
+                        .adoptionTime(asTimestamp(CONSENSUS_NOW.minusSeconds(entry.nodeId())))
+                        .build();
+                keySets.put(new NodeId(entry.nodeId()), keySet);
+            });
+        });
     }
 
     @SuppressWarnings("unchecked")

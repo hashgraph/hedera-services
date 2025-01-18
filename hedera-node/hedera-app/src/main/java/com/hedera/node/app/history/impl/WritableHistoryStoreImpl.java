@@ -31,6 +31,7 @@ import com.hedera.hapi.node.state.history.ConstructionNodeId;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
+import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.ProofKeySet;
 import com.hedera.hapi.node.state.history.RecordedHistorySignature;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -124,6 +125,25 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
     }
 
     @Override
+    public void addSignature(
+            final long nodeId,
+            final long constructionId,
+            @NonNull final HistorySignature signature,
+            @NonNull final Instant now) {
+        requireNonNull(signature);
+        requireNonNull(now);
+        signatures.put(
+                new ConstructionNodeId(constructionId, nodeId),
+                new RecordedHistorySignature(asTimestamp(now), signature));
+    }
+
+    @Override
+    public void addProofVote(final long nodeId, final long constructionId, @NonNull final HistoryProofVote vote) {
+        requireNonNull(vote);
+        votes.put(new ConstructionNodeId(constructionId, nodeId), vote);
+    }
+
+    @Override
     public HistoryProofConstruction completeProof(final long constructionId, @NonNull final HistoryProof proof) {
         requireNonNull(proof);
         return updateOrThrow(constructionId, b -> b.targetProof(proof));
@@ -137,7 +157,20 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
 
     @Override
     public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
-        throw new AssertionError("Not implemented");
+        if (activeRosters.phase() != HANDOFF) {
+            throw new IllegalArgumentException("Not in handoff phase");
+        }
+        if (requireNonNull(nextConstruction.get()).targetRosterHash().equals(activeRosters.currentRosterHash())) {
+            // The next construction is becoming the active one; so purge obsolete votes now
+            purgeVotesAndSignatures(requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
+            // Also purge any obsolete proof keys
+            activeRosters.removedNodeIds().forEach(id -> proofKeySets.remove(new NodeId(id)));
+            // And finally, make the next construction the active one
+            activeConstruction.put(nextConstruction.get());
+            nextConstruction.put(HistoryProofConstruction.DEFAULT);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -188,7 +221,7 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
         } else {
             if (!requireNonNull(nextConstruction.get()).equals(HistoryProofConstruction.DEFAULT)) {
                 // Before replacing the next construction, purge its votes
-                purgeVotes(requireNonNull(nextConstruction.get()), lookup);
+                purgeVotesAndSignatures(requireNonNull(nextConstruction.get()), lookup);
             }
             nextConstruction.put(construction);
         }
@@ -216,12 +249,14 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
      * @param construction the construction
      * @param lookup the roster lookup
      */
-    private void purgeVotes(
+    private void purgeVotesAndSignatures(
             @NonNull final HistoryProofConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
         final var sourceRoster = requireNonNull(lookup.apply(construction.sourceRosterHash()));
-        sourceRoster
-                .rosterEntries()
-                .forEach(entry -> votes.remove(new ConstructionNodeId(construction.constructionId(), entry.nodeId())));
+        sourceRoster.rosterEntries().forEach(entry -> {
+            final var key = new ConstructionNodeId(construction.constructionId(), entry.nodeId());
+            votes.remove(key);
+            signatures.remove(key);
+        });
     }
 
     /**

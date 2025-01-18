@@ -193,7 +193,14 @@ public class HintsControllerImpl implements HintsController {
         requireNonNull(vote);
         requireNonNull(hintsStore);
         if (!construction.hasHintsScheme() && !votes.containsKey(nodeId)) {
-            votes.put(nodeId, vote);
+            if (vote.hasPreprocessedKeys()) {
+                votes.put(nodeId, vote);
+            } else if (vote.hasCongruentNodeId()) {
+                final var congruentVote = votes.get(vote.congruentNodeIdOrThrow());
+                if (congruentVote != null && congruentVote.hasPreprocessedKeys()) {
+                    votes.put(nodeId, congruentVote);
+                }
+            }
             final var outputWeights = votes.entrySet().stream()
                     .collect(groupingBy(
                             entry -> entry.getValue().preprocessedKeysOrThrow(),

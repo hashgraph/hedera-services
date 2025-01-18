@@ -216,7 +216,14 @@ public class ProofControllerImpl implements ProofController {
         requireNonNull(vote);
         requireNonNull(historyStore);
         if (!construction.hasTargetProof() && !votes.containsKey(nodeId)) {
-            votes.put(nodeId, vote);
+            if (vote.hasProof()) {
+                votes.put(nodeId, vote);
+            } else if (vote.hasCongruentNodeId()) {
+                final var congruentVote = votes.get(vote.congruentNodeIdOrThrow());
+                if (congruentVote != null && congruentVote.hasProof()) {
+                    votes.put(nodeId, congruentVote);
+                }
+            }
             final var proofWeights = votes.entrySet().stream()
                     .collect(groupingBy(
                             entry -> entry.getValue().proofOrThrow(),

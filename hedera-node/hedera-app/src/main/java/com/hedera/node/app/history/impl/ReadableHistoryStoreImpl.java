@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.history.impl;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.history.schemas.V059HistorySchema.ACTIVE_PROOF_CONSTRUCTION_KEY;
 import static com.hedera.node.app.history.schemas.V059HistorySchema.HISTORY_SIGNATURES_KEY;
 import static com.hedera.node.app.history.schemas.V059HistorySchema.LEDGER_ID_KEY;
@@ -39,6 +40,8 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,20 +98,42 @@ public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
     @Override
     public @NonNull Map<Long, HistoryProofVote> getVotes(final long constructionId, @NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
-        return Map.of();
+        final Map<Long, HistoryProofVote> constructionVotes = new HashMap<>();
+        for (final var nodeId : nodeIds) {
+            final var vote = votes.get(new ConstructionNodeId(constructionId, nodeId));
+            if (vote != null) {
+                constructionVotes.put(nodeId, vote);
+            }
+        }
+        return constructionVotes;
     }
 
     @Override
     public @NonNull List<ProofKeyPublication> getProofKeyPublications(@NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
-        return List.of();
+        final List<ProofKeyPublication> publications = new ArrayList<>();
+        nodeIds.forEach(id -> {
+            final var keySet = proofKeySets.get(new NodeId(id));
+            if (keySet != null) {
+                publications.add(new ProofKeyPublication(id, keySet.key(), asInstant(keySet.adoptionTimeOrThrow())));
+            }
+        });
+        return publications;
     }
 
     @Override
     public @NonNull List<HistorySignaturePublication> getSignaturePublications(
             final long constructionId, @NonNull final Set<Long> nodeIds) {
         requireNonNull(nodeIds);
-        return List.of();
+        final List<HistorySignaturePublication> publications = new ArrayList<>();
+        for (final var nodeId : nodeIds) {
+            final var recorded = signatures.get(new ConstructionNodeId(constructionId, nodeId));
+            if (recorded != null) {
+                publications.add(new HistorySignaturePublication(
+                        nodeId, recorded.historySignatureOrThrow(), asInstant(recorded.signingTimeOrThrow())));
+            }
+        }
+        return publications;
     }
 
     private boolean constructionIsFor(
