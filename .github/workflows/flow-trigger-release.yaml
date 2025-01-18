@@ -149,6 +149,7 @@ jobs:
           npx semantic-release ${ARGS}
 
       - name: Delete the Temporary Semantic Release Branch
+        if: always()
         run: |
           echo "Deleting the temporary semantic release branch"
           git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
