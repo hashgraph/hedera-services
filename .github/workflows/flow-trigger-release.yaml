@@ -150,6 +150,12 @@ jobs:
         run: |
           echo "Prune Tags from Local"
           git fetch --prune-tags
+      
+
+      - name: Git Merged Tags
+        run: |
+          echo "Git Merged Tags"
+          git tag --merged ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
       - name: Publish Semantic Release
         env:
