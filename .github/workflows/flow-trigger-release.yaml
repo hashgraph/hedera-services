@@ -190,7 +190,7 @@ jobs:
         id: next_version
         run: |
           echo "Getting next computed version"
-          echo "next_release=$(git-semver next --stable=false)" >>  >> $GITHUB_OUTPUT
+          echo "next_release=$(git-semver next --stable=false)" >> $GITHUB_OUTPUT
 
       - name: Apply next computed version tag
         run: |
