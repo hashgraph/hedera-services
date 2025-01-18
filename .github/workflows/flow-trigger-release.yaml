@@ -67,7 +67,7 @@ jobs:
 
           # Export to Github output and Github summary
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
-          printf "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
+          #printf "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Checkout Code
         id: checkout_code
@@ -121,7 +121,7 @@ jobs:
         run: |
           echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> ${GITHUB_OUTPUT}
           echo "The temp branch name is: ${BRANCH_NAME}"
-          printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
+          #printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Create a Temporary Semantic Release Branch
         run: |
@@ -200,7 +200,7 @@ jobs:
           echo "Compute next version number using git-semver"
           echo "next_release=$(git-semver next --stable=false)" >> ${GITHUB_OUTPUT}
           echo "Next release version is: ${next_release}"
-          printf "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
+          #printf "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
 
       # TODO: Do we sign our tags?
       - name: Apply Tag with Calculated Next Version
@@ -209,10 +209,6 @@ jobs:
           git tag -a v${{ steps.next_version.outputs.next_release }} -m "v${{ steps.next_version.outputs.next_release }}"
           echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
           printf "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
-
-      - name: List All Tags Containing "59"
-        run: |
-          git tag -l | grep 59
 
       - name: Identify Current Version Number After Tagging
         run: |
@@ -266,7 +262,7 @@ jobs:
           echo "Deleting the temporary semantic release branch"
           echo "Deleting local branch now:"
           git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
-          printf "Deleted Temporary Branch from Local Runner" >> ${GITHUB_STEP_SUMMARY}
+          printf "Deleted Temporary Branch from Local Runner\n" >> ${GITHUB_STEP_SUMMARY}
           
           echo "Deleting remote branch now:"
           git push -d origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
