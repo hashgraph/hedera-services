@@ -223,8 +223,8 @@ public class BlockImplUtils {
                     case "HistoryService" -> switch (stateKey) {
                         case "LEDGER_ID" -> STATE_ID_LEDGER_ID.protoOrdinal();
                         case "PROOF_KEY_SETS" -> STATE_ID_PROOF_KEY_SETS.protoOrdinal();
-                        case "ACTIVE_CONSTRUCTION" -> STATE_ID_ACTIVE_PROOF_CONSTRUCTION.protoOrdinal();
-                        case "NEXT_CONSTRUCTION" -> STATE_ID_NEXT_PROOF_CONSTRUCTION.protoOrdinal();
+                        case "ACTIVE_PROOF_CONSTRUCTION" -> STATE_ID_ACTIVE_PROOF_CONSTRUCTION.protoOrdinal();
+                        case "NEXT_PROOF_CONSTRUCTION" -> STATE_ID_NEXT_PROOF_CONSTRUCTION.protoOrdinal();
                         case "HISTORY_SIGNATURES" -> STATE_ID_HISTORY_SIGNATURES.protoOrdinal();
                         case "PROOF_VOTES" -> STATE_ID_PROOF_VOTES.protoOrdinal();
                         default -> UNKNOWN_STATE_ID;

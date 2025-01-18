@@ -76,8 +76,8 @@ public class BlockStreamUtils {
             case STATE_ID_PREPROCESSING_VOTES -> "HintsService.PREPROCESSING_VOTES";
             case STATE_ID_LEDGER_ID -> "HistoryService.LEDGER_ID";
             case STATE_ID_PROOF_KEY_SETS -> "HistoryService.PROOF_KEY_SETS";
-            case STATE_ID_ACTIVE_PROOF_CONSTRUCTION -> "HistoryService.ACTIVE_CONSTRUCTION";
-            case STATE_ID_NEXT_PROOF_CONSTRUCTION -> "HistoryService.NEXT_CONSTRUCTION";
+            case STATE_ID_ACTIVE_PROOF_CONSTRUCTION -> "HistoryService.ACTIVE_PROOF_CONSTRUCTION";
+            case STATE_ID_NEXT_PROOF_CONSTRUCTION -> "HistoryService.NEXT_PROOF_CONSTRUCTION";
             case STATE_ID_HISTORY_SIGNATURES -> "HistoryService.HISTORY_SIGNATURES";
             case STATE_ID_PROOF_VOTES -> "HistoryService.PROOF_VOTES";
         };
