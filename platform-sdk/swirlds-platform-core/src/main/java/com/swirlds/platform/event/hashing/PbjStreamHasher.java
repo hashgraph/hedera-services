@@ -30,7 +30,6 @@ import com.swirlds.platform.system.transaction.TransactionWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,9 +54,8 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
         List<Bytes> transactions = event.getGossipEvent().transactions();
-        List<EventTransaction> eventTransactions = event.getGossipEvent().eventTransaction();
         boolean isNewFormat = !transactions.isEmpty();
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), isNewFormat, eventTransactions);
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), isNewFormat);
         event.setHash(hash);
         return event;
     }
@@ -68,7 +66,7 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), false, new ArrayList<>());
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), false);
         event.setHash(hash);
     }
 
@@ -77,27 +75,22 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      *
      * @param eventCore         the event to hash
      * @param transactions      the transactions to hash
-     * @param eventTransactions
      * @return the hash of the event
      */
     @NonNull
     private Hash hashEvent(
             @NonNull final EventCore eventCore,
             @NonNull final List<TransactionWrapper> transactions,
-            final boolean isNewFormat,
-            final List<EventTransaction> eventTransactions) {
+            final boolean isNewFormat) {
         try {
             EventCore.PROTOBUF.write(eventCore, eventStream);
-            if (isNewFormat) {
-                for (final TransactionWrapper transaction : transactions) {
-                    transactionStream.writeBytes(Objects.requireNonNull(transaction.getTransaction()));
-                    processTransactionHash(transaction);
-                }
-            } else {
-                for (final EventTransaction transaction : eventTransactions) {
-                    EventTransaction.PROTOBUF.write(transaction, transactionStream);
-                    byte[] hash = transactionDigest.digest();
-                    eventStream.writeBytes(hash);
+            for (final TransactionWrapper transaction : transactions) {
+                if (isNewFormat) {
+                    transactionStream.writeBytes(Objects.requireNonNull(transaction.getTransactionBytes()));
+                    processTransactionHash();
+                } else {
+                    EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
+                    processTransactionHash();
                 }
             }
         } catch (final IOException e) {
@@ -107,9 +100,8 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
         return new Hash(eventDigest.digest(), DigestType.SHA_384);
     }
 
-    private void processTransactionHash(TransactionWrapper transaction) throws IOException {
+    private void processTransactionHash() throws IOException {
         byte[] hash = transactionDigest.digest();
-        transaction.setHash(Bytes.wrap(hash));
         eventStream.writeBytes(hash);
     }
 }

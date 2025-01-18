@@ -102,6 +102,8 @@ public class TestingEventBuilder {
      * <p>
      * If not set, transactions will be auto generated, based on configured settings.
      */
+    private List<Bytes> transactionBytes;
+
     private List<EventTransaction> transactions;
 
     /**
@@ -295,6 +297,17 @@ public class TestingEventBuilder {
         return this;
     }
 
+    public @NonNull TestingEventBuilder setTransactionBytes(@Nullable final List<Bytes> transactions) {
+        if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
+            throw new IllegalStateException(
+                    "Cannot set transactions when app transaction count, system transaction count, or transaction "
+                            + "size are explicitly set");
+        }
+
+        this.transactionBytes = transactions;
+        return this;
+    }
+
     /**
      * Convenience method to set the transactions of an event to wrap to a list of {@link EventTransaction}s
      *
@@ -452,7 +465,7 @@ public class TestingEventBuilder {
      * @return the generated transactions
      */
     @NonNull
-    private List<EventTransaction> generateTransactions() {
+    private List<Bytes> generateTransactions() {
         if (appTransactionCount == null) {
             appTransactionCount = DEFAULT_APP_TRANSACTION_COUNT;
         }
@@ -461,7 +474,7 @@ public class TestingEventBuilder {
             systemTransactionCount = DEFAULT_SYSTEM_TRANSACTION_COUNT;
         }
 
-        final List<OneOf<TransactionOneOfType>> generatedTransactions = new ArrayList<>();
+        final List<Bytes> generatedTransactions = new ArrayList<>();
 
         if (transactionSize == null) {
             transactionSize = DEFAULT_TRANSACTION_SIZE;
@@ -470,20 +483,18 @@ public class TestingEventBuilder {
         for (int i = 0; i < appTransactionCount; ++i) {
             final byte[] bytes = new byte[transactionSize];
             random.nextBytes(bytes);
-            generatedTransactions.add(new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(bytes)));
+            generatedTransactions.add(Bytes.wrap(bytes));
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
-            generatedTransactions.add(new OneOf<>(
-                    STATE_SIGNATURE_TRANSACTION,
-                    StateSignatureTransaction.newBuilder()
+            generatedTransactions.add(StateSignatureTransaction.PROTOBUF.toBytes(StateSignatureTransaction.newBuilder()
                             .round(random.nextLong(0, Long.MAX_VALUE))
                             .signature(RandomUtils.randomSignatureBytes(random))
                             .hash(RandomUtils.randomHashBytes(random))
                             .build()));
         }
 
-        return generatedTransactions.stream().map(EventTransaction::new).toList();
+        return generatedTransactions;
     }
 
     /**
@@ -568,7 +579,7 @@ public class TestingEventBuilder {
         }
 
         if (transactions == null) {
-            transactions = generateTransactions();
+            transactionBytes = generateTransactions();
         }
 
         final UnsignedEvent unsignedEvent = new UnsignedEvent(
@@ -578,7 +589,7 @@ public class TestingEventBuilder {
                 otherParentDescriptors,
                 birthRound,
                 timeCreated,
-                transactions);
+                transactionBytes);
 
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);

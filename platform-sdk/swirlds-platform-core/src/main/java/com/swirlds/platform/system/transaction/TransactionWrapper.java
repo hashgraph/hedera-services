@@ -39,10 +39,10 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     /** An optional metadata object set by the application */
     private Object metadata;
     /** The protobuf data stored */
-    private final EventTransaction payload;
+    private EventTransaction payload;
     /** The hash of the transaction */
     private Bytes hash;
-    // TODO: adapt this to the new transaction model
+    /** The bytes of the transaction */
     private Bytes transaction;
 
     /**
@@ -55,7 +55,6 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
         Objects.requireNonNull(transaction, "transaction should not be null");
         this.payload = new EventTransaction(transaction);
-        this.transaction = transaction.as();
     }
 
     /**
@@ -77,9 +76,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      * @throws NullPointerException if payloadBytes is null
      */
     public TransactionWrapper(@NonNull final Bytes payloadBytes) {
-        this.payload = EventTransaction.newBuilder()
-                .applicationTransaction(payloadBytes)
-                .build();
+        this.transaction = payloadBytes;
     }
 
     /**
@@ -130,7 +127,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @NonNull
     @Override
-    public Bytes getTransaction() {
+    public EventTransaction getTransaction() {
+        return payload;
+    }
+
+    public Bytes getTransactionBytes() {
         return transaction;
     }
 
@@ -142,7 +143,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @Override
     public int getSize() {
-        return TransactionUtils.getLegacyTransactionSize(transaction);
+        return TransactionUtils.getLegacyTransactionSize(payload);
     }
 
     /**

@@ -65,17 +65,15 @@ class ConsistencyTestingToolRoundTests {
         final List<PlatformEvent> mockEvents = new ArrayList<>();
 
         eventContents.forEach(eventContent -> {
-            final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
+            final List<Bytes> transactions = new ArrayList<>();
 
             eventContent.forEach(transactionContent -> {
                 final Bytes bytes = Bytes.wrap(longToByteArray(transactionContent));
-                final OneOf<TransactionOneOfType> transaction =
-                        new OneOf<>(TransactionOneOfType.APPLICATION_TRANSACTION, bytes);
-                transactions.add(transaction);
+                transactions.add(bytes);
             });
 
             final PlatformEvent e = new TestingEventBuilder(randotron)
-                    .setOneOfTransactions(transactions)
+                    .setTransactionBytes(transactions)
                     .build();
             mockEvents.add(e);
         });
