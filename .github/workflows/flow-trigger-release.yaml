@@ -237,6 +237,7 @@ jobs:
 
       # TODO: Remove this delete step before merging to mainline
       - name: Delete Created Tag
+        if: always()
         run: |
           git tag --delete v${{ steps.next_version.outputs.next_release }}
 
