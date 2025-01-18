@@ -81,7 +81,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           path: "private"
-          ref: "14967-semantic-release-workflow-update"
+          ref: "14967-clean-semantic-release-workflow"
 
       # TODO: Remove this step before mainline merge
       - name: Copy Private .releaserc file to Github Workspace
