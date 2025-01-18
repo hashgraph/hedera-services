@@ -188,6 +188,12 @@ jobs:
       - name: Git-Semver Setup Action
         uses: DJ-BBot/setup-git-semver@7ede9a8b0c0f4cfff14e9b0a8771dbc546f2b76b # v1.0.1
 
+      - name: Identify Current Version Number
+        run: |
+          echo "Find the current version number"
+          current_version=$(git-semver latest)
+          echo "Current version is: ${current_version}"
+
       - name: Compute Next Version Number
         id: next_version
         run: |
