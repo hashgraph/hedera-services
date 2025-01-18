@@ -10,7 +10,7 @@ migrating to a fully automated release process with CITR.
 The release process within Hedera-Services has been using a release branching strategy that follows
 a set development cycle:
 
-|                Stage                |    Duration     |
+| Stage                               | Duration        |
 |-------------------------------------|-----------------|
 | Planning                            | 12d             |
 | Development                         | 26d (2 sprints) |
@@ -45,7 +45,7 @@ longevity testing.
 
 The release process will be changing in the following areas beginning with `Release 0.59`:
 
-|                          Stage                          | Duration |
+| Stage                                                   | Duration |
 |---------------------------------------------------------|----------|
 | Planning                                                | 12d      |
 | Development                                             | 26d      |
@@ -100,10 +100,10 @@ Beginning with release 0.59:
 
 ## Creating a patch bump
 
-:warning: Contact @hashgraph/platform-ci or @hashgraph/release-engineering-managers prior to attempting to create a
+:warning: Contact @hashgraph/platform-ci or @hashgraph/release-engineering-managers prior to attempting to create a 
 patch bump release.
 
-:rotating_light: Attempting to cut a patch release where the history from the prior release contains a feature or
+:rotating_light: Attempting to cut a patch release where the history from the prior release contains a feature or 
 breaking change will result in an unintentional minor bump. This could take several days to redact the incorrect release
 and will prevent the next minor release from shipping. Requires intervention from @hashgraph/platform-ci and
 @hashgraph/release-engineering-managers.
@@ -113,7 +113,7 @@ workflow. The release managers will need to select a new build candidate from th
 commit would need to match the [semantic release](https://semantic-release.gitbook.io/semantic-release) requirements for a
 patch bump.
 
-|                                                 Commit message                                                 |                                                   Release Type                                                   |
+| Commit message                                                                                                 | Release Type                                                                                                     |
 |----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | fix(pencil): stop graphite breaking when too much pressure applied                                             | Patch/Fix Release                                                                                                |
 | fix: stop graphite breaking when too much pressure applied                                                     | Patch/Fix Release                                                                                                |
@@ -135,6 +135,6 @@ There are also commit types that will not affect the version at all. These commi
 - `docs:`
 - `ci:`
 
-**Note**: If any `feat` commits or breaking change indicators have been added between passing builds the
+**Note**: If any `feat` commits or breaking change indicators have been added between passing builds the 
 @hashgraph/release-engineering-managers and @hashgraph/platform-ci teams must be contacted and coordinated with in order
 to generate a new patch release.

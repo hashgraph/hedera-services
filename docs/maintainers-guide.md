@@ -107,7 +107,7 @@ The Platform-CI team will handle the following:
 - `z` is used to force everything to sort to the bottom of the view in the Actions tab of github. We can now pin these.
 - `x` means a workflow is not user facing.
 - `f` means the workflow can be triggered directly by other workflows (or by users). Ex: `workflow_dispatch`.
-- `c` means the file contains a reusable workflow, called a workflow component, triggered by `workflow_call`.
+- `c` means the file contains a reusable workflow, called a workflow component, triggered by `workflow_call`. 
 - `cron` indicates a workflow has a time-based trigger.
 
 ### User Stories
