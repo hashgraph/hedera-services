@@ -158,7 +158,9 @@ jobs:
           if [[ "${{ github.event.inputs.dry-run-enabled }}" == true ]]; then
             ARGS="--dry-run"
           fi
-          npx semantic-release ${ARGS}
+          echo "Running semantic release command:"
+          echo "npx semantic-release ${ARGS} --branch ${{ steps.branch_name.outputs.BRANCH_NAME }}"
+          npx semantic-release ${ARGS} --branch ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
       - name: Generate Changelog
         run: |
