@@ -117,7 +117,8 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
                 final var previousRoster = RosterRetriever.retrieveActiveOrGenesisRoster(stateSupplier.get());
                 requireNonNull(previousRoster);
                 rosterStore.putActiveRoster(previousRoster, 0);
-                final var currentRoster = RosterUtils.rosterFrom(startupNetworks.migrationNetworkOrThrow());
+                final var currentRoster =
+                        RosterUtils.rosterFrom(startupNetworks.migrationNetworkOrThrow(ctx.platformConfig()));
                 rosterStore.putActiveRoster(currentRoster, activeRoundNumber);
             } else if (ctx.isUpgrade(ServicesSoftwareVersion::from, ServicesSoftwareVersion::new)) {
                 final var candidateRoster = rosterStore.getCandidateRoster();

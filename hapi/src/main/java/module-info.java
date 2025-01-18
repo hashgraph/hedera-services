@@ -90,6 +90,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.services.auxiliary.hints;
     exports com.hedera.hapi.services.auxiliary.history;
     exports com.hedera.hapi.platform.event.legacy;
+    exports com.hedera.hapi.node.state.entity;
 
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.google.common;

@@ -167,7 +167,7 @@ class V0540RosterSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
-        given(startupNetworks.migrationNetworkOrThrow()).willReturn(NETWORK);
+        given(startupNetworks.migrationNetworkOrThrow(any())).willReturn(NETWORK);
 
         // Setup PlatformService states to return a given ADDRESS_BOOK,
         // and the readable RosterService states to be empty:
