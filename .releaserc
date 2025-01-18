@@ -15,7 +15,7 @@
   ],
   "branches":[
     {
-      "name": "14967-clean-semantic-release-workflow"
+      "name": "14967-git-semver-test-branch"
     },
     {
       "name": "main"
