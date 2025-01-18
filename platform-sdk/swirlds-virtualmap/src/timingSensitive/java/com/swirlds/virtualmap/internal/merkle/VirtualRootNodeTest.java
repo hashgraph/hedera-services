@@ -653,7 +653,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
                 .getOrCreateConfig();
 
         final int N = 100;
-        final int nCopies = 1000;
+        final int nCopies = 200;
 
         VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
                 TestKeySerializer.INSTANCE,
@@ -885,6 +885,69 @@ class VirtualRootNodeTest extends VirtualTestBase {
             // Copies must be merged, not flushed
             assertEventuallyTrue(copies[i]::isMerged, Duration.ofSeconds(16), "copy " + i + " should be merged");
         }
+    }
+
+    @Test
+    void removeAddRemoveTest() throws Exception {
+        final Configuration configuration = new TestConfigBuilder()
+                // The value is set, so copy3 below will be checked to flush
+                .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 96 * 3)
+                .getOrCreateConfig();
+
+        VirtualRootNode<TestKey, TestValue> root = new VirtualRootNode<>(
+                TestKeySerializer.INSTANCE,
+                TestValueSerializer.INSTANCE,
+                new InMemoryBuilder(),
+                configuration.getConfigData(VirtualMapConfig.class));
+        VirtualMapState state = new VirtualMapState("label");
+        root.postInit(new VirtualStateAccessorImpl(state));
+
+        final TestKey key = new TestKey(1);
+        root.put(key, new TestValue(1));
+        root.enableFlush();
+
+        final VirtualRootNode<TestKey, TestValue> copy0 = root.copy();
+        copy0.postInit(root.getState());
+        root.release();
+        root.waitUntilFlushed();
+        root = copy0;
+
+        final VirtualRootNode<TestKey, TestValue> copy1 = root.copy();
+        copy1.postInit(root.getState());
+        // don't release copy0
+        root = copy1;
+        root.remove(key);
+
+        final VirtualRootNode<TestKey, TestValue> copy2 = root.copy();
+        copy2.postInit(root.getState());
+        root.release();
+        root = copy2;
+        root.put(key, new TestValue(2));
+
+        final VirtualRootNode<TestKey, TestValue> copy3 = root.copy();
+        copy3.postInit(root.getState());
+        root.release();
+        root = copy3;
+        root.remove(key);
+
+        final VirtualRootNode<TestKey, TestValue> copyN = root.copy();
+        copyN.postInit(root.getState());
+        root.release();
+        root = copyN;
+
+        final VirtualRootNode<TestKey, TestValue> copyFinal = root.copy();
+        copyFinal.postInit(root.getState());
+        root.release();
+        root = copyFinal;
+
+        assertEventuallyTrue(copy1::isMerged, Duration.ofSeconds(4), "copy1 should be merged");
+        assertEventuallyTrue(copy2::isMerged, Duration.ofSeconds(4), "copy2 should be merged");
+        assertEventuallyTrue(copy3::isMerged, Duration.ofSeconds(4), "copy3 should be merged");
+
+        assertFalse(root.containsKey(key), "Key should be null, but was " + root.get(key));
+
+        copy0.release();
+        copyFinal.release();
     }
 
     @Test

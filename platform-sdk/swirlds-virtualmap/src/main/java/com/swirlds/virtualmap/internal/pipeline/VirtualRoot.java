@@ -84,6 +84,11 @@ public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> exten
      */
     boolean isMerged();
 
+    /**
+     * If this copy contains merged changes from multiple versions, and its estimated size
+     * exceeds the flush threshold, remove all redundant changes. Estimated size may be
+     * changed after this call.
+     */
     void garbageCollectIfNeeded();
 
     /**

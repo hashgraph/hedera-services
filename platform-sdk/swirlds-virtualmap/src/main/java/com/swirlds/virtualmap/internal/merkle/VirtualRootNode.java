@@ -303,12 +303,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     private final AtomicBoolean merged = new AtomicBoolean(false);
 
-    /**
-     * Indicates whether this copy has been compacted, i.e. {@link #garbageCollectIfNeeded()} has been
-     * called.
-     */
-    private final AtomicBoolean compacted = new AtomicBoolean(false);
-
     private final AtomicBoolean detached = new AtomicBoolean(false);
 
     /**
@@ -1216,6 +1210,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throw new IllegalStateException("a merged copy can not be flushed");
         }
 
+        // By this time, the cache is usually prepared for flush from the pipeline code.
+        // However, in tests this method may be called directly. prepareForFlush() is
+        // ready to be called multiple times
         cache.prepareForFlush();
         logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush {} v{}", state.getLabel(), cache.getFastCopyVersion());
         final long start = System.currentTimeMillis();
@@ -1284,15 +1281,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void garbageCollectIfNeeded() {
-        if (!compacted.compareAndSet(false, true)) {
-            // Already compacted
-            return;
-        }
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be compacted");
         }
         if (flushed.get() || merged.get()) {
             throw new IllegalStateException("This virtual root has already been flushed or merged");
+        }
+        if (!cache.isMergedCopy()) {
+            // cache.prepareForFlush() only makes sense for merged caches
+            return;
         }
         // If estimated size below the threshold, no compaction is needed
         if (estimatedSizeExceedsFlushThreshold()) {
