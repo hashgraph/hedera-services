@@ -137,19 +137,19 @@ jobs:
           echo "Pushing branch to origin:"
           git push --set-upstream origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
-      #TODO: Revisit this before merging to mainline
-      - name: Git Merged Tags
-        run: |
-          echo "Git Merged Tags"
-          git fetch --all
-          git fetch --tags
-          git stash -u
-          git checkout 14967-git-semver-test-branch
-          git pull
-          BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
-          git checkout ${{ steps.branch_name.outputs.BRANCH_NAME }}
-          git stash pop
-          git tag --merged ${BRANCH_HEAD_COMMIT}
+#      #TODO: Revisit this before merging to mainline
+#      - name: Git Merged Tags
+#        run: |
+#          echo "Git Merged Tags"
+#          git fetch --all
+#          git fetch --tags
+#          git stash -u
+#          git checkout 14967-git-semver-test-branch
+#          git pull
+#          BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
+#          git checkout ${{ steps.branch_name.outputs.BRANCH_NAME }}
+#          git stash pop
+#          git tag --merged ${BRANCH_HEAD_COMMIT}
 
 #      - name: Install Dependencies
 #        run: |
