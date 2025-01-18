@@ -191,11 +191,14 @@ jobs:
         run: |
           echo "Getting next computed version"
           echo "next_release=$(git-semver next --stable=false)" >> $GITHUB_OUTPUT
+          echo "Next release version is: ${next_release}"
 
+      # TODO: Do we sign our tags?
       - name: Apply next computed version tag
         run: |
           echo "Applying computed version tag"
           git tag -a v${{ steps.next_version.outputs.next_release }} -m "v${{ steps.next_version.outputs.next_release }}"
+          echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
 
       - name: List all tags with 59 in the tag
         run: |
@@ -209,6 +212,12 @@ jobs:
         run: |
           echo git-semver log --markdown ${{ steps.next_version.outputs.next_release }}
           git-semver log --markdown ${{ steps.next_version.outputs.next_release }}
+
+      - name: Clean Up git-semver
+        run: |
+          echo "Deleting git-semver directory"
+          rm -rf git-semver
+          echo "Successfully removed git-semver directory"
 
       - name: View Status After Running Semantic Release
         run: git status
