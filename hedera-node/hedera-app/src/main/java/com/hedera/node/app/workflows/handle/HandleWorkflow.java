@@ -243,6 +243,8 @@ public class HandleWorkflow {
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        reconcileTssState(
+                configProvider.getConfiguration().getConfigData(TssConfig.class), state, round.getConsensusTimestamp());
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -906,7 +908,7 @@ public class HandleWorkflow {
                 doStreamingKVChanges(
                         historyWritableStates,
                         now,
-                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now));
+                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig));
             }
         }
     }

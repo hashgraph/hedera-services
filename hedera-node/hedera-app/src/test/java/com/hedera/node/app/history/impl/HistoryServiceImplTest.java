@@ -16,17 +16,14 @@
 
 package com.hedera.node.app.history.impl;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
-import com.hedera.node.app.history.WritableHistoryStore;
-import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.lifecycle.SchemaRegistry;
-import java.time.Instant;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,40 +32,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HistoryServiceImplTest {
-    private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
 
     @Mock
     private AppContext appContext;
 
     @Mock
-    private ActiveRosters activeRosters;
+    private HistoryLibrary library;
 
     @Mock
-    private WritableHistoryStore historyStore;
-
-    @Mock
-    private SchemaRegistry schemaRegistry;
+    private HistoryLibraryCodec codec;
 
     private HistoryServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HistoryServiceImpl(appContext);
+        subject = new HistoryServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, codec);
     }
 
     @Test
     void metadataAsExpected() {
         assertEquals(HistoryService.NAME, subject.getServiceName());
         assertEquals(HistoryService.MIGRATION_ORDER, subject.migrationOrder());
-    }
-
-    @Test
-    void nothingSupportedExceptRegisteringSchemas() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.reconcile(activeRosters, null, historyStore, CONSENSUS_NOW));
-        assertThrows(UnsupportedOperationException.class, subject::isReady);
-        assertThrows(UnsupportedOperationException.class, () -> subject.getCurrentProof(Bytes.EMPTY));
-        assertDoesNotThrow(() -> subject.registerSchemas(schemaRegistry));
     }
 }
