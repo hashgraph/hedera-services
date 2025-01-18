@@ -65,8 +65,9 @@ jobs:
           build_tag="build-$padded_number"
           echo "Prefixed number is: $build_tag"
 
-          # Export to Github output
-          echo "BUILD_TAG=$build_tag" >> $GITHUB_OUTPUT
+          # Export to Github output and Github summary
+          echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
+          printf "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Checkout Code
         id: checkout_code
@@ -118,8 +119,9 @@ jobs:
       - name: Calculate Temporary Semantic Release Branch Name
         id: branch_name
         run: |
-          echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> ${GITHUB_OUTPUT}
           echo "The temp branch name is: ${BRANCH_NAME}"
+          printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Create a Temporary Semantic Release Branch
         run: |
@@ -186,21 +188,23 @@ jobs:
       - name: Git-Semver Setup Action
         uses: DJ-BBot/setup-git-semver@7ede9a8b0c0f4cfff14e9b0a8771dbc546f2b76b # v1.0.1
 
-      - name: Get next computed version
+      - name: Compute Next Version Number
         id: next_version
         run: |
-          echo "Getting next computed version"
-          echo "next_release=$(git-semver next --stable=false)" >> $GITHUB_OUTPUT
+          echo "Compute next version number using git-semver"
+          echo "next_release=$(git-semver next --stable=false)" >> ${GITHUB_OUTPUT}
           echo "Next release version is: ${next_release}"
+          printf "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
 
       # TODO: Do we sign our tags?
-      - name: Apply next computed version tag
+      - name: Apply Tag with Calculated Next Version
         run: |
           echo "Applying computed version tag"
           git tag -a v${{ steps.next_version.outputs.next_release }} -m "v${{ steps.next_version.outputs.next_release }}"
           echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
+          printf "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
 
-      - name: List all tags with 59 in the tag
+      - name: List All Tags Containing "59"
         run: |
           git tag -l | grep 59
 
@@ -249,6 +253,8 @@ jobs:
           echo "Deleting the temporary semantic release branch"
           echo "Deleting local branch now:"
           git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          printf "Deleted Temporary Branch from Local Runner" >> ${GITHUB_STEP_SUMMARY}
           
           echo "Deleting remote branch now:"
           git push -d origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
+          printf "Deleted Temporary Branch from Remote" >> ${GITHUB_STEP_SUMMARY}
