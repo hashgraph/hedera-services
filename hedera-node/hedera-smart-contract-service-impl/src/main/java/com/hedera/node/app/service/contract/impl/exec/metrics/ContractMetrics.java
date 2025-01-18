@@ -357,6 +357,8 @@ public class ContractMetrics {
             } catch (final NullPointerException e) {
                 // ignore: should never happen, but ... just in case ... don't fail tx because of bad
                 // metrics code
+                // FUTURE: Log a warning (since should never happen) but take care to log only _once_
+                // per missing member and system contract method.  (So logs don't get spammed over and over.)
             }
         }
     }

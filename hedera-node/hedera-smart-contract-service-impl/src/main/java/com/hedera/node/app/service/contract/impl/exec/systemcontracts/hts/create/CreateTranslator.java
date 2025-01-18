@@ -283,9 +283,13 @@ public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
         for (final var method : createMethodsMap.keySet()) {
             final var isMetadataMethod = method.hasVariant(Variant.WITH_METADATA);
-            Optional<SystemContractMethod> m = isMetadataMethod
-                    ? metaConfigEnabled ? attempt.isMethod(method) : Optional.empty()
-                    : attempt.isMethod(method);
+
+            Optional<SystemContractMethod> m = Optional.empty();
+            if (isMetadataMethod) {
+                if (metaConfigEnabled) m = attempt.isMethod(method);
+            } else {
+                m = attempt.isMethod(method);
+            }
             if (m.isPresent()) return m;
         }
         return Optional.empty();

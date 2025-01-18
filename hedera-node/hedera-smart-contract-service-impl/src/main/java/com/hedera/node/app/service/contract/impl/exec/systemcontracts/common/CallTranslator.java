@@ -56,7 +56,7 @@ public interface CallTranslator<T> {
      *
      * @param attempt the attempt to get the call from
      * @param systemContractMethod system contract method the attempt is calling
-     * @return a call from the given attempt        hascall
+     * @return a call from the given attempt
      */
     default Call callFrom(@NonNull final T attempt, @NonNull final SystemContractMethod systemContractMethod) {
         final var call = callFrom(attempt);
