@@ -152,7 +152,7 @@ jobs:
           echo "Git branch -la grep semantic"
           git branch -la | grep semantic
           echo "Checkout clean semantic release workflow"
-          git stash
+          git stash -u
           git checkout 14967-clean-semantic-release-workflow
           echo "Find the head commit SHA"
           BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
