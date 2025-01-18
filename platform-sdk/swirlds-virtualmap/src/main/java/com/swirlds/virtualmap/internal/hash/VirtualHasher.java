@@ -99,34 +99,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      */
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
-    private static volatile ForkJoinPool hashingPool = null;
-
-    /**
-     * This method is invoked from a non-static method, passing the provided configuration.
-     * Consequently, the hashing pool will be initialized using the configuration provided
-     * with the first call of the hash method. Subsequent calls will reuse the same pool.
-     */
-    private static ForkJoinPool getHashingPool(final @NonNull VirtualMapConfig virtualMapConfig) {
-        requireNonNull(virtualMapConfig);
-
-        ForkJoinPool pool = hashingPool;
-        if (pool == null) {
-            synchronized (VirtualHasher.class) {
-                pool = hashingPool;
-                if (pool == null) {
-                    if (Thread.currentThread() instanceof ForkJoinWorkerThread thread) {
-                        hashingPool = thread.getPool();
-                    } else {
-                        final int hashingThreadCount = virtualMapConfig.getNumHashThreads();
-                        pool = new ForkJoinPool(hashingThreadCount);
-                        hashingPool = pool;
-                    }
-                }
-            }
-        }
-        return pool;
-    }
-
     /**
      * Indicate to the virtual hasher that it has been shut down. This method does not interrupt threads, but
      * it indicates to threads that an interrupt may happen, and that the interrupt should not be treated as
@@ -321,6 +293,10 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                     };
         }
 
+        ForkJoinPool hashingPool = Thread.currentThread() instanceof ForkJoinWorkerThread thread
+                ? thread.getPool()
+                : ForkJoinPool.commonPool();
+
         // Let the listener know we have started hashing.
         listener.onHashingStarted();
 
@@ -373,9 +349,9 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // the root task below. When the root task is done executing, that is it produced
         // a root hash, this hash is set as an input dependency for this result task, where
         // it's read and returned in the end of this method
-        final HashHoldingTask resultTask = new HashHoldingTask(getHashingPool(virtualMapConfig), 1, 1);
+        final HashHoldingTask resultTask = new HashHoldingTask(hashingPool, 1, 1);
         final int rootTaskHeight = Math.min(firstLeafRank, chunkHeight);
-        final ChunkHashTask rootTask = new ChunkHashTask(getHashingPool(virtualMapConfig), ROOT_PATH, rootTaskHeight);
+        final ChunkHashTask rootTask = new ChunkHashTask(hashingPool, ROOT_PATH, rootTaskHeight);
         rootTask.setOut(resultTask);
         map.put(ROOT_PATH, rootTask);
 
@@ -413,7 +389,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             long curPath = leaf.getPath();
             ChunkHashTask curTask = map.remove(curPath);
             if (curTask == null) {
-                curTask = new ChunkHashTask(getHashingPool(virtualMapConfig), curPath, 0);
+                curTask = new ChunkHashTask(hashingPool, curPath, 0);
             }
             curTask.setLeaf(leaf);
 
@@ -464,8 +440,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 final long parentPath = Path.getGrandParentPath(curPath, parentRankHeights[curRank]);
                 ChunkHashTask parentTask = map.remove(parentPath);
                 if (parentTask == null) {
-                    parentTask =
-                            new ChunkHashTask(getHashingPool(virtualMapConfig), parentPath, parentRankHeights[curRank]);
+                    parentTask = new ChunkHashTask(hashingPool, parentPath, parentRankHeights[curRank]);
                 }
                 curTask.setOut(parentTask);
 
@@ -501,8 +476,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                             siblingHeight = curTask.height;
                         }
                         ChunkHashTask siblingTask = map.computeIfAbsent(
-                                siblingPath,
-                                path -> new ChunkHashTask(getHashingPool(virtualMapConfig), path, siblingHeight));
+                                siblingPath, path -> new ChunkHashTask(hashingPool, path, siblingHeight));
                         // Set sibling task output to the same parent
                         siblingTask.setOut(parentTask);
                     }
