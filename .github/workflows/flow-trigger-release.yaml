@@ -160,6 +160,13 @@ jobs:
           fi
           npx semantic-release ${ARGS}
 
+      - name: Generate Changelog
+        run: |
+          echo "Generating changelog"
+          changelog=$(npx semantic-release --dry-run --no-ci --generate-notes)
+          echo "Changelog generated:"
+          echo "$changelog"
+
       - name: Ensure Branch Not in Use and Delete Worktree
         if: always()
         run: |
