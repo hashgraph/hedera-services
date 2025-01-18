@@ -183,10 +183,8 @@ jobs:
 #          echo "Changelog generated:"
 #          echo "$changelog"
 
-      - name: Set up git-semver
-        uses: DJ-BBot/setup-git-semver@v1
-        with:
-          version: 'latest'
+      - name: Git-Semver Setup Action
+        uses: DJ-BBot/setup-git-semver@v1.0.1
 
       - name: Get next computed version
         run: |
