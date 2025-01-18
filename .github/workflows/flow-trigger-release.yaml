@@ -154,7 +154,10 @@ jobs:
 
       - name: Git Merged Tags
         run: |
+          set +x
           echo "Git Merged Tags"
+          git fetch
+          git branch -la | grep semantic
           git tag --merged 14967-clean-semantic-release-workflow
 
       - name: Publish Semantic Release
