@@ -214,6 +214,13 @@ jobs:
         run: |
           git tag -l | grep 59
 
+      - name: Identify Current Version Number After Tagging
+        run: |
+          echo "Find the current version number after we applied the new tag"
+          current_version=$(git-semver latest)
+          echo "Current version is: ${current_version}"
+          echo "Should match version we just applied: ${{ steps.next_version.outputs.next_release }}"
+
       - name: Create Release Notes with Conventional Commits
         run: |
           git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
