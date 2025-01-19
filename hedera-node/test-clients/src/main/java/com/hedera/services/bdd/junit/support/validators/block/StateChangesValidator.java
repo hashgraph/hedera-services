@@ -236,6 +236,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
             for (final var item : block.items()) {
+                if (i == 0 && item.hasBlockHeader()) {
+                    assertEquals(0, item.blockHeaderOrThrow().number(), "Genesis block number should be 0");
+                }
                 servicesWritten.clear();
                 if (shouldVerifyProof) {
                     hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);

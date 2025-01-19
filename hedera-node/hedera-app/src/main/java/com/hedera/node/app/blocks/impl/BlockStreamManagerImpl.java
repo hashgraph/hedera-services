@@ -63,9 +63,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -76,7 +74,6 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -98,7 +95,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final int roundsPerBlock;
     private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
-    private final int serializationBatchSize;
     private final BlockHashSigner blockHashSigner;
     private final SemanticVersion version;
     private final SemanticVersion hapiVersion;
@@ -115,7 +111,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private PendingWork pendingWork = NONE;
     // The last time at which interval-based processing was done
     private Instant lastIntervalProcessTime = Instant.EPOCH;
-    // The last time at which interval-based processing was done
+    // The last platform-assigned  time
     private Instant lastHandleTime = Instant.EPOCH;
     // All this state is scoped to producing the current block
     private long blockNumber;
@@ -129,14 +125,31 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
     private BlockStreamManagerTask worker;
+    // If not null, the part of the block preceding a possible first user transaction
+    @Nullable
+    private PreUserItems preUserItems;
+    // Whether the block signer was ready at the start of the current block
+    private boolean signerReady;
+
+    /**
+     * Represents the part of a block preceding a possible first user transaction; we defer writing this part until
+     * we know the timestamp of the first user transaction.
+     * <p>
+     * <b>Important:</b> This first timestamp may be different from the first platform-assigned user transaction
+     * time because of synthetic preceding transactions.
+     *
+     * @param headerBuilder the block header builder
+     * @param postHeaderItems the post-header items
+     */
+    private record PreUserItems(@NonNull BlockHeader.Builder headerBuilder, @NonNull List<BlockItem> postHeaderItems) {}
 
     /**
      * Represents a block pending completion by the block hash signature needed for its block proof.
      *
-     * @param number        the block number
-     * @param blockHash     the block hash
-     * @param proofBuilder  the block proof builder
-     * @param writer        the block item writer
+     * @param number the block number
+     * @param blockHash the block hash
+     * @param proofBuilder the block proof builder
+     * @param writer the block item writer
      * @param siblingHashes the sibling hashes needed for an indirect block proof of an earlier block
      */
     private record PendingBlock(
@@ -176,7 +189,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
         this.streamWriterType = blockStreamConfig.writerMode();
         this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
-        this.serializationBatchSize = blockStreamConfig.serializationBatchSize();
         final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
         this.diskNetworkExport = networkAdminConfig.diskNetworkExport();
         this.diskNetworkExportFile = networkAdminConfig.diskNetworkExportFile();
@@ -184,11 +196,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.runningHashManager = new RunningHashManager();
         this.lastNonEmptyRoundNumber = initialStateHash.roundNum();
         final var hashFuture = initialStateHash.hashFuture();
+        signerReady = blockHashSigner.isReady();
         endRoundStateHashes.put(lastNonEmptyRoundNumber, hashFuture);
         log.info(
                 "Initialized BlockStreamManager from round {} with end-of-round hash {}",
                 lastNonEmptyRoundNumber,
                 hashFuture.isDone() ? hashFuture.join().toHex() : "<PENDING>");
+    }
+
+    @Override
+    public boolean hasLedgerId() {
+        return signerReady;
     }
 
     @Override
@@ -228,40 +246,30 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             outputTreeHasher = new ConcurrentStreamingTreeHasher(executor, hashCombineBatchSize);
             blockNumber = blockStreamInfo.blockNumber() + 1;
 
-            final var firstTransactionTimestamp = getFirstTransactionTimestamp(round);
-
             worker = new BlockStreamManagerTask();
-            worker.addItem(BlockItem.newBuilder()
-                    .blockHeader(BlockHeader.newBuilder()
-                            .number(blockNumber)
-                            .previousBlockHash(lastBlockHash)
-                            .hashAlgorithm(SHA2_384)
-                            .softwareVersion(platformState.creationSoftwareVersionOrThrow())
-                            .hapiProtoVersion(hapiVersion)
-                            .firstTransactionConsensusTime(firstTransactionTimestamp))
-                    .build());
+            final var header = BlockHeader.newBuilder()
+                    .number(blockNumber)
+                    .previousBlockHash(lastBlockHash)
+                    .hashAlgorithm(SHA2_384)
+                    .softwareVersion(platformState.creationSoftwareVersionOrThrow())
+                    .hapiProtoVersion(hapiVersion);
+            signerReady = blockHashSigner.isReady();
+            if (signerReady) {
+                preUserItems = new PreUserItems(header, new ArrayList<>());
+            } else {
+                // If the signer is not ready, we will not be accepting any user transactions
+                // until this block is over, so just write the header immediately
+                preUserItems = null;
+                worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
+            }
         }
     }
 
-    /**
-     * Returns the consensus timestamp of the first transaction in the given round, or {@code null} if no such
-     * transaction is found.
-     *
-     * @param round the round
-     * @return the consensus timestamp of the first transaction in the given round, or {@code null} if no such
-     */
-    @Nullable
-    private Timestamp getFirstTransactionTimestamp(final @NonNull Round round) {
-        for (final ConsensusEvent event : round) {
-            final Iterator<ConsensusTransaction> txnIterator = event.consensusTransactionIterator();
-            while (txnIterator.hasNext()) {
-                final ConsensusTransaction transaction = txnIterator.next();
-                if (transaction.getConsensusTimestamp() != null) {
-                    return asTimestamp(transaction.getConsensusTimestamp());
-                }
-            }
+    @Override
+    public void setRoundFirstUserTransactionTime(@NonNull final Instant at) {
+        if (preUserItems != null) {
+            flushPreUserItems(asTimestamp(at));
         }
-        return null;
     }
 
     @Override
@@ -301,6 +309,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     @Override
     public void endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
+            // If there were no user transactions in the block, this writes all the accumulated
+            // items starting from the header, sacrificing the benefits of concurrency; but
+            // performance impact is irrelevant when there are no user transactions
+            if (preUserItems != null) {
+                flushPreUserItems(null);
+            }
             // Flush all boundary state changes besides the BlockStreamInfo
             worker.addItem(boundaryStateChangeListener.flushChanges());
             worker.sync();
@@ -379,7 +393,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void writeItem(@NonNull final BlockItem item) {
-        worker.addItem(item);
+        if (preUserItems != null) {
+            preUserItems.postHeaderItems().add(item);
+        } else {
+            worker.addItem(item);
+        }
     }
 
     @Override
@@ -412,7 +430,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * Synchronized to ensure that block proofs are always written in order, even in edge cases where multiple
      * pending block proofs become available at the same time.
      *
-     * @param blockHash      the block hash to finish the block proof for
+     * @param blockHash the block hash to finish the block proof for
      * @param blockSignature the signature to use in the block proof
      */
     private synchronized void finishProofWithSignature(
@@ -454,11 +472,24 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     /**
+     * Flushes the pre-user items, with the given first user transaction time.
+     *
+     * @param firstUserTransactionTime the first user transaction time
+     */
+    private void flushPreUserItems(@Nullable final Timestamp firstUserTransactionTime) {
+        requireNonNull(preUserItems);
+        final var header = preUserItems.headerBuilder().firstTransactionConsensusTime(firstUserTransactionTime);
+        worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
+        preUserItems.postHeaderItems().forEach(worker::addItem);
+        preUserItems = null;
+    }
+
+    /**
      * Classifies the type of work pending, if any, given the block stream info from state and the current
      * software version.
      *
      * @param blockStreamInfo the block stream info
-     * @param version         the version
+     * @param version the version
      * @return the type of pending work given the block stream info and version
      */
     @VisibleForTesting
