@@ -17,7 +17,6 @@
 package com.swirlds.platform.pool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -25,7 +24,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
@@ -37,11 +35,11 @@ class TransactionPoolTests {
 
     @Test
     void addTransactionTest() {
-        final List<EventTransaction> transactionList = new ArrayList<>();
+        final List<Bytes> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
         when(transactionPoolNexus.submitTransaction(any(), anyBoolean(), anyBoolean()))
                 .thenAnswer(invocation -> {
-                    final EventTransaction transaction = invocation.getArgument(0);
+                    final Bytes transaction = invocation.getArgument(0);
                     final boolean isPriority = invocation.getArgument(1);
                     assertTrue(isPriority);
                     transactionList.add(transaction);
@@ -53,11 +51,11 @@ class TransactionPoolTests {
                 .round(1)
                 .signature(Bytes.EMPTY)
                 .build();
+        final Bytes signatureBytes = StateSignatureTransaction.PROTOBUF.toBytes(signatureTransaction);
 
         transactionPool.submitSystemTransaction(signatureTransaction);
         assertEquals(1, transactionList.size());
-        assertSame(
-                signatureTransaction, transactionList.getFirst().transaction().as());
+        assertEquals(signatureBytes, transactionList.getFirst());
     }
 
     @Test

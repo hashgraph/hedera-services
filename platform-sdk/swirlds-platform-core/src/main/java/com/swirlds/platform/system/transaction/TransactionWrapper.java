@@ -131,6 +131,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
         return payload;
     }
 
+    @Override
     public Bytes getTransactionBytes() {
         return transaction;
     }
@@ -144,6 +145,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public int getSize() {
         return TransactionUtils.getLegacyTransactionSize(payload);
+    }
+
+    @Override
+    public int getBytesSize() {
+        return TransactionUtils.getLegacyTransactionSize(transaction);
     }
 
     /**

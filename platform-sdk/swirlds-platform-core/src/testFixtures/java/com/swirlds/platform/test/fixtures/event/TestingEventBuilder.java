@@ -576,7 +576,7 @@ public class TestingEventBuilder {
             }
         }
 
-        if (transactions == null) {
+        if (transactionBytes == null) {
             transactionBytes = generateTransactions();
         }
 

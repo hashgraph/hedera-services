@@ -39,6 +39,8 @@ public sealed interface Transaction permits ConsensusTransaction {
     @Deprecated
     EventTransaction getTransaction();
 
+    Bytes getTransactionBytes();
+
     /**
      * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
      * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
@@ -55,6 +57,8 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return the size of the transaction in the unit of byte
      */
     int getSize();
+
+    int getBytesSize();
 
     /**
      * Internal use accessor that returns a flag indicating whether this is a system transaction.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,7 +242,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         int totalTransactionBytes = 0;
         final Iterator<Transaction> iterator = event.transactionIterator();
         while (iterator.hasNext()) {
-            totalTransactionBytes += iterator.next().getSize();
+            totalTransactionBytes += iterator.next().getBytesSize();
         }
 
         if (totalTransactionBytes > transactionConfig.maxTransactionBytesPerEvent()) {
