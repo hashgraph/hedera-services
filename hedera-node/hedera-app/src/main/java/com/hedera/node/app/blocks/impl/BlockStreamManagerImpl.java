@@ -519,6 +519,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     private boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
+        if (!blockHashSigner.isReady()) {
+            return false;
+        }
         return roundNumber % roundsPerBlock == 0 || roundNumber == freezeRoundNumber;
     }
 

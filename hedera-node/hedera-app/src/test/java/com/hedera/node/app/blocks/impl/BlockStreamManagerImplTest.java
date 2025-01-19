@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -251,7 +252,6 @@ class BlockStreamManagerImplTest {
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
         assertFalse(subject.hasLedgerId());
-        given(blockHashSigner.isReady()).willReturn(true);
 
         given(blockHashSigner.isReady()).willReturn(true);
         // Start the round that will be block N
@@ -318,7 +318,42 @@ class BlockStreamManagerImplTest {
     }
 
     @Test
-    void blockWithNoUserTransactionsHasExpectedHeader() throws ParseException {
+    void doesNotEndBlockEvenAtModZeroRoundIfSignerIsNotReady() {
+        givenSubjectWith(
+                1,
+                blockStreamInfoWith(
+                        Bytes.EMPTY, CREATION_VERSION.copyBuilder().patch(0).build()),
+                platformStateWithFreezeTime(null),
+                aWriter);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
+
+        // Initialize the last (N-1) block hash
+        subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
+
+        // Start the round that will be block N
+        subject.startRound(round, state);
+
+        // Assert the internal state of the subject has changed as expected and the writer has been opened
+        verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
+        assertEquals(N_MINUS_2_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_2_BLOCK_NO));
+        assertEquals(FAKE_RESTART_BLOCK_HASH, subject.blockHashByBlockNumber(N_MINUS_1_BLOCK_NO));
+        assertNull(subject.prngSeed());
+        assertEquals(N_BLOCK_NO, subject.blockNo());
+
+        // Write some items to the block
+        subject.writeItem(FAKE_EVENT_TRANSACTION);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        subject.writeItem(FAKE_STATE_CHANGES);
+        subject.writeItem(FAKE_RECORD_FILE_ITEM);
+
+        // End the round (which cannot close the block since signer isn't ready)
+        subject.endRound(state, ROUND_NO);
+
+        verify(blockHashSigner, never()).signFuture(any());
+    }
+
+    @Test
+    void blockWithNoUserTransactionsHasExpectedHeader() {
         givenSubjectWith(
                 1,
                 blockStreamInfoWith(
@@ -333,7 +368,6 @@ class BlockStreamManagerImplTest {
         // Initialize the last (N-1) block hash
         subject.initLastBlockHash(FAKE_RESTART_BLOCK_HASH);
         assertFalse(subject.hasLedgerId());
-        given(blockHashSigner.isReady()).willReturn(true);
 
         given(blockHashSigner.isReady()).willReturn(true);
         // Start the round that will be block N
