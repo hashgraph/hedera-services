@@ -260,7 +260,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
             }
             if (!firstUserTxnSeen) {
-                assertNull(expectedFirstUserTxnTime, "Blocks had no user transactions");
+                assertNull(expectedFirstUserTxnTime, "Block had no user transactions");
             }
             final var lastBlockItem = block.items().getLast();
             assertTrue(lastBlockItem.hasBlockProof());
