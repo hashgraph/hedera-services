@@ -1030,6 +1030,41 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .payingWith(alice)
                             .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
+
+        @HapiTest
+        @DisplayName("Max custom fee is supported only on consensus message submit")
+        final Stream<DynamicTest> maxCustomFeesIsSupportedOnlyWithMsgSubmit() {
+            final var sender = "sender";
+            final var receiver = "receiver";
+            final var feeLimit = maxCustomFee(sender, 2);
+            return hapiTest(
+                    cryptoCreate(sender).balance(ONE_HBAR),
+                    cryptoCreate(receiver),
+                    cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
+                            .maxCustomFee(feeLimit)
+                            .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
+        }
+
+        @HapiTest
+        @DisplayName("Max custom fee contain duplicate denominations")
+        final Stream<DynamicTest> maxCustomFeeContainsDuplicateDenominations() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
+            final var feeLimit2 = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 10);
+            return hapiTest(flattened(
+                    associateFeeTokensAndSubmitter(),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC)
+                            // duplicate denominations in maxCustomFee
+                            .maxCustomFee(feeLimit)
+                            .maxCustomFee(feeLimit2)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasPrecheck(DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST)));
+        }
     }
 
     @Nested
@@ -1114,40 +1149,5 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     submitMessageTo(TOPIC).message("TEST").signedBy(SUBMITTER).payingWith(collector),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
         }
-    }
-
-    @HapiTest
-    @DisplayName("Max custom fee is supported only on consensus message submit")
-    final Stream<DynamicTest> maxCustomFeesIsSupportedOnlyWithMsgSubmit() {
-        final var sender = "sender";
-        final var receiver = "receiver";
-        final var feeLimit = maxCustomFee(sender, 2);
-        return hapiTest(
-                cryptoCreate(sender).balance(ONE_HBAR),
-                cryptoCreate(receiver),
-                cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
-                        .maxCustomFee(feeLimit)
-                        .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
-    }
-
-    @HapiTest
-    @DisplayName("Max custom fee contain duplicate denominations")
-    final Stream<DynamicTest> maxCustomFeeContainsDuplicateDenominations() {
-        final var collector = "collector";
-        final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
-        final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
-        final var feeLimit2 = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 10);
-        return hapiTest(flattened(
-                associateFeeTokensAndSubmitter(),
-                cryptoCreate(collector).balance(ONE_HBAR),
-                tokenAssociate(collector, BASE_TOKEN),
-                createTopic(TOPIC).withConsensusCustomFee(fee),
-                submitMessageTo(TOPIC)
-                        // duplicate denominations in maxCustomFee
-                        .maxCustomFee(feeLimit)
-                        .maxCustomFee(feeLimit2)
-                        .message("TEST")
-                        .payingWith(SUBMITTER)
-                        .hasPrecheck(DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST)));
     }
 }
