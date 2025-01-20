@@ -67,7 +67,9 @@ public record TransactionParts(
     }
 
     private static Bytes bodyBytesOf(final Transaction txn) throws ParseException {
-        if (txn.signedTransactionBytes().length() > 0) {
+        if (txn.hasBody()) {
+            return TransactionBody.PROTOBUF.toBytes(txn.body());
+        } else if (txn.signedTransactionBytes().length() > 0) {
             final var signedTxn = SignedTransaction.PROTOBUF.parse(txn.signedTransactionBytes());
             return signedTxn.bodyBytes();
         } else {

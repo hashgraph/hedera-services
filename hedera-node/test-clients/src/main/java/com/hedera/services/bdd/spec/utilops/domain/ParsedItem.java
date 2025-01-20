@@ -47,7 +47,9 @@ public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord)
     public static ParsedItem parse(final RecordStreamItem item) throws InvalidProtocolBufferException {
         final var txn = item.getTransaction();
         final TransactionBody body;
-        if (txn.getBodyBytes().size() > 0) {
+        if (txn.hasBody()) {
+            body = txn.getBody();
+        } else if (txn.getBodyBytes().size() > 0) {
             body = TransactionBody.parseFrom(txn.getBodyBytes());
         } else {
             final var signedTxnBytes = item.getTransaction().getSignedTransactionBytes();

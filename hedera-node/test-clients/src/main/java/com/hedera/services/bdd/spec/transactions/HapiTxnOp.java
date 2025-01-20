@@ -39,6 +39,8 @@ import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
@@ -61,6 +63,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -244,7 +248,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             }
 
             /* Used by superclass to perform standard housekeeping. */
-            txnSubmitted = txn;
+            txnSubmitted = normalizeTransaction(txn);
 
             actualPrecheck = response.getNodeTransactionPrecheckCode();
             if (retryPrechecks.isPresent()
@@ -326,6 +330,32 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
 
         return !deferStatusResolution;
+    }
+
+
+    @SuppressWarnings("deprecation")
+    private static Transaction normalizeTransaction(Transaction txn) {
+        if (txn.hasBody()) {
+            return txn;
+        } else {
+            try {
+                final ByteString bodyBytes;
+                final SignatureMap signatureMap;
+                if (!txn.getSignedTransactionBytes().isEmpty()) {
+                    final var signedTransaction = SignedTransaction.parseFrom(txn.getSignedTransactionBytes());
+                    bodyBytes = signedTransaction.getBodyBytes();
+                    signatureMap = signedTransaction.getSigMap();
+                } else {
+                    bodyBytes = txn.getBodyBytes();
+                    signatureMap = txn.getSigMap();
+                }
+                final var txBody = TransactionBody.parseFrom(bodyBytes);
+                return Transaction.newBuilder().setBody(txBody).setSigMap(signatureMap).build();
+            } catch (InvalidProtocolBufferException ex) {
+                throw new IllegalStateException("Unable to normalize transaction: " + txn, ex);
+            }
+        }
+
     }
 
     private void resolveStatus(HapiSpec spec) throws Throwable {
