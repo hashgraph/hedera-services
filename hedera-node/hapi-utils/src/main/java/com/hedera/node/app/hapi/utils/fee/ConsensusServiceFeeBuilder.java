@@ -55,9 +55,8 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
         long extraRbsServices = 0;
         if (createTopicTxBody.hasAutoRenewPeriod()) {
             // Scale the rbs based on topic size and custom fees
-            extraRbsServices =
-                    (getTopicRamBytes(variableSize) + bytesNeededToRepr(createTopicTxBody.getCustomFeesList()))
-                            * createTopicTxBody.getAutoRenewPeriod().getSeconds();
+            extraRbsServices = getTopicRamBytes(variableSize + bytesNeededToRepr(createTopicTxBody.getCustomFeesList()))
+                    * createTopicTxBody.getAutoRenewPeriod().getSeconds();
         }
         return getTxFeeMatrices(
                 txBody,
