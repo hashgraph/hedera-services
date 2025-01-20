@@ -332,7 +332,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return !deferStatusResolution;
     }
 
-
     @SuppressWarnings("deprecation")
     private static Transaction normalizeTransaction(Transaction txn) {
         if (txn.hasBody()) {
@@ -350,12 +349,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                     signatureMap = txn.getSigMap();
                 }
                 final var txBody = TransactionBody.parseFrom(bodyBytes);
-                return Transaction.newBuilder().setBody(txBody).setSigMap(signatureMap).build();
+                return Transaction.newBuilder()
+                        .setBody(txBody)
+                        .setSigMap(signatureMap)
+                        .build();
             } catch (InvalidProtocolBufferException ex) {
                 throw new IllegalStateException("Unable to normalize transaction: " + txn, ex);
             }
         }
-
     }
 
     private void resolveStatus(HapiSpec spec) throws Throwable {
