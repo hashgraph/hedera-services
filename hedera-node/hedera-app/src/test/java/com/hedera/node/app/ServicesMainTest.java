@@ -21,8 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -74,24 +72,7 @@ final class ServicesMainTest {
     void throwsExceptionOnNoNodesToRun() {
         withBadCommandLineArgs();
         String[] args = {};
-        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
-            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
-            systemExitUtilsMockedStatic.verify(
-                    () -> SystemExitUtils.exitSystem(eq(NODE_ADDRESS_MISMATCH), anyString()));
-        }
-    }
-
-    // local node specified which does not match the address book
-    @Test
-    void hardExitOnNonMatchingNodeId() {
-        withBadCommandLineArgs();
-        String[] args = {"-local", "1234"}; // 1234 does not match anything in address book
-
-        try (MockedStatic<SystemExitUtils> systemExitUtilsMockedStatic = mockStatic(SystemExitUtils.class)) {
-            assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(ConfigurationException.class);
-            systemExitUtilsMockedStatic.verify(
-                    () -> SystemExitUtils.exitSystem(eq(NODE_ADDRESS_MISMATCH), anyString()));
-        }
+        assertThatThrownBy(() -> ServicesMain.main(args)).isInstanceOf(IllegalStateException.class);
     }
 
     // more than one local node specified on the commandline

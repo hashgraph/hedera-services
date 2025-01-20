@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
@@ -52,8 +50,6 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesUtilities;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.PcesWriterTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -73,9 +69,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.io.TempDir;
@@ -98,17 +92,6 @@ class PcesWriterTests {
 
     protected static Stream<Arguments> buildArguments() {
         return Stream.of(Arguments.of(GENERATION_THRESHOLD), Arguments.of(BIRTH_ROUND_THRESHOLD));
-    }
-
-    @BeforeAll
-    static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
-        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
-    }
-
-    @AfterAll
-    static void afterAll() {
-        StaticSoftwareVersion.reset();
     }
 
     @BeforeEach

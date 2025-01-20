@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         // Create the transaction-scoped component
-        final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
+        final var component = getTransactionComponent(context, ETHEREUM_TRANSACTION);
 
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
@@ -180,7 +180,7 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
      * @param context the handle context
      */
     public void handleThrottled(@NonNull final HandleContext context) {
-        final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
+        final var component = getTransactionComponent(context, ETHEREUM_TRANSACTION);
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.savepointStack()

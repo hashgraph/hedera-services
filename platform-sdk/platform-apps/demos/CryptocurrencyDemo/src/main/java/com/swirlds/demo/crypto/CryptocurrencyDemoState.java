@@ -28,31 +28,19 @@ package com.swirlds.demo.crypto;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -93,7 +81,7 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
      * the first byte of a transaction is the ordinal of one of these four: do not delete any of these or
      * change the order (and add new ones only to the end)
      */
-    public static enum TransType {
+    public enum TransType {
         slow,
         fast,
         bid,
@@ -104,8 +92,6 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
     public static final int NUM_STOCKS = 10;
     /** remember the last MAX_TRADES trades that occurred. */
     private static final int MAX_TRADES = 200;
-    /** the platform running this app */
-    private SwirldsPlatform platform = null;
 
     ////////////////////////////////////////////////////
     // the following are the shared state:
@@ -137,15 +123,12 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
 
     ////////////////////////////////////////////////////
 
-    public CryptocurrencyDemoState(
-            @NonNull final StateLifecycles lifecycles,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
-        super(lifecycles, versionFactory);
+    public CryptocurrencyDemoState(@NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
+        super(versionFactory);
     }
 
     private CryptocurrencyDemoState(final CryptocurrencyDemoState sourceState) {
         super(sourceState);
-        this.platform = sourceState.platform;
         this.tickerSymbol = sourceState.tickerSymbol.clone();
         this.wallet = new HashMap<>(sourceState.wallet);
         this.shares = new HashMap<>();
@@ -207,59 +190,8 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
         return new CryptocurrencyDemoState(this);
     }
 
-    @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        throwIfImmutable();
-        round.forEachEventTransaction((event, transaction) -> handleTransaction(event.getCreatorId(), transaction));
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * The matching algorithm for any given stock is as follows. The first bid or ask for a stock is
-     * remembered. Then, if there is a higher bid or lower ask, it is remembered, replacing the earlier one.
-     * Eventually, there will be a bid that is equal to or greater than the ask. At that point, they are
-     * matched, and a trade occurs, selling one share at the average of the bid and ask. Then the stored bid
-     * and ask are erased, and it goes back to waiting for a bid or ask to remember.
-     * <p>
-     * If a member tries to sell a stock for which they own no shares, or if they try to buy a stock at a
-     * price higher than the amount of money they currently have, then their bid/ask for that stock will not
-     * be stored.
-     * <p>
-     * A transaction is 1 or 3 bytes:
-     *
-     * <pre>
-     * {SLOW} = run slowly
-     * {FAST} = run quickly
-     * {BID,s,p} = bid to buy 1 share of stock s at p cents (where 0 &lt;= p &lt;= 127)
-     * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
-     * </pre>
-     */
-    private void handleTransaction(@NonNull final NodeId id, @NonNull final Transaction transaction) {
-        Objects.requireNonNull(id, "id must not be null");
-        Objects.requireNonNull(transaction, "transaction must not be null");
-        if (transaction.isSystem()) {
-            return;
-        }
-        final Bytes contents = transaction.getApplicationTransaction();
-        if (contents.length() < 3) {
-            return;
-        }
-        if (contents.getByte(0) == TransType.slow.ordinal() || contents.getByte(0) == TransType.fast.ordinal()) {
-            return;
-        }
-        final int askBid = contents.getByte(0);
-        final int tradeStock = contents.getByte(1);
-        int tradePrice = contents.getByte(2);
-
-        if (tradePrice < 1 || tradePrice > 127) {
-            return; // all asks and bids must be in the range 1 to 127
-        }
-
-        if (askBid == TransType.ask.ordinal()) { // it is an ask
+    void handleTransaction(NodeId id, int askBid, int tradeStock, int tradePrice) {
+        if (askBid == CryptocurrencyDemoState.TransType.ask.ordinal()) { // it is an ask
             // if they're trying to sell something they don't have, then ignore it
             if (shares.get(id).get(tradeStock).get() == 0) {
                 return;
@@ -341,7 +273,7 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
     /**
      * Do setup at genesis
      */
-    public void genesisInit() {
+    void genesisInit(@NonNull final Platform platform) {
         tickerSymbol = new String[NUM_STOCKS];
         wallet = new HashMap<>();
         shares = new HashMap<>();
@@ -377,22 +309,6 @@ public class CryptocurrencyDemoState extends PlatformMerkleStateRoot {
                 sharesForID.add(new AtomicLong(200L));
             }
             shares.put(id, sharesForID);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void init(
-            @NonNull final Platform platform,
-            @NonNull final InitTrigger trigger,
-            @Nullable final SoftwareVersion previousSoftwareVersion) {
-        super.init(platform, trigger, previousSoftwareVersion);
-
-        this.platform = (SwirldsPlatform) platform;
-        if (trigger == InitTrigger.GENESIS) {
-            genesisInit();
         }
     }
 

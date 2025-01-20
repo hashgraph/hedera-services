@@ -138,7 +138,7 @@ public class TopicCustomFeeBase {
     }
 
     protected static List<SpecOperation> createTokenWith2LayerFee(
-            String owner, String tokenName, boolean createTreasury, long htsFee, long hbarFee) {
+            String owner, String tokenName, boolean createTreasury, , long htsFee, long hbarFee) {
         final var specOperations = new ArrayList<SpecOperation>();
         final var collectorName = COLLECTOR_PREFIX + tokenName;
         final var denomToken = DENOM_TOKEN_PREFIX + tokenName;
@@ -167,6 +167,59 @@ public class TopicCustomFeeBase {
         // transfer the tokens to the owner
         specOperations.add(cryptoTransfer(moving(100L, tokenName).between(TOKEN_TREASURY, owner)));
         specOperations.add(cryptoTransfer(moving(100L, denomToken).between(DENOM_TREASURY, owner)));
+        return specOperations;
+    }
+
+    protected static List<SpecOperation> createTokenWith4LayerFee(
+            String owner, String tokenName, boolean createTreasury) {
+        final var specOperations = new ArrayList<SpecOperation>();
+        final var collectorName = COLLECTOR_PREFIX + tokenName;
+        final var denom1Token = "denom1_" + tokenName;
+        final var denom2Token = "denom2_" + tokenName;
+        final var denom3Token = "denom3_" + tokenName;
+        // if we generate multiple tokens, there will be no need to create treasury every time we create new token
+        if (createTreasury) {
+            specOperations.add(cryptoCreate(DENOM_TREASURY));
+            specOperations.add(cryptoCreate(TOKEN_TREASURY));
+        }
+        // create first common collector
+        specOperations.add(cryptoCreate(collectorName).balance(0L));
+        // create first denomination token with hbar fee
+        specOperations.add(tokenCreate(denom1Token)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasury(DENOM_TREASURY)
+                .withCustom(fixedHbarFee(ONE_HBAR, collectorName)));
+        // associate the denomination token with the collector
+        specOperations.add(tokenAssociate(collectorName, denom1Token));
+        // create second denomination token with first denomination token fee
+        specOperations.add(tokenCreate(denom2Token)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasury(DENOM_TREASURY)
+                .withCustom(fixedHtsFee(1, denom1Token, collectorName)));
+        // associate the denomination token with the collector
+        specOperations.add(tokenAssociate(collectorName, denom2Token));
+        // create third denomination token with second denomination token fee
+        specOperations.add(tokenCreate(denom3Token)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasury(DENOM_TREASURY)
+                .withCustom(fixedHtsFee(1, denom2Token, collectorName)));
+        // associate the denomination token with the collector
+        specOperations.add(tokenAssociate(collectorName, denom3Token));
+        // create the token with fixed HTS fee
+        specOperations.add(tokenCreate(tokenName)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasury(TOKEN_TREASURY)
+                .withCustom(fixedHtsFee(1, denom3Token, collectorName)));
+        // associate the owner with the two new tokens
+        specOperations.add(tokenAssociate(owner, tokenName));
+        specOperations.add(tokenAssociate(owner, denom1Token));
+        specOperations.add(tokenAssociate(owner, denom2Token));
+        specOperations.add(tokenAssociate(owner, denom3Token));
+        // transfer the tokens to the owner
+        specOperations.add(cryptoTransfer(moving(100L, tokenName).between(TOKEN_TREASURY, owner)));
+        specOperations.add(cryptoTransfer(moving(100L, denom1Token).between(DENOM_TREASURY, owner)));
+        specOperations.add(cryptoTransfer(moving(100L, denom2Token).between(DENOM_TREASURY, owner)));
+        specOperations.add(cryptoTransfer(moving(100L, denom3Token).between(DENOM_TREASURY, owner)));
         return specOperations;
     }
 

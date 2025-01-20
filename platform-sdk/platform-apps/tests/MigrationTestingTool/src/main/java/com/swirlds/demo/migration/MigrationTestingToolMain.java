@@ -22,6 +22,8 @@ import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -31,7 +33,7 @@ import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -45,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  * <p>
  * Command line arguments: Seed(long), TransactionsPerNode(int)
  */
-public class MigrationTestingToolMain implements SwirldMain {
+public class MigrationTestingToolMain implements SwirldMain<MigrationTestingToolState> {
 
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolMain.class);
 
@@ -53,12 +55,9 @@ public class MigrationTestingToolMain implements SwirldMain {
         try {
             logger.info(STARTUP.getMarker(), "Registering MigrationTestingToolState with ConstructableRegistry");
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MigrationTestingToolState.class, () -> {
-                        MigrationTestingToolState migrationTestingToolState = new MigrationTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        return migrationTestingToolState;
-                    }));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    MigrationTestingToolState.class,
+                    () -> new MigrationTestingToolState(version -> new BasicSoftwareVersion(version.major()))));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "MigrationTestingToolState is registered with ConstructableRegistry");
         } catch (ConstructableRegistryException e) {
@@ -192,12 +191,16 @@ public class MigrationTestingToolMain implements SwirldMain {
      */
     @NonNull
     @Override
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new MigrationTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
+    public MigrationTestingToolState newMerkleStateRoot() {
+        final MigrationTestingToolState state = new MigrationTestingToolState(
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    public StateLifecycles<MigrationTestingToolState> newStateLifecycles() {
+        return new MigrationTestToolStateLifecycles();
     }
 
     /**
@@ -206,5 +209,11 @@ public class MigrationTestingToolMain implements SwirldMain {
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
         return softwareVersion;
+    }
+
+    @Override
+    @NonNull
+    public Bytes encodeSystemTransaction(final @NonNull StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }
