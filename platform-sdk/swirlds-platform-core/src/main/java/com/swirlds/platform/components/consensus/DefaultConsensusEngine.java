@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.components.consensus;
 import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
@@ -111,8 +112,10 @@ public class DefaultConsensusEngine implements ConsensusEngine {
             return List.of();
         }
 
+        List<Bytes> transactions = event.getGossipEvent().transactions();
+        boolean isNewFormat = !transactions.isEmpty();
         final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
-        eventAddedMetrics.eventAdded(linkedEvent);
+        eventAddedMetrics.eventAdded(linkedEvent, isNewFormat);
 
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in

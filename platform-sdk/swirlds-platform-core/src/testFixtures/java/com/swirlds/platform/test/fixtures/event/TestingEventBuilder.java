@@ -234,7 +234,7 @@ public class TestingEventBuilder {
      * @return this instance
      */
     public @NonNull TestingEventBuilder setAppTransactionCount(final int numberOfAppTransactions) {
-        if (transactions != null) {
+        if (transactionBytes != null) {
             throw new IllegalStateException("Cannot set app transaction count when transactions are explicitly set");
         }
 
@@ -251,7 +251,7 @@ public class TestingEventBuilder {
      * @return this instance
      */
     public @NonNull TestingEventBuilder setSystemTransactionCount(final int numberOfSystemTransactions) {
-        if (transactions != null) {
+        if (transactionBytes != null) {
             throw new IllegalStateException("Cannot set system transaction count when transactions are explicitly set");
         }
 
@@ -268,7 +268,7 @@ public class TestingEventBuilder {
      * @return this instance
      */
     public @NonNull TestingEventBuilder setTransactionSize(final int transactionSize) {
-        if (transactions != null) {
+        if (transactionBytes != null) {
             throw new IllegalStateException("Cannot set transaction size when transactions are explicitly set");
         }
 
