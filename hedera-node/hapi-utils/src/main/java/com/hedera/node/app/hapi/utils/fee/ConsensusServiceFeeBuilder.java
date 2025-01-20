@@ -18,10 +18,10 @@ package com.hedera.node.app.hapi.utils.fee;
 
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusCustomFee;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -260,7 +260,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
      * @param feeSchedule the custom fees
      * @return long representing rbs increase
      */
-    public static int bytesNeededToRepr(final List<ConsensusCustomFee> feeSchedule) {
+    public static int bytesNeededToRepr(final List<FixedCustomFee> feeSchedule) {
         int numFixedHbarFees = 0;
         int numFixedHtsFees = 0;
         for (final var fee : feeSchedule) {
