@@ -228,9 +228,7 @@ public class StandaloneDispatchFactory {
                 .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(signedTransaction))
                 .build();
         final var transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
-        final var consensusTransaction = new TransactionWrapper(EventTransaction.newBuilder()
-                .applicationTransaction(transactionBytes)
-                .build());
+        final var consensusTransaction = new TransactionWrapper(transactionBytes);
         consensusTransaction.setMetadata(temporaryPreHandleResult());
         return consensusTransaction;
     }
