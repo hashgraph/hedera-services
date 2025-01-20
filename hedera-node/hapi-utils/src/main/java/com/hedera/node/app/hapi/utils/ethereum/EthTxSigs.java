@@ -51,6 +51,8 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         };
     }
 
+    // Legacy transactions do not support EIP1559, so only a single gasPrice field is present.
+    // Additionally, they do not include access list information.
     static byte[] resolveLegacy(final EthTxData ethTx) {
         return ethTx.chainId() != null && ethTx.chainId().length > 0
                 ? RLPEncoder.encodeAsList(
@@ -72,6 +74,9 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
                         ethTx.callData());
     }
 
+    // A notable difference introduced in EIP1559 is the replacement of the gasPrice field
+    // with maxPriorityGas and maxGas fields, enabling more granular control over transaction fees.
+    // More details: https://eips.ethereum.org/EIPS/eip-1559
     static byte[] resolveEIP1559(final EthTxData ethTx) {
         return RLPEncoder.encodeSequentially(Integers.toBytes(2), new Object[] {
             ethTx.chainId(),
@@ -86,6 +91,9 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         });
     }
 
+    // EIP2930 introduces the accessList field, which allows specifying a list of
+    // addresses and storage keys the transaction will access.
+    // More details: https://eips.ethereum.org/EIPS/eip-2930
     static byte[] resolveEIP2930(final EthTxData ethTx) {
         return RLPEncoder.encodeSequentially(Integers.toBytes(1), new Object[] {
             ethTx.chainId(),

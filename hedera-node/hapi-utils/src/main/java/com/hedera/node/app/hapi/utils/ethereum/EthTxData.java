@@ -288,6 +288,7 @@ public record EthTxData(
                 && (Objects.equals(value, ethTxData.value))
                 && (Arrays.equals(callData, ethTxData.callData))
                 && (Arrays.equals(accessList, ethTxData.accessList))
+                && (Arrays.deepEquals(accessListAsRlp, ethTxData.accessListAsRlp))
                 && (Arrays.equals(v, ethTxData.v))
                 && (Arrays.equals(r, ethTxData.r))
                 && (Arrays.equals(s, ethTxData.s));
@@ -306,6 +307,8 @@ public record EthTxData(
         result = 31 * result + Arrays.hashCode(to);
         result = 31 * result + (value != null ? value.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(callData);
+        // accessListAsRlp is not considered when calculating the hash,
+        // as it is simply a different representation of the same dataset.
         result = 31 * result + Arrays.hashCode(accessList);
         result = 31 * result + recId;
         result = 31 * result + Arrays.hashCode(v);

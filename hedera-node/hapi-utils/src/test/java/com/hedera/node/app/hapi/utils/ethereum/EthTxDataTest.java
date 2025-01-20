@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.rlp.RLPList;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.swirlds.common.utility.CommonUtils;
@@ -605,5 +607,114 @@ class EthTxDataTest {
         final var populateEthTxData = EthTxData.populateEthTxData(encoded);
 
         assertEquals(bigValue, populateEthTxData.value());
+    }
+
+    @Test
+    void populatesAccessListAsRlpCorrectly() {
+        final byte[] encodedAccessList = RLPEncoder.encodeAsList(
+                RLPEncoder.encodeAsList(RLPEncoder.encodeSequentially("key1".getBytes(), "value1".getBytes())),
+                RLPEncoder.encodeAsList(RLPEncoder.encodeSequentially("key2".getBytes(), "value2".getBytes())));
+        final RLPList rlpList = RLPDecoder.RLP_STRICT.wrapList(encodedAccessList);
+        final Object[] accessListAsRlp = rlpList.elements().stream()
+                .map(e -> e.isList() ? e.asRLPList().elements().toArray() : e.data())
+                .toArray();
+
+        final var ethTxData = new EthTxData(
+                new byte[] {1},
+                EthTxData.EthTransactionType.EIP1559,
+                new byte[] {1},
+                1L,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1},
+                100L,
+                new byte[] {1},
+                BigInteger.TEN,
+                new byte[] {1},
+                new byte[] {1},
+                accessListAsRlp,
+                0,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1});
+        assertArrayEquals(accessListAsRlp, ethTxData.accessListAsRlp());
+    }
+
+    @Test
+    void equalsConsidersAccessListAsRlp() {
+        final byte[] encodedAccessList = RLPEncoder.encodeAsList(
+                RLPEncoder.encodeAsList(RLPEncoder.encodeSequentially("key1".getBytes(), "value1".getBytes())));
+        final byte[] differentEncodedAccessList = RLPEncoder.encodeAsList(
+                RLPEncoder.encodeAsList(RLPEncoder.encodeSequentially("key2".getBytes(), "value2".getBytes())));
+
+        final RLPList rlpList = RLPDecoder.RLP_STRICT.wrapList(encodedAccessList);
+        final RLPList differentRlpList = RLPDecoder.RLP_STRICT.wrapList(differentEncodedAccessList);
+
+        final Object[] accessListAsRlp = rlpList.elements().stream()
+                .map(e -> e.isList() ? e.asRLPList().elements().toArray() : e.data())
+                .toArray();
+
+        final Object[] differentAccessListAsRlp = differentRlpList.elements().stream()
+                .map(e -> e.isList() ? e.asRLPList().elements().toArray() : e.data())
+                .toArray();
+
+        final var ethTxData = new EthTxData(
+                new byte[] {1},
+                EthTxData.EthTransactionType.EIP1559,
+                new byte[] {1},
+                1L,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1},
+                100L,
+                new byte[] {1},
+                BigInteger.TEN,
+                new byte[] {1},
+                new byte[] {1},
+                accessListAsRlp,
+                0,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1});
+
+        final var ethTxDataWithDifferentAccessList = new EthTxData(
+                new byte[] {1},
+                EthTxData.EthTransactionType.EIP1559,
+                new byte[] {1},
+                1L,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1},
+                100L,
+                new byte[] {1},
+                BigInteger.TEN,
+                new byte[] {1},
+                new byte[] {1},
+                differentAccessListAsRlp,
+                0,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1});
+        assertNotEquals(ethTxData, ethTxDataWithDifferentAccessList);
+
+        final var theSameEthTxData = new EthTxData(
+                new byte[] {1},
+                EthTxData.EthTransactionType.EIP1559,
+                new byte[] {1},
+                1L,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1},
+                100L,
+                new byte[] {1},
+                BigInteger.TEN,
+                new byte[] {1},
+                new byte[] {1},
+                accessListAsRlp,
+                0,
+                new byte[] {1},
+                new byte[] {1},
+                new byte[] {1});
+        assertEquals(ethTxData, theSameEthTxData);
     }
 }
