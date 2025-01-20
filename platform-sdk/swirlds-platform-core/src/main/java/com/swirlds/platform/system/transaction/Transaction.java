@@ -48,7 +48,9 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
      */
     default @NonNull Bytes getApplicationTransaction() {
-        return !isSystem() ? getTransaction().transaction().as() : Bytes.EMPTY;
+        return !isSystem()
+                ? (getTransaction() != null ? getTransaction().transaction().as() : getTransactionBytes())
+                : Bytes.EMPTY;
     }
 
     /**
