@@ -51,8 +51,12 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
@@ -1069,6 +1073,32 @@ public final class Hedera
 
     public BoundaryStateChangeListener boundaryStateChangeListener() {
         return boundaryStateChangeListener;
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
+        final var config = appContext.configSupplier().get().getConfigData(HederaConfig.class);
+        final var instant = appContext.instantSource().instant();
+        final var nodeAccountID = appContext.selfNodeInfoSupplier().get().accountId();
+
+        final var transactionValidStart =
+                Timestamp.newBuilder().seconds(instant.getEpochSecond()).nanos(instant.getNano());
+        final var transactionValidDuration = Duration.newBuilder().seconds(config.transactionMaxValidDuration());
+        final var transactionID = TransactionID.newBuilder()
+                .transactionValidStart(transactionValidStart)
+                .accountID(nodeAccountID);
+        final var transactionBody = TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .nodeAccountID(nodeAccountID)
+                .transactionValidDuration(transactionValidDuration)
+                .stateSignatureTransaction(stateSignatureTransaction);
+
+        final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
+                .sigMap(SignatureMap.DEFAULT)
+                .build();
+
+        return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
     }
 
     /*==================================================================================================================
