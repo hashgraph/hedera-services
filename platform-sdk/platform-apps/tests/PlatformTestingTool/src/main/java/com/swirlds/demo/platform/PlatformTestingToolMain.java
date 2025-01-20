@@ -43,6 +43,9 @@ import static java.lang.System.exit;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.ByteString;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -61,6 +64,8 @@ import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
 import com.swirlds.demo.merkle.map.internal.ExpectedMapUtils;
 import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
+import com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction;
+import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
 import com.swirlds.demo.platform.nft.NftQueryController;
 import com.swirlds.demo.platform.stream.AccountBalanceExport;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
@@ -86,7 +91,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -127,7 +132,7 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file.
  * Each transaction consists of an optional sequence number and random bytes.
  */
-public class PlatformTestingToolMain implements SwirldMain {
+public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolState> {
 
     /**
      * use this for all logging
@@ -149,7 +154,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             logger.info(STARTUP.getMarker(), "Registering PlatformTestingToolState with ConstructableRegistry");
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(PlatformTestingToolState.class, () -> {
-                        PlatformTestingToolState ptt = new PlatformTestingToolState();
+                        final PlatformTestingToolState ptt = new PlatformTestingToolState();
                         return ptt;
                     }));
             logger.info(
@@ -161,7 +166,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                             .get()
                             .getClassId());
             FakeStateLifecycles.registerMerkleStateRootClassIds();
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
             throw new RuntimeException(e);
         }
@@ -327,26 +332,26 @@ public class PlatformTestingToolMain implements SwirldMain {
      * @param args
      * 		these are not used
      */
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     private void printJVMParameters() {
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        List<String> jvmArgs = runtimeMXBean.getInputArguments();
+        final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        final List<String> jvmArgs = runtimeMXBean.getInputArguments();
         if (jvmArgs.size() == 0) {
             logger.error(EXCEPTION.getMarker(), "No JVM ARGS!");
         }
-        for (String arg : jvmArgs) {
+        for (final String arg : jvmArgs) {
             logger.info(LOGM_STARTUP, "JVM arg: {}", arg);
         }
     }
 
     private void sendFreezeTransaction() {
         // decide the freeze time
-        Instant startTime = Instant.now().plus(1, ChronoUnit.MINUTES);
+        final Instant startTime = Instant.now().plus(1, ChronoUnit.MINUTES);
 
-        byte[] freezeBytes = pttTransactionPool.createFreezeTranByte(startTime);
+        final byte[] freezeBytes = pttTransactionPool.createFreezeTranByte(startTime);
 
         if (!submitter.sendFreezeTran(platform, freezeBytes)) {
             logger.warn(DEMO_INFO.getMarker(), new CreateTransactionFailedPayload(FREEZE_TRANSACTION_TYPE));
@@ -373,7 +378,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                 logger.info(LOGM_SUBMIT_DETAIL, "will not submit the transaction because isActive is false");
                 return false;
             }
-            boolean success = submitter.trySubmit(
+            final boolean success = submitter.trySubmit(
                     platform, Pair.of(submittedPayloadTriple.left(), submittedPayloadTriple.middle()));
             if (!success) { // if failed keep bytes payload try next time
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
@@ -381,7 +386,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     Thread.sleep(50);
                     final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, false, isActive, submittedPayloadTriple, payloadConfig);
-                } catch (InterruptedException e) {
+                } catch (final InterruptedException e) {
                     logger.error(EXCEPTION.getMarker(), "", e);
                 }
                 return false;
@@ -441,10 +446,10 @@ public class PlatformTestingToolMain implements SwirldMain {
         FCQueueStatistics.register(metrics);
 
         // Register PTT statistics
-        PlatformTestingToolState.initStatistics(platform);
+        PlatformTestingToolStateLifecycles.initStatistics(platform);
 
         final int SAMPLING_PERIOD = 5000; /* millisecond */
-        Timer statTimer = new Timer("stat timer" + selfId, true);
+        final Timer statTimer = new Timer("stat timer" + selfId, true);
         statTimer.schedule(
                 new TimerTask() {
                     @Override
@@ -463,17 +468,17 @@ public class PlatformTestingToolMain implements SwirldMain {
                 SAMPLING_PERIOD);
     }
 
-    private long summation(List<TransactionCounter> counters, ValueExtractor valueExtractor) {
+    private long summation(final List<TransactionCounter> counters, final ValueExtractor valueExtractor) {
         long total = 0;
         if (counters != null) {
-            for (TransactionCounter counter : counters) {
+            for (final TransactionCounter counter : counters) {
                 total += valueExtractor.getValue(counter);
             }
         }
         return total;
     }
 
-    private void getCurrentTransactionStat(PlatformTestingToolState state) {
+    private void getCurrentTransactionStat(final PlatformTestingToolState state) {
         final long fcmCreateAmount = summation(state.getTransactionCounter(), (o) -> o.fcmCreateAmount);
         final long fcmUpdateAmount = summation(state.getTransactionCounter(), (o) -> o.fcmUpdateAmount);
         final long fcmTransferAmount = summation(state.getTransactionCounter(), (o) -> o.fcmTransferAmount);
@@ -552,7 +557,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             } else {
                 return null;
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "ERROR in getting PayloadCfgSimple, please check JSON file syntax. Stack Trace =",
@@ -563,7 +568,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public void init(Platform platform, NodeId id) {
+    public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
         selfId = id;
 
@@ -592,7 +597,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             final ProgressCfg progressCfg = new ProgressCfg();
 
             if (jsonFileName != null && jsonFileName.length() > 0) {
-                ObjectMapper objectMapper =
+                final ObjectMapper objectMapper =
                         new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                 objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 
@@ -607,8 +612,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                     fcmConfig.loadSequentials();
                     fcmConfig.loadVirtualMerkleSequentials(currentConfig.getVirtualMerkleConfig());
 
-                    PayloadCfgSimple pConfig = currentConfig.getPayloadConfig();
-                    PayloadConfig payloadConfig = buildPayloadConfig(pConfig);
+                    final PayloadCfgSimple pConfig = currentConfig.getPayloadConfig();
+                    final PayloadConfig payloadConfig = buildPayloadConfig(pConfig);
 
                     this.enableCheck = pConfig.isEnableCheck();
                     // if enableCheck is false, TYPE_TEST_PAUSE and TYPE_TEST_SYNC transactions don't work. So, if one
@@ -686,7 +691,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     }
 
                     initializeAppClient(parameters, objectMapper);
-                } catch (NullPointerException | IOException e) {
+                } catch (final NullPointerException | IOException e) {
                     logger.error(
                             EXCEPTION.getMarker(),
                             "ERROR in parsing JSON configuration file, please check JSON file syntax. Stack Trace =",
@@ -711,7 +716,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         platform.getNotificationEngine().register(NewSignedStateListener.class, notification -> {
             if (timeToCheckBalances(notification.getConsensusTimestamp())) {
-                checkBalances(notification.getSwirldState());
+                checkBalances(notification.getStateRoot());
             }
         });
     }
@@ -787,7 +792,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         if (queryRecord) {
             // query record periodically
-            Thread queryRecordThread = new Thread(this::queryRecord);
+            final Thread queryRecordThread = new Thread(this::queryRecord);
             queryRecordThread.setName("queryRecord_node" + selfId);
             queryRecordThread.start();
         }
@@ -821,7 +826,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     // node 2 starts after 30 seconds
                     try {
                         Thread.sleep(submitConfig.getInTurnIntervalSecond() * MILLIS_TO_SEC * selfId.id());
-                    } catch (InterruptedException e) {
+                    } catch (final InterruptedException e) {
                         // Suppress
                     }
                 }
@@ -831,7 +836,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     while (!isActive) {
                         try {
                             Thread.sleep(50);
-                        } catch (InterruptedException e) {
+                        } catch (final InterruptedException e) {
                             logger.error(EXCEPTION.getMarker(), "", e);
                             Thread.currentThread().interrupt();
                         }
@@ -862,14 +867,25 @@ public class PlatformTestingToolMain implements SwirldMain {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new PlatformTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+    public PlatformTestingToolState newMerkleStateRoot() {
+        final PlatformTestingToolState state =
+                new PlatformTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public StateLifecycles<PlatformTestingToolState> newStateLifecycles() {
+        return new PlatformTestingToolStateLifecycles();
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
@@ -897,8 +913,8 @@ public class PlatformTestingToolMain implements SwirldMain {
         return softwareVersion;
     }
 
-    private boolean timeToCheckBalances(Instant consensusTimestamp) {
-        int checkPeriodSec = 20;
+    private boolean timeToCheckBalances(final Instant consensusTimestamp) {
+        final int checkPeriodSec = 20;
         if (previousTimestamp != null
                 && consensusTimestamp.getEpochSecond() / checkPeriodSec
                         != previousTimestamp.getEpochSecond() / checkPeriodSec) {
@@ -914,12 +930,12 @@ public class PlatformTestingToolMain implements SwirldMain {
      *
      * @param state
      */
-    private void checkBalances(PlatformTestingToolState state) {
+    private void checkBalances(final PlatformTestingToolState state) {
         long totalBalance = 0;
         final MerkleMap<MapKey, MapValueFCQ<TransactionRecord>> accountMap =
                 state.getStateMap().getAccountFCQMap();
         for (final Map.Entry<MapKey, MapValueFCQ<TransactionRecord>> item : accountMap.entrySet()) {
-            MapValueFCQ<TransactionRecord> currMv = item.getValue();
+            final MapValueFCQ<TransactionRecord> currMv = item.getValue();
             totalBalance += currMv.getBalance().getValue();
         }
     }
@@ -936,13 +952,13 @@ public class PlatformTestingToolMain implements SwirldMain {
                         UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                     final PlatformTestingToolState state = wrapper.get();
                     if (state != null) {
-                        int randomId = random.nextInt(
+                        final int randomId = random.nextInt(
                                 platform.getRoster().rosterEntries().size());
-                        TransactionCounter txCounter =
+                        final TransactionCounter txCounter =
                                 state.getTransactionCounter().get(randomId);
-                        int accountsCount = (int) txCounter.fcmFCQCreateAmount;
+                        final int accountsCount = (int) txCounter.fcmFCQCreateAmount;
                         if (accountsCount > 0) {
-                            int randomAccountNum = random.nextInt(accountsCount);
+                            final int randomAccountNum = random.nextInt(accountsCount);
                             final MapKey key = new MapKey(randomId, randomId, randomAccountNum);
 
                             final MerkleMap<MapKey, MapValueFCQ<TransactionRecord>> accountMap =
@@ -950,8 +966,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                             final FCQueue<TransactionRecord> records =
                                     accountMap.get(key).getRecords();
                             if (!records.isEmpty()) {
-                                int randomIndex = random.nextInt(records.size());
-                                for (TransactionRecord record : records) {
+                                final int randomIndex = random.nextInt(records.size());
+                                for (final TransactionRecord record : records) {
                                     if (record.getIndex() == randomIndex) {
                                         record.getBalance();
                                         break;
@@ -963,7 +979,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                 }
                 Thread.sleep(3000);
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "error(ERROR queryRecord", e);
         }
     }
@@ -998,7 +1014,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      *
      * @param platform
      */
-    private void rebuildExpirationQueue(Platform platform) {
+    private void rebuildExpirationQueue(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
@@ -1214,7 +1230,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         try {
             Thread.sleep(sleepTime);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             logger.info(LOGM_DEMO_QUORUM, "exit-validator thread was interrupted. Continuing process exit.");
             Thread.currentThread().interrupt();
         }
@@ -1232,13 +1248,13 @@ public class PlatformTestingToolMain implements SwirldMain {
         // time in nanoseconds between successive queries
         final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
-        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
-        ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(
+        final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
+        final ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(
                 () -> {
                     try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                             UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                         // this watch is for counting the time cost in each query on current state
-                        StopWatch watch = new StopWatch();
+                        final StopWatch watch = new StopWatch();
                         watch.start();
                         final PlatformTestingToolState state = wrapper.get();
                         // suspend because we don't want to count the time spent on picking up a MapKey for this query
@@ -1248,7 +1264,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                             // resume after picking up a MapKey
                             watch.resume();
                             // query value of the key
-                            MapValueData value = state.getStateMap().getMap().get(mapKey);
+                            final MapValueData value =
+                                    state.getStateMap().getMap().get(mapKey);
                             if (value != null) {
                                 value.getBalance();
                             }
@@ -1265,16 +1282,40 @@ public class PlatformTestingToolMain implements SwirldMain {
                 periodInNanos,
                 TimeUnit.NANOSECONDS);
 
-        Thread queryInStateThread = new Thread(() -> {
+        final Thread queryInStateThread = new Thread(() -> {
             try {
                 future.get();
-            } catch (InterruptedException ex) {
+            } catch (final InterruptedException ex) {
                 Thread.currentThread().interrupt();
-            } catch (ExecutionException ex) {
+            } catch (final ExecutionException ex) {
                 logger.error(EXCEPTION.getMarker(), "Got Exception in queryInState() ", ex);
             }
         });
         queryInStateThread.setName("queryInState_node" + selfId);
         queryInStateThread.start();
+    }
+
+    @Override
+    @NonNull
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        final com.swirlds.demo.platform.fs.stresstest.proto.StateSignatureTransaction convertedSystemTransaction =
+                com.swirlds.demo.platform.fs.stresstest.proto.StateSignatureTransaction.newBuilder()
+                        .setRound(transaction.round())
+                        .setSignature(
+                                ByteString.copyFrom(transaction.signature().toByteArray()))
+                        .setHash(ByteString.copyFrom(transaction.hash().toByteArray()))
+                        .build();
+        final TestTransaction testTransaction = TestTransaction.newBuilder()
+                .setStateSignatureTransaction(convertedSystemTransaction)
+                .build();
+
+        if (currentConfig.getPayloadConfig().isAppendSig()) {
+            final TestTransactionWrapper testTransactionWrapper = TestTransactionWrapper.newBuilder()
+                    .setTestTransactionRawBytes(ByteString.copyFrom(testTransaction.toByteArray()))
+                    .build();
+            return Bytes.wrap(testTransactionWrapper.toByteArray());
+        } else {
+            return Bytes.wrap(testTransaction.toByteArray());
+        }
     }
 }

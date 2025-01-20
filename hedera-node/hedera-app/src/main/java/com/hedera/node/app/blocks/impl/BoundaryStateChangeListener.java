@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
+import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.recordcache.TransactionReceiptEntries;
@@ -230,6 +231,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             }
             case PlatformState platformState -> {
                 return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.PLATFORM_STATE_VALUE, platformState);
+            }
+            case HintsConstruction hintsConstruction -> {
+                return new OneOf<>(SingletonUpdateChange.NewValueOneOfType.HINTS_CONSTRUCTION_VALUE, hintsConstruction);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());

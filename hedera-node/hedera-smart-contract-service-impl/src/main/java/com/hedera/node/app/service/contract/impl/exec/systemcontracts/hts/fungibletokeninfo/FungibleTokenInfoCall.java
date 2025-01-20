@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
             return revertResult(status, gasRequirement);
         }
 
-        return function.getName().equals(FUNGIBLE_TOKEN_INFO.getName())
+        return function.getName().equals(FUNGIBLE_TOKEN_INFO.methodName())
                 ? successResult(
                         FUNGIBLE_TOKEN_INFO
                                 .getOutputs()
