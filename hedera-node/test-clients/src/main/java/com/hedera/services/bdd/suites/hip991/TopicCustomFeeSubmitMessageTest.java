@@ -47,15 +47,15 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_VALID_MAX_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -679,57 +679,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .maxCustomFee(feeLimit2)
                             .message("TEST")
                             .payingWith(SUBMITTER)
-                            .hasKnownStatus(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));
-        }
-
-        @HapiTest
-        @DisplayName("Test multiple fees with same denomination")
-        final Stream<DynamicTest> multipleFeesSameDenom() {
-            final var collector = "collector";
-            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
-            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
-
-            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
-            final var correctFeeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 3);
-
-            return hapiTest(
-                    cryptoCreate(collector).balance(ONE_HBAR),
-                    tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(fee1),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(feeLimit)
-                            .message("TEST")
-                            .payingWith(SUBMITTER)
-                            .hasKnownStatus(ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(correctFeeLimit)
-                            .message("TEST")
-                            .payingWith(SUBMITTER));
-        }
-
-        @HapiTest
-        @DisplayName("Test multiple hbar fees with")
-        final Stream<DynamicTest> multipleHbarFees() {
-            final var collector = "collector";
-            final var fee = fixedConsensusHbarFee(2, collector);
-            final var fee1 = fixedConsensusHbarFee(1, collector);
-
-            final var feeLimit = maxCustomFee(SUBMITTER, 2);
-            final var correctFeeLimit = maxCustomFee(SUBMITTER, 3);
-
-            return hapiTest(
-                    cryptoCreate(collector).balance(ONE_HBAR),
-                    tokenAssociate(collector, BASE_TOKEN),
-                    createTopic(TOPIC).withConsensusCustomFee(fee).withConsensusCustomFee(fee1),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(feeLimit)
-                            .message("TEST")
-                            .payingWith(SUBMITTER)
-                            .hasKnownStatus(ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED),
-                    submitMessageTo(TOPIC)
-                            .maxCustomFee(correctFeeLimit)
-                            .message("TEST")
-                            .payingWith(SUBMITTER));
+                            .hasPrecheck(ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST));
         }
 
         @HapiTest

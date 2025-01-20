@@ -381,9 +381,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final List<FixedCustomFee> topicCustomFees,
             @NonNull final List<CustomFeeLimit> payerCustomFeeLimits) {
-        // Validate the duplication of payer custom fee limits
-        validateDuplicationFeeLimits(payerCustomFeeLimits);
-
         // Extract the token fees and hbar fees from the topic custom fees
         Map<TokenID, Long> tokenFees = new HashMap<>();
         AtomicReference<Long> hbarFee = new AtomicReference<>(0L);
