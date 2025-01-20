@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.state.State;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,7 +150,7 @@ public class HashLoggerTest {
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
         final PlatformMerkleStateRoot state =
-                mock(PlatformMerkleStateRoot.class, withSettings().extraInterfaces(State.class, SwirldState.class));
+                mock(PlatformMerkleStateRoot.class, withSettings().extraInterfaces(State.class));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
 
         when(platformState.getRound()).thenReturn(round);

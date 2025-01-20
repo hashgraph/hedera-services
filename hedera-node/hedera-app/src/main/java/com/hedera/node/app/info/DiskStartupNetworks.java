@@ -95,7 +95,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     public Network genesisNetworkOrThrow(@NonNull final Configuration platformConfig) {
         requireNonNull(platformConfig);
         return loadNetwork(AssetUse.GENESIS, configProvider.getConfiguration(), GENESIS_NETWORK_JSON)
-                .or(() -> genesisNetworkFromConfigTxt(platformConfig))
+                .or(() -> networkFromConfigTxt(platformConfig))
                 .orElseThrow(() -> new IllegalStateException("Genesis network not found"));
     }
 
@@ -164,8 +164,8 @@ public class DiskStartupNetworks implements StartupNetworks {
 
     @Override
     public Network migrationNetworkOrThrow() {
-        // FUTURE - look into sourcing this from a config.txt and public.pfx to ease migration
         return loadNetwork(AssetUse.MIGRATION, configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
+                .or(() -> networkFromConfigTxt(configProvider.getConfiguration()))
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 
@@ -294,7 +294,7 @@ public class DiskStartupNetworks implements StartupNetworks {
      * @return the loaded genesis network, if it was found and successfully loaded
      */
     @Deprecated(forRemoval = true)
-    private Optional<Network> genesisNetworkFromConfigTxt(@NonNull final Configuration platformConfig) {
+    private Optional<Network> networkFromConfigTxt(@NonNull final Configuration platformConfig) {
         try {
             log.info("No genesis-network.json detected, falling back to config.txt and initNodeSecurity()");
             final AddressBook legacyBook;

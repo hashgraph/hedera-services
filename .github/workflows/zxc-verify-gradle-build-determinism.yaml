@@ -122,7 +122,7 @@ jobs:
       - name: Build Artifacts
         id: gradle-build
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble
 
       - name: Generate Manifest
         id: manifest
@@ -212,7 +212,7 @@ jobs:
 
       - name: Build Artifacts
         id: gradle-build
-        run: ./gradlew assemble --scan --no-build-cache
+        run: ./gradlew assemble --no-build-cache
 
       - name: Regenerate Manifest
         id: regen-manifest

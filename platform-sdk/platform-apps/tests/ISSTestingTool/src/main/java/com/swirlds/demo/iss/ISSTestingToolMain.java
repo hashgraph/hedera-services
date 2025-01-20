@@ -26,7 +26,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  * peers stop gossiping. Therefore, we can validate that a scheduled log error doesn't occur, due to consensus coming to
  * a halt, even if an ISS isn't detected.
  */
-public class ISSTestingToolMain implements SwirldMain {
+public class ISSTestingToolMain implements SwirldMain<ISSTestingToolState> {
 
     private static final Logger logger = LogManager.getLogger(ISSTestingToolMain.class);
 
@@ -58,8 +58,8 @@ public class ISSTestingToolMain implements SwirldMain {
             logger.info(STARTUP.getMarker(), "Registering ISSTestingToolState with ConstructableRegistry");
             ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(new ClassConstructorPair(ISSTestingToolState.class, () -> {
-                ISSTestingToolState issTestingToolState = new ISSTestingToolState(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                ISSTestingToolState issTestingToolState =
+                        new ISSTestingToolState(version -> new BasicSoftwareVersion(version.major()));
                 return issTestingToolState;
             }));
             registerMerkleStateRootClassIds();
@@ -112,12 +112,16 @@ public class ISSTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new ISSTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+    public ISSTestingToolState newMerkleStateRoot() {
+        final ISSTestingToolState state =
+                new ISSTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    public StateLifecycles<ISSTestingToolState> newStateLifecycles() {
+        return new ISSTestingToolStateLifecycles();
     }
 
     /**

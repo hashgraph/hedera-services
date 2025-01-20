@@ -112,6 +112,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final ConsensusSubmitMessageTransactionBody op = txn.consensusSubmitMessageOrThrow();
+        // Validate the duplication of payer custom fee limits
+        validateDuplicationFeeLimits(txn.maxCustomFees());
         validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
         validateFalsePreCheck(op.message().length() == 0, INVALID_TOPIC_MESSAGE);
     }
@@ -459,7 +461,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
     }
 
-    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> payerCustomFeeLimits) {
+    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> payerCustomFeeLimits)
+            throws PreCheckException {
         final var htsCustomFeeLimits = payerCustomFeeLimits.stream()
                 .filter(maxCustomFee -> maxCustomFee.amountLimit().hasDenominatingTokenId())
                 .toList();
@@ -474,7 +477,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 != htsCustomFeeLimits.size();
         final var hbarLimitsHasDuplicate = new HashSet<>(hbarCustomFeeLimits).size() != hbarCustomFeeLimits.size();
 
-        validateTrue(!htsLimitHasDuplicate && !hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
+        validateTruePreCheck(
+                !htsLimitHasDuplicate && !hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
     }
 
     @NonNull
