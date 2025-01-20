@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
                 return;
             }
             transactionContents.add(
-                    byteArrayToLong(transaction.getApplicationTransaction().toByteArray(), 0));
+                    byteArrayToLong(transaction.getTransactionBytes().toByteArray(), 0));
         });
 
         return new ConsistencyTestingToolRound(round.getRoundNum(), currentState, transactionContents);

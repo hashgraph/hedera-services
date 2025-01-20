@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.platform.components.transaction.system;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -71,12 +72,19 @@ public class SystemTransactionExtractionUtils {
 
         final Iterator<Transaction> transactionIterator = event.transactionIterator();
         while (transactionIterator.hasNext()) {
+            List<Bytes> transactions = event.getGossipEvent().transactions();
+            boolean isNewFormat = !transactions.isEmpty();
             final Transaction transaction = transactionIterator.next();
-            if (systemTransactionTypeClass.isInstance(
-                    transaction.getTransaction().transaction().value())) {
-                scopedTransactions.add(
-                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
-                                transaction.getTransaction().transaction().value()));
+            if (isNewFormat) {
+                scopedTransactions.add(new ScopedSystemTransaction<>(
+                        event.getCreatorId(), event.getSoftwareVersion(), (T) transaction.getTransactionBytes()));
+            } else {
+                if (systemTransactionTypeClass.isInstance(
+                        transaction.getTransaction().transaction().value())) {
+                    scopedTransactions.add(
+                            new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
+                                    transaction.getTransaction().transaction().value()));
+                }
             }
         }
 

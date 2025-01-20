@@ -18,13 +18,16 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO_OP_CONSUMER;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.StateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,13 +56,14 @@ public class TransactionHandler {
      * 		the stateLifecycles to apply {@code round} to
      * @param stateRoot the state root to apply {@code round} to
      */
-    public <T extends PlatformMerkleStateRoot> void handleRound(
+    public <T extends PlatformMerkleStateRoot> List<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
             final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 
-            stateLifecycles.onHandleConsensusRound(round, stateRoot, NO_OP_CONSUMER);
+            stateLifecycles.onHandleConsensusRound(round, stateRoot, scopedSystemTransactions::add);
 
             final double secondsElapsed = (System.nanoTime() - startTime) * NANOSECONDS_TO_SECONDS;
 
@@ -80,5 +84,6 @@ public class TransactionHandler {
                     round.getRoundNum(),
                     t);
         }
+        return scopedSystemTransactions;
     }
 }

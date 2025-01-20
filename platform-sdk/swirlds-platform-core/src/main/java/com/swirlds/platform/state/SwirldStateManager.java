@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromRound;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 import static java.util.Objects.requireNonNull;
 
@@ -139,11 +138,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
         final PlatformMerkleStateRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round);
-        transactionHandler.handleRound(round, stateLifecycles, state);
-
-        // TODO update this logic to return the transactions from the callback consumer passed in
-        // stateLifecycles.onHandleConsensusRound, when it is implemented
-        return extractFromRound(round, StateSignatureTransaction.class);
+        return transactionHandler.handleRound(round, stateLifecycles, state);
     }
 
     /**

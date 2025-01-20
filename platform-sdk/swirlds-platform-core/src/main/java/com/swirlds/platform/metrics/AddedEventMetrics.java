@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public class AddedEventMetrics {
      *
      * @param event the event that was added
      */
-    public void eventAdded(final EventImpl event) {
+    public void eventAdded(final EventImpl event, final boolean isNewFormat) {
         if (Objects.equals(event.getCreatorId(), selfId)) {
             eventsCreatedPerSecond.cycle();
             if (!event.getBaseEvent().getOtherParents().isEmpty()) {
@@ -188,14 +188,21 @@ public class AddedEventMetrics {
         final Iterator<Transaction> iterator = event.getBaseEvent().transactionIterator();
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
-            if (transaction.isSystem()) {
-                numSysTrans++;
-                sysSize += transaction.getSize();
-                avgBytesPerTransactionSys.update(transaction.getSize());
-            } else {
+            // TODO: how to know if a transaction is a system transaction?
+            if (isNewFormat) {
                 numAppTrans++;
-                appSize += transaction.getSize();
-                avgBytesPerTransaction.update(transaction.getSize());
+                appSize += transaction.getBytesSize();
+                avgBytesPerTransaction.update(transaction.getBytesSize());
+            } else {
+                if (transaction.isSystem()) {
+                    numSysTrans++;
+                    sysSize += transaction.getSize();
+                    avgBytesPerTransactionSys.update(transaction.getSize());
+                } else {
+                    numAppTrans++;
+                    appSize += transaction.getSize();
+                    avgBytesPerTransaction.update(transaction.getSize());
+                }
             }
         }
         avgTransactionsPerEvent.update(numAppTrans);

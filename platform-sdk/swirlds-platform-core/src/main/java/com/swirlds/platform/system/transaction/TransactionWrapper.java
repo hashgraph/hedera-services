@@ -39,9 +39,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     /** An optional metadata object set by the application */
     private Object metadata;
     /** The protobuf data stored */
-    private final EventTransaction payload;
+    private EventTransaction payload;
     /** The hash of the transaction */
     private Bytes hash;
+    /** The bytes of the transaction */
+    private Bytes transaction;
 
     /**
      * Constructs a new transaction wrapper
@@ -74,9 +76,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      * @throws NullPointerException if payloadBytes is null
      */
     public TransactionWrapper(@NonNull final Bytes payloadBytes) {
-        this.payload = EventTransaction.newBuilder()
-                .applicationTransaction(payloadBytes)
-                .build();
+        this.transaction = payloadBytes;
     }
 
     /**
@@ -131,6 +131,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
         return payload;
     }
 
+    @Override
+    public Bytes getTransactionBytes() {
+        return transaction;
+    }
+
     /**
      * Get the serialized size of the transaction. This method returns the same value as
      * {@code SwirldsTransaction.getSerializedLength()} and {@code StateSignatureTransaction.getSerializedLength()}.
@@ -140,6 +145,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public int getSize() {
         return TransactionUtils.getLegacyTransactionSize(payload);
+    }
+
+    @Override
+    public int getBytesSize() {
+        return TransactionUtils.getLegacyTransactionSize(transaction);
     }
 
     /**
