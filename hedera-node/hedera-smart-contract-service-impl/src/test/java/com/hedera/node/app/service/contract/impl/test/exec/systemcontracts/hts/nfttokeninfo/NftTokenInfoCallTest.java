@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class NftTokenInfoCallTest extends CallTestBase {
                 FUNGIBLE_EVERYTHING_TOKEN,
                 2L,
                 config,
-                NON_FUNGIBLE_TOKEN_INFO);
+                NON_FUNGIBLE_TOKEN_INFO.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -139,7 +139,7 @@ class NftTokenInfoCallTest extends CallTestBase {
                 FUNGIBLE_EVERYTHING_TOKEN_V2,
                 2L,
                 config,
-                NON_FUNGIBLE_TOKEN_INFO_V2);
+                NON_FUNGIBLE_TOKEN_INFO_V2.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -189,7 +189,7 @@ class NftTokenInfoCallTest extends CallTestBase {
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
         final var subject = new NftTokenInfoCall(
-                gasCalculator, mockEnhancement(), false, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO);
+                gasCalculator, mockEnhancement(), false, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -231,8 +231,8 @@ class NftTokenInfoCallTest extends CallTestBase {
 
     @Test
     void returnsNftTokenInfoStatusForMissingTokenStaticCall() {
-        final var subject =
-                new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO);
+        final var subject = new NftTokenInfoCall(
+                gasCalculator, mockEnhancement(), true, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO.function());
 
         final var result = subject.execute().fullResult().result();
 
@@ -243,7 +243,7 @@ class NftTokenInfoCallTest extends CallTestBase {
     @Test
     void returnsNftTokenInfoStatusForMissingTokenStaticCallV2() {
         final var subject = new NftTokenInfoCall(
-                gasCalculator, mockEnhancement(), true, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO_V2);
+                gasCalculator, mockEnhancement(), true, null, 0L, config, NON_FUNGIBLE_TOKEN_INFO_V2.function());
 
         final var result = subject.execute().fullResult().result();
 
