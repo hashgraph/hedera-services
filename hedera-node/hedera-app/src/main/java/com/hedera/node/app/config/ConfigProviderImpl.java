@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,8 @@ public class ConfigProviderImpl extends ConfigProviderBase {
 
     private final ConfigMetrics configMetrics;
 
+    private final Map<String, String> overrideValues;
+
     /**
      * Create a new instance, particularly from dependency injection.
      */
@@ -92,6 +94,9 @@ public class ConfigProviderImpl extends ConfigProviderBase {
         addFileSources(builder, useGenesisSource);
         if (overrideValues != null) {
             overrideValues.forEach(builder::withValue);
+            this.overrideValues = Map.copyOf(overrideValues);
+        } else {
+            this.overrideValues = Map.of();
         }
         final Configuration config = builder.build();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
@@ -124,6 +129,7 @@ public class ConfigProviderImpl extends ConfigProviderBase {
             addFileSources(builder, false);
             addByteSource(builder, networkProperties);
             addByteSource(builder, permissions);
+            overrideValues.forEach(builder::withValue);
             final Configuration config = builder.build();
             configuration.set(
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1));

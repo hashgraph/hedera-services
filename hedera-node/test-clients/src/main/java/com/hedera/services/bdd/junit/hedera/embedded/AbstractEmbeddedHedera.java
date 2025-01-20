@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
 import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
 import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
@@ -39,12 +40,15 @@ import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHintsService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
@@ -55,7 +59,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -111,6 +120,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final Roster roster;
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
+    protected final Metrics metrics;
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -125,6 +135,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
      */
     protected LapsingBlockHashSigner blockHashSigner;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HintsServiceFactory} lambda we give the
+     * {@link Hedera} constructor will always set this (the fake's {@link HintsServiceImpl}
+     * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
+     */
+    protected FakeHintsService hintsService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -143,13 +159,24 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Pair::left, Pair::right));
         defaultNodeId = NodeId.FIRST_NODE_ID;
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
+        final var metricsConfig = PLATFORM_CONFIG.getConfigData(MetricsConfig.class);
+        metrics = new DefaultPlatformMetrics(
+                defaultNodeId,
+                new MetricKeyRegistry(),
+                executorService,
+                new PlatformMetricsFactoryImpl(metricsConfig),
+                metricsConfig);
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
                 DiskStartupNetworks::new,
-                () -> this.blockHashSigner = new LapsingBlockHashSigner());
+                (hintsService, historyService, configProvider) ->
+                        this.blockHashSigner = new LapsingBlockHashSigner(hintsService, historyService, configProvider),
+                appContext -> this.hintsService = new FakeHintsService(appContext),
+                HistoryServiceImpl::new,
+                metrics);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
@@ -170,13 +197,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             trigger = RESTART;
         }
-        hedera.initializeStatesApi(
-                state,
-                fakePlatform().getContext().getMetrics(),
-                trigger,
-                network,
-                ServicesMain.buildPlatformConfig(),
-                addressBook);
+        hedera.initializeConfigProvider(trigger);
+        hedera.initializeStatesApi(state, trigger, network, ServicesMain.buildPlatformConfig(), addressBook);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
         // and we are running all CI tests with the Roster lifecycle enabled
