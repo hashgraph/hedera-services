@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,9 @@ package com.hedera.node.app.blocks.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
-import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
@@ -34,23 +32,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class GrpcBlockItemWriterTest {
 
     @Mock
-    private BlockStreamConfig blockStreamConfig;
+    private BlockNodeConnectionManager blockNodeConnectionManager;
 
     @Test
     public void testGrpcBlockItemWriterConstructor() {
-        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
-        when(blockStreamConfig.grpcPort()).thenReturn(8080);
-
-        final GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
+        final GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
         assertThat(grpcBlockItemWriter).isNotNull();
     }
 
     @Test
     public void testOpenBlockNegativeBlockNumber() {
-        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
-        when(blockStreamConfig.grpcPort()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
+        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
 
         assertThatThrownBy(() -> grpcBlockItemWriter.openBlock(-1), "Block number must be non-negative")
                 .isInstanceOf(IllegalArgumentException.class);
@@ -58,10 +50,7 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testWriteItemBeforeOpen() {
-        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
-        when(blockStreamConfig.grpcPort()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
+        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
 
         // Create BlockProof as easiest way to build object from BlockStreams
         Bytes bytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
@@ -76,10 +65,7 @@ public class GrpcBlockItemWriterTest {
 
     @Test
     public void testCloseBlockNotOpen() {
-        when(blockStreamConfig.grpcAddress()).thenReturn("localhost");
-        when(blockStreamConfig.grpcPort()).thenReturn(8080);
-
-        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockStreamConfig);
+        GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
 
         assertThatThrownBy(grpcBlockItemWriter::closeBlock, "Cannot close a GrpcBlockItemWriter that is not open")
                 .isInstanceOf(IllegalStateException.class);

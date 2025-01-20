@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.dsl;
     exports com.hedera.services.bdd.spec.dsl.contracts;
@@ -63,6 +79,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.utils;
     exports com.hedera.services.bdd.junit.restart;
 
+    // Jackson dependencies
     requires com.hedera.cryptography.tss;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
@@ -93,6 +110,7 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.dataformat.yaml;
     requires com.github.dockerjava.api;
     requires com.google.common;
     requires com.google.protobuf;
@@ -122,8 +140,6 @@ module com.hedera.node.test.clients {
     requires org.yaml.snakeyaml;
     requires tuweni.bytes;
     requires tuweni.units;
-    // Jackson dependencies
-    requires com.fasterxml.jackson.dataformat.yaml;
     requires static com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
     requires static org.junit.platform.engine;

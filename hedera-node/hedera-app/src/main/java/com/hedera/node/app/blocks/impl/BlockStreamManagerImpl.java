@@ -444,7 +444,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
             final var proofItem = BlockItem.newBuilder().blockProof(proof).build();
             block.writer().writePbjItem(BlockItem.PROTOBUF.toBytes(proofItem));
-            if (streamWriterType == BlockStreamWriterMode.FILE) {
+            if (streamWriterType == BlockStreamWriterMode.FILE || streamWriterType == BlockStreamWriterMode.GRPC) {
                 block.writer().closeBlock();
             }
             if (block.number() != blockNumber) {

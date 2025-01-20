@@ -24,6 +24,7 @@ import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamModule;
 import com.hedera.node.app.blocks.InitialStateHash;
+import com.hedera.node.app.blocks.impl.BlockNodeConnectionManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -82,7 +83,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import com.hedera.node.app.blocks.impl.BlockNodeConnectionManager;
 
 /**
  * The infrastructure used to implement the platform contract for a Hedera Services node.

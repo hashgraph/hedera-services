@@ -12,7 +12,6 @@ message BlockNodeConfig {
     string address = 2;
     int32 port = 3;
     bool preferred = 4;
-    int32 block_item_batch_size = 5;
 }
 
 // Overall connection configuration for block nodes
@@ -20,4 +19,5 @@ message BlockNodeConnectionInfo {
     repeated BlockNodeConfig nodes = 1;
     int32 node_reselection_interval = 2;  // in seconds
     int32 max_simultaneous_connections = 3;
+    int32 block_item_batch_size = 4;
 } 

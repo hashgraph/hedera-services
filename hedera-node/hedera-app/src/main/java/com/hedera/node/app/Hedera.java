@@ -569,7 +569,10 @@ public final class Hedera
     public void notify(@NonNull final PlatformStatusChangeNotification notification) {
         this.platformStatus = notification.getNewStatus();
         logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
-        final var streamToBlockNodes = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class).streamToBlockNodes();
+        final var streamToBlockNodes = configProvider
+                .getConfiguration()
+                .getConfigData(BlockStreamConfig.class)
+                .streamToBlockNodes();
         switch (platformStatus) {
             case ACTIVE -> {
                 startGrpcServer();

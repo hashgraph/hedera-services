@@ -18,6 +18,7 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
+    // Jackson dependencies
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
@@ -41,11 +42,11 @@ module com.hedera.node.app {
     requires transitive com.swirlds.state.impl;
     requires transitive dagger;
     requires transitive io.grpc.stub;
+    requires transitive io.helidon.webclient.grpc;
     requires transitive javax.inject;
     requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
     requires transitive org.hyperledger.besu.evm;
-    requires transitive io.helidon.webclient.grpc;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
@@ -60,6 +61,9 @@ module com.hedera.node.app {
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.dataformat.yaml;
     requires com.google.common;
     requires com.google.protobuf;
     requires io.grpc.netty;
@@ -73,11 +77,6 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler; // javax.annotation.processing.Generated
-
-    // Jackson dependencies
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.dataformat.yaml;
-    requires com.fasterxml.jackson.core;
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
