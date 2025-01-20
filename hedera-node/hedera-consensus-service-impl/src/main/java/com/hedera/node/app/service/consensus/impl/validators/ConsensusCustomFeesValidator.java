@@ -35,7 +35,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.transaction.ConsensusCustomFee;
+import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -66,7 +66,7 @@ public class ConsensusCustomFeesValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final List<ConsensusCustomFee> customFees,
+            @NonNull final List<FixedCustomFee> customFees,
             @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(accountStore);
         requireNonNull(tokenRelationStore);
@@ -89,7 +89,7 @@ public class ConsensusCustomFeesValidator {
     }
 
     private void validateFixedFee(
-            @NonNull final ConsensusCustomFee fee,
+            @NonNull final FixedCustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var fixedFee = fee.fixedFeeOrThrow();
