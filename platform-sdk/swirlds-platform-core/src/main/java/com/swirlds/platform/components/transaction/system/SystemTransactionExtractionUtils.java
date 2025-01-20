@@ -19,6 +19,8 @@ package com.swirlds.platform.components.transaction.system;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -29,11 +31,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Contains utility methods for extracting a particular type of system transaction from an event or a round.
  */
 public class SystemTransactionExtractionUtils {
+    private static final Logger log = LogManager.getLogger(SystemTransactionExtractionUtils.class);
+
     /**
      * Hidden constructor.
      */
@@ -72,12 +78,20 @@ public class SystemTransactionExtractionUtils {
 
         final Iterator<Transaction> transactionIterator = event.transactionIterator();
         while (transactionIterator.hasNext()) {
-            List<Bytes> transactions = event.getGossipEvent().transactions();
-            boolean isNewFormat = !transactions.isEmpty();
+            final List<Bytes> transactions = event.getGossipEvent().transactions();
+            final boolean isNewFormat = !transactions.isEmpty();
             final Transaction transaction = transactionIterator.next();
             if (isNewFormat) {
-                scopedTransactions.add(new ScopedSystemTransaction<>(
-                        event.getCreatorId(), event.getSoftwareVersion(), (T) transaction.getTransactionBytes()));
+                if (systemTransactionTypeClass.equals(StateSignatureTransaction.class)) {
+                    try {
+                        final var maybeStateSignatureTransaction =
+                                StateSignatureTransaction.PROTOBUF.parse(transaction.getTransactionBytes());
+                        scopedTransactions.add(new ScopedSystemTransaction<>(
+                                event.getCreatorId(), event.getSoftwareVersion(), (T) maybeStateSignatureTransaction));
+                    } catch (ParseException e) {
+                        log.error("Failed to parse StateSignatureTransaction from event", e);
+                    }
+                }
             } else {
                 if (systemTransactionTypeClass.isInstance(
                         transaction.getTransaction().transaction().value())) {
