@@ -429,7 +429,7 @@ class BlockStreamManagerImplTest {
         subject.endRound(state, ROUND_NO);
 
         // Assert the internal state of the subject has changed as expected and the writer has been closed
-        verify(blockHashSigner, times(2)).isReady();
+        verify(blockHashSigner, times(3)).isReady();
         verifyNoMoreInteractions(blockHashSigner);
     }
 
@@ -511,6 +511,7 @@ class BlockStreamManagerImplTest {
 
     @Test
     void supportsMultiplePendingBlocksWithIndirectProofAsExpected() throws ParseException {
+        given(blockHashSigner.isReady()).willReturn(true);
         givenSubjectWith(
                 1,
                 blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION),
