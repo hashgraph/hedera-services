@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.system.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import java.time.Instant;
 
 /**
@@ -27,21 +27,20 @@ import java.time.Instant;
  */
 public class NewSignedStateNotification extends AbstractNotification {
 
-    private final SwirldState swirldState;
+    private final PlatformMerkleStateRoot stateRoot;
     private final long round;
     private final Instant consensusTimestamp;
 
     /**
      * Create a notification for a newly signed state.
      *
-     * @param swirldState        the swirld state from the round that is now fully signed
+     * @param stateRoot        the swirld state from the round that is now fully signed
      * @param round              the round that is now fully signed
      * @param consensusTimestamp the consensus timestamp of the round that is now fully signed
      */
     public NewSignedStateNotification(
-            final SwirldState swirldState, final long round, final Instant consensusTimestamp) {
-
-        this.swirldState = swirldState;
+            final PlatformMerkleStateRoot stateRoot, final long round, final Instant consensusTimestamp) {
+        this.stateRoot = stateRoot;
         this.round = round;
         this.consensusTimestamp = consensusTimestamp;
     }
@@ -51,8 +50,8 @@ public class NewSignedStateNotification extends AbstractNotification {
      * this notification.
      */
     @SuppressWarnings("unchecked")
-    public <T extends SwirldState> T getSwirldState() {
-        return (T) swirldState;
+    public <T extends PlatformMerkleStateRoot> T getStateRoot() {
+        return (T) stateRoot;
     }
 
     /**

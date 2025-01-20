@@ -96,8 +96,51 @@ import "stream/output/transaction_result.proto";
  * Items to be hashed MUST NOT be contained within another item.<br/>
  * Items which might be filtered out of the stream MUST NOT be
  * contained in other items.
+ *
+ * ### Forward Compatibility
+ * In order to maximize forward compatibility, and minimize the need to
+ * coordinate deployments of different systems creating and processing
+ * block streams in the future, the following rules SHALL be followed
+ * for field numbering in this message.
+ * - The first 15 field numbers SHALL be assigned to the fields present
+ *   in the first release. Unused fields in this range SHALL remain reserved
+ *   until needed for additional options that do not fit into "input" or
+ *   "output" categories.
+ * - Fields numbered 16 and above MUST be numbered as follows.
+ *    - "input" items MUST use `odd` field numbers.
+ *    - "output" items MUST use `even` field numbers.
+ *
+ * #### Forward Compatibility Example
+ * A future update adding three new items. A "BlockTrailer" item which is
+ * neither input nor output, a new "ConsensusTransom" which is an input,
+ * and a new "BridgeTransform" which is an output.
+ * - The "BlockTrailer" is field 11, which is removed from the `reserved` list.
+ * - The "ConsensusTransom" is an input, so it is field `17` (the first unused
+ *   `odd` field greater than or equal to 16).
+ * - The "BridgeTransform" is an output, so it is field `16` (the first unused
+ *   even field greater than or equal to 16).
+ *
+ * #### Initial Field assignment to "input", "output", and "other" categories.
+ * - Inputs
+ *    - `event_header`
+ *    - `round_header`
+ *    - `event_transaction`
+ * - Outputs
+ *    - `block_header`
+ *    - `transaction_result`
+ *    - `transaction_output`
+ *    - `state_changes`
+ * - Any subtree (depending on what was filtered).
+ *   This item details it's path in the tree.
+ *    - `filtered_item_hash`
+ * - Neither input nor output (and not part of the "proof" merkle tree)
+ *    - `block_proof`
+ *    - `record_file`
  */
 message BlockItem {
+    // Reserved for future items that are neither "input" nor "output".
+    reserved 11,12,13,14,15;
+
     oneof item {
         /**
          * An header for the block, marking the start of a new block.
