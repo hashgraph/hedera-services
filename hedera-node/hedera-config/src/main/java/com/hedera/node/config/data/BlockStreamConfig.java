@@ -39,6 +39,7 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
         @ConfigProperty(defaultValue = "GRPC") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "true") @NodeProperty boolean streamToBlockNodes,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean shutdownNodeOnNoBlockNodes,
         @ConfigProperty(defaultValue = "/opt/hgcapp/blockStreams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "/opt/hgcapp/data/config") @NodeProperty String blockNodeConnectionFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,

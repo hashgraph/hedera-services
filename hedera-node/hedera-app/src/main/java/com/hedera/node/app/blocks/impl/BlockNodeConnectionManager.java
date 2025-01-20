@@ -532,4 +532,26 @@ public class BlockNodeConnectionManager {
             blockStates.remove(blockNumber);
         }
     }
+
+    /**
+     * Waits for at least one active connection to be established, with timeout.
+     * @param timeout maximum time to wait
+     * @return true if at least one connection was established, false if timeout occurred
+     */
+    public boolean waitForConnection(Duration timeout) {
+        Instant deadline = Instant.now().plus(timeout);
+        establishConnections();
+        while (Instant.now().isBefore(deadline)) {
+            if (!activeConnections.isEmpty()) {
+                return true;
+            }
+            try {
+                Thread.sleep(1000); // Wait 1 second between attempts
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
+    }
 }

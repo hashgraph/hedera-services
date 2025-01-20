@@ -97,6 +97,7 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Optional;
@@ -382,6 +383,10 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 .withKeysAndCerts(keysAndCerts);
         final var platform = platformBuilder.build();
         hedera.init(platform, selfId);
+
+        // Initialize block node connections before starting the platform
+        hedera.initializeBlockNodeConnections(Duration.ofMinutes(2));
+
         platform.start();
         hedera.run();
     }

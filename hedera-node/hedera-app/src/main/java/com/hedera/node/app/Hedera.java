@@ -164,6 +164,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
@@ -576,10 +577,6 @@ public final class Hedera
         switch (platformStatus) {
             case ACTIVE -> {
                 startGrpcServer();
-                if (streamToBlockNodes && isNotEmbedded()) {
-                    logger.info("Establishing connections to Block Nodes");
-                    daggerApp.blockNodeConnectionManager().establishConnections();
-                }
             }
             case FREEZE_COMPLETE -> {
                 logger.info("Platform status is now FREEZE_COMPLETE");
@@ -1315,6 +1312,28 @@ public final class Hedera
             requireNonNull(initialStateHashFuture)
                     .complete(requireNonNull(notification.getState().getHash()).getBytes());
             notifications.unregister(ReconnectCompleteListener.class, this);
+        }
+    }
+
+    /**
+     * Initializes block node connections and waits for at least one connection to be established.
+     * This should be called before platform.start() to ensure we don't miss any blocks.
+     * 
+     * @param timeout maximum time to wait for a connection
+     */
+    public void initializeBlockNodeConnections(Duration timeout) {
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        if (!blockStreamConfig.streamToBlockNodes()) {
+            logger.info("Block stream to Block Nodes is disabled, skipping block node connection initialization");
+            return;
+        }
+
+        logger.info("Initializing block node connections with timeout {}", timeout);
+        boolean connected = daggerApp.blockNodeConnectionManager().waitForConnection(timeout);
+        if (blockStreamConfig.shutdownNodeOnNoBlockNodes() && !connected) {
+            logger.error("No block node connections established within timeout, shutting down");
+            this.shutdown();
+            System.exit(1);
         }
     }
 }
