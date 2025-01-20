@@ -484,24 +484,24 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
 
             return hapiTest(
-                cryptoCreate(alice),
-                cryptoCreate(collector),
-                newKeyNamed(topicAdmin),
-                tokenAssociate(alice, BASE_TOKEN),
-                tokenAssociate(collector, BASE_TOKEN),
-                cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
-                    .signedByPayerAnd(SUBMITTER),
+                    cryptoCreate(alice),
+                    cryptoCreate(collector),
+                    newKeyNamed(topicAdmin),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
+                            .signedByPayerAnd(SUBMITTER),
 
-                // Create a topic without alice in the fee exempt key list and verify that she pays
-                createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(topicAdmin),
-                submitMessageTo(TOPIC).message("TEST").payingWith(alice),
-                getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0),
+                    // Create a topic without alice in the fee exempt key list and verify that she pays
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0),
 
-                // Add alice to the fee exempt key list and verify that she doesn't pay
-                updateTopic(TOPIC).feeExemptKeys(alice).signedByPayerAnd(topicAdmin),
-                // even though alice doesn't have any tokens, the transaction should still be successful
-                submitMessageTo(TOPIC).message("TEST").payingWith(alice),
-                getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
+                    // Add alice to the fee exempt key list and verify that she doesn't pay
+                    updateTopic(TOPIC).feeExemptKeys(alice).signedByPayerAnd(topicAdmin),
+                    // even though alice doesn't have any tokens, the transaction should still be successful
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
         }
 
         @HapiTest
@@ -515,26 +515,26 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
 
             return hapiTest(
-                cryptoCreate(alice),
-                cryptoCreate(collector),
-                newKeyNamed(topicAdmin),
-                tokenAssociate(alice, BASE_TOKEN),
-                tokenAssociate(collector, BASE_TOKEN),
-                cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
-                    .signedByPayerAnd(SUBMITTER),
+                    cryptoCreate(alice),
+                    cryptoCreate(collector),
+                    newKeyNamed(topicAdmin),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
+                            .signedByPayerAnd(SUBMITTER),
 
-                // Add alice to the fee exempt key list and verify that she doesn't pay
-                createTopic(TOPIC)
-                    .withConsensusCustomFee(fee1)
-                    .feeExemptKeys(alice)
-                    .adminKeyName(topicAdmin),
-                submitMessageTo(TOPIC).message("TEST").payingWith(alice),
-                getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 1),
+                    // Add alice to the fee exempt key list and verify that she doesn't pay
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee1)
+                            .feeExemptKeys(alice)
+                            .adminKeyName(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 1),
 
-                // Remove alice from the fee exempt key list and verify that she pays
-                updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(topicAdmin),
-                submitMessageTo(TOPIC).message("TEST").payingWith(alice),
-                getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
+                    // Remove alice from the fee exempt key list and verify that she pays
+                    updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
         }
 
         @HapiTest
@@ -634,14 +634,14 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
             final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
 
             return hapiTest(
-                cryptoCreate(collector).balance(ONE_HBAR),
-                tokenAssociate(collector, BASE_TOKEN),
-                newKeyNamed(admin),
-                createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(admin),
-                deleteTopic(TOPIC).signedByPayerAnd(admin),
-                submitMessageTo(TOPIC).message("TEST").hasKnownStatus(ResponseCodeEnum.INVALID_TOPIC_ID));
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    newKeyNamed(admin),
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(admin),
+                    deleteTopic(TOPIC).signedByPayerAnd(admin),
+                    submitMessageTo(TOPIC).message("TEST").hasKnownStatus(ResponseCodeEnum.INVALID_TOPIC_ID));
         }
-        
+
         @HapiTest
         @DisplayName("Submitter has insufficient hbar balance")
         // TOPIC_FEE_158
