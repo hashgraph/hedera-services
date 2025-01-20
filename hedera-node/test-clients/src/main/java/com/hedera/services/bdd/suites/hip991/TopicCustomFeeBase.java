@@ -138,7 +138,7 @@ public class TopicCustomFeeBase {
     }
 
     protected static List<SpecOperation> createTokenWith2LayerFee(
-            String owner, String tokenName, boolean createTreasury, , long htsFee, long hbarFee) {
+            String owner, String tokenName, boolean createTreasury, long htsFee, long hbarFee) {
         final var specOperations = new ArrayList<SpecOperation>();
         final var collectorName = COLLECTOR_PREFIX + tokenName;
         final var denomToken = DENOM_TOKEN_PREFIX + tokenName;

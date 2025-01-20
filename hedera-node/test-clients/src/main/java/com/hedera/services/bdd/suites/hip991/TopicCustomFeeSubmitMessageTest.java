@@ -58,10 +58,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_VALID_MAX_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -1517,7 +1518,10 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     tokenAssociate(collector, pausedToken),
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     tokenPause(pausedToken),
-                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).hasKnownStatus(TOKEN_IS_PAUSED));
+                    submitMessageTo(TOPIC)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
         }
 
         @HapiTest
