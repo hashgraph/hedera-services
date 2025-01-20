@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -818,6 +819,70 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
+        // TOPIC_FEE_177
+        @DisplayName("Submits messages with account excluded and included from FEKL")
+        final Stream<DynamicTest> submitWithoutAndWithFEKL() {
+            final var alice = "alice";
+            final var collector = "collector";
+            final var topicAdmin = "topicAdmin";
+
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+
+            return hapiTest(
+                    cryptoCreate(alice),
+                    cryptoCreate(collector),
+                    newKeyNamed(topicAdmin),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
+                            .signedByPayerAnd(SUBMITTER),
+
+                    // Create a topic without alice in the fee exempt key list and verify that she pays
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0),
+
+                    // Add alice to the fee exempt key list and verify that she doesn't pay
+                    updateTopic(TOPIC).feeExemptKeys(alice).signedByPayerAnd(topicAdmin),
+                    // even though alice doesn't have any tokens, the transaction should still be successful
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
+        }
+
+        @HapiTest
+        // TOPIC_FEE_178
+        @DisplayName("Submits messages with account included and excluded from FEKL")
+        final Stream<DynamicTest> submitWithAndWithoutFEKL() {
+            final var alice = "alice";
+            final var collector = "collector";
+            final var topicAdmin = "topicAdmin";
+
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+
+            return hapiTest(
+                    cryptoCreate(alice),
+                    cryptoCreate(collector),
+                    newKeyNamed(topicAdmin),
+                    tokenAssociate(alice, BASE_TOKEN),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    cryptoTransfer(moving(1, BASE_TOKEN).between(SUBMITTER, alice))
+                            .signedByPayerAnd(SUBMITTER),
+
+                    // Add alice to the fee exempt key list and verify that she doesn't pay
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee1)
+                            .feeExemptKeys(alice)
+                            .adminKeyName(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 1),
+
+                    // Remove alice from the fee exempt key list and verify that she pays
+                    updateTopic(TOPIC).withEmptyFeeExemptKeyList().signedByPayerAnd(topicAdmin),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0));
+        }
+
+        @HapiTest
         // TOPIC_FEE_250
         @DisplayName("Submitter as collector pays fees with no max fee limit")
         final Stream<DynamicTest> multipleCustomFeesWithSenderAsCollectorWithAcceptAllCustomFees() {
@@ -833,6 +898,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     cryptoTransfer(moving(2, BASE_TOKEN).between(SUBMITTER, alice)),
                     createTopic(TOPIC).withConsensusCustomFee(fee1).withConsensusCustomFee(fee2),
                     submitMessageTo(TOPIC).message("TEST").payingWith(alice),
+                    getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0),
 
                     // Verifying that alice pays bob but not herself
                     getAccountBalance(alice).hasTokenBalance(BASE_TOKEN, 0L),
@@ -902,6 +968,23 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle lifecycle) {
             lifecycle.doAdhoc(associateFeeTokensAndSubmitter());
+        }
+
+        @HapiTest
+        // TOPIC_FEE_179
+        @DisplayName("Collector submits a message to a deleted topic.")
+        final Stream<DynamicTest> submitMessageToDeletedTopic() {
+            final var collector = "collector";
+            final var admin = "admin";
+            final var fee1 = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+
+            return hapiTest(
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    newKeyNamed(admin),
+                    createTopic(TOPIC).withConsensusCustomFee(fee1).adminKeyName(admin),
+                    deleteTopic(TOPIC).signedByPayerAnd(admin),
+                    submitMessageTo(TOPIC).message("TEST").hasKnownStatus(ResponseCodeEnum.INVALID_TOPIC_ID));
         }
 
         @HapiTest
