@@ -247,17 +247,17 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             }
         } else if (blockNodeMode == BlockNodeMode.SIMULATOR) {
             log.info("Starting simulated block nodes for {} nodes", nodes.size());
-            // Start one simulated block node per network node
-            for (int i = 0; i < nodes.size(); i++) {
+            // Start 4 simulated block nodes with dynamic ports
+            for (HederaNode node : nodes) {
                 try {
                     // Find an available port
                     int port = findAvailablePort();
                     SimulatedBlockNodeServer server = new SimulatedBlockNodeServer(port);
                     server.start();
                     simulatedBlockNodes.add(server);
-                    log.info("Started simulated block node {} @ localhost:{}", i, port);
+                    log.info("Started simulated block node @ localhost:{}", port);
                 } catch (IOException e) {
-                    log.error("Failed to start simulated block node", e);
+                    log.error("Failed to start simulated block node {}", e.toString());
                 }
             }
         } else {
@@ -327,9 +327,10 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private void updateBlockNodesConfigForNodeWithSimulators(HederaNode node, SimulatedBlockNodeServer sim) {
         try {
             // Create block node config for simulator servers
-            List<BlockNodeConfig> blockNodes = List.of(new BlockNodeConfig(
+            List<BlockNodeConfig> blockNodes = new ArrayList<>();
+            blockNodes.add(new BlockNodeConfig(
                     1, // priority
-                    "127.0.0.1", // Use explicit IP instead of hostname
+                    "localhost",
                     sim.getPort(),
                     true // Preferred
             ));
@@ -337,7 +338,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
                     blockNodes,
                     3600, // 1 hour reselection interval
-                    1, // Only one connection needed since we have one dedicated simulator per node
+                    2, // max simultaneous connections
                     256 // default batch size
             );
 
@@ -346,10 +347,9 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             Files.writeString(configPath, BlockNodeConnectionInfo.JSON.toJSON(connectionInfo));
 
             log.info(
-                    "Updated block node configuration for node {} with simulator @ {}:{}",
+                    "Updated block node configuration for node {} with {} simulator servers",
                     node.getNodeId(),
-                    "127.0.0.1",
-                    sim.getPort());
+                    simulatedBlockNodes.size());
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to update block node configuration for node " + node.getNodeId(), e);
         }
@@ -360,20 +360,41 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     @Override
     public void terminate() {
-        // Stop block node containers first
+        // Then stop network nodes first to prevent new streaming requests
+        nodes.forEach(HederaNode::stopFuture);
+
+        // Stop block node containers
         for (BlockNodeContainer container : blockNodeContainers) {
             container.stop();
         }
         blockNodeContainers.clear();
 
-        // Stop simulated block nodes
+        // Stop simulated block nodes with grace period
+        Duration shutdownTimeout = Duration.ofSeconds(30);
+        log.info("Gracefully stopping {} simulated block nodes with {} timeout", simulatedBlockNodes.size(), shutdownTimeout);
+        
+        List<CompletableFuture<Void>> shutdownFutures = new ArrayList<>();
         for (SimulatedBlockNodeServer server : simulatedBlockNodes) {
-            server.stop();
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    server.stop();
+                    log.info("Successfully stopped simulated block node on port {}", server.getPort());
+                } catch (Exception e) {
+                    log.error("Error stopping simulated block node on port {}", server.getPort(), e);
+                }
+            });
+            shutdownFutures.add(future);
+        }
+
+        try {
+            // Wait for all servers to stop or timeout
+            CompletableFuture.allOf(shutdownFutures.toArray(new CompletableFuture[0]))
+                    .get(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            log.info("All simulated block nodes stopped successfully");
+        } catch (Exception e) {
+            log.error("Timeout or error while stopping simulated block nodes", e);
         }
         simulatedBlockNodes.clear();
-
-        // Then stop network nodes
-        nodes.forEach(HederaNode::stopFuture);
     }
 
     /**

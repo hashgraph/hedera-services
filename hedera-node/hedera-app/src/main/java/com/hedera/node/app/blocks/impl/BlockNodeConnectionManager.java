@@ -340,7 +340,16 @@ public class BlockNodeConnectionManager {
 
     public void shutdown() {
         scheduler.shutdown();
-        streamingExecutor.shutdown();
+        try {
+            boolean awaitTermination = streamingExecutor.awaitTermination(10, TimeUnit.SECONDS);
+            if (!awaitTermination) {
+                logger.error("Failed to shut down streaming executor within 10 seconds");
+            } else {
+                logger.info("Successfully shut down streaming executor");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         for (BlockNodeConfig node : new ArrayList<>(activeConnections.keySet())) {
             disconnectFromNode(node);
         }
