@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.maxCustomFee;
@@ -404,6 +405,90 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                                 submitTxnRecord.getResponseRecord().getTransactionFee();
                         getAccountBalance(collector).hasTinyBars(ONE_HUNDRED_HBARS - transactionTxnFee);
                     }));
+        }
+
+        @DisplayName("Submit message to a topic after fee update")
+        // TOPIC_FEE_126
+        final Stream<DynamicTest> submitMessageAfterUpdate() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
+            final var updatedFee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var updatedFeeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    newKeyNamed("feeScheduleKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee)
+                            .adminKeyName("adminKey")
+                            .feeScheduleKeyName("feeScheduleKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(feeLimit)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1),
+                    updateTopic(TOPIC)
+                            .withConsensusCustomFee(updatedFee)
+                            .signedByPayerAnd("adminKey", "feeScheduleKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(updatedFeeLimit)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit2"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 3));
+        }
+
+        @HapiTest
+        @DisplayName("Submit message to a topic after key is removed from FEKL")
+        // TOPIC_FEE_129
+        final Stream<DynamicTest> submitMessageAfterFEKLisRemoved() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC)
+                            .withConsensusCustomFee(fee)
+                            .adminKeyName("adminKey")
+                            .feeExemptKeys(SUBMITTER),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
+                    updateTopic(TOPIC).feeExemptKeys().signedByPayerAnd("adminKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(feeLimit)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit2"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1));
+        }
+
+        @HapiTest
+        @DisplayName("Submit message to a topic after fee is added with update")
+        // TOPIC_FEE_130
+        final Stream<DynamicTest> submitMessageAfterFeeIsAdded() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 1);
+            return hapiTest(
+                    newKeyNamed("adminKey"),
+                    newKeyNamed("feeScheduleKey"),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).adminKeyName("adminKey").feeScheduleKeyName("feeScheduleKey"),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0),
+                    updateTopic(TOPIC).withConsensusCustomFee(fee).signedByPayerAnd("adminKey", "feeScheduleKey"),
+                    submitMessageTo(TOPIC)
+                            .maxCustomFee(feeLimit)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .via("submit2"),
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1));
         }
 
         @HapiTest
@@ -945,6 +1030,41 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .payingWith(alice)
                             .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
         }
+
+        @HapiTest
+        @DisplayName("Max custom fee is supported only on consensus message submit")
+        final Stream<DynamicTest> maxCustomFeesIsSupportedOnlyWithMsgSubmit() {
+            final var sender = "sender";
+            final var receiver = "receiver";
+            final var feeLimit = maxCustomFee(sender, 2);
+            return hapiTest(
+                    cryptoCreate(sender).balance(ONE_HBAR),
+                    cryptoCreate(receiver),
+                    cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
+                            .maxCustomFee(feeLimit)
+                            .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
+        }
+
+        @HapiTest
+        @DisplayName("Max custom fee contain duplicate denominations")
+        final Stream<DynamicTest> maxCustomFeeContainsDuplicateDenominations() {
+            final var collector = "collector";
+            final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
+            final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
+            final var feeLimit2 = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 10);
+            return hapiTest(flattened(
+                    associateFeeTokensAndSubmitter(),
+                    cryptoCreate(collector).balance(ONE_HBAR),
+                    tokenAssociate(collector, BASE_TOKEN),
+                    createTopic(TOPIC).withConsensusCustomFee(fee),
+                    submitMessageTo(TOPIC)
+                            // duplicate denominations in maxCustomFee
+                            .maxCustomFee(feeLimit)
+                            .maxCustomFee(feeLimit2)
+                            .message("TEST")
+                            .payingWith(SUBMITTER)
+                            .hasPrecheck(DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST)));
+        }
     }
 
     @Nested
@@ -1029,40 +1149,5 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     submitMessageTo(TOPIC).message("TEST").signedBy(SUBMITTER).payingWith(collector),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
         }
-    }
-
-    @HapiTest
-    @DisplayName("Max custom fee is supported only on consensus message submit")
-    final Stream<DynamicTest> maxCustomFeesIsSupportedOnlyWithMsgSubmit() {
-        final var sender = "sender";
-        final var receiver = "receiver";
-        final var feeLimit = maxCustomFee(sender, 2);
-        return hapiTest(
-                cryptoCreate(sender).balance(ONE_HBAR),
-                cryptoCreate(receiver),
-                cryptoTransfer(TokenMovement.movingHbar(1).between(sender, receiver))
-                        .maxCustomFee(feeLimit)
-                        .hasPrecheck(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED));
-    }
-
-    @HapiTest
-    @DisplayName("Max custom fee contain duplicate denominations")
-    final Stream<DynamicTest> maxCustomFeeContainsDuplicateDenominations() {
-        final var collector = "collector";
-        final var fee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
-        final var feeLimit = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 2);
-        final var feeLimit2 = maxHtsCustomFee(SUBMITTER, BASE_TOKEN, 10);
-        return hapiTest(flattened(
-                associateFeeTokensAndSubmitter(),
-                cryptoCreate(collector).balance(ONE_HBAR),
-                tokenAssociate(collector, BASE_TOKEN),
-                createTopic(TOPIC).withConsensusCustomFee(fee),
-                submitMessageTo(TOPIC)
-                        // duplicate denominations in maxCustomFee
-                        .maxCustomFee(feeLimit)
-                        .maxCustomFee(feeLimit2)
-                        .message("TEST")
-                        .payingWith(SUBMITTER)
-                        .hasPrecheck(DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST)));
     }
 }
