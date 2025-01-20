@@ -98,7 +98,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
-@WithBlockNodes(BlockNodeMode.CONTAINERS)
+@WithBlockNodes(BlockNodeMode.SIMULATOR)
 public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";

@@ -49,6 +49,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.containers.BlockNodeContainer;
+import com.hedera.services.bdd.junit.hedera.simulator.SimulatedBlockNodeServer;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode.ReassignPorts;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OnlyRoster;
@@ -61,6 +62,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -115,6 +117,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private final String genesisConfigTxt;
 
     private final List<BlockNodeContainer> blockNodeContainers = new ArrayList<>();
+    private final List<SimulatedBlockNodeServer> simulatedBlockNodes = new ArrayList<>();
 
     /**
      * Configure the block node mode for this network.
@@ -242,12 +245,28 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         node.getNodeId(),
                         container.getGrpcPort());
             }
+        } else if (blockNodeMode == BlockNodeMode.SIMULATOR) {
+            log.info("Starting simulated block nodes for {} nodes", nodes.size());
+            // Start one simulated block node per network node
+            for (int i = 0; i < nodes.size(); i++) {
+                try {
+                    // Find an available port
+                    int port = findAvailablePort();
+                    SimulatedBlockNodeServer server = new SimulatedBlockNodeServer(port);
+                    server.start();
+                    simulatedBlockNodes.add(server);
+                    log.info("Started simulated block node {} @ localhost:{}", i, port);
+                } catch (IOException e) {
+                    log.error("Failed to start simulated block node", e);
+                }
+            }
         } else {
-            log.info("Skipping block node containers as mode is: {}", blockNodeMode);
+            log.info("Skipping block nodes as mode is: {}", blockNodeMode);
         }
 
         // Then start each network node
-        for (HederaNode node : nodes) {
+        for (int i = 0; i < nodes.size(); i++) {
+            HederaNode node = nodes.get(i);
             log.info("Starting node {} with block node mode: {}", node.getNodeId(), blockNodeMode);
 
             // Initialize Working Directory for Node
@@ -261,36 +280,17 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         "Configured block node for node {} with container port {}",
                         node.getNodeId(),
                         container.getGrpcPort());
+            } else if (blockNodeMode == BlockNodeMode.SIMULATOR) {
+                updateBlockNodesConfigForNodeWithSimulators(node, simulatedBlockNodes.get(i));
+                log.info(
+                        "Configured simulated block nodes for node {}",
+                        node.getNodeId());
             } else {
                 log.info("Skipping block node for node {} as block nodes are disabled", node.getNodeId());
             }
 
             // Start the node
             node.start();
-        }
-    }
-
-    /**
-     * Configures block nodes based on the current mode.
-     * This is called after the network is started and block node mode is set.
-     */
-    public void configureBlockNodes() {
-        if (blockNodeMode != BlockNodeMode.CONTAINERS) {
-            return;
-        }
-
-        for (HederaNode node : nodes) {
-            // Start a block node container for this network node
-            BlockNodeContainer container = new BlockNodeContainer();
-            container.start();
-            blockNodeContainers.add(container);
-            log.info(
-                    "Started block node container for node {} @ localhost:{}",
-                    node.getNodeId(),
-                    container.getGrpcPort());
-
-            // Update this node's block-nodes.json with the container's connection info
-            updateBlockNodesConfigForNode(node, container);
         }
     }
 
@@ -324,6 +324,37 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         }
     }
 
+    private void updateBlockNodesConfigForNodeWithSimulators(HederaNode node, SimulatedBlockNodeServer sim) {
+        try {
+            // Create block node config for simulator servers
+            List<BlockNodeConfig> blockNodes = List.of(new BlockNodeConfig(
+                    1, // priority
+                    "127.0.0.1", // Use explicit IP instead of hostname
+                    sim.getPort(),
+                    true // Preferred
+            ));
+
+            BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
+                    blockNodes,
+                    3600, // 1 hour reselection interval
+                    1, // Only one connection needed since we have one dedicated simulator per node
+                    256 // default batch size
+            );
+
+            // Write the config to this node's block-nodes.json
+            Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.json");
+            Files.writeString(configPath, BlockNodeConnectionInfo.JSON.toJSON(connectionInfo));
+
+            log.info(
+                    "Updated block node configuration for node {} with simulator @ {}:{}",
+                    node.getNodeId(),
+                    "127.0.0.1",
+                    sim.getPort());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to update block node configuration for node " + node.getNodeId(), e);
+        }
+    }
+
     /**
      * Forcibly stops all nodes in the network.
      */
@@ -334,6 +365,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             container.stop();
         }
         blockNodeContainers.clear();
+
+        // Stop simulated block nodes
+        for (SimulatedBlockNodeServer server : simulatedBlockNodes) {
+            server.stop();
+        }
+        simulatedBlockNodes.clear();
 
         // Then stop network nodes
         nodes.forEach(HederaNode::stopFuture);
@@ -679,5 +716,19 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         } catch (IOException | ParseException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private int findAvailablePort() {
+        // Find a random available port between 30000 and 40000
+        int attempts = 0;
+        while (attempts < 100) {
+            int port = RANDOM.nextInt(FIRST_CANDIDATE_PORT, LAST_CANDIDATE_PORT);
+            try (ServerSocket socket = new ServerSocket(port)) {
+                return port;
+            } catch (IOException e) {
+                attempts++;
+            }
+        }
+        throw new RuntimeException("Could not find available port after 100 attempts");
     }
 }
