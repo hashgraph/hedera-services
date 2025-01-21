@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -227,7 +228,9 @@ public class StandaloneDispatchFactory {
                 .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(signedTransaction))
                 .build();
         final var transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
-        final var consensusTransaction = new TransactionWrapper(transactionBytes);
+        final var consensusTransaction = new TransactionWrapper(EventTransaction.newBuilder()
+                .applicationTransaction(transactionBytes)
+                .build());
         consensusTransaction.setMetadata(temporaryPreHandleResult());
         return consensusTransaction;
     }
