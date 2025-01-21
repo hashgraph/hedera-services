@@ -77,22 +77,6 @@ jobs:
           ref: ${{ steps.validate.outputs.BUILD_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-#      # TODO: Remove this step before mainline merge
-#      - name: Checkout Code - Private Repo Temporarily
-#        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-#        with:
-#          path: "private"
-#          ref: "14967-git-semver-test-branch"
-#
-#      # TODO: Remove this step before mainline merge
-#      - name: Copy Private .releaserc file to Github Workspace
-#        run: |
-#          echo "Copying the .releaserc file"
-#          cp -f private/.releaserc .releaserc
-#
-#          echo "Removing private directory"
-#          rm -rf private
-
       - name: Display Current Branch or Tag
         run: |
           # Check if it's a tag
@@ -138,52 +122,6 @@ jobs:
         run: |
           echo "Pushing branch to origin:"
           git push --set-upstream origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
-
-#      #TODO: Revisit this before merging to mainline
-#      - name: Git Merged Tags
-#        run: |
-#          echo "Git Merged Tags"
-#          git fetch --all
-#          git fetch --tags
-#          git stash -u
-#          git checkout 14967-git-semver-test-branch
-#          git pull
-#          BRANCH_HEAD_COMMIT=$(git rev-parse HEAD)
-#          git checkout ${{ steps.branch_name.outputs.BRANCH_NAME }}
-#          git stash pop
-#          git tag --merged ${BRANCH_HEAD_COMMIT}
-
-#      - name: Install Dependencies
-#        run: |
-#          echo "Installing semantic-release"
-#          npm install -g semantic-release@24.2.0 @semantic-release/git@10.0.1 @semantic-release/github@11.0.1 \
-#            @semantic-release/exec@6.0.3 semantic-release-helm3@2.9.3 \
-#            conventional-changelog-conventionalcommits@8.0.0 \
-#            @commitlint/cli@19.5.0 @commitlint/config-conventional@19.5.0 \
-#            marked-mangle@1.1.10 marked-gfm-heading-id@4.1.1 semantic-release-conventional-commits@3.0.0
-#
-#      - name: Publish Semantic Release
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-#          GIT_AUTHOR_NAME: ${{ secrets.GIT_USER_NAME }}
-#          GIT_AUTHOR_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
-#          GIT_COMMITTER_NAME: ${{ secrets.GIT_USER_NAME }}
-#          GIT_COMMITTER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
-#        run: |
-#          ARGS=""
-#          if [[ "${{ github.event.inputs.dry-run-enabled }}" == true ]]; then
-#            ARGS="--dry-run"
-#          fi
-#          echo "Running semantic release command:"
-#          echo "npx semantic-release ${ARGS} --branch ${{ steps.branch_name.outputs.BRANCH_NAME }}"
-#          npx semantic-release ${ARGS} --branch ${{ steps.branch_name.outputs.BRANCH_NAME }}
-
-#      - name: Generate Changelog
-#        run: |
-#          echo "Generating changelog"
-#          changelog=$(npx semantic-release --dry-run --no-ci --generate-notes)
-#          echo "Changelog generated:"
-#          echo "$changelog"
 
       - name: Git-Semver Setup Action
         uses: DJ-BBot/setup-git-semver@7ede9a8b0c0f4cfff14e9b0a8771dbc546f2b76b # v1.0.1
