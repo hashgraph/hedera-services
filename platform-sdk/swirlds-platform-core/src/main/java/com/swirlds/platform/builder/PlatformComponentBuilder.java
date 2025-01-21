@@ -1030,7 +1030,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public TransactionPool buildTransactionPool() {
         if (transactionPool == null) {
-            transactionPool = new DefaultTransactionPool(blocks.transactionPoolNexus());
+            transactionPool = new DefaultTransactionPool(blocks.transactionPoolNexus(), blocks.stateLifecycles());
         }
         return transactionPool;
     }

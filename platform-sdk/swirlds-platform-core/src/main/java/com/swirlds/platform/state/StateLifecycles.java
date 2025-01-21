@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.system.InitTrigger;
@@ -100,4 +101,14 @@ public interface StateLifecycles<T extends MerkleStateRoot> {
      * @param recoveredState the recovered state after reapplying all events
      */
     void onNewRecoveredState(@NonNull T recoveredState);
+
+    /**
+     * Encodes a system transaction to {@link Bytes} representation of a {@link com.hedera.hapi.node.base.Transaction}.
+     *
+     * @param transaction the {@link StateSignatureTransaction} to encode
+     * @return {@link Bytes} representation of the transaction
+     */
+    default Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        throw new IllegalStateException("Invoke the method on the appropriate SwirldMain implementation!");
+    }
 }

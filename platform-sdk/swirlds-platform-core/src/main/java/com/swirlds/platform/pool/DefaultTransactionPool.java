@@ -18,6 +18,7 @@ package com.swirlds.platform.pool;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -29,14 +30,17 @@ import java.util.Objects;
 public class DefaultTransactionPool implements TransactionPool {
 
     private final TransactionPoolNexus transactionPoolNexus;
+    private final StateLifecycles stateLifecycles;
 
     /**
      * Constructor.
      *
      * @param transactionPoolNexus the transaction pool nexus
      */
-    public DefaultTransactionPool(@NonNull final TransactionPoolNexus transactionPoolNexus) {
+    public DefaultTransactionPool(
+            @NonNull final TransactionPoolNexus transactionPoolNexus, StateLifecycles stateLifecycles) {
         this.transactionPoolNexus = Objects.requireNonNull(transactionPoolNexus);
+        this.stateLifecycles = stateLifecycles;
     }
 
     /**
@@ -45,7 +49,7 @@ public class DefaultTransactionPool implements TransactionPool {
     @Override
     public void submitSystemTransaction(@NonNull final StateSignatureTransaction payload) {
         Objects.requireNonNull(payload);
-        final Bytes payloadBytes = StateSignatureTransaction.PROTOBUF.toBytes(payload);
+        final Bytes payloadBytes = stateLifecycles.encodeSystemTransaction(payload);
         transactionPoolNexus.submitTransaction(payloadBytes, true, true);
     }
 
