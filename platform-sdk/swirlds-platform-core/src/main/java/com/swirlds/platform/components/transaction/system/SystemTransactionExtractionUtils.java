@@ -19,10 +19,6 @@ package com.swirlds.platform.components.transaction.system;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -32,16 +28,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Contains utility methods for extracting a particular type of system transaction from an event or a round.
  */
 public class SystemTransactionExtractionUtils {
-    private static final Logger logger = LogManager.getLogger(SystemTransactionExtractionUtils.class);
-
     /**
      * Hidden constructor.
      */
@@ -80,43 +71,15 @@ public class SystemTransactionExtractionUtils {
 
         final Iterator<Transaction> transactionIterator = event.transactionIterator();
         while (transactionIterator.hasNext()) {
-            final List<Bytes> transactions = event.getGossipEvent().transactions();
-            final boolean isNewFormat = !transactions.isEmpty();
             final Transaction transaction = transactionIterator.next();
-            if (isNewFormat) {
-                final Optional<StateSignatureTransaction> maybeStateSignatureTransaction =
-                        extractStateSignatureTransactionFromTransaction(transaction);
-                maybeStateSignatureTransaction.ifPresent(stateSignatureTransaction ->
-                        consumeSystemTransaction(event, scopedTransactions, (T) stateSignatureTransaction));
-            } else if (systemTransactionTypeClass.isInstance(
+            if (systemTransactionTypeClass.isInstance(
                     transaction.getTransaction().transaction().value())) {
-                consumeSystemTransaction(event, scopedTransactions, (T)
-                        transaction.getTransaction().transaction().value());
+                scopedTransactions.add(
+                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
+                                transaction.getTransaction().transaction().value()));
             }
         }
 
         return scopedTransactions.isEmpty() ? null : scopedTransactions;
-    }
-
-    private static Optional<StateSignatureTransaction> extractStateSignatureTransactionFromTransaction(
-            final Transaction transaction) {
-        try {
-            final com.hedera.hapi.node.base.Transaction parsedTransaction =
-                    com.hedera.hapi.node.base.Transaction.PROTOBUF.parse(transaction.getTransactionBytes());
-            final Bytes bodyBytes = parsedTransaction.bodyBytes();
-            final TransactionBody transactionBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes);
-            return Optional.ofNullable(transactionBody.stateSignatureTransaction());
-        } catch (final ParseException e) {
-            logger.error("Failed to parse StateSignatureTransaction from event", e);
-            return Optional.empty();
-        }
-    }
-
-    private static <T> void consumeSystemTransaction(
-            @NonNull final PlatformEvent event,
-            @NonNull final List<ScopedSystemTransaction<T>> scopedTransactions,
-            final T stateSignatureTransaction) {
-        scopedTransactions.add(new ScopedSystemTransaction<>(
-                event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
     }
 }

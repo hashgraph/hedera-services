@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
+import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
@@ -29,12 +30,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -69,8 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("IssDetector Tests")
 class IssDetectorTests extends PlatformTest {
@@ -86,8 +82,7 @@ class IssDetectorTests extends PlatformTest {
     private static List<EventImpl> generateEventsContainingSignatures(
             @NonNull final Randotron random,
             final long roundNumber,
-            @NonNull final RoundHashValidatorTests.HashGenerationData hashGenerationData,
-            final boolean useNewTransactionFormat) {
+            @NonNull final RoundHashValidatorTests.HashGenerationData hashGenerationData) {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
@@ -99,31 +94,13 @@ class IssDetectorTests extends PlatformTest {
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
+                            .setOneOfTransactions(
+                                    List.of(new OneOf<>(STATE_SIGNATURE_TRANSACTION, signatureTransaction)))
                             .setSoftwareVersion(SemanticVersion.DEFAULT);
-
-                    if (useNewTransactionFormat) {
-                        event.setUseNewTransactionFormat(true)
-                                .setTransactionBytes(List.of(encodeSystemTransaction(signatureTransaction)));
-                    } else {
-                        event.setTransactions(List.of(new EventTransaction(
-                                new OneOf<>(TransactionOneOfType.STATE_SIGNATURE_TRANSACTION, signatureTransaction))));
-                    }
 
                     return EventImplTestUtils.createEventImpl(event, null, null);
                 })
                 .toList();
-    }
-
-    @NonNull
-    private static Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction stateSignatureTransaction) {
-        final var transactionBody = TransactionBody.newBuilder().stateSignatureTransaction(stateSignatureTransaction);
-
-        final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
-                .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
-                .sigMap(SignatureMap.DEFAULT)
-                .build();
-
-        return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
     }
 
     /**
@@ -142,8 +119,7 @@ class IssDetectorTests extends PlatformTest {
             @NonNull final Randotron random,
             @NonNull final Roster roster,
             final long roundNumber,
-            @NonNull final Hash roundHash,
-            final boolean useNewTransactionFormat) {
+            @NonNull final Hash roundHash) {
         final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
 
         roster.rosterEntries()
@@ -152,10 +128,7 @@ class IssDetectorTests extends PlatformTest {
 
         // create signature transactions for this round
         return generateEventsContainingSignatures(
-                random,
-                roundNumber,
-                new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash),
-                useNewTransactionFormat);
+                random, roundNumber, new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash));
     }
 
     /**
@@ -198,10 +171,9 @@ class IssDetectorTests extends PlatformTest {
         return consensusRound;
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("No ISSes Test")
-    void noIss(final boolean useNewTransactionFormat) {
+    void noIss() {
         final Randotron random = Randotron.create();
         final Roster roster = RandomRosterBuilder.create(random)
                 .withSize(100)
@@ -227,8 +199,7 @@ class IssDetectorTests extends PlatformTest {
             final Hash roundHash = randomHash(random);
 
             // create signature transactions for this round
-            signatureEvents.addAll(generateEventsWithConsistentSignatures(
-                    random, roster, currentRound, roundHash, useNewTransactionFormat));
+            signatureEvents.addAll(generateEventsWithConsistentSignatures(random, roster, currentRound, roundHash));
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
@@ -264,10 +235,9 @@ class IssDetectorTests extends PlatformTest {
      * This test goes through a series of rounds, some of which experience ISSes. The test verifies that the expected
      * number of ISSes are registered by the ISS detector.
      */
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("Mixed Order Test")
-    void mixedOrderTest(final boolean useNewTransactionFormat) {
+    void mixedOrderTest() {
         final Randotron random = Randotron.create();
 
         final Roster roster = RandomRosterBuilder.create(random)
@@ -346,13 +316,13 @@ class IssDetectorTests extends PlatformTest {
 
         // signature events are generated for each round when that round is handled, and then are included randomly
         // in subsequent rounds
-        final List<EventImpl> signatureEvents = new ArrayList<>(
-                generateEventsContainingSignatures(random, 0, roundData.getFirst(), useNewTransactionFormat));
+        final List<EventImpl> signatureEvents =
+                new ArrayList<>(generateEventsContainingSignatures(random, 0, roundData.getFirst()));
 
         for (currentRound++; currentRound < roundsNonAncient; currentRound++) {
             // create signature transactions for this round
-            signatureEvents.addAll(generateEventsContainingSignatures(
-                    random, currentRound, roundData.get((int) currentRound), useNewTransactionFormat));
+            signatureEvents.addAll(
+                    generateEventsContainingSignatures(random, currentRound, roundData.get((int) currentRound)));
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
@@ -413,10 +383,9 @@ class IssDetectorTests extends PlatformTest {
      * Handles additional rounds after an ISS occurred, but before all signatures have been submitted. Validates that
      * the ISS is detected after enough signatures are submitted, and not before.
      */
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("Decide hash for catastrophic ISS")
-    void decideForCatastrophicIss(final boolean useNewTransactionFormat) {
+    void decideForCatastrophicIss() {
         final Randotron random = Randotron.create();
         final PlatformContext platformContext = createDefaultPlatformContext();
 
@@ -446,7 +415,7 @@ class IssDetectorTests extends PlatformTest {
                 .map(RoundHashValidatorTests.NodeHashInfo::nodeStateHash)
                 .orElseThrow();
         final List<EventImpl> signaturesOnCatastrophicRound =
-                generateEventsContainingSignatures(random, currentRound, catastrophicHashData, useNewTransactionFormat);
+                generateEventsContainingSignatures(random, currentRound, catastrophicHashData);
 
         // handle the catastrophic round, but don't submit any signatures yet, so it won't be detected
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, List.of());
@@ -546,10 +515,9 @@ class IssDetectorTests extends PlatformTest {
      * enough signatures to "decide", there will be enough signatures to declare a catastrophic ISS when shifting the
      * window past the ISS round.
      */
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("Catastrophic Shift Before Complete Test")
-    void catastrophicShiftBeforeCompleteTest(final boolean useNewTransactionFormat) {
+    void catastrophicShiftBeforeCompleteTest() {
         final Randotron random = Randotron.create();
         final PlatformContext platformContext = createDefaultPlatformContext();
 
@@ -578,10 +546,7 @@ class IssDetectorTests extends PlatformTest {
                 .map(RoundHashValidatorTests.NodeHashInfo::nodeStateHash)
                 .orElseThrow();
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
-                random,
-                currentRound,
-                new RoundHashValidatorTests.HashGenerationData(catastrophicData, null),
-                useNewTransactionFormat);
+                random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
 
         final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
         long submittedWeight = 0;
@@ -648,10 +613,9 @@ class IssDetectorTests extends PlatformTest {
      * Causes a catastrophic ISS, but shifts the window by a large amount past the ISS round. This causes the
      * catastrophic ISS to not be registered.
      */
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("Big Shift Test")
-    void bigShiftTest(final boolean useNewTransactionFormat) {
+    void bigShiftTest() {
         final Randotron random = Randotron.create();
 
         final PlatformContext platformContext = createDefaultPlatformContext();
@@ -685,10 +649,7 @@ class IssDetectorTests extends PlatformTest {
                 .map(RoundHashValidatorTests.NodeHashInfo::nodeStateHash)
                 .orElseThrow();
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
-                random,
-                currentRound,
-                new RoundHashValidatorTests.HashGenerationData(catastrophicData, null),
-                useNewTransactionFormat);
+                random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
 
         // handle the catastrophic round, but don't submit any signatures yet, so it won't be detected
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, List.of());
@@ -742,10 +703,9 @@ class IssDetectorTests extends PlatformTest {
     /**
      * Causes a catastrophic ISS, but specifies that round to be ignored. This should cause the ISS to not be detected.
      */
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("Ignored Round Test")
-    void ignoredRoundTest(final boolean useNewTransactionFormat) {
+    void ignoredRoundTest() {
         final Randotron random = Randotron.create();
 
         final Roster roster = RandomRosterBuilder.create(random)
@@ -772,10 +732,7 @@ class IssDetectorTests extends PlatformTest {
         final List<RoundHashValidatorTests.NodeHashInfo> catastrophicData =
                 generateCatastrophicTimeoutIss(random, roster, currentRound);
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
-                random,
-                currentRound,
-                new RoundHashValidatorTests.HashGenerationData(catastrophicData, null),
-                useNewTransactionFormat);
+                random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
 
         // handle the round and all signatures.
         // The round has a catastrophic ISS, but should be ignored
