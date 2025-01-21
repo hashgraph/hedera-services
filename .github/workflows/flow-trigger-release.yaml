@@ -108,7 +108,7 @@ jobs:
       - name: Print Temporary Branch Name
         run: |
           echo "The temporary branch name is: ${{ steps.branch_name.outputs.BRANCH_NAME }}"
-          printf "Temporary Branch Name: ${{ steps.branch_name.outputs.BRANCH_NAME }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Temporary Branch Name: ${{ steps.branch_name.outputs.BRANCH_NAME }}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Create a Temporary Semantic Release Branch
         run: |
@@ -143,14 +143,14 @@ jobs:
           echo "Compute next version number using git-semver"
           echo "next_release=$(git-semver next --stable=false)" >> ${GITHUB_OUTPUT}
           echo "Next release version is: ${next_release}"
-          #printf "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Apply Tag with Calculated Next Version
         run: |
           echo "Applying computed version tag"
           git tag --annotate v${{ steps.next_version.outputs.next_release }} --message "v${{ steps.next_version.outputs.next_release }}"
           echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
-          printf "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Identify Current Version Number After Tagging
         run: |
@@ -206,8 +206,8 @@ jobs:
           echo "Deleting the temporary semantic release branch"
           echo "Deleting local branch now:"
           git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
-          printf "Deleted Temporary Branch from Local Runner\n" >> ${GITHUB_STEP_SUMMARY}
+          echo "Deleted Temporary Branch from Local Runner\n" >> ${GITHUB_STEP_SUMMARY}
           
           echo "Deleting remote branch now:"
           git push -d origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
-          printf "Deleted Temporary Branch from Remote" >> ${GITHUB_STEP_SUMMARY}
+          echo "Deleted Temporary Branch from Remote" >> ${GITHUB_STEP_SUMMARY}
