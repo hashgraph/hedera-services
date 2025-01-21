@@ -16,11 +16,20 @@
 
 package com.hedera.node.app.service.util.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_DUPLICATES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_NULL_VALUES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_EMPTY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.util.AtomicBatchTransactionBody;
 import com.hedera.node.app.service.util.records.AtomicBatchStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -29,6 +38,9 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.AtomicBatchConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -41,7 +53,9 @@ public class AtomicBatchHandler implements TransactionHandler {
      * Constructs a {@link AtomicBatchHandler}
      */
     @Inject
-    public AtomicBatchHandler() {}
+    public AtomicBatchHandler() {
+        // exists for Dagger injection
+    }
 
     /**
      * Performs checks independent of state or context.
@@ -50,7 +64,36 @@ public class AtomicBatchHandler implements TransactionHandler {
      */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // TODO
+        requireNonNull(txn);
+        final AtomicBatchTransactionBody transactionBody = txn.atomicBatchOrThrow();
+
+        final List<Transaction> transactions = transactionBody.transactions();
+        requireNonNull(transactions);
+
+        if (transactions.isEmpty()) {
+            throw new PreCheckException(BATCH_LIST_EMPTY);
+        }
+
+        Set<Transaction> set = new HashSet<>();
+        for( final Transaction transaction : transactions) {
+            if (transaction == null) {
+                throw new PreCheckException(BATCH_LIST_CONTAINS_NULL_VALUES);
+            }
+
+            if (!set.add(transaction))
+                throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
+
+            TransactionBody innerTrxBody = null;
+            try {
+                //need to use from the new context same way as we did in pre handle and handle to use context and checker inside
+                final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                        transaction.signedTransactionBytes().toReadableSequentialData());
+                innerTrxBody = TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+                //transaction checker parse and check - to check validity of the transaction expire
+            } catch (Exception e) {
+                throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            }
+        }
     }
 
     /**
@@ -62,7 +105,26 @@ public class AtomicBatchHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        // TODO
+        final var op = context.body();
+        final var atomicBatchTransactionBody = op.atomicBatchOrThrow();
+        requireNonNull(op);
+        List<Transaction> transactions = atomicBatchTransactionBody.transactions();
+        if (op.hasBatchKey()) {
+            context.requireKeyOrThrow(op.batchKey(), BAD_ENCODING);
+        }
+
+        if (transactions.size() > context.configuration().getConfigData(AtomicBatchConfig.class).maxNumberOfTransactions()) {
+            throw new PreCheckException(BATCH_SIZE_LIMIT_EXCEEDED);
+        }
+
+        for( var transaction : transactions) {
+            //check how to parse it correctly or maybe throw an exception
+            final var body = context.bodyFromTransaction(transaction);
+            final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
+
+            //this method will dispatch the prehandle transaction of each transaction in the batch
+            context.executeInnerPreHandle(body, payerId);
+        }
     }
 
     @Override
@@ -71,7 +133,10 @@ public class AtomicBatchHandler implements TransactionHandler {
         final var batchConfig = context.configuration().getConfigData(AtomicBatchConfig.class);
         final var op = context.body().atomicBatchOrThrow();
         if (batchConfig.isEnabled()) {
-            final var transactions = op.transactions();
+            List<Transaction> transactions = op.transactions();
+            if (transactions.size() > context.configuration().getConfigData(AtomicBatchConfig.class).maxNumberOfTransactions()) {
+                throw new HandleException(BATCH_SIZE_LIMIT_EXCEEDED);
+            }
             for (final var transaction : transactions) {
                 final var body = context.bodyFromTransaction(transaction);
                 final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
