@@ -374,6 +374,8 @@ public final class Hedera
     @Nullable
     private StartupNetworks startupNetworks;
 
+    private boolean onceOnlyServiceInitializationPostDaggerHasHappened = false;
+
     @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
@@ -479,7 +481,7 @@ public final class Hedera
                         ThrottleAccumulator::new));
         hintsService = hintsServiceFactory.apply(appContext);
         historyService = historyServiceFactory.apply(appContext);
-        contractServiceImpl = new ContractServiceImpl(appContext);
+        contractServiceImpl = new ContractServiceImpl(appContext, metrics);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
@@ -674,7 +676,13 @@ public final class Hedera
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
-        contractServiceImpl.registerMetrics();
+
+        // Perform any service initialization that has to be postponed until Dagger is available
+        // (simple boolean is usable since we're still single-threaded when `onStateInitialized` is called)
+        if (!onceOnlyServiceInitializationPostDaggerHasHappened) {
+            contractServiceImpl.createMetrics();
+            onceOnlyServiceInitializationPostDaggerHasHappened = true;
+        }
     }
 
     /**

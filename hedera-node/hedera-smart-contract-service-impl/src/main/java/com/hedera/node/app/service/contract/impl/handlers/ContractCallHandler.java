@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class ContractCallHandler extends AbstractContractTransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         // Create the transaction-scoped component
-        final var component = provider.get().create(context, CONTRACT_CALL);
+        final var component = getTransactionComponent(context, CONTRACT_CALL);
 
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
