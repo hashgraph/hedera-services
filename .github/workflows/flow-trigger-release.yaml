@@ -54,15 +54,15 @@ jobs:
 
           # 5-digit padding
           padded_number=$(printf "%05d" ${{ inputs.build_number }})
-          echo "Padded number is: $padded_number"
+          echo "Padded number is: ${padded_number}"
 
           # Add "build_" prefix to the padded number
-          build_tag="build-$padded_number"
-          echo "Prefixed number is: $build_tag"
+          build_tag="build-${padded_number}"
+          echo "Prefixed number is: ${build_tag}"
 
           # Export to Github output and Github summary
-          BUILD_TAG=$build_tag
-          echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
+          BUILD_TAG=${build_tag}
+          echo "BUILD_TAG=${build_tag}" >> ${GITHUB_OUTPUT}
           echo "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Checkout Code
@@ -119,7 +119,7 @@ jobs:
       - name: Echo Current Branch Name
         run: |
           current_branch=$(git symbolic-ref --short HEAD)
-          echo "Currently on branch: $current_branch"
+          echo "Currently on branch: ${current_branch}"
 
       - name: Push Temporary Branch to Origin
         run: |
@@ -158,7 +158,11 @@ jobs:
           echo "Current version is: ${current_version}"
           echo "Should match version we just applied: ${{ steps.next_version.outputs.next_release }}"
 
-      # TODO: Push the new tag to remote
+#        TODO: Comment out before merge
+#      - name: Push Release Tag to Remote
+#        run: |
+#          echo "Pushing release tag to remote"
+#          git push origin tag v${{ steps.next_version.outputs.next_release }}
 
       - name: Create Release Notes with Markdown
         run: |
