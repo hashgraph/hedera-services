@@ -202,7 +202,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public long getKvStateSize() {
-        return contractStateStore.getNumSlots();
+        return nativeOperations.readableEntityIdStore().numContractStorageSlots();
     }
 
     /**
@@ -437,7 +437,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     @Override
     public long numBytecodesInState() {
-        return contractStateStore.getNumBytecodes();
+        return nativeOperations.readableEntityIdStore().numContractBytecodes();
     }
 
     /**

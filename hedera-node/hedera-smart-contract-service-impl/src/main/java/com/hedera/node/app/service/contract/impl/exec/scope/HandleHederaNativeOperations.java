@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -100,6 +101,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public @NonNull ReadableScheduleStore readableScheduleStore() {
         return context.storeFactory().readableStore(ReadableScheduleStore.class);
+    }
+
+    @Override
+    public ReadableEntityIdStore readableEntityIdStore() {
+        return context.storeFactory().readableStore(ReadableEntityIdStore.class);
     }
 
     /**

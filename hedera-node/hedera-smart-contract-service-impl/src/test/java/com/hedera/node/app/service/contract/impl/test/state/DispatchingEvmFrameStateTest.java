@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ import com.hedera.node.app.service.contract.impl.state.ScheduleEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
@@ -139,6 +140,9 @@ class DispatchingEvmFrameStateTest {
     private ContractStateStore contractStateStore;
 
     @Mock
+    private ReadableEntityIdStore readableEntityIdStore;
+
+    @Mock
     private MessageFrame frame;
 
     private DispatchingEvmFrameState subject;
@@ -157,7 +161,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void dispatchesToNumBytecodes() {
-        given(contractStateStore.getNumBytecodes()).willReturn(1234L);
+        given(nativeOperations.readableEntityIdStore()).willReturn(readableEntityIdStore);
+        given(readableEntityIdStore.numContractBytecodes()).willReturn(1234L);
 
         assertEquals(1234L, subject.numBytecodesInState());
     }
@@ -792,7 +797,9 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void delegatesSizeOfKvState() {
-        given(contractStateStore.getNumSlots()).willReturn(123L);
+        given(nativeOperations.readableEntityIdStore()).willReturn(readableEntityIdStore);
+        given(readableEntityIdStore.numContractStorageSlots()).willReturn(123L);
+
         assertEquals(123L, subject.getKvStateSize());
     }
 

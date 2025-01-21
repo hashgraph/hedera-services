@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
@@ -76,6 +77,7 @@ public class V0490TokenSchema extends Schema {
     public static final String TOKENS_KEY = "TOKENS";
     public static final String ALIASES_KEY = "ALIASES";
     public static final String ACCOUNTS_KEY = "ACCOUNTS";
+    public static final String ENTITY_COUNTS_KEY = "ENTITY_COUNTS";
     public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
     public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
@@ -124,6 +126,7 @@ public class V0490TokenSchema extends Schema {
 
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
+        final var entityCounts = ctx.newStates().<EntityCounts>getSingleton(ENTITY_COUNTS_KEY);
         if (accounts.size() != 0) {
             throw new IllegalStateException("Accounts map should be empty at genesis");
         }
@@ -211,15 +214,13 @@ public class V0490TokenSchema extends Schema {
             @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
         long totalBalance = 0;
         long curAccountId = 1; // Start with the first account ID
-        long totalAccounts = accounts.size();
-        do {
+        while (accounts.keys().hasNext()) {
             final Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
             if (account != null) {
                 totalBalance += account.tinybarBalance();
-                totalAccounts--;
             }
             curAccountId++;
-        } while (totalAccounts > 0);
+        }
         return totalBalance;
     }
 

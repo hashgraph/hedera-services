@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,18 +99,4 @@ public interface ContractStateStore {
      */
     @Nullable
     SlotValue getOriginalSlotValue(@NonNull SlotKey key);
-
-    /**
-     * Returns the number of slots.
-     *
-     * @return the number of slots
-     */
-    long getNumSlots();
-
-    /**
-     * Returns the number of bytecodes.
-     *
-     * @return the number of bytecodes
-     */
-    long getNumBytecodes();
 }

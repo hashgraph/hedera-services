@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,18 +128,5 @@ public class WritableContractStateStore implements ContractStateStore {
     @Override
     public @Nullable SlotValue getOriginalSlotValue(@NonNull final SlotKey key) {
         return storage.getOriginalValue(requireNonNull(key));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getNumSlots() {
-        return storage.size();
-    }
-
-    @Override
-    public long getNumBytecodes() {
-        return bytecode.size();
     }
 }

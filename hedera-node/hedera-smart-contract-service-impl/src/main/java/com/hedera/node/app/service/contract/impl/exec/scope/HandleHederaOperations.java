@@ -53,6 +53,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -149,6 +150,16 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public ContractStateStore getStore() {
         return context.storeFactory().writableStore(WritableContractStateStore.class);
+    }
+
+    @Override
+    public long numContractBytecodes() {
+        return context.storeFactory().readableStore(ReadableEntityIdStore.class).numContractBytecodes();
+    }
+
+    @Override
+    public long numContractStorageSlots() {
+        return context.storeFactory().readableStore(ReadableEntityIdStore.class).numContractStorageSlots();
     }
 
     /**
