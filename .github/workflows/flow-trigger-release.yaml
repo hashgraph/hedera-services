@@ -63,12 +63,7 @@ jobs:
           # Export to Github output and Github summary
           BUILD_TAG=$build_tag
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
-          echo "Build Tag to Release (Step Process Input): ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
-
-      - name: Print Tag To Create a Release From
-        run: |
-          echo "We will release the following tag: ${{ steps.validate.outputs.BUILD_TAG }}"
-          printf "Build Tag to Release: ${{ steps.validate.outputs.BUILD_TAG }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Checkout Code
         id: checkout_code
