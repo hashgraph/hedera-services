@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.StateLifecycles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +37,6 @@ class TransactionPoolTests {
     void addTransactionTest() {
         final List<Bytes> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
-        final StateLifecycles stateLifecycles = mock(StateLifecycles.class);
         when(transactionPoolNexus.submitTransaction(any(), anyBoolean(), anyBoolean()))
                 .thenAnswer(invocation -> {
                     final Bytes transaction = invocation.getArgument(0);
@@ -48,14 +46,14 @@ class TransactionPoolTests {
                     return true;
                 });
 
-        final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus, stateLifecycles);
+        final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
         final StateSignatureTransaction signatureTransaction = StateSignatureTransaction.newBuilder()
                 .round(1)
                 .signature(Bytes.EMPTY)
                 .build();
         final Bytes signatureBytes = StateSignatureTransaction.PROTOBUF.toBytes(signatureTransaction);
 
-        transactionPool.submitSystemTransaction(signatureTransaction);
+        transactionPool.submitSystemTransaction(signatureBytes);
         assertEquals(1, transactionList.size());
         //        assertEquals(signatureBytes, transactionList.getFirst());
     }
@@ -63,7 +61,6 @@ class TransactionPoolTests {
     @Test
     void clearTest() {
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
-        final StateLifecycles stateLifecycles = mock(StateLifecycles.class);
         final AtomicBoolean clearCalled = new AtomicBoolean(false);
 
         doAnswer(invocation -> {
@@ -73,7 +70,7 @@ class TransactionPoolTests {
                 .when(transactionPoolNexus)
                 .clear();
 
-        final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus, stateLifecycles);
+        final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
         transactionPool.clear();
 
         assertTrue(clearCalled.get());

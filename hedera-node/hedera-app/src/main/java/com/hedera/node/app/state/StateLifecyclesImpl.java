@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.Hedera;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
@@ -88,10 +87,5 @@ public class StateLifecyclesImpl implements StateLifecycles<PlatformMerkleStateR
     @Override
     public void onNewRecoveredState(@NonNull final PlatformMerkleStateRoot recoveredStateRoot) {
         hedera.onNewRecoveredState(recoveredStateRoot);
-    }
-
-    @Override
-    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
-        return hedera.encodeSystemTransaction(stateSignatureTransaction);
     }
 }
