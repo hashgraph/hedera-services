@@ -143,7 +143,6 @@ jobs:
           echo "Compute next version number using git-semver"
           echo "next_release=$(git-semver next --stable=false)" >> ${GITHUB_OUTPUT}
           echo "Next release version is: ${next_release}"
-          echo "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Apply Tag with Calculated Next Version
         run: |
@@ -206,7 +205,7 @@ jobs:
           echo "Deleting the temporary semantic release branch"
           echo "Deleting local branch now:"
           git branch -d ${{ steps.branch_name.outputs.BRANCH_NAME }}
-          echo "Deleted Temporary Branch from Local Runner\n" >> ${GITHUB_STEP_SUMMARY}
+          echo "Deleted Temporary Branch from Local Runner" >> ${GITHUB_STEP_SUMMARY}
           
           echo "Deleting remote branch now:"
           git push -d origin ${{ steps.branch_name.outputs.BRANCH_NAME }}
