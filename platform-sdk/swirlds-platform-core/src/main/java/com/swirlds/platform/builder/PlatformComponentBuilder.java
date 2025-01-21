@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -116,7 +117,7 @@ import java.util.Objects;
  *     <li>A component must not communicate with other components except through the wiring framework
  *         (with a very small number of exceptions due to tech debt that has not yet been paid off).</li>
  *     <li>A component should have an interface and at default implementation.</li>
- *     <li>A component should use {@link com.swirlds.common.wiring.component.ComponentWiring ComponentWiring} to define
+ *     <li>A component should use {@link ComponentWiring ComponentWiring} to define
  *         wiring API.</li>
  *     <li>The order in which components are constructed should not matter.</li>
  *     <li>A component must not be a static singleton or use static stateful variables in any way.</li>

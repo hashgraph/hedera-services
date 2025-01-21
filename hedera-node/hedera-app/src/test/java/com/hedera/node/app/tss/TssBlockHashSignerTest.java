@@ -119,7 +119,7 @@ class TssBlockHashSignerTest {
         assertThrows(IllegalStateException.class, () -> subject.signFuture(FAKE_BLOCK_HASH));
         given(hintsService.isReady()).willReturn(true);
         assertTrue(subject.isReady());
-        given(hintsService.currentVerificationKeyOrThrow()).willReturn(FAKE_VK);
+        given(hintsService.activeVerificationKeyOrThrow()).willReturn(FAKE_VK);
         given(hintsService.signFuture(FAKE_BLOCK_HASH))
                 .willReturn(CompletableFuture.completedFuture(FAKE_HINTS_SIGNATURE));
         given(historyService.getCurrentProof(FAKE_VK)).willReturn(FAKE_PROOF);
