@@ -67,7 +67,7 @@ jobs:
 
           # Export to Github output and Github summary
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
-          #printf "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
+          printf "Build Tag to Release: ${{ BUILD_TAG }}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Checkout Code
         id: checkout_code
@@ -105,7 +105,7 @@ jobs:
         run: |
           echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> ${GITHUB_OUTPUT}
           echo "The temp branch name is: ${BRANCH_NAME}"
-          printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
+          printf "The temp branch name for release is: ${{ BRANCH_NAME} }" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Create a Temporary Semantic Release Branch
         run: |
