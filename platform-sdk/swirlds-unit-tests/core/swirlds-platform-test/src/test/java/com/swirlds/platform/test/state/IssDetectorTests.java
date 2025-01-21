@@ -29,8 +29,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
@@ -92,13 +94,23 @@ class IssDetectorTests extends PlatformTest {
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
-                            .setTransactionBytes(
-                                    List.of(StateSignatureTransaction.PROTOBUF.toBytes(signatureTransaction)))
+                            .setTransactionBytes(List.of(encodeSystemTransaction(signatureTransaction)))
                             .setSoftwareVersion(SemanticVersion.DEFAULT);
 
                     return EventImplTestUtils.createEventImpl(event, null, null);
                 })
                 .toList();
+    }
+
+    private static Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
+        final var transactionBody = TransactionBody.newBuilder().stateSignatureTransaction(stateSignatureTransaction);
+
+        final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
+                .sigMap(SignatureMap.DEFAULT)
+                .build();
+
+        return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
     }
 
     /**

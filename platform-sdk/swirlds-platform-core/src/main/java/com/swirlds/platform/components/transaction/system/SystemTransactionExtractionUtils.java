@@ -19,6 +19,7 @@ package com.swirlds.platform.components.transaction.system;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,15 +84,14 @@ public class SystemTransactionExtractionUtils {
             final boolean isNewFormat = !transactions.isEmpty();
             final Transaction transaction = transactionIterator.next();
             if (isNewFormat) {
-                if (systemTransactionTypeClass.equals(StateSignatureTransaction.class)) {
-                    try {
-                        final var maybeStateSignatureTransaction =
-                                StateSignatureTransaction.PROTOBUF.parse(transaction.getTransactionBytes());
-                        scopedTransactions.add(new ScopedSystemTransaction<>(
-                                event.getCreatorId(), event.getSoftwareVersion(), (T) maybeStateSignatureTransaction));
-                    } catch (ParseException e) {
-                        log.error("Failed to parse StateSignatureTransaction from event", e);
-                    }
+                try {
+                    final Optional<StateSignatureTransaction> maybeStateSignatureTransaction =
+                            extractStateSignatureTransactionFromTransaction(transaction);
+                    maybeStateSignatureTransaction.ifPresent(
+                            stateSignatureTransaction -> scopedTransactions.add(new ScopedSystemTransaction<>(
+                                    event.getCreatorId(), event.getSoftwareVersion(), (T) stateSignatureTransaction)));
+                } catch (ParseException e) {
+                    log.error("Failed to parse StateSignatureTransaction from event", e);
                 }
             } else {
                 if (systemTransactionTypeClass.isInstance(
@@ -103,5 +104,14 @@ public class SystemTransactionExtractionUtils {
         }
 
         return scopedTransactions.isEmpty() ? null : scopedTransactions;
+    }
+
+    private static Optional<StateSignatureTransaction> extractStateSignatureTransactionFromTransaction(
+            final Transaction transaction) throws ParseException {
+        final com.hedera.hapi.node.base.Transaction parsedTransaction =
+                com.hedera.hapi.node.base.Transaction.PROTOBUF.parse(transaction.getTransactionBytes());
+        final Bytes bodyBytes = parsedTransaction.bodyBytes();
+        final TransactionBody transactionBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes);
+        return Optional.ofNullable(transactionBody.stateSignatureTransaction());
     }
 }
