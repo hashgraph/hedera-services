@@ -22,11 +22,6 @@ on:
         description: "Build Number (ex: 43 = build_00043)"
         type: string
         required: true
-      dry-run-enabled:
-        description: "Perform Dry Run"
-        type: boolean
-        required: false
-        default: false
 
 defaults:
   run:
