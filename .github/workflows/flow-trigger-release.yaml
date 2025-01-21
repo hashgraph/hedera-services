@@ -105,7 +105,7 @@ jobs:
         run: |
           echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> ${GITHUB_OUTPUT}
           echo "The temp branch name is: ${BRANCH_NAME}"
-          printf "The temp branch name for release is: ${{ BRANCH_NAME }}" >> ${GITHUB_STEP_SUMMARY}
+          printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Create a Temporary Semantic Release Branch
         run: |
