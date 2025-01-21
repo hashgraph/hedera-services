@@ -62,7 +62,7 @@ jobs:
 
           # Export to Github output and Github summary
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
-          echo "Build Tag to Release (Step Process Input): ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Build Tag to Release (Step Process Input): "${BUILD_TAG} >> ${GITHUB_STEP_SUMMARY}
 
       - name: Print Tag To Create a Release From
         run: |
