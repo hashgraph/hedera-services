@@ -316,6 +316,12 @@ public class TestingEventBuilder {
         return this;
     }
 
+    /**
+     * Set transactions in the format of Bytes. Each Bytes instance represent encoded version of a single transaction.
+     *
+     * @param transactions {@link List<Bytes>} transactions
+     * @return this instance
+     */
     public @NonNull TestingEventBuilder setTransactionBytes(@Nullable final List<Bytes> transactions) {
         if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
             throw new IllegalStateException(

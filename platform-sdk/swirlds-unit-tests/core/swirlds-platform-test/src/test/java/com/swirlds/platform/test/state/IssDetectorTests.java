@@ -115,7 +115,7 @@ class IssDetectorTests extends PlatformTest {
     }
 
     @NonNull
-    private static Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
+    private static Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction stateSignatureTransaction) {
         final var transactionBody = TransactionBody.newBuilder().stateSignatureTransaction(stateSignatureTransaction);
 
         final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()

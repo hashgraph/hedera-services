@@ -53,8 +53,8 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        List<Bytes> transactions = event.getGossipEvent().transactions();
-        boolean isNewFormat = !transactions.isEmpty();
+        final List<Bytes> transactions = event.getGossipEvent().transactions();
+        final boolean isNewFormat = !transactions.isEmpty();
         final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), isNewFormat);
         event.setHash(hash);
         return event;

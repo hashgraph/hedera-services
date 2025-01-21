@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * Contains utility methods for extracting a particular type of system transaction from an event or a round.
  */
 public class SystemTransactionExtractionUtils {
-    private static final Logger log = LogManager.getLogger(SystemTransactionExtractionUtils.class);
+    private static final Logger logger = LogManager.getLogger(SystemTransactionExtractionUtils.class);
 
     /**
      * Hidden constructor.
@@ -84,22 +84,14 @@ public class SystemTransactionExtractionUtils {
             final boolean isNewFormat = !transactions.isEmpty();
             final Transaction transaction = transactionIterator.next();
             if (isNewFormat) {
-                try {
-                    final Optional<StateSignatureTransaction> maybeStateSignatureTransaction =
-                            extractStateSignatureTransactionFromTransaction(transaction);
-                    maybeStateSignatureTransaction.ifPresent(
-                            stateSignatureTransaction -> scopedTransactions.add(new ScopedSystemTransaction<>(
-                                    event.getCreatorId(), event.getSoftwareVersion(), (T) stateSignatureTransaction)));
-                } catch (ParseException e) {
-                    log.error("Failed to parse StateSignatureTransaction from event", e);
-                }
-            } else {
-                if (systemTransactionTypeClass.isInstance(
-                        transaction.getTransaction().transaction().value())) {
-                    scopedTransactions.add(
-                            new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
-                                    transaction.getTransaction().transaction().value()));
-                }
+                final Optional<StateSignatureTransaction> maybeStateSignatureTransaction =
+                        extractStateSignatureTransactionFromTransaction(transaction);
+                maybeStateSignatureTransaction.ifPresent(stateSignatureTransaction ->
+                        consumeSystemTransaction(event, scopedTransactions, (T) stateSignatureTransaction));
+            } else if (systemTransactionTypeClass.isInstance(
+                    transaction.getTransaction().transaction().value())) {
+                consumeSystemTransaction(event, scopedTransactions, (T)
+                        transaction.getTransaction().transaction().value());
             }
         }
 
@@ -107,11 +99,24 @@ public class SystemTransactionExtractionUtils {
     }
 
     private static Optional<StateSignatureTransaction> extractStateSignatureTransactionFromTransaction(
-            final Transaction transaction) throws ParseException {
-        final com.hedera.hapi.node.base.Transaction parsedTransaction =
-                com.hedera.hapi.node.base.Transaction.PROTOBUF.parse(transaction.getTransactionBytes());
-        final Bytes bodyBytes = parsedTransaction.bodyBytes();
-        final TransactionBody transactionBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes);
-        return Optional.ofNullable(transactionBody.stateSignatureTransaction());
+            final Transaction transaction) {
+        try {
+            final com.hedera.hapi.node.base.Transaction parsedTransaction =
+                    com.hedera.hapi.node.base.Transaction.PROTOBUF.parse(transaction.getTransactionBytes());
+            final Bytes bodyBytes = parsedTransaction.bodyBytes();
+            final TransactionBody transactionBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes);
+            return Optional.ofNullable(transactionBody.stateSignatureTransaction());
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction from event", e);
+            return Optional.empty();
+        }
+    }
+
+    private static <T> void consumeSystemTransaction(
+            @NonNull final PlatformEvent event,
+            @NonNull final List<ScopedSystemTransaction<T>> scopedTransactions,
+            final T stateSignatureTransaction) {
+        scopedTransactions.add(new ScopedSystemTransaction<>(
+                event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
     }
 }

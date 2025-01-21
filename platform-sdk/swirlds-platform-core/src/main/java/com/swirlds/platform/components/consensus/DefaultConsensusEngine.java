@@ -112,8 +112,8 @@ public class DefaultConsensusEngine implements ConsensusEngine {
             return List.of();
         }
 
-        List<Bytes> transactions = event.getGossipEvent().transactions();
-        boolean isNewFormat = !transactions.isEmpty();
+        final List<Bytes> transactions = event.getGossipEvent().transactions();
+        final boolean isNewFormat = !transactions.isEmpty();
         final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
         eventAddedMetrics.eventAdded(linkedEvent, isNewFormat);
 
