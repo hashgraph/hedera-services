@@ -84,7 +84,7 @@ public interface HapiPropertySource {
 
     default FileID getFile(String property) {
         try {
-            return asFile(get(property));
+            return asFile(get("default.shard"), get("default.realm"), get(property));
         } catch (Exception ignore) {
         }
         return FileID.getDefaultInstance();
@@ -92,7 +92,7 @@ public interface HapiPropertySource {
 
     default AccountID getAccount(String property) {
         try {
-            return asAccount(get(property));
+            return asAccount(get("default.shard"), get("default.realm"), get(property));
         } catch (Exception ignore) {
         }
         return AccountID.getDefaultInstance();
@@ -226,6 +226,54 @@ public interface HapiPropertySource {
                 .setShardNum(nativeParts[0])
                 .setRealmNum(nativeParts[1])
                 .setAccountNum(nativeParts[2])
+                .build();
+    }
+
+    static AccountID asAccount(String shard, String realm, String num) {
+        return AccountID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setAccountNum(Long.parseLong(num))
+                .build();
+    }
+
+    static ContractID asContract(String shard, String realm, String num) {
+        return ContractID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setContractNum(Long.parseLong(num))
+                .build();
+    }
+
+    static FileID asFile(String shard, String realm, String num) {
+        return FileID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setFileNum(Long.parseLong(num))
+                .build();
+    }
+
+    static ScheduleID asSchedule(String shard, String realm, String num) {
+        return ScheduleID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setScheduleNum(Long.parseLong(num))
+                .build();
+    }
+
+    static TokenID asToken(String shard, String realm, String num) {
+        return TokenID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setTokenNum(Long.parseLong(num))
+                .build();
+    }
+
+    static TopicID asTopic(String shard, String realm, String num) {
+        return TopicID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setTopicNum(Long.parseLong(num))
                 .build();
     }
 
