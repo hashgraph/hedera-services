@@ -155,7 +155,6 @@ jobs:
           echo "Current version is: ${current_version}"
           echo "Should match version we just applied: ${{ steps.next_version.outputs.next_release }}"
 
-#        TODO: Comment out before merge
       - name: Push Release Tag to Remote
         run: |
           echo "Pushing release tag to remote"
