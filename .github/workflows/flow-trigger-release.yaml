@@ -62,6 +62,7 @@ jobs:
 
           # Export to Github output and Github summary
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
+          echo "Build Tag to Release (Step Process Input): ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Print Tag To Create a Release From
         run: |
@@ -85,6 +86,9 @@ jobs:
             echo "Checked out branch: $(git symbolic-ref --short HEAD)"
           fi
 
+      # TODO: Configure
+      # git config --global user.email "you@example.com"
+      # git config --global user.name "Your Name"
       - name: Import GPG Key
         uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
         with:
@@ -148,7 +152,7 @@ jobs:
       - name: Apply Tag with Calculated Next Version
         run: |
           echo "Applying computed version tag"
-          git tag -a v${{ steps.next_version.outputs.next_release }} -m "v${{ steps.next_version.outputs.next_release }}"
+          git tag --annotate v${{ steps.next_version.outputs.next_release }} --message "v${{ steps.next_version.outputs.next_release }}"
           echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
           printf "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
 
