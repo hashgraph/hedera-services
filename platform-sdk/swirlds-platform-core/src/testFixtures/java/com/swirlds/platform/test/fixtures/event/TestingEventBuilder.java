@@ -23,6 +23,7 @@ import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
@@ -57,6 +58,13 @@ public class TestingEventBuilder {
     private static final int DEFAULT_TRANSACTION_SIZE = 4;
 
     private final Random random;
+
+    /**
+     * Flag that determines whether to use the new transaction format of Bytes.
+     * <p>
+     * If set to true, transactions will be encoded in the new format of Bytes. If set to false, the deprecated OneOf format will be used.
+     */
+    private boolean useNewTransactionFormat = false;
 
     /**
      * Creator ID to use.
@@ -182,6 +190,19 @@ public class TestingEventBuilder {
      */
     public TestingEventBuilder(@NonNull final Random random) {
         this.random = Objects.requireNonNull(random);
+    }
+
+    /**
+     * Set the flag for using the new transaction format
+     * <p>
+     * If not set, the deprecated transaction format will be used. If it's set the new Bytes format will be used.
+     *
+     * @param useNewTransactionFormat the creator ID
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setUseNewTransactionFormat(final boolean useNewTransactionFormat) {
+        this.useNewTransactionFormat = useNewTransactionFormat;
+        return this;
     }
 
     /**
@@ -592,7 +613,12 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final PlatformEvent platformEvent = new PlatformEvent(unsignedEvent, signature);
+        final PlatformEvent platformEvent = new PlatformEvent(new GossipEvent(
+                Objects.requireNonNull(unsignedEvent, "The unsignedEvent must not be null")
+                        .getEventCore(),
+                Objects.requireNonNull(Bytes.wrap(signature), "The signature must not be null"),
+                useNewTransactionFormat ? null : transactions,
+                useNewTransactionFormat ? unsignedEvent.getTransactionsBytes() : new ArrayList<>()));
 
         platformEvent.setHash(RandomUtils.randomHash(random));
 
