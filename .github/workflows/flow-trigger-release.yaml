@@ -62,7 +62,7 @@ jobs:
 
           # Export to Github output and Github summary
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
-          printf "Build Tag to Release: ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
+          printf "Build Tag to Release: $BUILD_TAG" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Checkout Code
         id: checkout_code
