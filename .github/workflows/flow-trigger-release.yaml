@@ -105,7 +105,7 @@ jobs:
         run: |
           echo "BRANCH_NAME=temp/${{ steps.validate.outputs.BUILD_TAG }}" >> ${GITHUB_OUTPUT}
           echo "The temp branch name is: ${BRANCH_NAME}"
-          #printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
+          printf "The temp branch name for release is: ${BRANCH_NAME}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Create a Temporary Semantic Release Branch
         run: |
@@ -132,6 +132,8 @@ jobs:
           current_version=$(git-semver latest)
           echo "Current version is: ${current_version}"
 
+      # IF HIERO/HEDERA TRANSITIONS TO A MAJOR RELEASE NUMBER (1.0.0+)
+      # stable = false WILL NO LONGER BE VALID
       - name: Compute Next Version Number
         id: next_version
         run: |
@@ -140,7 +142,6 @@ jobs:
           echo "Next release version is: ${next_release}"
           #printf "Next Release Version Number: ${next_release}" >> ${GITHUB_STEP_SUMMARY}
 
-      # TODO: Do we sign our tags?
       - name: Apply Tag with Calculated Next Version
         run: |
           echo "Applying computed version tag"
@@ -157,6 +158,7 @@ jobs:
 
       - name: Create Release Notes with Conventional Commits
         run: |
+          echo git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
           git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
 
       - name: Create Release Notes with Markdown
