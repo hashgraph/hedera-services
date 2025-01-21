@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,6 +228,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         || !oldAccount.smartContract()
                         || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
                     final var contractId = ContractID.newBuilder()
+                            .shardNum(1)
+                            .realmNum(2)
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
                     // exclude nonce info if contract was destructed

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ class AppThrottleAdviserTest {
 
     private static final long GAS_LIMIT = 456L;
     private static final AccountID PAYER_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(1_234).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234).build();
     private static final TransactionBody CONTRACT_CALL_TXN_BODY = TransactionBody.newBuilder()
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())

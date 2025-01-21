@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,18 +50,24 @@ class ChildFeeContextImplTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(666L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
     private static final TransactionBody SAMPLE_BODY = TransactionBody.newBuilder()
             .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                     .tokenTransfers(TokenTransferList.newBuilder()
                             .token(TokenID.newBuilder().tokenNum(666L).build())
                             .transfers(
                                     AccountAmount.newBuilder()
-                                            .accountID(AccountID.newBuilder().accountNum(1234))
+                                            .accountID(AccountID.newBuilder()
+                                                    .shardNum(1)
+                                                    .realmNum(2)
+                                                    .accountNum(1234))
                                             .amount(-1000)
                                             .build(),
                                     AccountAmount.newBuilder()
-                                            .accountID(AccountID.newBuilder().accountNum(5678))
+                                            .accountID(AccountID.newBuilder()
+                                                    .shardNum(1)
+                                                    .realmNum(2)
+                                                    .accountNum(5678))
                                             .amount(+1000)
                                             .build())
                             .build()))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import javax.inject.Singleton;
 @Singleton
 public class SyntheticIds {
     private static final AccountID DEBIT_NON_CANONICAL_REFERENCE_ID =
-            AccountID.newBuilder().accountNum(0L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0L).build();
     private static final AccountID CREDIT_NON_CANONICAL_REFERENCE_ID =
             AccountID.newBuilder().alias(Bytes.wrap(new byte[20])).build();
 
@@ -106,7 +106,7 @@ public class SyntheticIds {
     }
 
     private static AccountID numericIdWith(final long number) {
-        return AccountID.newBuilder().accountNum(number).build();
+        return AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(number).build();
     }
 
     private static AccountID aliasIdWith(final byte[] alias) {

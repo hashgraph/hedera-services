@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ class ExpiryValidatorImplTest {
     private static final long A_PERIOD = 666_666L;
     private static final long B_PERIOD = 777_777L;
     private static final AccountID AN_AUTO_RENEW_ID =
-            AccountID.newBuilder().accountNum(888).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(888).build();
 
     @Mock
     private AttributeValidator attributeValidator;

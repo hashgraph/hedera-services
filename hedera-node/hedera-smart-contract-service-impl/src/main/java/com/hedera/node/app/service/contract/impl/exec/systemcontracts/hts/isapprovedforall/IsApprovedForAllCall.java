@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,11 @@ public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
         if (operatorNum > 0 && ownerNum > 0) {
             verdict = operatorMatches(
                     requireNonNull(nativeOperations().getAccount(ownerNum)),
-                    AccountID.newBuilder().accountNum(operatorNum).build(),
+                    AccountID.newBuilder()
+                            .shardNum(1)
+                            .realmNum(2)
+                            .accountNum(operatorNum)
+                            .build(),
                     token.tokenIdOrThrow());
         }
         if (isErcRedirect) {

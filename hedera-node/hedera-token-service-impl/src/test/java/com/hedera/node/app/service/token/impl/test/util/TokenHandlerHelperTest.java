@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenHandlerHelperTest {
     private static final AccountID ACCT_2300 =
-            AccountID.newBuilder().accountNum(2300L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2300L).build();
     private static final TokenID TOKEN_ID_45 = TokenID.newBuilder().tokenNum(45).build();
     private static final NftID NFT_ID =
             NftID.newBuilder().tokenId(TOKEN_ID_45).serialNumber(123).build();

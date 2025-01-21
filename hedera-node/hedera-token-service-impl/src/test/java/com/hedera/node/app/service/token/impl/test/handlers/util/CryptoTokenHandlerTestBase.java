@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,25 +153,27 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
 
     /* ---------- Account IDs */
-    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID payerId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
     protected final AccountID deleteAccountId =
-            AccountID.newBuilder().accountNum(3213).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3213).build();
     protected final AccountID transferAccountId =
-            AccountID.newBuilder().accountNum(32134).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(32134).build();
     protected final AccountID delegatingSpenderId =
-            AccountID.newBuilder().accountNum(1234567).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234567).build();
     protected final AccountID ownerId =
-            AccountID.newBuilder().accountNum(123456).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(123456).build();
     protected final AccountID treasuryId =
-            AccountID.newBuilder().accountNum(1000000).build();
-    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1000000).build();
+    protected final AccountID autoRenewId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4).build();
     protected final AccountID spenderId =
-            AccountID.newBuilder().accountNum(12345).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(12345).build();
     protected final AccountID feeCollectorId = transferAccountId;
     protected final AccountID stakingRewardId =
-            AccountID.newBuilder().accountNum(800).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(800).build();
     protected final AccountID zeroAccountId =
-            AccountID.newBuilder().accountNum(0).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build();
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -196,14 +198,23 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final TokenID fungibleTokenIDC = asToken(7L);
     protected final TokenID fungibleTokenIDD = asToken(8L);
     protected final int hbarReceiver = 10000000;
-    protected final AccountID hbarReceiverId =
-            AccountID.newBuilder().accountNum(hbarReceiver).build();
+    protected final AccountID hbarReceiverId = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(hbarReceiver)
+            .build();
     protected final int tokenReceiver = hbarReceiver + 1;
     protected final int tokenReceiverNoAssociation = tokenReceiver + 1;
-    protected final AccountID tokenReceiverId =
-            AccountID.newBuilder().accountNum(tokenReceiver).build();
-    protected final AccountID tokenReceiverNoAssociationId =
-            AccountID.newBuilder().accountNum(tokenReceiverNoAssociation).build();
+    protected final AccountID tokenReceiverId = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(tokenReceiver)
+            .build();
+    protected final AccountID tokenReceiverNoAssociationId = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(tokenReceiverNoAssociation)
+            .build();
 
     protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
             .accountId(payerId)

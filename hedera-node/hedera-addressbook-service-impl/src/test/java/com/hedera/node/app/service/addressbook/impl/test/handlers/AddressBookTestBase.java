@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,9 +108,11 @@ public class AddressBookTestBase {
     final Key invalidKey = Key.newBuilder()
             .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
             .build();
-    protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID accountId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
 
-    protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
+    protected final AccountID payerId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2).build();
     protected final byte[] grpcCertificateHash = "grpcCertificateHash".getBytes();
     protected final byte[] gossipCaCertificate = "gossipCaCertificate".getBytes();
     protected final long WELL_KNOWN_NODE_ID = 1L;

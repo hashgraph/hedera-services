@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,11 @@ public class UpdateAccountEnabledTest {
                 viewNode(
                         "testNode",
                         node -> assertEquals(
-                                AccountID.newBuilder().accountNum(1000).build(),
+                                AccountID.newBuilder()
+                                        .shardNum(1)
+                                        .realmNum(2)
+                                        .accountNum(1000)
+                                        .build(),
                                 node.accountId(),
                                 "Node accountId should be updated")));
     }

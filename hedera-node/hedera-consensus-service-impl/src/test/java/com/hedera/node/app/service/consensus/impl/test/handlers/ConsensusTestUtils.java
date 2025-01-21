@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,11 @@ public final class ConsensusTestUtils {
                 -1L,
                 0L,
                 -1L,
-                AccountID.newBuilder().accountNum(1234567L).build(),
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234567L)
+                        .build(),
                 false,
                 null,
                 "memo",

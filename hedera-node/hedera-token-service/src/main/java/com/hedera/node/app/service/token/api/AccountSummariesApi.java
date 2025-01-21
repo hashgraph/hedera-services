@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,8 @@ public interface AccountSummariesApi {
     /**
      * The sentinel account id to represent stakedAccountId is absent on account.
      */
-    AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
+    AccountID SENTINEL_ACCOUNT_ID =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build();
 
     /**
      * Returns the hexed EVM address of the given account.

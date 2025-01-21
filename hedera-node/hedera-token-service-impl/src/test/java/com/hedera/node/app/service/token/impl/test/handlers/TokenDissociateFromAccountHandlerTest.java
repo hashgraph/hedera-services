@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,11 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
-    private static final AccountID ACCOUNT_1339 =
-            AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
+    private static final AccountID ACCOUNT_1339 = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(MISC_ACCOUNT.getAccountNum())
+            .build();
     private static final AccountID ACCOUNT_2020 = BaseCryptoHandler.asAccount(2020);
     private static final TokenID TOKEN_555_ID =
             TokenID.newBuilder().tokenNum(555).build();
@@ -133,8 +136,11 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsExpiredAccount() {
             // Create an account that is expired
             final var accountNumber = 12345L;
-            final AccountID accountId =
-                    AccountID.newBuilder().accountNum(accountNumber).build();
+            final AccountID accountId = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(accountNumber)
+                    .build();
             writableAccountStore.put(Account.newBuilder()
                     .accountId(accountId)
                     .expiredAndPendingRemoval(true)
@@ -156,8 +162,11 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsDeletedAccount() {
             // Create an account that is deleted
             final var accountNumber = 53135;
-            final AccountID accountId =
-                    AccountID.newBuilder().accountNum(accountNumber).build();
+            final AccountID accountId = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(accountNumber)
+                    .build();
             writableAccountStore.put(Account.newBuilder()
                     .accountId(accountId)
                     .expiredAndPendingRemoval(false)

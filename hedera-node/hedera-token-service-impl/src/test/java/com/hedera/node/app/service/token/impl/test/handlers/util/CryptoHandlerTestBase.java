@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,9 +117,13 @@ public class CryptoHandlerTestBase {
             .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
-    protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
-    protected final AccountID invalidId =
-            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
+    protected final AccountID id =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+    protected final AccountID invalidId = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(Long.MAX_VALUE)
+            .build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
@@ -139,18 +143,20 @@ public class CryptoHandlerTestBase {
     protected final ContractID contract =
             ContractID.newBuilder().contractNum(1234).build();
     protected final AccountID deleteAccountId =
-            AccountID.newBuilder().accountNum(3213).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3213).build();
     protected final AccountID transferAccountId =
-            AccountID.newBuilder().accountNum(32134).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(32134).build();
     protected final Long deleteAccountNum = deleteAccountId.accountNum();
     protected final Long transferAccountNum = transferAccountId.accountNum();
 
     protected final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
     protected final TokenID token = TokenID.newBuilder().tokenNum(6789).build();
-    protected final AccountID spender = AccountID.newBuilder().accountNum(12345).build();
+    protected final AccountID spender =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(12345).build();
     protected final AccountID delegatingSpender =
-            AccountID.newBuilder().accountNum(1234567).build();
-    protected final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234567).build();
+    protected final AccountID owner =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(123456).build();
     protected final Key ownerKey = B_COMPLEX_KEY;
     protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
             .spender(spender)
@@ -310,7 +316,11 @@ public class CryptoHandlerTestBase {
 
     protected Account givenValidAccount(final long accountNum) {
         return new Account(
-                AccountID.newBuilder().accountNum(accountNum).build(),
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountNum)
+                        .build(),
                 alias.alias(),
                 key,
                 1_234_567L,
@@ -333,7 +343,7 @@ public class CryptoHandlerTestBase {
                 2,
                 0,
                 1000L,
-                AccountID.newBuilder().accountNum(2L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),
@@ -348,7 +358,11 @@ public class CryptoHandlerTestBase {
 
     protected void givenValidContract() {
         account = new Account(
-                AccountID.newBuilder().accountNum(accountNum).build(),
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountNum)
+                        .build(),
                 alias.alias(),
                 key,
                 1_234_567L,
@@ -371,7 +385,7 @@ public class CryptoHandlerTestBase {
                 2,
                 0,
                 1000L,
-                AccountID.newBuilder().accountNum(2L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),
@@ -385,6 +399,6 @@ public class CryptoHandlerTestBase {
     }
 
     protected AccountID accountID(final long num) {
-        return AccountID.newBuilder().accountNum(num).build();
+        return AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(num).build();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,9 +80,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class SystemSetupTest {
     private static final AccountID ACCOUNT_ID_1 =
-            AccountID.newBuilder().accountNum(1).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1).build();
     private static final AccountID ACCOUNT_ID_2 =
-            AccountID.newBuilder().accountNum(2).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2).build();
     private static final int ACCT_1_BALANCE = 25;
     private static final Account ACCOUNT_1 = Account.newBuilder()
             .accountId(ACCOUNT_ID_1)

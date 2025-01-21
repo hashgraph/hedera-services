@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,6 +128,8 @@ public abstract class AbstractProxyEvmAccount extends AbstractMutableEvmAccount 
     @Override
     public @NonNull ContractID hederaContractId() {
         return ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
                 .contractNum(accountID.accountNumOrThrow())
                 .build();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -495,7 +495,11 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         when(contract.accountIdOrThrow())
-                .thenReturn(AccountID.newBuilder().accountNum(666).build());
+                .thenReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(666)
+                        .build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
         given(context.storeFactory()).willReturn(storeFactory);
@@ -623,7 +627,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void stakedAccountIdUpdated() {
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder()
-                .stakedAccountId(AccountID.newBuilder().accountNum(1))
+                .stakedAccountId(AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1))
                 .build();
 
         final var updatedContract = subject.update(contract, context, op);
@@ -669,7 +673,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void autoRenewAccountIdUpdated() {
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder()
-                .autoRenewAccountId(AccountID.newBuilder().accountNum(10))
+                .autoRenewAccountId(
+                        AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10))
                 .build();
 
         final var updatedContract = subject.update(contract, context, op);
@@ -699,10 +704,11 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .expirationTime(Timestamp.newBuilder().seconds(10))
                 .autoRenewPeriod(Duration.newBuilder().seconds(10))
                 .memo("memo")
-                .stakedAccountId(AccountID.newBuilder().accountNum(1))
+                .stakedAccountId(AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1))
                 .stakedNodeId(10)
                 .declineReward(true)
-                .autoRenewAccountId(AccountID.newBuilder().accountNum(10))
+                .autoRenewAccountId(
+                        AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10))
                 .maxAutomaticTokenAssociations(10)
                 .build();
 
@@ -726,7 +732,11 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         doReturn(attributeValidator).when(context).attributeValidator();
         when(accountStore.getContractById(targetContractWithEvmAddress)).thenReturn(contract);
         when(contract.accountIdOrThrow())
-                .thenReturn(AccountID.newBuilder().accountNum(999L).build());
+                .thenReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(999L)
+                        .build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
         given(context.storeFactory()).willReturn(storeFactory);

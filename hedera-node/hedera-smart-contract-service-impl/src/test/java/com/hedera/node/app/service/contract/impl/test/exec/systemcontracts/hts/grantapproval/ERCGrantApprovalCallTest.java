@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,11 @@ class ERCGrantApprovalCallTest extends CallTestBase {
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
         given(accountStore.getAccountById(any(AccountID.class))).willReturn(account);
         given(account.accountIdOrThrow())
-                .willReturn(AccountID.newBuilder().accountNum(1).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build());
         given(account.alias()).willReturn(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(new byte[] {1, 2, 3}));
         final var result = subject.execute(frame).fullResult().result();
 
@@ -134,7 +138,11 @@ class ERCGrantApprovalCallTest extends CallTestBase {
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
         given(accountStore.getAccountById(any(AccountID.class))).willReturn(account);
         given(account.accountIdOrThrow())
-                .willReturn(AccountID.newBuilder().accountNum(1).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build());
         given(account.alias()).willReturn(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(new byte[] {1, 2, 3}));
         final var result = subject.execute(frame).fullResult().result();
 
@@ -253,7 +261,11 @@ class ERCGrantApprovalCallTest extends CallTestBase {
         given(nativeOperations.readableAccountStore()).willReturn(accountStore);
         given(accountStore.getAccountById(any(AccountID.class))).willReturn(account);
         given(account.accountIdOrThrow())
-                .willReturn(AccountID.newBuilder().accountNum(1).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build());
         given(account.alias()).willReturn(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(new byte[] {1, 2, 3}));
         final var result = subject.execute(frame).fullResult().result();
 

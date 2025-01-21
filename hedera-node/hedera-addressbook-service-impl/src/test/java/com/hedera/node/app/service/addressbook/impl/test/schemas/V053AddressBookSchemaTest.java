@@ -310,7 +310,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
     private void setupMigrationContext2() {
         setupMigrationContext();
         accounts.put(
-                AccountID.newBuilder().accountNum(55).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(55).build(),
                 Account.newBuilder().key(anotherKey).build());
         writableStates = MapWritableStates.builder()
                 .state(writableAccounts)

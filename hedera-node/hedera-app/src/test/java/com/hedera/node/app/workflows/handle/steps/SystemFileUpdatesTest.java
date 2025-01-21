@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
                 FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
@@ -168,7 +172,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
                 FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
@@ -193,7 +201,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var fileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
@@ -219,7 +231,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var fileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
@@ -247,7 +263,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
@@ -269,7 +289,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
@@ -281,7 +305,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
         verify(exchangeRateManager, times(1))
                 .update(
                         FileUtilities.getFileContent(state, fileID),
-                        AccountID.newBuilder().accountNum(50L).build());
+                        AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build());
     }
 
     @Test
@@ -294,7 +322,11 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var fileID = FileID.newBuilder().fileNum(fileNum).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(50L)
+                                .build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());

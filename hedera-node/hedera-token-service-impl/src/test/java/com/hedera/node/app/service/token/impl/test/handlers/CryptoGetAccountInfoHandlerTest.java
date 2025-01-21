@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -356,7 +356,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var expectedInfo = getExpectedAccountInfo2(balancesInQueriesEnabled);
 
         account = account.copyBuilder()
-                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .stakedAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build())
                 .declineReward(false)
                 .build();
         setupAccountStore();
@@ -636,7 +640,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         return StakingInfo.newBuilder()
                 .declineReward(false)
                 .stakedToMe(1_234L)
-                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .stakedAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build())
                 .build();
     }
 
@@ -650,7 +658,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     private Query createCryptoGetInfoQuery(final long accountId) {
         final var data = CryptoGetInfoQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountId)
+                        .build())
                 .header(QueryHeader.newBuilder().build())
                 .build();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,8 @@ public class BaseCryptoHandlerTest {
     @Test
     @DisplayName("hasAccountNumOrAlias Account with number is valid")
     void hasAccountNumOrAlias_returnsTrue_whenAccountHasNumber() {
-        AccountID accountID = AccountID.newBuilder().accountNum(1L).build();
+        AccountID accountID =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build();
         assertTrue(BaseCryptoHandler.hasAccountNumOrAlias(accountID));
     }
 

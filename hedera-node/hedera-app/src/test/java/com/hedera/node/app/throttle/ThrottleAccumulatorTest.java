@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,9 +120,9 @@ class ThrottleAccumulatorTest {
     private static final int CAPACITY_SPLIT = 2;
     private static final Instant TIME_INSTANT = Instant.ofEpochSecond(1_234_567L, 123);
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(1234L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234L).build();
     private static final AccountID RECEIVER_ID =
-            AccountID.newBuilder().accountNum(1256L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1256L).build();
     private static final TokenID TOKEN_ID = TokenID.newBuilder().tokenNum(3333L).build();
     private static final Key A_PRIMITIVE_KEY = Key.newBuilder()
             .ed25519(Bytes.wrap("01234567890123456789012345678901"))
@@ -216,7 +216,11 @@ class ThrottleAccumulatorTest {
         subject.rebuildFor(defs);
 
         // when
-        final var queryPayerId = AccountID.newBuilder().accountNum(1_234L).build();
+        final var queryPayerId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(1_234L)
+                .build();
         var noAns = subject.checkAndEnforceThrottle(TRANSACTION_GET_RECEIPT, TIME_INSTANT, query, state, queryPayerId);
         subject.checkAndEnforceThrottle(GET_VERSION_INFO, TIME_INSTANT.plusNanos(1), query, state, queryPayerId);
         final var yesAns = subject.checkAndEnforceThrottle(
@@ -374,7 +378,11 @@ class ThrottleAccumulatorTest {
         subject.rebuildFor(defs);
 
         // then
-        final var queryPayerId = AccountID.newBuilder().accountNum(1_234L).build();
+        final var queryPayerId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(1_234L)
+                .build();
         assertTrue(
                 subject.checkAndEnforceThrottle(NETWORK_GET_EXECUTION_TIME, TIME_INSTANT, query, state, queryPayerId));
     }
@@ -412,7 +420,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(true);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -450,7 +462,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(true);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -491,7 +507,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -530,7 +550,11 @@ class ThrottleAccumulatorTest {
         final var defs = getThrottleDefs("bootstrap/throttles.json");
         given(transactionInfo.functionality()).willReturn(CONTRACT_CALL);
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1L)
+                        .build());
 
         // when:
         subject.rebuildFor(defs);
@@ -563,7 +587,11 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -604,7 +632,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -645,7 +677,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -684,7 +720,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -723,7 +763,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -762,7 +806,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -800,7 +848,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -838,7 +890,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles-sans-creation.json");
 
@@ -876,7 +932,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -918,7 +978,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -960,7 +1024,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles.json");
 
@@ -1002,7 +1070,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         final var defs = getThrottleDefs("bootstrap/throttles-sans-creation.json");
 
@@ -1045,7 +1117,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.maxGasPerSec()).willReturn(0L);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(CONTRACT_CALL);
         given(transactionInfo.txBody())
@@ -1074,7 +1150,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.maxGasPerSec()).willReturn(1L);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(CONTRACT_CALL);
         final var contractCallTxnBody =
@@ -1105,7 +1185,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.maxGasPerSec()).willReturn(0L);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(CONTRACT_CREATE);
         given(transactionInfo.txBody())
@@ -1134,7 +1218,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.maxGasPerSec()).willReturn(1L);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(CONTRACT_CREATE);
         final var contractCreateTxnBody =
@@ -1170,7 +1258,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.maxGasPerSec()).willReturn(0L);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(ETHEREUM_TRANSACTION);
         given(transactionInfo.txBody())
@@ -1199,7 +1291,11 @@ class ThrottleAccumulatorTest {
         given(contractsConfig.maxGasPerSec()).willReturn(1L);
 
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(ETHEREUM_TRANSACTION);
         final var ethTxnBody = EthereumTransactionBody.newBuilder()
@@ -1281,7 +1377,11 @@ class ThrottleAccumulatorTest {
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.throttleThrottleByGas()).willReturn(false);
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         given(transactionInfo.functionality()).willReturn(CONTRACT_CALL);
 
@@ -1303,7 +1403,11 @@ class ThrottleAccumulatorTest {
 
         // payer is not exempt
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1234L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1234L)
+                        .build());
 
         subject.applyGasConfig();
 
@@ -1317,7 +1421,11 @@ class ThrottleAccumulatorTest {
 
         // payer is exempt
         given(transactionInfo.payerID())
-                .willReturn(AccountID.newBuilder().accountNum(1L).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1L)
+                        .build());
 
         subject.leakUnusedGasPreviouslyReserved(transactionInfo, 100L);
 
@@ -1532,7 +1640,11 @@ class ThrottleAccumulatorTest {
             var accountAmounts = new ArrayList<AccountAmount>();
             accountAmounts.add(AccountAmount.newBuilder()
                     .amount(-1_000_000_000L)
-                    .accountID(AccountID.newBuilder().accountNum(3333L).build())
+                    .accountID(AccountID.newBuilder()
+                            .shardNum(1)
+                            .realmNum(2)
+                            .accountNum(3333L)
+                            .build())
                     .build());
             accountAmounts.add(AccountAmount.newBuilder()
                     .amount(+1_000_000_000L)

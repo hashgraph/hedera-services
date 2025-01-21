@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProxyEvmContractTest {
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
-    private static final AccountID ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
+    private static final AccountID ACCOUNT_ID = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(ACCOUNT_NUM)
+            .build();
     private static final ContractID CONTRACT_ID =
             ContractID.newBuilder().contractNum(ACCOUNT_NUM).build();
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
@@ -77,7 +80,13 @@ class ProxyEvmContractTest {
 
     @Test
     void hasExpectedId() {
-        assertEquals(AccountID.newBuilder().accountNum(ACCOUNT_NUM).build(), subject.hederaId());
+        assertEquals(
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(ACCOUNT_NUM)
+                        .build(),
+                subject.hederaId());
     }
 
     @Test

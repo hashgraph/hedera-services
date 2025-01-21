@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,7 +257,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksWhenSysAdminSign() throws PreCheckException {
-        final var accountID = AccountID.newBuilder().accountNum(50).build();
+        final var accountID =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(50).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
         subject.preHandle(context);
@@ -268,7 +269,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksWhenAddressBookAdminSign() throws PreCheckException {
-        final var accountID = AccountID.newBuilder().accountNum(55).build();
+        final var accountID =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(55).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
         subject.preHandle(context);

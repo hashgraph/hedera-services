@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,9 +81,12 @@ class QueryHederaNativeOperationsTest {
     @BeforeEach
     void setUp() {
         subject = new QueryHederaNativeOperations(context);
-        deletedAccount = AccountID.newBuilder().accountNum(1L).build();
-        fromAccount = AccountID.newBuilder().accountNum(3L).build();
-        beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
+        deletedAccount =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build();
+        fromAccount =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3L).build();
+        beneficiaryAccount =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build();
     }
 
     @Test

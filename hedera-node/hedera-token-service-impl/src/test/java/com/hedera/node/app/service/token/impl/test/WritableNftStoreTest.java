@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,8 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     void removesByNftID() {
         // Set up the NFT state with an existing NFT
 
-        final var ownerId = AccountID.newBuilder().accountNum(12345).build();
+        final var ownerId =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(12345).build();
         final var nftToRemove =
                 NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         writableNftState = emptyWritableNftStateBuilder()

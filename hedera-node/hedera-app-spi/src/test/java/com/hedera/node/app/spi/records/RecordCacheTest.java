@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,11 @@ import org.junit.jupiter.api.Test;
 
 class RecordCacheTest {
     private static final TransactionID USER_TXN_ID = TransactionID.newBuilder()
-            .accountID(AccountID.newBuilder().accountNum(666L).build())
+            .accountID(AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(666L)
+                    .build())
             .transactionValidStart(new Timestamp(1, 0))
             .scheduled(true)
             .build();

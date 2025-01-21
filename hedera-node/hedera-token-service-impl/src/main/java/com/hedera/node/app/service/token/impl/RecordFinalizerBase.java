@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import java.util.Objects;
 
 public class RecordFinalizerBase {
     protected static final AccountID ZERO_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(0).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build();
 
     /**
      * Gets all hbar changes for all modified accounts from the given {@link WritableAccountStore}.

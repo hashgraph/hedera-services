@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,10 @@ public class ReturnTypes {
 
     // When no value is set for AccountID, ContractID or TokenId the return value is set to 0.
     public static final AccountID ZERO_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(0).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build();
     public static final Address ZERO_ADDRESS = asHeadlongAddress(asEvmAddress(0L));
     public static final ContractID ZERO_CONTRACT_ID =
-            ContractID.newBuilder().contractNum(0).build();
+            ContractID.newBuilder().shardNum(1).realmNum(2).contractNum(0).build();
     public static final TokenID ZERO_TOKEN_ID = TokenID.newBuilder().tokenNum(0).build();
     public static final Fraction ZERO_FRACTION = new Fraction(0, 1);
     public static final FixedFee ZERO_FIXED_FEE = new FixedFee(0, null);

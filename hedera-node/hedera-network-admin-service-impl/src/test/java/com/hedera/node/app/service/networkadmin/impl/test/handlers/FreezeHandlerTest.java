@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ class FreezeHandlerTest {
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
     private final AccountID nonAdminAccount =
-            AccountID.newBuilder().accountNum(9999L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(9999L).build();
     private final FreezeHandler subject = new FreezeHandler(new ForkJoinPool(
             1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true));
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,10 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountId(AccountID.newBuilder().accountNum(hbarReceiver + 2))
+                            .accountId(AccountID.newBuilder()
+                                    .shardNum(1)
+                                    .realmNum(2)
+                                    .accountNum(hbarReceiver + 2))
                             .alias(evmAddressAlias3.value())
                             .build();
                     writableAccountStore.put(copy);

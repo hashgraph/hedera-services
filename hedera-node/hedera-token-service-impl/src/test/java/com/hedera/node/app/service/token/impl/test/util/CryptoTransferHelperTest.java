@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoTransferHelperTest {
     private static final TokenID tokenId = TokenID.newBuilder().tokenNum(1).build();
     private static final AccountID fromAccount =
-            AccountID.newBuilder().accountNum(1001).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001).build();
     private static final AccountID toAccount =
-            AccountID.newBuilder().accountNum(1002).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1002).build();
 
     @Test
     void testCreateFungibleTransfer() {

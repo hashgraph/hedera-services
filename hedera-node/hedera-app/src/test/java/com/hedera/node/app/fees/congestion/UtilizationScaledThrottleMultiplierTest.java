@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,15 +147,30 @@ class UtilizationScaledThrottleMultiplierTest {
                         Map.of(
                                 "ACCOUNTS",
                                 Map.of(
-                                        AccountID.newBuilder().accountNum(1L),
+                                        AccountID.newBuilder()
+                                                        .shardNum(1)
+                                                        .realmNum(2)
+                                                        .accountNum(1L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder().accountNum(2L),
+                                        AccountID.newBuilder()
+                                                        .shardNum(1)
+                                                        .realmNum(2)
+                                                        .accountNum(2L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder().accountNum(3L),
+                                        AccountID.newBuilder()
+                                                        .shardNum(1)
+                                                        .realmNum(2)
+                                                        .accountNum(3L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder().accountNum(4L),
+                                        AccountID.newBuilder()
+                                                        .shardNum(1)
+                                                        .realmNum(2)
+                                                        .accountNum(4L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder().accountNum(5L),
+                                        AccountID.newBuilder()
+                                                        .shardNum(1)
+                                                        .realmNum(2)
+                                                        .accountNum(5L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT),
                                 "ALIASES",
                                 new HashMap<>()))

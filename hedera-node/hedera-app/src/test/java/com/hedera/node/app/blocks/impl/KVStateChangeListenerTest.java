@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,8 @@ import org.junit.jupiter.api.Test;
 
 class KVStateChangeListenerTest {
     private static final int STATE_ID = 1;
-    private static final AccountID KEY = AccountID.newBuilder().accountNum(1234).build();
+    private static final AccountID KEY =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234).build();
     private static final Account VALUE = Account.newBuilder().accountId(KEY).build();
     private KVStateChangeListener listener;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,19 +38,19 @@ public class FakeNetworkInfo implements NetworkInfo {
     private static final List<NodeInfo> FAKE_NODE_INFOS = List.of(
             fakeInfoWith(
                     2L,
-                    AccountID.newBuilder().accountNum(3).build(),
+                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build(),
                     30,
                     List.of(endpointFor("333.333.333.333", 50233), endpointFor("127.0.0.1", 20)),
                     Bytes.wrap("cert1")),
             fakeInfoWith(
                     4L,
-                    AccountID.newBuilder().accountNum(4).build(),
+                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4).build(),
                     40,
                     List.of(endpointFor("444.444.444.444", 50244), endpointFor("127.0.0.2", 21)),
                     Bytes.wrap("cert2")),
             fakeInfoWith(
                     8L,
-                    AccountID.newBuilder().accountNum(5).build(),
+                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(5).build(),
                     50,
                     List.of(endpointFor("555.555.555.555", 50255), endpointFor("127.0.0.3", 22)),
                     Bytes.wrap("cert3")));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,7 +177,10 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         final var accountAsContract = hollowAccount
                 .copyBuilder()
                 .key(Key.newBuilder()
-                        .contractID(ContractID.newBuilder().contractNum(hollowAccountId.accountNumOrThrow()))
+                        .contractID(ContractID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .contractNum(hollowAccountId.accountNumOrThrow()))
                         .build())
                 .smartContract(true)
                 .maxAutoAssociations(hollowAccount.numberAssociations())

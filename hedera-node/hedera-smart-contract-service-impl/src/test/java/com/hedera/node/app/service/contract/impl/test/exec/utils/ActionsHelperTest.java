@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,11 @@ class ActionsHelperTest {
         assertTrue(subject.isValid(CALL_ACTION
                 .copyBuilder()
                 .recipientContract((ContractID) null)
-                .recipientAccount(AccountID.newBuilder().accountNum(123).build())
+                .recipientAccount(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(123)
+                        .build())
                 .build()));
         assertTrue(subject.isValid(CALL_ACTION
                 .copyBuilder()

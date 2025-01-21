@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,8 +198,12 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
         final var store = new ReadableAccountStoreImpl(readableStates);
-        final AccountID invalidRealmAccountId =
-                AccountID.newBuilder().accountNum(5).realmNum(-1L).build();
+        final AccountID invalidRealmAccountId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(5)
+                .realmNum(-1L)
+                .build();
 
         final var query = createGetAccountBalanceQueryWithInvalidHeader(invalidRealmAccountId.accountNumOrThrow());
         when(context.query()).thenReturn(query);
@@ -496,7 +500,11 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQuery(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountId)
+                        .build())
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
@@ -505,7 +513,11 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQueryWithInvalidHeader(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountId)
+                        .build())
                 .header((QueryHeader) null)
                 .build();
 

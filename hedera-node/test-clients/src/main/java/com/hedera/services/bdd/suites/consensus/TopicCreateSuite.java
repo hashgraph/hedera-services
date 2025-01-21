@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class TopicCreateSuite {
     @HapiTest
     final Stream<DynamicTest> autoRenewAccountIsValidated() {
         return hapiTest(createTopic("testTopic")
-                .autoRenewAccountId("1.2.3")
+                .autoRenewAccountId("2.1.3")
                 .signedBy(GENESIS)
                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
     }

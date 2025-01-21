@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,8 @@ class PreHandleContextListUpdatesTest {
     private Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
-    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
+    private AccountID payer =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3L).build();
     private Long payerNum = 3L;
     private Key payerKey = A_COMPLEX_KEY;
 

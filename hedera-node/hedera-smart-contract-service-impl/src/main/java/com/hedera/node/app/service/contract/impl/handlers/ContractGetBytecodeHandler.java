@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,7 +125,11 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     private Bytes bytecodeFrom(@NonNull final QueryContext context, @NonNull Account contract) {
         final var store = context.createStore(ContractStateStore.class);
         var contractNumber = contract.accountIdOrThrow().accountNumOrThrow();
-        var contractId = ContractID.newBuilder().contractNum(contractNumber).build();
+        var contractId = ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .contractNum(contractNumber)
+                .build();
         final var bytecode = store.getBytecode(contractId);
         return bytecode.code();
     }

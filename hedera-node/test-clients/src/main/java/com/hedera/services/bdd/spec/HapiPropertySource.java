@@ -395,8 +395,8 @@ public interface HapiPropertySource {
 
     static ContractID asContractIdWithEvmAddress(ByteString address) {
         return ContractID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
+                .setShardNum(1)
+                .setRealmNum(2)
                 .setEvmAddress(address)
                 .build();
     }
