@@ -82,9 +82,6 @@ jobs:
             echo "Checked out branch: $(git symbolic-ref --short HEAD)"
           fi
 
-      # TODO: Configure
-      # git config --global user.email "you@example.com"
-      # git config --global user.name "Your Name"
       - name: Import GPG Key
         uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
         with:
@@ -159,10 +156,11 @@ jobs:
           echo "Should match version we just applied: ${{ steps.next_version.outputs.next_release }}"
 
 #        TODO: Comment out before merge
-#      - name: Push Release Tag to Remote
-#        run: |
-#          echo "Pushing release tag to remote"
-#          git push origin tag v${{ steps.next_version.outputs.next_release }}
+      - name: Push Release Tag to Remote
+        run: |
+          echo "Pushing release tag to remote"
+          git push origin tag v${{ steps.next_version.outputs.next_release }}
+          echo "Pushed new release tag to remote"
 
       - name: Create Release Notes with Markdown
         run: |
@@ -183,6 +181,7 @@ jobs:
         if: always()
         run: |
           git tag --delete v${{ steps.next_version.outputs.next_release }}
+          git push --delete origin v${{ steps.next_version.outputs.next_release }}
 
       - name: Ensure Branch Not in Use and Delete Worktree
         if: always()
