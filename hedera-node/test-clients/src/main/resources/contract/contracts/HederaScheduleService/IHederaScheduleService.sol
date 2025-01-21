@@ -32,11 +32,11 @@ interface IHederaScheduleService {
     /// @param scheduleAddress the address of the schedule transaction
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return fungibleTokenInfo The token information for the scheduled fungible token create transaction
-    function getScheduledFungibleTokenCreateTransaction(address scheduleAddress) external returns (int64 responseCode, IHederaTokenService.FungibleTokenInfo memory fungibleTokenInfo);
+    function getScheduledCreateFungibleTokenInfo(address scheduleAddress) external returns (int64 responseCode, IHederaTokenService.FungibleTokenInfo memory fungibleTokenInfo);
 
     /// Returns the token information for a scheduled non fungible token create transaction
     /// @param scheduleAddress the address of the schedule transaction
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return nonFungibleTokenInfo The token information for the scheduled non fungible token create transaction
-    function getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress) external returns (int64 responseCode, IHederaTokenService.NonFungibleTokenInfo memory nonFungibleTokenInfo);
+    function getScheduledCreateNonFungibleTokenInfo(address scheduleAddress) external returns (int64 responseCode, IHederaTokenService.NonFungibleTokenInfo memory nonFungibleTokenInfo);
 }
