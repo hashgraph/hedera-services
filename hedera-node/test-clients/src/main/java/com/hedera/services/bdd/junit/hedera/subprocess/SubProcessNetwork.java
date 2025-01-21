@@ -65,6 +65,7 @@ import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -267,14 +268,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         // Then start each network node
         for (int i = 0; i < nodes.size(); i++) {
             HederaNode node = nodes.get(i);
-            log.info("Starting node {} with block node mode: {}", node.getNodeId(), blockNodeMode);
+            log.info("Starting node {} with block node mode: {}", i, blockNodeMode);
 
             // Initialize Working Directory for Node
             node.initWorkingDir(configTxt);
 
             // Write block node config if needed
             if (blockNodeMode == BlockNodeMode.CONTAINERS) {
-                BlockNodeContainer container = blockNodeContainers.get((int) node.getNodeId());
+                BlockNodeContainer container = blockNodeContainers.get(i);
                 updateBlockNodesConfigForNode(node, container);
                 log.info(
                         "Configured block node for node {} with container port {}",
@@ -285,12 +286,71 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 log.info(
                         "Configured simulated block nodes for node {}",
                         node.getNodeId());
+            } else if(blockNodeMode == BlockNodeMode.LOCAL_NODE && i == 0) {
+                updateSubProcessNodeOneConfigForLocalBlockNode(node);
+                log.info(
+                        "Configured local block nodes for node {}",
+                        node.getNodeId());
             } else {
                 log.info("Skipping block node for node {} as block nodes are disabled", node.getNodeId());
             }
 
             // Start the node
             node.start();
+        }
+    }
+
+    private void updateSubProcessNodeOneConfigForLocalBlockNode(HederaNode node) {
+        try {
+            // Create block node config for this container
+            List<BlockNodeConfig> blockNodes = List.of(new BlockNodeConfig(
+                    1, // priority
+                    "127.0.0.1",
+                    8080,
+                    true // preferred since it's the only node
+            ));
+
+            BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
+                    blockNodes,
+                    3600, // 1 hour reselection interval
+                    1, // only one connection needed, also not relevant for one preferred block node,
+                    256 // default batch size
+            );
+
+            // Write the config to this node's block-nodes.json
+            Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.json");
+            Files.writeString(configPath, BlockNodeConnectionInfo.JSON.toJSON(connectionInfo));
+
+            // Update application.properties with block stream settings
+            Path appPropertiesPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("application.properties");
+            log.info("Attempting to update application.properties at path {} for node {}", appPropertiesPath, node.getNodeId());
+
+            // First check if file exists and log current content
+            if (Files.exists(appPropertiesPath)) {
+                String currentContent = Files.readString(appPropertiesPath);
+                log.info("Current application.properties content for node {}: {}", node.getNodeId(), currentContent);
+            } else {
+                log.info("application.properties does not exist yet for node {}, will create new file", node.getNodeId());
+            }
+
+            String blockStreamConfig = """
+                    # Block stream configuration
+                    blockStream.writerMode=GRPC
+                    blockStream.streamToBlockNodes=true
+                    blockStream.shutdownNodeOnNoBlockNodes=true
+                    """;
+
+            // Write the properties with CREATE and APPEND options
+            Files.writeString(appPropertiesPath, blockStreamConfig,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
+
+            // Verify the file was updated
+            String updatedContent = Files.readString(appPropertiesPath);
+            log.info("Verified application.properties content after update for node {}: {}", node.getNodeId(), updatedContent);
+
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to update block node configuration for node " + node.getNodeId(), e);
         }
     }
 

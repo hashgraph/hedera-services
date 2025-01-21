@@ -26,6 +26,9 @@ public enum BlockNodeMode {
     /** Use a simulated block node */
     SIMULATOR,
 
+    /** User is already running a local hedera block node. SubProcessNode 1 will connect to it. */
+    LOCAL_NODE,
+
     /** Don't use any block nodes */
     NONE
 }

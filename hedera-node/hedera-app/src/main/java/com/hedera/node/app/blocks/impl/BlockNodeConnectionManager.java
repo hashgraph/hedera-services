@@ -23,8 +23,6 @@ import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
-import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.internal.network.BlockNodeConfig;
@@ -32,6 +30,7 @@ import com.hedera.node.internal.network.BlockNodeConnectionInfo;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import io.grpc.Status;
+import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.helidon.common.tls.Tls;
 import io.helidon.webclient.grpc.GrpcClient;
@@ -46,7 +45,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -70,9 +74,9 @@ public class BlockNodeConnectionManager {
     private static final Duration INITIAL_RETRY_DELAY = Duration.ofSeconds(1);
     private static final double RETRY_BACKOFF_MULTIPLIER = 2.0;
 
-    private final List<BlockNodeConfig> allNodes;
-    private final int maxSimultaneousConnections;
-    private final Duration nodeReselectionInterval;
+    private List<BlockNodeConfig> allNodes;
+    private int maxSimultaneousConnections;
+    private Duration nodeReselectionInterval;
     private final Map<BlockNodeConfig, BlockNodeConnection> activeConnections;
     private final Map<BlockNodeConfig, Integer> retryAttempts;
     private final Map<BlockNodeConfig, Instant> nextRetryTime;
@@ -96,7 +100,7 @@ public class BlockNodeConnectionManager {
     private final Map<Long, BlockState> blockStates = new ConcurrentHashMap<>();
     private final ReentrantLock blockStateLock = new ReentrantLock();
     private volatile BlockState currentBlock;
-    private final int blockItemBatchSize;
+    private int blockItemBatchSize;
     private final ExecutorService streamingExecutor = Executors.newSingleThreadExecutor();
 
     /**
@@ -104,8 +108,19 @@ public class BlockNodeConnectionManager {
      */
     public BlockNodeConnectionManager(@NonNull final ConfigProvider configProvider) {
         requireNonNull(configProvider);
+        this.activeConnections = new ConcurrentHashMap<>();
+        this.retryAttempts = new ConcurrentHashMap<>();
+        this.nextRetryTime = new ConcurrentHashMap<>();
+        this.nodesInBackoff = ConcurrentHashMap.newKeySet();
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
+        this.availableNonPreferredSlots = 0;
+
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var configPath = Paths.get(blockStreamConfig.blockNodeConnectionFileDir(), "block-nodes.json");
+
+        if (!blockStreamConfig.streamToBlockNodes()) {
+            return;
+        }
 
         try {
             byte[] jsonConfig = Files.readAllBytes(configPath);
@@ -127,13 +142,6 @@ public class BlockNodeConnectionManager {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
-
-        this.activeConnections = new ConcurrentHashMap<>();
-        this.retryAttempts = new ConcurrentHashMap<>();
-        this.nextRetryTime = new ConcurrentHashMap<>();
-        this.nodesInBackoff = ConcurrentHashMap.newKeySet();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor();
-        this.availableNonPreferredSlots = maxSimultaneousConnections;
 
         // Sort nodes by priority (lowest number = highest priority)
         allNodes.sort(Comparator.comparingInt(BlockNodeConfig::priority));
@@ -224,10 +232,11 @@ public class BlockNodeConnectionManager {
         try {
             GrpcClient client = GrpcClient.builder()
                     .tls(Tls.builder().enabled(false).build())
-                    .baseUri(new URI(null, null, node.address(), node.port(), null, null, null))
+                    .baseUri(new URI("http://" + node.address() + ":" + node.port()))
                     .protocolConfig(GrpcClientProtocolConfig.builder()
                             .abortPollTimeExpired(false)
                             .build())
+                    .keepAlive(true)
                     .build();
 
             GrpcServiceClient grpcServiceClient = client.serviceClient(GrpcServiceDescriptor.builder()
