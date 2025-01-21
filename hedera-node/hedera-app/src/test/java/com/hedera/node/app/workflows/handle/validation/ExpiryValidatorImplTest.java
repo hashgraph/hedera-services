@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -346,9 +346,9 @@ class ExpiryValidatorImplTest {
                 .isEqualTo(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         assertThat(subject.isDetached(EntityType.ACCOUNT, true, 0)).isTrue();
 
-        assertThat(subject.expirationStatus(EntityType.CONTRACT, true, 0L))
+        assertThat(subject.expirationStatus(EntityType.CONTRACT_BYTECODE, true, 0L))
                 .isEqualTo(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
-        assertThat(subject.isDetached(EntityType.CONTRACT, true, 0)).isTrue();
+        assertThat(subject.isDetached(EntityType.CONTRACT_BYTECODE, true, 0)).isTrue();
     }
 
     @Test

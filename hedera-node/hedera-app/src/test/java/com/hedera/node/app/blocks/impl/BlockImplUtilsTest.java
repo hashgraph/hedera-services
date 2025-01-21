@@ -136,6 +136,7 @@ class BlockImplUtilsTest {
             case STATE_ID_ACTIVE_CONSTRUCTION -> "HintsService.ACTIVE_CONSTRUCTION";
             case STATE_ID_NEXT_CONSTRUCTION -> "HintsService.NEXT_CONSTRUCTION";
             case STATE_ID_PREPROCESSING_VOTES -> "HintsService.PREPROCESSING_VOTES";
+            case STATE_ID_ENTITY_COUNTS -> "EntityIdService.ENTITY_COUNTS";
         };
     }
 }

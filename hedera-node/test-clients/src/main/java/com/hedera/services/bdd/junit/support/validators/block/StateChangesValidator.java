@@ -610,6 +610,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
             case HINTS_CONSTRUCTION_VALUE -> singletonUpdateChange.hintsConstructionValueOrThrow();
+            case ENTITY_COUNTS_VALUE -> singletonUpdateChange.entityCountsValueOrThrow();
         };
     }
 

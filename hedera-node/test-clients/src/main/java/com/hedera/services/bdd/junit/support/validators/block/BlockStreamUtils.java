@@ -49,6 +49,7 @@ public class BlockStreamUtils {
             case STATE_ID_PLATFORM_STATE -> "PlatformStateService.PLATFORM_STATE";
             case STATE_ID_ROSTER_STATE -> "RosterService.ROSTER_STATE";
             case STATE_ID_ROSTERS -> "RosterService.ROSTERS";
+            case STATE_ID_ENTITY_COUNTS -> "EntityIdService.ENTITY_COUNTS";
             case STATE_ID_TRANSACTION_RECEIPTS_QUEUE -> "RecordCache.TransactionReceiptQueue";
             case STATE_ID_SCHEDULES_BY_EQUALITY -> "ScheduleService.SCHEDULES_BY_EQUALITY";
             case STATE_ID_SCHEDULES_BY_EXPIRY -> "ScheduleService.SCHEDULES_BY_EXPIRY_SEC";
